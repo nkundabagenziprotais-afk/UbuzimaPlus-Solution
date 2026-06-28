@@ -47,3 +47,27 @@ The stock movement ledger records opening stock balances and becomes the foundat
 - Stock movement APIs
 - Expiry and reorder intelligence
 - Dashboard product and inventory snapshot
+
+
+## Phase 3.2 read APIs
+
+Phase 3.2 exposes read-only product and inventory APIs.
+
+### Endpoints
+
+- `GET /api/v1/pharmaco/products`
+- `GET /api/v1/pharmaco/products/{product}`
+- `GET /api/v1/pharmaco/inventory/locations`
+- `GET /api/v1/pharmaco/inventory/batches`
+- `GET /api/v1/pharmaco/inventory/summary`
+
+### Controls
+
+All endpoints require:
+
+- Authenticated Sanctum token
+- `X-Tenant-Slug`
+- `pharmaco.inventory.manage` permission
+- Active `pharmaco.inventory` module for the tenant
+
+The APIs are read-only in this phase. Stock receiving, transfer, adjustment, dispensing and audit-linked mutation workflows will be added in later phases.
