@@ -1138,3 +1138,102 @@ p {
     align-items: stretch;
   }
 }
+
+
+.payment-recording-card {
+  border: 1px solid rgba(20, 83, 45, 0.12);
+  border-radius: 22px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.82);
+  display: grid;
+  gap: 1rem;
+}
+
+.payment-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.payment-form-grid label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.payment-form-grid input,
+.payment-form-grid select,
+.payment-form-grid textarea {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 12px;
+  padding: 0.7rem 0.8rem;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.payment-form-grid textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.payment-action-row {
+  display: flex;
+  align-items: end;
+}
+
+.payment-action-row button {
+  width: 100%;
+}
+
+.receipt-preview {
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.24);
+  display: grid;
+  gap: 0.2rem;
+}
+
+.receipt-preview span,
+.receipt-preview small {
+  color: #64748b;
+}
+
+.receipt-preview strong {
+  color: #166534;
+  font-size: 1.25rem;
+}
+
+.payment-history {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.payment-history h4 {
+  margin: 0;
+  color: #14532d;
+}
+
+.payment-history > div {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
+  background: #ffffff;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.payment-history span,
+.payment-history small {
+  color: #64748b;
+}
+
+@media (max-width: 900px) {
+  .payment-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

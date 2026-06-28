@@ -15,6 +15,7 @@ use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class SalesDispensingController extends Controller
@@ -296,6 +297,139 @@ class SalesDispensingController extends Controller
         ]);
     }
 
+
+    public function recordPayment(
+        Request $request,
+        PharmacoSale $sale,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $sale->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'payment_method' => ['required', 'string', 'in:cash,momo,card,insurance,credit,bank_transfer'],
+            'reference_number' => ['nullable', 'string', 'max:120'],
+            'received_at' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $result = DB::transaction(function () use ($request, $sale, $tenant, $validated) {
+            $lockedSale = PharmacoSale::query()
+                ->where('tenant_id', $tenant->id)
+                ->lockForUpdate()
+                ->findOrFail($sale->id);
+
+            if ($lockedSale->status === 'draft') {
+                throw ValidationException::withMessages([
+                    'sale' => ['Draft sales must be confirmed and dispensed before payment is recorded.'],
+                ]);
+            }
+
+            if (in_array($lockedSale->status, ['cancelled', 'voided'], true)) {
+                throw ValidationException::withMessages([
+                    'sale' => ['Payments cannot be recorded against cancelled or voided sales.'],
+                ]);
+            }
+
+            $amount = round((float) $validated['amount'], 2);
+            $currentPaid = round((float) $lockedSale->paid_amount, 2);
+            $totalAmount = round((float) $lockedSale->total_amount, 2);
+            $currentBalance = max(round($totalAmount - $currentPaid, 2), 0);
+
+            if ($currentBalance <= 0 || $lockedSale->payment_status === 'paid') {
+                abort(409, 'Sale is already fully paid.');
+            }
+
+            if ($amount > $currentBalance) {
+                throw ValidationException::withMessages([
+                    'amount' => ["Payment amount cannot exceed the current balance of {$currentBalance}."],
+                ]);
+            }
+
+            $newPaid = round($currentPaid + $amount, 2);
+            $newBalance = max(round($totalAmount - $newPaid, 2), 0);
+            $paymentStatus = $newBalance <= 0 ? 'paid' : 'partially_paid';
+
+            $receiptNumber = $this->nextReceiptNumber($tenant->id, $lockedSale->id);
+
+            $payment = PharmacoPayment::query()->create([
+                'uuid' => (string) Str::uuid(),
+                'tenant_id' => $tenant->id,
+                'pharmaco_sale_id' => $lockedSale->id,
+                'amount' => $amount,
+                'payment_method' => $validated['payment_method'],
+                'status' => 'completed',
+                'reference_number' => $validated['reference_number'] ?? null,
+                'receipt_number' => $receiptNumber,
+                'received_by' => $request->user()?->id,
+                'received_at' => $validated['received_at'] ?? now(),
+                'metadata' => [
+                    'notes' => $validated['notes'] ?? null,
+                    'previous_paid_amount' => $currentPaid,
+                    'previous_balance_amount' => $currentBalance,
+                    'new_paid_amount' => $newPaid,
+                    'new_balance_amount' => $newBalance,
+                    'payment_workflow' => 'phase_5_1_record_payment',
+                ],
+            ]);
+
+            $lockedSale->paid_amount = $newPaid;
+            $lockedSale->balance_amount = $newBalance;
+            $lockedSale->payment_status = $paymentStatus;
+            $lockedSale->metadata = [
+                ...($lockedSale->metadata ?? []),
+                'last_payment_id' => $payment->id,
+                'last_receipt_number' => $receiptNumber,
+                'last_payment_recorded_at' => now()->toISOString(),
+            ];
+            $lockedSale->save();
+
+            return [
+                'sale' => $lockedSale->fresh([
+                    'branch',
+                    'customer',
+                    'prescription.customer',
+                    'items.product.category',
+                    'items.stockBatch',
+                    'items.stockLocation',
+                    'payments',
+                ]),
+                'payment' => $payment->fresh(),
+            ];
+        });
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.payment.recorded',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'sale_number' => $result['sale']->sale_number,
+                'sale_id' => $result['sale']->id,
+                'payment_id' => $result['payment']->id,
+                'receipt_number' => $result['payment']->receipt_number,
+                'payment_method' => $result['payment']->payment_method,
+                'amount' => (float) $result['payment']->amount,
+                'payment_status' => $result['sale']->payment_status,
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoPayment::class,
+            auditableId: $result['payment']->id
+        );
+
+        return response()->json([
+            'message' => 'Payment recorded successfully.',
+            'payment' => $this->serializePayment($result['payment']),
+            'sale' => $this->serializeSale($result['sale'], includeDetails: true),
+        ], 201);
+    }
+
     private function tenantPayload($tenant): array
     {
         return [
@@ -430,6 +564,17 @@ class SalesDispensingController extends Controller
         ];
     }
 
+
+    private function nextReceiptNumber(int $tenantId, int $saleId): string
+    {
+        $sequence = PharmacoPayment::query()
+            ->where('tenant_id', $tenantId)
+            ->where('pharmaco_sale_id', $saleId)
+            ->count() + 1;
+
+        return sprintf('RCPT-%s-%s-%04d', str_pad((string) $tenantId, 4, '0', STR_PAD_LEFT), str_pad((string) $saleId, 6, '0', STR_PAD_LEFT), $sequence);
+    }
+
     private function serializePayment(PharmacoPayment $payment): array
     {
         return [
@@ -439,6 +584,7 @@ class SalesDispensingController extends Controller
             'payment_method' => $payment->payment_method,
             'status' => $payment->status,
             'reference_number' => $payment->reference_number,
+            'receipt_number' => $payment->receipt_number,
             'received_at' => $payment->received_at?->toISOString(),
             'metadata' => $payment->metadata ?? [],
         ];
