@@ -1,76 +1,285 @@
-const summaryCards = [
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { AccessCheckResult, AccessProfile, getAuthenticatedProfile, login, logout, runAccessCheck } from './lib/api';
+import './styles.css';
+
+type StoredSession = {
+  token: string;
+  profile: AccessProfile;
+};
+
+type AccessCheckState = {
+  label: string;
+  result: AccessCheckResult;
+} | null;
+
+const storageKey = 'ubuzima_admin_session';
+
+const demoUsers = [
   {
-    label: 'Active tenants',
-    value: '1',
-    note: 'VitaPharma pilot active'
+    label: 'Ubuzima+ Super Admin',
+    email: 'admin@ubuzimaplus.local',
+    scope: 'Platform',
   },
   {
-    label: 'Solutions',
-    value: '3',
-    note: 'PharmaCo360 active, ClinicCo360 and VetCo360 planned'
+    label: 'PharmaCo360 Solution Admin',
+    email: 'pharmaco.admin@ubuzimaplus.local',
+    scope: 'Solution',
   },
   {
-    label: 'Modules mapped',
-    value: '19',
-    note: 'Activated progressively by tenant and package'
+    label: 'VitaPharma Tenant Admin',
+    email: 'admin@vitapharmaafrica.com',
+    scope: 'Tenant',
   },
-  {
-    label: 'AI status',
-    value: 'Controlled',
-    note: 'Human approval required before sensitive use'
+];
+
+function loadStoredSession(): StoredSession | null {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    return raw ? (JSON.parse(raw) as StoredSession) : null;
+  } catch {
+    localStorage.removeItem(storageKey);
+    return null;
   }
-];
-
-const adminLevels = [
-  {
-    title: 'Ubuzima+ Admin',
-    description: 'Controls platform-wide settings, solutions, tenants, AI providers, billing, security, support access and system health.',
-    permissions: ['Platform overview', 'Tenant supervision', 'Global AI governance', 'Audit and security']
-  },
-  {
-    title: 'PharmaCo360 Admin',
-    description: 'Controls PharmaCo360 configuration, module availability, solution templates, pharmacy insights and tenant onboarding.',
-    permissions: ['Solution modules', 'Pharmacy workflows', 'Aggregated insights', 'Support coordination']
-  },
-  {
-    title: 'VitaPharma Tenant Admin',
-    description: 'Controls VitaPharma users, branches, local settings, active modules, operations, reports and tenant-specific AI preferences.',
-    permissions: ['Tenant users', 'Branches', 'Inventory and POS', 'Tenant reports']
-  }
-];
-
-const pendingTasks = [
-  'Review VitaPharma Phase 1 module activation',
-  'Confirm tenant branding and receipt settings',
-  'Approve AI Center sandbox policy before activation',
-  'Prepare RBAC roles for pharmacy users',
-  'Review audit logging coverage before production deployment'
-];
-
-const modules = [
-  ['Public Website', 'Active foundation'],
-  ['Authentication', 'Planned'],
-  ['Admin Scopes', 'Foundation ready'],
-  ['Tenancy', 'Foundation ready'],
-  ['RBAC', 'Planned'],
-  ['Audit Logs', 'Foundation ready'],
-  ['AI Center', 'Controlled'],
-  ['Product Master', 'Planned'],
-  ['Inventory', 'Planned'],
-  ['POS and Sales', 'Planned'],
-  ['Suppliers', 'Planned'],
-  ['Reports', 'Planned']
-];
+}
 
 function App() {
+  const [session, setSession] = useState<StoredSession | null>(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
+  const [email, setEmail] = useState('admin@vitapharmaafrica.com');
+  const [password, setPassword] = useState('ChangeThisPassword123!');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [accessCheck, setAccessCheck] = useState<AccessCheckState>(null);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(false);
+
+  const profile = session?.profile;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      const stored = loadStoredSession();
+
+      if (!stored?.token) {
+        setIsRestoringSession(false);
+        return;
+      }
+
+      try {
+        const verifiedProfile = await getAuthenticatedProfile(stored.token);
+
+        if (!cancelled) {
+          const verifiedSession = {
+            token: stored.token,
+            profile: verifiedProfile,
+          };
+
+          localStorage.setItem(storageKey, JSON.stringify(verifiedSession));
+          setSession(verifiedSession);
+        }
+      } catch {
+        localStorage.removeItem(storageKey);
+
+        if (!cancelled) {
+          setSession(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsRestoringSession(false);
+        }
+      }
+    }
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+  const permissionGroups = useMemo(() => {
+    if (!profile) return [];
+
+    return [
+      {
+        title: 'Security',
+        items: profile.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
+      },
+      {
+        title: 'PharmaCo360',
+        items: profile.permissions.filter((item) => item.startsWith('pharmaco.')),
+      },
+      {
+        title: 'AI & Platform',
+        items: profile.permissions.filter((item) => item.includes('ai') || item.includes('platform')),
+      },
+    ].filter((group) => group.items.length > 0);
+  }, [profile]);
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await login({
+        email,
+        password,
+        device_name: 'Ubuzima+ Admin Dashboard',
+      });
+
+      const nextSession = {
+        token: response.access_token,
+        profile: response.profile,
+      };
+
+      localStorage.setItem(storageKey, JSON.stringify(nextSession));
+      setSession(nextSession);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleLogout() {
+    if (session?.token) {
+      await logout(session.token).catch(() => undefined);
+    }
+
+    localStorage.removeItem(storageKey);
+    setSession(null);
+    setAccessCheck(null);
+  }
+
+  async function handleAccessCheck(
+    label: string,
+    endpoint: 'security' | 'inventory' | 'ai',
+    tenantSlug?: string,
+  ) {
+    if (!session?.token) return;
+
+    setIsCheckingAccess(true);
+
+    try {
+      const result = await runAccessCheck(session.token, endpoint, tenantSlug);
+      setAccessCheck({ label, result });
+    } finally {
+      setIsCheckingAccess(false);
+    }
+  }
+
+
+  if (isRestoringSession) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-panel">
+          <div className="brand-mark">U+</div>
+          <p className="eyebrow">Ubuzima+ Platform</p>
+          <h1>Checking your secure session.</h1>
+          <p className="auth-copy">
+            We are validating your stored access token before opening the admin workspace.
+          </p>
+        </section>
+
+        <section className="auth-side">
+          <div className="status-card">
+            <span className="status-dot" />
+            <div>
+              <strong>Session validation</strong>
+              <p>Stored sessions are verified through the backend before dashboard access.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-panel">
+          <div className="brand-mark">U+</div>
+          <p className="eyebrow">Ubuzima+ Platform</p>
+          <h1>Sign in to manage trusted health operations.</h1>
+          <p className="auth-copy">
+            Access is role-based and tenant-aware. PharmaCo360 administrators see only the
+            modules, tenants, and actions assigned to their scope.
+          </p>
+
+          <form className="login-form" onSubmit={handleLogin}>
+            <label>
+              Email address
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                required
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+
+            {error && <div className="form-error">{error}</div>}
+
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Checking access…' : 'Sign in securely'}
+            </button>
+          </form>
+
+          <div className="demo-users">
+            <p>Development users</p>
+            {demoUsers.map((user) => (
+              <button key={user.email} type="button" onClick={() => setEmail(user.email)}>
+                <span>{user.label}</span>
+                <small>{user.scope} scope</small>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="auth-side">
+          <div className="status-card">
+            <span className="status-dot" />
+            <div>
+              <strong>Backend API ready</strong>
+              <p>Login uses `/api/v1/auth/login` with Sanctum Bearer tokens.</p>
+            </div>
+          </div>
+
+          <div className="principle-card">
+            <h2>Security by design</h2>
+            <ul>
+              <li>Permission-based navigation</li>
+              <li>Tenant boundary protection</li>
+              <li>Controlled AI Center access</li>
+              <li>Audit-ready administration</li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <main className="layout">
+    <main className="dashboard-shell">
       <aside className="sidebar">
-        <div className="brand">
-          <span>U+</span>
+        <div className="sidebar-brand">
+          <div className="brand-mark">U+</div>
           <div>
             <strong>Ubuzima+</strong>
-            <small>Platform Console</small>
+            <span>Admin Center</span>
           </div>
         </div>
 
@@ -85,126 +294,159 @@ function App() {
           <a>Settings</a>
         </nav>
 
-        <div className="sidebar-note">
-          <strong>Current branch</strong>
-          <span>feature/platform-foundation</span>
-        </div>
+        <button className="logout-button" type="button" onClick={handleLogout}>
+          Sign out
+        </button>
       </aside>
 
-      <section className="content">
-        <header className="topbar">
+      <section className="dashboard-main">
+        <header className="dashboard-header">
           <div>
-            <p className="eyebrow">Phase 0 dashboard frame</p>
-            <h1>Admin control center for Ubuzima+, PharmaCo360 and VitaPharma.</h1>
+            <p className="eyebrow">Authenticated workspace</p>
+            <h1>Welcome back, {profile.user.name}</h1>
+            <p>
+              Current scope: <strong>{profile.scope.type}</strong>. Access is generated from
+              active roles, tenant assignments, and enabled modules.
+            </p>
           </div>
 
-          <div className="profile-card">
-            <span className="avatar">PN</span>
-            <div>
-              <strong>Protais</strong>
-              <small>Ubuzima+ Platform Owner</small>
-            </div>
+          <div className="user-card">
+            <strong>{profile.user.email}</strong>
+            <span>{profile.user.status}</span>
+            {profile.user.must_change_password && <small>Password change required</small>}
           </div>
         </header>
 
-        <section className="cards">
-          {summaryCards.map((card) => (
-            <article className="metric-card" key={card.label}>
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-              <p>{card.note}</p>
-            </article>
-          ))}
+        <section className="summary-grid">
+          <article>
+            <span>Active roles</span>
+            <strong>{profile.roles.length}</strong>
+          </article>
+          <article>
+            <span>Permissions</span>
+            <strong>{profile.permissions.length}</strong>
+          </article>
+          <article>
+            <span>Tenant assignments</span>
+            <strong>{profile.tenant_assignments.length}</strong>
+          </article>
+          <article>
+            <span>Admin scopes</span>
+            <strong>{profile.admin_scopes.length}</strong>
+          </article>
         </section>
 
-        <section className="grid two">
+        <section className="content-grid">
           <article className="panel">
-            <div className="panel-heading">
+            <h2>Resolved access profile</h2>
+            <div className="scope-list">
               <div>
-                <p className="eyebrow">Admin hierarchy</p>
-                <h2>Higher levels supervise lower levels without breaking data separation.</h2>
+                <span>Scope type</span>
+                <strong>{profile.scope.type}</strong>
+              </div>
+              <div>
+                <span>Solution ID</span>
+                <strong>{profile.scope.solution_id ?? 'All'}</strong>
+              </div>
+              <div>
+                <span>Tenant ID</span>
+                <strong>{profile.scope.tenant_id ?? 'All / none'}</strong>
+              </div>
+              <div>
+                <span>Branch ID</span>
+                <strong>{profile.scope.branch_id ?? 'All / none'}</strong>
               </div>
             </div>
+          </article>
 
-            <div className="admin-list">
-              {adminLevels.map((level) => (
-                <div className="admin-item" key={level.title}>
-                  <h3>{level.title}</h3>
-                  <p>{level.description}</p>
-                  <div className="chips">
-                    {level.permissions.map((permission) => (
-                      <span key={permission}>{permission}</span>
-                    ))}
+          <article className="panel">
+            <h2>Roles</h2>
+            <div className="tag-list">
+              {profile.roles.map((role) => (
+                <span key={`${role.code}-${role.tenant_id ?? 'global'}`}>{role.name}</span>
+              ))}
+            </div>
+          </article>
+
+          <article className="panel wide">
+            <h2>Permissions by area</h2>
+            <div className="permission-grid">
+              {permissionGroups.map((group) => (
+                <div key={group.title}>
+                  <h3>{group.title}</h3>
+                  {group.items.map((item) => (
+                    <span key={item}>{item}</span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </article>
+
+
+          <article className="panel wide">
+            <h2>Live access control checks</h2>
+            <p className="muted">
+              These buttons call protected backend endpoints using your current Bearer token.
+            </p>
+
+            <div className="access-actions">
+              <button
+                type="button"
+                onClick={() => handleAccessCheck('Security permission check', 'security')}
+                disabled={isCheckingAccess}
+              >
+                Check security access
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAccessCheck('VitaPharma inventory module check', 'inventory', 'vitapharma')}
+                disabled={isCheckingAccess}
+              >
+                Check inventory access
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAccessCheck('AI Center controlled-module check', 'ai', 'vitapharma')}
+                disabled={isCheckingAccess}
+              >
+                Check AI Center access
+              </button>
+            </div>
+
+            {accessCheck && (
+              <div className={`access-result ${accessCheck.result.access?.status === 'granted' ? 'granted' : 'blocked'}`}>
+                <strong>{accessCheck.label}</strong>
+                <span>Status: {accessCheck.result.access?.status ?? accessCheck.result.status ?? 'unknown'}</span>
+                {accessCheck.result.access?.area && <span>Area: {accessCheck.result.access.area}</span>}
+                {accessCheck.result.access?.module && <span>Module: {accessCheck.result.access.module}</span>}
+                {accessCheck.result.access?.tenant && <span>Tenant: {accessCheck.result.access.tenant}</span>}
+                {accessCheck.result.message && <span>Message: {accessCheck.result.message}</span>}
+                {accessCheck.result.missing_permissions?.length ? (
+                  <span>Missing: {accessCheck.result.missing_permissions.join(', ')}</span>
+                ) : null}
+              </div>
+            )}
+          </article>
+
+          <article className="panel wide">
+            <h2>Tenant assignments</h2>
+            {profile.tenant_assignments.length === 0 ? (
+              <p className="muted">No tenant assignment is attached to this account.</p>
+            ) : (
+              <div className="tenant-table">
+                {profile.tenant_assignments.map((assignment) => (
+                  <div key={assignment.tenant.slug}>
+                    <strong>{assignment.tenant.name}</strong>
+                    <span>{assignment.branch?.name ?? 'All branches'}</span>
+                    <span>{assignment.job_title ?? 'Assigned user'}</span>
+                    <small>{assignment.status}</small>
                   </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Pending decisions</p>
-                <h2>Review queue before deeper implementation.</h2>
+                ))}
               </div>
-            </div>
-
-            <ul className="task-list">
-              {pendingTasks.map((task) => (
-                <li key={task}>
-                  <span></span>
-                  {task}
-                </li>
-              ))}
-            </ul>
+            )}
           </article>
-        </section>
-
-        <section className="grid two">
-          <article className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Module activation</p>
-                <h2>Modules exist structurally and become active by phase.</h2>
-              </div>
-            </div>
-
-            <div className="module-table">
-              {modules.map(([name, status]) => (
-                <div className="module-row" key={name}>
-                  <strong>{name}</strong>
-                  <span>{status}</span>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="panel ai-panel">
-            <p className="eyebrow">Ubuzima AI Center</p>
-            <h2>AI remains central, but controlled.</h2>
-            <p>
-              AI can support demand forecasting, reorder recommendations, expiry risk, wholesale opportunities,
-              customer refill reminders, anomaly detection and report writing. Sensitive actions require human approval.
-            </p>
-
-            <div className="ai-rules">
-              <span>Tenant boundary required</span>
-              <span>Provider disabled until approved</span>
-              <span>Audit logs required</span>
-              <span>Human approval for risk</span>
-            </div>
-          </article>
-        </section>
-
-        <section className="review-panel">
-          <div>
-            <p className="eyebrow">Preview rule</p>
-            <h2>Every meaningful UI change must be reviewable before production.</h2>
-            <p>
-              Review this dashboard at 360px, 430px, 768px, 1280px, 1440px and 1920px before approval.
-            </p>
-          </div>
-          <button>Ready for review</button>
         </section>
       </section>
     </main>

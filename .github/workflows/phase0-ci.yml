@@ -6,6 +6,7 @@ on:
       - main
       - development
       - feature/platform-foundation
+      - 'feature/**'
   pull_request:
     branches:
       - development
