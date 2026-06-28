@@ -18,6 +18,7 @@ class PharmacoPayment extends Model
         'payment_method',
         'status',
         'reference_number',
+        'receipt_number',
         'received_by',
         'received_at',
         'metadata',

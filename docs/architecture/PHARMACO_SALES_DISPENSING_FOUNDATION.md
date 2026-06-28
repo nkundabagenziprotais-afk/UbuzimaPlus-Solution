@@ -162,3 +162,41 @@ The backend still enforces:
 - double-confirmation prevention
 - `sale_dispensed` stock movement logging
 - `pharmaco.sale.dispensed` audit logging
+
+
+## Phase 5.1 payment recording and receipt foundation
+
+Phase 5.1 introduces controlled payment recording for dispensed PharmaCo360 sales.
+
+### Endpoint
+
+- `POST /api/v1/pharmaco/sales/{sale}/payments`
+
+### Supported payment methods
+
+- `cash`
+- `momo`
+- `card`
+- `insurance`
+- `credit`
+- `bank_transfer`
+
+### Behaviour
+
+The payment workflow:
+
+- validates tenant context
+- validates sale ownership
+- rejects payment on draft sales
+- rejects payment on cancelled or voided sales
+- rejects overpayment
+- generates a tenant-scoped receipt number
+- records a completed payment
+- updates sale `paid_amount`
+- updates sale `balance_amount`
+- updates sale `payment_status` to `partially_paid` or `paid`
+- records `pharmaco.payment.recorded` audit logs
+
+### Safety
+
+Payments do not bypass dispensing controls. A sale must already be confirmed and dispensed before payment can be recorded in this foundation step.
