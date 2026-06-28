@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AccessCheckResult, AccessProfile, getAuthenticatedProfile, login, logout, runAccessCheck } from './lib/api';
+import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, PharmacyProfileResponse, getAuthenticatedProfile, getBranchDepartments, getPharmaBranches, getPharmacyProfile, login, logout, runAccessCheck } from './lib/api';
+import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import './styles.css';
 
 type StoredSession = {
@@ -11,6 +12,12 @@ type AccessCheckState = {
   label: string;
   result: AccessCheckResult;
 } | null;
+
+type PharmaCoreState = {
+  profile: PharmacyProfileResponse | null;
+  branches: BranchesResponse | null;
+  departments: BranchDepartmentsResponse | null;
+};
 
 const storageKey = 'ubuzima_admin_session';
 
@@ -51,6 +58,13 @@ function App() {
   const [error, setError] = useState('');
   const [accessCheck, setAccessCheck] = useState<AccessCheckState>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(false);
+  const [pharmaCore, setPharmaCore] = useState<PharmaCoreState>({
+    profile: null,
+    branches: null,
+    departments: null,
+  });
+  const [isLoadingPharmaCore, setIsLoadingPharmaCore] = useState(false);
+  const [pharmaCoreError, setPharmaCoreError] = useState('');
 
   const profile = session?.profile;
 
@@ -151,6 +165,12 @@ function App() {
     localStorage.removeItem(storageKey);
     setSession(null);
     setAccessCheck(null);
+    setPharmaCore({
+      profile: null,
+      branches: null,
+      departments: null,
+    });
+    setPharmaCoreError('');
   }
 
   async function handleAccessCheck(
@@ -167,6 +187,41 @@ function App() {
       setAccessCheck({ label, result });
     } finally {
       setIsCheckingAccess(false);
+    }
+  }
+
+  async function loadPharmaCore() {
+    if (!session?.token) return;
+
+    const tenantSlug =
+      profile?.tenant_assignments?.[0]?.tenant?.slug ||
+      (profile?.scope?.is_tenant ? 'vitapharma' : '');
+
+    if (!tenantSlug) {
+      setPharmaCoreError('No tenant assignment is available for this account.');
+      return;
+    }
+
+    setIsLoadingPharmaCore(true);
+    setPharmaCoreError('');
+
+    try {
+      const profileResponse = await getPharmacyProfile(session.token, tenantSlug);
+      const branchesResponse = await getPharmaBranches(session.token, tenantSlug);
+      const firstBranch = branchesResponse.branches[0] ?? null;
+      const departmentsResponse = firstBranch
+        ? await getBranchDepartments(session.token, tenantSlug, firstBranch.id)
+        : null;
+
+      setPharmaCore({
+        profile: profileResponse,
+        branches: branchesResponse,
+        departments: departmentsResponse,
+      });
+    } catch (err) {
+      setPharmaCoreError(err instanceof Error ? err.message : 'Unable to load PharmaCo360 data.');
+    } finally {
+      setIsLoadingPharmaCore(false);
     }
   }
 
@@ -382,6 +437,97 @@ function App() {
             </div>
           </article>
 
+
+
+          <article className="panel wide pharmaco-panel">
+            <div className="panel-heading-row">
+              <div>
+                <h2>PharmaCo360 tenant operations preview</h2>
+                <p className="muted">
+                  Live tenant-scoped data from the PharmaCo360 profile, branches, and department APIs.
+                </p>
+              </div>
+
+              <button type="button" onClick={loadPharmaCore} disabled={isLoadingPharmaCore}>
+                {isLoadingPharmaCore ? 'Loading…' : 'Load VitaPharma profile'}
+              </button>
+            </div>
+
+            {pharmaCoreError && <div className="form-error">{pharmaCoreError}</div>}
+
+            {pharmaCore.profile && (
+              <div className="pharmaco-grid">
+                <section className="pharmaco-card">
+                  <span className="section-label">Pharmacy profile</span>
+                  <h3>{pharmaCore.profile.profile.trading_name}</h3>
+                  <p>{pharmaCore.profile.profile.legal_name}</p>
+                  <div className="mini-facts">
+                    <span>Category: {pharmaCore.profile.profile.pharmacy_category}</span>
+                    <span>Regulator: {pharmaCore.profile.profile.regulator_name}</span>
+                    <span>Status: {pharmaCore.profile.profile.status}</span>
+                    <span>District: {pharmaCore.profile.profile.district ?? 'Not set'}</span>
+                  </div>
+                </section>
+
+                <section className="pharmaco-card">
+                  <span className="section-label">Capabilities</span>
+                  <div className="tag-list">
+                    {pharmaCore.profile.profile.capabilities.map((capability) => (
+                      <span key={capability}>{capability.replaceAll('_', ' ')}</span>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="pharmaco-card">
+                  <span className="section-label">Insurance partners</span>
+                  <div className="tag-list">
+                    {pharmaCore.profile.profile.insurance_partners.map((partner) => (
+                      <span key={partner}>{partner}</span>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="pharmaco-card">
+                  <span className="section-label">Operating hours</span>
+                  <div className="mini-facts">
+                    {Object.entries(pharmaCore.profile.profile.operating_hours).map(([day, hours]) => (
+                      <span key={day}>{day.replaceAll('_', ' ')}: {hours}</span>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {pharmaCore.branches && (
+              <div className="branch-preview">
+                <h3>Branches</h3>
+                {pharmaCore.branches.branches.map((branch) => (
+                  <div key={branch.id}>
+                    <strong>{branch.name}</strong>
+                    <span>{branch.code}</span>
+                    <span>{branch.branch_type}</span>
+                    <small>{branch.status}</small>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {pharmaCore.departments && (
+              <div className="department-preview">
+                <h3>{pharmaCore.departments.branch.name} departments</h3>
+                {pharmaCore.departments.departments.map((department) => (
+                  <div key={department.id}>
+                    <strong>{department.name}</strong>
+                    <span>{department.code}</span>
+                    <span>{department.department_type}</span>
+                    <small>{department.is_revenue_center ? 'Revenue center' : 'Support unit'}</small>
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+
+          <PharmaCoreEditor token={session.token} profile={profile} />
 
           <article className="panel wide">
             <h2>Live access control checks</h2>

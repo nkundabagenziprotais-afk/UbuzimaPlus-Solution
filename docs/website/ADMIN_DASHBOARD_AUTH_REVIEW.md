@@ -70,3 +70,29 @@ After login, use the access-check buttons:
 - Security access should fail for `admin@vitapharmaafrica.com`.
 - Inventory access should pass for VitaPharma tenant admin with tenant `vitapharma`.
 - AI Center access should fail while `platform.ai_center` remains controlled.
+
+
+## PharmaCo360 tenant preview
+
+After logging in as `admin@vitapharmaafrica.com`, use **Load VitaPharma profile**.
+
+Expected:
+
+- Pharmacy profile loads from `/api/v1/pharmaco/profile`.
+- Branch list loads from `/api/v1/pharmaco/branches`.
+- Department/counter list loads from `/api/v1/pharmaco/branches/{branch}/departments`.
+- The request includes `X-Tenant-Slug: vitapharma`.
+- Data remains tenant-scoped.
+
+
+## PharmaCo360 editing controls
+
+After loading the VitaPharma profile, use Load editable branch data.
+
+Expected:
+
+- Edit the main branch phone, email, or address and save.
+- Create a new department/counter.
+- Toggle a department between active and maintenance.
+- Confirm the panel refreshes after saving.
+- Confirm duplicate department codes show a validation error.

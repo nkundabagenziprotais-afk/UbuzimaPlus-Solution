@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\PlatformStatusController;
 use App\Http\Controllers\Api\V1\SolutionController;
 use App\Http\Controllers\Api\V1\TenantPublicStatusController;
+use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -40,3 +41,42 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
             'tenant.module:platform.ai_center',
         ]);
 });
+
+Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
+    Route::get('/profile', [CoreProfileController::class, 'profile'])
+        ->middleware([
+            'permission:pharmaco.profile.manage',
+            'tenant.module:pharmaco.profile',
+        ]);
+
+    Route::get('/branches', [CoreProfileController::class, 'branches'])
+        ->middleware([
+            'permission:pharmaco.branches.manage',
+            'tenant.module:pharmaco.branches',
+        ]);
+
+    Route::get('/branches/{branch}/departments', [CoreProfileController::class, 'branchDepartments'])
+        ->middleware([
+            'permission:pharmaco.branches.manage',
+            'tenant.module:pharmaco.branches',
+        ]);
+
+    Route::patch('/branches/{branch}', [CoreProfileController::class, 'updateBranch'])
+        ->middleware([
+            'permission:pharmaco.branches.manage',
+            'tenant.module:pharmaco.branches',
+        ]);
+
+    Route::post('/branches/{branch}/departments', [CoreProfileController::class, 'createBranchDepartment'])
+        ->middleware([
+            'permission:pharmaco.branches.manage',
+            'tenant.module:pharmaco.branches',
+        ]);
+
+    Route::patch('/branches/{branch}/departments/{department}', [CoreProfileController::class, 'updateBranchDepartment'])
+        ->middleware([
+            'permission:pharmaco.branches.manage',
+            'tenant.module:pharmaco.branches',
+        ]);
+});
+
