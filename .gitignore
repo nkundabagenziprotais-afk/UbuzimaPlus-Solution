@@ -1,9 +1,13 @@
 node_modules/
 dist/
+vendor/
 .env
 .env.*
+!.env.example
+!backend/.env.example
 .DS_Store
-vendor/
 storage/logs/
+backend/storage/logs/*
+!backend/storage/logs/.gitignore
 .idea/
 .vscode/
