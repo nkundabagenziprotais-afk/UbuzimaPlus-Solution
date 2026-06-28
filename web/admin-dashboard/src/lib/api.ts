@@ -118,3 +118,52 @@ export async function logout(token: string): Promise<void> {
     },
   });
 }
+
+
+export type AccessCheckResult = {
+  access?: {
+    status: string;
+    area: string;
+    permission?: string;
+    module?: string;
+    tenant?: string;
+  };
+  message?: string;
+  missing_permissions?: string[];
+  required_header?: string;
+  status?: string;
+};
+
+export async function runAccessCheck(
+  token: string,
+  endpoint: 'security' | 'inventory' | 'ai',
+  tenantSlug?: string,
+): Promise<AccessCheckResult> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+
+  if (tenantSlug) {
+    headers['X-Tenant-Slug'] = tenantSlug;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/access-check/${endpoint}`, {
+    method: 'GET',
+    headers,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    return {
+      ...data,
+      access: {
+        status: 'blocked',
+        area: endpoint,
+      },
+    };
+  }
+
+  return data as AccessCheckResult;
+}

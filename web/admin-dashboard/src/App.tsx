@@ -1,11 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AccessProfile, getAuthenticatedProfile, login, logout } from './lib/api';
+import { AccessCheckResult, AccessProfile, getAuthenticatedProfile, login, logout, runAccessCheck } from './lib/api';
 import './styles.css';
 
 type StoredSession = {
   token: string;
   profile: AccessProfile;
 };
+
+type AccessCheckState = {
+  label: string;
+  result: AccessCheckResult;
+} | null;
 
 const storageKey = 'ubuzima_admin_session';
 
@@ -44,6 +49,8 @@ function App() {
   const [password, setPassword] = useState('ChangeThisPassword123!');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [accessCheck, setAccessCheck] = useState<AccessCheckState>(null);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(false);
 
   const profile = session?.profile;
 
@@ -143,6 +150,24 @@ function App() {
 
     localStorage.removeItem(storageKey);
     setSession(null);
+    setAccessCheck(null);
+  }
+
+  async function handleAccessCheck(
+    label: string,
+    endpoint: 'security' | 'inventory' | 'ai',
+    tenantSlug?: string,
+  ) {
+    if (!session?.token) return;
+
+    setIsCheckingAccess(true);
+
+    try {
+      const result = await runAccessCheck(session.token, endpoint, tenantSlug);
+      setAccessCheck({ label, result });
+    } finally {
+      setIsCheckingAccess(false);
+    }
   }
 
 
@@ -355,6 +380,54 @@ function App() {
                 </div>
               ))}
             </div>
+          </article>
+
+
+          <article className="panel wide">
+            <h2>Live access control checks</h2>
+            <p className="muted">
+              These buttons call protected backend endpoints using your current Bearer token.
+            </p>
+
+            <div className="access-actions">
+              <button
+                type="button"
+                onClick={() => handleAccessCheck('Security permission check', 'security')}
+                disabled={isCheckingAccess}
+              >
+                Check security access
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAccessCheck('VitaPharma inventory module check', 'inventory', 'vitapharma')}
+                disabled={isCheckingAccess}
+              >
+                Check inventory access
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAccessCheck('AI Center controlled-module check', 'ai', 'vitapharma')}
+                disabled={isCheckingAccess}
+              >
+                Check AI Center access
+              </button>
+            </div>
+
+            {accessCheck && (
+              <div className={`access-result ${accessCheck.result.access?.status === 'granted' ? 'granted' : 'blocked'}`}>
+                <strong>{accessCheck.label}</strong>
+                <span>Status: {accessCheck.result.access?.status ?? accessCheck.result.status ?? 'unknown'}</span>
+                {accessCheck.result.access?.area && <span>Area: {accessCheck.result.access.area}</span>}
+                {accessCheck.result.access?.module && <span>Module: {accessCheck.result.access.module}</span>}
+                {accessCheck.result.access?.tenant && <span>Tenant: {accessCheck.result.access.tenant}</span>}
+                {accessCheck.result.message && <span>Message: {accessCheck.result.message}</span>}
+                {accessCheck.result.missing_permissions?.length ? (
+                  <span>Missing: {accessCheck.result.missing_permissions.join(', ')}</span>
+                ) : null}
+              </div>
+            )}
           </article>
 
           <article className="panel wide">

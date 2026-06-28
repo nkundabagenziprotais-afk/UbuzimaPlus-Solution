@@ -453,3 +453,44 @@ p {
     min-width: 100%;
   }
 }
+
+
+.access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.access-actions button {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #106b4f;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.access-actions button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.access-result {
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(32, 80, 61, 0.12);
+}
+
+.access-result.granted {
+  background: #eaf8ef;
+  color: #155d47;
+}
+
+.access-result.blocked {
+  background: #fff4ee;
+  color: #8a3a15;
+}

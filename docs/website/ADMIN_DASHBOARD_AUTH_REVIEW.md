@@ -60,3 +60,13 @@ Expected behavior:
 - Valid token opens the dashboard.
 - Invalid or expired token clears the session.
 - User returns to the login screen.
+
+
+## Live access checks
+
+After login, use the access-check buttons:
+
+- Security access should pass for `admin@ubuzimaplus.local`.
+- Security access should fail for `admin@vitapharmaafrica.com`.
+- Inventory access should pass for VitaPharma tenant admin with tenant `vitapharma`.
+- AI Center access should fail while `platform.ai_center` remains controlled.
