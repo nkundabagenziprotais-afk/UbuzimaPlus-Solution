@@ -224,3 +224,49 @@ The dashboard can now:
 ### Safety
 
 The dashboard does not calculate final payment state independently. The backend remains the source of truth for receipt generation, balance calculation, payment status, overpayment protection, tenant boundary checks and audit logging.
+
+
+## Phase 6.1 customer, prescription and draft sale creation APIs
+
+Phase 6.1 introduces the backend creation workflow that starts the PharmaCo360 operating cycle.
+
+### Endpoints
+
+- `POST /api/v1/pharmaco/customers`
+- `POST /api/v1/pharmaco/prescriptions`
+- `POST /api/v1/pharmaco/sales`
+
+### Behaviour
+
+The creation workflow supports:
+
+- creating tenant-scoped customers / patients
+- generating prescription numbers where not provided
+- creating tenant-scoped prescriptions
+- creating draft sales
+- linking sales to a branch, customer and prescription
+- adding sale line items
+- calculating line totals
+- calculating sale subtotal, discount, tax, total and balance
+- setting new sales to `draft`
+- setting initial payment status to `unpaid`
+
+### Safety
+
+The backend enforces:
+
+- authenticated access
+- `X-Tenant-Slug`
+- active `pharmaco.sales`
+- `pharmaco.sales.manage`
+- tenant ownership of customers, prescriptions, branches and products
+- active branch and customer checks
+- active product checks
+- prescription requirement for prescription-controlled products
+- audit logs for customer, prescription and sale creation
+
+### Audit actions
+
+- `pharmaco.customer.created`
+- `pharmaco.prescription.created`
+- `pharmaco.sale.created`

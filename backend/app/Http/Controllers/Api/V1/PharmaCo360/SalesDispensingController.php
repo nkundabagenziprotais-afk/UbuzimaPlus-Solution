@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\PharmaCo360;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\Product;
 use App\Models\PharmacoCustomer;
 use App\Models\PharmacoPrescription;
 use App\Models\PharmacoSale;
@@ -118,6 +120,379 @@ class SalesDispensingController extends Controller
         ]);
     }
 
+
+
+    public function createCustomer(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:80'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'date_of_birth' => ['nullable', 'date'],
+            'gender' => ['nullable', 'string', 'max:40'],
+            'customer_type' => ['nullable', 'string', 'max:80'],
+            'insurance_provider' => ['nullable', 'string', 'max:255'],
+            'insurance_membership_number' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:active,inactive'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        if (! empty($validated['phone'])) {
+            $phoneExists = PharmacoCustomer::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('phone', $validated['phone'])
+                ->exists();
+
+            if ($phoneExists) {
+                throw ValidationException::withMessages([
+                    'phone' => ['A customer with this phone number already exists for this tenant.'],
+                ]);
+            }
+        }
+
+        $customer = PharmacoCustomer::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'email' => $validated['email'] ?? null,
+            'date_of_birth' => $validated['date_of_birth'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'customer_type' => $validated['customer_type'] ?? 'patient',
+            'insurance_provider' => $validated['insurance_provider'] ?? null,
+            'insurance_membership_number' => $validated['insurance_membership_number'] ?? null,
+            'status' => $validated['status'] ?? 'active',
+            'metadata' => [
+                'notes' => $validated['notes'] ?? null,
+                'creation_workflow' => 'phase_6_1_create_customer',
+            ],
+        ]);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.customer.created',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'customer_id' => $customer->id,
+                'customer_name' => trim($customer->first_name . ' ' . ($customer->last_name ?? '')),
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoCustomer::class,
+            auditableId: $customer->id
+        );
+
+        return response()->json([
+            'message' => 'Customer created successfully.',
+            'customer' => $this->serializeCustomer($customer),
+        ], 201);
+    }
+
+    public function createPrescription(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'pharmaco_customer_id' => ['nullable', 'integer'],
+            'prescription_number' => ['nullable', 'string', 'max:120'],
+            'prescriber_name' => ['nullable', 'string', 'max:255'],
+            'prescriber_facility' => ['nullable', 'string', 'max:255'],
+            'prescriber_phone' => ['nullable', 'string', 'max:80'],
+            'issued_at' => ['nullable', 'date'],
+            'expires_at' => ['nullable', 'date', 'after_or_equal:issued_at'],
+            'status' => ['nullable', 'string', 'in:active,used,expired,cancelled'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $customer = null;
+
+        if (! empty($validated['pharmaco_customer_id'])) {
+            $customer = PharmacoCustomer::query()
+                ->where('tenant_id', $tenant->id)
+                ->find($validated['pharmaco_customer_id']);
+
+            if (! $customer) {
+                throw ValidationException::withMessages([
+                    'pharmaco_customer_id' => ['Selected customer does not belong to the current tenant.'],
+                ]);
+            }
+        }
+
+        $prescriptionNumber = $validated['prescription_number'] ?? $this->nextPrescriptionNumber($tenant->id);
+
+        $numberExists = PharmacoPrescription::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('prescription_number', $prescriptionNumber)
+            ->exists();
+
+        if ($numberExists) {
+            throw ValidationException::withMessages([
+                'prescription_number' => ['This prescription number already exists for this tenant.'],
+            ]);
+        }
+
+        $prescription = PharmacoPrescription::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'pharmaco_customer_id' => $customer?->id,
+            'prescription_number' => $prescriptionNumber,
+            'prescriber_name' => $validated['prescriber_name'] ?? null,
+            'prescriber_facility' => $validated['prescriber_facility'] ?? null,
+            'prescriber_phone' => $validated['prescriber_phone'] ?? null,
+            'issued_at' => $validated['issued_at'] ?? now()->toDateString(),
+            'expires_at' => $validated['expires_at'] ?? null,
+            'status' => $validated['status'] ?? 'active',
+            'notes' => $validated['notes'] ?? null,
+            'metadata' => [
+                'creation_workflow' => 'phase_6_1_create_prescription',
+            ],
+        ]);
+
+        $prescription->load('customer');
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.prescription.created',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'prescription_id' => $prescription->id,
+                'prescription_number' => $prescription->prescription_number,
+                'customer_id' => $customer?->id,
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoPrescription::class,
+            auditableId: $prescription->id
+        );
+
+        return response()->json([
+            'message' => 'Prescription created successfully.',
+            'prescription' => $this->serializePrescription($prescription, includeCustomer: true),
+        ], 201);
+    }
+
+    public function createSale(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'branch_id' => ['required', 'integer'],
+            'pharmaco_customer_id' => ['nullable', 'integer'],
+            'pharmaco_prescription_id' => ['nullable', 'integer'],
+            'sale_type' => ['nullable', 'string', 'in:cash_sale,prescription_sale,insurance_sale,credit_sale'],
+            'discount_amount' => ['nullable', 'numeric', 'gte:0'],
+            'tax_amount' => ['nullable', 'numeric', 'gte:0'],
+            'notes' => ['nullable', 'string'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0'],
+            'items.*.unit_price' => ['required', 'numeric', 'gte:0'],
+            'items.*.discount_amount' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.tax_amount' => ['nullable', 'numeric', 'gte:0'],
+        ]);
+
+        $branch = Branch::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->find($validated['branch_id']);
+
+        if (! $branch) {
+            throw ValidationException::withMessages([
+                'branch_id' => ['Selected branch does not belong to the current tenant or is inactive.'],
+            ]);
+        }
+
+        $customer = null;
+
+        if (! empty($validated['pharmaco_customer_id'])) {
+            $customer = PharmacoCustomer::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('status', 'active')
+                ->find($validated['pharmaco_customer_id']);
+
+            if (! $customer) {
+                throw ValidationException::withMessages([
+                    'pharmaco_customer_id' => ['Selected customer does not belong to the current tenant or is inactive.'],
+                ]);
+            }
+        }
+
+        $prescription = null;
+
+        if (! empty($validated['pharmaco_prescription_id'])) {
+            $prescription = PharmacoPrescription::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('status', 'active')
+                ->find($validated['pharmaco_prescription_id']);
+
+            if (! $prescription) {
+                throw ValidationException::withMessages([
+                    'pharmaco_prescription_id' => ['Selected prescription does not belong to the current tenant or is inactive.'],
+                ]);
+            }
+
+            if ($customer && $prescription->pharmaco_customer_id && (int) $prescription->pharmaco_customer_id !== (int) $customer->id) {
+                throw ValidationException::withMessages([
+                    'pharmaco_prescription_id' => ['Selected prescription belongs to a different customer.'],
+                ]);
+            }
+        }
+
+        $productIds = collect($validated['items'])->pluck('product_id')->unique()->values();
+        $products = Product::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $productIds)
+            ->get()
+            ->keyBy('id');
+
+        if ($products->count() !== $productIds->count()) {
+            throw ValidationException::withMessages([
+                'items' => ['One or more selected products do not belong to the current tenant.'],
+            ]);
+        }
+
+        if ($products->contains(fn (Product $product) => $product->status !== 'active')) {
+            throw ValidationException::withMessages([
+                'items' => ['Inactive products cannot be added to a draft sale.'],
+            ]);
+        }
+
+        $requiresPrescription = $products->contains(fn (Product $product) => (bool) $product->requires_prescription);
+
+        if ($requiresPrescription && ! $prescription) {
+            throw ValidationException::withMessages([
+                'pharmaco_prescription_id' => ['A prescription is required because one or more selected products require prescription control.'],
+            ]);
+        }
+
+        $result = DB::transaction(function () use ($request, $tenant, $validated, $branch, $customer, $prescription, $products) {
+            $saleNumber = $this->nextSaleNumber($tenant->id);
+
+            $lineItems = collect($validated['items'])->map(function (array $item) use ($tenant, $products) {
+                /** @var Product $product */
+                $product = $products->get($item['product_id']);
+
+                $quantity = round((float) $item['quantity'], 3);
+                $unitPrice = round((float) $item['unit_price'], 2);
+                $discount = round((float) ($item['discount_amount'] ?? 0), 2);
+                $tax = round((float) ($item['tax_amount'] ?? 0), 2);
+                $lineTotal = round(($quantity * $unitPrice) - $discount + $tax, 2);
+
+                if ($lineTotal < 0) {
+                    throw ValidationException::withMessages([
+                        'items' => ["Line total cannot be negative for product {$product->sku}."],
+                    ]);
+                }
+
+                return [
+                    'uuid' => (string) Str::uuid(),
+                    'tenant_id' => $tenant->id,
+                    'product_id' => $product->id,
+                    'product_name_snapshot' => $product->name,
+                    'sku_snapshot' => $product->sku,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'discount_amount' => $discount,
+                    'tax_amount' => $tax,
+                    'line_total' => $lineTotal,
+                    'requires_prescription' => (bool) $product->requires_prescription,
+                    'prescription_verified' => false,
+                    'status' => 'pending',
+                    'metadata' => [
+                        'creation_workflow' => 'phase_6_1_create_sale',
+                        'stock_deducted' => false,
+                    ],
+                ];
+            });
+
+            $itemsSubtotal = round($lineItems->sum('line_total'), 2);
+            $saleDiscount = round((float) ($validated['discount_amount'] ?? 0), 2);
+            $saleTax = round((float) ($validated['tax_amount'] ?? 0), 2);
+            $total = round($itemsSubtotal - $saleDiscount + $saleTax, 2);
+
+            if ($total < 0) {
+                throw ValidationException::withMessages([
+                    'total_amount' => ['Sale total cannot be negative.'],
+                ]);
+            }
+
+            $sale = PharmacoSale::query()->create([
+                'uuid' => (string) Str::uuid(),
+                'tenant_id' => $tenant->id,
+                'branch_id' => $branch->id,
+                'pharmaco_customer_id' => $customer?->id,
+                'pharmaco_prescription_id' => $prescription?->id,
+                'sale_number' => $saleNumber,
+                'sale_type' => $validated['sale_type'] ?? ($prescription ? 'prescription_sale' : 'cash_sale'),
+                'status' => 'draft',
+                'subtotal_amount' => $itemsSubtotal,
+                'discount_amount' => $saleDiscount,
+                'tax_amount' => $saleTax,
+                'total_amount' => $total,
+                'paid_amount' => 0,
+                'balance_amount' => $total,
+                'payment_status' => 'unpaid',
+                'sold_by' => $request->user()?->id,
+                'sold_at' => null,
+                'notes' => $validated['notes'] ?? null,
+                'metadata' => [
+                    'creation_workflow' => 'phase_6_1_create_sale',
+                    'stock_deducted' => false,
+                ],
+            ]);
+
+            $lineItems->each(function (array $lineItem) use ($sale) {
+                $sale->items()->create($lineItem);
+            });
+
+            return $sale->fresh([
+                'branch',
+                'customer',
+                'prescription.customer',
+                'items.product.category',
+                'items.stockBatch',
+                'items.stockLocation',
+                'payments',
+            ]);
+        });
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.sale.created',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'sale_id' => $result->id,
+                'sale_number' => $result->sale_number,
+                'items_count' => $result->items->count(),
+                'total_amount' => (float) $result->total_amount,
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoSale::class,
+            auditableId: $result->id
+        );
+
+        return response()->json([
+            'message' => 'Draft sale created successfully.',
+            'sale' => $this->serializeSale($result, includeDetails: true),
+        ], 201);
+    }
 
     public function confirmSale(
         Request $request,
@@ -564,6 +939,25 @@ class SalesDispensingController extends Controller
         ];
     }
 
+
+
+    private function nextSaleNumber(int $tenantId): string
+    {
+        $sequence = PharmacoSale::query()
+            ->where('tenant_id', $tenantId)
+            ->count() + 1;
+
+        return sprintf('SALE-%s-%s-%04d', str_pad((string) $tenantId, 4, '0', STR_PAD_LEFT), now()->format('Ymd'), $sequence);
+    }
+
+    private function nextPrescriptionNumber(int $tenantId): string
+    {
+        $sequence = PharmacoPrescription::query()
+            ->where('tenant_id', $tenantId)
+            ->count() + 1;
+
+        return sprintf('RX-%s-%s-%04d', str_pad((string) $tenantId, 4, '0', STR_PAD_LEFT), now()->format('Ymd'), $sequence);
+    }
 
     private function nextReceiptNumber(int $tenantId, int $saleId): string
     {
