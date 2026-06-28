@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             PlatformFoundationSeeder::class,
             AuthRbacSeeder::class,
             PharmacoCoreSeeder::class,
+            PharmacoProductInventorySeeder::class,
         ]);
     }
 }

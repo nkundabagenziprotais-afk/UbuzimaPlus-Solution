@@ -692,3 +692,198 @@ p {
     grid-column: auto;
   }
 }
+
+
+.inventory-preview-panel {
+  background:
+    radial-gradient(circle at top right, rgba(16, 107, 79, 0.08), transparent 22rem),
+    rgba(255, 255, 255, 0.86);
+}
+
+.inventory-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.inventory-kpi-grid div {
+  border-radius: 18px;
+  padding: 16px;
+  background: #f6fbf8;
+  border: 1px solid rgba(16, 107, 79, 0.09);
+}
+
+.inventory-kpi-grid span {
+  display: block;
+  color: #6a7972;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.inventory-kpi-grid strong {
+  color: #103d30;
+  font-size: 1.35rem;
+}
+
+.inventory-section {
+  margin-top: 22px;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.section-heading h3 {
+  margin: 0;
+}
+
+.section-heading span {
+  color: #6a7972;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.inventory-table {
+  display: grid;
+  gap: 10px;
+}
+
+.inventory-table > div {
+  display: grid;
+  grid-template-columns: 1.45fr 0.9fr 0.9fr 0.9fr;
+  gap: 10px;
+  align-items: center;
+  border-radius: 16px;
+  padding: 13px 14px;
+  background: #ffffff;
+  border: 1px solid rgba(16, 107, 79, 0.08);
+}
+
+.product-preview-table > div,
+.batch-preview-table > div {
+  grid-template-columns: 1.5fr 0.8fr 0.9fr 0.9fr 1fr;
+}
+
+.location-preview-table > div {
+  grid-template-columns: 1.4fr 0.8fr 1fr 0.7fr;
+}
+
+.inventory-table strong {
+  color: #133e32;
+}
+
+.inventory-table span,
+.inventory-table small {
+  color: #5d6f67;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .inventory-kpi-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+
+  .section-heading,
+  .inventory-table > div,
+  .product-preview-table > div,
+  .batch-preview-table > div,
+  .location-preview-table > div {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .inventory-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.inventory-actions-panel {
+  background:
+    radial-gradient(circle at top left, rgba(18, 123, 90, 0.08), transparent 22rem),
+    rgba(255, 255, 255, 0.9);
+}
+
+.inventory-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.inventory-action-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(16, 107, 79, 0.1);
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.inventory-action-card h3 {
+  margin: 0 0 4px;
+  color: #153f33;
+}
+
+.inventory-action-card label {
+  display: grid;
+  gap: 7px;
+  color: #3f554d;
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+.inventory-action-card input,
+.inventory-action-card select,
+.inventory-action-card textarea {
+  width: 100%;
+  border: 1px solid rgba(16, 107, 79, 0.18);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fbfefc;
+  color: #123d30;
+}
+
+.inventory-action-card textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.form-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.inventory-action-card .checkbox-label {
+  display: flex;
+  grid-template-columns: unset;
+  align-items: center;
+  gap: 10px;
+}
+
+.inventory-action-card .checkbox-label input {
+  width: auto;
+}
+
+@media (max-width: 1180px) {
+  .inventory-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-two-column {
+    grid-template-columns: 1fr;
+  }
+}
