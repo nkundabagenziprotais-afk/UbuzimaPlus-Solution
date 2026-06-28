@@ -105,3 +105,26 @@ The confirmation workflow:
 ### Safety
 
 This workflow is intentionally strict. It does not allow partial confirmation, cross-tenant dispensing, cross-branch dispensing or confirmation without batch assignment.
+
+
+## Phase 4.4 dashboard sales and dispensing review panel
+
+Phase 4.4 adds a read-only dashboard review panel for the sales and dispensing workflow.
+
+### Dashboard scope
+
+The dashboard can review:
+
+- customers / patients
+- prescriptions
+- sales list
+- selected sale detail
+- sale item prescription status
+- batch/location assignment status
+- confirmation readiness
+
+### Safety
+
+The panel is intentionally read-only. It does not call the sale confirmation endpoint and does not deduct stock.
+
+Controlled dashboard confirmation should be added later after visual review.
