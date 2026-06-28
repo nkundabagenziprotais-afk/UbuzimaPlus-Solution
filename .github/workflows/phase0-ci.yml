@@ -1,0 +1,115 @@
+name: Phase 0 Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+      - development
+      - feature/platform-foundation
+  pull_request:
+    branches:
+      - development
+      - main
+
+jobs:
+  backend-tests:
+    name: Backend Laravel Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - name: Show checked-out commit and dependency versions
+        run: |
+          echo "Checked out commit:"
+          git rev-parse HEAD
+          echo "Composer JSON Laravel/PHP constraints:"
+          grep -E '"php"|"laravel/framework"|"platform"' composer.json || true
+          echo "Composer lock Laravel version:"
+          grep -A 8 '"name": "laravel/framework"' composer.lock || true
+          echo "Composer lock Symfony HTTP Foundation version:"
+          grep -A 8 '"name": "symfony/http-foundation"' composer.lock || true
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, fileinfo, pdo, pdo_sqlite
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare Laravel environment
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+          php artisan key:generate
+          php artisan migrate:fresh --seed
+
+      - name: Run backend tests
+        run: php artisan test
+
+  public-website-build:
+    name: Public Website Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web/public-website
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/public-website/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build public website
+        run: npm run build
+
+  admin-dashboard-build:
+    name: Admin Dashboard Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web/admin-dashboard
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/admin-dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build admin dashboard
+        run: npm run build
