@@ -200,3 +200,27 @@ The payment workflow:
 ### Safety
 
 Payments do not bypass dispensing controls. A sale must already be confirmed and dispensed before payment can be recorded in this foundation step.
+
+
+## Phase 5.2 dashboard payment recording panel
+
+Phase 5.2 adds dashboard payment recording for dispensed PharmaCo360 sales.
+
+### Dashboard behaviour
+
+The dashboard can now:
+
+- display sale paid amount, balance and payment status
+- prevent payment recording on draft sales
+- enter a payment amount
+- select a payment method
+- capture payment reference number
+- capture payment notes
+- submit payment to the backend
+- display generated receipt number
+- refresh sale payment status and balance
+- show sale payment history
+
+### Safety
+
+The dashboard does not calculate final payment state independently. The backend remains the source of truth for receipt generation, balance calculation, payment status, overpayment protection, tenant boundary checks and audit logging.
