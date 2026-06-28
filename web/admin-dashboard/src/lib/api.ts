@@ -306,3 +306,115 @@ export async function getBranchDepartments(
     tenantSlug,
   );
 }
+
+
+export type BranchMutationResponse = {
+  message: string;
+  branch: PharmaBranch;
+};
+
+export type DepartmentMutationResponse = {
+  message: string;
+  department: BranchDepartment;
+};
+
+export type UpdateBranchPayload = {
+  name?: string;
+  branch_type?: string;
+  status?: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+};
+
+export type CreateDepartmentPayload = {
+  name: string;
+  code: string;
+  department_type: string;
+  phone?: string | null;
+  email?: string | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
+  is_revenue_center?: boolean;
+  operating_status?: string;
+  notes?: string | null;
+};
+
+export type UpdateDepartmentPayload = Partial<CreateDepartmentPayload>;
+
+async function sendJsonWithTenant<T>(
+  token: string,
+  path: string,
+  tenantSlug: string,
+  method: 'POST' | 'PATCH',
+  payload: unknown,
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'X-Tenant-Slug': tenantSlug,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors).flat().join(' ')
+      : null;
+
+    throw new Error(validationMessage || data?.message || 'Unable to save PharmaCo360 tenant data.');
+  }
+
+  return data as T;
+}
+
+export async function updatePharmaBranch(
+  token: string,
+  tenantSlug: string,
+  branchId: number,
+  payload: UpdateBranchPayload,
+): Promise<BranchMutationResponse> {
+  return sendJsonWithTenant<BranchMutationResponse>(
+    token,
+    `/pharmaco/branches/${branchId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export async function createPharmaBranchDepartment(
+  token: string,
+  tenantSlug: string,
+  branchId: number,
+  payload: CreateDepartmentPayload,
+): Promise<DepartmentMutationResponse> {
+  return sendJsonWithTenant<DepartmentMutationResponse>(
+    token,
+    `/pharmaco/branches/${branchId}/departments`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function updatePharmaBranchDepartment(
+  token: string,
+  tenantSlug: string,
+  branchId: number,
+  departmentId: number,
+  payload: UpdateDepartmentPayload,
+): Promise<DepartmentMutationResponse> {
+  return sendJsonWithTenant<DepartmentMutationResponse>(
+    token,
+    `/pharmaco/branches/${branchId}/departments/${departmentId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}

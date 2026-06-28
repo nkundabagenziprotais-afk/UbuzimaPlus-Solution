@@ -593,3 +593,102 @@ p {
     width: 100%;
   }
 }
+
+
+.form-success {
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #eaf8ef;
+  color: #155d47;
+  font-weight: 800;
+  margin-top: 12px;
+}
+
+.pharmaco-editor-panel {
+  background:
+    radial-gradient(circle at bottom right, rgba(16, 107, 79, 0.08), transparent 24rem),
+    rgba(255, 255, 255, 0.82);
+}
+
+.inline-edit-form {
+  margin-top: 14px;
+  border-radius: 20px;
+  padding: 18px;
+  background: #eef8f2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.inline-edit-form h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.inline-edit-form label {
+  display: grid;
+  gap: 7px;
+  color: #344840;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.inline-edit-form input {
+  width: 100%;
+  border: 1px solid rgba(16, 107, 79, 0.18);
+  border-radius: 14px;
+  padding: 11px 12px;
+  background: #fff;
+}
+
+.inline-edit-form button,
+.editor-departments button {
+  border: none;
+  border-radius: 14px;
+  padding: 11px 13px;
+  background: #106b4f;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inline-edit-form button:disabled,
+.editor-departments button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.department-form {
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.checkbox-label input {
+  width: auto;
+}
+
+.wide-field {
+  grid-column: span 2;
+}
+
+.editor-departments div {
+  grid-template-columns: 1.25fr 0.9fr 0.9fr 0.9fr auto;
+}
+
+@media (max-width: 980px) {
+  .inline-edit-form,
+  .department-form,
+  .editor-departments div {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-field {
+    grid-column: auto;
+  }
+}
