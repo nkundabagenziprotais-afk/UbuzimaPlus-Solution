@@ -22,3 +22,21 @@ Route::prefix('v1/auth')->group(function () {
         Route::post('/logout', [\App\Http\Controllers\Api\V1\AuthController::class, 'logout']);
     });
 });
+
+
+Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () {
+    Route::get('/security', [\App\Http\Controllers\Api\V1\AccessCheckController::class, 'securitySummary'])
+        ->middleware('permission:roles.manage');
+
+    Route::get('/inventory', [\App\Http\Controllers\Api\V1\AccessCheckController::class, 'inventoryAccessCheck'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::get('/ai', [\App\Http\Controllers\Api\V1\AccessCheckController::class, 'aiAccessCheck'])
+        ->middleware([
+            'permission:ai.use',
+            'tenant.module:platform.ai_center',
+        ]);
+});
