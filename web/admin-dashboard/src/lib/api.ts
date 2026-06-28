@@ -880,3 +880,32 @@ export async function getPharmaSale(
 ): Promise<PharmaSaleResponse> {
   return getJsonWithTenant<PharmaSaleResponse>(token, `/pharmaco/sales/${saleId}`, tenantSlug);
 }
+
+
+export type ConfirmPharmaSalePayload = {
+  items: Array<{
+    sale_item_id: number;
+    stock_batch_id: number;
+    prescription_verified?: boolean;
+  }>;
+};
+
+export type ConfirmPharmaSaleResponse = {
+  message: string;
+  sale: PharmaSale;
+};
+
+export async function confirmPharmaSale(
+  token: string,
+  tenantSlug: string,
+  saleId: number,
+  payload: ConfirmPharmaSalePayload,
+): Promise<ConfirmPharmaSaleResponse> {
+  return sendJsonWithTenant<ConfirmPharmaSaleResponse>(
+    token,
+    `/pharmaco/sales/${saleId}/confirm`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}

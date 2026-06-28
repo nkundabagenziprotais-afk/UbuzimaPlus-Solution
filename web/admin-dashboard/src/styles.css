@@ -1066,3 +1066,75 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+
+.confirmation-controls {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 0.75rem;
+}
+
+.confirmation-controls label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.confirmation-controls select {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.check-row {
+  display: flex !important;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.5rem !important;
+}
+
+.check-row input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.confirmation-footer {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.danger-action {
+  background: linear-gradient(135deg, #b91c1c, #dc2626) !important;
+  box-shadow: 0 14px 28px rgba(185, 28, 28, 0.22) !important;
+}
+
+.danger-action:disabled {
+  background: #94a3b8 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+.form-success {
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  background: rgba(34, 197, 94, 0.12);
+  color: #166534;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .confirmation-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -4,8 +4,12 @@ import {
   PharmaCustomer,
   PharmaPrescription,
   PharmaSale,
+  PharmaSaleItem,
   PharmaSalesResponse,
+  PharmaStockBatch,
+  confirmPharmaSale,
   getPharmaCustomers,
+  getPharmaInventoryBatches,
   getPharmaPrescriptions,
   getPharmaSale,
   getPharmaSales,
@@ -21,7 +25,11 @@ type SalesReviewState = {
   prescriptions: PharmaPrescription[];
   sales: PharmaSale[];
   selectedSale: PharmaSale | null;
+  batches: PharmaStockBatch[];
 };
+
+type BatchSelections = Record<number, string>;
+type PrescriptionChecks = Record<number, boolean>;
 
 function money(value: number | null | undefined): string {
   return new Intl.NumberFormat('en-RW', {
@@ -48,16 +56,69 @@ function getTenantSlug(profile: AccessProfile): string {
   );
 }
 
+function eligibleBatchesForItem(
+  item: PharmaSaleItem,
+  sale: PharmaSale | null,
+  batches: PharmaStockBatch[],
+): PharmaStockBatch[] {
+  if (!item.product) return [];
+
+  return batches
+    .filter((batch) => batch.product.id === item.product?.id)
+    .filter((batch) => !sale?.branch?.id || batch.branch.id === sale.branch.id)
+    .filter((batch) => batch.available_quantity >= item.quantity)
+    .filter((batch) => batch.status === 'active')
+    .sort((left, right) => {
+      const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+      const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+
+      return leftExpiry - rightExpiry || left.id - right.id;
+    });
+}
+
+function buildBatchSelections(sale: PharmaSale | null, batches: PharmaStockBatch[]): BatchSelections {
+  if (!sale?.items?.length) return {};
+
+  return sale.items.reduce<BatchSelections>((carry, item) => {
+    if (item.stock_batch?.id) {
+      carry[item.id] = String(item.stock_batch.id);
+      return carry;
+    }
+
+    const firstEligibleBatch = eligibleBatchesForItem(item, sale, batches)[0];
+
+    if (firstEligibleBatch) {
+      carry[item.id] = String(firstEligibleBatch.id);
+    }
+
+    return carry;
+  }, {});
+}
+
+function buildPrescriptionChecks(sale: PharmaSale | null): PrescriptionChecks {
+  if (!sale?.items?.length) return {};
+
+  return sale.items.reduce<PrescriptionChecks>((carry, item) => {
+    carry[item.id] = Boolean(item.prescription_verified);
+    return carry;
+  }, {});
+}
+
 export function SalesDispensingReview({ token, profile }: Props) {
   const [state, setState] = useState<SalesReviewState>({
     customers: [],
     prescriptions: [],
     sales: [],
     selectedSale: null,
+    batches: [],
   });
+  const [batchSelections, setBatchSelections] = useState<BatchSelections>({});
+  const [prescriptionChecks, setPrescriptionChecks] = useState<PrescriptionChecks>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSale, setIsLoadingSale] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const tenantSlug = useMemo(() => getTenantSlug(profile), [profile]);
   const canReadSales = profile.permissions.includes('pharmaco.sales.manage');
@@ -89,12 +150,14 @@ export function SalesDispensingReview({ token, profile }: Props) {
 
     setIsLoading(true);
     setError('');
+    setNotice('');
 
     try {
-      const [customersResponse, prescriptionsResponse, salesResponse] = await Promise.all([
+      const [customersResponse, prescriptionsResponse, salesResponse, batchesResponse] = await Promise.all([
         getPharmaCustomers(token, tenantSlug),
         getPharmaPrescriptions(token, tenantSlug),
         getPharmaSales(token, tenantSlug),
+        getPharmaInventoryBatches(token, tenantSlug),
       ]);
 
       const firstSale = (salesResponse as PharmaSalesResponse).sales[0] ?? null;
@@ -107,7 +170,10 @@ export function SalesDispensingReview({ token, profile }: Props) {
         prescriptions: prescriptionsResponse.prescriptions,
         sales: salesResponse.sales,
         selectedSale,
+        batches: batchesResponse.batches,
       });
+      setBatchSelections(buildBatchSelections(selectedSale, batchesResponse.batches));
+      setPrescriptionChecks(buildPrescriptionChecks(selectedSale));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load sales and dispensing review data.');
     } finally {
@@ -118,6 +184,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
   async function selectSale(saleId: number) {
     setIsLoadingSale(true);
     setError('');
+    setNotice('');
 
     try {
       const response = await getPharmaSale(token, tenantSlug, saleId);
@@ -125,6 +192,8 @@ export function SalesDispensingReview({ token, profile }: Props) {
         ...current,
         selectedSale: response.sale,
       }));
+      setBatchSelections(buildBatchSelections(response.sale, state.batches));
+      setPrescriptionChecks(buildPrescriptionChecks(response.sale));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load sale detail.');
     } finally {
@@ -132,15 +201,83 @@ export function SalesDispensingReview({ token, profile }: Props) {
     }
   }
 
+  async function handleConfirmSale() {
+    const sale = state.selectedSale;
+
+    if (!sale) return;
+
+    if (sale.status !== 'draft') {
+      setError('Only draft sales can be confirmed.');
+      return;
+    }
+
+    const items = sale.items ?? [];
+
+    if (items.length === 0) {
+      setError('This sale has no items to confirm.');
+      return;
+    }
+
+    const notReadyItems = items.filter((item) => {
+      const hasBatch = Boolean(Number(batchSelections[item.id]));
+      const prescriptionOk = !item.requires_prescription || Boolean(prescriptionChecks[item.id]);
+
+      return !hasBatch || !prescriptionOk;
+    });
+
+    if (notReadyItems.length > 0) {
+      setError('Every sale item must have an eligible batch and required prescription verification before confirmation.');
+      return;
+    }
+
+    setIsConfirming(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await confirmPharmaSale(token, tenantSlug, sale.id, {
+        items: items.map((item) => ({
+          sale_item_id: item.id,
+          stock_batch_id: Number(batchSelections[item.id]),
+          prescription_verified: Boolean(prescriptionChecks[item.id]),
+        })),
+      });
+
+      const [salesResponse, batchesResponse] = await Promise.all([
+        getPharmaSales(token, tenantSlug),
+        getPharmaInventoryBatches(token, tenantSlug),
+      ]);
+
+      setState((current) => ({
+        ...current,
+        sales: salesResponse.sales,
+        selectedSale: response.sale,
+        batches: batchesResponse.batches,
+      }));
+      setBatchSelections(buildBatchSelections(response.sale, batchesResponse.batches));
+      setPrescriptionChecks(buildPrescriptionChecks(response.sale));
+      setNotice(response.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to confirm sale.');
+    } finally {
+      setIsConfirming(false);
+    }
+  }
+
   const selectedSale = state.selectedSale;
   const saleItems = selectedSale?.items ?? [];
+  const isDraftSale = selectedSale?.status === 'draft';
+
   const readinessItems = saleItems.map((item) => {
-    const needsPrescription = item.requires_prescription && !item.prescription_verified;
-    const needsBatch = !item.stock_batch;
+    const selectedBatch = state.batches.find((batch) => batch.id === Number(batchSelections[item.id]));
+    const needsPrescription = item.requires_prescription && !prescriptionChecks[item.id];
+    const needsBatch = !selectedBatch;
     const ready = !needsPrescription && !needsBatch;
 
     return {
       item,
+      selectedBatch,
+      eligibleBatches: eligibleBatchesForItem(item, selectedSale, state.batches),
       needsPrescription,
       needsBatch,
       ready,
@@ -148,6 +285,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
   });
 
   const readyCount = readinessItems.filter((item) => item.ready).length;
+  const canConfirmSelectedSale = Boolean(selectedSale && isDraftSale && saleItems.length > 0 && readyCount === saleItems.length);
 
   return (
     <article className="panel wide sales-review-panel">
@@ -155,7 +293,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         <div>
           <h2>Sales and dispensing review</h2>
           <p className="muted">
-            Read-only visibility for customers, prescriptions, draft sales, dispensed sales and confirmation readiness.
+            Review customers, prescriptions, draft sales and controlled dispensing readiness before stock deduction.
           </p>
         </div>
 
@@ -165,6 +303,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
       </div>
 
       {error && <div className="form-error">{error}</div>}
+      {notice && <div className="form-success">{notice}</div>}
 
       {!canReadSales && (
         <div className="form-error">
@@ -286,14 +425,14 @@ export function SalesDispensingReview({ token, profile }: Props) {
 
           <div className="readiness-summary">
             <strong>{readyCount}/{saleItems.length}</strong>
-            <span>items ready for confirmation review</span>
+            <span>items ready for controlled confirmation</span>
             <small>
-              This panel is read-only. Actual stock deduction remains backend-controlled and will be exposed later.
+              Confirmation deducts stock, creates sale_dispensed movements and records an audit log.
             </small>
           </div>
 
           <div className="sale-items-grid">
-            {readinessItems.map(({ item, needsPrescription, needsBatch, ready }) => (
+            {readinessItems.map(({ item, selectedBatch, eligibleBatches, needsPrescription, needsBatch, ready }) => (
               <div key={item.id} className={ready ? 'ready-item' : 'pending-item'}>
                 <div>
                   <strong>{item.product_name_snapshot}</strong>
@@ -302,21 +441,81 @@ export function SalesDispensingReview({ token, profile }: Props) {
 
                 <div className="mini-facts">
                   <span>Line total: {money(item.line_total)}</span>
-                  <span>Prescription: {item.requires_prescription ? (item.prescription_verified ? 'verified' : 'required') : 'not required'}</span>
-                  <span>Batch: {item.stock_batch?.batch_number ?? 'not assigned'}</span>
-                  <span>Location: {item.stock_location?.name ?? 'not assigned'}</span>
+                  <span>Prescription: {item.requires_prescription ? (prescriptionChecks[item.id] ? 'verified' : 'required') : 'not required'}</span>
+                  <span>Batch: {selectedBatch?.batch_number ?? item.stock_batch?.batch_number ?? 'not assigned'}</span>
+                  <span>Location: {selectedBatch?.stock_location.name ?? item.stock_location?.name ?? 'not assigned'}</span>
                 </div>
+
+                {isDraftSale && (
+                  <div className="confirmation-controls">
+                    <label>
+                      Dispensing batch
+                      <select
+                        value={batchSelections[item.id] ?? ''}
+                        onChange={(event) =>
+                          setBatchSelections((current) => ({
+                            ...current,
+                            [item.id]: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Select eligible batch</option>
+                        {eligibleBatches.map((batch) => (
+                          <option key={batch.id} value={batch.id}>
+                            {batch.batch_number} · {batch.stock_location.name} · available {batch.available_quantity} · expires {formatDate(batch.expiry_date)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {item.requires_prescription ? (
+                      <label className="check-row">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(prescriptionChecks[item.id])}
+                          onChange={(event) =>
+                            setPrescriptionChecks((current) => ({
+                              ...current,
+                              [item.id]: event.target.checked,
+                            }))
+                          }
+                        />
+                        Prescription verified
+                      </label>
+                    ) : (
+                      <small>No prescription verification required for this item.</small>
+                    )}
+                  </div>
+                )}
 
                 <small>
                   {ready
                     ? 'Ready for controlled confirmation.'
                     : [
                         needsPrescription ? 'Prescription verification needed' : null,
-                        needsBatch ? 'Stock batch assignment needed' : null,
+                        needsBatch ? 'Eligible stock batch needed' : null,
                       ].filter(Boolean).join(' · ')}
                 </small>
               </div>
             ))}
+          </div>
+
+          <div className="confirmation-footer">
+            <div>
+              <strong>Controlled sale confirmation</strong>
+              <p className="muted">
+                This action is irreversible in the current foundation. It deducts stock once and prevents double confirmation.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="danger-action"
+              onClick={handleConfirmSale}
+              disabled={!canConfirmSelectedSale || isConfirming}
+            >
+              {isConfirming ? 'Confirming…' : selectedSale.status === 'draft' ? 'Confirm and dispense stock' : 'Sale already dispensed'}
+            </button>
           </div>
         </section>
       )}

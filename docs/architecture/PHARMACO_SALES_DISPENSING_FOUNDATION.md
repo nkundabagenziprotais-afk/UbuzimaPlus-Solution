@@ -128,3 +128,37 @@ The dashboard can review:
 The panel is intentionally read-only. It does not call the sale confirmation endpoint and does not deduct stock.
 
 Controlled dashboard confirmation should be added later after visual review.
+
+
+## Phase 4.5 dashboard-controlled sale confirmation
+
+Phase 4.5 exposes the controlled confirmation workflow in the dashboard.
+
+### Dashboard behaviour
+
+The dashboard now allows an authorized user to:
+
+- review a draft sale
+- select an eligible stock batch for each sale item
+- verify prescription-required sale items
+- confirm and dispense stock
+- see the sale status update after confirmation
+
+### Safety
+
+The dashboard does not bypass backend controls.
+
+The backend still enforces:
+
+- authenticated access
+- `X-Tenant-Slug`
+- `pharmaco.sales.manage`
+- active `pharmaco.sales`
+- sale tenant ownership
+- draft-only confirmation
+- prescription verification
+- batch/product/branch matching
+- stock availability
+- double-confirmation prevention
+- `sale_dispensed` stock movement logging
+- `pharmaco.sale.dispensed` audit logging
