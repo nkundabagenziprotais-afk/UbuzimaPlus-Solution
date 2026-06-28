@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\StockBatch;
 use App\Models\StockLocation;
+use App\Models\StockMovement;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
@@ -320,6 +321,151 @@ class ProductInventoryController extends Controller
         ]);
     }
 
+
+    public function receiveStock(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'product_id' => [
+                'required',
+                'integer',
+                Rule::exists('products', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'stock_location_id' => [
+                'required',
+                'integer',
+                Rule::exists('stock_locations', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'batch_number' => ['required', 'string', 'max:120'],
+            'quantity' => ['required', 'numeric', 'min:0.01'],
+            'expiry_date' => ['nullable', 'date'],
+            'received_at' => ['nullable', 'date'],
+            'unit_cost' => ['nullable', 'numeric', 'min:0'],
+            'selling_price' => ['nullable', 'numeric', 'min:0'],
+            'supplier_name' => ['nullable', 'string', 'max:255'],
+            'reference_number' => ['nullable', 'string', 'max:120'],
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $product = Product::query()
+            ->where('tenant_id', $tenant->id)
+            ->findOrFail($validated['product_id']);
+
+        $location = StockLocation::query()
+            ->with('branch')
+            ->where('tenant_id', $tenant->id)
+            ->findOrFail($validated['stock_location_id']);
+
+        $quantityReceived = (float) $validated['quantity'];
+
+        [$batch, $movement, $beforeQuantity, $afterQuantity] = DB::transaction(function () use (
+            $tenant,
+            $request,
+            $validated,
+            $product,
+            $location,
+            $quantityReceived
+        ) {
+            $batch = StockBatch::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('product_id', $product->id)
+                ->where('stock_location_id', $location->id)
+                ->where('batch_number', $validated['batch_number'])
+                ->lockForUpdate()
+                ->first();
+
+            $beforeQuantity = $batch ? (float) $batch->quantity_on_hand : 0.0;
+            $afterQuantity = $beforeQuantity + $quantityReceived;
+
+            if (! $batch) {
+                $batch = StockBatch::query()->create([
+                    'uuid' => (string) Str::uuid(),
+                    'tenant_id' => $tenant->id,
+                    'branch_id' => $location->branch_id,
+                    'stock_location_id' => $location->id,
+                    'product_id' => $product->id,
+                    'batch_number' => $validated['batch_number'],
+                    'expiry_date' => $validated['expiry_date'] ?? null,
+                    'received_at' => $validated['received_at'] ?? now()->toDateString(),
+                    'quantity_on_hand' => $afterQuantity,
+                    'quantity_reserved' => 0,
+                    'unit_cost' => $validated['unit_cost'] ?? null,
+                    'selling_price' => $validated['selling_price'] ?? null,
+                    'supplier_name' => $validated['supplier_name'] ?? null,
+                    'status' => 'active',
+                    'metadata' => [
+                        'created_from' => 'pharmaco_stock_receive_api',
+                    ],
+                ]);
+            } else {
+                $batch->quantity_on_hand = $afterQuantity;
+
+                foreach (['expiry_date', 'received_at', 'unit_cost', 'selling_price', 'supplier_name'] as $field) {
+                    if (array_key_exists($field, $validated)) {
+                        $batch->{$field} = $validated[$field];
+                    }
+                }
+
+                $batch->status = 'active';
+                $batch->save();
+            }
+
+            $movement = StockMovement::query()->create([
+                'uuid' => (string) Str::uuid(),
+                'tenant_id' => $tenant->id,
+                'branch_id' => $location->branch_id,
+                'stock_location_id' => $location->id,
+                'product_id' => $product->id,
+                'stock_batch_id' => $batch->id,
+                'movement_type' => 'stock_received',
+                'quantity' => $quantityReceived,
+                'running_balance' => $afterQuantity,
+                'reference_type' => 'stock_receipt',
+                'reference_number' => $validated['reference_number'] ?? ('RCV-' . now()->format('YmdHis')),
+                'reason' => $validated['reason'] ?? 'Stock received through PharmaCo360 inventory API.',
+                'performed_by' => $request->user()?->id,
+                'occurred_at' => now(),
+                'metadata' => [
+                    'source' => 'pharmaco_stock_receive_api',
+                    'before_quantity' => $beforeQuantity,
+                    'after_quantity' => $afterQuantity,
+                ],
+            ]);
+
+            return [$batch->fresh(['product.category', 'stockLocation', 'branch']), $movement, $beforeQuantity, $afterQuantity];
+        });
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.stock.received',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'stock_location_code' => $location->code,
+                'batch_number' => $batch->batch_number,
+                'quantity_received' => $quantityReceived,
+                'before_quantity' => $beforeQuantity,
+                'after_quantity' => $afterQuantity,
+                'movement_id' => $movement->id,
+            ],
+            dataClassification: 'internal',
+            auditableType: StockBatch::class,
+            auditableId: $batch->id
+        );
+
+        return response()->json([
+            'message' => 'Stock received successfully.',
+            'batch' => $this->serializeBatch($batch),
+            'movement' => $this->serializeMovement($movement),
+        ], 201);
+    }
+
     private function tenantPayload($tenant): array
     {
         return [
@@ -375,6 +521,23 @@ class ProductInventoryController extends Controller
         }
 
         return $payload;
+    }
+
+
+    private function serializeMovement(StockMovement $movement): array
+    {
+        return [
+            'id' => $movement->id,
+            'uuid' => $movement->uuid,
+            'movement_type' => $movement->movement_type,
+            'quantity' => (float) $movement->quantity,
+            'running_balance' => $movement->running_balance === null ? null : (float) $movement->running_balance,
+            'reference_type' => $movement->reference_type,
+            'reference_number' => $movement->reference_number,
+            'reason' => $movement->reason,
+            'occurred_at' => $movement->occurred_at?->toISOString(),
+            'metadata' => $movement->metadata ?? [],
+        ];
     }
 
     private function serializeBatch(StockBatch $batch): array

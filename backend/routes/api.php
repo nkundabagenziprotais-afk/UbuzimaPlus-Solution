@@ -69,6 +69,12 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.inventory',
         ]);
 
+    Route::post('/inventory/receive', [ProductInventoryController::class, 'receiveStock'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
     Route::get('/inventory/locations', [ProductInventoryController::class, 'locations'])
         ->middleware([
             'permission:pharmaco.inventory.manage',

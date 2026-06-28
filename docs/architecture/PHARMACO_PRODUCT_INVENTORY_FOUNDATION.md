@@ -97,3 +97,29 @@ All mutation endpoints require:
 ### Out of scope
 
 Stock quantity changes remain out of scope for Phase 3.4. Stock receiving, transfer, dispensing, adjustment and reversal workflows must use the stock movement ledger in a later phase.
+
+
+## Phase 3.5 stock receiving API
+
+Phase 3.5 adds the first stock mutation workflow.
+
+### Endpoint
+
+- `POST /api/v1/pharmaco/inventory/receive`
+
+### Behaviour
+
+The stock receiving endpoint:
+
+- validates the tenant context
+- validates that the product belongs to the current tenant
+- validates that the stock location belongs to the current tenant
+- derives the branch from the stock location
+- creates a new batch when the batch does not exist
+- increases `quantity_on_hand` when the batch already exists
+- records a `stock_received` stock movement
+- records a `pharmaco.stock.received` audit log
+
+### Controls
+
+This workflow does not directly allow stock deduction, dispensing, reversal, transfer or adjustment. Those workflows must be introduced separately so that every stock change remains traceable through the movement ledger.
