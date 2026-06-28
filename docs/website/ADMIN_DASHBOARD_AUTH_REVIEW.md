@@ -96,3 +96,15 @@ Expected:
 - Toggle a department between active and maintenance.
 - Confirm the panel refreshes after saving.
 - Confirm duplicate department codes show a validation error.
+
+
+## Product master and inventory snapshot preview
+
+After signing in as VitaPharma tenant admin:
+
+- Click Load inventory snapshot.
+- Confirm product, category, location and batch counts appear.
+- Confirm estimated stock value appears.
+- Confirm product master preview shows seeded products.
+- Confirm batch and expiry preview shows seeded batch numbers.
+- Confirm near-expiry and low-stock watchlists render safely even when empty.

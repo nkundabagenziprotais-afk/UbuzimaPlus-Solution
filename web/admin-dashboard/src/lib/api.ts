@@ -418,3 +418,186 @@ export async function updatePharmaBranchDepartment(
     payload,
   );
 }
+
+
+export type PharmaProductCategory = {
+  id: number;
+  name: string;
+  code: string;
+  category_type: string;
+};
+
+export type PharmaProductStockSummary = {
+  quantity_on_hand: number;
+  quantity_reserved: number;
+  available_quantity: number;
+  is_below_reorder_level: boolean;
+};
+
+export type PharmaProduct = {
+  id: number;
+  uuid: string;
+  name: string;
+  generic_name: string | null;
+  brand_name: string | null;
+  sku: string;
+  barcode: string | null;
+  registration_number: string | null;
+  dosage_form: string | null;
+  strength: string | null;
+  unit: string;
+  pack_size: string | null;
+  route_of_administration: string | null;
+  product_type: string;
+  regulatory_status: string;
+  requires_prescription: boolean;
+  is_controlled: boolean;
+  reorder_level: number;
+  minimum_stock_level: number;
+  maximum_stock_level: number | null;
+  status: string;
+  category: PharmaProductCategory | null;
+  metadata: Record<string, unknown>;
+  stock_summary?: PharmaProductStockSummary;
+};
+
+export type PharmaStockLocation = {
+  id: number;
+  uuid: string;
+  name: string;
+  code: string;
+  location_type: string;
+  status: string;
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  stock_batches_count: number;
+  metadata: Record<string, unknown>;
+};
+
+export type PharmaStockBatch = {
+  id: number;
+  uuid: string;
+  batch_number: string;
+  expiry_date: string | null;
+  received_at: string | null;
+  quantity_on_hand: number;
+  quantity_reserved: number;
+  available_quantity: number;
+  unit_cost: number | null;
+  selling_price: number | null;
+  supplier_name: string | null;
+  status: string;
+  product: {
+    id: number;
+    name: string;
+    sku: string;
+    category: {
+      name: string;
+      code: string;
+    } | null;
+  };
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  stock_location: {
+    id: number;
+    name: string;
+    code: string;
+    location_type: string;
+  };
+  metadata: Record<string, unknown>;
+};
+
+export type PharmaProductsResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  products: PharmaProduct[];
+};
+
+export type PharmaInventoryLocationsResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  locations: PharmaStockLocation[];
+};
+
+export type PharmaInventoryBatchesResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  batches: PharmaStockBatch[];
+};
+
+export type PharmaInventorySummaryResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  summary: {
+    product_categories_count: number;
+    products_count: number;
+    stock_locations_count: number;
+    stock_batches_count: number;
+    total_quantity_on_hand: number;
+    estimated_stock_value: number;
+    low_stock_products_count: number;
+    near_expiry_batches_180_days_count: number;
+  };
+  low_stock_products: PharmaProduct[];
+};
+
+export async function getPharmaProducts(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaProductsResponse> {
+  return getJsonWithTenant<PharmaProductsResponse>(token, '/pharmaco/products', tenantSlug);
+}
+
+export async function getPharmaInventoryLocations(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaInventoryLocationsResponse> {
+  return getJsonWithTenant<PharmaInventoryLocationsResponse>(
+    token,
+    '/pharmaco/inventory/locations',
+    tenantSlug,
+  );
+}
+
+export async function getPharmaInventoryBatches(
+  token: string,
+  tenantSlug: string,
+  expiringWithinDays?: number,
+): Promise<PharmaInventoryBatchesResponse> {
+  const query = expiringWithinDays ? `?expiring_within_days=${expiringWithinDays}` : '';
+
+  return getJsonWithTenant<PharmaInventoryBatchesResponse>(
+    token,
+    `/pharmaco/inventory/batches${query}`,
+    tenantSlug,
+  );
+}
+
+export async function getPharmaInventorySummary(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaInventorySummaryResponse> {
+  return getJsonWithTenant<PharmaInventorySummaryResponse>(
+    token,
+    '/pharmaco/inventory/summary',
+    tenantSlug,
+  );
+}
