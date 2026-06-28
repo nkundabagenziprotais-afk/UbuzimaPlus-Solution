@@ -91,6 +91,24 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   return data as LoginResponse;
 }
 
+export async function getAuthenticatedProfile(token: string): Promise<AccessProfile> {
+  const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Stored session is no longer valid.');
+  }
+
+  return data.profile as AccessProfile;
+}
+
 export async function logout(token: string): Promise<void> {
   await fetch(`${API_BASE_URL}/auth/logout`, {
     method: 'POST',

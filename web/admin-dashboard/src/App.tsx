@@ -1,5 +1,5 @@
-import { FormEvent, useMemo, useState } from 'react';
-import { AccessProfile, login, logout } from './lib/api';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { AccessProfile, getAuthenticatedProfile, login, logout } from './lib/api';
 import './styles.css';
 
 type StoredSession = {
@@ -38,13 +38,58 @@ function loadStoredSession(): StoredSession | null {
 }
 
 function App() {
-  const [session, setSession] = useState<StoredSession | null>(() => loadStoredSession());
+  const [session, setSession] = useState<StoredSession | null>(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [email, setEmail] = useState('admin@vitapharmaafrica.com');
   const [password, setPassword] = useState('ChangeThisPassword123!');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const profile = session?.profile;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      const stored = loadStoredSession();
+
+      if (!stored?.token) {
+        setIsRestoringSession(false);
+        return;
+      }
+
+      try {
+        const verifiedProfile = await getAuthenticatedProfile(stored.token);
+
+        if (!cancelled) {
+          const verifiedSession = {
+            token: stored.token,
+            profile: verifiedProfile,
+          };
+
+          localStorage.setItem(storageKey, JSON.stringify(verifiedSession));
+          setSession(verifiedSession);
+        }
+      } catch {
+        localStorage.removeItem(storageKey);
+
+        if (!cancelled) {
+          setSession(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsRestoringSession(false);
+        }
+      }
+    }
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   const permissionGroups = useMemo(() => {
     if (!profile) return [];
@@ -98,6 +143,32 @@ function App() {
 
     localStorage.removeItem(storageKey);
     setSession(null);
+  }
+
+
+  if (isRestoringSession) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-panel">
+          <div className="brand-mark">U+</div>
+          <p className="eyebrow">Ubuzima+ Platform</p>
+          <h1>Checking your secure session.</h1>
+          <p className="auth-copy">
+            We are validating your stored access token before opening the admin workspace.
+          </p>
+        </section>
+
+        <section className="auth-side">
+          <div className="status-card">
+            <span className="status-dot" />
+            <div>
+              <strong>Session validation</strong>
+              <p>Stored sessions are verified through the backend before dashboard access.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   if (!profile) {

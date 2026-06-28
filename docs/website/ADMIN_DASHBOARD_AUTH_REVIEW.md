@@ -49,3 +49,14 @@ Verify:
 - Tenant assignments appear for VitaPharma admin.
 - Sign out clears the local session.
 - The UI does not expose AI secrets, tenant settings, or private configuration.
+
+
+## Session validation
+
+The dashboard does not trust localStorage alone. On page refresh, it sends the stored Bearer token to `/api/v1/auth/me`.
+
+Expected behavior:
+
+- Valid token opens the dashboard.
+- Invalid or expired token clears the session.
+- User returns to the login screen.
