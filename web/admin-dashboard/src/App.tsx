@@ -3,6 +3,7 @@ import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesRe
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
+import { SalesDispensingReview } from './components/SalesDispensingReview';
 import './styles.css';
 
 type StoredSession = {
@@ -534,6 +535,8 @@ function App() {
           <ProductInventoryPreview token={session.token} profile={profile} />
 
           <ProductInventoryActions token={session.token} profile={profile} />
+
+          <SalesDispensingReview token={session.token} profile={profile} />
 
           <article className="panel wide">
             <h2>Live access control checks</h2>

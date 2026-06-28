@@ -708,3 +708,204 @@ export async function receivePharmaStock(
     payload,
   );
 }
+
+
+export type PharmaCustomer = {
+  id: number;
+  uuid: string;
+  first_name: string;
+  last_name: string | null;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  customer_type: string;
+  insurance_provider: string | null;
+  insurance_membership_number: string | null;
+  status: string;
+};
+
+export type PharmaPrescription = {
+  id: number;
+  uuid: string;
+  prescription_number: string;
+  prescriber_name: string | null;
+  prescriber_facility: string | null;
+  prescriber_phone: string | null;
+  issued_at: string | null;
+  expires_at: string | null;
+  status: string;
+  notes: string | null;
+  customer?: PharmaCustomer | null;
+};
+
+export type PharmaSaleItem = {
+  id: number;
+  uuid: string;
+  product: {
+    id: number;
+    name: string;
+    sku: string;
+    category: {
+      id: number;
+      name: string;
+      code: string;
+    } | null;
+  } | null;
+  stock_batch: {
+    id: number;
+    batch_number: string;
+    expiry_date: string | null;
+  } | null;
+  stock_location: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  product_name_snapshot: string;
+  sku_snapshot: string;
+  quantity: number;
+  unit_price: number;
+  discount_amount: number;
+  tax_amount: number;
+  line_total: number;
+  requires_prescription: boolean;
+  prescription_verified: boolean;
+  status: string;
+  metadata: Record<string, unknown>;
+};
+
+export type PharmaPayment = {
+  id: number;
+  uuid: string;
+  amount: number;
+  payment_method: string;
+  status: string;
+  reference_number: string | null;
+  received_at: string | null;
+  metadata: Record<string, unknown>;
+};
+
+export type PharmaSale = {
+  id: number;
+  uuid: string;
+  sale_number: string;
+  sale_type: string;
+  status: string;
+  subtotal_amount: number;
+  discount_amount: number;
+  tax_amount: number;
+  total_amount: number;
+  paid_amount: number;
+  balance_amount: number;
+  payment_status: string;
+  sold_at: string | null;
+  notes: string | null;
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  customer: PharmaCustomer | null;
+  prescription: PharmaPrescription | null;
+  items_count: number | null;
+  payments_count: number | null;
+  created_at: string | null;
+  items?: PharmaSaleItem[];
+  payments?: PharmaPayment[];
+};
+
+export type PharmaCustomersResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  customers: PharmaCustomer[];
+};
+
+export type PharmaPrescriptionsResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  prescriptions: PharmaPrescription[];
+};
+
+export type PharmaSalesResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  sales: PharmaSale[];
+};
+
+export type PharmaSaleResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  sale: PharmaSale;
+};
+
+export async function getPharmaCustomers(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaCustomersResponse> {
+  return getJsonWithTenant<PharmaCustomersResponse>(token, '/pharmaco/customers', tenantSlug);
+}
+
+export async function getPharmaPrescriptions(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaPrescriptionsResponse> {
+  return getJsonWithTenant<PharmaPrescriptionsResponse>(token, '/pharmaco/prescriptions', tenantSlug);
+}
+
+export async function getPharmaSales(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaSalesResponse> {
+  return getJsonWithTenant<PharmaSalesResponse>(token, '/pharmaco/sales', tenantSlug);
+}
+
+export async function getPharmaSale(
+  token: string,
+  tenantSlug: string,
+  saleId: number,
+): Promise<PharmaSaleResponse> {
+  return getJsonWithTenant<PharmaSaleResponse>(token, `/pharmaco/sales/${saleId}`, tenantSlug);
+}
+
+
+export type ConfirmPharmaSalePayload = {
+  items: Array<{
+    sale_item_id: number;
+    stock_batch_id: number;
+    prescription_verified?: boolean;
+  }>;
+};
+
+export type ConfirmPharmaSaleResponse = {
+  message: string;
+  sale: PharmaSale;
+};
+
+export async function confirmPharmaSale(
+  token: string,
+  tenantSlug: string,
+  saleId: number,
+  payload: ConfirmPharmaSalePayload,
+): Promise<ConfirmPharmaSaleResponse> {
+  return sendJsonWithTenant<ConfirmPharmaSaleResponse>(
+    token,
+    `/pharmaco/sales/${saleId}/confirm`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
