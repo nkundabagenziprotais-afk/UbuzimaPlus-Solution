@@ -75,3 +75,33 @@ All sales read endpoints require:
 ### Safety
 
 These endpoints are read-only. They do not confirm sales, deduct stock, create payments or write movement ledger entries.
+
+
+## Phase 4.3 controlled sale confirmation and dispensing
+
+Phase 4.3 introduces the first controlled sales mutation workflow.
+
+### Endpoint
+
+- `POST /api/v1/pharmaco/sales/{sale}/confirm`
+
+### Behaviour
+
+The confirmation workflow:
+
+- validates tenant context
+- validates sale ownership
+- confirms only draft sales
+- requires every sale item to be assigned to a stock batch
+- validates selected batch belongs to the same tenant, product and branch
+- verifies prescription-required items before dispensing
+- deducts stock from `stock_batches.quantity_on_hand`
+- writes `sale_dispensed` stock movement records
+- marks sale items as `dispensed`
+- marks the sale as `dispensed`
+- records a `pharmaco.sale.dispensed` audit log
+- prevents double confirmation and double stock deduction
+
+### Safety
+
+This workflow is intentionally strict. It does not allow partial confirmation, cross-tenant dispensing, cross-branch dispensing or confirmation without batch assignment.

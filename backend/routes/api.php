@@ -148,6 +148,13 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.sales',
         ]);
 
+
+    Route::post('/sales/{sale}/confirm', [SalesDispensingController::class, 'confirmSale'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
     Route::get('/sales/{sale}', [SalesDispensingController::class, 'sale'])
         ->middleware([
             'permission:pharmaco.sales.manage',

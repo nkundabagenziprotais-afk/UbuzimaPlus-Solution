@@ -8,8 +8,14 @@ use App\Models\PharmacoPrescription;
 use App\Models\PharmacoSale;
 use App\Models\PharmacoSaleItem;
 use App\Models\PharmacoPayment;
+use App\Models\StockBatch;
+use App\Models\StockMovement;
+use App\Services\Access\ScopeResolver;
+use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class SalesDispensingController extends Controller
 {
@@ -108,6 +114,185 @@ class SalesDispensingController extends Controller
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
             'sale' => $this->serializeSale($sale, includeDetails: true),
+        ]);
+    }
+
+
+    public function confirmSale(
+        Request $request,
+        PharmacoSale $sale,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $sale->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        if ($sale->status !== 'draft' || (bool) ($sale->metadata['stock_deducted'] ?? false)) {
+            abort(409, 'Sale has already been confirmed or dispensed.');
+        }
+
+        $validated = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.sale_item_id' => ['required', 'integer'],
+            'items.*.stock_batch_id' => ['required', 'integer'],
+            'items.*.prescription_verified' => ['sometimes', 'boolean'],
+        ]);
+
+        $confirmedSale = DB::transaction(function () use ($request, $sale, $tenant, $validated) {
+            $lockedSale = PharmacoSale::query()
+                ->where('tenant_id', $tenant->id)
+                ->lockForUpdate()
+                ->findOrFail($sale->id);
+
+            if ($lockedSale->status !== 'draft' || (bool) ($lockedSale->metadata['stock_deducted'] ?? false)) {
+                abort(409, 'Sale has already been confirmed or dispensed.');
+            }
+
+            $lockedSale->load(['items.product']);
+
+            $payloadByItemId = collect($validated['items'])->keyBy('sale_item_id');
+            $saleItemIds = $lockedSale->items->pluck('id')->values();
+
+            if ($payloadByItemId->keys()->diff($saleItemIds)->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => ['One or more submitted sale items do not belong to this sale.'],
+                ]);
+            }
+
+            if ($saleItemIds->diff($payloadByItemId->keys())->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => ['Every sale item must be assigned to a stock batch before dispensing.'],
+                ]);
+            }
+
+            foreach ($lockedSale->items as $item) {
+                $payload = $payloadByItemId->get($item->id);
+
+                $batch = StockBatch::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->where('product_id', $item->product_id)
+                    ->lockForUpdate()
+                    ->find($payload['stock_batch_id']);
+
+                if (! $batch) {
+                    throw ValidationException::withMessages([
+                        'items' => ["A selected stock batch is invalid for item {$item->id}."],
+                    ]);
+                }
+
+                if ((int) $batch->branch_id !== (int) $lockedSale->branch_id) {
+                    throw ValidationException::withMessages([
+                        'items' => ["Stock batch {$batch->batch_number} does not belong to the sale branch."],
+                    ]);
+                }
+
+                $requiresPrescription = (bool) $item->requires_prescription;
+                $prescriptionVerified = (bool) ($payload['prescription_verified'] ?? $item->prescription_verified);
+
+                if ($requiresPrescription && (! $lockedSale->pharmaco_prescription_id || ! $prescriptionVerified)) {
+                    throw ValidationException::withMessages([
+                        'items' => ["Item {$item->sku_snapshot} requires prescription verification before dispensing."],
+                    ]);
+                }
+
+                $quantity = (float) $item->quantity;
+                $beforeQuantity = (float) $batch->quantity_on_hand;
+
+                if ($beforeQuantity < $quantity) {
+                    throw ValidationException::withMessages([
+                        'items' => ["Insufficient stock for item {$item->sku_snapshot} in batch {$batch->batch_number}."],
+                    ]);
+                }
+
+                $afterQuantity = $beforeQuantity - $quantity;
+
+                $batch->quantity_on_hand = $afterQuantity;
+                $batch->status = $afterQuantity <= 0 ? 'depleted' : 'active';
+                $batch->save();
+
+                $item->stock_batch_id = $batch->id;
+                $item->stock_location_id = $batch->stock_location_id;
+                $item->prescription_verified = $prescriptionVerified;
+                $item->status = 'dispensed';
+                $item->metadata = [
+                    ...($item->metadata ?? []),
+                    'stock_deducted' => true,
+                    'stock_deducted_at' => now()->toISOString(),
+                    'before_quantity' => $beforeQuantity,
+                    'after_quantity' => $afterQuantity,
+                ];
+                $item->save();
+
+                StockMovement::query()->create([
+                    'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'tenant_id' => $tenant->id,
+                    'branch_id' => $lockedSale->branch_id,
+                    'stock_location_id' => $batch->stock_location_id,
+                    'product_id' => $item->product_id,
+                    'stock_batch_id' => $batch->id,
+                    'movement_type' => 'sale_dispensed',
+                    'quantity' => -1 * $quantity,
+                    'running_balance' => $afterQuantity,
+                    'reference_type' => 'pharmaco_sale',
+                    'reference_number' => $lockedSale->sale_number,
+                    'reason' => 'Stock dispensed through confirmed PharmaCo360 sale.',
+                    'performed_by' => $request->user()?->id,
+                    'occurred_at' => now(),
+                    'metadata' => [
+                        'sale_id' => $lockedSale->id,
+                        'sale_item_id' => $item->id,
+                        'batch_number' => $batch->batch_number,
+                        'before_quantity' => $beforeQuantity,
+                        'after_quantity' => $afterQuantity,
+                    ],
+                ]);
+            }
+
+            $lockedSale->status = 'dispensed';
+            $lockedSale->sold_by = $request->user()?->id;
+            $lockedSale->sold_at = now();
+            $lockedSale->metadata = [
+                ...($lockedSale->metadata ?? []),
+                'stock_deducted' => true,
+                'stock_deducted_at' => now()->toISOString(),
+                'dispensing_workflow' => 'phase_4_3_confirm_sale',
+            ];
+            $lockedSale->save();
+
+            return $lockedSale->fresh([
+                'branch',
+                'customer',
+                'prescription.customer',
+                'items.product.category',
+                'items.stockBatch',
+                'items.stockLocation',
+                'payments',
+            ]);
+        });
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.sale.dispensed',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'sale_number' => $confirmedSale->sale_number,
+                'sale_id' => $confirmedSale->id,
+                'items_count' => $confirmedSale->items->count(),
+                'stock_deducted' => true,
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoSale::class,
+            auditableId: $confirmedSale->id
+        );
+
+        return response()->json([
+            'message' => 'Sale confirmed and stock dispensed successfully.',
+            'sale' => $this->serializeSale($confirmedSale, includeDetails: true),
         ]);
     }
 
