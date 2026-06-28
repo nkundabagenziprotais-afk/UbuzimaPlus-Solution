@@ -50,3 +50,28 @@ The seed data includes:
 Phase 4.2 should introduce tenant-scoped sales read APIs.
 
 Phase 4.3 should introduce controlled sale confirmation/dispensing, where stock deduction happens through the movement ledger.
+
+
+## Phase 4.2 sales and dispensing read APIs
+
+Phase 4.2 adds tenant-scoped read APIs for sales and dispensing review.
+
+### Endpoints
+
+- `GET /api/v1/pharmaco/customers`
+- `GET /api/v1/pharmaco/prescriptions`
+- `GET /api/v1/pharmaco/sales`
+- `GET /api/v1/pharmaco/sales/{sale}`
+
+### Access controls
+
+All sales read endpoints require:
+
+- authenticated Sanctum token
+- `X-Tenant-Slug`
+- `pharmaco.sales.manage` permission
+- active `pharmaco.sales` module for the tenant
+
+### Safety
+
+These endpoints are read-only. They do not confirm sales, deduct stock, create payments or write movement ledger entries.

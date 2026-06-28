@@ -8,8 +8,10 @@ use App\Models\PharmacoPrescription;
 use App\Models\PharmacoSale;
 use App\Models\PharmacoSaleItem;
 use App\Models\Product;
+use App\Models\Solution;
 use App\Models\Tenant;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PharmacoSalesDispensingSeeder extends Seeder
@@ -17,6 +19,7 @@ class PharmacoSalesDispensingSeeder extends Seeder
     public function run(): void
     {
         $tenant = Tenant::where('slug', 'vitapharma')->firstOrFail();
+        $this->ensureSalesAccess($tenant);
         $branch = Branch::where('tenant_id', $tenant->id)
             ->where('status', 'active')
             ->orderBy('id')
@@ -110,6 +113,81 @@ class PharmacoSalesDispensingSeeder extends Seeder
             unitPrice: 1200,
             prescriptionVerified: true
         );
+    }
+
+
+    private function ensureSalesAccess(Tenant $tenant): void
+    {
+        $solution = Solution::where('code', 'pharmaco360')->firstOrFail();
+        $now = now();
+
+        DB::table('modules')->updateOrInsert(
+            ['code' => 'pharmaco.sales'],
+            [
+                'name' => 'PharmaCo360 Sales and Dispensing',
+                'module_group' => 'pharmaco',
+                'solution_scope' => 'pharmaco360',
+                'description' => 'Sales, dispensing, prescriptions, customers and pharmacy checkout workflows.',
+                'status' => 'available',
+                'dependencies' => json_encode(['pharmaco.inventory']),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
+
+        $moduleId = DB::table('modules')->where('code', 'pharmaco.sales')->value('id');
+
+        DB::table('solution_modules')->insertOrIgnore([
+            'solution_id' => $solution->id,
+            'module_id' => $moduleId,
+            'status' => 'available',
+            'default_config' => json_encode([
+                'stock_deduction_requires_dispensing_confirmation' => true,
+                'allow_draft_sales_without_stock_deduction' => true,
+            ]),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        DB::table('tenant_module_activations')->insertOrIgnore([
+            'tenant_id' => $tenant->id,
+            'solution_id' => $solution->id,
+            'module_id' => $moduleId,
+            'status' => 'active',
+            'configuration' => json_encode([
+                'phase' => 'sales_dispensing_foundation',
+                'stock_deduction_enabled' => false,
+            ]),
+            'activated_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        DB::table('permissions')->updateOrInsert(
+            ['code' => 'pharmaco.sales.manage'],
+            [
+                'name' => 'Manage PharmaCo360 Sales and Dispensing',
+                'permission_group' => 'pharmaco.sales',
+                'description' => 'View and manage tenant-scoped PharmaCo360 customers, prescriptions and pharmacy sales.',
+                'status' => 'active',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
+
+        $permissionId = DB::table('permissions')->where('code', 'pharmaco.sales.manage')->value('id');
+
+        DB::table('roles')
+            ->whereIn('code', ['ubuzima_plus_super_admin', 'pharmaco360_solution_admin', 'tenant_admin'])
+            ->pluck('id')
+            ->each(function ($roleId) use ($permissionId, $now): void {
+                DB::table('permission_role')->insertOrIgnore([
+                    'permission_id' => $permissionId,
+                    'role_id' => $roleId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            });
     }
 
     private function seedSaleItem(

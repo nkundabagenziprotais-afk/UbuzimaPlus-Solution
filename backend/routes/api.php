@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\SolutionController;
 use App\Http\Controllers\Api\V1\TenantPublicStatusController;
 use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
+use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -128,5 +129,31 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'permission:pharmaco.branches.manage',
             'tenant.module:pharmaco.branches',
         ]);
+
+    Route::get('/customers', [SalesDispensingController::class, 'customers'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::get('/prescriptions', [SalesDispensingController::class, 'prescriptions'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::get('/sales', [SalesDispensingController::class, 'sales'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::get('/sales/{sale}', [SalesDispensingController::class, 'sale'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+
 });
 
