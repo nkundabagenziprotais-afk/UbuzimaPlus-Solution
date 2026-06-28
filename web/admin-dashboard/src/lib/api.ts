@@ -601,3 +601,110 @@ export async function getPharmaInventorySummary(
     tenantSlug,
   );
 }
+
+
+export type CreatePharmaProductPayload = {
+  product_category_id?: number | null;
+  name: string;
+  generic_name?: string | null;
+  brand_name?: string | null;
+  sku: string;
+  barcode?: string | null;
+  registration_number?: string | null;
+  dosage_form?: string | null;
+  strength?: string | null;
+  unit: string;
+  pack_size?: string | null;
+  route_of_administration?: string | null;
+  product_type: 'medicine' | 'consumable' | 'device' | 'service';
+  regulatory_status: 'approved' | 'pending' | 'suspended' | 'unregistered';
+  requires_prescription?: boolean;
+  is_controlled?: boolean;
+  reorder_level?: number;
+  minimum_stock_level?: number;
+  maximum_stock_level?: number | null;
+  status?: 'active' | 'inactive' | 'discontinued';
+};
+
+export type UpdatePharmaProductPayload = Partial<CreatePharmaProductPayload>;
+
+export type PharmaProductMutationResponse = {
+  message: string;
+  product: PharmaProduct;
+};
+
+export type ReceivePharmaStockPayload = {
+  product_id: number;
+  stock_location_id: number;
+  batch_number: string;
+  quantity: number;
+  expiry_date?: string | null;
+  received_at?: string | null;
+  unit_cost?: number | null;
+  selling_price?: number | null;
+  supplier_name?: string | null;
+  reference_number?: string | null;
+  reason?: string | null;
+};
+
+export type PharmaStockMovement = {
+  id: number;
+  uuid: string;
+  movement_type: string;
+  quantity: number;
+  running_balance: number | null;
+  reference_type: string | null;
+  reference_number: string | null;
+  reason: string | null;
+  occurred_at: string | null;
+  metadata: Record<string, unknown>;
+};
+
+export type ReceivePharmaStockResponse = {
+  message: string;
+  batch: PharmaStockBatch;
+  movement: PharmaStockMovement;
+};
+
+export async function createPharmaProduct(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaProductPayload,
+): Promise<PharmaProductMutationResponse> {
+  return sendJsonWithTenant<PharmaProductMutationResponse>(
+    token,
+    '/pharmaco/products',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function updatePharmaProduct(
+  token: string,
+  tenantSlug: string,
+  productId: number,
+  payload: UpdatePharmaProductPayload,
+): Promise<PharmaProductMutationResponse> {
+  return sendJsonWithTenant<PharmaProductMutationResponse>(
+    token,
+    `/pharmaco/products/${productId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export async function receivePharmaStock(
+  token: string,
+  tenantSlug: string,
+  payload: ReceivePharmaStockPayload,
+): Promise<ReceivePharmaStockResponse> {
+  return sendJsonWithTenant<ReceivePharmaStockResponse>(
+    token,
+    '/pharmaco/inventory/receive',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}

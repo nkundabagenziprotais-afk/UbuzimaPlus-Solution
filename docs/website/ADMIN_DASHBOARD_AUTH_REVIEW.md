@@ -108,3 +108,15 @@ After signing in as VitaPharma tenant admin:
 - Confirm product master preview shows seeded products.
 - Confirm batch and expiry preview shows seeded batch numbers.
 - Confirm near-expiry and low-stock watchlists render safely even when empty.
+
+
+## Product master and stock receiving forms
+
+After signing in as VitaPharma tenant admin:
+
+- Click Load action data.
+- Create a test product with a unique SKU.
+- Select an existing product and update its reorder level or status.
+- Receive stock into one of the stock locations.
+- Re-open the inventory snapshot and confirm quantities and batch information changed.
+- Confirm all actions remain tenant-scoped and audit-backed through backend tests.

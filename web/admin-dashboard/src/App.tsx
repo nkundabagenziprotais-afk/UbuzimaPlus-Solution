@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, PharmacyProfileResponse, getAuthenticatedProfile, getBranchDepartments, getPharmaBranches, getPharmacyProfile, login, logout, runAccessCheck } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview } from './components/ProductInventoryPreview';
+import { ProductInventoryActions } from './components/ProductInventoryActions';
 import './styles.css';
 
 type StoredSession = {
@@ -531,6 +532,8 @@ function App() {
           <PharmaCoreEditor token={session.token} profile={profile} />
 
           <ProductInventoryPreview token={session.token} profile={profile} />
+
+          <ProductInventoryActions token={session.token} profile={profile} />
 
           <article className="panel wide">
             <h2>Live access control checks</h2>
