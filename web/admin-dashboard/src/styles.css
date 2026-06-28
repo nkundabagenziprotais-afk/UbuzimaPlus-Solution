@@ -494,3 +494,102 @@ p {
   background: #fff4ee;
   color: #8a3a15;
 }
+
+
+.panel-heading-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.panel-heading-row button {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #106b4f;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.panel-heading-row button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.pharmaco-panel {
+  background:
+    radial-gradient(circle at top right, rgba(16, 107, 79, 0.08), transparent 22rem),
+    rgba(255, 255, 255, 0.82);
+}
+
+.pharmaco-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.pharmaco-card,
+.branch-preview div,
+.department-preview div {
+  border-radius: 18px;
+  padding: 16px;
+  background: #f4faf6;
+}
+
+.section-label {
+  display: block;
+  color: #26765d;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.mini-facts {
+  display: grid;
+  gap: 7px;
+  color: #536b60;
+}
+
+.branch-preview,
+.department-preview {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.branch-preview div,
+.department-preview div {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 1fr 0.8fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.branch-preview span,
+.branch-preview small,
+.department-preview span,
+.department-preview small {
+  color: #63776e;
+}
+
+@media (max-width: 760px) {
+  .panel-heading-row {
+    flex-direction: column;
+  }
+
+  .pharmaco-grid,
+  .branch-preview div,
+  .department-preview div {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-heading-row button {
+    width: 100%;
+  }
+}

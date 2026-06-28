@@ -167,3 +167,142 @@ export async function runAccessCheck(
 
   return data as AccessCheckResult;
 }
+
+
+export type PharmacyProfileResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+    status?: string;
+  };
+  profile: {
+    id: number;
+    uuid: string;
+    legal_name: string;
+    trading_name: string;
+    pharmacy_category: string;
+    ownership_type: string | null;
+    license_number: string | null;
+    tin: string | null;
+    rssb_provider_code: string | null;
+    insurance_partner_code: string | null;
+    regulator_name: string;
+    primary_contact_name: string | null;
+    primary_phone: string | null;
+    primary_email: string | null;
+    website: string | null;
+    country: string;
+    city: string | null;
+    district: string | null;
+    sector: string | null;
+    physical_address: string | null;
+    capabilities: string[];
+    insurance_partners: string[];
+    operating_hours: Record<string, string>;
+    status: string;
+    is_primary: boolean;
+    verified_at: string | null;
+  };
+};
+
+export type PharmaBranch = {
+  id: number;
+  name: string;
+  code: string;
+  branch_type: string;
+  status: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  settings: Record<string, unknown>;
+};
+
+export type BranchesResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  branches: PharmaBranch[];
+};
+
+export type BranchDepartment = {
+  id: number;
+  uuid: string;
+  name: string;
+  code: string;
+  department_type: string;
+  phone: string | null;
+  email: string | null;
+  opening_time: string | null;
+  closing_time: string | null;
+  is_revenue_center: boolean;
+  operating_status: string;
+  notes: string | null;
+  metadata: Record<string, unknown>;
+};
+
+export type BranchDepartmentsResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+    status: string;
+  };
+  departments: BranchDepartment[];
+};
+
+async function getJsonWithTenant<T>(
+  token: string,
+  path: string,
+  tenantSlug: string,
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-Slug': tenantSlug,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load PharmaCo360 tenant data.');
+  }
+
+  return data as T;
+}
+
+export async function getPharmacyProfile(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmacyProfileResponse> {
+  return getJsonWithTenant<PharmacyProfileResponse>(token, '/pharmaco/profile', tenantSlug);
+}
+
+export async function getPharmaBranches(
+  token: string,
+  tenantSlug: string,
+): Promise<BranchesResponse> {
+  return getJsonWithTenant<BranchesResponse>(token, '/pharmaco/branches', tenantSlug);
+}
+
+export async function getBranchDepartments(
+  token: string,
+  tenantSlug: string,
+  branchId: number,
+): Promise<BranchDepartmentsResponse> {
+  return getJsonWithTenant<BranchDepartmentsResponse>(
+    token,
+    `/pharmaco/branches/${branchId}/departments`,
+    tenantSlug,
+  );
+}
