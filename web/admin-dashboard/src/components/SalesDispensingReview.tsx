@@ -5,9 +5,11 @@ import {
   PharmaPrescription,
   PharmaSale,
   PharmaSaleItem,
+  PharmaPayment,
   PharmaSalesResponse,
   PharmaStockBatch,
   confirmPharmaSale,
+  recordPharmaPayment,
   getPharmaCustomers,
   getPharmaInventoryBatches,
   getPharmaPrescriptions,
@@ -30,6 +32,15 @@ type SalesReviewState = {
 
 type BatchSelections = Record<number, string>;
 type PrescriptionChecks = Record<number, boolean>;
+
+type PaymentMethod = 'cash' | 'momo' | 'card' | 'insurance' | 'credit' | 'bank_transfer';
+
+type PaymentFormState = {
+  amount: string;
+  payment_method: PaymentMethod;
+  reference_number: string;
+  notes: string;
+};
 
 function money(value: number | null | undefined): string {
   return new Intl.NumberFormat('en-RW', {
@@ -95,6 +106,17 @@ function buildBatchSelections(sale: PharmaSale | null, batches: PharmaStockBatch
   }, {});
 }
 
+function defaultPaymentForm(sale: PharmaSale | null): PaymentFormState {
+  const balance = Number(sale?.balance_amount ?? 0);
+
+  return {
+    amount: balance > 0 ? String(Math.round(balance * 100) / 100) : '',
+    payment_method: 'cash',
+    reference_number: '',
+    notes: '',
+  };
+}
+
 function buildPrescriptionChecks(sale: PharmaSale | null): PrescriptionChecks {
   if (!sale?.items?.length) return {};
 
@@ -114,9 +136,12 @@ export function SalesDispensingReview({ token, profile }: Props) {
   });
   const [batchSelections, setBatchSelections] = useState<BatchSelections>({});
   const [prescriptionChecks, setPrescriptionChecks] = useState<PrescriptionChecks>({});
+  const [paymentForm, setPaymentForm] = useState<PaymentFormState>(defaultPaymentForm(null));
+  const [lastPayment, setLastPayment] = useState<PharmaPayment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSale, setIsLoadingSale] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -174,6 +199,8 @@ export function SalesDispensingReview({ token, profile }: Props) {
       });
       setBatchSelections(buildBatchSelections(selectedSale, batchesResponse.batches));
       setPrescriptionChecks(buildPrescriptionChecks(selectedSale));
+      setPaymentForm(defaultPaymentForm(selectedSale));
+      setLastPayment(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load sales and dispensing review data.');
     } finally {
@@ -194,6 +221,8 @@ export function SalesDispensingReview({ token, profile }: Props) {
       }));
       setBatchSelections(buildBatchSelections(response.sale, state.batches));
       setPrescriptionChecks(buildPrescriptionChecks(response.sale));
+      setPaymentForm(defaultPaymentForm(response.sale));
+      setLastPayment(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load sale detail.');
     } finally {
@@ -261,6 +290,63 @@ export function SalesDispensingReview({ token, profile }: Props) {
       setError(err instanceof Error ? err.message : 'Unable to confirm sale.');
     } finally {
       setIsConfirming(false);
+    }
+  }
+
+  async function handleRecordPayment() {
+    const sale = state.selectedSale;
+
+    if (!sale) return;
+
+    if (sale.status === 'draft') {
+      setError('Draft sales must be confirmed and dispensed before payment can be recorded.');
+      return;
+    }
+
+    if (sale.payment_status === 'paid' || Number(sale.balance_amount) <= 0) {
+      setError('This sale is already fully paid.');
+      return;
+    }
+
+    const amount = Number(paymentForm.amount);
+    const balance = Number(sale.balance_amount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError('Enter a valid payment amount greater than zero.');
+      return;
+    }
+
+    if (amount > balance) {
+      setError(`Payment amount cannot exceed the current balance of ${money(balance)}.`);
+      return;
+    }
+
+    setIsRecordingPayment(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await recordPharmaPayment(token, tenantSlug, sale.id, {
+        amount,
+        payment_method: paymentForm.payment_method,
+        reference_number: paymentForm.reference_number.trim() || null,
+        notes: paymentForm.notes.trim() || null,
+      });
+
+      const salesResponse = await getPharmaSales(token, tenantSlug);
+
+      setState((current) => ({
+        ...current,
+        sales: salesResponse.sales,
+        selectedSale: response.sale,
+      }));
+      setLastPayment(response.payment);
+      setPaymentForm(defaultPaymentForm(response.sale));
+      setNotice(`${response.message} Receipt: ${response.payment.receipt_number ?? 'Not generated'}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to record payment.');
+    } finally {
+      setIsRecordingPayment(false);
     }
   }
 
@@ -430,6 +516,132 @@ export function SalesDispensingReview({ token, profile }: Props) {
               Confirmation deducts stock, creates sale_dispensed movements and records an audit log.
             </small>
           </div>
+
+
+          <section className="payment-recording-card">
+            <div className="panel-heading-row">
+              <div>
+                <span className="section-label">Payment and receipt</span>
+                <h3>Record customer payment</h3>
+                <p className="muted">
+                  Payments can only be recorded after a sale has been dispensed. The backend generates the receipt number.
+                </p>
+              </div>
+              <div className="sale-total-box">
+                <span>Payment status</span>
+                <strong>{selectedSale.payment_status.replaceAll('_', ' ')}</strong>
+                <small>Paid: {money(selectedSale.paid_amount)} · Balance: {money(selectedSale.balance_amount)}</small>
+              </div>
+            </div>
+
+            {selectedSale.status === 'draft' ? (
+              <div className="form-error">
+                Confirm and dispense this sale before recording payment.
+              </div>
+            ) : selectedSale.payment_status === 'paid' || Number(selectedSale.balance_amount) <= 0 ? (
+              <div className="form-success">
+                This sale is fully paid.
+              </div>
+            ) : (
+              <div className="payment-form-grid">
+                <label>
+                  Amount
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={paymentForm.amount}
+                    onChange={(event) =>
+                      setPaymentForm((current) => ({
+                        ...current,
+                        amount: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  Payment method
+                  <select
+                    value={paymentForm.payment_method}
+                    onChange={(event) =>
+                      setPaymentForm((current) => ({
+                        ...current,
+                        payment_method: event.target.value as PaymentMethod,
+                      }))
+                    }
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="momo">Mobile Money</option>
+                    <option value="card">Card</option>
+                    <option value="insurance">Insurance</option>
+                    <option value="credit">Credit</option>
+                    <option value="bank_transfer">Bank transfer</option>
+                  </select>
+                </label>
+
+                <label>
+                  Reference number
+                  <input
+                    type="text"
+                    value={paymentForm.reference_number}
+                    placeholder="MoMo, card, bank or insurance reference"
+                    onChange={(event) =>
+                      setPaymentForm((current) => ({
+                        ...current,
+                        reference_number: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  Notes
+                  <textarea
+                    value={paymentForm.notes}
+                    placeholder="Optional payment note"
+                    onChange={(event) =>
+                      setPaymentForm((current) => ({
+                        ...current,
+                        notes: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <div className="payment-action-row">
+                  <button type="button" onClick={handleRecordPayment} disabled={isRecordingPayment}>
+                    {isRecordingPayment ? 'Recording payment…' : 'Record payment and generate receipt'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {lastPayment && (
+              <div className="receipt-preview">
+                <span>Latest receipt</span>
+                <strong>{lastPayment.receipt_number ?? 'Receipt pending'}</strong>
+                <small>
+                  {money(lastPayment.amount)} · {lastPayment.payment_method.replaceAll('_', ' ')} · {lastPayment.status}
+                </small>
+              </div>
+            )}
+
+            {selectedSale.payments?.length ? (
+              <div className="payment-history">
+                <h4>Payment history</h4>
+                {selectedSale.payments.map((payment) => (
+                  <div key={payment.id}>
+                    <strong>{payment.receipt_number ?? payment.reference_number ?? `Payment #${payment.id}`}</strong>
+                    <span>{money(payment.amount)} · {payment.payment_method.replaceAll('_', ' ')}</span>
+                    <small>{payment.status} · {formatDate(payment.received_at)}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No payment has been recorded for this sale yet.</p>
+            )}
+          </section>
 
           <div className="sale-items-grid">
             {readinessItems.map(({ item, selectedBatch, eligibleBatches, needsPrescription, needsBatch, ready }) => (

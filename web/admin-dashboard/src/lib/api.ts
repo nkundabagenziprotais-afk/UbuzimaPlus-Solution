@@ -783,6 +783,7 @@ export type PharmaPayment = {
   payment_method: string;
   status: string;
   reference_number: string | null;
+  receipt_number: string | null;
   received_at: string | null;
   metadata: Record<string, unknown>;
 };
@@ -904,6 +905,36 @@ export async function confirmPharmaSale(
   return sendJsonWithTenant<ConfirmPharmaSaleResponse>(
     token,
     `/pharmaco/sales/${saleId}/confirm`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+
+export type RecordPharmaPaymentPayload = {
+  amount: number;
+  payment_method: 'cash' | 'momo' | 'card' | 'insurance' | 'credit' | 'bank_transfer';
+  reference_number?: string | null;
+  received_at?: string | null;
+  notes?: string | null;
+};
+
+export type RecordPharmaPaymentResponse = {
+  message: string;
+  payment: PharmaPayment;
+  sale: PharmaSale;
+};
+
+export async function recordPharmaPayment(
+  token: string,
+  tenantSlug: string,
+  saleId: number,
+  payload: RecordPharmaPaymentPayload,
+): Promise<RecordPharmaPaymentResponse> {
+  return sendJsonWithTenant<RecordPharmaPaymentResponse>(
+    token,
+    `/pharmaco/sales/${saleId}/payments`,
     tenantSlug,
     'POST',
     payload,
