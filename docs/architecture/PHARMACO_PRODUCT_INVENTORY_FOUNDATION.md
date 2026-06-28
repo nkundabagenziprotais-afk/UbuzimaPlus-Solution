@@ -71,3 +71,29 @@ All endpoints require:
 - Active `pharmaco.inventory` module for the tenant
 
 The APIs are read-only in this phase. Stock receiving, transfer, adjustment, dispensing and audit-linked mutation workflows will be added in later phases.
+
+
+## Phase 3.4 product mutation APIs
+
+Phase 3.4 adds controlled product master mutation endpoints.
+
+### Endpoints
+
+- `POST /api/v1/pharmaco/products`
+- `PATCH /api/v1/pharmaco/products/{product}`
+
+### Controls
+
+All mutation endpoints require:
+
+- Authenticated Sanctum token
+- `X-Tenant-Slug`
+- `pharmaco.inventory.manage` permission
+- Active `pharmaco.inventory` module for the tenant
+- Tenant-scoped SKU uniqueness
+- Tenant-owned product category validation
+- Audit logs for create and update actions
+
+### Out of scope
+
+Stock quantity changes remain out of scope for Phase 3.4. Stock receiving, transfer, dispensing, adjustment and reversal workflows must use the stock movement ledger in a later phase.

@@ -7,9 +7,13 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\StockBatch;
 use App\Models\StockLocation;
+use App\Services\Access\ScopeResolver;
+use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ProductInventoryController extends Controller
 {
@@ -165,6 +169,154 @@ class ProductInventoryController extends Controller
             'low_stock_products' => $lowStockProducts
                 ->map(fn (Product $product) => $this->serializeProduct($product, includeStockSummary: true))
                 ->values(),
+        ]);
+    }
+
+
+    public function createProduct(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'product_category_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('product_categories', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'name' => ['required', 'string', 'max:255'],
+            'generic_name' => ['nullable', 'string', 'max:255'],
+            'brand_name' => ['nullable', 'string', 'max:255'],
+            'sku' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::unique('products', 'sku')->where('tenant_id', $tenant->id),
+            ],
+            'barcode' => ['nullable', 'string', 'max:120'],
+            'registration_number' => ['nullable', 'string', 'max:120'],
+            'dosage_form' => ['nullable', 'string', 'max:120'],
+            'strength' => ['nullable', 'string', 'max:120'],
+            'unit' => ['required', 'string', 'max:80'],
+            'pack_size' => ['nullable', 'string', 'max:120'],
+            'route_of_administration' => ['nullable', 'string', 'max:120'],
+            'product_type' => ['required', Rule::in(['medicine', 'consumable', 'device', 'service'])],
+            'regulatory_status' => ['required', Rule::in(['approved', 'pending', 'suspended', 'unregistered'])],
+            'requires_prescription' => ['sometimes', 'boolean'],
+            'is_controlled' => ['sometimes', 'boolean'],
+            'reorder_level' => ['sometimes', 'numeric', 'min:0'],
+            'minimum_stock_level' => ['sometimes', 'numeric', 'min:0'],
+            'maximum_stock_level' => ['nullable', 'numeric', 'min:0'],
+            'status' => ['sometimes', Rule::in(['active', 'inactive', 'discontinued'])],
+        ]);
+
+        $product = Product::query()->create([
+            ...$validated,
+            'uuid' => (string) Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'requires_prescription' => $validated['requires_prescription'] ?? false,
+            'is_controlled' => $validated['is_controlled'] ?? false,
+            'reorder_level' => $validated['reorder_level'] ?? 0,
+            'minimum_stock_level' => $validated['minimum_stock_level'] ?? 0,
+            'maximum_stock_level' => $validated['maximum_stock_level'] ?? null,
+            'status' => $validated['status'] ?? 'active',
+            'metadata' => [
+                'created_from' => 'pharmaco_product_inventory_api',
+            ],
+        ]);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.product.created',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'product_name' => $product->name,
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $product->id
+        );
+
+        return response()->json([
+            'message' => 'Product created successfully.',
+            'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
+        ], 201);
+    }
+
+    public function updateProduct(
+        Request $request,
+        Product $product,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'product_category_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('product_categories', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'generic_name' => ['nullable', 'string', 'max:255'],
+            'brand_name' => ['nullable', 'string', 'max:255'],
+            'sku' => [
+                'sometimes',
+                'string',
+                'max:120',
+                Rule::unique('products', 'sku')->where('tenant_id', $tenant->id)->ignore($product->id),
+            ],
+            'barcode' => ['nullable', 'string', 'max:120'],
+            'registration_number' => ['nullable', 'string', 'max:120'],
+            'dosage_form' => ['nullable', 'string', 'max:120'],
+            'strength' => ['nullable', 'string', 'max:120'],
+            'unit' => ['sometimes', 'string', 'max:80'],
+            'pack_size' => ['nullable', 'string', 'max:120'],
+            'route_of_administration' => ['nullable', 'string', 'max:120'],
+            'product_type' => ['sometimes', Rule::in(['medicine', 'consumable', 'device', 'service'])],
+            'regulatory_status' => ['sometimes', Rule::in(['approved', 'pending', 'suspended', 'unregistered'])],
+            'requires_prescription' => ['sometimes', 'boolean'],
+            'is_controlled' => ['sometimes', 'boolean'],
+            'reorder_level' => ['sometimes', 'numeric', 'min:0'],
+            'minimum_stock_level' => ['sometimes', 'numeric', 'min:0'],
+            'maximum_stock_level' => ['nullable', 'numeric', 'min:0'],
+            'status' => ['sometimes', Rule::in(['active', 'inactive', 'discontinued'])],
+        ]);
+
+        $before = $product->only(array_keys($validated));
+
+        $product->fill($validated);
+        $product->save();
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.product.updated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'before' => $before,
+                'after' => $product->only(array_keys($validated)),
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $product->id
+        );
+
+        return response()->json([
+            'message' => 'Product updated successfully.',
+            'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
         ]);
     }
 

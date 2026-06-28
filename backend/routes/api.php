@@ -45,6 +45,12 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
 
 Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
+    Route::post('/products', [ProductInventoryController::class, 'createProduct'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
     Route::get('/products', [ProductInventoryController::class, 'products'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
@@ -52,6 +58,12 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ]);
 
     Route::get('/products/{product}', [ProductInventoryController::class, 'product'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::patch('/products/{product}', [ProductInventoryController::class, 'updateProduct'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
             'tenant.module:pharmaco.inventory',
