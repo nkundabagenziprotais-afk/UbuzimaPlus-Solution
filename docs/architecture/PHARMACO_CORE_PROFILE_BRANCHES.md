@@ -41,3 +41,25 @@ The profile and departments provide the foundation for:
 - Insurance dispensing
 - Customer follow-up
 - AI analytics
+
+
+## Phase 2.2 API endpoints
+
+Tenant-scoped API endpoints:
+
+- `GET /api/v1/pharmaco/profile`
+- `GET /api/v1/pharmaco/branches`
+- `GET /api/v1/pharmaco/branches/{branch}/departments`
+
+Required headers:
+
+- `Authorization: Bearer <token>`
+- `X-Tenant-Slug: vitapharma`
+
+Access controls:
+
+- Profile endpoint requires `pharmaco.profile.manage`.
+- Branch endpoints require `pharmaco.branches.manage`.
+- Profile endpoint requires active `pharmaco.profile` module for the tenant.
+- Branch endpoints require active `pharmaco.branches` module for the tenant.
+- Branch departments cannot be read across tenant boundaries.
