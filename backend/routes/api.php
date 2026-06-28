@@ -60,5 +60,23 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'permission:pharmaco.branches.manage',
             'tenant.module:pharmaco.branches',
         ]);
+
+    Route::patch('/branches/{branch}', [CoreProfileController::class, 'updateBranch'])
+        ->middleware([
+            'permission:pharmaco.branches.manage',
+            'tenant.module:pharmaco.branches',
+        ]);
+
+    Route::post('/branches/{branch}/departments', [CoreProfileController::class, 'createBranchDepartment'])
+        ->middleware([
+            'permission:pharmaco.branches.manage',
+            'tenant.module:pharmaco.branches',
+        ]);
+
+    Route::patch('/branches/{branch}/departments/{department}', [CoreProfileController::class, 'updateBranchDepartment'])
+        ->middleware([
+            'permission:pharmaco.branches.manage',
+            'tenant.module:pharmaco.branches',
+        ]);
 });
 

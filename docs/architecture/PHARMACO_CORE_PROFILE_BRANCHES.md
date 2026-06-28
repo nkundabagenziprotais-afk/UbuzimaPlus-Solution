@@ -63,3 +63,22 @@ Access controls:
 - Profile endpoint requires active `pharmaco.profile` module for the tenant.
 - Branch endpoints require active `pharmaco.branches` module for the tenant.
 - Branch departments cannot be read across tenant boundaries.
+
+
+## Phase 2.4 editable branch and department APIs
+
+Controlled mutation endpoints:
+
+- PATCH /api/v1/pharmaco/branches/{branch}
+- POST /api/v1/pharmaco/branches/{branch}/departments
+- PATCH /api/v1/pharmaco/branches/{branch}/departments/{department}
+
+Controls:
+
+- Requires authenticated Sanctum token.
+- Requires X-Tenant-Slug.
+- Requires pharmaco.branches.manage permission.
+- Requires active pharmaco.branches tenant module.
+- Blocks branch and department access outside the active tenant.
+- Records audit logs for branch update, department creation, and department update.
+- Validates duplicate department code per branch.
