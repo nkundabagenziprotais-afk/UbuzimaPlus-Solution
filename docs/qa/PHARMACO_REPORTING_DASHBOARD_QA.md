@@ -42,3 +42,17 @@ Functional checks:
 Local validation:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
+
+## Operator production review
+
+Phase 13.4 adds an operator-facing production review checklist.
+
+Before production approval, confirm:
+
+- reporting dashboard language feels natural for a pharmacy operator
+- figures remain read-only
+- customer credit CSV download remains available after reports load
+- no reporting review step mutates pharmacy records
+- cPanel deployment uses GitHub main as the source of truth
+- no destructive production database command is required
+
