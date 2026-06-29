@@ -795,3 +795,21 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-production-review-check.sh`
 - `./scripts/phase0-check.sh`
 
+### Reporting dashboard release handover
+
+Phase 13.5 adds release handover documentation for the reporting dashboard.
+
+Included:
+
+- release note for business and product stakeholders
+- handover summary for operators, QA, deployment reviewers, and future developers
+- release readiness evidence requirements
+- local release guardrail script
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/pharmaco-reporting-production-review-check.sh`
+- `./scripts/pharmaco-reporting-release-check.sh`
+- `./scripts/phase0-check.sh`
+

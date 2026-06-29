@@ -90,3 +90,20 @@ After deployment:
 ## Rollback note
 
 Because this phase is documentation and checklist focused, rollback should only require reverting the documentation/checklist commit if needed.
+
+## Release handover evidence
+
+Phase 13.5 requires the release note and stakeholder handover summary to be available before production approval.
+
+Required documents:
+
+- docs/releases/PHARMACO_REPORTING_DASHBOARD_RELEASE_NOTE.md
+- docs/handover/PHARMACO_REPORTING_DASHBOARD_HANDOVER.md
+
+Required validation:
+
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/pharmaco-reporting-production-review-check.sh
+- ./scripts/pharmaco-reporting-release-check.sh
+- ./scripts/phase0-check.sh
+
