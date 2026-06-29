@@ -489,6 +489,10 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             {isPreparingCustomerCreditExport ? 'Downloading CSV…' : 'Download CSV'}
           </button>
 
+          <p className="muted">
+            CSV includes open customer receivables as of today, grouped with aging status for review before follow-up.
+          </p>
+
           {customerCreditExportNotice && <p className="muted">{customerCreditExportNotice}</p>}
 
           <div className="report-metric-list">
