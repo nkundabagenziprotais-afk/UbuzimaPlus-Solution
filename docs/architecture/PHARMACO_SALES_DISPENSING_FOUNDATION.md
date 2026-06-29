@@ -294,3 +294,68 @@ The dashboard can now:
 ### Safety
 
 The dashboard does not bypass backend rules. The backend remains responsible for tenant boundaries, branch ownership, product ownership, active product validation, prescription-required product validation, total calculation and audit logging.
+
+
+## Phase 7.1 supplier and purchase order backend foundation
+
+Phase 7.1 introduces the upstream procurement foundation for PharmaCo360.
+
+### Tables
+
+- `pharmaco_suppliers`
+- `pharmaco_purchase_orders`
+- `pharmaco_purchase_order_items`
+
+### Endpoints
+
+- `POST /api/v1/pharmaco/suppliers`
+- `GET /api/v1/pharmaco/suppliers`
+- `POST /api/v1/pharmaco/purchase-orders`
+- `GET /api/v1/pharmaco/purchase-orders`
+- `GET /api/v1/pharmaco/purchase-orders/{purchaseOrder}`
+
+### Supplier categories
+
+- wholesaler
+- manufacturer
+- distributor
+- importer
+- other
+
+### Behaviour
+
+The procurement foundation supports:
+
+- creating tenant-scoped suppliers
+- listing suppliers
+- creating draft purchase orders
+- linking purchase orders to supplier and branch
+- adding purchase order line items
+- calculating line totals and purchase order totals
+- listing purchase orders
+- reading purchase order detail
+
+### Safety
+
+The backend enforces:
+
+- authenticated access
+- `X-Tenant-Slug`
+- active `pharmaco.suppliers`
+- `pharmaco.suppliers.manage`
+- tenant ownership of suppliers, products and branches
+- active supplier validation
+- active branch validation
+- active product validation
+- duplicate supplier code protection
+- duplicate purchase order number protection
+- audit logs for supplier and purchase order creation
+
+### Audit actions
+
+- `pharmaco.supplier.created`
+- `pharmaco.purchase_order.created`
+
+### Phase boundary
+
+This phase does not yet receive stock against purchase orders. Purchase-order-linked stock receiving will be handled in Phase 7.2.
