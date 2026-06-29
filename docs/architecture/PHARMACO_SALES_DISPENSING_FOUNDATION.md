@@ -738,3 +738,25 @@ Expected behavior:
 - Customer Credit CSV still downloads the same export rows
 - export notice is easier to see after download
 
+### Reporting dashboard empty and loading states
+
+Phase 13.2 improves the reporting dashboard review experience without changing reporting APIs or database behavior.
+
+Included UI behavior:
+
+- shows a clear tenant-context message when reporting context is missing
+- disables refresh and customer credit export actions until tenant context exists
+- shows a loading message while figures refresh
+- shows an initial empty overview before reports are loaded
+- replaces plain empty table text with more helpful business guidance
+- keeps all reporting data read-only
+
+Review these screen sizes before production approval:
+
+- 360px: loading and empty messages fit without horizontal scrolling
+- 430px: disabled actions remain understandable
+- 768px: empty-state boxes align with card spacing
+- 1280px: dashboard feels clear before and after data loads
+- 1440px: messages do not visually overpower report cards
+- 1920px: empty/loading states remain readable and not stretched
+
