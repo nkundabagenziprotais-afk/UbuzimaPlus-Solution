@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\PharmaCo360;
 
 use App\Http\Controllers\Controller;
+use App\Models\PharmacoPurchaseOrderItem;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\StockBatch;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProductInventoryController extends Controller
 {
@@ -340,6 +342,7 @@ class ProductInventoryController extends Controller
                 'integer',
                 Rule::exists('stock_locations', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
             ],
+            'pharmaco_purchase_order_item_id' => ['nullable', 'integer'],
             'batch_number' => ['required', 'string', 'max:120'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'expiry_date' => ['nullable', 'date'],
@@ -362,14 +365,149 @@ class ProductInventoryController extends Controller
 
         $quantityReceived = (float) $validated['quantity'];
 
-        [$batch, $movement, $beforeQuantity, $afterQuantity] = DB::transaction(function () use (
+        $purchaseOrderItem = null;
+
+        if (! empty($validated['pharmaco_purchase_order_item_id'])) {
+            $purchaseOrderItem = PharmacoPurchaseOrderItem::query()
+                ->with(['purchaseOrder.supplier', 'product'])
+                ->where('tenant_id', $tenant->id)
+                ->find($validated['pharmaco_purchase_order_item_id']);
+
+            if (! $purchaseOrderItem) {
+                throw ValidationException::withMessages([
+                    'pharmaco_purchase_order_item_id' => ['Selected purchase order item does not belong to the current tenant.'],
+                ]);
+            }
+
+            $purchaseOrder = $purchaseOrderItem->purchaseOrder;
+
+            if (! $purchaseOrder || (int) $purchaseOrder->tenant_id !== (int) $tenant->id) {
+                throw ValidationException::withMessages([
+                    'pharmaco_purchase_order_item_id' => ['Selected purchase order item is invalid for the current tenant.'],
+                ]);
+            }
+
+            if ((int) $purchaseOrderItem->product_id !== (int) $product->id) {
+                throw ValidationException::withMessages([
+                    'product_id' => ['Received product must match the selected purchase order item.'],
+                ]);
+            }
+
+            if ((int) $purchaseOrder->branch_id !== (int) $location->branch_id) {
+                throw ValidationException::withMessages([
+                    'stock_location_id' => ['Stock must be received into a location belonging to the purchase order branch.'],
+                ]);
+            }
+
+            if (in_array($purchaseOrder->status, ['cancelled', 'voided', 'closed'], true)) {
+                throw ValidationException::withMessages([
+                    'pharmaco_purchase_order_item_id' => ['Stock cannot be received against a closed or cancelled purchase order.'],
+                ]);
+            }
+
+            $remainingQuantity = (float) $purchaseOrderItem->quantity_ordered - (float) $purchaseOrderItem->quantity_received;
+
+            if ($quantityReceived > $remainingQuantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => ['Received quantity cannot exceed the remaining purchase order item quantity.'],
+                ]);
+            }
+        }
+
+        [$batch, $movement, $beforeQuantity, $afterQuantity, $purchaseOrderReceipt] = DB::transaction(function () use (
             $tenant,
             $request,
             $validated,
             $product,
             $location,
-            $quantityReceived
+            $quantityReceived,
+            $purchaseOrderItem
         ) {
+            $lockedPurchaseOrderItem = null;
+            $purchaseOrderReceipt = null;
+            $purchaseOrderSupplierName = null;
+
+            if ($purchaseOrderItem) {
+                $lockedPurchaseOrderItem = PharmacoPurchaseOrderItem::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->lockForUpdate()
+                    ->findOrFail($purchaseOrderItem->id);
+
+                $lockedPurchaseOrderItem->load(['purchaseOrder.supplier', 'purchaseOrder.items']);
+
+                $purchaseOrder = $lockedPurchaseOrderItem->purchaseOrder;
+
+                if ((int) $lockedPurchaseOrderItem->product_id !== (int) $product->id) {
+                    throw ValidationException::withMessages([
+                        'product_id' => ['Received product must match the selected purchase order item.'],
+                    ]);
+                }
+
+                if ((int) $purchaseOrder->branch_id !== (int) $location->branch_id) {
+                    throw ValidationException::withMessages([
+                        'stock_location_id' => ['Stock must be received into a location belonging to the purchase order branch.'],
+                    ]);
+                }
+
+                $receivedBefore = (float) $lockedPurchaseOrderItem->quantity_received;
+                $orderedQuantity = (float) $lockedPurchaseOrderItem->quantity_ordered;
+                $remainingQuantity = $orderedQuantity - $receivedBefore;
+
+                if ($quantityReceived > $remainingQuantity) {
+                    throw ValidationException::withMessages([
+                        'quantity' => ['Received quantity cannot exceed the remaining purchase order item quantity.'],
+                    ]);
+                }
+
+                $receivedAfter = $receivedBefore + $quantityReceived;
+                $remainingAfter = $orderedQuantity - $receivedAfter;
+
+                $lockedPurchaseOrderItem->quantity_received = $receivedAfter;
+                $lockedPurchaseOrderItem->status = $remainingAfter <= 0 ? 'received' : 'partially_received';
+                $lockedPurchaseOrderItem->metadata = [
+                    ...($lockedPurchaseOrderItem->metadata ?? []),
+                    'last_received_at' => now()->toISOString(),
+                    'last_received_quantity' => $quantityReceived,
+                    'receiving_workflow' => 'phase_7_2_po_linked_receiving',
+                ];
+                $lockedPurchaseOrderItem->save();
+
+                $totalOrdered = (float) $purchaseOrder->items()->sum('quantity_ordered');
+                $totalReceived = (float) $purchaseOrder->items()->sum('quantity_received');
+
+                $receivingStatus = match (true) {
+                    $totalReceived <= 0 => 'not_received',
+                    $totalReceived >= $totalOrdered => 'received',
+                    default => 'partially_received',
+                };
+
+                $purchaseOrder->status = $receivingStatus === 'received' ? 'received' : 'partially_received';
+                $purchaseOrder->metadata = [
+                    ...($purchaseOrder->metadata ?? []),
+                    'receiving_status' => $receivingStatus,
+                    'total_quantity_ordered' => $totalOrdered,
+                    'total_quantity_received' => $totalReceived,
+                    'last_received_at' => now()->toISOString(),
+                ];
+                $purchaseOrder->save();
+
+                $purchaseOrderSupplierName = $purchaseOrder->supplier?->name;
+
+                $purchaseOrderReceipt = [
+                    'purchase_order_id' => $purchaseOrder->id,
+                    'purchase_order_item_id' => $lockedPurchaseOrderItem->id,
+                    'po_number' => $purchaseOrder->po_number,
+                    'purchase_order_status' => $purchaseOrder->status,
+                    'purchase_order_receiving_status' => $receivingStatus,
+                    'item_status' => $lockedPurchaseOrderItem->status,
+                    'quantity_ordered' => $orderedQuantity,
+                    'quantity_received_before' => $receivedBefore,
+                    'quantity_received_after' => $receivedAfter,
+                    'remaining_quantity_after' => $remainingAfter,
+                    'supplier_name' => $purchaseOrderSupplierName,
+                ];
+            }
+
             $batch = StockBatch::query()
                 ->where('tenant_id', $tenant->id)
                 ->where('product_id', $product->id)
@@ -380,6 +518,7 @@ class ProductInventoryController extends Controller
 
             $beforeQuantity = $batch ? (float) $batch->quantity_on_hand : 0.0;
             $afterQuantity = $beforeQuantity + $quantityReceived;
+            $supplierName = $validated['supplier_name'] ?? $purchaseOrderSupplierName;
 
             if (! $batch) {
                 $batch = StockBatch::query()->create([
@@ -395,23 +534,56 @@ class ProductInventoryController extends Controller
                     'quantity_reserved' => 0,
                     'unit_cost' => $validated['unit_cost'] ?? null,
                     'selling_price' => $validated['selling_price'] ?? null,
-                    'supplier_name' => $validated['supplier_name'] ?? null,
+                    'supplier_name' => $supplierName,
                     'status' => 'active',
                     'metadata' => [
                         'created_from' => 'pharmaco_stock_receive_api',
+                        'receiving_workflow' => $purchaseOrderReceipt ? 'phase_7_2_po_linked_receiving' : 'manual_receiving',
+                        'purchase_order_id' => $purchaseOrderReceipt['purchase_order_id'] ?? null,
+                        'purchase_order_item_id' => $purchaseOrderReceipt['purchase_order_item_id'] ?? null,
                     ],
                 ]);
             } else {
                 $batch->quantity_on_hand = $afterQuantity;
 
-                foreach (['expiry_date', 'received_at', 'unit_cost', 'selling_price', 'supplier_name'] as $field) {
+                foreach (['expiry_date', 'received_at', 'unit_cost', 'selling_price'] as $field) {
                     if (array_key_exists($field, $validated)) {
                         $batch->{$field} = $validated[$field];
                     }
                 }
 
+                if (array_key_exists('supplier_name', $validated) || $supplierName) {
+                    $batch->supplier_name = $supplierName;
+                }
+
+                $batch->metadata = [
+                    ...($batch->metadata ?? []),
+                    'receiving_workflow' => $purchaseOrderReceipt ? 'phase_7_2_po_linked_receiving' : 'manual_receiving',
+                    'purchase_order_id' => $purchaseOrderReceipt['purchase_order_id'] ?? (($batch->metadata ?? [])['purchase_order_id'] ?? null),
+                    'purchase_order_item_id' => $purchaseOrderReceipt['purchase_order_item_id'] ?? (($batch->metadata ?? [])['purchase_order_item_id'] ?? null),
+                ];
                 $batch->status = 'active';
                 $batch->save();
+            }
+
+            $movementMetadata = [
+                'source' => 'pharmaco_stock_receive_api',
+                'receiving_workflow' => $purchaseOrderReceipt ? 'phase_7_2_po_linked_receiving' : 'manual_receiving',
+                'before_quantity' => $beforeQuantity,
+                'after_quantity' => $afterQuantity,
+            ];
+
+            if ($purchaseOrderReceipt) {
+                $movementMetadata = [
+                    ...$movementMetadata,
+                    'purchase_order_id' => $purchaseOrderReceipt['purchase_order_id'],
+                    'purchase_order_item_id' => $purchaseOrderReceipt['purchase_order_item_id'],
+                    'purchase_order_status' => $purchaseOrderReceipt['purchase_order_status'],
+                    'purchase_order_receiving_status' => $purchaseOrderReceipt['purchase_order_receiving_status'],
+                    'quantity_received_before' => $purchaseOrderReceipt['quantity_received_before'],
+                    'quantity_received_after' => $purchaseOrderReceipt['quantity_received_after'],
+                    'remaining_quantity_after' => $purchaseOrderReceipt['remaining_quantity_after'],
+                ];
             }
 
             $movement = StockMovement::query()->create([
@@ -424,45 +596,67 @@ class ProductInventoryController extends Controller
                 'movement_type' => 'stock_received',
                 'quantity' => $quantityReceived,
                 'running_balance' => $afterQuantity,
-                'reference_type' => 'stock_receipt',
-                'reference_number' => $validated['reference_number'] ?? ('RCV-' . now()->format('YmdHis')),
-                'reason' => $validated['reason'] ?? 'Stock received through PharmaCo360 inventory API.',
+                'reference_type' => $purchaseOrderReceipt ? 'pharmaco_purchase_order' : 'stock_receipt',
+                'reference_number' => $purchaseOrderReceipt['po_number'] ?? ($validated['reference_number'] ?? ('RCV-' . now()->format('YmdHis'))),
+                'reason' => $validated['reason'] ?? (
+                    $purchaseOrderReceipt
+                        ? 'Stock received against PharmaCo360 purchase order.'
+                        : 'Stock received through PharmaCo360 inventory API.'
+                ),
                 'performed_by' => $request->user()?->id,
                 'occurred_at' => now(),
-                'metadata' => [
-                    'source' => 'pharmaco_stock_receive_api',
-                    'before_quantity' => $beforeQuantity,
-                    'after_quantity' => $afterQuantity,
-                ],
+                'metadata' => $movementMetadata,
             ]);
 
-            return [$batch->fresh(['product.category', 'stockLocation', 'branch']), $movement, $beforeQuantity, $afterQuantity];
+            return [
+                $batch->fresh(['product.category', 'stockLocation', 'branch']),
+                $movement,
+                $beforeQuantity,
+                $afterQuantity,
+                $purchaseOrderReceipt,
+            ];
         });
 
         $scope = $scopeResolver->resolveForUser($request->user());
 
+        $auditMetadata = [
+            'tenant_slug' => $tenant->slug,
+            'product_sku' => $product->sku,
+            'stock_location_code' => $location->code,
+            'batch_number' => $batch->batch_number,
+            'quantity_received' => $quantityReceived,
+            'before_quantity' => $beforeQuantity,
+            'after_quantity' => $afterQuantity,
+            'movement_id' => $movement->id,
+        ];
+
+        if ($purchaseOrderReceipt) {
+            $auditMetadata = [
+                ...$auditMetadata,
+                'purchase_order_id' => $purchaseOrderReceipt['purchase_order_id'],
+                'purchase_order_item_id' => $purchaseOrderReceipt['purchase_order_item_id'],
+                'po_number' => $purchaseOrderReceipt['po_number'],
+                'purchase_order_status' => $purchaseOrderReceipt['purchase_order_status'],
+                'purchase_order_receiving_status' => $purchaseOrderReceipt['purchase_order_receiving_status'],
+            ];
+        }
+
         $auditLogService->record(
-            action: 'pharmaco.stock.received',
+            action: $purchaseOrderReceipt ? 'pharmaco.purchase_order.stock_received' : 'pharmaco.stock.received',
             scope: $scope,
-            metadata: [
-                'tenant_slug' => $tenant->slug,
-                'product_sku' => $product->sku,
-                'stock_location_code' => $location->code,
-                'batch_number' => $batch->batch_number,
-                'quantity_received' => $quantityReceived,
-                'before_quantity' => $beforeQuantity,
-                'after_quantity' => $afterQuantity,
-                'movement_id' => $movement->id,
-            ],
+            metadata: $auditMetadata,
             dataClassification: 'internal',
             auditableType: StockBatch::class,
             auditableId: $batch->id
         );
 
         return response()->json([
-            'message' => 'Stock received successfully.',
+            'message' => $purchaseOrderReceipt
+                ? 'Stock received against purchase order successfully.'
+                : 'Stock received successfully.',
             'batch' => $this->serializeBatch($batch),
             'movement' => $this->serializeMovement($movement),
+            'purchase_order_receipt' => $purchaseOrderReceipt,
         ], 201);
     }
 

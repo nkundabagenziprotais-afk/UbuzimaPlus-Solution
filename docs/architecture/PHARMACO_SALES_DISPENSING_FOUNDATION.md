@@ -359,3 +359,39 @@ The backend enforces:
 ### Phase boundary
 
 This phase does not yet receive stock against purchase orders. Purchase-order-linked stock receiving will be handled in Phase 7.2.
+
+
+## Phase 7.2 purchase-order-linked stock receiving
+
+Phase 7.2 connects the existing stock receiving API to the procurement foundation.
+
+### Updated endpoint
+
+- `POST /api/v1/pharmaco/inventory/receive`
+
+The endpoint still supports manual receiving. It now also accepts:
+
+- `pharmaco_purchase_order_item_id`
+
+### Behaviour
+
+When a purchase order item is supplied, the backend:
+
+- validates that the purchase order item belongs to the current tenant
+- validates that the received product matches the purchase order item product
+- validates that the stock location belongs to the purchase order branch
+- rejects quantities above the remaining ordered quantity
+- creates or updates the stock batch
+- creates a `stock_received` movement
+- links the movement to the purchase order through `reference_type = pharmaco_purchase_order`
+- updates the purchase order item received quantity
+- marks the item as `partially_received` or `received`
+- marks the purchase order as `partially_received` or `received`
+- records `pharmaco.purchase_order.stock_received`
+
+### Manual receiving compatibility
+
+Manual receiving remains available without `pharmaco_purchase_order_item_id` and continues to record:
+
+- `reference_type = stock_receipt`
+- `pharmaco.stock.received`
