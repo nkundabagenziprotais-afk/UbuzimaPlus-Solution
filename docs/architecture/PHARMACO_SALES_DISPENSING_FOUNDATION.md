@@ -688,6 +688,18 @@ The report helps pharmacy finance teams see how much customer credit is open, ho
 - period
 - customer_credit_exposure
 
+
+### Customer credit exposure export
+
+Phase 12.5 through Phase 12.8 add an export-ready customer credit exposure flow.
+
+- `GET /api/v1/pharmaco/reports/customer-credit-exposure/export`
+- returns tenant-scoped open receivable rows as of the report date
+- includes customer, reference, status, original amount, collected amount, balance amount, due date, days overdue, and aging bucket fields
+- supports the admin dashboard CSV download action
+- intended for review, follow-up, and audit-friendly credit control evidence
+- read-only export; no customer, sale, payment, or receivable data is changed
+
 ### Customer credit exposure summary
 
 - open balance
