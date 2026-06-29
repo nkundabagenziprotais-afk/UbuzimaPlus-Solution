@@ -534,3 +534,36 @@ The dashboard consumes the Phase 9.1 backend endpoints:
 ### Safety
 
 The dashboard keeps the backend as the source of truth for tenant boundaries, supplier/PO matching, invoice state transitions, and overpayment protection.
+
+
+## Phase 10.1 reporting and analytics foundation
+
+Phase 10.1 adds tenant-safe reporting APIs for operational analytics.
+
+### API endpoints
+
+- `GET /api/v1/pharmaco/reports/overview`
+- `GET /api/v1/pharmaco/reports/inventory-valuation`
+- `GET /api/v1/pharmaco/reports/sales-summary`
+- `GET /api/v1/pharmaco/reports/procurement-summary`
+- `GET /api/v1/pharmaco/reports/payables-summary`
+
+### Reports
+
+- inventory valuation report
+- sales summary report
+- procurement summary report
+- supplier payable summary
+- combined reporting overview
+
+### Filters
+
+The time-based reports support:
+
+- `start_date`
+- `end_date`
+
+### Safety
+
+The reporting endpoints reuse existing Sanctum authentication, tenant headers, tenant module middleware, and existing module permissions.
+No new RBAC seed changes are required in this phase.
