@@ -636,6 +636,7 @@ export type PharmaProductMutationResponse = {
 export type ReceivePharmaStockPayload = {
   product_id: number;
   stock_location_id: number;
+  pharmaco_purchase_order_item_id?: number | null;
   batch_number: string;
   quantity: number;
   expiry_date?: string | null;
@@ -660,10 +661,25 @@ export type PharmaStockMovement = {
   metadata: Record<string, unknown>;
 };
 
+export type PharmaPurchaseOrderReceipt = {
+  purchase_order_id: number;
+  purchase_order_item_id: number;
+  po_number: string;
+  purchase_order_status: string;
+  purchase_order_receiving_status: string;
+  item_status: string;
+  quantity_ordered: number;
+  quantity_received_before: number;
+  quantity_received_after: number;
+  remaining_quantity_after: number;
+  supplier_name: string | null;
+};
+
 export type ReceivePharmaStockResponse = {
   message: string;
   batch: PharmaStockBatch;
   movement: PharmaStockMovement;
+  purchase_order_receipt?: PharmaPurchaseOrderReceipt | null;
 };
 
 export async function createPharmaProduct(
@@ -1036,6 +1052,202 @@ export async function createPharmaSale(
   return sendJsonWithTenant<CreatePharmaSaleResponse>(
     token,
     '/pharmaco/sales',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+
+export type PharmaSupplier = {
+  id: number;
+  uuid: string;
+  supplier_code: string;
+  name: string;
+  legal_name: string | null;
+  supplier_type: string;
+  contact_person: string | null;
+  phone: string | null;
+  email: string | null;
+  tax_identification_number: string | null;
+  license_number: string | null;
+  address: string | null;
+  payment_terms: string | null;
+  status: string;
+  metadata: Record<string, unknown>;
+  created_at: string | null;
+};
+
+export type PharmaPurchaseOrderItem = {
+  id: number;
+  uuid: string;
+  product: {
+    id: number;
+    name: string;
+    sku: string;
+    category: {
+      id: number;
+      name: string;
+      code: string;
+    } | null;
+  } | null;
+  product_name_snapshot: string;
+  sku_snapshot: string | null;
+  quantity_ordered: number;
+  quantity_received: number;
+  unit_cost: number;
+  discount_amount: number;
+  tax_amount: number;
+  line_total: number;
+  status: string;
+  notes: string | null;
+  metadata: Record<string, unknown>;
+};
+
+export type PharmaPurchaseOrder = {
+  id: number;
+  uuid: string;
+  po_number: string;
+  status: string;
+  order_date: string | null;
+  expected_delivery_date: string | null;
+  subtotal_amount: number;
+  discount_amount: number;
+  tax_amount: number;
+  shipping_amount: number;
+  total_amount: number;
+  notes: string | null;
+  supplier: PharmaSupplier | null;
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  items_count: number | null;
+  created_at: string | null;
+  items?: PharmaPurchaseOrderItem[];
+};
+
+export type PharmaSuppliersResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  suppliers: PharmaSupplier[];
+};
+
+export type PharmaPurchaseOrdersResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  purchase_orders: PharmaPurchaseOrder[];
+};
+
+export type PharmaPurchaseOrderResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  purchase_order: PharmaPurchaseOrder;
+};
+
+export type CreatePharmaSupplierPayload = {
+  supplier_code?: string | null;
+  name: string;
+  legal_name?: string | null;
+  supplier_type: 'wholesaler' | 'manufacturer' | 'distributor' | 'importer' | 'other';
+  contact_person?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  tax_identification_number?: string | null;
+  license_number?: string | null;
+  address?: string | null;
+  payment_terms?: string | null;
+  status?: 'active' | 'inactive' | 'suspended';
+  notes?: string | null;
+};
+
+export type CreatePharmaSupplierResponse = {
+  message: string;
+  supplier: PharmaSupplier;
+};
+
+export async function getPharmaSuppliers(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaSuppliersResponse> {
+  return getJsonWithTenant<PharmaSuppliersResponse>(token, '/pharmaco/suppliers', tenantSlug);
+}
+
+export async function createPharmaSupplier(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaSupplierPayload,
+): Promise<CreatePharmaSupplierResponse> {
+  return sendJsonWithTenant<CreatePharmaSupplierResponse>(
+    token,
+    '/pharmaco/suppliers',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export type CreatePharmaPurchaseOrderPayload = {
+  branch_id: number;
+  pharmaco_supplier_id: number;
+  order_date?: string | null;
+  expected_delivery_date?: string | null;
+  discount_amount?: number;
+  tax_amount?: number;
+  shipping_amount?: number;
+  notes?: string | null;
+  items: Array<{
+    product_id: number;
+    quantity_ordered: number;
+    unit_cost: number;
+    discount_amount?: number;
+    tax_amount?: number;
+    notes?: string | null;
+  }>;
+};
+
+export type CreatePharmaPurchaseOrderResponse = {
+  message: string;
+  purchase_order: PharmaPurchaseOrder;
+};
+
+export async function getPharmaPurchaseOrders(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaPurchaseOrdersResponse> {
+  return getJsonWithTenant<PharmaPurchaseOrdersResponse>(token, '/pharmaco/purchase-orders', tenantSlug);
+}
+
+export async function getPharmaPurchaseOrder(
+  token: string,
+  tenantSlug: string,
+  purchaseOrderId: number,
+): Promise<PharmaPurchaseOrderResponse> {
+  return getJsonWithTenant<PharmaPurchaseOrderResponse>(
+    token,
+    `/pharmaco/purchase-orders/${purchaseOrderId}`,
+    tenantSlug,
+  );
+}
+
+export async function createPharmaPurchaseOrder(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaPurchaseOrderPayload,
+): Promise<CreatePharmaPurchaseOrderResponse> {
+  return sendJsonWithTenant<CreatePharmaPurchaseOrderResponse>(
+    token,
+    '/pharmaco/purchase-orders',
     tenantSlug,
     'POST',
     payload,
