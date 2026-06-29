@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   getPharmaInventoryValuationReport,
   getPharmaPayablesSummaryReport,
+  getPharmaCustomerCreditExposureReport,
   getPharmaProcurementSummaryReport,
   getPharmaReportingOverview,
   getPharmaSalesSummaryReport,
@@ -27,6 +28,7 @@ type ReportingState = {
   sales: PharmaSalesSummaryReport | null;
   procurement: PharmaProcurementSummaryReport | null;
   payables: PharmaPayablesSummaryReport | null;
+  customerCredit: PharmaCustomerCreditExposureReport | null;
 };
 
 const money = new Intl.NumberFormat('en-RW', {
@@ -102,6 +104,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
     sales: null,
     procurement: null,
     payables: null,
+    customerCredit: null,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [notice, setNotice] = useState('');
@@ -145,11 +148,12 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
 
     try {
       const overview = await getPharmaReportingOverview(token, tenantSlug, filters);
-      const [inventory, sales, procurement, payables] = await Promise.all([
+      const [inventory, sales, procurement, payables, customerCredit] = await Promise.all([
         getPharmaInventoryValuationReport(token, tenantSlug),
         getPharmaSalesSummaryReport(token, tenantSlug, filters),
         getPharmaProcurementSummaryReport(token, tenantSlug, filters),
         getPharmaPayablesSummaryReport(token, tenantSlug, filters),
+        getPharmaCustomerCreditExposureReport(token, tenantSlug),
       ]);
 
       setState({
@@ -158,6 +162,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
         sales: sales.sales,
         procurement: procurement.procurement,
         payables: payables.payables,
+        customerCredit: customerCredit.customer_credit_exposure,
       });
 
       setNotice('Reporting dashboard refreshed.');
@@ -386,6 +391,44 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             {(state.procurement?.status_summary ?? []).length === 0 && (
               <p className="muted">No purchase orders in this period.</p>
             )}
+          </div>
+        </section>
+
+
+        <section className="report-card">
+          <div className="mini-section-heading">
+            <strong>Customer credit exposure</strong>
+            <span>{state.customerCredit?.open_receivables_count ?? 0} open receivables</span>
+          </div>
+
+          <div className="report-metric-list">
+            <div>
+              <span>Open balance</span>
+              <strong>{formatMoney(state.customerCredit?.open_balance)}</strong>
+            </div>
+            <div>
+              <span>Overdue</span>
+              <strong>{formatMoney(state.customerCredit?.overdue_balance)}</strong>
+            </div>
+            <div>
+              <span>Current</span>
+              <strong>{formatMoney(state.customerCredit?.current_balance)}</strong>
+            </div>
+            <div>
+              <span>Customers on credit</span>
+              <strong>{formatNumber(state.customerCredit?.customers_on_credit)}</strong>
+            </div>
+          </div>
+
+          <div className="report-status-list">
+            <div>
+              <span>Credit limit enabled</span>
+              <span>{formatMoney(state.customerCredit?.credit_limit_total)}</span>
+            </div>
+            <div>
+              <span>Overdue receivables</span>
+              <span>{formatNumber(state.customerCredit?.overdue_receivables_count)}</span>
+            </div>
           </div>
         </section>
 
