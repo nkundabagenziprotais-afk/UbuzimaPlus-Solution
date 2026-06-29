@@ -9,6 +9,8 @@ use App\Models\PharmacoSale;
 use App\Models\PharmacoSupplierInvoice;
 use App\Models\PharmacoSupplierPayment;
 use App\Models\StockBatch;
+use App\Models\PharmacoCustomer;
+use App\Models\PharmacoCustomerReceivable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -74,6 +76,52 @@ class ReportingController extends Controller
             'tenant' => $this->tenantPayload($tenant),
             'period' => $this->periodPayload($startDate, $endDate),
             'payables' => $this->payablesSummaryPayload($tenant->id, $startDate, $endDate, includeStatuses: true),
+        ]);
+    }
+
+
+    public function customerCreditExposure(Request $request): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        $openReceivables = PharmacoCustomerReceivable::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('status', ['open', 'partially_collected'])
+            ->where('balance_amount', '>', 0)
+            ->get();
+
+        $openBalance = (float) $openReceivables->sum('balance_amount');
+
+        $overdueBalance = (float) $openReceivables
+            ->filter(fn ($receivable) => $receivable->due_date && $receivable->due_date < now()->toDateString())
+            ->sum('balance_amount');
+
+        $customersOnCredit = PharmacoCustomer::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('credit_status', 'enabled')
+            ->count();
+
+        $creditLimitTotal = (float) PharmacoCustomer::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('credit_status', 'enabled')
+            ->sum('credit_limit');
+
+        return response()->json([
+            'tenant' => $this->tenantPayload($tenant),
+            'period' => [
+                'as_of_date' => now()->toDateString(),
+            ],
+            'customer_credit_exposure' => [
+                'open_balance' => round($openBalance, 2),
+                'overdue_balance' => round($overdueBalance, 2),
+                'current_balance' => round($openBalance - $overdueBalance, 2),
+                'credit_limit_total' => round($creditLimitTotal, 2),
+                'customers_on_credit' => $customersOnCredit,
+                'open_receivables_count' => $openReceivables->count(),
+                'overdue_receivables_count' => $openReceivables
+                    ->filter(fn ($receivable) => $receivable->due_date && $receivable->due_date < now()->toDateString())
+                    ->count(),
+            ],
         ]);
     }
 
