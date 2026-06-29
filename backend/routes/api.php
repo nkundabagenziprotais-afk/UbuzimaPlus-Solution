@@ -54,6 +54,38 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.suppliers',
         ]);
 
+
+    Route::get('/supplier-invoices', [ProcurementController::class, 'supplierInvoices'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/supplier-invoices', [ProcurementController::class, 'createSupplierInvoice'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/supplier-invoices/{supplierInvoice}', [ProcurementController::class, 'supplierInvoice'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/supplier-invoices/{supplierInvoice}/approve', [ProcurementController::class, 'approveSupplierInvoice'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/supplier-invoices/{supplierInvoice}/payments', [ProcurementController::class, 'recordSupplierPayment'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+
     Route::get('/suppliers', [ProcurementController::class, 'suppliers'])
         ->middleware([
             'permission:pharmaco.suppliers.manage',
