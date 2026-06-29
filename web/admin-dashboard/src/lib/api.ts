@@ -1608,6 +1608,13 @@ export type PharmaPayablesSummaryReportResponse = {
 
 
 
+export type PharmaCustomerCreditExposureAgingBucket = {
+  code: string;
+  label: string;
+  balance: number;
+  receivables_count: number;
+};
+
 export type PharmaCustomerCreditExposureReport = {
   open_balance: number;
   overdue_balance: number;
@@ -1616,6 +1623,7 @@ export type PharmaCustomerCreditExposureReport = {
   customers_on_credit: number;
   open_receivables_count: number;
   overdue_receivables_count: number;
+  aging_buckets: PharmaCustomerCreditExposureAgingBucket[];
 };
 
 export type PharmaCustomerCreditExposureReportResponse = {
