@@ -1253,3 +1253,60 @@ export async function createPharmaPurchaseOrder(
     payload,
   );
 }
+
+
+export type UpdatePharmaSupplierPayload = Partial<CreatePharmaSupplierPayload>;
+
+export type UpdatePharmaSupplierResponse = {
+  message: string;
+  supplier: PharmaSupplier;
+};
+
+export async function updatePharmaSupplier(
+  token: string,
+  tenantSlug: string,
+  supplierId: number,
+  payload: UpdatePharmaSupplierPayload,
+): Promise<UpdatePharmaSupplierResponse> {
+  return sendJsonWithTenant<UpdatePharmaSupplierResponse>(
+    token,
+    `/pharmaco/suppliers/${supplierId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export type ControlPharmaPurchaseOrderResponse = {
+  message: string;
+  purchase_order: PharmaPurchaseOrder;
+};
+
+export async function approvePharmaPurchaseOrder(
+  token: string,
+  tenantSlug: string,
+  purchaseOrderId: number,
+): Promise<ControlPharmaPurchaseOrderResponse> {
+  return sendJsonWithTenant<ControlPharmaPurchaseOrderResponse>(
+    token,
+    `/pharmaco/purchase-orders/${purchaseOrderId}/approve`,
+    tenantSlug,
+    'POST',
+    {},
+  );
+}
+
+export async function cancelPharmaPurchaseOrder(
+  token: string,
+  tenantSlug: string,
+  purchaseOrderId: number,
+  reason?: string,
+): Promise<ControlPharmaPurchaseOrderResponse> {
+  return sendJsonWithTenant<ControlPharmaPurchaseOrderResponse>(
+    token,
+    `/pharmaco/purchase-orders/${purchaseOrderId}/cancel`,
+    tenantSlug,
+    'POST',
+    { reason: reason || null },
+  );
+}

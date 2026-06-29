@@ -123,6 +123,101 @@ class ProcurementController extends Controller
         ], 201);
     }
 
+
+    public function updateSupplier(
+        Request $request,
+        PharmacoSupplier $supplier,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $supplier->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'supplier_code' => ['sometimes', 'string', 'max:80'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'legal_name' => ['nullable', 'string', 'max:255'],
+            'supplier_type' => ['sometimes', 'string', 'in:wholesaler,manufacturer,distributor,importer,other'],
+            'contact_person' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:80'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'tax_identification_number' => ['nullable', 'string', 'max:120'],
+            'license_number' => ['nullable', 'string', 'max:120'],
+            'address' => ['nullable', 'string'],
+            'payment_terms' => ['nullable', 'string', 'max:120'],
+            'status' => ['sometimes', 'string', 'in:active,inactive,suspended'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        if (array_key_exists('supplier_code', $validated)) {
+            $exists = PharmacoSupplier::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('supplier_code', $validated['supplier_code'])
+                ->where('id', '!=', $supplier->id)
+                ->exists();
+
+            if ($exists) {
+                throw ValidationException::withMessages([
+                    'supplier_code' => ['This supplier code already exists for the current tenant.'],
+                ]);
+            }
+        }
+
+        $before = $supplier->only([
+            'supplier_code',
+            'name',
+            'legal_name',
+            'supplier_type',
+            'contact_person',
+            'phone',
+            'email',
+            'tax_identification_number',
+            'license_number',
+            'address',
+            'payment_terms',
+            'status',
+        ]);
+
+        $metadata = $supplier->metadata ?? [];
+
+        if (array_key_exists('notes', $validated)) {
+            $metadata['notes'] = $validated['notes'];
+            unset($validated['notes']);
+        }
+
+        $supplier->fill($validated);
+        $supplier->metadata = [
+            ...$metadata,
+            'last_updated_from' => 'phase_8_2_procurement_dashboard',
+        ];
+        $supplier->save();
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.supplier.updated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'supplier_id' => $supplier->id,
+                'supplier_code' => $supplier->supplier_code,
+                'before' => $before,
+                'after' => $supplier->only(array_keys($before)),
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoSupplier::class,
+            auditableId: $supplier->id
+        );
+
+        return response()->json([
+            'message' => 'Supplier updated successfully.',
+            'supplier' => $this->serializeSupplier($supplier->fresh()),
+        ]);
+    }
+
     public function purchaseOrders(Request $request): JsonResponse
     {
         $tenant = $request->attributes->get('tenant');
@@ -341,6 +436,135 @@ class ProcurementController extends Controller
             'message' => 'Purchase order created successfully.',
             'purchase_order' => $this->serializePurchaseOrder($purchaseOrder, includeDetails: true),
         ], 201);
+    }
+
+
+    public function approvePurchaseOrder(
+        Request $request,
+        PharmacoPurchaseOrder $purchaseOrder,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $purchaseOrder->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        if ($purchaseOrder->status !== 'draft') {
+            throw ValidationException::withMessages([
+                'status' => ['Only draft purchase orders can be approved.'],
+            ]);
+        }
+
+        if ($purchaseOrder->items()->count() === 0) {
+            throw ValidationException::withMessages([
+                'items' => ['A purchase order must have at least one item before approval.'],
+            ]);
+        }
+
+        $purchaseOrder->status = 'approved';
+        $purchaseOrder->approved_by = $request->user()?->id;
+        $purchaseOrder->approved_at = now();
+        $purchaseOrder->metadata = [
+            ...($purchaseOrder->metadata ?? []),
+            'approval_workflow' => 'phase_8_2_procurement_approval_controls',
+            'approved_from' => 'procurement_dashboard',
+        ];
+        $purchaseOrder->save();
+
+        $purchaseOrder->load(['supplier', 'branch', 'items.product.category']);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.purchase_order.approved',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'purchase_order_id' => $purchaseOrder->id,
+                'po_number' => $purchaseOrder->po_number,
+                'supplier_id' => $purchaseOrder->pharmaco_supplier_id,
+                'approved_by' => $request->user()?->id,
+                'approved_at' => $purchaseOrder->approved_at?->toISOString(),
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoPurchaseOrder::class,
+            auditableId: $purchaseOrder->id
+        );
+
+        return response()->json([
+            'message' => 'Purchase order approved successfully.',
+            'purchase_order' => $this->serializePurchaseOrder($purchaseOrder, includeDetails: true),
+        ]);
+    }
+
+    public function cancelPurchaseOrder(
+        Request $request,
+        PharmacoPurchaseOrder $purchaseOrder,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $purchaseOrder->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if (in_array($purchaseOrder->status, ['received', 'cancelled'], true)) {
+            throw ValidationException::withMessages([
+                'status' => ['Received or already cancelled purchase orders cannot be cancelled.'],
+            ]);
+        }
+
+        if ($purchaseOrder->items()->where('quantity_received', '>', 0)->exists()) {
+            throw ValidationException::withMessages([
+                'status' => ['Purchase orders with received stock cannot be cancelled.'],
+            ]);
+        }
+
+        $purchaseOrder->status = 'cancelled';
+        $purchaseOrder->metadata = [
+            ...($purchaseOrder->metadata ?? []),
+            'cancelled_at' => now()->toISOString(),
+            'cancelled_by' => $request->user()?->id,
+            'cancellation_reason' => $validated['reason'] ?? null,
+            'cancellation_workflow' => 'phase_8_2_procurement_approval_controls',
+        ];
+        $purchaseOrder->save();
+
+        $purchaseOrder->items()->update([
+            'status' => 'cancelled',
+            'updated_at' => now(),
+        ]);
+
+        $purchaseOrder->load(['supplier', 'branch', 'items.product.category']);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.purchase_order.cancelled',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'purchase_order_id' => $purchaseOrder->id,
+                'po_number' => $purchaseOrder->po_number,
+                'supplier_id' => $purchaseOrder->pharmaco_supplier_id,
+                'reason' => $validated['reason'] ?? null,
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoPurchaseOrder::class,
+            auditableId: $purchaseOrder->id
+        );
+
+        return response()->json([
+            'message' => 'Purchase order cancelled successfully.',
+            'purchase_order' => $this->serializePurchaseOrder($purchaseOrder, includeDetails: true),
+        ]);
     }
 
     private function tenantPayload($tenant): array
