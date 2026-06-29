@@ -940,3 +940,104 @@ export async function recordPharmaPayment(
     payload,
   );
 }
+
+
+export type CreatePharmaCustomerPayload = {
+  first_name: string;
+  last_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  customer_type?: string | null;
+  insurance_provider?: string | null;
+  insurance_membership_number?: string | null;
+  status?: 'active' | 'inactive';
+  notes?: string | null;
+};
+
+export type CreatePharmaCustomerResponse = {
+  message: string;
+  customer: PharmaCustomer;
+};
+
+export async function createPharmaCustomer(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaCustomerPayload,
+): Promise<CreatePharmaCustomerResponse> {
+  return sendJsonWithTenant<CreatePharmaCustomerResponse>(
+    token,
+    '/pharmaco/customers',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export type CreatePharmaPrescriptionPayload = {
+  pharmaco_customer_id?: number | null;
+  prescription_number?: string | null;
+  prescriber_name?: string | null;
+  prescriber_facility?: string | null;
+  prescriber_phone?: string | null;
+  issued_at?: string | null;
+  expires_at?: string | null;
+  status?: 'active' | 'used' | 'expired' | 'cancelled';
+  notes?: string | null;
+};
+
+export type CreatePharmaPrescriptionResponse = {
+  message: string;
+  prescription: PharmaPrescription;
+};
+
+export async function createPharmaPrescription(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaPrescriptionPayload,
+): Promise<CreatePharmaPrescriptionResponse> {
+  return sendJsonWithTenant<CreatePharmaPrescriptionResponse>(
+    token,
+    '/pharmaco/prescriptions',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export type CreatePharmaSalePayload = {
+  branch_id: number;
+  pharmaco_customer_id?: number | null;
+  pharmaco_prescription_id?: number | null;
+  sale_type?: 'cash_sale' | 'prescription_sale' | 'insurance_sale' | 'credit_sale';
+  discount_amount?: number;
+  tax_amount?: number;
+  notes?: string | null;
+  items: Array<{
+    product_id: number;
+    quantity: number;
+    unit_price: number;
+    discount_amount?: number;
+    tax_amount?: number;
+  }>;
+};
+
+export type CreatePharmaSaleResponse = {
+  message: string;
+  sale: PharmaSale;
+};
+
+export async function createPharmaSale(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaSalePayload,
+): Promise<CreatePharmaSaleResponse> {
+  return sendJsonWithTenant<CreatePharmaSaleResponse>(
+    token,
+    '/pharmaco/sales',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}

@@ -1,16 +1,21 @@
 import { useMemo, useState } from 'react';
+import { SalesCreationPanel } from './SalesCreationPanel';
 import {
   AccessProfile,
+  PharmaBranch,
   PharmaCustomer,
   PharmaPrescription,
   PharmaSale,
   PharmaSaleItem,
   PharmaPayment,
+  PharmaProduct,
   PharmaSalesResponse,
   PharmaStockBatch,
   confirmPharmaSale,
+  getPharmaBranches,
   recordPharmaPayment,
   getPharmaCustomers,
+  getPharmaProducts,
   getPharmaInventoryBatches,
   getPharmaPrescriptions,
   getPharmaSale,
@@ -23,11 +28,13 @@ type Props = {
 };
 
 type SalesReviewState = {
+  branches: PharmaBranch[];
   customers: PharmaCustomer[];
   prescriptions: PharmaPrescription[];
   sales: PharmaSale[];
   selectedSale: PharmaSale | null;
   batches: PharmaStockBatch[];
+  products: PharmaProduct[];
 };
 
 type BatchSelections = Record<number, string>;
@@ -128,11 +135,13 @@ function buildPrescriptionChecks(sale: PharmaSale | null): PrescriptionChecks {
 
 export function SalesDispensingReview({ token, profile }: Props) {
   const [state, setState] = useState<SalesReviewState>({
+    branches: [],
     customers: [],
     prescriptions: [],
     sales: [],
     selectedSale: null,
     batches: [],
+    products: [],
   });
   const [batchSelections, setBatchSelections] = useState<BatchSelections>({});
   const [prescriptionChecks, setPrescriptionChecks] = useState<PrescriptionChecks>({});
@@ -178,11 +187,20 @@ export function SalesDispensingReview({ token, profile }: Props) {
     setNotice('');
 
     try {
-      const [customersResponse, prescriptionsResponse, salesResponse, batchesResponse] = await Promise.all([
+      const [
+        branchesResponse,
+        customersResponse,
+        prescriptionsResponse,
+        salesResponse,
+        batchesResponse,
+        productsResponse,
+      ] = await Promise.all([
+        getPharmaBranches(token, tenantSlug),
         getPharmaCustomers(token, tenantSlug),
         getPharmaPrescriptions(token, tenantSlug),
         getPharmaSales(token, tenantSlug),
         getPharmaInventoryBatches(token, tenantSlug),
+        getPharmaProducts(token, tenantSlug),
       ]);
 
       const firstSale = (salesResponse as PharmaSalesResponse).sales[0] ?? null;
@@ -191,11 +209,13 @@ export function SalesDispensingReview({ token, profile }: Props) {
         : null;
 
       setState({
+        branches: branchesResponse.branches,
         customers: customersResponse.customers,
         prescriptions: prescriptionsResponse.prescriptions,
         sales: salesResponse.sales,
         selectedSale,
         batches: batchesResponse.batches,
+        products: productsResponse.products,
       });
       setBatchSelections(buildBatchSelections(selectedSale, batchesResponse.batches));
       setPrescriptionChecks(buildPrescriptionChecks(selectedSale));
@@ -282,6 +302,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         sales: salesResponse.sales,
         selectedSale: response.sale,
         batches: batchesResponse.batches,
+        products: productsResponse.products,
       }));
       setBatchSelections(buildBatchSelections(response.sale, batchesResponse.batches));
       setPrescriptionChecks(buildPrescriptionChecks(response.sale));
@@ -348,6 +369,36 @@ export function SalesDispensingReview({ token, profile }: Props) {
     } finally {
       setIsRecordingPayment(false);
     }
+  }
+
+
+  function handleCustomerCreated(customer: PharmaCustomer) {
+    setState((current) => ({
+      ...current,
+      customers: [customer, ...current.customers.filter((entry) => entry.id !== customer.id)],
+    }));
+  }
+
+  function handlePrescriptionCreated(prescription: PharmaPrescription) {
+    setState((current) => ({
+      ...current,
+      prescriptions: [
+        prescription,
+        ...current.prescriptions.filter((entry) => entry.id !== prescription.id),
+      ],
+    }));
+  }
+
+  function handleSaleCreated(sale: PharmaSale) {
+    setState((current) => ({
+      ...current,
+      sales: [sale, ...current.sales.filter((entry) => entry.id !== sale.id)],
+      selectedSale: sale,
+    }));
+    setBatchSelections(buildBatchSelections(sale, state.batches));
+    setPrescriptionChecks(buildPrescriptionChecks(sale));
+    setPaymentForm(defaultPaymentForm(sale));
+    setLastPayment(null);
   }
 
   const selectedSale = state.selectedSale;
@@ -423,6 +474,19 @@ export function SalesDispensingReview({ token, profile }: Props) {
           <strong>{money(salesSummary.openBalance)}</strong>
         </article>
       </div>
+
+
+      <SalesCreationPanel
+        token={token}
+        tenantSlug={tenantSlug}
+        branches={state.branches}
+        customers={state.customers}
+        prescriptions={state.prescriptions}
+        products={state.products}
+        onCustomerCreated={handleCustomerCreated}
+        onPrescriptionCreated={handlePrescriptionCreated}
+        onSaleCreated={handleSaleCreated}
+      />
 
       <div className="sales-review-grid">
         <section className="pharmaco-card">
