@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\PharmaCo360;
 
+use App\Models\PharmacoCustomer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -164,6 +165,58 @@ class PharmacoReportingAnalyticsApiTest extends TestCase
                     'status_summary',
                 ],
             ]);
+    }
+
+
+    public function test_tenant_admin_can_view_customer_credit_exposure_report(): void
+    {
+        $this->seed();
+
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+        $customer = PharmacoCustomer::firstOrFail();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->patchJson("/api/v1/pharmaco/customers/{$customer->id}/credit", [
+                'credit_limit' => 100000,
+                'credit_terms_days' => 30,
+                'credit_status' => 'enabled',
+            ])
+            ->assertOk();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/receivables', [
+                'pharmaco_customer_id' => $customer->id,
+                'amount' => 25000,
+                'due_date' => now()->subDays(10)->toDateString(),
+                'notes' => 'Customer credit exposure report test.',
+            ])
+            ->assertCreated();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->getJson('/api/v1/pharmaco/reports/customer-credit-exposure')
+            ->assertOk()
+            ->assertJsonPath('tenant.slug', 'vitapharma')
+            ->assertJsonPath('customer_credit_exposure.open_balance', 25000)
+            ->assertJsonPath('customer_credit_exposure.overdue_balance', 25000)
+            ->assertJsonPath('customer_credit_exposure.current_balance', 0)
+            ->assertJsonPath('customer_credit_exposure.credit_limit_total', 100000)
+            ->assertJsonPath('customer_credit_exposure.customers_on_credit', 1)
+            ->assertJsonPath('customer_credit_exposure.open_receivables_count', 1)
+            ->assertJsonPath('customer_credit_exposure.overdue_receivables_count', 1);
+    }
+
+    public function test_customer_credit_exposure_report_requires_tenant_header(): void
+    {
+        $this->seed();
+
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $this->withToken($token)
+            ->getJson('/api/v1/pharmaco/reports/customer-credit-exposure')
+            ->assertStatus(422);
     }
 
     public function test_reporting_endpoints_require_tenant_header(): void

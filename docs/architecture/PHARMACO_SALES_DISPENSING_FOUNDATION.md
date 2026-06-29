@@ -667,3 +667,41 @@ Review these screen sizes before production approval:
 - 1920px wide screen
 
 Confirm that credit updates, receivable creation, and payment recording remain readable and usable at each size.
+
+
+
+## Phase 12.1 customer credit exposure report
+
+Phase 12.1 adds a small backend report for customer credit exposure.
+
+### Endpoint
+
+- `GET /api/v1/pharmaco/reports/customer-credit-exposure`
+
+### Purpose
+
+The report helps pharmacy finance teams see how much customer credit is open, how much is overdue, and how many customers are currently using credit.
+
+### Response sections
+
+- tenant
+- period
+- customer_credit_exposure
+
+### Customer credit exposure summary
+
+- open balance
+- overdue balance
+- current balance
+- enabled customer credit limit total
+- customers on credit
+- open receivables count
+- overdue receivables count
+
+### Safety
+
+- follows the existing `ReportingController` pattern
+- uses the existing `/reports/...` route style
+- requires tenant context
+- requires authentication
+- read-only report; no customer, sale, payment, or receivable data is changed
