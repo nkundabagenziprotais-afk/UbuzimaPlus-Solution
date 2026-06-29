@@ -717,3 +717,24 @@ Phase 12.5 through Phase 12.8 add an export-ready customer credit exposure flow.
 - requires tenant context
 - requires authentication
 - read-only report; no customer, sale, payment, or receivable data is changed
+
+### Reporting dashboard UI review checklist
+
+Phase 13.1B improves reporting dashboard readability without changing backend logic, API contracts, migrations, authentication, or dependencies.
+
+Review these screen sizes before production approval:
+
+- 360px: filters stack cleanly and the CSV action remains tappable
+- 430px: Customer credit risk card does not overflow
+- 768px: reporting cards remain readable in tablet layout
+- 1280px: KPI labels and card summaries feel executive-ready
+- 1440px: report cards have balanced spacing
+- 1920px: dashboard does not look sparse or stretched
+
+Expected behavior:
+
+- report figures remain read-only
+- date filters continue to refresh the same reports
+- Customer Credit CSV still downloads the same export rows
+- export notice is easier to see after download
+
