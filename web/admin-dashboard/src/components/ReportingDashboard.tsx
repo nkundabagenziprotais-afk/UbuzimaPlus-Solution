@@ -189,7 +189,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
         customerCredit: customerCredit.customer_credit_exposure,
       });
 
-      setNotice('Reporting dashboard refreshed.');
+      setNotice('Reporting view refreshed with the latest tenant-safe figures.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load PharmaCo360 reports.');
     } finally {
@@ -260,10 +260,10 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
   return (
     <section className="reporting-dashboard-panel">
       <div className="section-heading">
-        <span>Reporting and analytics</span>
-        <h2>Operational reporting dashboard</h2>
+        <span>Business reporting</span>
+        <h2>PharmaCo360 operating view</h2>
         <p>
-          Review stock value, sales collection, procurement movement, and supplier payables from one tenant-safe view.
+          Track stock value, sales collection, purchasing movement, customer credit exposure, and supplier obligations from one tenant-safe view.
         </p>
       </div>
 
@@ -302,31 +302,31 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
 
       <div className="reporting-kpi-grid">
         <article>
-          <span>Inventory cost value</span>
+          <span>Stock at cost</span>
           <strong>{formatMoney(state.inventory?.total_cost_value)}</strong>
           <small>{formatNumber(state.inventory?.total_quantity_on_hand)} units on hand</small>
         </article>
 
         <article>
-          <span>Estimated retail value</span>
+          <span>Estimated sale value</span>
           <strong>{formatMoney(state.inventory?.total_retail_value)}</strong>
-          <small>Margin estimate {formatMoney(state.inventory?.estimated_margin_value)}</small>
+          <small>Estimated margin {formatMoney(state.inventory?.estimated_margin_value)}</small>
         </article>
 
         <article>
-          <span>Sales value</span>
+          <span>Sales generated</span>
           <strong>{formatMoney(state.sales?.total_sales_amount)}</strong>
           <small>{salesCollectionRate}% collected</small>
         </article>
 
         <article>
-          <span>Purchase order value</span>
+          <span>Purchase orders value</span>
           <strong>{formatMoney(state.procurement?.total_purchase_order_amount)}</strong>
           <small>{state.procurement?.purchase_order_count ?? 0} purchase orders</small>
         </article>
 
         <article>
-          <span>Open supplier balance</span>
+          <span>Supplier balance</span>
           <strong>{formatMoney(state.payables?.balance_amount)}</strong>
           <small>{payableSettlementRate}% settled</small>
         </article>
@@ -335,7 +335,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
       <div className="reporting-grid">
         <section className="report-card">
           <div className="mini-section-heading">
-            <strong>Inventory valuation</strong>
+            <strong>Stock valuation</strong>
             <span>{state.inventory?.product_count ?? 0} products</span>
           </div>
 
@@ -384,7 +384,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
 
         <section className="report-card">
           <div className="mini-section-heading">
-            <strong>Sales summary</strong>
+            <strong>Sales and collection</strong>
             <span>{state.sales?.sale_count ?? 0} sales</span>
           </div>
 
@@ -430,7 +430,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
 
         <section className="report-card">
           <div className="mini-section-heading">
-            <strong>Procurement summary</strong>
+            <strong>Purchase orders</strong>
             <span>{state.procurement?.purchase_order_count ?? 0} purchase orders</span>
           </div>
 
@@ -477,7 +477,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
 
         <section className="report-card">
           <div className="mini-section-heading">
-            <strong>Customer credit exposure</strong>
+            <strong>Customer credit risk</strong>
             <span>{state.customerCredit?.open_receivables_count ?? 0} open receivables</span>
           </div>
 
@@ -490,7 +490,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
           </button>
 
           <p className="muted">
-            CSV includes open customer receivables as of today, grouped with aging status for review before follow-up.
+            CSV includes open customer receivables as of today, grouped by aging status for collection review and follow-up.
           </p>
 
           {customerCreditExportNotice && <p className="muted">{customerCreditExportNotice}</p>}
