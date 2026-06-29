@@ -77,6 +77,26 @@ function formatNumber(value?: number | null): string {
   return numberFormatter.format(Number(value ?? 0));
 }
 
+function csvCell(value?: string | number | null): string {
+  const text = value === null || value === undefined ? '' : String(value);
+
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function downloadCsvFile(filename: string, csvContent: string): void {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  window.URL.revokeObjectURL(url);
+}
+
 function statusLabel(value: string): string {
   return value
     .split('_')
@@ -177,9 +197,9 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
     }
   }
 
-  async function prepareCustomerCreditExport() {
+  async function downloadCustomerCreditCsv() {
     if (!token || !tenantSlug) {
-      setError('Tenant context is required before preparing the customer credit export.');
+      setError('Tenant context is required before downloading the customer credit export.');
       return;
     }
 
@@ -189,13 +209,45 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
 
     try {
       const exportResponse = await getPharmaCustomerCreditExposureExport(token, tenantSlug);
+      const headers = [
+        'Customer',
+        'Reference',
+        'Status',
+        'Original amount',
+        'Collected amount',
+        'Balance amount',
+        'Due date',
+        'Days overdue',
+        'Aging bucket',
+      ];
+
+      const rows = exportResponse.rows.map((row) => [
+        row.customer_name,
+        row.reference_number,
+        statusLabel(row.status),
+        row.original_amount,
+        row.collected_amount,
+        row.balance_amount,
+        row.due_date,
+        row.days_overdue,
+        row.aging_bucket_label,
+      ]);
+
+      const csvContent = [
+        headers.map(csvCell).join(','),
+        ...rows.map((row) => row.map(csvCell).join(',')),
+      ].join('\n');
+
+      const filename = `customer-credit-exposure-${tenantSlug}-${exportResponse.period.as_of_date}.csv`;
       const rowCount = exportResponse.export.rows_count;
 
+      downloadCsvFile(filename, csvContent);
+
       setCustomerCreditExportNotice(
-        `Export prepared with ${formatNumber(rowCount)} open receivable ${rowCount === 1 ? 'row' : 'rows'} as of ${exportResponse.period.as_of_date}.`,
+        `CSV downloaded with ${formatNumber(rowCount)} open receivable ${rowCount === 1 ? 'row' : 'rows'} as of ${exportResponse.period.as_of_date}.`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to prepare the customer credit export.');
+      setError(err instanceof Error ? err.message : 'Unable to download the customer credit export.');
     } finally {
       setIsPreparingCustomerCreditExport(false);
     }
@@ -431,10 +483,10 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
 
           <button
             type="button"
-            onClick={prepareCustomerCreditExport}
+            onClick={downloadCustomerCreditCsv}
             disabled={isPreparingCustomerCreditExport}
           >
-            {isPreparingCustomerCreditExport ? 'Preparing export…' : 'Prepare export'}
+            {isPreparingCustomerCreditExport ? 'Downloading CSV…' : 'Download CSV'}
           </button>
 
           {customerCreditExportNotice && <p className="muted">{customerCreditExportNotice}</p>}
