@@ -628,3 +628,42 @@ Phase 11.1 adds the customer-side credit and accounts receivable foundation.
 ### Safety
 
 The backend protects tenant boundaries, customer credit status, customer credit limit, overpayment, and cross-tenant receivable access.
+
+
+
+## Phase 11.2 customer receivables dashboard workflow
+
+Phase 11.2 adds a clean dashboard workflow for customer credit and accounts receivable management.
+
+### Dashboard sections
+
+- Customer Credit & Receivables header
+- open balance, overdue balance, customers on credit, and collected accounts KPIs
+- customer credit update form
+- customer receivable creation form
+- receivables register
+- selected receivable collection form
+
+### Style direction
+
+The interface follows the current PharmaCo360 dashboard style:
+
+- white cards
+- subtle borders
+- restrained spacing
+- no decorative gradients
+- practical finance wording
+- responsive layout for mobile, tablet, laptop, desktop, and wide screens
+
+### Review checklist
+
+Review these screen sizes before production approval:
+
+- 360px small mobile
+- 430px mobile
+- 768px tablet
+- 1280px laptop
+- 1440px desktop
+- 1920px wide screen
+
+Confirm that credit updates, receivable creation, and payment recording remain readable and usable at each size.
