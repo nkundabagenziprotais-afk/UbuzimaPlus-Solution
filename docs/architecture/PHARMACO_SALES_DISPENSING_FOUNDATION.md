@@ -777,3 +777,21 @@ Expected approval evidence:
 - `./scripts/phase0-check.sh`
 - desktop/tablet/mobile preview review before production deployment
 
+### Reporting dashboard production review checklist
+
+Phase 13.4 adds operator review and production deployment checklist guidance.
+
+Included:
+
+- dedicated production review checklist for the reporting dashboard
+- cPanel-safe deployment checks
+- approval evidence requirements for mobile, tablet, desktop, and wide-screen preview
+- reminder that reporting dashboard review is read-only and must not mutate pharmacy records
+- local checklist guardrail script
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/pharmaco-reporting-production-review-check.sh`
+- `./scripts/phase0-check.sh`
+
