@@ -1606,6 +1606,26 @@ export type PharmaPayablesSummaryReportResponse = {
   payables: PharmaPayablesSummaryReport;
 };
 
+
+
+export type PharmaCustomerCreditExposureReport = {
+  open_balance: number;
+  overdue_balance: number;
+  current_balance: number;
+  credit_limit_total: number;
+  customers_on_credit: number;
+  open_receivables_count: number;
+  overdue_receivables_count: number;
+};
+
+export type PharmaCustomerCreditExposureReportResponse = {
+  tenant: TenantPayload;
+  period: {
+    as_of_date: string;
+  };
+  customer_credit_exposure: PharmaCustomerCreditExposureReport;
+};
+
 export type PharmaReportDateFilters = {
   start_date?: string;
   end_date?: string;
@@ -1682,6 +1702,18 @@ export async function getPharmaPayablesSummaryReport(
   return getJsonWithTenant<PharmaPayablesSummaryReportResponse>(
     token,
     `/pharmaco/reports/payables-summary${reportDateQuery(filters)}`,
+    tenantSlug,
+  );
+}
+
+
+export async function getPharmaCustomerCreditExposureReport(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaCustomerCreditExposureReportResponse> {
+  return getJsonWithTenant<PharmaCustomerCreditExposureReportResponse>(
+    token,
+    '/pharmaco/reports/customer-credit-exposure',
     tenantSlug,
   );
 }
