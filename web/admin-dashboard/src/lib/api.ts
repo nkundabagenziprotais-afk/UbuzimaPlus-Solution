@@ -1491,3 +1491,197 @@ export async function recordPharmaSupplierPayment(
     payload,
   );
 }
+
+
+export type PharmaReportPeriod = {
+  start_date: string;
+  end_date: string;
+};
+
+export type PharmaInventoryLocationValuation = {
+  stock_location_id: number | null;
+  location_name: string | null;
+  branch_name: string | null;
+  batch_count: number;
+  total_quantity_on_hand: number;
+  total_cost_value: number;
+};
+
+export type PharmaInventoryValuationReport = {
+  batch_count: number;
+  product_count: number;
+  total_quantity_on_hand: number;
+  total_cost_value: number;
+  total_retail_value: number;
+  estimated_margin_value: number;
+  low_stock_batches: number;
+  expired_batches: number;
+  expiring_soon_batches: number;
+  locations?: PharmaInventoryLocationValuation[];
+};
+
+export type PharmaSalesPaymentMethodSummary = {
+  payment_method: string;
+  payment_count: number;
+  total_amount: number;
+};
+
+export type PharmaSalesSummaryReport = {
+  sale_count: number;
+  draft_sale_count: number;
+  dispensed_sale_count: number;
+  total_sales_amount: number;
+  paid_amount: number;
+  balance_amount: number;
+  payments_collected: number;
+  payment_methods?: PharmaSalesPaymentMethodSummary[];
+};
+
+export type PharmaProcurementStatusSummary = {
+  status: string;
+  purchase_order_count: number;
+  total_amount: number;
+};
+
+export type PharmaProcurementSummaryReport = {
+  purchase_order_count: number;
+  draft_purchase_order_count: number;
+  approved_purchase_order_count: number;
+  received_purchase_order_count: number;
+  cancelled_purchase_order_count: number;
+  total_purchase_order_amount: number;
+  status_summary?: PharmaProcurementStatusSummary[];
+};
+
+export type PharmaPayablesStatusSummary = {
+  status: string;
+  invoice_count: number;
+  total_amount: number;
+  balance_amount: number;
+};
+
+export type PharmaPayablesSummaryReport = {
+  supplier_invoice_count: number;
+  draft_invoice_count: number;
+  approved_invoice_count: number;
+  partially_paid_invoice_count: number;
+  paid_invoice_count: number;
+  overdue_invoice_count: number;
+  total_invoice_amount: number;
+  paid_amount: number;
+  balance_amount: number;
+  payments_recorded: number;
+  status_summary?: PharmaPayablesStatusSummary[];
+};
+
+export type PharmaReportingOverviewResponse = {
+  tenant: TenantPayload;
+  period: PharmaReportPeriod;
+  inventory: PharmaInventoryValuationReport;
+  sales: PharmaSalesSummaryReport;
+  procurement: PharmaProcurementSummaryReport;
+  payables: PharmaPayablesSummaryReport;
+};
+
+export type PharmaInventoryValuationReportResponse = {
+  tenant: TenantPayload;
+  inventory: PharmaInventoryValuationReport;
+};
+
+export type PharmaSalesSummaryReportResponse = {
+  tenant: TenantPayload;
+  period: PharmaReportPeriod;
+  sales: PharmaSalesSummaryReport;
+};
+
+export type PharmaProcurementSummaryReportResponse = {
+  tenant: TenantPayload;
+  period: PharmaReportPeriod;
+  procurement: PharmaProcurementSummaryReport;
+};
+
+export type PharmaPayablesSummaryReportResponse = {
+  tenant: TenantPayload;
+  period: PharmaReportPeriod;
+  payables: PharmaPayablesSummaryReport;
+};
+
+export type PharmaReportDateFilters = {
+  start_date?: string;
+  end_date?: string;
+};
+
+function reportDateQuery(filters?: PharmaReportDateFilters): string {
+  const params = new URLSearchParams();
+
+  if (filters?.start_date) {
+    params.set('start_date', filters.start_date);
+  }
+
+  if (filters?.end_date) {
+    params.set('end_date', filters.end_date);
+  }
+
+  const query = params.toString();
+
+  return query ? `?${query}` : '';
+}
+
+export async function getPharmaReportingOverview(
+  token: string,
+  tenantSlug: string,
+  filters?: PharmaReportDateFilters,
+): Promise<PharmaReportingOverviewResponse> {
+  return getJsonWithTenant<PharmaReportingOverviewResponse>(
+    token,
+    `/pharmaco/reports/overview${reportDateQuery(filters)}`,
+    tenantSlug,
+  );
+}
+
+export async function getPharmaInventoryValuationReport(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaInventoryValuationReportResponse> {
+  return getJsonWithTenant<PharmaInventoryValuationReportResponse>(
+    token,
+    '/pharmaco/reports/inventory-valuation',
+    tenantSlug,
+  );
+}
+
+export async function getPharmaSalesSummaryReport(
+  token: string,
+  tenantSlug: string,
+  filters?: PharmaReportDateFilters,
+): Promise<PharmaSalesSummaryReportResponse> {
+  return getJsonWithTenant<PharmaSalesSummaryReportResponse>(
+    token,
+    `/pharmaco/reports/sales-summary${reportDateQuery(filters)}`,
+    tenantSlug,
+  );
+}
+
+export async function getPharmaProcurementSummaryReport(
+  token: string,
+  tenantSlug: string,
+  filters?: PharmaReportDateFilters,
+): Promise<PharmaProcurementSummaryReportResponse> {
+  return getJsonWithTenant<PharmaProcurementSummaryReportResponse>(
+    token,
+    `/pharmaco/reports/procurement-summary${reportDateQuery(filters)}`,
+    tenantSlug,
+  );
+}
+
+export async function getPharmaPayablesSummaryReport(
+  token: string,
+  tenantSlug: string,
+  filters?: PharmaReportDateFilters,
+): Promise<PharmaPayablesSummaryReportResponse> {
+  return getJsonWithTenant<PharmaPayablesSummaryReportResponse>(
+    token,
+    `/pharmaco/reports/payables-summary${reportDateQuery(filters)}`,
+    tenantSlug,
+  );
+}

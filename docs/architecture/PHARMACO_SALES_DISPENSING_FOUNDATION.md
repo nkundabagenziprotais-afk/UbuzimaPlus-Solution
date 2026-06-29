@@ -567,3 +567,32 @@ The time-based reports support:
 
 The reporting endpoints reuse existing Sanctum authentication, tenant headers, tenant module middleware, and existing module permissions.
 No new RBAC seed changes are required in this phase.
+
+
+## Phase 10.2 reporting dashboard workflow
+
+Phase 10.2 adds the frontend reporting dashboard for the Phase 10.1 reporting APIs.
+
+### Dashboard additions
+
+- reporting date filter bar
+- operational KPI cards
+- inventory valuation cards and location table
+- sales summary cards and payment method table
+- procurement summary cards and status table
+- supplier payables cards and invoice status table
+
+### API usage
+
+The dashboard consumes:
+
+- `GET /api/v1/pharmaco/reports/overview`
+- `GET /api/v1/pharmaco/reports/inventory-valuation`
+- `GET /api/v1/pharmaco/reports/sales-summary`
+- `GET /api/v1/pharmaco/reports/procurement-summary`
+- `GET /api/v1/pharmaco/reports/payables-summary`
+
+### Safety
+
+The dashboard does not calculate tenant boundaries locally.
+It relies on the backend reporting APIs, Sanctum authentication, tenant headers, and existing module permissions.
