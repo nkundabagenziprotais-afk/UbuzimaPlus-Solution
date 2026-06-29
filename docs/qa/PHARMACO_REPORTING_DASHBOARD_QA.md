@@ -56,3 +56,16 @@ Before production approval, confirm:
 - cPanel deployment uses GitHub main as the source of truth
 - no destructive production database command is required
 
+## Release handover summary
+
+Phase 13.5 adds release and stakeholder handover documentation.
+
+Before closing the reporting dashboard release, confirm:
+
+- release note is available
+- handover summary is available
+- QA scripts pass
+- production checklist passes
+- Phase 0 local check passes
+- preview evidence is collected for the required screen sizes
+
