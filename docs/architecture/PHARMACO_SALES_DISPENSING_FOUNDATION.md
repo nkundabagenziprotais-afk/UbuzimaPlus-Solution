@@ -760,3 +760,20 @@ Review these screen sizes before production approval:
 - 1440px: messages do not visually overpower report cards
 - 1920px: empty/loading states remain readable and not stretched
 
+### Reporting dashboard QA guardrails
+
+Phase 13.3 adds QA guardrails for reporting dashboard review.
+
+Included guardrails:
+
+- a dedicated reporting dashboard QA guide
+- a local script that checks important UI copy, tenant-context guards, empty states, and export visibility markers
+- manual preview notes for 360px, 430px, 768px, 1280px, 1440px, and 1920px review
+- confirmation that reporting UI polish must not hide backend, API, migration, auth, or dependency changes
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
+- desktop/tablet/mobile preview review before production deployment
+
