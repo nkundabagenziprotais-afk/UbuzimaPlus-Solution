@@ -24,10 +24,17 @@ class PharmacoCustomer extends Model
         'insurance_provider',
         'insurance_membership_number',
         'status',
+        'credit_status',
+        'credit_terms_days',
+        'credit_balance',
+        'credit_limit',
         'metadata',
     ];
 
     protected $casts = [
+        'credit_limit' => 'decimal:2',
+        'credit_balance' => 'decimal:2',
+        'credit_terms_days' => 'integer',
         'date_of_birth' => 'date',
         'metadata' => 'array',
     ];
