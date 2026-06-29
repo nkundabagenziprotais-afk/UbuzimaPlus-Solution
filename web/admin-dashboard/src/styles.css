@@ -1912,3 +1912,64 @@ p {
     padding: 0.65rem;
   }
 }
+
+/* PharmaCo360 reporting dashboard readability bundle */
+.reporting-dashboard-panel--business .section-heading p {
+  max-width: 840px;
+}
+
+.reporting-dashboard-panel--business .reporting-filter-bar {
+  align-items: end;
+}
+
+.reporting-period-note {
+  align-self: center;
+  line-height: 1.5;
+}
+
+.report-card-intro {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: -0.15rem 0 1rem;
+}
+
+.report-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.35rem 0 0.75rem;
+}
+
+.report-muted-note {
+  line-height: 1.55;
+  margin-top: 0;
+}
+
+.report-export-notice {
+  margin: 0.75rem 0;
+}
+
+.report-status-list--aging {
+  margin-top: 0.85rem;
+}
+
+.report-status-list--aging > div {
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+@media (max-width: 720px) {
+  .reporting-dashboard-panel--business .reporting-filter-bar {
+    align-items: stretch;
+  }
+
+  .report-card-actions button {
+    width: 100%;
+  }
+
+  .report-card-intro {
+    font-size: 0.9rem;
+  }
+}
+

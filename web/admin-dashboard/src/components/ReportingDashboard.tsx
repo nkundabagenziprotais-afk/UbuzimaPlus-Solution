@@ -258,7 +258,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
   }
 
   return (
-    <section className="reporting-dashboard-panel">
+    <section className="reporting-dashboard-panel reporting-dashboard-panel--business">
       <div className="section-heading">
         <span>Business reporting</span>
         <h2>PharmaCo360 operating view</h2>
@@ -291,7 +291,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
         </button>
 
         {state.period && (
-          <small>
+          <small className="reporting-period-note">
             Active period: {state.period.start_date} to {state.period.end_date}
           </small>
         )}
@@ -338,6 +338,8 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             <strong>Stock valuation</strong>
             <span>{state.inventory?.product_count ?? 0} products</span>
           </div>
+
+          <p className="report-card-intro">Review stock value, batch movement, and location-level exposure before replenishment decisions.</p>
 
           <div className="report-metric-list">
             <div>
@@ -388,6 +390,8 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             <span>{state.sales?.sale_count ?? 0} sales</span>
           </div>
 
+          <p className="report-card-intro">Track sales value, paid amounts, and remaining balances for the selected operating period.</p>
+
           <div className="report-metric-list">
             <div>
               <span>Draft</span>
@@ -433,6 +437,8 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             <strong>Purchase orders</strong>
             <span>{state.procurement?.purchase_order_count ?? 0} purchase orders</span>
           </div>
+
+          <p className="report-card-intro">Monitor purchasing value and approval status before supplier follow-up or stock receiving.</p>
 
           <div className="report-metric-list">
             <div>
@@ -481,19 +487,23 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             <span>{state.customerCredit?.open_receivables_count ?? 0} open receivables</span>
           </div>
 
-          <button
-            type="button"
-            onClick={downloadCustomerCreditCsv}
-            disabled={isPreparingCustomerCreditExport}
-          >
-            {isPreparingCustomerCreditExport ? 'Downloading CSV…' : 'Download CSV'}
-          </button>
+          <p className="report-card-intro">Prioritize open customer balances by overdue risk before collection review and follow-up.</p>
 
-          <p className="muted">
+          <div className="report-card-actions">
+            <button
+              type="button"
+              onClick={downloadCustomerCreditCsv}
+              disabled={isPreparingCustomerCreditExport}
+            >
+              {isPreparingCustomerCreditExport ? 'Downloading CSV…' : 'Download CSV'}
+            </button>
+          </div>
+
+          <p className="muted report-muted-note">
             CSV includes open customer receivables as of today, grouped by aging status for collection review and follow-up.
           </p>
 
-          {customerCreditExportNotice && <p className="muted">{customerCreditExportNotice}</p>}
+          {customerCreditExportNotice && <p className="notice-banner report-export-notice">{customerCreditExportNotice}</p>}
 
           <div className="report-metric-list">
             <div>
@@ -525,7 +535,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             </div>
           </div>
 
-          <div className="report-status-list">
+          <div className="report-status-list report-status-list--aging">
             {(state.customerCredit?.aging_buckets ?? []).map((bucket) => (
               <div key={bucket.code}>
                 <span>{bucket.label}</span>
@@ -542,6 +552,8 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             <strong>Supplier payables</strong>
             <span>{state.payables?.supplier_invoice_count ?? 0} invoices</span>
           </div>
+
+          <p className="report-card-intro">Review approved, partial, paid, and overdue supplier obligations before payment planning.</p>
 
           <div className="report-metric-list">
             <div>
