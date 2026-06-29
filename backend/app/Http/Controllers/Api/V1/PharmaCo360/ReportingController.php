@@ -166,6 +166,75 @@ class ReportingController extends Controller
         ]);
     }
 
+    public function customerCreditExposureExport(Request $request): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        $receivables = PharmacoCustomerReceivable::query()
+            ->with('customer')
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('status', ['open', 'partially_collected'])
+            ->where('balance_amount', '>', 0)
+            ->orderBy('due_date')
+            ->get();
+
+        $rows = $receivables
+            ->map(function (PharmacoCustomerReceivable $receivable) {
+                $bucketCode = 'current';
+                $bucketLabel = 'Current';
+                $daysOverdue = 0;
+
+                if ($receivable->due_date && $receivable->due_date < now()->toDateString()) {
+                    $daysOverdue = Carbon::parse($receivable->due_date)->startOfDay()->diffInDays(now()->startOfDay());
+
+                    if ($daysOverdue <= 30) {
+                        $bucketCode = 'days_1_30';
+                        $bucketLabel = '1–30 days';
+                    } elseif ($daysOverdue <= 60) {
+                        $bucketCode = 'days_31_60';
+                        $bucketLabel = '31–60 days';
+                    } elseif ($daysOverdue <= 90) {
+                        $bucketCode = 'days_61_90';
+                        $bucketLabel = '61–90 days';
+                    } else {
+                        $bucketCode = 'days_over_90';
+                        $bucketLabel = '90+ days';
+                    }
+                }
+
+                return [
+                    'receivable_id' => $receivable->id,
+                    'customer_id' => $receivable->pharmaco_customer_id,
+                    'customer_name' => $receivable->customer?->name,
+                    'reference_number' => $receivable->reference_number,
+                    'status' => $receivable->status,
+                    'original_amount' => round((float) $receivable->original_amount, 2),
+                    'collected_amount' => round((float) $receivable->collected_amount, 2),
+                    'balance_amount' => round((float) $receivable->balance_amount, 2),
+                    'due_date' => $receivable->due_date?->toDateString(),
+                    'days_overdue' => $daysOverdue,
+                    'aging_bucket_code' => $bucketCode,
+                    'aging_bucket_label' => $bucketLabel,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return response()->json([
+            'tenant' => $this->tenantPayload($tenant),
+            'period' => [
+                'as_of_date' => now()->toDateString(),
+            ],
+            'export' => [
+                'report' => 'customer_credit_exposure',
+                'format' => 'json',
+                'rows_count' => count($rows),
+                'generated_at' => now()->toISOString(),
+            ],
+            'rows' => $rows,
+        ]);
+    }
+
     private function inventoryValuationPayload(int $tenantId, bool $includeLocations = false): array
     {
         $batches = StockBatch::query()

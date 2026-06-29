@@ -211,6 +211,55 @@ class PharmacoReportingAnalyticsApiTest extends TestCase
             ->assertJsonPath('customer_credit_exposure.aging_buckets.1.receivables_count', 1);
     }
 
+
+    public function test_tenant_admin_can_view_customer_credit_exposure_export_rows(): void
+    {
+        $this->seed();
+
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $tenant = \App\Models\Tenant::query()
+            ->where('slug', 'vitapharma')
+            ->firstOrFail();
+
+        $customer = PharmacoCustomer::query()
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->patchJson("/api/v1/pharmaco/customers/{$customer->id}/credit", [
+                'credit_limit' => 100000,
+                'credit_terms_days' => 30,
+                'credit_status' => 'enabled',
+            ])
+            ->assertOk();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/receivables', [
+                'pharmaco_customer_id' => $customer->id,
+                'amount' => 25000,
+                'due_date' => now()->subDays(10)->toDateString(),
+                'notes' => 'Customer credit exposure export test.',
+            ])
+            ->assertCreated();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->getJson('/api/v1/pharmaco/reports/customer-credit-exposure/export')
+            ->assertOk()
+            ->assertJsonPath('tenant.slug', 'vitapharma')
+            ->assertJsonPath('export.report', 'customer_credit_exposure')
+            ->assertJsonPath('export.format', 'json')
+            ->assertJsonPath('export.rows_count', 1)
+            ->assertJsonPath('rows.0.customer_id', $customer->id)
+            ->assertJsonPath('rows.0.balance_amount', 25000)
+            ->assertJsonPath('rows.0.days_overdue', 10)
+            ->assertJsonPath('rows.0.aging_bucket_code', 'days_1_30')
+            ->assertJsonPath('rows.0.aging_bucket_label', '1–30 days');
+    }
+
     public function test_customer_credit_exposure_report_requires_tenant_header(): void
     {
         $this->seed();
