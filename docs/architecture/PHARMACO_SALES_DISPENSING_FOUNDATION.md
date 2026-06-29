@@ -503,3 +503,34 @@ Phase 9.1 adds supplier invoice and payable tracking after procurement.
 ### Safety
 
 The backend protects tenant boundaries, supplier/PO matching, duplicate invoice numbers, invoice approval state, overpayment, and cross-tenant access.
+
+
+## Phase 9.2 supplier invoice and payables dashboard workflow
+
+Phase 9.2 adds the dashboard workflow for supplier invoices and accounts payable management.
+
+### Dashboard additions
+
+- supplier invoice list
+- create supplier invoice from approved purchase order
+- invoice item builder populated from purchase order items
+- payable balance cards
+- AP aging indicator for overdue invoices
+- supplier invoice detail panel
+- supplier invoice approval action
+- supplier payment recording form
+- supplier payment history
+
+### API usage
+
+The dashboard consumes the Phase 9.1 backend endpoints:
+
+- `GET /api/v1/pharmaco/supplier-invoices`
+- `POST /api/v1/pharmaco/supplier-invoices`
+- `GET /api/v1/pharmaco/supplier-invoices/{supplierInvoice}`
+- `POST /api/v1/pharmaco/supplier-invoices/{supplierInvoice}/approve`
+- `POST /api/v1/pharmaco/supplier-invoices/{supplierInvoice}/payments`
+
+### Safety
+
+The dashboard keeps the backend as the source of truth for tenant boundaries, supplier/PO matching, invoice state transitions, and overpayment protection.
