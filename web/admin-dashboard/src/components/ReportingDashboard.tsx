@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   getPharmaInventoryValuationReport,
   getPharmaPayablesSummaryReport,
+  getPharmaCustomerCreditExposureExport,
   getPharmaCustomerCreditExposureReport,
   getPharmaProcurementSummaryReport,
   getPharmaReportingOverview,
@@ -107,6 +108,8 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
     customerCredit: null,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreparingCustomerCreditExport, setIsPreparingCustomerCreditExport] = useState(false);
+  const [customerCreditExportNotice, setCustomerCreditExportNotice] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
@@ -145,6 +148,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
     setIsLoading(true);
     setError('');
     setNotice('');
+    setCustomerCreditExportNotice('');
 
     try {
       const overview = await getPharmaReportingOverview(token, tenantSlug, filters);
@@ -170,6 +174,30 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
       setError(err instanceof Error ? err.message : 'Unable to load PharmaCo360 reports.');
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function prepareCustomerCreditExport() {
+    if (!token || !tenantSlug) {
+      setError('Tenant context is required before preparing the customer credit export.');
+      return;
+    }
+
+    setIsPreparingCustomerCreditExport(true);
+    setError('');
+    setCustomerCreditExportNotice('');
+
+    try {
+      const exportResponse = await getPharmaCustomerCreditExposureExport(token, tenantSlug);
+      const rowCount = exportResponse.export.rows_count;
+
+      setCustomerCreditExportNotice(
+        `Export prepared with ${formatNumber(rowCount)} open receivable ${rowCount === 1 ? 'row' : 'rows'} as of ${exportResponse.period.as_of_date}.`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to prepare the customer credit export.');
+    } finally {
+      setIsPreparingCustomerCreditExport(false);
     }
   }
 
@@ -400,6 +428,16 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             <strong>Customer credit exposure</strong>
             <span>{state.customerCredit?.open_receivables_count ?? 0} open receivables</span>
           </div>
+
+          <button
+            type="button"
+            onClick={prepareCustomerCreditExport}
+            disabled={isPreparingCustomerCreditExport}
+          >
+            {isPreparingCustomerCreditExport ? 'Preparing export…' : 'Prepare export'}
+          </button>
+
+          {customerCreditExportNotice && <p className="muted">{customerCreditExportNotice}</p>}
 
           <div className="report-metric-list">
             <div>
