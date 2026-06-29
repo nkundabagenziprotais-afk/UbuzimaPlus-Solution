@@ -464,3 +464,42 @@ The backend prevents:
 - cancellation of received purchase orders
 - cancellation of purchase orders with received quantities
 - cross-tenant approval/cancellation
+
+
+## Phase 9.1 supplier invoice and accounts payable foundation
+
+Phase 9.1 adds supplier invoice and payable tracking after procurement.
+
+### Backend tables
+
+- `pharmaco_supplier_invoices`
+- `pharmaco_supplier_invoice_items`
+- `pharmaco_supplier_payments`
+
+### API endpoints
+
+- `GET /api/v1/pharmaco/supplier-invoices`
+- `POST /api/v1/pharmaco/supplier-invoices`
+- `GET /api/v1/pharmaco/supplier-invoices/{supplierInvoice}`
+- `POST /api/v1/pharmaco/supplier-invoices/{supplierInvoice}/approve`
+- `POST /api/v1/pharmaco/supplier-invoices/{supplierInvoice}/payments`
+
+### Workflow
+
+- supplier invoices can be created manually or from approved/received purchase orders
+- invoice items can reference purchase order items
+- invoices start as `draft`
+- draft invoices can be approved
+- supplier payments can be recorded only after approval
+- invoice balances are updated after each payment
+- invoices move to `partially_paid` or `paid`
+
+### Audit actions
+
+- `pharmaco.supplier_invoice.created`
+- `pharmaco.supplier_invoice.approved`
+- `pharmaco.supplier_payment.recorded`
+
+### Safety
+
+The backend protects tenant boundaries, supplier/PO matching, duplicate invoice numbers, invoice approval state, overpayment, and cross-tenant access.
