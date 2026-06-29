@@ -1608,6 +1608,35 @@ export type PharmaPayablesSummaryReportResponse = {
 
 
 
+export type PharmaCustomerCreditExposureExportRow = {
+  receivable_id: number;
+  customer_id: number;
+  customer_name: string | null;
+  reference_number: string | null;
+  status: string;
+  original_amount: number;
+  collected_amount: number;
+  balance_amount: number;
+  due_date: string | null;
+  days_overdue: number;
+  aging_bucket_code: string;
+  aging_bucket_label: string;
+};
+
+export type PharmaCustomerCreditExposureExportResponse = {
+  tenant: TenantPayload;
+  period: {
+    as_of_date: string;
+  };
+  export: {
+    report: string;
+    format: string;
+    rows_count: number;
+    generated_at: string;
+  };
+  rows: PharmaCustomerCreditExposureExportRow[];
+};
+
 export type PharmaCustomerCreditExposureAgingBucket = {
   code: string;
   label: string;
@@ -1714,6 +1743,20 @@ export async function getPharmaPayablesSummaryReport(
   );
 }
 
+
+
+export async function getPharmaCustomerCreditExposureExport(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaCustomerCreditExposureExportResponse> {
+  return apiRequest<PharmaCustomerCreditExposureExportResponse>(
+    "/api/v1/pharmaco/reports/customer-credit-exposure/export",
+    {
+      token,
+      tenantSlug,
+    },
+  );
+}
 
 export async function getPharmaCustomerCreditExposureReport(
   token: string,
