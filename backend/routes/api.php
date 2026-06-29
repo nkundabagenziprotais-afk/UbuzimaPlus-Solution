@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\SolutionController;
 use App\Http\Controllers\Api\V1\TenantPublicStatusController;
 use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
+use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +46,38 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
 });
 
 Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
+
+
+    Route::post('/suppliers', [ProcurementController::class, 'createSupplier'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/suppliers', [ProcurementController::class, 'suppliers'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/purchase-orders', [ProcurementController::class, 'createPurchaseOrder'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/purchase-orders', [ProcurementController::class, 'purchaseOrders'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/purchase-orders/{purchaseOrder}', [ProcurementController::class, 'purchaseOrder'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
 
     Route::post('/products', [ProductInventoryController::class, 'createProduct'])
         ->middleware([
