@@ -1666,3 +1666,249 @@ p {
     justify-self: start;
   }
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* PharmaCo360 Customer Credit & Receivables                                  */
+/* -------------------------------------------------------------------------- */
+
+.receivables-workflow {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.receivables-section-header,
+.receivables-card,
+.receivables-kpis article {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+}
+
+.receivables-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.receivables-section-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+}
+
+.receivables-section-header p {
+  margin: 0.4rem 0 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.section-kicker {
+  margin: 0 0 0.25rem !important;
+  color: #0369a1 !important;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.receivables-message {
+  border-radius: 14px;
+  font-weight: 700;
+  padding: 0.8rem 1rem;
+}
+
+.receivables-message.success {
+  background: #f0fdf4;
+  border: 1px solid rgba(22, 101, 52, 0.16);
+  color: #166534;
+}
+
+.receivables-message.error {
+  background: #fef2f2;
+  border: 1px solid rgba(153, 27, 27, 0.16);
+  color: #991b1b;
+}
+
+.receivables-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.receivables-kpis article {
+  padding: 1rem;
+}
+
+.receivables-kpis span,
+.receivables-kpis small {
+  display: block;
+  color: #64748b;
+}
+
+.receivables-kpis span {
+  font-weight: 700;
+}
+
+.receivables-kpis strong {
+  display: block;
+  margin: 0.4rem 0;
+  color: #0f172a;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+}
+
+.receivables-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.receivables-grid.main {
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
+}
+
+.receivables-card {
+  padding: 1.1rem;
+}
+
+.receivables-card h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.receivables-card p {
+  margin: 0.35rem 0 1rem;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.receivables-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.receivables-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.receivables-form input,
+.receivables-form select,
+.receivables-form textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  padding: 0.72rem 0.8rem;
+}
+
+.receivables-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.receivables-table-wrap {
+  margin-top: 0.9rem;
+  overflow-x: auto;
+}
+
+.receivables-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.receivables-table th,
+.receivables-table td {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.receivables-table th {
+  color: #64748b;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.receivables-table td {
+  color: #0f172a;
+}
+
+.receivables-table tr.is-overdue td {
+  background: #fffbeb;
+}
+
+.receivable-selected {
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 0.9rem;
+}
+
+.receivable-selected span,
+.receivable-selected small {
+  display: block;
+  color: #64748b;
+}
+
+.receivable-selected strong {
+  display: block;
+  margin: 0.3rem 0;
+  color: #0f172a;
+  font-size: 1.4rem;
+}
+
+.link-button {
+  border: 0;
+  background: transparent;
+  color: #0369a1;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1200px) {
+  .receivables-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .receivables-grid,
+  .receivables-grid.main {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .receivables-section-header {
+    flex-direction: column;
+  }
+
+  .receivables-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .receivables-section-header,
+  .receivables-card,
+  .receivables-kpis article {
+    border-radius: 14px;
+  }
+
+  .receivables-table th,
+  .receivables-table td {
+    padding: 0.65rem;
+  }
+}

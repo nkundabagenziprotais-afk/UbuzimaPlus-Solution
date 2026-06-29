@@ -1685,3 +1685,216 @@ export async function getPharmaPayablesSummaryReport(
     tenantSlug,
   );
 }
+
+
+// -----------------------------------------------------------------------------
+// Phase 11.2 customer credit receivables API
+// -----------------------------------------------------------------------------
+
+export type PharmaReceivableCustomer = {
+  id: number;
+  customer_code?: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string | null;
+  email?: string | null;
+  status?: string;
+  credit_limit?: number;
+  credit_balance?: number;
+  credit_terms_days?: number | null;
+  credit_status?: 'enabled' | 'disabled' | 'suspended' | string;
+};
+
+export type PharmaReceivablePayment = {
+  id: number;
+  uuid?: string;
+  payment_number?: string;
+  amount: number;
+  payment_method: string;
+  reference_number?: string | null;
+  paid_at?: string | null;
+  notes?: string | null;
+  status?: string;
+};
+
+export type PharmaReceivable = {
+  id: number;
+  uuid?: string;
+  receivable_number: string;
+  status: 'open' | 'partially_collected' | 'collected' | 'cancelled' | string;
+  original_amount: number;
+  paid_amount: number;
+  balance_amount: number;
+  issued_at?: string | null;
+  due_date?: string | null;
+  closed_at?: string | null;
+  notes?: string | null;
+  customer?: PharmaReceivableCustomer | null;
+  payments?: PharmaReceivablePayment[];
+};
+
+export type PharmaReceivablesResponse = {
+  receivables: PharmaReceivable[];
+};
+
+export type PharmaReceivableDetailResponse = {
+  receivable: PharmaReceivable;
+};
+
+export type PharmaReceivableCustomersResponse = {
+  customers: PharmaReceivableCustomer[];
+};
+
+export type PharmaUpdateCustomerCreditPayload = {
+  credit_limit: number;
+  credit_terms_days?: number | null;
+  credit_status: 'enabled' | 'disabled' | 'suspended';
+};
+
+export type PharmaCreateReceivablePayload = {
+  pharmaco_customer_id: number;
+  amount: number;
+  issued_at?: string | null;
+  due_date?: string | null;
+  notes?: string | null;
+};
+
+export type PharmaRecordReceivablePaymentPayload = {
+  amount: number;
+  payment_method: 'cash' | 'momo' | 'card' | 'bank_transfer' | 'cheque';
+  reference_number?: string | null;
+  paid_at?: string | null;
+  notes?: string | null;
+};
+
+const getReceivablesTenantSlug = (): string => {
+  if (typeof window === 'undefined') {
+    return 'vitapharma';
+  }
+
+  return (
+    window.localStorage.getItem('ubuzima.currentTenantSlug') ||
+    window.localStorage.getItem('pharmaco.tenantSlug') ||
+    'vitapharma'
+  );
+};
+
+const receivablesRequest = async <T>(
+  path: string,
+  token: string,
+  options: RequestInit = {},
+): Promise<T> => {
+  const headers = new Headers(options.headers);
+
+  headers.set('Accept', 'application/json');
+  headers.set('X-Tenant-Slug', getReceivablesTenantSlug());
+
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const validationMessage =
+      payload?.message ||
+      Object.values(payload?.errors || {})
+        .flat()
+        .filter(Boolean)
+        .join(' ');
+
+    throw new Error(validationMessage || 'Customer receivables request failed.');
+  }
+
+  return payload as T;
+};
+
+export const getPharmaReceivables = async (
+  token: string,
+): Promise<PharmaReceivablesResponse> => {
+  return receivablesRequest<PharmaReceivablesResponse>(
+    '/pharmaco/receivables',
+    token,
+  );
+};
+
+export const getPharmaReceivable = async (
+  token: string,
+  receivableId: number,
+): Promise<PharmaReceivableDetailResponse> => {
+  return receivablesRequest<PharmaReceivableDetailResponse>(
+    `/pharmaco/receivables/${receivableId}`,
+    token,
+  );
+};
+
+export const getPharmaReceivableCustomers = async (
+  token: string,
+): Promise<PharmaReceivableCustomersResponse> => {
+  return receivablesRequest<PharmaReceivableCustomersResponse>(
+    '/pharmaco/customers',
+    token,
+  );
+};
+
+export const updatePharmaCustomerCredit = async (
+  token: string,
+  customerId: number,
+  payload: PharmaUpdateCustomerCreditPayload,
+): Promise<{ message: string; customer: PharmaReceivableCustomer }> => {
+  return receivablesRequest<{ message: string; customer: PharmaReceivableCustomer }>(
+    `/pharmaco/customers/${customerId}/credit`,
+    token,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    },
+  );
+};
+
+export const createPharmaReceivable = async (
+  token: string,
+  payload: PharmaCreateReceivablePayload,
+): Promise<{ message: string; receivable: PharmaReceivable }> => {
+  return receivablesRequest<{ message: string; receivable: PharmaReceivable }>(
+    '/pharmaco/receivables',
+    token,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
+};
+
+export const recordPharmaReceivablePayment = async (
+  token: string,
+  receivableId: number,
+  payload: PharmaRecordReceivablePaymentPayload,
+): Promise<{
+  message: string;
+  receivable_payment: PharmaReceivablePayment;
+  receivable: PharmaReceivable;
+}> => {
+  return receivablesRequest<{
+    message: string;
+    receivable_payment: PharmaReceivablePayment;
+    receivable: PharmaReceivable;
+  }>(
+    `/pharmaco/receivables/${receivableId}/payments`,
+    token,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
+};
