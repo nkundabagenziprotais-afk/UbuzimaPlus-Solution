@@ -117,6 +117,12 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.sales',
         ]);
 
+    Route::get('/reports/customer-credit-exposure/export', [ReportingController::class, 'customerCreditExposureExport'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
 
 
 
