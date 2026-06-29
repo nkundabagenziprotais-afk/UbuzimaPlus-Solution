@@ -430,6 +430,17 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
               <span>{formatNumber(state.customerCredit?.overdue_receivables_count)}</span>
             </div>
           </div>
+
+          <div className="report-status-list">
+            {(state.customerCredit?.aging_buckets ?? []).map((bucket) => (
+              <div key={bucket.code}>
+                <span>{bucket.label}</span>
+                <span>
+                  {formatMoney(bucket.balance)} · {formatNumber(bucket.receivables_count)}
+                </span>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="report-card">
