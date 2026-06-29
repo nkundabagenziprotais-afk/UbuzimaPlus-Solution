@@ -596,3 +596,35 @@ The dashboard consumes:
 
 The dashboard does not calculate tenant boundaries locally.
 It relies on the backend reporting APIs, Sanctum authentication, tenant headers, and existing module permissions.
+
+
+## Phase 11.1 customer credit and receivables foundation
+
+Phase 11.1 adds the customer-side credit and accounts receivable foundation.
+
+### Backend additions
+
+- customer credit limit
+- customer credit balance
+- customer credit terms
+- customer credit status
+- customer receivables
+- customer receivable payments
+
+### API endpoints
+
+- `GET /api/v1/pharmaco/receivables`
+- `POST /api/v1/pharmaco/receivables`
+- `GET /api/v1/pharmaco/receivables/{receivable}`
+- `POST /api/v1/pharmaco/receivables/{receivable}/payments`
+- `PATCH /api/v1/pharmaco/customers/{customer}/credit`
+
+### Audit actions
+
+- `pharmaco.customer_credit.updated`
+- `pharmaco.customer_receivable.created`
+- `pharmaco.customer_receivable.payment_recorded`
+
+### Safety
+
+The backend protects tenant boundaries, customer credit status, customer credit limit, overpayment, and cross-tenant receivable access.

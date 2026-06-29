@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
+use App\Http\Controllers\Api\V1\PharmaCo360\ReceivablesController;
 use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,38 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
 });
 
 Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
+
+    Route::get('/receivables', [ReceivablesController::class, 'receivables'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::post('/receivables', [ReceivablesController::class, 'createReceivable'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::get('/receivables/{receivable}', [ReceivablesController::class, 'receivable'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::post('/receivables/{receivable}/payments', [ReceivablesController::class, 'recordPayment'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::patch('/customers/{customer}/credit', [ReceivablesController::class, 'updateCustomerCredit'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+
 
     Route::get('/reports/overview', [ReportingController::class, 'overview'])
         ->middleware([
