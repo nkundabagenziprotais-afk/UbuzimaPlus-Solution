@@ -1310,3 +1310,184 @@ export async function cancelPharmaPurchaseOrder(
     { reason: reason || null },
   );
 }
+
+
+export type PharmaSupplierInvoicePayment = {
+  id: number;
+  uuid: string;
+  payment_number: string;
+  amount: number;
+  payment_method: string;
+  reference_number?: string | null;
+  status: string;
+  paid_at?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
+export type PharmaSupplierInvoiceItem = {
+  id: number;
+  uuid: string;
+  purchase_order_item_id?: number | null;
+  product?: PharmaProduct | null;
+  product_name_snapshot: string;
+  sku_snapshot?: string | null;
+  quantity: number;
+  unit_cost: number;
+  discount_amount: number;
+  tax_amount: number;
+  line_total: number;
+  notes?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
+export type PharmaSupplierInvoice = {
+  id: number;
+  uuid: string;
+  invoice_number: string;
+  supplier_invoice_number?: string | null;
+  status: string;
+  invoice_date?: string | null;
+  due_date?: string | null;
+  subtotal_amount: number;
+  discount_amount: number;
+  tax_amount: number;
+  total_amount: number;
+  paid_amount: number;
+  balance_amount: number;
+  approved_at?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, unknown>;
+  supplier?: PharmaSupplier | null;
+  purchase_order?: {
+    id: number;
+    po_number: string;
+    status: string;
+  } | null;
+  items_count?: number | null;
+  payments_count?: number | null;
+  items?: PharmaSupplierInvoiceItem[];
+  payments?: PharmaSupplierInvoicePayment[];
+  created_at?: string | null;
+};
+
+export type PharmaSupplierInvoicesResponse = {
+  tenant: TenantPayload;
+  supplier_invoices: PharmaSupplierInvoice[];
+};
+
+export type PharmaSupplierInvoiceResponse = {
+  tenant: TenantPayload;
+  supplier_invoice: PharmaSupplierInvoice;
+};
+
+export type CreatePharmaSupplierInvoicePayload = {
+  pharmaco_supplier_id: number;
+  pharmaco_purchase_order_id?: number | null;
+  invoice_number?: string | null;
+  supplier_invoice_number?: string | null;
+  invoice_date?: string | null;
+  due_date?: string | null;
+  discount_amount?: number;
+  tax_amount?: number;
+  notes?: string | null;
+  items: Array<{
+    pharmaco_purchase_order_item_id?: number | null;
+    product_id?: number | null;
+    quantity: number;
+    unit_cost: number;
+    discount_amount?: number;
+    tax_amount?: number;
+    notes?: string | null;
+  }>;
+};
+
+export type CreatePharmaSupplierInvoiceResponse = {
+  message: string;
+  supplier_invoice: PharmaSupplierInvoice;
+};
+
+export type ApprovePharmaSupplierInvoiceResponse = {
+  message: string;
+  supplier_invoice: PharmaSupplierInvoice;
+};
+
+export type RecordPharmaSupplierPaymentPayload = {
+  amount: number;
+  payment_method: 'cash' | 'momo' | 'card' | 'bank_transfer' | 'cheque' | 'credit';
+  reference_number?: string | null;
+  paid_at?: string | null;
+  notes?: string | null;
+};
+
+export type RecordPharmaSupplierPaymentResponse = {
+  message: string;
+  supplier_payment: PharmaSupplierInvoicePayment;
+  supplier_invoice: PharmaSupplierInvoice;
+};
+
+export async function getPharmaSupplierInvoices(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaSupplierInvoicesResponse> {
+  return getJsonWithTenant<PharmaSupplierInvoicesResponse>(
+    token,
+    '/pharmaco/supplier-invoices',
+    tenantSlug,
+  );
+}
+
+export async function getPharmaSupplierInvoice(
+  token: string,
+  tenantSlug: string,
+  supplierInvoiceId: number,
+): Promise<PharmaSupplierInvoiceResponse> {
+  return getJsonWithTenant<PharmaSupplierInvoiceResponse>(
+    token,
+    `/pharmaco/supplier-invoices/${supplierInvoiceId}`,
+    tenantSlug,
+  );
+}
+
+export async function createPharmaSupplierInvoice(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaSupplierInvoicePayload,
+): Promise<CreatePharmaSupplierInvoiceResponse> {
+  return sendJsonWithTenant<CreatePharmaSupplierInvoiceResponse>(
+    token,
+    '/pharmaco/supplier-invoices',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function approvePharmaSupplierInvoice(
+  token: string,
+  tenantSlug: string,
+  supplierInvoiceId: number,
+): Promise<ApprovePharmaSupplierInvoiceResponse> {
+  return sendJsonWithTenant<ApprovePharmaSupplierInvoiceResponse>(
+    token,
+    `/pharmaco/supplier-invoices/${supplierInvoiceId}/approve`,
+    tenantSlug,
+    'POST',
+    {},
+  );
+}
+
+export async function recordPharmaSupplierPayment(
+  token: string,
+  tenantSlug: string,
+  supplierInvoiceId: number,
+  payload: RecordPharmaSupplierPaymentPayload,
+): Promise<RecordPharmaSupplierPaymentResponse> {
+  return sendJsonWithTenant<RecordPharmaSupplierPaymentResponse>(
+    token,
+    `/pharmaco/supplier-invoices/${supplierInvoiceId}/payments`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}

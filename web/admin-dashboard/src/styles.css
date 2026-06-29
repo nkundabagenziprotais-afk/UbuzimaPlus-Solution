@@ -1408,3 +1408,110 @@ p {
 .approval-actions button {
   width: fit-content;
 }
+
+
+.payables-panel {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.payables-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.payables-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.payables-builder,
+.payables-detail-card {
+  border-color: rgba(15, 118, 110, 0.18);
+}
+
+.payables-line-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.payables-line-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(90px, 0.65fr)) minmax(120px, 0.75fr);
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.payables-line-row strong {
+  align-self: center;
+}
+
+.payables-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(240, 253, 250, 0.85);
+  border: 1px solid rgba(15, 118, 110, 0.16);
+}
+
+.payables-total-row strong {
+  color: #0f766e;
+}
+
+.payables-list-card > div,
+.payables-detail-card .procurement-list-card > div,
+.payment-history-row {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.payables-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.payables-detail-grid article {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.payables-detail-grid article span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.payables-detail-grid article strong {
+  color: #0f172a;
+}
+
+.payables-history-heading {
+  margin-top: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .payables-kpi-grid,
+  .payables-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .payables-grid,
+  .payables-line-row {
+    grid-template-columns: 1fr;
+  }
+}
