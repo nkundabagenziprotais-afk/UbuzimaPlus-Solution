@@ -5,6 +5,7 @@ import { ProductInventoryPreview } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
+import { PayablesWorkflow } from './components/PayablesWorkflow';
 import './styles.css';
 
 type StoredSession = {
@@ -538,6 +539,9 @@ function App() {
           <ProductInventoryActions token={session.token} profile={profile} />
 
           <ProcurementWorkflow token={session.token} profile={profile} />
+
+
+          <PayablesWorkflow token={session.token} profile={profile} />
 
           <SalesDispensingReview token={session.token} profile={profile} />
 
