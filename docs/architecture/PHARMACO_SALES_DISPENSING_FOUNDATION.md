@@ -395,3 +395,36 @@ Manual receiving remains available without `pharmaco_purchase_order_item_id` and
 
 - `reference_type = stock_receipt`
 - `pharmaco.stock.received`
+
+
+## Phase 8.1 procurement dashboard workflow
+
+Phase 8.1 exposes the procurement backend in the admin dashboard.
+
+### Dashboard capabilities
+
+- load supplier, branch, product, location and purchase-order data
+- create suppliers
+- list active suppliers
+- create draft purchase orders
+- build purchase order line items
+- preview purchase order totals
+- list purchase orders
+- open purchase order detail
+- receive stock against a purchase order item
+- preserve manual receiving through the existing inventory action panel
+
+### API helpers
+
+The dashboard now includes typed client helpers for:
+
+- `GET /api/v1/pharmaco/suppliers`
+- `POST /api/v1/pharmaco/suppliers`
+- `GET /api/v1/pharmaco/purchase-orders`
+- `GET /api/v1/pharmaco/purchase-orders/{purchaseOrder}`
+- `POST /api/v1/pharmaco/purchase-orders`
+- `POST /api/v1/pharmaco/inventory/receive` with `pharmaco_purchase_order_item_id`
+
+### Safety
+
+The dashboard remains a client only. Backend validation still owns tenant boundaries, product ownership, supplier ownership, branch/location rules, over-receipt protection and audit logging.

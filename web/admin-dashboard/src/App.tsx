@@ -4,6 +4,7 @@ import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
+import { ProcurementWorkflow } from './components/ProcurementWorkflow';
 import './styles.css';
 
 type StoredSession = {
@@ -535,6 +536,8 @@ function App() {
           <ProductInventoryPreview token={session.token} profile={profile} />
 
           <ProductInventoryActions token={session.token} profile={profile} />
+
+          <ProcurementWorkflow token={session.token} profile={profile} />
 
           <SalesDispensingReview token={session.token} profile={profile} />
 
