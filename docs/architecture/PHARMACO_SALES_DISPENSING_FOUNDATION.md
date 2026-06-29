@@ -428,3 +428,39 @@ The dashboard now includes typed client helpers for:
 ### Safety
 
 The dashboard remains a client only. Backend validation still owns tenant boundaries, product ownership, supplier ownership, branch/location rules, over-receipt protection and audit logging.
+
+
+## Phase 8.2 procurement polish and approval controls
+
+Phase 8.2 adds approval and cancellation controls to the procurement foundation.
+
+### Backend additions
+
+- `PATCH /api/v1/pharmaco/suppliers/{supplier}`
+- `POST /api/v1/pharmaco/purchase-orders/{purchaseOrder}/approve`
+- `POST /api/v1/pharmaco/purchase-orders/{purchaseOrder}/cancel`
+
+### Dashboard additions
+
+- supplier row selection
+- purchase order approval action
+- purchase order cancellation action
+- cancellation reason field
+- status-aware action disabling
+
+### Audit actions
+
+- `pharmaco.supplier.updated`
+- `pharmaco.purchase_order.approved`
+- `pharmaco.purchase_order.cancelled`
+
+### Safety
+
+The backend prevents:
+
+- duplicate supplier codes inside the same tenant
+- supplier updates across tenant boundaries
+- approval of non-draft purchase orders
+- cancellation of received purchase orders
+- cancellation of purchase orders with received quantities
+- cross-tenant approval/cancellation

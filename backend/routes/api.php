@@ -60,6 +60,26 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.suppliers',
         ]);
 
+
+    Route::patch('/suppliers/{supplier}', [ProcurementController::class, 'updateSupplier'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/purchase-orders/{purchaseOrder}/approve', [ProcurementController::class, 'approvePurchaseOrder'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/purchase-orders/{purchaseOrder}/cancel', [ProcurementController::class, 'cancelPurchaseOrder'])
+        ->middleware([
+            'permission:pharmaco.suppliers.manage',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+
     Route::post('/purchase-orders', [ProcurementController::class, 'createPurchaseOrder'])
         ->middleware([
             'permission:pharmaco.suppliers.manage',

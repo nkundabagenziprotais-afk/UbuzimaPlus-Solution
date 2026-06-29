@@ -7,6 +7,8 @@ import {
   PharmaPurchaseOrderItem,
   PharmaStockLocation,
   PharmaSupplier,
+  approvePharmaPurchaseOrder,
+  cancelPharmaPurchaseOrder,
   createPharmaPurchaseOrder,
   createPharmaSupplier,
   getPharmaBranches,
@@ -153,11 +155,15 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   const [supplierForm, setSupplierForm] = useState<SupplierForm>(blankSupplierForm());
   const [purchaseOrderForm, setPurchaseOrderForm] = useState<PurchaseOrderForm>(blankPurchaseOrderForm());
   const [receiveForm, setReceiveForm] = useState<ReceiveForm>(blankReceiveForm());
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSavingSupplier, setIsSavingSupplier] = useState(false);
   const [isSavingPurchaseOrder, setIsSavingPurchaseOrder] = useState(false);
   const [isReceivingStock, setIsReceivingStock] = useState(false);
+  const [isApprovingPurchaseOrder, setIsApprovingPurchaseOrder] = useState(false);
+  const [isCancellingPurchaseOrder, setIsCancellingPurchaseOrder] = useState(false);
 
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -169,6 +175,7 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   const activeProducts = state.products.filter((product) => product.status === 'active');
   const activeSuppliers = state.suppliers.filter((supplier) => supplier.status === 'active');
   const selectedItems = state.selectedPurchaseOrder?.items ?? [];
+  const selectedSupplier = state.suppliers.find((supplier) => supplier.id === Number(selectedSupplierId));
 
   const purchaseOrderTotal = useMemo(() => {
     const linesTotal = purchaseOrderForm.items.reduce((sum, item) => {
@@ -426,6 +433,69 @@ export function ProcurementWorkflow({ token, profile }: Props) {
     }
   }
 
+
+  async function approveSelectedPurchaseOrder() {
+    if (!state.selectedPurchaseOrder) {
+      setError('Select a purchase order first.');
+      return;
+    }
+
+    setIsApprovingPurchaseOrder(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await approvePharmaPurchaseOrder(token, tenantSlug, state.selectedPurchaseOrder.id);
+      const purchaseOrders = await getPharmaPurchaseOrders(token, tenantSlug);
+
+      setState((current) => ({
+        ...current,
+        purchaseOrders: purchaseOrders.purchase_orders,
+        selectedPurchaseOrder: response.purchase_order,
+      }));
+
+      setNotice(response.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to approve purchase order.');
+    } finally {
+      setIsApprovingPurchaseOrder(false);
+    }
+  }
+
+  async function cancelSelectedPurchaseOrder() {
+    if (!state.selectedPurchaseOrder) {
+      setError('Select a purchase order first.');
+      return;
+    }
+
+    setIsCancellingPurchaseOrder(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await cancelPharmaPurchaseOrder(
+        token,
+        tenantSlug,
+        state.selectedPurchaseOrder.id,
+        cancelReason,
+      );
+      const purchaseOrders = await getPharmaPurchaseOrders(token, tenantSlug);
+
+      setState((current) => ({
+        ...current,
+        purchaseOrders: purchaseOrders.purchase_orders,
+        selectedPurchaseOrder: response.purchase_order,
+      }));
+
+      setCancelReason('');
+      setNotice(response.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to cancel purchase order.');
+    } finally {
+      setIsCancellingPurchaseOrder(false);
+    }
+  }
+
   function updateLine(index: number, patch: Partial<PurchaseOrderLineForm>) {
     setPurchaseOrderForm((current) => ({
       ...current,
@@ -565,15 +635,29 @@ export function ProcurementWorkflow({ token, profile }: Props) {
           ) : (
             <div className="compact-list">
               {state.suppliers.slice(0, 6).map((supplier) => (
-                <div key={supplier.id}>
+                <div key={supplier.id} className={supplier.id === Number(selectedSupplierId) ? 'selected-list-row' : ''}>
                   <strong>{supplier.name}</strong>
                   <span>{supplier.supplier_code} · {supplier.supplier_type}</span>
                   <small>{supplier.status} · {supplier.payment_terms ?? 'No terms'}</small>
+                  <button type="button" onClick={() => setSelectedSupplierId(String(supplier.id))}>
+                    Select
+                  </button>
                 </div>
               ))}
             </div>
           )}
         </section>
+
+          {selectedSupplier && (
+            <div className="approval-control-box">
+              <strong>Selected supplier</strong>
+              <span>{selectedSupplier.name}</span>
+              <small>{selectedSupplier.supplier_code} · {selectedSupplier.status}</small>
+              <p className="muted">
+                Supplier update API is now available. A full edit form can be added in the next UI refinement without backend changes.
+              </p>
+            </div>
+          )}
       </div>
 
       <section className="draft-sale-builder purchase-order-builder">
@@ -772,6 +856,42 @@ export function ProcurementWorkflow({ token, profile }: Props) {
                 <span>Supplier: {state.selectedPurchaseOrder.supplier?.name ?? 'Not set'}</span>
                 <span>Branch: {state.selectedPurchaseOrder.branch?.name ?? 'Not set'}</span>
                 <span>Status: {state.selectedPurchaseOrder.status}</span>
+              </div>
+
+
+              <div className="approval-control-box">
+                <strong>Approval controls</strong>
+                <span>Current status: {state.selectedPurchaseOrder.status}</span>
+
+                <div className="approval-actions">
+                  <button
+                    type="button"
+                    onClick={approveSelectedPurchaseOrder}
+                    disabled={isApprovingPurchaseOrder || state.selectedPurchaseOrder.status !== 'draft'}
+                  >
+                    {isApprovingPurchaseOrder ? 'Approving…' : 'Approve PO'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={cancelSelectedPurchaseOrder}
+                    disabled={
+                      isCancellingPurchaseOrder ||
+                      ['received', 'cancelled'].includes(state.selectedPurchaseOrder.status)
+                    }
+                  >
+                    {isCancellingPurchaseOrder ? 'Cancelling…' : 'Cancel PO'}
+                  </button>
+                </div>
+
+                <label>
+                  Cancellation reason
+                  <input
+                    value={cancelReason}
+                    onChange={(event) => setCancelReason(event.target.value)}
+                    placeholder="Optional reason for audit trail"
+                  />
+                </label>
               </div>
 
               <div className="creation-form-grid">

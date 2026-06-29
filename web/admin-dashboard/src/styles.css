@@ -1383,3 +1383,28 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+
+.selected-list-row {
+  border-color: rgba(15, 118, 110, 0.35) !important;
+  background: rgba(240, 253, 250, 0.78);
+}
+
+.approval-control-box {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.approval-actions button {
+  width: fit-content;
+}
