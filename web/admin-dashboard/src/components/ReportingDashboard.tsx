@@ -133,6 +133,16 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
+  const hasTenantContext = Boolean(token && tenantSlug);
+  const hasLoadedReports = Boolean(
+    state.period ||
+      state.inventory ||
+      state.sales ||
+      state.procurement ||
+      state.payables ||
+      state.customerCredit,
+  );
+
   const salesCollectionRate = useMemo(() => {
     const total = Number(state.sales?.total_sales_amount ?? 0);
     const paid = Number(state.sales?.paid_amount ?? 0);
@@ -286,7 +296,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
           />
         </label>
 
-        <button type="button" onClick={loadReports} disabled={isLoading}>
+        <button type="button" onClick={loadReports} disabled={isLoading || !hasTenantContext}>
           {isLoading ? 'Refreshing…' : 'Refresh reports'}
         </button>
 
@@ -296,6 +306,24 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
           </small>
         )}
       </div>
+
+      {!hasTenantContext && (
+        <div className="error-banner">
+          Tenant context is required before reporting figures can be loaded.
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="reporting-loading-state" role="status">
+          Refreshing tenant-safe reporting figures. Pharmacy records are not changed by this action.
+        </div>
+      )}
+
+      {!isLoading && hasTenantContext && !hasLoadedReports && (
+        <div className="reporting-empty-overview">
+          Choose a reporting period and refresh to load stock, sales, procurement, credit, and payable figures.
+        </div>
+      )}
 
       {notice && <div className="notice-banner">{notice}</div>}
       {error && <div className="error-banner">{error}</div>}
@@ -379,7 +407,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             ))}
 
             {(state.inventory?.locations ?? []).length === 0 && (
-              <p className="muted">No location valuation loaded yet.</p>
+              <p className="report-empty-state">No location valuation is available yet. Refresh once inventory activity has been recorded.</p>
             )}
           </div>
         </section>
@@ -427,7 +455,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             ))}
 
             {(state.sales?.payment_methods ?? []).length === 0 && (
-              <p className="muted">No completed payments in this period.</p>
+              <p className="report-empty-state">No completed payments were found for this period. Adjust the dates or review after sales collection starts.</p>
             )}
           </div>
         </section>
@@ -475,7 +503,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             ))}
 
             {(state.procurement?.status_summary ?? []).length === 0 && (
-              <p className="muted">No purchase orders in this period.</p>
+              <p className="report-empty-state">No purchase orders were found for this period. Adjust the dates or review after procurement activity starts.</p>
             )}
           </div>
         </section>
@@ -493,7 +521,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             <button
               type="button"
               onClick={downloadCustomerCreditCsv}
-              disabled={isPreparingCustomerCreditExport}
+              disabled={isPreparingCustomerCreditExport || !hasTenantContext}
             >
               {isPreparingCustomerCreditExport ? 'Downloading CSV…' : 'Download CSV'}
             </button>
@@ -590,7 +618,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             ))}
 
             {(state.payables?.status_summary ?? []).length === 0 && (
-              <p className="muted">No supplier invoices in this period.</p>
+              <p className="report-empty-state">No supplier invoices were found for this period. Adjust the dates or review after supplier billing starts.</p>
             )}
           </div>
         </section>
