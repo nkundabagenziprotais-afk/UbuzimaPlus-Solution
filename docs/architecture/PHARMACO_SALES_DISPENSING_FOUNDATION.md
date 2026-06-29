@@ -270,3 +270,27 @@ The backend enforces:
 - `pharmaco.customer.created`
 - `pharmaco.prescription.created`
 - `pharmaco.sale.created`
+
+
+## Phase 6.2 dashboard creation workflow
+
+Phase 6.2 adds a dashboard workflow for creating the beginning of a PharmaCo360 transaction.
+
+### Dashboard behaviour
+
+The dashboard can now:
+
+- create a tenant-scoped customer / patient
+- create a prescription
+- create a draft sale
+- select branch, customer and prescription
+- add draft sale line items
+- select products
+- enter quantity, unit price, discount and tax
+- preview draft sale total
+- submit to the backend creation APIs
+- select the newly created draft sale for dispensing review
+
+### Safety
+
+The dashboard does not bypass backend rules. The backend remains responsible for tenant boundaries, branch ownership, product ownership, active product validation, prescription-required product validation, total calculation and audit logging.
