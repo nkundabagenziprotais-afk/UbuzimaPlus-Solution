@@ -92,9 +92,51 @@ class ReportingController extends Controller
 
         $openBalance = (float) $openReceivables->sum('balance_amount');
 
-        $overdueBalance = (float) $openReceivables
-            ->filter(fn ($receivable) => $receivable->due_date && $receivable->due_date < now()->toDateString())
-            ->sum('balance_amount');
+        $overdueReceivables = $openReceivables
+            ->filter(fn ($receivable) => $receivable->due_date && $receivable->due_date < now()->toDateString());
+
+        $overdueBalance = (float) $overdueReceivables->sum('balance_amount');
+
+        $agingBuckets = [
+            'current' => ['label' => 'Current', 'balance' => 0.0, 'receivables_count' => 0],
+            'days_1_30' => ['label' => '1–30 days', 'balance' => 0.0, 'receivables_count' => 0],
+            'days_31_60' => ['label' => '31–60 days', 'balance' => 0.0, 'receivables_count' => 0],
+            'days_61_90' => ['label' => '61–90 days', 'balance' => 0.0, 'receivables_count' => 0],
+            'days_over_90' => ['label' => '90+ days', 'balance' => 0.0, 'receivables_count' => 0],
+        ];
+
+        foreach ($openReceivables as $receivable) {
+            $bucket = 'current';
+
+            if ($receivable->due_date && $receivable->due_date < now()->toDateString()) {
+                $daysOverdue = Carbon::parse($receivable->due_date)->startOfDay()->diffInDays(now()->startOfDay());
+
+                if ($daysOverdue <= 30) {
+                    $bucket = 'days_1_30';
+                } elseif ($daysOverdue <= 60) {
+                    $bucket = 'days_31_60';
+                } elseif ($daysOverdue <= 90) {
+                    $bucket = 'days_61_90';
+                } else {
+                    $bucket = 'days_over_90';
+                }
+            }
+
+            $agingBuckets[$bucket]['balance'] += (float) $receivable->balance_amount;
+            $agingBuckets[$bucket]['receivables_count'] += 1;
+        }
+
+        $agingBuckets = collect($agingBuckets)
+            ->map(function (array $bucket, string $code) {
+                return [
+                    'code' => $code,
+                    'label' => $bucket['label'],
+                    'balance' => round((float) $bucket['balance'], 2),
+                    'receivables_count' => $bucket['receivables_count'],
+                ];
+            })
+            ->values()
+            ->all();
 
         $customersOnCredit = PharmacoCustomer::query()
             ->where('tenant_id', $tenant->id)
@@ -118,9 +160,8 @@ class ReportingController extends Controller
                 'credit_limit_total' => round($creditLimitTotal, 2),
                 'customers_on_credit' => $customersOnCredit,
                 'open_receivables_count' => $openReceivables->count(),
-                'overdue_receivables_count' => $openReceivables
-                    ->filter(fn ($receivable) => $receivable->due_date && $receivable->due_date < now()->toDateString())
-                    ->count(),
+                'overdue_receivables_count' => $overdueReceivables->count(),
+                'aging_buckets' => $agingBuckets,
             ],
         ]);
     }

@@ -205,7 +205,10 @@ class PharmacoReportingAnalyticsApiTest extends TestCase
             ->assertJsonPath('customer_credit_exposure.credit_limit_total', 100000)
             ->assertJsonPath('customer_credit_exposure.customers_on_credit', 1)
             ->assertJsonPath('customer_credit_exposure.open_receivables_count', 1)
-            ->assertJsonPath('customer_credit_exposure.overdue_receivables_count', 1);
+            ->assertJsonPath('customer_credit_exposure.overdue_receivables_count', 1)
+            ->assertJsonPath('customer_credit_exposure.aging_buckets.1.code', 'days_1_30')
+            ->assertJsonPath('customer_credit_exposure.aging_buckets.1.balance', 25000)
+            ->assertJsonPath('customer_credit_exposure.aging_buckets.1.receivables_count', 1);
     }
 
     public function test_customer_credit_exposure_report_requires_tenant_header(): void
