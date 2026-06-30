@@ -98,3 +98,25 @@ Executive approval checklist:
 - The command center must remain operationally useful before detailed workflows.
 - The feature must not introduce new backend, migration, dependency, or data mutation behavior.
 
+## Phase 14.5 release closure and deployment evidence checklist
+
+Release closure checks:
+
+1. Confirm the command center includes the operations command center, operational alerts, review queues, operator checklist, executive summary, and decision notes.
+2. Confirm all command center guardrail scripts pass.
+3. Confirm the feature remains read-only and does not mutate sales, stock, receivables, payables, purchase orders, supplier invoices, or payments.
+4. Confirm no backend, migration, dependency, or data mutation change was introduced in the release closure phase.
+5. Confirm the release closure document is available for stakeholder, QA, and deployment review.
+
+Deployment evidence checklist:
+
+- branch reviewed from development before promotion
+- local guardrails passed
+- full Phase 0 check passed
+- public website build passed
+- admin dashboard build passed
+- backend tests passed
+- main promotion validated
+- development final-sync validated
+- final commit recorded
+
