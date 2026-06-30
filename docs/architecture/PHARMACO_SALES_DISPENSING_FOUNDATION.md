@@ -1406,3 +1406,60 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center deployment runbook command sequence and rollback evidence placeholders
+
+Phase 15.9 adds the deployment runbook command sequence and rollback evidence placeholders for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment runbook command sequence
+- command sequence categories
+- command execution rules
+- explicit prohibited production command boundary
+- rollback evidence placeholders
+- rollback readiness register
+- rollback decision table
+- rollback command placeholder rules
+- local deployment runbook guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-operations-release-candidate-freeze-check.sh
+- ./scripts/pharmaco-operations-release-freeze-evidence-check.sh
+- ./scripts/pharmaco-operations-final-approval-check.sh
+- ./scripts/pharmaco-operations-deployment-execution-authorization-check.sh
+- ./scripts/pharmaco-operations-deployment-runbook-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center deployment runbook and rollback evidence
+
+Phase 15.9 adds a clean deployment runbook and rollback evidence structure for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment runbook command sequence
+- operator evidence placeholders
+- prohibited production action boundary
+- rollback trigger register
+- rollback readiness register
+- protected-file, `.env`, storage, migration, and database boundaries
+- local deployment runbook guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
