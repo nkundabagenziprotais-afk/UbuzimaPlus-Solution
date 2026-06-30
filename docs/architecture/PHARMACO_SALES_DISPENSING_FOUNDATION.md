@@ -1497,3 +1497,20 @@ Included:
 - local dry-run binder guardrail script
 
 This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 package generation dry-run evidence manifest
+
+Phase 16.2 adds a dry-run evidence manifest for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run evidence manifest
+- dry-run evidence index
+- evidence naming rules
+- evidence ownership placeholders
+- storage reference placeholders
+- review checkpoints
+- missing evidence handling
+- local evidence manifest guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.

@@ -518,3 +518,20 @@ Checks:
 10. Dry-run result evidence register exists.
 11. Required exclusion preview is listed.
 12. No package archive creation, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.2 package generation dry-run evidence manifest
+
+Checks:
+
+1. Package generation dry-run evidence manifest document exists.
+2. Package generation dry-run evidence index document exists.
+3. Manifest states that it does not generate or execute package generation.
+4. Required evidence owners are listed.
+5. Evidence naming rules are listed.
+6. Dry-run evidence manifest rows are present.
+7. Evidence storage placeholders are present.
+8. Review checkpoints are listed.
+9. Evidence index register is present.
+10. Missing evidence handling is defined.
+11. Evidence closure checklist is present.
+12. No package archive creation, package generation execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
