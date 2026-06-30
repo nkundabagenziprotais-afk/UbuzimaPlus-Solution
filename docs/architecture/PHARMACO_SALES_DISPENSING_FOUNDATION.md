@@ -903,3 +903,31 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-ui-check.sh`
 - `./scripts/phase0-check.sh`
 
+### PharmaCo360 command center executive operating summary
+
+Phase 14.4 adds an executive operating summary and decision notes to the PharmaCo360 operations command center.
+
+Included:
+
+- operating position summary
+- credit discipline summary
+- supplier exposure summary
+- stock investment summary
+- daily close decision note
+- collection follow-up decision note
+- purchasing control decision note
+- manager handover decision note
+- standalone executive summary QA document
+- local executive summary guardrail script
+
+The feature is UI and QA documentation only. It uses existing tenant-safe reporting data and does not introduce backend changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-operations-command-center-check.sh`
+- `./scripts/pharmaco-operations-alerts-check.sh`
+- `./scripts/pharmaco-operations-operator-review-check.sh`
+- `./scripts/pharmaco-operations-executive-summary-check.sh`
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
+

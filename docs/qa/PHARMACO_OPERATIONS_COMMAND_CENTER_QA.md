@@ -79,3 +79,22 @@ Operator approval notes:
 - Confirm no workflow action is triggered by the checklist.
 - Confirm detailed workflow panels remain below the command center.
 
+## Phase 14.4 executive operating summary and decision notes
+
+Functional checks:
+
+1. Confirm `Executive operating summary` appears inside the command center.
+2. Confirm operating position, credit discipline, supplier exposure, and stock investment cards render.
+3. Confirm `Decision notes` appears inside the command center.
+4. Confirm approve daily position, collection follow-up, purchasing pressure, and manager handover notes render.
+5. Confirm the executive summary is advisory only and does not submit, approve, mutate, or delete records.
+6. Confirm the command center still refreshes from read-only tenant-safe reporting APIs.
+7. Confirm Phase 14.1, Phase 14.2, and Phase 14.3 guardrail scripts still pass.
+
+Executive approval checklist:
+
+- The summary should help a manager understand cash, credit, supplier, and stock posture quickly.
+- Decision notes should be practical and not look generic.
+- The command center must remain operationally useful before detailed workflows.
+- The feature must not introduce new backend, migration, dependency, or data mutation behavior.
+
