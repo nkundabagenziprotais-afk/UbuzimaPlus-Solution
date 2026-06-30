@@ -1255,3 +1255,40 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center deployment approval freeze and release candidate sign-off
+
+Phase 15.5 adds deployment approval freeze and final release candidate sign-off controls for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment approval freeze document
+- release candidate sign-off checklist
+- freeze no-change boundary
+- final go/no-go evidence register
+- release owner checklist
+- deployment operator checklist
+- rollback owner checklist
+- local release candidate freeze guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-operations-release-candidate-freeze-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+

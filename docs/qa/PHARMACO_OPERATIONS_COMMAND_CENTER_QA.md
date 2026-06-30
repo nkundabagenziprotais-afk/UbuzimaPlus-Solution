@@ -340,3 +340,28 @@ Package generation dry-run evidence checklist:
 - reviewer captured
 - decision captured
 
+## Phase 15.5 production deployment approval freeze and final release candidate sign-off
+
+Deployment approval freeze and release candidate sign-off checks:
+
+1. Confirm the deployment approval freeze document exists.
+2. Confirm the final release candidate sign-off document exists.
+3. Confirm freeze controls require an approved release candidate commit.
+4. Confirm freeze controls require main and development alignment.
+5. Confirm freeze controls require validation evidence across command center, alerts, operator review, executive summary, release closure, production deployment, release evidence, live verification, go-live approval, cPanel dry-run, package handoff, package manifest, package dry-run, package generation dry-run, reporting UI, and Phase 0.
+6. Confirm sign-off controls include release owner, technical reviewer, business reviewer, deployment operator, rollback owner, package owner, and final decision owner.
+7. Confirm the final go/no-go decision is recorded separately.
+8. Confirm the phase does not create, copy, upload, or deploy any production package.
+9. Confirm no backend, migration, dependency, frontend product, production file copy, production command execution, or data mutation change was introduced in this phase.
+
+Release candidate freeze evidence checklist:
+
+- release candidate commit captured
+- main and development alignment confirmed
+- validation evidence complete
+- package readiness evidence complete
+- protected-file inspection complete
+- rollback owner captured
+- release owner captured
+- final decision owner captured
+
