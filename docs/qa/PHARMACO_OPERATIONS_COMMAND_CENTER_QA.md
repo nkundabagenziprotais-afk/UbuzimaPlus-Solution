@@ -569,3 +569,20 @@ Checks:
 10. Review index rows are present.
 11. Closure checklist is present.
 12. No checksum generation, package archive creation, package generation execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.5 dry-run approval evidence closure ledger
+
+Checks:
+
+1. Dry-run approval evidence closure ledger exists.
+2. Dry-run approval evidence exception log exists.
+3. Closure ledger states that it does not execute approval.
+4. Exception log states that it does not execute approval.
+5. Required closure owners are listed.
+6. Approval evidence closure rows are present.
+7. Required closure evidence is listed.
+8. Review outcomes are listed.
+9. Stop conditions are defined.
+10. Exception rows are present.
+11. Escalation rules are listed.
+12. No approval execution, checksum generation, package archive creation, package generation execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
