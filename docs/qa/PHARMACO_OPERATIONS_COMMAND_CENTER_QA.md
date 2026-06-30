@@ -292,3 +292,27 @@ Package manifest evidence checklist:
 - package reviewer captured
 - rollback reference captured
 
+## Phase 15.3 production package dry-run generator and protected-file inspection checklist
+
+Package dry-run and protected-file inspection checks:
+
+1. Confirm the package dry-run checklist exists.
+2. Confirm the protected-file inspection checklist exists.
+3. Confirm dry-run controls require approved GitHub main.
+4. Confirm dry-run controls verify package manifest, checksum evidence, and deployment handoff documents.
+5. Confirm protected-file inspection excludes `.env`, `.env` backups, local database files, SQLite databases, logs, cache, node_modules, temporary files, OS metadata files, production backups, production uploads, and runtime logs.
+6. Confirm special-review files are identified before package inclusion.
+7. Confirm the local dry-run guardrail script exists.
+8. Confirm the phase does not create, copy, upload, or deploy any production package.
+9. Confirm no backend, migration, dependency, frontend product, production file copy, production command execution, or data mutation change was introduced in this phase.
+
+Package dry-run evidence checklist:
+
+- approved main commit captured
+- dry-run operator captured
+- package inventory reviewed
+- protected-file inspection completed
+- package exclusions confirmed
+- reviewer captured
+- decision captured
+
