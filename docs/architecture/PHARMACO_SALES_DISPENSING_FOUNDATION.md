@@ -1564,3 +1564,20 @@ Included:
 - local approval evidence closure guardrail script
 
 This phase is documentation and validation only. It does not execute approval, generate checksums, create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 package generation readiness lock ledger
+
+Phase 16.6 adds package generation readiness lock controls for the PharmaCo360 operations command center.
+
+Included:
+
+- package generation readiness lock ledger
+- package generation readiness unlock exception log
+- readiness lock ownership placeholders
+- lock and unlock decision placeholders
+- unlock exception handling rows
+- unlock requirements
+- stop conditions
+- local readiness lock guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
