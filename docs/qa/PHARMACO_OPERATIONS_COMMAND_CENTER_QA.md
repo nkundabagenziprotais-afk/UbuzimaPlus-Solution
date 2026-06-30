@@ -586,3 +586,20 @@ Checks:
 10. Exception rows are present.
 11. Escalation rules are listed.
 12. No approval execution, checksum generation, package archive creation, package generation execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.6 package generation readiness lock ledger
+
+Checks:
+
+1. Package generation readiness lock ledger exists.
+2. Package generation readiness unlock exception log exists.
+3. Readiness lock ledger states that it does not create a package archive.
+4. Unlock exception log states that it does not execute package generation.
+5. Required readiness lock owners are listed.
+6. Readiness lock rows are present.
+7. Required lock evidence is listed.
+8. Allowed lock decisions are listed.
+9. Unlock requirements are listed.
+10. Stop conditions are defined.
+11. Unlock exception rows are present.
+12. No package archive creation, package generation execution, checksum generation, approval execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
