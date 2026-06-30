@@ -316,3 +316,27 @@ Package dry-run evidence checklist:
 - reviewer captured
 - decision captured
 
+## Phase 15.4 controlled production package generation dry-run and checksum register
+
+Package generation dry-run and checksum register checks:
+
+1. Confirm the package generation dry-run document exists.
+2. Confirm the checksum register exists.
+3. Confirm the package generation dry-run is inventory-only and does not create a production archive.
+4. Confirm the dry-run validates package manifest, checksum evidence, deployment handoff, package dry-run, protected-file inspection, cPanel dry-run, and production deployment documents.
+5. Confirm protected-file tracked source inspection is included.
+6. Confirm checksum register fields include package filename, package location, approved source commit, package size, checksum method, checksum value, manifest reference, rollback reference, deployment handoff reference, reviewer, and final decision.
+7. Confirm checksum generation is only approved after final package creation.
+8. Confirm the phase does not create, copy, upload, or deploy any production package.
+9. Confirm no backend, migration, dependency, frontend product, production file copy, production command execution, or data mutation change was introduced in this phase.
+
+Package generation dry-run evidence checklist:
+
+- source commit captured
+- inventory-only dry-run evidence produced
+- required deployment documents found
+- protected-file inspection completed
+- checksum register template confirmed
+- reviewer captured
+- decision captured
+
