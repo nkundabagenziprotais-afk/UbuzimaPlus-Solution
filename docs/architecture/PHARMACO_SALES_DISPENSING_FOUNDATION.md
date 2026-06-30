@@ -1530,3 +1530,20 @@ Included:
 - local manifest preview ledger guardrail script
 
 This phase is documentation and validation only. It does not create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 dry-run checksum preview ledger
+
+Phase 16.4 adds dry-run checksum preview controls for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run checksum preview ledger
+- dry-run checksum review index
+- checksum method preview placeholders
+- checksum evidence ownership placeholders
+- checksum storage placeholders
+- checksum review outcomes
+- stop conditions
+- local checksum preview ledger guardrail script
+
+This phase is documentation and validation only. It does not generate checksums, create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
