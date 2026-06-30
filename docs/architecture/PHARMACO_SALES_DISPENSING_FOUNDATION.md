@@ -1048,3 +1048,36 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center go-live approval dossier
+
+Phase 14.9 adds go-live approval and readiness sign-off documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- go-live approval dossier
+- go-live readiness sign-off checklist
+- business approval evidence
+- operations approval evidence
+- technical approval evidence
+- deployment approval evidence
+- rollback readiness evidence
+- live verification readiness evidence
+- go / no-go decision register
+- local go-live approval guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
