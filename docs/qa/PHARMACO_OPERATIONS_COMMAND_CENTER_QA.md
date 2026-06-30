@@ -195,3 +195,27 @@ Live verification evidence checklist:
 - responsive views reviewed
 - rollback trigger review completed
 
+## Phase 14.9 production deployment approval dossier and go-live readiness sign-off
+
+Go-live approval checks:
+
+1. Confirm the go-live approval dossier exists.
+2. Confirm the go-live readiness sign-off checklist exists.
+3. Confirm business, operations, technical, deployment, rollback, and live verification sign-offs are listed.
+4. Confirm go / no-go decision evidence is listed.
+5. Confirm no-go triggers are clearly documented.
+6. Confirm GitHub main remains the source of truth.
+7. Confirm cPanel remains production runtime only.
+8. Confirm no backend, migration, dependency, frontend product, or data mutation change was introduced in this phase.
+
+Go-live evidence checklist:
+
+- approved main commit captured
+- business approval captured
+- operations approval captured
+- technical approval captured
+- deployment approval captured
+- rollback owner captured
+- live verification readiness captured
+- go / no-go decision captured
+
