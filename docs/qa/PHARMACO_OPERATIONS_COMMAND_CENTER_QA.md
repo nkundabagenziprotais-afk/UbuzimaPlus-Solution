@@ -501,3 +501,20 @@ Checks:
 9. Post-generation evidence register exists.
 10. Required package exclusions are listed.
 11. No package creation, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.1 controlled package generation dry-run command binder
+
+Checks:
+
+1. Package generation dry-run command binder document exists.
+2. Package generation dry-run evidence capture document exists.
+3. Binder states that it does not generate a package archive.
+4. Required binder owners are listed.
+5. Command preview register exists.
+6. Required dry-run command categories are listed.
+7. Stop conditions are listed.
+8. Prohibited command boundary is explicit.
+9. Pre-dry-run evidence register exists.
+10. Dry-run result evidence register exists.
+11. Required exclusion preview is listed.
+12. No package archive creation, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
