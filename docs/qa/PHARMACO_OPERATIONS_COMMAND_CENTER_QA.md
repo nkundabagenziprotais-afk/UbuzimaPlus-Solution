@@ -603,3 +603,21 @@ Checks:
 10. Stop conditions are defined.
 11. Unlock exception rows are present.
 12. No package archive creation, package generation execution, checksum generation, approval execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.7 controlled package generation authorization release ledger
+
+Checks:
+
+1. Controlled package generation authorization release ledger exists.
+2. Controlled package generation release exception log exists.
+3. Authorization release ledger states that it does not create a package archive.
+4. Authorization release ledger states that it does not execute package generation.
+5. Release exception log states that it does not execute package generation.
+6. Required authorization release owners are listed.
+7. Authorization release rows are present.
+8. Required release evidence is listed.
+9. Allowed release decisions are listed.
+10. Release requirements are listed.
+11. Stop conditions are defined.
+12. Controlled release exception rows are present.
+13. No package archive creation, package generation execution, checksum generation, approval execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
