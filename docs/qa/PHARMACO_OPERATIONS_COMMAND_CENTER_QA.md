@@ -535,3 +535,20 @@ Checks:
 10. Missing evidence handling is defined.
 11. Evidence closure checklist is present.
 12. No package archive creation, package generation execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.3 dry-run package manifest preview ledger
+
+Checks:
+
+1. Dry-run package manifest preview ledger exists.
+2. Dry-run package exclusion preview ledger exists.
+3. Manifest preview ledger states that it does not create or execute package generation.
+4. Exclusion preview ledger states that it does not create or execute package generation.
+5. Required preview owners are listed.
+6. Required exclusion owners are listed.
+7. Manifest preview rows are present.
+8. Exclusion preview rows are present.
+9. Required inclusion categories are listed.
+10. Required exclusion categories are listed.
+11. Stop conditions are defined.
+12. No package archive creation, package generation execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
