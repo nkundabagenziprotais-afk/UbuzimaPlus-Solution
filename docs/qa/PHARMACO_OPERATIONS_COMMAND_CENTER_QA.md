@@ -267,3 +267,28 @@ Package handoff evidence checklist:
 - rollback point captured
 - handoff decision captured
 
+## Phase 15.2 production package manifest and checksum evidence checklist
+
+Package manifest and checksum checks:
+
+1. Confirm the package manifest checklist exists.
+2. Confirm the checksum evidence checklist exists.
+3. Confirm manifest fields include package filename, approved commit, package size, checksum method, checksum value, reviewer, and rollback reference.
+4. Confirm source traceability requires approved GitHub main.
+5. Confirm protected-file exclusion evidence covers `.env`, local database files, logs, cache, node_modules, temporary files, and OS metadata files.
+6. Confirm checksum evidence uses an approved method such as SHA256 or SHA512.
+7. Confirm checksum evidence is generated only after final package creation.
+8. Confirm the phase does not build, copy, upload, or deploy any production package.
+9. Confirm no backend, migration, dependency, frontend product, production file copy, production command execution, or data mutation change was introduced in this phase.
+
+Package manifest evidence checklist:
+
+- approved main commit captured
+- package filename captured
+- package size captured
+- checksum method captured
+- checksum value captured
+- protected-file exclusions confirmed
+- package reviewer captured
+- rollback reference captured
+
