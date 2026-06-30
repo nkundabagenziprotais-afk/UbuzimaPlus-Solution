@@ -365,3 +365,27 @@ Release candidate freeze evidence checklist:
 - release owner captured
 - final decision owner captured
 
+## Phase 15.6 production package approval ledger and release freeze evidence index
+
+Package approval ledger and release freeze evidence index checks:
+
+1. Confirm the production package approval ledger exists.
+2. Confirm the release freeze evidence index exists.
+3. Confirm approval roles include release owner, technical reviewer, business reviewer, deployment operator, package owner, checksum verifier, protected-file reviewer, rollback owner, and final go/no-go owner.
+4. Confirm required evidence references include release candidate commit, validation evidence, deployment approval freeze, release candidate sign-off, package manifest, checksum register, protected-file inspection, package generation dry-run, rollback reference, and final decision reference.
+5. Confirm the evidence index lists validation, deployment readiness, cPanel readiness, package readiness, protected-file inspection, checksum readiness, rollback readiness, approval freeze, final sign-off, and go/no-go decision evidence.
+6. Confirm release freeze evidence controls do not authorize production package creation, package upload, live deployment, production file copy, production command execution, production migration execution, or destructive commands.
+7. Confirm the local release freeze evidence guardrail script exists.
+8. Confirm no backend, migration, dependency, frontend product, production file copy, production command execution, or data mutation change was introduced in this phase.
+
+Release freeze evidence checklist:
+
+- package approval ledger captured
+- release freeze evidence index captured
+- approval roles captured
+- evidence groups captured
+- protected-file evidence captured
+- checksum evidence captured
+- rollback evidence captured
+- final go/no-go evidence remains separately controlled
+
