@@ -1514,3 +1514,19 @@ Included:
 - local evidence manifest guardrail script
 
 This phase is documentation and validation only. It does not create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 dry-run package manifest preview ledger
+
+Phase 16.3 adds dry-run package manifest and exclusion preview ledgers for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run package manifest preview ledger
+- dry-run package exclusion preview ledger
+- inclusion category placeholders
+- exclusion category placeholders
+- preview ownership placeholders
+- stop conditions
+- local manifest preview ledger guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
