@@ -32,3 +32,24 @@ It summarizes stock value, sales collection, customer credit risk, supplier bala
 This phase introduces no backend change, no migration, no dependency change, and no production data mutation.
 
 The command center must remain read-only.
+
+## Phase 14.2 operational alerts and review queues
+
+Functional checks:
+
+1. Confirm `Operational alerts` appears inside the command center.
+2. Confirm customer credit, supplier payables, sales collection, purchasing, and stock visibility alerts render.
+3. Confirm `Review queues` appears inside the command center.
+4. Confirm credit collection, supplier payment, purchase receiving, and sales collection queues render.
+5. Confirm alerts and queues are generated from existing read-only reporting data.
+6. Confirm no stock, sale, receivable, payment, supplier, invoice, or purchase order record is changed by refreshing the command center.
+
+Responsive checks:
+
+- 360px: alerts and queues stack in one column without horizontal overflow.
+- 430px: alert details remain readable and the refresh button is tappable.
+- 768px: queues remain clear in tablet view.
+- 1280px: alerts fit the command center without crowding.
+- 1440px: command center looks like an executive operating view.
+- 1920px: alert and queue cards remain readable and not stretched.
+
