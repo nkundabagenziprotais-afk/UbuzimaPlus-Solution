@@ -1463,3 +1463,20 @@ Included:
 - local deployment runbook guardrail script
 
 This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation authorization gate
+
+Phase 16.0 adds a controlled authorization gate before any future production package generation.
+
+Included:
+
+- package generation authorization gate
+- package generation decision evidence
+- required gate owners
+- required authorization checks
+- pre-generation evidence register
+- post-generation evidence register
+- package exclusion rules
+- local package generation authorization guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
