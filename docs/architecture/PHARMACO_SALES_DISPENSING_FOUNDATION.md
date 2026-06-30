@@ -879,3 +879,27 @@ Expected approval evidence:
 - `./scripts/pharmaco-operations-alerts-check.sh`
 - `./scripts/pharmaco-reporting-ui-check.sh`
 - `./scripts/phase0-check.sh`
+
+### PharmaCo360 command center responsive polish and operator review
+
+Phase 14.3 improves the command center approval experience by adding an operator review checklist and additional responsive polish.
+
+Included:
+
+- operator review checklist inside the command center
+- small-mobile polish at 360px and 430px
+- tablet and laptop layout polish
+- wide-screen readability guardrails
+- standalone operator review QA document
+- local operator review guardrail script
+
+The feature is UI and QA documentation only. It does not introduce backend changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-operations-command-center-check.sh`
+- `./scripts/pharmaco-operations-alerts-check.sh`
+- `./scripts/pharmaco-operations-operator-review-check.sh`
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
+
