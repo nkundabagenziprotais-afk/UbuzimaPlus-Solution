@@ -957,3 +957,33 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-ui-check.sh`
 - `./scripts/phase0-check.sh`
 
+### PharmaCo360 command center production deployment runbook
+
+Phase 14.6 adds production deployment and post-deployment verification documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- production deployment runbook
+- GitHub source-of-truth deployment flow
+- cPanel production runtime checklist
+- safe migration warning
+- frontend deployment checklist
+- post-deployment verification checklist
+- responsive production review checklist
+- rollback checklist
+- deployment evidence archive checklist
+- local production deployment guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
