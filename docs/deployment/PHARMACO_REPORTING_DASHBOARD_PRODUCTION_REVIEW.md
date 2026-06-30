@@ -107,3 +107,16 @@ Required validation:
 - ./scripts/pharmaco-reporting-release-check.sh
 - ./scripts/phase0-check.sh
 
+## Release closure checklist
+
+Phase 13.6 adds the final release closure checklist.
+
+Before deployment approval, confirm:
+
+- runbook index has been reviewed
+- closure guardrail script has passed
+- main and development branches are aligned
+- no production migration is required
+- no destructive production database command is required
+- cPanel deployment will pull the approved main branch only
+

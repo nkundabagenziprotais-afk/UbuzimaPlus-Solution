@@ -813,3 +813,22 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-release-check.sh`
 - `./scripts/phase0-check.sh`
 
+### Reporting dashboard release closure
+
+Phase 13.6 adds the deployment runbook index and final release closure checklist.
+
+Included:
+
+- runbook index for reporting dashboard documentation
+- release closure checklist
+- final evidence list for QA, deployment, and operator review
+- local release closure guardrail script
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/pharmaco-reporting-production-review-check.sh`
+- `./scripts/pharmaco-reporting-release-check.sh`
+- `./scripts/pharmaco-reporting-release-closure-check.sh`
+- `./scripts/phase0-check.sh`
+

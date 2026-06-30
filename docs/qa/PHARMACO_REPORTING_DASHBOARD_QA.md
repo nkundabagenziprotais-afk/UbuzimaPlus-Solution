@@ -69,3 +69,15 @@ Before closing the reporting dashboard release, confirm:
 - Phase 0 local check passes
 - preview evidence is collected for the required screen sizes
 
+## Release closure QA
+
+Phase 13.6 adds the final release closure QA requirement.
+
+QA closure requires:
+
+- reporting UI guardrail check passed
+- production review checklist check passed
+- release handover check passed
+- release closure check passed
+- full Phase 0 local check passed
+
