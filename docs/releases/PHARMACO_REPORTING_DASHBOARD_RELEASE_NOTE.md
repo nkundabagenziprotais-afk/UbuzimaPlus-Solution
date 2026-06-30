@@ -66,3 +66,16 @@ Required validation before production approval:
 ## Release readiness
 
 The dashboard can be considered release-ready when the operator review, QA guide, production checklist, and local validation evidence are complete.
+
+## Release closure
+
+Phase 13.6 adds the runbook index and release closure checklist.
+
+Release closure requires:
+
+- runbook index available
+- release closure guardrail script passing
+- main and development aligned
+- Phase 0 local check passing
+- reporting dashboard remains read-only
+
