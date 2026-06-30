@@ -413,3 +413,30 @@ Final approval authorization evidence checklist:
 - production action boundary captured
 - final decision remains pending until signed
 
+## Phase 15.8 deployment execution authorization packet and operator evidence capture
+
+Deployment execution authorization packet and operator evidence capture checks:
+
+1. Confirm the deployment execution authorization packet exists.
+2. Confirm the operator evidence capture document exists.
+3. Confirm execution decision options include Authorized, Not authorized, Conditionally authorized, and Deferred.
+4. Confirm execution authorization is separate from release readiness, validation, freeze, sign-off, evidence indexing, approval ledger, and final approval.
+5. Confirm execution scope options are explicit and include package generation only, checksum generation only, package upload only, cPanel file copy only, production command execution only, post-deployment verification only, rollback readiness only, and full controlled deployment window.
+6. Confirm pre-execution, during-execution, and post-execution evidence fields are present.
+7. Confirm operator evidence includes protected-file evidence, checksum evidence, rollback evidence, and post-execution verification evidence.
+8. Confirm the phase does not create, copy, upload, authorize, or deploy any production package by itself.
+9. Confirm no backend, migration, dependency, frontend product, production file copy, production command execution, or data mutation change was introduced in this phase.
+
+Deployment execution evidence checklist:
+
+- deployment execution authorization packet captured
+- operator evidence capture document captured
+- execution decision options captured
+- execution scope options captured
+- pre-execution evidence fields captured
+- during-execution evidence fields captured
+- post-execution evidence fields captured
+- operator evidence register captured
+- production action boundary captured
+- final execution decision remains pending until separately authorized
+
