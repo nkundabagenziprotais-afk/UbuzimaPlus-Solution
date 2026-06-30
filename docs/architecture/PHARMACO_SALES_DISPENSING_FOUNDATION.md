@@ -1366,3 +1366,43 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center deployment execution authorization packet and operator evidence capture
+
+Phase 15.8 adds the deployment execution authorization packet and operator evidence capture checklist for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment execution authorization packet
+- operator evidence capture document
+- execution decision options
+- execution scope controls
+- pre-execution evidence capture
+- during-execution evidence capture
+- post-execution evidence capture
+- local deployment execution authorization guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-operations-release-candidate-freeze-check.sh
+- ./scripts/pharmaco-operations-release-freeze-evidence-check.sh
+- ./scripts/pharmaco-operations-final-approval-check.sh
+- ./scripts/pharmaco-operations-deployment-execution-authorization-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
