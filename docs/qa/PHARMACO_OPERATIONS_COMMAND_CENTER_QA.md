@@ -485,3 +485,19 @@ Checks:
 7. Rollback readiness register exists.
 8. Protected-file, `.env`, storage, migration, and database boundaries are explicit.
 9. No package creation, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.0 controlled package generation authorization gate
+
+Checks:
+
+1. Package generation authorization gate document exists.
+2. Package generation authorization evidence document exists.
+3. Gate states that package generation requires separate explicit authorization.
+4. Required gate owners are listed.
+5. Required authorization checks are listed.
+6. Authorization decision options are listed.
+7. Package generation boundary is explicit.
+8. Pre-generation evidence register exists.
+9. Post-generation evidence register exists.
+10. Required package exclusions are listed.
+11. No package creation, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
