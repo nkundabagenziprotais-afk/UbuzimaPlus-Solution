@@ -931,3 +931,29 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-ui-check.sh`
 - `./scripts/phase0-check.sh`
 
+### PharmaCo360 command center release closure
+
+Phase 14.5 adds release closure and deployment evidence documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- release closure checklist
+- stakeholder review checklist
+- technical review checklist
+- deployment review checklist
+- production evidence checklist
+- cPanel deployment notes
+- local release closure guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-operations-command-center-check.sh`
+- `./scripts/pharmaco-operations-alerts-check.sh`
+- `./scripts/pharmaco-operations-operator-review-check.sh`
+- `./scripts/pharmaco-operations-executive-summary-check.sh`
+- `./scripts/pharmaco-operations-release-closure-check.sh`
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
+
