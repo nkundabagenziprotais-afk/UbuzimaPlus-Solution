@@ -1480,3 +1480,20 @@ Included:
 - local package generation authorization guardrail script
 
 This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 package generation dry-run command binder
+
+Phase 16.1 adds a controlled package generation dry-run command binder for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run command preview register
+- required binder owners
+- dry-run command categories
+- stop conditions
+- dry-run evidence capture placeholders
+- package exclusion preview
+- protected-file inspection boundary
+- local dry-run binder guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
