@@ -1081,3 +1081,36 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center controlled production preparation and cPanel dry-run
+
+Phase 15.0 adds controlled production deployment preparation and cPanel dry-run readiness documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled production deployment preparation checklist
+- cPanel dry-run checklist
+- cPanel readiness checklist
+- production backup readiness checklist
+- deployment package readiness checklist
+- dry-run boundary checklist
+- not-approved production command list
+- dry-run evidence register
+- local cPanel dry-run guardrail script
+
+The phase is documentation and validation only. It does not deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+

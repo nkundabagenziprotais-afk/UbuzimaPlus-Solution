@@ -219,3 +219,27 @@ Go-live evidence checklist:
 - live verification readiness captured
 - go / no-go decision captured
 
+## Phase 15.0 controlled production deployment preparation and cPanel dry-run checklist
+
+cPanel dry-run checks:
+
+1. Confirm the controlled production deployment preparation document exists.
+2. Confirm the cPanel dry-run checklist exists.
+3. Confirm dry-run boundaries are clear.
+4. Confirm the dry-run does not approve production deployment.
+5. Confirm production file copy is explicitly not allowed during dry-run.
+6. Confirm destructive production commands are explicitly not approved.
+7. Confirm backup, rollback, cPanel path, environment, and post-deployment verification readiness are listed.
+8. Confirm no backend, migration, dependency, frontend product, or data mutation change was introduced in this phase.
+
+Dry-run evidence checklist:
+
+- approved main commit captured
+- cPanel account captured
+- production path captured
+- document root captured
+- backup path captured
+- rollback point captured
+- environment protection confirmed
+- dry-run decision captured
+
