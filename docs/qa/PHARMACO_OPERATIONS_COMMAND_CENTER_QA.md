@@ -145,3 +145,28 @@ Post-deployment evidence checklist:
 - command center remains read-only
 - 360px, 430px, 768px, 1280px, 1440px, and 1920px views reviewed
 
+## Phase 14.7 production deployment package and release evidence index
+
+Release evidence checks:
+
+1. Confirm the release evidence index exists.
+2. Confirm the production deployment package exists.
+3. Confirm validation evidence, approval evidence, rollback evidence, responsive evidence, and post-deployment evidence are listed.
+4. Confirm GitHub remains the source of truth.
+5. Confirm cPanel remains production runtime only.
+6. Confirm destructive production commands are explicitly not approved.
+7. Confirm no backend, migration, dependency, frontend product, or data mutation change was introduced in this phase.
+
+Release evidence archive checklist:
+
+- final commit hash
+- branch name
+- pull request reference
+- merge reference
+- backend test result
+- public website build result
+- admin dashboard build result
+- command center guardrail outputs
+- production deployment reviewer approval
+- post-deployment health and log review
+
