@@ -639,3 +639,22 @@ Checks:
 11. Stop conditions are defined.
 12. Execution preflight exception rows are present.
 13. No package archive creation, package generation execution, checksum generation, approval execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.9 controlled package generation command release hold ledger
+
+Checks:
+
+1. Controlled package generation command release hold ledger exists.
+2. Controlled package generation command release hold exception log exists.
+3. Command release hold ledger states that it does not create a package archive.
+4. Command release hold ledger states that it does not execute package generation.
+5. Command release hold ledger states that it does not release a package generation command.
+6. Command release hold exception log states that it does not execute package generation.
+7. Required command release hold owners are listed.
+8. Command release hold rows are present.
+9. Required command release evidence placeholders are listed.
+10. Allowed command release decisions are listed.
+11. Command release requirements are listed.
+12. Stop conditions are defined.
+13. Command release hold exception rows are present.
+14. No package archive creation, package generation execution, checksum generation, approval execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.

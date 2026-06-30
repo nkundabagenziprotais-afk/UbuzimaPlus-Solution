@@ -1616,3 +1616,22 @@ Included:
 - local execution evidence preflight guardrail script
 
 This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation command release hold ledger
+
+Phase 16.9 adds controlled package generation command release hold controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation command release hold ledger
+- controlled package generation command release hold exception log
+- command hold owner placeholders
+- command release decision placeholders
+- command identity placeholders
+- evidence storage placeholders
+- command release requirements
+- command release hold exception handling rows
+- stop conditions
+- local command release hold guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
