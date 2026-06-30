@@ -1114,3 +1114,38 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center production package build and deployment handoff
+
+Phase 15.1 adds controlled production package build and deployment handoff documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- production package build checklist
+- package source control requirements
+- package exclusion rules
+- environment protection requirements
+- package build evidence register
+- deployment handoff checklist
+- operator readiness checklist
+- backup and rollback handoff checklist
+- live verification handoff checklist
+- local package handoff guardrail script
+
+The phase is documentation and validation only. It does not deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
