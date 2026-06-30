@@ -552,3 +552,20 @@ Checks:
 10. Required exclusion categories are listed.
 11. Stop conditions are defined.
 12. No package archive creation, package generation execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.4 dry-run checksum preview ledger
+
+Checks:
+
+1. Dry-run checksum preview ledger exists.
+2. Dry-run checksum review index exists.
+3. Checksum preview ledger states that it does not generate checksums.
+4. Checksum review index states that it does not generate checksums.
+5. Required checksum owners are listed.
+6. Checksum preview rows are present.
+7. Allowed checksum preview methods are listed.
+8. Review checkpoints are listed.
+9. Stop conditions are defined.
+10. Review index rows are present.
+11. Closure checklist is present.
+12. No checksum generation, package archive creation, package generation execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
