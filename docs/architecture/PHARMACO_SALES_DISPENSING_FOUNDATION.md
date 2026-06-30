@@ -1016,3 +1016,35 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center live verification pack
+
+Phase 14.8 adds deployment execution and live production verification documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment execution checklist
+- live verification pack
+- health verification checklist
+- authentication verification checklist
+- dashboard verification checklist
+- read-only verification checklist
+- responsive live verification checklist
+- production log verification checklist
+- rollback trigger checklist
+- local live verification guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+

@@ -170,3 +170,28 @@ Release evidence archive checklist:
 - production deployment reviewer approval
 - post-deployment health and log review
 
+## Phase 14.8 production deployment execution checklist and live verification pack
+
+Live verification checks:
+
+1. Confirm the live verification pack exists.
+2. Confirm the deployment execution checklist exists.
+3. Confirm live health, authentication, dashboard, log, read-only, responsive, and rollback evidence are listed.
+4. Confirm GitHub main remains the source of truth.
+5. Confirm cPanel remains production runtime only.
+6. Confirm destructive production commands are explicitly not approved.
+7. Confirm no backend, migration, dependency, frontend product, or data mutation change was introduced in this phase.
+
+Live verification evidence checklist:
+
+- production URL checked
+- deployment commit hash captured
+- health endpoint checked
+- authorized login checked
+- PharmaCo360 dashboard checked
+- operations command center checked
+- command center read-only behavior checked
+- production logs reviewed
+- responsive views reviewed
+- rollback trigger review completed
+
