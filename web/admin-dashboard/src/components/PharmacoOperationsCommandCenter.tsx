@@ -242,6 +242,58 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
     }
   }
 
+  const executiveSummaryItems = [
+    {
+      label: 'Operating position',
+      title: collectionRate >= 80 ? 'Collections are supporting daily operations' : 'Collections need executive attention',
+      detail: `${collectionRate}% of generated sales has been collected from ${formatMoney(totalSales)} total sales.`,
+      tone: collectionRate >= 80 ? 'stable' : 'attention',
+    },
+    {
+      label: 'Credit discipline',
+      title: overdueCredit > 0 ? 'Overdue customer credit requires action' : 'Customer credit is within review comfort',
+      detail:
+        overdueCredit > 0
+          ? `${formatMoney(overdueCredit)} is overdue from ${formatMoney(openCredit)} open credit.`
+          : 'No overdue customer credit is highlighted in the current snapshot.',
+      tone: overdueCredit > 0 ? 'warning' : 'stable',
+    },
+    {
+      label: 'Supplier exposure',
+      title: supplierBalance > 0 ? 'Supplier obligations should be reviewed' : 'Supplier exposure is currently light',
+      detail: `${formatMoney(supplierBalance)} remains open with suppliers in the latest payable view.`,
+      tone: supplierBalance > 0 ? 'attention' : 'stable',
+    },
+    {
+      label: 'Stock investment',
+      title: stockAtCost > 0 ? 'Stock value is visible for executive review' : 'Stock valuation needs confirmation',
+      detail:
+        stockAtCost > 0
+          ? `${formatMoney(stockAtCost)} stock at cost is visible for pharmacy operating review.`
+          : 'Inventory value is not visible in the current reporting snapshot.',
+      tone: stockAtCost > 0 ? 'stable' : 'attention',
+    },
+  ];
+
+  const decisionNotes = [
+    {
+      title: 'Approve daily position',
+      note: 'Use sales collected, open customer credit, and supplier balance to decide whether the day can be closed cleanly.',
+    },
+    {
+      title: 'Prioritize collection follow-up',
+      note: 'Escalate overdue receivables before extending additional credit or releasing large-value products on account.',
+    },
+    {
+      title: 'Control purchasing pressure',
+      note: 'Check approved purchase orders, open supplier balances, and current stock value before new buying commitments.',
+    },
+    {
+      title: 'Prepare manager handover',
+      note: 'Use alerts, queues, and operator notes as the handover agenda between cashier, stock, procurement, and management.',
+    },
+  ];
+
   const operatorChecklist = [
     {
       title: 'Cash and collections',
@@ -367,6 +419,43 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
               <strong>{queue.count}</strong>
               <small>{queue.value}</small>
               <p>{queue.note}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="operations-executive-section">
+        <div className="section-heading">
+          <div>
+            <h3>Executive operating summary</h3>
+            <span>Management-level interpretation of the current pharmacy reporting snapshot.</span>
+          </div>
+        </div>
+
+        <div className="operations-executive-grid">
+          {executiveSummaryItems.map((item) => (
+            <div key={item.label} className={`operations-executive-card operations-executive-card--${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.title}</strong>
+              <p>{item.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="operations-decision-section">
+        <div className="section-heading">
+          <div>
+            <h3>Decision notes</h3>
+            <span>Executive prompts for daily review, escalation, and handover.</span>
+          </div>
+        </div>
+
+        <div className="operations-decision-grid">
+          {decisionNotes.map((note) => (
+            <div key={note.title}>
+              <strong>{note.title}</strong>
+              <p>{note.note}</p>
             </div>
           ))}
         </div>
