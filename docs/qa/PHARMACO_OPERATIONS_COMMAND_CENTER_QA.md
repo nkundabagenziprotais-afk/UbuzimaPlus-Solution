@@ -440,3 +440,48 @@ Deployment execution evidence checklist:
 - production action boundary captured
 - final execution decision remains pending until separately authorized
 
+## Phase 15.9 deployment runbook command sequence and rollback evidence placeholders
+
+Deployment runbook and rollback evidence checks:
+
+1. Confirm the deployment runbook command sequence document exists.
+2. Confirm the rollback evidence placeholders document exists.
+3. Confirm the runbook states that it is not a deployment script.
+4. Confirm command sequence categories are defined.
+5. Confirm command execution rules are present.
+6. Confirm approval checkpoints are separated from execution steps.
+7. Confirm rollback trigger status is required.
+8. Confirm prohibited production commands are explicitly listed.
+9. Confirm rollback roles are listed.
+10. Confirm rollback trigger placeholders are present.
+11. Confirm rollback readiness register is present.
+12. Confirm rollback decision table is present.
+13. Confirm rollback command placeholder rules are present.
+14. Confirm no production archive, package upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change was introduced in this phase.
+
+Deployment runbook and rollback evidence checklist:
+
+- deployment runbook command sequence captured
+- rollback evidence placeholders captured
+- command sequence categories captured
+- command execution rules captured
+- approval checkpoints captured
+- rollback trigger placeholders captured
+- rollback readiness register captured
+- rollback decision table captured
+- prohibited command boundary captured
+- final execution and rollback decisions remain pending until separately authorized
+
+## Phase 15.9 deployment runbook and rollback evidence
+
+Checks:
+
+1. Deployment runbook document exists.
+2. Rollback evidence document exists.
+3. Runbook clearly states it is not a deployment script.
+4. Command sequence register exists.
+5. Prohibited production actions are listed.
+6. Rollback trigger register exists.
+7. Rollback readiness register exists.
+8. Protected-file, `.env`, storage, migration, and database boundaries are explicit.
+9. No package creation, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
