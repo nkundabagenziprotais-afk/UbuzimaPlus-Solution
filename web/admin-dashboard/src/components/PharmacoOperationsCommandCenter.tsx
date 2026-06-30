@@ -242,6 +242,25 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
     }
   }
 
+  const operatorChecklist = [
+    {
+      title: 'Cash and collections',
+      note: 'Compare sales generated, collected cash, and open customer credit before closing the day.',
+    },
+    {
+      title: 'Credit control',
+      note: 'Review overdue receivables before approving additional credit sales.',
+    },
+    {
+      title: 'Supplier exposure',
+      note: 'Check open and overdue supplier balances before confirming new purchase commitments.',
+    },
+    {
+      title: 'Stock attention',
+      note: 'Use the stock value and queue notes to guide replenishment, expiry, and receiving conversations.',
+    },
+  ];
+
   const focusItems = [
     {
       label: 'Collect customer credit',
@@ -348,6 +367,24 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
               <strong>{queue.count}</strong>
               <small>{queue.value}</small>
               <p>{queue.note}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="operations-operator-section">
+        <div className="section-heading">
+          <div>
+            <h3>Operator review checklist</h3>
+            <span>Daily questions for a pharmacy manager before moving into detailed workflows.</span>
+          </div>
+        </div>
+
+        <div className="operations-operator-grid">
+          {operatorChecklist.map((item) => (
+            <div key={item.title}>
+              <strong>{item.title}</strong>
+              <p>{item.note}</p>
             </div>
           ))}
         </div>

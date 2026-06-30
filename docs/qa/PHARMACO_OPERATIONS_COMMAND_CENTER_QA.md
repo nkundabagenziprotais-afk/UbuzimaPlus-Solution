@@ -53,3 +53,29 @@ Responsive checks:
 - 1440px: command center looks like an executive operating view.
 - 1920px: alert and queue cards remain readable and not stretched.
 
+## Phase 14.3 responsive polish and operator review checklist
+
+Functional checks:
+
+1. Confirm `Operator review checklist` appears inside the command center.
+2. Confirm cash and collections, credit control, supplier exposure, and stock attention review cards render.
+3. Confirm the checklist is advisory only and does not submit, approve, mutate, or delete records.
+4. Confirm the command center still refreshes from read-only tenant-safe reporting APIs.
+5. Confirm Phase 14.1 and Phase 14.2 guardrail scripts still pass.
+
+Responsive approval checklist:
+
+- 360px: command center cards stack without horizontal scrolling.
+- 430px: refresh button, period note, alerts, queues, and checklist cards are readable.
+- 768px: KPI, alert, queue, and checklist layouts remain balanced.
+- 1280px: command center works as the main operational overview.
+- 1440px: spacing remains professional and not crowded.
+- 1920px: command center remains readable and does not feel overstretched.
+
+Operator approval notes:
+
+- Review the page after login as VitaPharma tenant admin.
+- Refresh the command center once.
+- Confirm no workflow action is triggered by the checklist.
+- Confirm detailed workflow panels remain below the command center.
+
