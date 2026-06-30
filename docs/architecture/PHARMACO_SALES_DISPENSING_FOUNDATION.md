@@ -854,3 +854,28 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-ui-check.sh`
 - `./scripts/phase0-check.sh`
 
+
+### PharmaCo360 command center alerts and review queues
+
+Phase 14.2 adds read-only operational alerts and manager review queues to the PharmaCo360 operations command center.
+
+Included:
+
+- customer credit alert
+- supplier payables alert
+- sales collection alert
+- purchasing alert
+- stock visibility alert
+- credit collection queue
+- supplier payment queue
+- purchase receiving queue
+- sales collection queue
+
+The feature continues to reuse existing tenant-safe reporting APIs and does not introduce backend changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-operations-command-center-check.sh`
+- `./scripts/pharmaco-operations-alerts-check.sh`
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
