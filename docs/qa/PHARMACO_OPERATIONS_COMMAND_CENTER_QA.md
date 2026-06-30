@@ -243,3 +243,27 @@ Dry-run evidence checklist:
 - environment protection confirmed
 - dry-run decision captured
 
+## Phase 15.1 controlled production package build and deployment handoff checklist
+
+Production package and handoff checks:
+
+1. Confirm the production package build checklist exists.
+2. Confirm the deployment handoff checklist exists.
+3. Confirm package build must use approved GitHub main.
+4. Confirm package exclusion rules protect `.env`, local database files, logs, cache, and development artifacts.
+5. Confirm production environment protection is documented.
+6. Confirm handoff evidence includes approved commit, package filename, package location, backup location, rollback point, and deployment operator.
+7. Confirm the handoff does not approve live deployment by itself.
+8. Confirm no backend, migration, dependency, frontend product, production file copy, production command execution, or data mutation change was introduced in this phase.
+
+Package handoff evidence checklist:
+
+- approved main commit captured
+- package builder captured
+- package filename captured
+- package checksum captured where applicable
+- deployment operator captured
+- backup location captured
+- rollback point captured
+- handoff decision captured
+
