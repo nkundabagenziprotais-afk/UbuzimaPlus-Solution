@@ -987,3 +987,32 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center release evidence package
+
+Phase 14.7 adds a release evidence index and deployment package for the PharmaCo360 operations command center.
+
+Included:
+
+- release evidence index
+- production deployment package
+- validation evidence register
+- approval evidence register
+- responsive evidence checklist
+- post-deployment evidence checklist
+- rollback evidence checklist
+- local release evidence guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
