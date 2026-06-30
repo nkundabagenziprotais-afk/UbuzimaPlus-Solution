@@ -67,3 +67,17 @@ Possible future phases may include:
 - branch-level reporting filters
 - date-range presets
 - audit trail for report exports
+
+## Release closure handover
+
+Phase 13.6 confirms that the reporting dashboard handover package has a runbook index and closure checklist.
+
+The handover is complete when:
+
+- QA guide is available
+- production review checklist is available
+- release note is available
+- handover summary is available
+- runbook index is available
+- all reporting dashboard guardrail scripts pass
+
