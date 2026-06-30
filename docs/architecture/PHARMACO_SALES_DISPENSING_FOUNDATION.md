@@ -832,3 +832,25 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-release-closure-check.sh`
 - `./scripts/phase0-check.sh`
 
+### PharmaCo360 operations command center
+
+Phase 14.1 introduces a read-only operations command center near the top of the admin workspace.
+
+The command center reuses existing tenant-safe reporting APIs to summarize:
+
+- stock at cost
+- sales generated
+- collection rate
+- customer credit risk
+- supplier balance
+- purchase follow-up
+- manager review notes
+
+The feature is UI-only and does not introduce database migrations, backend changes, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-operations-command-center-check.sh`
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
+

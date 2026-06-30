@@ -7,6 +7,7 @@ import { SalesDispensingReview } from './components/SalesDispensingReview';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { ReportingDashboard } from './components/ReportingDashboard';
+import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 
@@ -397,6 +398,8 @@ function App() {
             <strong>{profile.admin_scopes.length}</strong>
           </article>
         </section>
+
+        <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
 
         <section className="content-grid">
           <article className="panel">
