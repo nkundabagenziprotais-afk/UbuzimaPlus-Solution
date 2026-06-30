@@ -1547,3 +1547,20 @@ Included:
 - local checksum preview ledger guardrail script
 
 This phase is documentation and validation only. It does not generate checksums, create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 dry-run approval evidence closure ledger
+
+Phase 16.5 adds approval evidence closure controls for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run approval evidence closure ledger
+- dry-run approval evidence exception log
+- approval evidence ownership placeholders
+- closure decision placeholders
+- exception handling rows
+- escalation rules
+- stop conditions
+- local approval evidence closure guardrail script
+
+This phase is documentation and validation only. It does not execute approval, generate checksums, create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
