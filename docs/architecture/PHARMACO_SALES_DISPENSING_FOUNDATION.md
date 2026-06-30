@@ -1149,3 +1149,38 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center package manifest and checksum evidence
+
+Phase 15.2 adds production package manifest and checksum evidence documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- package manifest checklist
+- source traceability requirements
+- package content group verification
+- protected-file exclusion evidence
+- protected production asset warning
+- checksum evidence checklist
+- checksum method requirements
+- integrity verification checklist
+- local package manifest guardrail script
+
+The phase is documentation and validation only. It does not build a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
