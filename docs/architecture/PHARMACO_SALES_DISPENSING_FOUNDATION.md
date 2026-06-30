@@ -1184,3 +1184,38 @@ Expected approval evidence:
 - ./scripts/pharmaco-reporting-ui-check.sh
 - ./scripts/phase0-check.sh
 
+### PharmaCo360 command center package dry-run and protected-file inspection
+
+Phase 15.3 adds production package dry-run and protected-file inspection controls for the PharmaCo360 operations command center.
+
+Included:
+
+- package dry-run checklist
+- local package readiness controls
+- file inventory verification requirements
+- package exclusion simulation
+- protected-file inspection checklist
+- special-review file controls
+- protected production asset warnings
+- local package dry-run guardrail script
+
+The phase is documentation and validation only. It does not create a production package, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
