@@ -120,3 +120,28 @@ Deployment evidence checklist:
 - development final-sync validated
 - final commit recorded
 
+## Phase 14.6 production deployment runbook and post-deployment verification
+
+Production readiness checks:
+
+1. Confirm the production deployment runbook exists.
+2. Confirm the runbook treats GitHub as the source of truth.
+3. Confirm cPanel is treated as production runtime, not source control.
+4. Confirm deployment instructions avoid destructive production commands.
+5. Confirm post-deployment verification includes health, logs, authentication, dashboard, responsiveness, and read-only checks.
+6. Confirm rollback evidence and deployment approval evidence are listed.
+7. Confirm no backend, migration, dependency, frontend product, or data mutation change was introduced in this phase.
+
+Post-deployment evidence checklist:
+
+- final commit hash captured
+- deployment date and responsible reviewer captured
+- main branch confirmed as source
+- backend health endpoint checked
+- logs checked after deployment
+- admin dashboard opened successfully
+- PharmaCo360 command center opened successfully
+- refresh action verified
+- command center remains read-only
+- 360px, 430px, 768px, 1280px, 1440px, and 1920px views reviewed
+
