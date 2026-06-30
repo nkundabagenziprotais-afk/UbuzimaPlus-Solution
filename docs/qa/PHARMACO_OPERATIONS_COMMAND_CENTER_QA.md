@@ -621,3 +621,21 @@ Checks:
 11. Stop conditions are defined.
 12. Controlled release exception rows are present.
 13. No package archive creation, package generation execution, checksum generation, approval execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 16.8 controlled package generation execution evidence preflight ledger
+
+Checks:
+
+1. Controlled package generation execution evidence preflight ledger exists.
+2. Controlled package generation execution preflight exception log exists.
+3. Execution evidence preflight ledger states that it does not create a package archive.
+4. Execution evidence preflight ledger states that it does not execute package generation.
+5. Execution preflight exception log states that it does not execute package generation.
+6. Required execution evidence preflight owners are listed.
+7. Execution evidence preflight rows are present.
+8. Required execution evidence placeholders are listed.
+9. Allowed preflight decisions are listed.
+10. Preflight requirements are listed.
+11. Stop conditions are defined.
+12. Execution preflight exception rows are present.
+13. No package archive creation, package generation execution, checksum generation, approval execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
