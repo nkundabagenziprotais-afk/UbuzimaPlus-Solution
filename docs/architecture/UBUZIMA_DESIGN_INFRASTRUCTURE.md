@@ -34,6 +34,10 @@ The public website is for external customers and partners. It should not read li
 
 The authenticated dashboard should feel like an operating console, not a marketing page.
 
+- Shell: fixed header, independent left navigation, independent content scroll.
+- Navigation: folded tree menu by default, with compact icon badges and sub-menu descriptions.
+- State: active section must persist locally so user changes do not reset the workspace to the top menu.
+- Header actions: Back, Website, Email Corporate, signed-in user, scope, and status.
 - Header: authenticated workspace, scope, user status, and role context.
 - Summary: active roles, permissions, tenant assignments, admin scopes.
 - System experience blueprint: Operate, Control, Grow, Connect.
@@ -79,6 +83,27 @@ AI modules:
 - Human approval center
 - Feedback and evaluation
 - Usage, cost, risk, and audit logs
+
+## Priority UX Workspaces
+
+AI Center:
+
+- Document intake, structured extraction, reconciliation, approval queue, and controlled apply.
+- AI must show extracted content inside the platform before approval; approving a file alone is not enough.
+- Bulk approval requires visible differences, affected fields, risk, and audit trail.
+- Long extraction jobs should be queued or chunked to avoid web request timeout failures.
+
+Inventory:
+
+- Product master, batch, expiry, FEFO, receiving, stock movement, low stock, near-expiry, and shelf arrangement readiness.
+- Offline lookup can be allowed by policy, but stock changes must remain pending sync and must not blindly overwrite online inventory.
+- Shelf and warehouse arrangement AI stays advisory until inventory officers approve it.
+
+POS:
+
+- Teller session, teller PIN, fast barcode/product search, FEFO batch selection, prescription control, payments, supervisor approval, and till close.
+- Institution pay-later and OTP workflows must be explicit and audit-ready.
+- Receipt screens must not claim official RRA/EBM compliance until the official integration is configured and approved.
 
 ## Implementation Rules
 
