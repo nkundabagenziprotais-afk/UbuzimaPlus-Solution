@@ -896,3 +896,21 @@ Required validation:
 - Protected-file inspection passes.
 - Admin dashboard build passes.
 - Phase 0 local check passes.
+
+## Phase 18.3 QA — Controlled package generation execution checksum target quarantine ledger
+
+Phase 18.3 QA validates that the checksum target quarantine ledger exists, the exception log exists, all prior controlled package generation execution ledgers remain present, protected tracked source files are not present, and no execution/deployment/data mutation action is released.
+
+Required validation:
+
+- Checksum target quarantine ledger exists.
+- Checksum target quarantine exception log exists.
+- Phase 18.2 archive target quarantine ledger exists.
+- Phase 18.1 package-build command quarantine ledger exists.
+- Phase 18.0 final go/no-go hold ledger exists.
+- Phase 17.9 final authorization evidence ledger exists.
+- Phase 17.8 owner authorization lock ledger exists.
+- Phase 17.7 release authorization hold ledger exists.
+- Protected-file inspection passes.
+- Admin dashboard build passes.
+- Phase 0 local check passes.
