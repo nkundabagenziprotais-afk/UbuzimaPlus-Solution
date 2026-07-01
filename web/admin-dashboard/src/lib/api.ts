@@ -2654,3 +2654,287 @@ export async function updateAiRecommendationStatus(
     { status },
   );
 }
+
+export type SupportedLanguage = {
+  code: 'en' | 'fr' | 'pt';
+  name: string;
+  native_name: string;
+};
+
+export type Market = {
+  id: number;
+  code: string;
+  name: string;
+  country_code: string;
+  default_language: 'en' | 'fr' | 'pt';
+  currency_code: string;
+  timezone: string;
+  service_radius_km: number;
+  status: string;
+  tenant_assignments_count?: number;
+  service_providers_count?: number;
+};
+
+export type LocalizationContext = {
+  supported_languages: SupportedLanguage[];
+  selected_language: 'en' | 'fr' | 'pt';
+  language_source: string;
+  market: Market | null;
+  ip_policy: {
+    ip_address: string;
+    country_code: string | null;
+    restricted_to_market: string | null;
+    allowed: boolean;
+    message: string;
+  };
+};
+
+export type TenantMarketAssignment = {
+  id: number;
+  status: string;
+  service_radius_km: number | null;
+  assigned_at: string | null;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+    tenant_type: string;
+    status: string;
+  } | null;
+  market: Market | null;
+};
+
+export type NearbyProvider = {
+  id: number;
+  uuid: string;
+  name: string;
+  provider_type: string;
+  service_channels: string[];
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  service_radius_km: number | null;
+  distance_km: number | null;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+    website_url: string | null;
+  } | null;
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  market: {
+    code: string;
+    name: string;
+  } | null;
+};
+
+export type SystemNotification = {
+  id: number;
+  uuid: string;
+  title: string;
+  body: string;
+  notification_type: string;
+  channel: string;
+  audience_scope: string;
+  status: string;
+  published_at: string | null;
+  read_at: string | null;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+  market: {
+    id: number;
+    code: string;
+    name: string;
+  } | null;
+};
+
+export async function getLocalizationContext(): Promise<LocalizationContext> {
+  const response = await fetch(`${API_BASE_URL}/localization/context`, {
+    headers: { Accept: 'application/json' },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load localization context.');
+  }
+
+  return data as LocalizationContext;
+}
+
+export async function saveLocalizationPreference(
+  token: string,
+  payload: { language: 'en' | 'fr' | 'pt'; market_code?: string | null },
+): Promise<{ message: string; preference: Record<string, unknown> }> {
+  const response = await fetch(`${API_BASE_URL}/localization/preference`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to save localization preference.');
+  }
+
+  return data as { message: string; preference: Record<string, unknown> };
+}
+
+export async function getMarketAdminOverview(
+  token: string,
+): Promise<{ markets: Market[]; assignments: TenantMarketAssignment[]; provider_types: string[] }> {
+  const response = await fetch(`${API_BASE_URL}/admin/markets`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load market management.');
+  }
+
+  return data as { markets: Market[]; assignments: TenantMarketAssignment[]; provider_types: string[] };
+}
+
+export async function assignTenantToMarket(
+  token: string,
+  payload: {
+    tenant_slug: string;
+    market_code: string;
+    status?: string;
+    service_radius_km?: number;
+  },
+): Promise<{ message: string; assignment: TenantMarketAssignment }> {
+  const response = await fetch(`${API_BASE_URL}/admin/markets/assign-tenant`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to assign tenant market.');
+  }
+
+  return data as { message: string; assignment: TenantMarketAssignment };
+}
+
+export async function getNearbyProviders(params: {
+  latitude?: number;
+  longitude?: number;
+  market_code?: string;
+  provider_type?: string;
+  limit?: number;
+}): Promise<{ market: Market | null; providers: NearbyProvider[] }> {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  const queryString = searchParams.toString();
+  const response = await fetch(`${API_BASE_URL}/nearby/providers${queryString ? `?${queryString}` : ''}`, {
+    headers: { Accept: 'application/json' },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load nearby providers.');
+  }
+
+  return data as { market: Market | null; providers: NearbyProvider[] };
+}
+
+export async function getNotifications(
+  token: string,
+): Promise<{ unread_count: number; notifications: SystemNotification[] }> {
+  const response = await fetch(`${API_BASE_URL}/notifications`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load notifications.');
+  }
+
+  return data as { unread_count: number; notifications: SystemNotification[] };
+}
+
+export async function createNotification(
+  token: string,
+  payload: {
+    title: string;
+    body: string;
+    tenant_slug?: string | null;
+    market_code?: string | null;
+    notification_type?: string;
+    audience_scope?: string;
+    status?: 'draft' | 'published';
+  },
+): Promise<{ message: string; notification: SystemNotification }> {
+  const response = await fetch(`${API_BASE_URL}/notifications`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors ? Object.values(data.errors).flat().join(' ') : null;
+    throw new Error(validationMessage || data?.message || 'Unable to create notification.');
+  }
+
+  return data as { message: string; notification: SystemNotification };
+}
+
+export async function markNotificationRead(token: string, notificationId: number): Promise<{ message: string; read_at: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to mark notification as read.');
+  }
+
+  return data as { message: string; read_at: string };
+}

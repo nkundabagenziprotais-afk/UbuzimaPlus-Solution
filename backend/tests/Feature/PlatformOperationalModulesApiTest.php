@@ -158,6 +158,54 @@ class PlatformOperationalModulesApiTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_market_localization_nearby_and_notifications_are_operational(): void
+    {
+        $this->seed();
+
+        $this->getJson('/api/v1/localization/context?country_code=RW')
+            ->assertOk()
+            ->assertJsonPath('selected_language', 'en')
+            ->assertJsonPath('market.code', 'RW');
+
+        $this->getJson('/api/v1/nearby/providers?market_code=RW&latitude=-1.9441&longitude=30.0619&provider_type=retail_pharmacy')
+            ->assertOk()
+            ->assertJsonPath('providers.0.name', 'VitaPharma Main Branch')
+            ->assertJsonPath('providers.0.tenant.slug', 'vitapharma');
+
+        $platformToken = $this->loginAs('admin@ubuzimaplus.local');
+
+        $this->withToken($platformToken)
+            ->getJson('/api/v1/admin/markets')
+            ->assertOk()
+            ->assertJsonFragment(['code' => 'RW'])
+            ->assertJsonFragment(['slug' => 'vitapharma']);
+
+        $this->withToken($platformToken)
+            ->postJson('/api/v1/notifications', [
+                'title' => 'Operational notice',
+                'body' => 'Confirm first tenant readiness.',
+                'tenant_slug' => 'vitapharma',
+                'market_code' => 'RW',
+                'status' => 'published',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('notification.tenant.slug', 'vitapharma');
+
+        $tenantToken = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $notificationResponse = $this->withToken($tenantToken)
+            ->getJson('/api/v1/notifications')
+            ->assertOk()
+            ->assertJsonFragment(['title' => 'Operational notice']);
+
+        $notificationId = collect($notificationResponse->json('notifications'))
+            ->firstWhere('title', 'Operational notice')['id'];
+
+        $this->withToken($tenantToken)
+            ->postJson("/api/v1/notifications/{$notificationId}/read")
+            ->assertOk();
+    }
+
     private function loginAs(string $email): string
     {
         $response = $this->postJson('/api/v1/auth/login', [

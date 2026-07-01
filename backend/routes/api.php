@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\AiCenterController;
 use App\Http\Controllers\Api\V1\CorporateMailController;
 use App\Http\Controllers\Api\V1\DataLayerController;
+use App\Http\Controllers\Api\V1\LocalizationController;
+use App\Http\Controllers\Api\V1\MarketManagementController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PlatformContentController;
 use App\Http\Controllers\Api\V1\PlatformStatusController;
 use App\Http\Controllers\Api\V1\PharmacistChatController;
@@ -21,6 +24,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/health', HealthController::class);
     Route::get('/platform/status', PlatformStatusController::class);
     Route::get('/platform-content/public', [PlatformContentController::class, 'publicPages']);
+    Route::get('/localization/context', [LocalizationController::class, 'context']);
+    Route::get('/markets', [MarketManagementController::class, 'publicMarkets']);
+    Route::get('/nearby/providers', [MarketManagementController::class, 'nearbyProviders']);
     Route::get('/solutions', [SolutionController::class, 'index']);
     Route::get('/tenants/{slug}/public-status', [TenantPublicStatusController::class, 'show']);
 });
@@ -70,6 +76,30 @@ Route::middleware(['auth:sanctum', 'permission:platform.content.manage'])
         Route::get('/pages', [PlatformContentController::class, 'adminPages']);
         Route::patch('/pages/{page}', [PlatformContentController::class, 'updatePage']);
         Route::patch('/sections/{section}', [PlatformContentController::class, 'updateSection']);
+    });
+
+Route::middleware('auth:sanctum')
+    ->prefix('v1/localization')
+    ->group(function () {
+        Route::post('/preference', [LocalizationController::class, 'setPreference']);
+    });
+
+Route::middleware(['auth:sanctum', 'permission:markets.manage'])
+    ->prefix('v1/admin/markets')
+    ->group(function () {
+        Route::get('/', [MarketManagementController::class, 'adminIndex']);
+        Route::post('/assign-tenant', [MarketManagementController::class, 'assignTenant']);
+    });
+
+Route::middleware('auth:sanctum')
+    ->prefix('v1/notifications')
+    ->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])
+            ->middleware('permission:notifications.view');
+        Route::post('/', [NotificationController::class, 'store'])
+            ->middleware('permission:notifications.manage');
+        Route::post('/{notification}/read', [NotificationController::class, 'markRead'])
+            ->middleware('permission:notifications.view');
     });
 
 Route::middleware(['auth:sanctum', 'permission:communications.email.use'])

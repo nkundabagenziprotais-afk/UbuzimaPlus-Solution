@@ -46,4 +46,14 @@ class Tenant extends Model
             ->withPivot(['solution_id', 'status', 'configuration', 'activated_by', 'activated_at', 'suspended_at'])
             ->withTimestamps();
     }
+
+    public function marketAssignments(): HasMany
+    {
+        return $this->hasMany(TenantMarketAssignment::class);
+    }
+
+    public function serviceProviderLocations(): HasMany
+    {
+        return $this->hasMany(ServiceProviderLocation::class);
+    }
 }

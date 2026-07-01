@@ -738,6 +738,28 @@ footer a {
   cursor: pointer;
 }
 
+.language-selector {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  background: var(--white);
+  color: var(--teal);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.language-selector select {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
 .website-focus-section {
   width: min(1060px, 100%);
   align-self: center;
@@ -817,8 +839,93 @@ footer a {
   align-self: center;
 }
 
+.vita-website-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 248, 0.88)),
+    radial-gradient(circle at 80% 18%, rgba(145, 198, 83, 0.14), transparent 24rem);
+}
+
+.vita-tree-panel {
+  background: #fbfdf9;
+}
+
+.vita-brand {
+  min-width: 0;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.vita-logo {
+  width: min(230px, 100%);
+  max-height: 96px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.vita-powered-card {
+  background: #1f6b36;
+}
+
+.vita-content-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 250, 248, 0.96)),
+    radial-gradient(circle at 88% 28%, rgba(31, 107, 54, 0.12), transparent 26rem);
+}
+
+.vita-focus-section {
+  width: min(1040px, 100%);
+  align-self: center;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4.5rem);
+}
+
+.vita-hero-section {
+  min-height: calc(100vh - 74px);
+  display: grid;
+  align-content: center;
+}
+
+.vita-focus-section h1 {
+  max-width: 860px;
+}
+
+.vita-focus-section > p {
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.72;
+}
+
+.vita-service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.vita-service-grid article {
+  border: 1px solid rgba(31, 107, 54, 0.14);
+  border-radius: 8px;
+  padding: 1.15rem;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.vita-service-grid p {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  line-height: 1.58;
+}
+
+.vita-care-grid {
+  margin-top: 2rem;
+}
+
 @media (max-width: 960px) {
-  .website-app-shell {
+  .website-app-shell,
+  .vita-website-shell {
     grid-template-columns: 1fr;
   }
 
@@ -837,7 +944,8 @@ footer a {
   .compact-solution-grid,
   .compact-audience-grid,
   .website-mini-grid,
-  .website-module-list {
+  .website-module-list,
+  .vita-service-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -851,6 +959,11 @@ footer a {
   .website-content-header div {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .language-selector {
+    justify-content: space-between;
+    width: 100%;
   }
 }
 
