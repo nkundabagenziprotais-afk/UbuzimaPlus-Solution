@@ -36,6 +36,11 @@ The authenticated dashboard should feel like an operating console, not a marketi
 
 - Shell: fixed header, independent left navigation, independent content scroll.
 - Navigation: folded tree menu by default, with compact icon badges and sub-menu descriptions.
+- Left menu roots:
+  - ERP Module: ERP Overview, Finance, HR, Procurement, Projects, Customer Care.
+  - Solution Portfolio: PharmaCore 360, VetCore 360, ClinicCore 360, InsuCore 260.
+  - AI Center: AI Governance, Provider Management, Model Registry, Agents, Prompt Library, Knowledge Base, Data Connectors, Recommendations, Workflow Automation, Approval Center, Feedback, Usage and Cost, Risk Compliance, Audit Logs, Insights.
+  - Admin Panel: Backend API, Web Application, Mobile Application, Desktop Application, Data Layer, Infrastructure.
 - State: active section must persist locally so user changes do not reset the workspace to the top menu.
 - Header actions: Back, Website, Email Corporate, signed-in user, scope, and status.
 - Header: authenticated workspace, scope, user status, and role context.
@@ -44,6 +49,28 @@ The authenticated dashboard should feel like an operating console, not a marketi
 - Commercial platform framework: platform core, PharmaCo360 operations, growth modules, AI Center.
 - 360 views: platform, solution, tenant, branch, product, supplier, customer, AI.
 - Channel readiness: public website, admin dashboard, tenant portal, mobile app, desktop/PWA POS.
+
+## Solution Portfolio Flow
+
+PharmaCore 360 is the active solution. Selecting it from the left tree should immediately show the dedicated solution segments below the fixed header:
+
+- Retail Pharmacy
+- Wholesale Pharmacy
+- Retail-to-wholesale procurement
+- Delivery and dispatch
+- Insurance and clinic links
+- AI insights
+
+Selecting a segment opens the third section below it. For Retail Pharmacy, priority features are AI Model, Inventory, POS, Product Master, Procurement, Prescriptions, Customers, and Reports. Feature visibility must be filtered by solution, tenant, package, role, branch, and permissions.
+
+Recommended tenant dashboards:
+
+- Owner dashboard: sales health, stock value, cash and credit, branch performance, exceptions, and strategic AI recommendations.
+- Finance dashboard: receivables, payables, collections, supplier payments, daily close, and export readiness.
+- Branch manager dashboard: today sales, tills, stock alerts, expiry risk, staff activity, and approvals.
+- Inventory officer dashboard: product master, batches, expiry, receiving, adjustments, transfers, and shelf readiness.
+- Cashier/POS dashboard: teller session, product search, cart, payment, prescription flags, held sales, returns, and close till.
+- Pharmacist dashboard: prescription checks, controlled medicine alerts, dispensing safety, substitutions, refill follow-up, and audit notes.
 
 ## Full Module Framework
 

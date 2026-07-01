@@ -29,7 +29,10 @@ type PharmaCoreState = {
 
 type AdminSectionKey =
   | 'overview'
+  | 'erp'
+  | 'solution-portfolio'
   | 'ai-center'
+  | 'admin-panel'
   | 'inventory'
   | 'pos'
   | 'suppliers'
@@ -39,13 +42,50 @@ type AdminSectionKey =
   | 'security'
   | 'settings';
 
-type MenuGroupKey = 'start' | 'operations' | 'business' | 'control';
+type MenuGroupKey = 'erp' | 'solutions' | 'ai' | 'admin';
+type ErpWorkspaceKey = 'erp-overview' | 'finance' | 'hr' | 'procurement' | 'projects' | 'customer-care';
+type SolutionKey = 'pharmaco' | 'vetcore' | 'cliniccore' | 'insucore';
+type PharmaSegmentKey = 'retail' | 'wholesale' | 'retail-procurement' | 'delivery' | 'insurance-clinic' | 'ai-insights';
+type PharmaFeatureKey =
+  | 'ai-model'
+  | 'inventory'
+  | 'pos'
+  | 'product-master'
+  | 'procurement'
+  | 'prescriptions'
+  | 'customers'
+  | 'reports';
+type AiWorkspaceKey =
+  | 'governance'
+  | 'provider-management'
+  | 'model-registry'
+  | 'agent-management'
+  | 'prompt-library'
+  | 'knowledge-base'
+  | 'data-connectors'
+  | 'recommendations'
+  | 'workflow-automation'
+  | 'approval-center'
+  | 'feedback-learning'
+  | 'usage-cost'
+  | 'risk-compliance'
+  | 'audit-logs'
+  | 'insights-dashboard';
+type AdminPanelWorkspaceKey =
+  | 'backend-api'
+  | 'web-application'
+  | 'mobile-application'
+  | 'desktop-application'
+  | 'data-layer'
+  | 'infrastructure';
+type MenuContextKey = ErpWorkspaceKey | SolutionKey | AiWorkspaceKey | AdminPanelWorkspaceKey;
 
 type MenuItem = {
   key: AdminSectionKey;
   label: string;
   description: string;
   icon: string;
+  context?: MenuContextKey;
   status?: string;
 };
 
@@ -190,10 +230,25 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     title: 'Operating dashboard',
     description: 'A compact control room for the active tenant, role scope, and priority modules.',
   },
+  erp: {
+    eyebrow: 'ERP Module',
+    title: 'Enterprise resource planning',
+    description: 'Finance, HR, procurement, projects, customer care, approvals, and shared business controls.',
+  },
+  'solution-portfolio': {
+    eyebrow: 'Solution Portfolio',
+    title: 'Ubuzima+ solution portfolio',
+    description: 'Sector-specific solutions, with PharmaCore 360 active and future solutions clearly marked by readiness.',
+  },
   'ai-center': {
     eyebrow: 'Governed AI module',
     title: 'AI Center review workspace',
     description: 'Document extraction, reconciliation, recommendations, approvals, and audit-first AI operations.',
+  },
+  'admin-panel': {
+    eyebrow: 'Admin Panel',
+    title: 'Platform administration architecture',
+    description: 'Backend API, web, mobile, desktop, data layer, and infrastructure readiness for controlled deployment.',
   },
   inventory: {
     eyebrow: 'Inventory and product control',
@@ -239,43 +294,486 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
 
 const menuGroups: Array<{ key: MenuGroupKey; label: string; icon: string; items: MenuItem[] }> = [
   {
-    key: 'start',
-    label: 'Start here',
-    icon: 'ST',
+    key: 'erp',
+    label: 'ERP Module',
+    icon: 'ERP',
     items: [
-      { key: 'ai-center', label: 'AI Center', description: 'Extraction, reconciliation, approval', icon: 'AI', status: 'Priority' },
-      { key: 'inventory', label: 'Inventory', description: 'Batch, expiry, FEFO, stock', icon: 'IN', status: 'Priority' },
-      { key: 'pos', label: 'POS', description: 'Sales, dispensing, till control', icon: 'POS', status: 'Priority' },
+      { key: 'erp', context: 'erp-overview', label: 'ERP Overview', description: 'Shared business control layer', icon: 'ER', status: 'Framework' },
+      { key: 'erp', context: 'finance', label: 'Finance', description: 'Payables, receivables, close', icon: 'FN', status: 'Live' },
+      { key: 'erp', context: 'hr', label: 'HR', description: 'People, shifts, performance', icon: 'HR', status: 'Coming soon' },
+      { key: 'erp', context: 'procurement', label: 'Procurement', description: 'Purchasing and approvals', icon: 'PR', status: 'Live' },
+      { key: 'erp', context: 'projects', label: 'Projects', description: 'Rollouts and implementation', icon: 'PJ', status: 'Planned' },
+      { key: 'erp', context: 'customer-care', label: 'Customer Care', description: 'Support, SLA, escalations', icon: 'CC', status: 'Planned' },
     ],
   },
   {
-    key: 'operations',
-    label: 'Operations',
-    icon: 'OP',
+    key: 'solutions',
+    label: 'Solution Portfolio',
+    icon: 'SOL',
     items: [
-      { key: 'tenant-setup', label: 'Tenant setup', description: 'Profile, branches, departments', icon: 'TN' },
-      { key: 'suppliers', label: 'Suppliers', description: 'Suppliers, wholesale, procurement', icon: 'SP' },
-      { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN' },
-      { key: 'reports', label: 'Reports', description: 'BI and command center', icon: 'RP' },
+      { key: 'solution-portfolio', context: 'pharmaco', label: 'PharmaCore 360', description: 'Retail and wholesale pharmacy', icon: 'PH', status: 'Active' },
+      { key: 'solution-portfolio', context: 'vetcore', label: 'VetCore 360', description: 'Veterinary practice ecosystem', icon: 'VT', status: 'Coming soon' },
+      { key: 'solution-portfolio', context: 'cliniccore', label: 'ClinicCore 360', description: 'Clinic operations suite', icon: 'CL', status: 'Coming soon' },
+      { key: 'solution-portfolio', context: 'insucore', label: 'InsuCore 260', description: 'Insurance partner operations', icon: 'IN', status: 'Coming soon' },
     ],
   },
   {
-    key: 'business',
-    label: 'Growth channels',
-    icon: 'GR',
+    key: 'ai',
+    label: 'AI Center',
+    icon: 'AI',
     items: [
-      { key: 'settings', label: 'Offline mode', description: 'Allowed offline services and sync policy', icon: 'OF', status: 'Framework' },
-      { key: 'settings', label: 'API integration', description: 'Connector proposals and sandbox approval', icon: 'API', status: 'Framework' },
+      { key: 'ai-center', context: 'governance', label: 'AI Governance', description: 'Policies and approval rules', icon: 'GV', status: 'Controlled' },
+      { key: 'ai-center', context: 'provider-management', label: 'Provider Management', description: 'Provider keys and status', icon: 'PV' },
+      { key: 'ai-center', context: 'model-registry', label: 'AI Model Registry', description: 'Models, versions, risk', icon: 'MD', status: 'Priority' },
+      { key: 'ai-center', context: 'agent-management', label: 'AI Agents', description: 'Inventory, sales, support', icon: 'AG' },
+      { key: 'ai-center', context: 'prompt-library', label: 'Prompt Library', description: 'Approved instructions', icon: 'PL' },
+      { key: 'ai-center', context: 'knowledge-base', label: 'Knowledge Base', description: 'SOPs and trusted content', icon: 'KB' },
+      { key: 'ai-center', context: 'data-connectors', label: 'Data Connectors', description: 'Sales, stock, ERP links', icon: 'DC' },
+      { key: 'ai-center', context: 'recommendations', label: 'Recommendations', description: 'Structured advisory queue', icon: 'RC' },
+      { key: 'ai-center', context: 'workflow-automation', label: 'Workflow Automation', description: 'Draft tasks and reminders', icon: 'WA' },
+      { key: 'ai-center', context: 'approval-center', label: 'Approval Center', description: 'Human review queue', icon: 'AP', status: 'Priority' },
+      { key: 'ai-center', context: 'feedback-learning', label: 'Feedback', description: 'Accepted/rejected learning', icon: 'FB' },
+      { key: 'ai-center', context: 'usage-cost', label: 'Usage and Cost', description: 'Quota and monthly limits', icon: 'UC' },
+      { key: 'ai-center', context: 'risk-compliance', label: 'Risk Compliance', description: 'Sensitive data and policy', icon: 'RK' },
+      { key: 'ai-center', context: 'audit-logs', label: 'AI Audit Logs', description: 'Inputs, outputs, approvals', icon: 'AL' },
+      { key: 'ai-center', context: 'insights-dashboard', label: 'AI Insights', description: 'Operational AI signals', icon: 'ID' },
     ],
   },
   {
-    key: 'control',
-    label: 'Control',
-    icon: 'CT',
+    key: 'admin',
+    label: 'Admin Panel',
+    icon: 'ADM',
     items: [
-      { key: 'security', label: 'Security', description: 'Permissions, access, tenant boundary', icon: 'SC' },
-      { key: 'settings', label: 'Settings', description: 'Packages, modules, policy, channels', icon: 'ST' },
+      { key: 'admin-panel', context: 'backend-api', label: 'Backend API', description: 'Laravel API and services', icon: 'BE', status: 'Active' },
+      { key: 'admin-panel', context: 'web-application', label: 'Web Application', description: 'Public and staff web apps', icon: 'WEB', status: 'Active' },
+      { key: 'admin-panel', context: 'mobile-application', label: 'Mobile Application', description: 'Manager and field apps', icon: 'MOB', status: 'Planned' },
+      { key: 'admin-panel', context: 'desktop-application', label: 'Desktop Application', description: 'Installable POS/PWA', icon: 'DSK', status: 'Planned' },
+      { key: 'admin-panel', context: 'data-layer', label: 'Data Layer', description: 'Tenancy, audit, modules', icon: 'DB', status: 'Active' },
+      { key: 'admin-panel', context: 'infrastructure', label: 'Infrastructure', description: 'Deployment and operations', icon: 'INF', status: 'Framework' },
     ],
+  },
+];
+
+const erpModules: Array<{
+  key: ErpWorkspaceKey;
+  title: string;
+  status: string;
+  summary: string;
+  workspace: string[];
+}> = [
+  {
+    key: 'erp-overview',
+    title: 'ERP operating layer',
+    status: 'Framework',
+    summary: 'Shared controls for finance, people, procurement, approvals, implementation, and customer support.',
+    workspace: ['Role-aware dashboards', 'Approval queues', 'Audit trail', 'Tenant and branch filters'],
+  },
+  {
+    key: 'finance',
+    title: 'Finance',
+    status: 'Live APIs',
+    summary: 'Payables, receivables, collections, customer credit, supplier aging, and management review.',
+    workspace: ['Supplier invoices', 'Payment records', 'Customer collections', 'Cash and credit visibility'],
+  },
+  {
+    key: 'hr',
+    title: 'Human resources',
+    status: 'Coming soon',
+    summary: 'Staff records, role assignment, shifts, branch staffing, training, leave, and productivity controls.',
+    workspace: ['Staff profile', 'Shift schedule', 'Training checklist', 'Performance notes'],
+  },
+  {
+    key: 'procurement',
+    title: 'Procurement',
+    status: 'Live APIs',
+    summary: 'Purchase requests, supplier comparison, purchase orders, receiving, and invoice handoff.',
+    workspace: ['Purchase order builder', 'Receiving review', 'Supplier terms', 'Approval evidence'],
+  },
+  {
+    key: 'projects',
+    title: 'Projects and rollout',
+    status: 'Planned',
+    summary: 'Implementation tasks for new tenants, branches, integrations, migrations, and training.',
+    workspace: ['Milestones', 'Risks', 'Owner assignment', 'Deployment readiness'],
+  },
+  {
+    key: 'customer-care',
+    title: 'Customer care',
+    status: 'Planned',
+    summary: 'Support cases, tenant requests, SLA tracking, knowledge responses, and escalation visibility.',
+    workspace: ['Tickets', 'SLA aging', 'Knowledge base', 'Escalation queue'],
+  },
+];
+
+const solutionPortfolio: Array<{
+  key: SolutionKey;
+  title: string;
+  status: string;
+  audience: string;
+  summary: string;
+  next: string;
+}> = [
+  {
+    key: 'pharmaco',
+    title: 'PharmaCore 360',
+    status: 'Active',
+    audience: 'Retail pharmacies, wholesale pharmacies, suppliers, and health-commerce partners.',
+    summary: 'A pharmacy ecosystem for product master, inventory, POS, procurement, finance, reports, AI, and partner growth.',
+    next: 'Use the segment selector below to open retail pharmacy, wholesale, procurement, delivery, partner, and AI workspaces.',
+  },
+  {
+    key: 'vetcore',
+    title: 'VetCore 360',
+    status: 'Coming soon',
+    audience: 'Veterinary clinics, pharmacies, livestock health teams, and animal-care suppliers.',
+    summary: 'Future veterinary operations suite with appointments, medicines, stock, treatment records, billing, and reports.',
+    next: 'Keep as portfolio-visible but locked until the first tenant and module activation plan are approved.',
+  },
+  {
+    key: 'cliniccore',
+    title: 'ClinicCore 360',
+    status: 'Coming soon',
+    audience: 'Clinics, outpatient departments, reception teams, clinicians, pharmacies, and billing offices.',
+    summary: 'Future clinic workflow suite for registration, appointments, consultation, prescribing, billing, insurance, and reporting.',
+    next: 'Design after PharmaCore 360 core workflows stabilize so shared patient and pharmacy logic stays clean.',
+  },
+  {
+    key: 'insucore',
+    title: 'InsuCore 260',
+    status: 'Coming soon',
+    audience: 'Insurance partners, claims reviewers, providers, and reconciliation teams.',
+    summary: 'Future insurance operations layer for partner setup, covered products, claims, co-payments, reconciliation, and audit.',
+    next: 'Expose only the readiness view until insurance integration rules and regulatory controls are defined.',
+  },
+];
+
+const pharmaSegments: Array<{
+  key: PharmaSegmentKey;
+  label: string;
+  status: string;
+  summary: string;
+}> = [
+  {
+    key: 'retail',
+    label: 'Retail Pharmacy',
+    status: 'Phase 1 active',
+    summary: 'Counter sales, dispensing, product master, inventory, prescriptions, customers, branch control, and daily review.',
+  },
+  {
+    key: 'wholesale',
+    label: 'Wholesale Pharmacy',
+    status: 'Phase 2/3',
+    summary: 'Wholesale catalog, bulk pricing, invoices, delivery terms, demand analytics, and retail order visibility.',
+  },
+  {
+    key: 'retail-procurement',
+    label: 'Retail Procurement',
+    status: 'Phase 2/3',
+    summary: 'Browse wholesale catalogs, compare supplier prices, order, receive stock, reconcile invoice, and update inventory.',
+  },
+  {
+    key: 'delivery',
+    label: 'Delivery and Dispatch',
+    status: 'Phase 3',
+    summary: 'Assignments, proof of delivery, OTP confirmation, failed delivery reasons, and dispatch performance.',
+  },
+  {
+    key: 'insurance-clinic',
+    label: 'Insurance and Clinic Links',
+    status: 'Later',
+    summary: 'Partner setup, claim handoff, covered medicines, co-payment, e-prescription readiness, and referrals.',
+  },
+  {
+    key: 'ai-insights',
+    label: 'AI Insights',
+    status: 'Controlled',
+    summary: 'Demand, reorder, expiry, pricing, anomaly, product gap, customer, supplier, and finance recommendations.',
+  },
+];
+
+const pharmaFeaturesBySegment: Record<PharmaSegmentKey, {
+  note: string;
+  features: Array<{
+    key: PharmaFeatureKey;
+    title: string;
+    status: string;
+    summary: string;
+    actions: string[];
+  }>;
+}> = {
+  retail: {
+    note: 'Retail pharmacy users should land on their permitted workspace: owner and managers see executive health; cashiers see POS; inventory officers see stock; finance users see receivables and close.',
+    features: [
+      {
+        key: 'ai-model',
+        title: 'AI Model',
+        status: 'Controlled activation',
+        summary: 'Governed pharmacy AI for demand, reorder, expiry, pricing, anomaly, compliance, and report writing.',
+        actions: ['Human approval required', 'Explanation and confidence visible', 'Tenant data boundary enforced'],
+      },
+      {
+        key: 'inventory',
+        title: 'Inventory',
+        status: 'Live APIs',
+        summary: 'Product master, batches, expiry, stock movement, receiving, FEFO, low stock, and shelf readiness.',
+        actions: ['Review stock by branch', 'Receive and adjust with audit', 'Escalate expiry and stock-out risk'],
+      },
+      {
+        key: 'pos',
+        title: 'POS',
+        status: 'Live APIs',
+        summary: 'Fast checkout, barcode/product search, dispensing checks, payment controls, returns, receipts, and daily close.',
+        actions: ['Open teller session', 'Validate FEFO stock', 'Close till with supervisor review'],
+      },
+      {
+        key: 'product-master',
+        title: 'Product Master',
+        status: 'Phase 1',
+        summary: 'Approved products, generics, brands, categories, dosage, strength, barcode, and regulatory flags.',
+        actions: ['Maintain approved product list', 'Map barcodes and SKU', 'Control prescription flags'],
+      },
+      {
+        key: 'procurement',
+        title: 'Procurement',
+        status: 'Live APIs',
+        summary: 'Suppliers, purchase requests, purchase orders, goods received, invoices, and wholesale readiness.',
+        actions: ['Create purchase order', 'Receive against order', 'Hand invoice to payables'],
+      },
+      {
+        key: 'prescriptions',
+        title: 'Prescriptions',
+        status: 'Phase 2',
+        summary: 'Prescription capture, item validation, dispensing status, refill tracking, and safety checks.',
+        actions: ['Capture prescription', 'Check duplicate/risky dispensing', 'Schedule refill follow-up'],
+      },
+      {
+        key: 'customers',
+        title: 'Customers',
+        status: 'Phase 2',
+        summary: 'Customer profiles, refill reminders, feedback, loyalty, chronic medicine follow-up, and credit visibility.',
+        actions: ['Review customer 360', 'Send approved reminders', 'Monitor credit exposure'],
+      },
+      {
+        key: 'reports',
+        title: 'Reports and BI',
+        status: 'Live APIs',
+        summary: 'Sales, stock, margin, branch performance, supplier performance, expiry, and stockout reports.',
+        actions: ['Review daily command center', 'Export finance-ready reports', 'Track branch performance'],
+      },
+    ],
+  },
+  wholesale: {
+    note: 'Wholesale users should only see their own business data, catalog, orders, invoices, dispatch terms, and aggregated demand opportunities.',
+    features: [
+      {
+        key: 'procurement',
+        title: 'Wholesale Catalog',
+        status: 'Phase 2/3',
+        summary: 'Bulk availability, minimum order quantities, pricing tiers, lead time, regions, returns, and credit terms.',
+        actions: ['Publish catalog', 'Confirm retail orders', 'Prepare invoice and dispatch'],
+      },
+      {
+        key: 'ai-model',
+        title: 'Wholesale Opportunity AI',
+        status: 'Controlled',
+        summary: 'Aggregated demand signals help wholesalers identify products, regions, and pricing opportunities.',
+        actions: ['Review demand without tenant leakage', 'Approve opportunity insight', 'Track accepted recommendation'],
+      },
+      {
+        key: 'inventory',
+        title: 'Warehouse Inventory',
+        status: 'Framework',
+        summary: 'Warehouse stock, batches, expiry, reserved stock, dispatch location, and replenishment controls.',
+        actions: ['Reserve order stock', 'Monitor expiry risk', 'Prepare dispatch stock'],
+      },
+      {
+        key: 'reports',
+        title: 'Wholesale Performance',
+        status: 'Framework',
+        summary: 'Retail demand, order conversion, delivery reliability, supplier pricing, and payment performance.',
+        actions: ['Review demand analytics', 'Compare supplier performance', 'Track payment aging'],
+      },
+    ],
+  },
+  'retail-procurement': {
+    note: 'Retail-to-wholesale procurement should guide the user from demand to order to receipt without flooding the screen with unrelated supplier data.',
+    features: [
+      {
+        key: 'procurement',
+        title: 'Compare and Order',
+        status: 'Phase 2/3',
+        summary: 'Browse approved wholesale catalogs, compare supplier prices, select terms, submit order, and reconcile invoice.',
+        actions: ['Compare prices', 'Submit purchase request', 'Receive stock against invoice'],
+      },
+      {
+        key: 'ai-model',
+        title: 'Reorder Recommendation AI',
+        status: 'Controlled',
+        summary: 'Recommend reorder quantity, supplier option, urgency, and expected stock-out risk using approved data signals.',
+        actions: ['Review recommendation reason', 'Approve draft order', 'Capture rejection feedback'],
+      },
+      {
+        key: 'inventory',
+        title: 'Receiving and Stock Update',
+        status: 'Live APIs',
+        summary: 'Confirm received quantities, capture batch/expiry/cost, update shelf stock, and log variance.',
+        actions: ['Receive against PO', 'Flag variance', 'Update stock after approval'],
+      },
+    ],
+  },
+  delivery: {
+    note: 'Delivery and dispatch should be a task board for accountable handoff, not a generic logistics page.',
+    features: [
+      {
+        key: 'pos',
+        title: 'Dispatch-Ready Sale',
+        status: 'Phase 3',
+        summary: 'Validated paid or approved sale waits for assignment, package confirmation, and customer handoff.',
+        actions: ['Confirm package', 'Assign delivery', 'Capture proof of delivery'],
+      },
+      {
+        key: 'reports',
+        title: 'Dispatch Review',
+        status: 'Framework',
+        summary: 'Delivery status, failed reasons, OTP confirmation, branch delays, and partner performance.',
+        actions: ['Monitor failed delivery', 'Review OTP completion', 'Escalate delayed dispatch'],
+      },
+    ],
+  },
+  'insurance-clinic': {
+    note: 'Insurance and clinic integrations remain visible as controlled modules until partner rules, data sharing, and claim workflows are approved.',
+    features: [
+      {
+        key: 'prescriptions',
+        title: 'Clinic Prescription Flow',
+        status: 'Later',
+        summary: 'Clinic partner setup, e-prescription readiness, referral flow, and dispensing handoff.',
+        actions: ['Map partner', 'Validate prescription payload', 'Route to pharmacist review'],
+      },
+      {
+        key: 'procurement',
+        title: 'Insurance Claims',
+        status: 'Later',
+        summary: 'Covered medicine list, co-payment, claim status, reconciliation, and audit-ready exceptions.',
+        actions: ['Check coverage', 'Capture co-payment', 'Reconcile partner claim'],
+      },
+    ],
+  },
+  'ai-insights': {
+    note: 'AI insights must remain advisory by default and always show reason, confidence, data signals, approval status, and audit context.',
+    features: [
+      {
+        key: 'ai-model',
+        title: 'PharmaCore AI Models',
+        status: 'Controlled',
+        summary: 'Demand forecasting, reorder, stock-out, expiry, product mix, pricing, fraud, finance, branch, and report-writing AI.',
+        actions: ['Register model and use case', 'Set risk and data class', 'Require human approval for high-risk action'],
+      },
+      {
+        key: 'reports',
+        title: 'AI Insight Dashboard',
+        status: 'Framework',
+        summary: 'Accepted, rejected, pending, high-risk, and implemented recommendations by tenant, branch, user, and module.',
+        actions: ['Review insight queue', 'Track cost and quota', 'Audit outputs and approvals'],
+      },
+    ],
+  },
+};
+
+const roleDashboardModels = [
+  ['Owner dashboard', 'Sales health, cash and credit position, stock value, branch performance, supplier aging, exceptions, and strategic AI recommendations.'],
+  ['Finance dashboard', 'Receivables, payables, collections, supplier payments, daily close, payment variance, reports, and export readiness.'],
+  ['Branch manager dashboard', 'Today sales, active tills, stock alerts, expiry risk, branch tasks, approvals, and staff activity.'],
+  ['Inventory officer dashboard', 'Product master, batch/expiry, receiving, adjustments, transfers, low stock, and shelf readiness.'],
+  ['Cashier/POS dashboard', 'Open teller session, product search, cart, payment, prescription flags, held sales, returns, and close till.'],
+  ['Pharmacist dashboard', 'Prescription checks, controlled medicine alerts, dispensing safety, substitutions, refill follow-up, and audit notes.'],
+];
+
+const aiCenterModules: Array<{
+  key: AiWorkspaceKey;
+  title: string;
+  status: string;
+  purpose: string;
+  controls: string[];
+}> = [
+  { key: 'governance', title: 'AI Governance', status: 'Controlled', purpose: 'Policies, consent, risk levels, approval rules, data-sharing controls, and audit requirements.', controls: ['Global safety rules', 'Tenant data boundaries', 'Sensitive action approvals'] },
+  { key: 'provider-management', title: 'AI Provider Management', status: 'Framework', purpose: 'OpenAI, local/internal models, future providers, sandbox/production status, and encrypted keys.', controls: ['Provider disabled by default', 'Sandbox before production', 'Encrypted secret ownership'] },
+  { key: 'model-registry', title: 'AI Model Registry', status: 'Priority', purpose: 'Model name, provider, version, use case, risk level, approved data types, and status.', controls: ['Risk level', 'Approved data classes', 'Versioned model use case'] },
+  { key: 'agent-management', title: 'AI Agent Management', status: 'Framework', purpose: 'Platform assistant, solution assistant, inventory assistant, sales assistant, compliance agent, and support agent.', controls: ['Agent scope', 'Allowed tools', 'Escalation rules'] },
+  { key: 'prompt-library', title: 'AI Prompt Library', status: 'Framework', purpose: 'Approved prompts, reusable instructions, tenant-specific overrides, and version history.', controls: ['Version history', 'Admin approval', 'Tenant overrides'] },
+  { key: 'knowledge-base', title: 'AI Knowledge Base', status: 'Framework', purpose: 'Approved policies, SOPs, training content, FAQs, product information, and support resolutions.', controls: ['Trusted sources', 'Review dates', 'Access classes'] },
+  { key: 'data-connectors', title: 'AI Data Connectors', status: 'Framework', purpose: 'Controlled data access to sales, stock, products, suppliers, customers, finance, support, and ERP.', controls: ['Permission-aware connectors', 'Tenant isolation', 'Read/write separation'] },
+  { key: 'recommendations', title: 'AI Recommendations', status: 'Priority', purpose: 'Structured recommendations with title, type, confidence, explanation, action, status, and approval.', controls: ['Confidence', 'Reason', 'Human approval status'] },
+  { key: 'workflow-automation', title: 'AI Workflow Automation', status: 'Framework', purpose: 'Draft reorder proposals, reminders, reports, alerts, and support responses.', controls: ['Draft-only default', 'Reviewer assignment', 'Audit log'] },
+  { key: 'approval-center', title: 'AI Human Approval Center', status: 'Priority', purpose: 'Review queue for price changes, purchase drafts, customer messages, permission changes, and sensitive alerts.', controls: ['Reviewer role', 'Bulk review evidence', 'Reject reason'] },
+  { key: 'feedback-learning', title: 'AI Feedback and Learning', status: 'Framework', purpose: 'Useful, incorrect, accepted, rejected, implemented, needs-review, and comment history.', controls: ['User feedback', 'Model evaluation', 'Closed-loop improvement'] },
+  { key: 'usage-cost', title: 'AI Usage, Cost and Quota Control', status: 'Framework', purpose: 'Usage per user, tenant, solution, model, feature, quota, monthly limit, and cost estimate.', controls: ['Quota', 'Cost guardrails', 'Monthly limits'] },
+  { key: 'risk-compliance', title: 'AI Risk and Compliance', status: 'Controlled', purpose: 'Sensitive data checks, anomaly flags, access violations, and policy exceptions.', controls: ['Data classification', 'Risk scoring', 'Compliance escalation'] },
+  { key: 'audit-logs', title: 'AI Audit Logs', status: 'Required', purpose: 'Complete audit trail of AI inputs, outputs, context, provider, model, user, and approval path.', controls: ['Immutable trail', 'Provider context', 'Approval path'] },
+  { key: 'insights-dashboard', title: 'AI Insights Dashboard', status: 'Framework', purpose: 'AI performance, recommendation adoption, risk posture, cost trend, and operational impact.', controls: ['Adoption rate', 'Pending risk', 'Cost-to-value view'] },
+];
+
+const pharmaAiModels = [
+  ['Demand Forecasting AI', 'Predicts demand by branch, product, period, and season.'],
+  ['Reorder Recommendation AI', 'Suggests what to reorder, when, and estimated quantity.'],
+  ['Stock-Out Risk AI', 'Detects products likely to run out before the next supply cycle.'],
+  ['Expiry Risk AI', 'Flags products likely to expire before they are sold.'],
+  ['Inter-Branch Transfer AI', 'Suggests movement between branches to reduce stockouts and expiry risk.'],
+  ['Pricing Intelligence AI', 'Highlights margin gaps, price review opportunities, and pricing risks.'],
+  ['Prescription Safety AI', 'Flags potential duplicate, risky, unusual, or incomplete dispensing patterns.'],
+  ['Fraud/Anomaly AI', 'Detects unusual refunds, stock adjustments, sales, claims, or user behavior.'],
+  ['Finance Forecast AI', 'Forecasts revenue, cash flow, margins, and profitability.'],
+  ['Business Chat AI', 'Lets authorized users ask questions about their own tenant data.'],
+];
+
+const adminPanelLayers: Array<{
+  key: AdminPanelWorkspaceKey;
+  title: string;
+  status: string;
+  summary: string;
+  components: string[];
+}> = [
+  {
+    key: 'backend-api',
+    title: 'Backend API',
+    status: 'Active',
+    summary: 'Laravel API, Sanctum auth, tenant-aware endpoints, module permissions, reports, and protected service routes.',
+    components: ['Auth and profile', 'Tenant scope', 'PharmaCore endpoints', 'Protected access checks'],
+  },
+  {
+    key: 'web-application',
+    title: 'Web Application',
+    status: 'Active',
+    summary: 'Public website for external customers and the authenticated staff console for platform, solution, and tenant work.',
+    components: ['Public website', 'Admin dashboard', 'Tenant portal framework', 'Section-based shell'],
+  },
+  {
+    key: 'mobile-application',
+    title: 'Mobile Application',
+    status: 'Planned',
+    summary: 'Manager alerts, approvals, delivery tasks, stock summaries, refill reminders, and mobile support workflows.',
+    components: ['Manager app', 'Approval push', 'Delivery task view', 'Offline-safe summaries'],
+  },
+  {
+    key: 'desktop-application',
+    title: 'Desktop Application',
+    status: 'Planned',
+    summary: 'Installable desktop/PWA POS for counters, barcode scanner support, receipt printing, and offline-friendly lookups.',
+    components: ['PWA POS', 'Barcode scanner', 'Receipt printer', 'Teller session cache'],
+  },
+  {
+    key: 'data-layer',
+    title: 'Data Layer',
+    status: 'Active',
+    summary: 'Tenants, solutions, modules, branches, permissions, products, stock, sales, suppliers, finance, AI, and audit records.',
+    components: ['Tenant boundary', 'Module activation', 'Audit fields', 'AI entities'],
+  },
+  {
+    key: 'infrastructure',
+    title: 'Infrastructure',
+    status: 'Framework',
+    summary: 'Deployment readiness, environment configuration, queues for long AI jobs, storage, monitoring, backup, and secure secrets.',
+    components: ['Environment policy', 'Queue workers', 'Object storage', 'Monitoring and backups'],
   },
 ];
 
@@ -395,11 +893,17 @@ function App() {
   const [pharmaCoreError, setPharmaCoreError] = useState('');
   const [activeSection, setActiveSection] = useState<AdminSectionKey>(loadStoredActiveSection);
   const [navigationStack, setNavigationStack] = useState<AdminSectionKey[]>([]);
+  const [activeErpWorkspace, setActiveErpWorkspace] = useState<ErpWorkspaceKey>('erp-overview');
+  const [activeSolution, setActiveSolution] = useState<SolutionKey>('pharmaco');
+  const [activePharmaSegment, setActivePharmaSegment] = useState<PharmaSegmentKey>('retail');
+  const [activePharmaFeature, setActivePharmaFeature] = useState<PharmaFeatureKey>('ai-model');
+  const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
+  const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<MenuGroupKey, boolean>>({
-    start: false,
-    operations: false,
-    business: false,
-    control: false,
+    erp: false,
+    solutions: false,
+    ai: false,
+    admin: false,
   });
 
   const profile = session?.profile;
@@ -479,6 +983,51 @@ function App() {
 
     setNavigationStack((current) => [activeSection, ...current].slice(0, 10));
     setActiveSection(section);
+  }
+
+  function handleMenuItemClick(item: MenuItem) {
+    if (item.key === 'erp' && item.context) {
+      setActiveErpWorkspace(item.context as ErpWorkspaceKey);
+    }
+
+    if (item.key === 'solution-portfolio' && item.context) {
+      setActiveSolution(item.context as SolutionKey);
+      if (item.context === 'pharmaco') {
+        setActivePharmaSegment('retail');
+      }
+    }
+
+    if (item.key === 'ai-center' && item.context) {
+      setActiveAiWorkspace(item.context as AiWorkspaceKey);
+    }
+
+    if (item.key === 'admin-panel' && item.context) {
+      setActiveAdminPanelWorkspace(item.context as AdminPanelWorkspaceKey);
+    }
+
+    navigateToSection(item.key);
+  }
+
+  function isActiveMenuItem(item: MenuItem) {
+    if (activeSection !== item.key) return false;
+
+    if (item.key === 'erp') {
+      return item.context === activeErpWorkspace;
+    }
+
+    if (item.key === 'solution-portfolio') {
+      return item.context === activeSolution;
+    }
+
+    if (item.key === 'ai-center') {
+      return item.context === activeAiWorkspace;
+    }
+
+    if (item.key === 'admin-panel') {
+      return item.context === activeAdminPanelWorkspace;
+    }
+
+    return true;
   }
 
   function goBack() {
@@ -875,42 +1424,400 @@ function App() {
     </article>
   );
 
-  function renderActiveSection() {
-    switch (activeSection) {
-      case 'ai-center':
-        return (
-          <section className="section-page">
-            <ModulePageIntro
-              eyebrow="AI module"
-              title="Governed AI extraction, reconciliation, and approval"
-              description="Built around the attached requirements: AI creates proposals from documents and system records, then humans approve before any product, price, or inventory update is applied."
-              status="Controlled activation"
-            />
-            <ModuleReadinessGrid items={aiWorkflows} />
-            <section className="ai-workspace-grid">
-              <article className="panel">
-                <h2>AI review queue model</h2>
-                <div className="workflow-list">
-                  <div><strong>Pending extraction</strong><span>Documents wait for structured content review, not file-only approval.</span></div>
-                  <div><strong>Pending reconciliation</strong><span>Existing products, prices, suppliers, and stock fields are compared before approval.</span></div>
-                  <div><strong>Pending bulk approval</strong><span>Bulk approval is allowed only after differences, risk, and affected fields are visible.</span></div>
-                  <div><strong>Apply after approval</strong><span>Approved changes become backend work items for product, regulatory price, and inventory updates.</span></div>
-                </div>
-              </article>
+  function renderErpWorkspace() {
+    const selectedErpModule = erpModules.find((module) => module.key === activeErpWorkspace) ?? erpModules[0];
 
-              <article className="panel">
-                <h2>AI safety controls</h2>
-                <div className="workflow-list">
-                  <div><strong>No paid provider by default</strong><span>External AI stays optional and provider-configured.</span></div>
-                  <div><strong>No arbitrary code execution</strong><span>AI proposes connector mappings and reviewed configuration only.</span></div>
-                  <div><strong>Timeout-aware work</strong><span>Long extraction should be queued or chunked so web requests avoid 30-second failures.</span></div>
-                  <div><strong>Audit required</strong><span>Every AI recommendation needs reason, confidence, risk, approver, and audit trail.</span></div>
-                </div>
-              </article>
+    return (
+      <section className="section-page">
+        <ModulePageIntro
+          eyebrow="ERP Module"
+          title={selectedErpModule.title}
+          description={selectedErpModule.summary}
+          status={selectedErpModule.status}
+        />
+
+        <div className="workspace-selector erp-selector">
+          {erpModules.map((module) => (
+            <button
+              key={module.key}
+              type="button"
+              className={activeErpWorkspace === module.key ? 'active' : ''}
+              onClick={() => setActiveErpWorkspace(module.key)}
+            >
+              <strong>{module.title}</strong>
+              <span>{module.status}</span>
+            </button>
+          ))}
+        </div>
+
+        <section className="erp-module-grid">
+          <article className="panel">
+            <h2>{selectedErpModule.title} workspace model</h2>
+            <p className="muted">{selectedErpModule.summary}</p>
+            <div className="framework-chip-list">
+              {selectedErpModule.workspace.map((item) => (
+                <small key={item}>{item}</small>
+              ))}
+            </div>
+          </article>
+
+          <article className="panel">
+            <h2>Recommended access split</h2>
+            <div className="workflow-list">
+              <div><strong>Owner</strong><span>Executive health, risk, cash position, branch performance, and strategic approvals.</span></div>
+              <div><strong>Finance</strong><span>Payables, receivables, collections, daily close, supplier aging, and exports.</span></div>
+              <div><strong>Operator</strong><span>Only the task surface needed for the role, branch, tenant, and active package.</span></div>
+            </div>
+          </article>
+        </section>
+
+        {activeErpWorkspace === 'finance' && (
+          <>
+            <PayablesWorkflow token={session.token} profile={profile} />
+            <ReceivablesWorkflow token={session.token} profile={profile} />
+          </>
+        )}
+
+        {activeErpWorkspace === 'procurement' && (
+          <ProcurementWorkflow token={session.token} profile={profile} />
+        )}
+
+        {!['finance', 'procurement'].includes(activeErpWorkspace) && (
+          <article className="panel wide roadmap-panel">
+            <h2>Activation plan</h2>
+            <p className="muted">
+              This ERP workspace is visible in the framework so ChatGPT and future implementation can align
+              with the platform architecture. Production actions stay inactive until backend permissions,
+              data model, and tenant package activation are approved.
+            </p>
+          </article>
+        )}
+      </section>
+    );
+  }
+
+  function renderPharmaFeatureContent() {
+    const segmentConfig = pharmaFeaturesBySegment[activePharmaSegment];
+    const selectedFeature = segmentConfig.features.find((feature) => feature.key === activePharmaFeature) ?? segmentConfig.features[0];
+
+    return (
+      <section className="pharma-feature-stage">
+        <div className="feature-stage-heading">
+          <div>
+            <p className="eyebrow">Third section</p>
+            <h2>{selectedFeature.title}</h2>
+            <p className="muted">{selectedFeature.summary}</p>
+          </div>
+          <span>{selectedFeature.status}</span>
+        </div>
+
+        <div className="feature-action-grid">
+          {selectedFeature.actions.map((action) => (
+            <article key={action}>
+              <strong>{action}</strong>
+              <span>Visible only when the user role, tenant, package, and branch scope allow it.</span>
+            </article>
+          ))}
+        </div>
+
+        {selectedFeature.key === 'ai-model' && (
+          <>
+            <ModuleReadinessGrid items={aiWorkflows} />
+            <section className="ai-model-grid">
+              {pharmaAiModels.map(([model, description]) => (
+                <article key={model}>
+                  <strong>{model}</strong>
+                  <span>{description}</span>
+                </article>
+              ))}
             </section>
             {accessControlPanel}
-          </section>
-        );
+          </>
+        )}
+
+        {selectedFeature.key === 'inventory' && (
+          <>
+            <ModuleReadinessGrid items={inventoryReadiness} />
+            <ProductInventoryPreview token={session.token} profile={profile} />
+            <ProductInventoryActions token={session.token} profile={profile} />
+          </>
+        )}
+
+        {selectedFeature.key === 'pos' && (
+          <>
+            <ModuleReadinessGrid items={posReadiness} />
+            <SalesDispensingReview token={session.token} profile={profile} />
+          </>
+        )}
+
+        {selectedFeature.key === 'procurement' && (
+          <>
+            <ModuleReadinessGrid items={supplierReadiness} />
+            <ProcurementWorkflow token={session.token} profile={profile} />
+          </>
+        )}
+
+        {selectedFeature.key === 'reports' && (
+          <>
+            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
+            <ReportingDashboard token={session.token} profile={profile} />
+          </>
+        )}
+
+        {['product-master', 'prescriptions', 'customers'].includes(selectedFeature.key) && (
+          <article className="panel wide roadmap-panel">
+            <h2>{selectedFeature.title} framework</h2>
+            <p className="muted">
+              The workflow is now represented in the platform shell and is ready for backend activation,
+              migration design, permission mapping, and tenant rollout when prioritized.
+            </p>
+          </article>
+        )}
+      </section>
+    );
+  }
+
+  function renderSolutionPortfolio() {
+    const selectedSolution = solutionPortfolio.find((solution) => solution.key === activeSolution) ?? solutionPortfolio[0];
+    const activeSegment = pharmaSegments.find((segment) => segment.key === activePharmaSegment) ?? pharmaSegments[0];
+    const segmentConfig = pharmaFeaturesBySegment[activePharmaSegment];
+
+    return (
+      <section className="section-page">
+        <ModulePageIntro
+          eyebrow="Solution Portfolio"
+          title={selectedSolution.title}
+          description={selectedSolution.summary}
+          status={selectedSolution.status}
+        />
+
+        <section className="solution-card-grid">
+          {solutionPortfolio.map((solution) => (
+            <button
+              key={solution.key}
+              type="button"
+              className={activeSolution === solution.key ? 'active' : ''}
+              onClick={() => setActiveSolution(solution.key)}
+            >
+              <span>{solution.status}</span>
+              <strong>{solution.title}</strong>
+              <small>{solution.audience}</small>
+            </button>
+          ))}
+        </section>
+
+        {activeSolution !== 'pharmaco' && (
+          <article className="panel wide roadmap-panel">
+            <h2>{selectedSolution.title} readiness</h2>
+            <p className="muted">{selectedSolution.next}</p>
+            <div className="framework-chip-list">
+              <small>Coming soon</small>
+              <small>Role-based activation required</small>
+              <small>Tenant package pending</small>
+            </div>
+          </article>
+        )}
+
+        {activeSolution === 'pharmaco' && (
+          <>
+            <section className="pharma-segment-section">
+              <div className="framework-heading">
+                <div>
+                  <p className="eyebrow">PharmaCore 360 dedicated menu</p>
+                  <h2>Select the operating segment first.</h2>
+                  <p className="muted">
+                    These options appear directly below the fixed header when PharmaCore 360 is selected.
+                    The detailed feature workspace opens underneath as the third section.
+                  </p>
+                </div>
+                <div className="framework-scope-card">
+                  <span>Active segment</span>
+                  <strong>{activeSegment.label}</strong>
+                  <small>{activeSegment.status}</small>
+                </div>
+              </div>
+
+              <div className="segment-switcher">
+                {pharmaSegments.map((segment) => (
+                  <button
+                    key={segment.key}
+                    type="button"
+                    className={activePharmaSegment === segment.key ? 'active' : ''}
+                    onClick={() => {
+                      setActivePharmaSegment(segment.key);
+                      setActivePharmaFeature(pharmaFeaturesBySegment[segment.key].features[0]?.key ?? 'ai-model');
+                    }}
+                  >
+                    <strong>{segment.label}</strong>
+                    <span>{segment.status}</span>
+                    <small>{segment.summary}</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="pharma-feature-selector-panel">
+              <div>
+                <p className="eyebrow">Feature menu</p>
+                <h2>{activeSegment.label} features</h2>
+                <p className="muted">{segmentConfig.note}</p>
+              </div>
+
+              <div className="feature-tabs">
+                {segmentConfig.features.map((feature) => (
+                  <button
+                    key={feature.key}
+                    type="button"
+                    className={activePharmaFeature === feature.key ? 'active' : ''}
+                    onClick={() => setActivePharmaFeature(feature.key)}
+                  >
+                    <strong>{feature.title}</strong>
+                    <span>{feature.status}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {renderPharmaFeatureContent()}
+
+            <section className="role-dashboard-section">
+              <div>
+                <p className="eyebrow">Role dashboards</p>
+                <h2>Recommended dashboards by user type</h2>
+                <p className="muted">
+                  Admins and Ubuzima+ staff can see the portfolio flow. Tenant users should land on the
+                  dashboard that matches their institution, branch, role, and activated package.
+                </p>
+              </div>
+              <div className="role-dashboard-grid">
+                {roleDashboardModels.map(([role, description]) => (
+                  <article key={role}>
+                    <strong>{role}</strong>
+                    <span>{description}</span>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            {tenantOperationsPanel}
+          </>
+        )}
+      </section>
+    );
+  }
+
+  function renderAiCenter() {
+    const selectedAiModule = aiCenterModules.find((module) => module.key === activeAiWorkspace) ?? aiCenterModules[0];
+
+    return (
+      <section className="section-page">
+        <ModulePageIntro
+          eyebrow="AI Center"
+          title={selectedAiModule.title}
+          description={selectedAiModule.purpose}
+          status={selectedAiModule.status}
+        />
+
+        <section className="ai-center-layout">
+          <div className="ai-center-module-grid">
+            {aiCenterModules.map((module) => (
+              <button
+                key={module.key}
+                type="button"
+                className={activeAiWorkspace === module.key ? 'active' : ''}
+                onClick={() => setActiveAiWorkspace(module.key)}
+              >
+                <strong>{module.title}</strong>
+                <span>{module.status}</span>
+              </button>
+            ))}
+          </div>
+
+          <article className="panel ai-detail-panel">
+            <h2>{selectedAiModule.title}</h2>
+            <p className="muted">{selectedAiModule.purpose}</p>
+            <div className="workflow-list">
+              {selectedAiModule.controls.map((control) => (
+                <div key={control}>
+                  <strong>{control}</strong>
+                  <span>Configured per platform, solution, tenant, role, branch, and data classification.</span>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        <ModuleReadinessGrid items={aiWorkflows} />
+
+        <section className="ai-model-grid">
+          {pharmaAiModels.map(([model, description]) => (
+            <article key={model}>
+              <strong>{model}</strong>
+              <span>{description}</span>
+            </article>
+          ))}
+        </section>
+
+        {accessControlPanel}
+      </section>
+    );
+  }
+
+  function renderAdminPanel() {
+    const selectedLayer = adminPanelLayers.find((layer) => layer.key === activeAdminPanelWorkspace) ?? adminPanelLayers[0];
+
+    return (
+      <section className="section-page">
+        <ModulePageIntro
+          eyebrow="Admin Panel"
+          title={selectedLayer.title}
+          description={selectedLayer.summary}
+          status={selectedLayer.status}
+        />
+
+        <section className="admin-layer-grid">
+          {adminPanelLayers.map((layer) => (
+            <button
+              key={layer.key}
+              type="button"
+              className={activeAdminPanelWorkspace === layer.key ? 'active' : ''}
+              onClick={() => setActiveAdminPanelWorkspace(layer.key)}
+            >
+              <span>{layer.status}</span>
+              <strong>{layer.title}</strong>
+              <small>{layer.summary}</small>
+            </button>
+          ))}
+        </section>
+
+        <article className="panel wide">
+          <h2>{selectedLayer.title} control surface</h2>
+          <p className="muted">{selectedLayer.summary}</p>
+          <div className="framework-chip-list">
+            {selectedLayer.components.map((component) => (
+              <small key={component}>{component}</small>
+            ))}
+          </div>
+        </article>
+
+        <ModuleReadinessGrid items={settingsBlueprint} />
+
+        {activeAdminPanelWorkspace === 'backend-api' && accessControlPanel}
+        {activeAdminPanelWorkspace === 'data-layer' && tenantAssignmentsPanel}
+      </section>
+    );
+  }
+
+  function renderActiveSection() {
+    switch (activeSection) {
+      case 'erp':
+        return renderErpWorkspace();
+      case 'solution-portfolio':
+        return renderSolutionPortfolio();
+      case 'ai-center':
+        return renderAiCenter();
+      case 'admin-panel':
+        return renderAdminPanel();
       case 'inventory':
         return (
           <section className="section-page">
@@ -1188,9 +2095,9 @@ function App() {
                       <button
                         key={`${group.key}-${item.label}`}
                         type="button"
-                        className={activeSection === item.key ? 'active' : ''}
+                        className={isActiveMenuItem(item) ? 'active' : ''}
                         data-section={item.key}
-                        onClick={() => navigateToSection(item.key)}
+                        onClick={() => handleMenuItemClick(item)}
                       >
                         <span className="nav-icon">{item.icon}</span>
                         <span>

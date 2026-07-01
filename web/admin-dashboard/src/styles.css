@@ -3331,3 +3331,311 @@ h3,
     padding: 18px;
   }
 }
+
+/* Portfolio, ERP, AI Center, and Admin Panel framework */
+.workspace-selector,
+.segment-switcher,
+.feature-tabs,
+.solution-card-grid,
+.admin-layer-grid,
+.ai-center-module-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.workspace-selector {
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+}
+
+.workspace-selector button,
+.solution-card-grid button,
+.segment-switcher button,
+.feature-tabs button,
+.admin-layer-grid button,
+.ai-center-module-grid button {
+  min-width: 0;
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ubuzima-ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(7, 56, 68, 0.05);
+}
+
+.workspace-selector button,
+.feature-tabs button,
+.ai-center-module-grid button {
+  display: grid;
+  gap: 6px;
+  padding: 13px;
+}
+
+.workspace-selector button.active,
+.solution-card-grid button.active,
+.segment-switcher button.active,
+.feature-tabs button.active,
+.admin-layer-grid button.active,
+.ai-center-module-grid button.active {
+  border-color: rgba(8, 119, 201, 0.42);
+  background: linear-gradient(180deg, rgba(232, 245, 255, 0.95), #ffffff);
+  box-shadow: inset 0 4px 0 var(--ubuzima-blue), 0 16px 34px rgba(7, 56, 68, 0.08);
+}
+
+.workspace-selector strong,
+.solution-card-grid strong,
+.segment-switcher strong,
+.feature-tabs strong,
+.admin-layer-grid strong,
+.ai-center-module-grid strong {
+  color: var(--ubuzima-teal);
+  line-height: 1.25;
+}
+
+.workspace-selector span,
+.solution-card-grid span,
+.segment-switcher span,
+.feature-tabs span,
+.admin-layer-grid span,
+.ai-center-module-grid span {
+  color: #26765d;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.solution-card-grid {
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+}
+
+.solution-card-grid button,
+.admin-layer-grid button {
+  min-height: 168px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 16px;
+}
+
+.solution-card-grid small,
+.segment-switcher small,
+.admin-layer-grid small {
+  color: #5f7169;
+  line-height: 1.45;
+}
+
+.erp-module-grid,
+.ai-center-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.roadmap-panel {
+  border-left: 4px solid var(--ubuzima-amber);
+}
+
+.pharma-segment-section {
+  display: grid;
+  gap: 14px;
+}
+
+.segment-switcher {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+}
+
+.segment-switcher button {
+  min-height: 174px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px;
+}
+
+.pharma-feature-selector-panel,
+.feature-stage-heading,
+.role-dashboard-section {
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(7, 56, 68, 0.06);
+}
+
+.pharma-feature-selector-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.55fr) minmax(0, 1.45fr);
+  gap: 16px;
+  padding: 20px;
+}
+
+.feature-tabs {
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+}
+
+.feature-tabs button {
+  min-height: 88px;
+}
+
+.pharma-feature-stage {
+  display: grid;
+  gap: 16px;
+}
+
+.feature-stage-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 22px;
+  border-left: 4px solid var(--ubuzima-blue);
+}
+
+.feature-stage-heading h2 {
+  margin-bottom: 8px;
+  font-size: clamp(1.55rem, 2.4vw, 2.25rem);
+}
+
+.feature-stage-heading > span {
+  flex: 0 0 auto;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #eaf8ef;
+  color: #155d47;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.feature-action-grid,
+.ai-model-grid,
+.role-dashboard-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.feature-action-grid {
+  grid-template-columns: repeat(3, minmax(190px, 1fr));
+}
+
+.feature-action-grid article,
+.ai-model-grid article,
+.role-dashboard-grid article {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 15px;
+  box-shadow: 0 12px 28px rgba(7, 56, 68, 0.05);
+}
+
+.feature-action-grid strong,
+.ai-model-grid strong,
+.role-dashboard-grid strong {
+  color: var(--ubuzima-teal);
+}
+
+.feature-action-grid span,
+.ai-model-grid span,
+.role-dashboard-grid span {
+  color: #5f7169;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.ai-model-grid {
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+}
+
+.ai-model-grid article:nth-child(3n + 1) {
+  border-top: 4px solid var(--ubuzima-blue);
+}
+
+.ai-model-grid article:nth-child(3n + 2) {
+  border-top: 4px solid var(--ubuzima-green);
+}
+
+.ai-model-grid article:nth-child(3n) {
+  border-top: 4px solid var(--ubuzima-amber);
+}
+
+.role-dashboard-section {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.55fr) minmax(0, 1.45fr);
+  gap: 18px;
+  padding: 22px;
+}
+
+.role-dashboard-grid {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+.ai-center-layout {
+  align-items: start;
+}
+
+.ai-center-module-grid {
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+}
+
+.ai-center-module-grid button {
+  min-height: 100px;
+}
+
+.ai-detail-panel {
+  position: sticky;
+  top: 0;
+}
+
+.admin-layer-grid {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+}
+
+@media (max-width: 1320px) {
+  .workspace-selector,
+  .solution-card-grid,
+  .segment-switcher,
+  .feature-tabs,
+  .admin-layer-grid,
+  .ai-center-module-grid,
+  .ai-model-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .feature-action-grid {
+    grid-template-columns: repeat(2, minmax(190px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .erp-module-grid,
+  .ai-center-layout,
+  .pharma-feature-selector-panel,
+  .role-dashboard-section {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-detail-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-selector,
+  .solution-card-grid,
+  .segment-switcher,
+  .feature-tabs,
+  .admin-layer-grid,
+  .ai-center-module-grid,
+  .ai-model-grid,
+  .feature-action-grid,
+  .role-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-stage-heading {
+    flex-direction: column;
+  }
+}
