@@ -1689,3 +1689,21 @@ Included:
 - local execution approval closure guardrail script
 
 This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, authorize final execution, release an execution decision, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation execution release readiness ledger
+
+Phase 17.3 adds controlled package generation execution release readiness controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation execution release readiness ledger
+- controlled package generation execution release readiness exception log
+- execution release readiness owner placeholders
+- execution release readiness evidence placeholders
+- execution release readiness decision placeholders
+- execution release readiness requirements
+- execution release readiness exception handling rows
+- stop conditions
+- local execution release readiness guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, authorize final execution, release an execution decision, close execution approval, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
