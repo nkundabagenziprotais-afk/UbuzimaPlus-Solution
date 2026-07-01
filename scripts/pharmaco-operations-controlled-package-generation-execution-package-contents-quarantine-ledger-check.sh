@@ -30,7 +30,7 @@ OWNER_LOCK="docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAG
 OWNER_LOCK_LOG="docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_OWNER_AUTHORIZATION_LOCK_EXCEPTION_LOG.md"
 
 echo "== Protected-file tracked source inspection =="
-if git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.|id_rsa|id_dsa|\.pem$|\.key$|secrets|credentials|production\.sqlite|database\.sqlite' | grep -v '^\.env\.example$'; then
+if git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.|id_rsa|id_dsa|\.pem$|\.key$|secrets|credentials|production\.sqlite|database\.sqlite' | grep -vE '(^|/)\.env\.example$'; then
   echo "Protected tracked file detected."
   exit 1
 else
