@@ -28,6 +28,7 @@ type PharmaCoreState = {
 };
 
 const storageKey = 'ubuzima_admin_session';
+const brandLogoSrc = '/assets/ubuzima-logo.png';
 
 const demoUsers = [
   {
@@ -45,6 +46,117 @@ const demoUsers = [
     email: 'admin@vitapharmaafrica.com',
     scope: 'Tenant',
   },
+];
+
+const commercialFramework = [
+  {
+    family: 'Platform core',
+    state: 'Foundation active',
+    modules: [
+      'Tenancy',
+      'Admin scopes',
+      'Roles and permissions',
+      'Module registry',
+      'Audit logs',
+      'Configuration',
+      'Support access',
+    ],
+  },
+  {
+    family: 'PharmaCo360 operations',
+    state: 'Pilot active',
+    modules: [
+      'Profile and branches',
+      'Product master',
+      'Inventory',
+      'Sales and dispensing',
+      'Procurement',
+      'Payables',
+      'Receivables',
+      'Reports',
+    ],
+  },
+  {
+    family: 'Growth modules',
+    state: 'Progressive activation',
+    modules: [
+      'Customer engagement',
+      'Wholesale catalog',
+      'Retail procurement',
+      'Delivery dispatch',
+      'Insurance claims',
+      'Clinic integration',
+      'Finance exports',
+    ],
+  },
+  {
+    family: 'Ubuzima AI Center',
+    state: 'Controlled',
+    modules: [
+      'AI governance',
+      'Provider registry',
+      'Model registry',
+      'AI agents',
+      'Approval center',
+      'Usage and cost',
+      'AI audit logs',
+    ],
+  },
+];
+
+const viewFramework = [
+  ['Ubuzima+ Admin 360', 'Tenants, solutions, modules, security, support, billing, platform health, and aggregated insights.'],
+  ['Solution Admin 360', 'PharmaCo360 tenants, onboarding, workflow templates, module usage, AI performance, and solution alerts.'],
+  ['Tenant Admin 360', 'VitaPharma branches, users, modules, sales, stock, suppliers, finance, customer risk, and AI insights.'],
+  ['Branch 360', 'Branch stock, POS activity, cashier sessions, daily close, expiry risk, low stock, and local alerts.'],
+  ['Product 360', 'Batches, expiry, purchases, sales history, supplier options, margin, forecast, and reorder advice.'],
+  ['Supplier 360', 'Catalog, purchase orders, invoices, payment status, delivery performance, and demand opportunities.'],
+  ['Customer 360', 'Customer profile, prescriptions, credit exposure, refill history, communication, and follow-up notes.'],
+  ['AI 360', 'Models, agents, tasks, recommendations, approvals, feedback, usage, cost, risk, and audit logs.'],
+];
+
+const channelReadiness = [
+  ['Public website', 'Repositioned for commercial lead capture and solution discovery.'],
+  ['Admin dashboard', 'Current working control center with live PharmaCo360 modules.'],
+  ['Tenant portal', 'Next framework for VitaPharma setup, package, branding, and onboarding.'],
+  ['Mobile app', 'Future manager alerts, approvals, delivery tasks, and stock summaries.'],
+  ['Desktop/PWA POS', 'Future counter-optimized sales, barcode, receipt, and installable POS flow.'],
+];
+
+const experienceBlueprint = [
+  {
+    lane: 'Operate',
+    outcome: 'Make daily pharmacy work faster, safer, and easier to supervise.',
+    modules: ['POS and dispensing', 'Inventory', 'Product master', 'Branches', 'Daily close'],
+    signal: 'Active core',
+  },
+  {
+    lane: 'Control',
+    outcome: 'Keep finance, access, risk, and approvals visible without slowing operators.',
+    modules: ['Roles', 'Audit logs', 'Payables', 'Receivables', 'Reports', 'AI approvals'],
+    signal: 'Governed',
+  },
+  {
+    lane: 'Grow',
+    outcome: 'Prepare tenants for wholesale, customer engagement, delivery, and partner channels.',
+    modules: ['Wholesale', 'Customer engagement', 'Delivery', 'Insurance', 'Clinic integration'],
+    signal: 'Progressive',
+  },
+  {
+    lane: 'Connect',
+    outcome: 'Give each user the right channel for the job across web, mobile, desktop POS, and API integrations.',
+    modules: ['Public website', 'Tenant portal', 'Mobile app', 'PWA POS', 'Partner APIs'],
+    signal: 'Framework ready',
+  },
+];
+
+const workspaceModel = [
+  ['Platform admin', 'Tenants, packages, security, support, billing, AI governance, and platform health.'],
+  ['Solution admin', 'PharmaCo360 templates, tenant readiness, module adoption, reports, and support oversight.'],
+  ['Tenant admin', 'Branches, users, modules, finance visibility, sales, stock, suppliers, and local policy.'],
+  ['Branch manager', 'Daily close, stock movement, cashier activity, expiry risk, transfers, and local alerts.'],
+  ['Counter team', 'Fast POS, barcode search, prescription checks, receipt, payment, and controlled dispensing.'],
+  ['AI steward', 'Agents, recommendations, approvals, usage, risk, feedback, and audit trail.'],
 ];
 
 function loadStoredSession(): StoredSession | null {
@@ -238,7 +350,7 @@ function App() {
     return (
       <main className="auth-shell">
         <section className="auth-panel">
-          <div className="brand-mark">U+</div>
+          <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
           <p className="eyebrow">Ubuzima+ Platform</p>
           <h1>Checking your secure session.</h1>
           <p className="auth-copy">
@@ -263,7 +375,7 @@ function App() {
     return (
       <main className="auth-shell">
         <section className="auth-panel">
-          <div className="brand-mark">U+</div>
+          <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
           <p className="eyebrow">Ubuzima+ Platform</p>
           <h1>Sign in to manage trusted health operations.</h1>
           <p className="auth-copy">
@@ -339,7 +451,7 @@ function App() {
     <main className="dashboard-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-mark">U+</div>
+          <img className="sidebar-logo" src={brandLogoSrc} alt="Ubuzima+" />
           <div>
             <strong>Ubuzima+</strong>
             <span>Admin Center</span>
@@ -397,6 +509,127 @@ function App() {
             <span>Admin scopes</span>
             <strong>{profile.admin_scopes.length}</strong>
           </article>
+        </section>
+
+        <section className="system-experience-section">
+          <div className="framework-heading">
+            <div>
+              <p className="eyebrow">System experience blueprint</p>
+              <h2>One design model for every current and future Ubuzima+ module.</h2>
+              <p className="muted">
+                The platform now has a visible UX framework that future work can follow: role-first
+                navigation, progressive module activation, operational 360 views, and channel-specific layouts.
+              </p>
+            </div>
+
+            <div className="framework-scope-card design-system-card">
+              <span>Design infrastructure</span>
+              <strong>Synced</strong>
+              <small>Logo, modules, roles, channels, and activation states</small>
+            </div>
+          </div>
+
+          <div className="experience-lane-grid">
+            {experienceBlueprint.map((lane) => (
+              <article key={lane.lane} className="experience-lane-card">
+                <span>{lane.signal}</span>
+                <h3>{lane.lane}</h3>
+                <p>{lane.outcome}</p>
+                <div>
+                  {lane.modules.map((module) => (
+                    <small key={module}>{module}</small>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="workspace-model-panel">
+            <div>
+              <h2>Role-based workspaces to build next</h2>
+              <p className="muted">
+                These are the destination workspaces for the whole system. Existing modules should keep their
+                current APIs, then progressively adopt this structure.
+              </p>
+            </div>
+
+            <div className="workspace-model-grid">
+              {workspaceModel.map(([role, text]) => (
+                <div key={role}>
+                  <strong>{role}</strong>
+                  <span>{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="commercial-framework-section">
+          <div className="framework-heading">
+            <div>
+              <p className="eyebrow">Commercial platform framework</p>
+              <h2>Ubuzima+ should expose the full system, while activating modules safely.</h2>
+              <p className="muted">
+                This workspace now shows the current operating framework across platform core,
+                PharmaCo360, future growth modules, AI governance, and application channels.
+              </p>
+            </div>
+
+            <div className="framework-scope-card">
+              <span>Current pilot</span>
+              <strong>VitaPharma</strong>
+              <small>PharmaCo360 tenant scope</small>
+            </div>
+          </div>
+
+          <div className="framework-grid">
+            {commercialFramework.map((group) => (
+              <article key={group.family} className="framework-card">
+                <span>{group.state}</span>
+                <h3>{group.family}</h3>
+                <div className="framework-chip-list">
+                  {group.modules.map((module) => (
+                    <small key={module}>{module}</small>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="view-framework-grid">
+            <article className="framework-wide-panel">
+              <div className="panel-heading-row">
+                <div>
+                  <h2>360 views to build into every module</h2>
+                  <p className="muted">
+                    Each user needs a complete but permissioned view of the entity they manage, with
+                    alerts, pending actions, recent activity, and AI explanation where relevant.
+                  </p>
+                </div>
+              </div>
+
+              <div className="view-map">
+                {viewFramework.map(([title, text]) => (
+                  <div key={title}>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="framework-channel-panel">
+              <h2>Channel readiness</h2>
+              <div className="channel-readiness-list">
+                {channelReadiness.map(([title, text]) => (
+                  <div key={title}>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
         </section>
 
         <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
