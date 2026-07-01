@@ -841,3 +841,22 @@ Required validation:
 - Protected-file inspection passes.
 - Admin dashboard build passes.
 - Phase 0 local check passes.
+
+## Phase 18.0 QA — Controlled package generation execution final go/no-go hold ledger
+
+Phase 18.0 QA validates that the final go/no-go hold ledger exists, the exception log exists, all prior controlled package generation execution ledgers remain present, protected tracked source files are not present, and no execution/deployment/data mutation action is released.
+
+Required validation:
+
+- Final go/no-go hold ledger exists.
+- Final go/no-go hold exception log exists.
+- Phase 17.9 final authorization evidence ledger exists.
+- Phase 17.8 owner authorization lock ledger exists.
+- Phase 17.7 release authorization hold ledger exists.
+- Phase 17.6 operator release approval ledger exists.
+- Phase 17.5 final release gate ledger exists.
+- Phase 17.4 readiness sign-off ledger exists.
+- Phase 17.3 execution release readiness ledger exists.
+- Protected-file inspection passes.
+- Admin dashboard build passes.
+- Phase 0 local check passes.

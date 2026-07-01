@@ -1755,3 +1755,11 @@ Phase 17.9 adds a controlled final authorization evidence ledger for the PharmaC
 This phase documents final authorization evidence placeholders and keeps final execution authorization blocked until explicit future approval is provided.
 
 No package archive, package generation execution, checksum generation, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.0 — Controlled package generation execution final go/no-go hold ledger
+
+Phase 18.0 adds a controlled final go/no-go hold ledger for the PharmaCo360 package generation execution pathway.
+
+This phase documents final go/no-go evidence placeholders and keeps final execution blocked until explicit future approval is provided.
+
+No package archive, package generation execution, checksum generation, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
