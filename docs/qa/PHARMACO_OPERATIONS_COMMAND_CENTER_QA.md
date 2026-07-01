@@ -860,3 +860,21 @@ Required validation:
 - Protected-file inspection passes.
 - Admin dashboard build passes.
 - Phase 0 local check passes.
+
+## Phase 18.1 QA — Controlled package generation execution package-build command quarantine ledger
+
+Phase 18.1 QA validates that the package-build command quarantine ledger exists, the exception log exists, all prior controlled package generation execution ledgers remain present, protected tracked source files are not present, and no execution/deployment/data mutation action is released.
+
+Required validation:
+
+- Package-build command quarantine ledger exists.
+- Package-build command quarantine exception log exists.
+- Phase 18.0 final go/no-go hold ledger exists.
+- Phase 17.9 final authorization evidence ledger exists.
+- Phase 17.8 owner authorization lock ledger exists.
+- Phase 17.7 release authorization hold ledger exists.
+- Phase 17.6 operator release approval ledger exists.
+- Phase 17.5 final release gate ledger exists.
+- Protected-file inspection passes.
+- Admin dashboard build passes.
+- Phase 0 local check passes.
