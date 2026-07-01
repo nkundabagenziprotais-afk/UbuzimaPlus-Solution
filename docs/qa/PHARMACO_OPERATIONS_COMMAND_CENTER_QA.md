@@ -747,3 +747,27 @@ QA coverage now includes the controlled package generation execution readiness s
 The guardrail validates that the readiness sign-off ledger and exception log exist, confirms upstream Phase 17.3, 17.2, 17.1, 17.0, 16.9, 16.8, 16.7, and 16.6 evidence continuity, performs protected-file tracked source inspection, and confirms the admin dashboard build remains valid.
 
 Expected result: the execution readiness sign-off ledger check passes while package generation execution remains blocked unless separately and explicitly authorized.
+
+
+## Phase 17.5 Controlled Package Generation Execution Final Release Gate QA
+
+Phase 17.5 QA verifies that the controlled package generation execution final release gate ledger exists and that all upstream controlled package generation evidence ledgers remain present.
+
+Validation confirms:
+
+- Final release gate ledger exists.
+- Final release gate exception log exists.
+- Execution readiness sign-off ledger exists.
+- Execution release readiness ledger exists.
+- Execution approval closure ledger exists.
+- Execution decision hold ledger exists.
+- Final execution authorization packet exists.
+- Command release hold ledger exists.
+- Execution evidence preflight ledger exists.
+- Authorization release ledger exists.
+- Readiness lock ledger exists.
+- Protected-file inspection blocks real secrets and runtime artifacts while allowing safe `.env.example` files.
+- Admin dashboard build passes.
+- Phase 0 local check remains clean.
+
+This QA phase does not create a package archive, execute package generation, generate checksums, release commands, upload files, run cPanel actions, deploy live code, copy production files, run migrations, change dependencies, or mutate data.
