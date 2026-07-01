@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Auth\TwoFactorAuthenticationService;
 use App\Services\Auth\UserAccessProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,12 +14,17 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
-    public function login(Request $request, UserAccessProfileService $profileService): JsonResponse
+    public function login(
+        Request $request,
+        UserAccessProfileService $profileService,
+        TwoFactorAuthenticationService $twoFactor
+    ): JsonResponse
     {
         $data = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:100'],
+            'trusted_device_token' => ['nullable', 'string', 'max:200'],
         ]);
 
         $user = User::query()
@@ -35,6 +41,27 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['This user account is not active.'],
             ]);
+        }
+
+        if (
+            $twoFactor->staffTwoFactorRequired($user)
+            && ! $twoFactor->trustedDeviceIsValid($user, $data['trusted_device_token'] ?? null)
+        ) {
+            if (! $user->two_factor_enabled || ! $user->two_factor_secret) {
+                return response()->json([
+                    'status' => 'two_factor_setup_required',
+                    'message' => 'Two-factor authentication is required for staff access.',
+                    ...$twoFactor->createSetupChallenge($user, $request),
+                ], 202);
+            }
+
+            return response()->json([
+                'status' => 'two_factor_challenge_required',
+                'message' => 'Enter your authenticator code or recovery code to continue.',
+                'delivery_methods' => ['authenticator_code', 'recovery_code'],
+                'trust_device_available' => true,
+                ...$twoFactor->createLoginChallenge($user, $request),
+            ], 202);
         }
 
         $abilities = $profileService->permissionCodes($user);

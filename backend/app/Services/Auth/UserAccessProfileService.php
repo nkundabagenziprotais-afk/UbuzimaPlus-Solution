@@ -29,6 +29,16 @@ class UserAccessProfileService
                 'status' => $user->status,
                 'must_change_password' => (bool) $user->must_change_password,
                 'last_login_at' => optional($user->last_login_at)->toISOString(),
+                'two_factor' => [
+                    'required' => (bool) $user->two_factor_required,
+                    'enabled' => (bool) $user->two_factor_enabled,
+                    'confirmed_at' => optional($user->two_factor_confirmed_at)->toISOString(),
+                    'last_verified_at' => optional($user->two_factor_last_verified_at)->toISOString(),
+                    'trusted_devices_count' => $user->trustedDevices()
+                        ->whereNull('revoked_at')
+                        ->where('trusted_until', '>', now())
+                        ->count(),
+                ],
             ],
             'scope' => [
                 'type' => $scope->scopeType,
