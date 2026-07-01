@@ -120,21 +120,46 @@ function App() {
   }, []);
 
 
+  const safeRoles = profile?.roles ?? [];
+  const safePermissions = profile?.permissions ?? [];
+  const safeTenantAssignments = profile?.tenant_assignments ?? [];
+  const safeAdminScopes = profile?.admin_scopes ?? [];
+  const safeUser = profile?.user ?? {
+    id: 0,
+    name: 'Admin User',
+    email: 'Not available',
+    phone: null,
+    status: 'active',
+    must_change_password: false,
+    last_login_at: null,
+  };
+  const safeScope = profile?.scope ?? {
+    type: 'tenant',
+    solution_id: null,
+    tenant_id: null,
+    branch_id: null,
+    is_platform: false,
+    is_solution: false,
+    is_tenant: true,
+    is_branch: false,
+  };
+  const safePharmaProfile = pharmaCore.profile?.profile ?? null;
+
   const permissionGroups = useMemo(() => {
     if (!profile) return [];
 
     return [
       {
         title: 'Security',
-        items: profile.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
+        items: safePermissions.filter((item) => item.includes('roles') || item.includes('audit')),
       },
       {
         title: 'PharmaCo360',
-        items: profile.permissions.filter((item) => item.startsWith('pharmaco.')),
+        items: safePermissions.filter((item) => item.startsWith('pharmaco.')),
       },
       {
         title: 'AI & Platform',
-        items: profile.permissions.filter((item) => item.includes('ai') || item.includes('platform')),
+        items: safePermissions.filter((item) => item.includes('ai') || item.includes('platform')),
       },
     ].filter((group) => group.items.length > 0);
   }, [profile]);
@@ -202,8 +227,9 @@ function App() {
     if (!session?.token) return;
 
     const tenantSlug =
-      profile?.tenant_assignments?.[0]?.tenant?.slug ||
-      (profile?.scope?.is_tenant ? 'vitapharma' : '');
+      safeTenantAssignments.find((assignment) => assignment.status === 'active')?.tenant?.slug ||
+      safeTenantAssignments[0]?.tenant?.slug ||
+      (safeScope.is_tenant ? 'vitapharma' : '');
 
     if (!tenantSlug) {
       setPharmaCoreError('No tenant assignment is available for this account.');
@@ -366,36 +392,36 @@ function App() {
         <header className="dashboard-header">
           <div>
             <p className="eyebrow">Authenticated workspace</p>
-            <h1>Welcome back, {profile.user.name}</h1>
+            <h1>Welcome back, {safeUser.name}</h1>
             <p>
-              Current scope: <strong>{profile.scope.type}</strong>. Access is generated from
+              Current scope: <strong>{safeScope.type}</strong>. Access is generated from
               active roles, tenant assignments, and enabled modules.
             </p>
           </div>
 
           <div className="user-card">
-            <strong>{profile.user.email}</strong>
-            <span>{profile.user.status}</span>
-            {profile.user.must_change_password && <small>Password change required</small>}
+            <strong>{safeUser.email}</strong>
+            <span>{safeUser.status}</span>
+            {safeUser.must_change_password && <small>Password change required</small>}
           </div>
         </header>
 
         <section className="summary-grid">
           <article>
             <span>Active roles</span>
-            <strong>{profile.roles.length}</strong>
+            <strong>{safeRoles.length}</strong>
           </article>
           <article>
             <span>Permissions</span>
-            <strong>{profile.permissions.length}</strong>
+            <strong>{safePermissions.length}</strong>
           </article>
           <article>
             <span>Tenant assignments</span>
-            <strong>{profile.tenant_assignments.length}</strong>
+            <strong>{safeTenantAssignments.length}</strong>
           </article>
           <article>
             <span>Admin scopes</span>
-            <strong>{profile.admin_scopes.length}</strong>
+            <strong>{safeAdminScopes.length}</strong>
           </article>
         </section>
 
@@ -407,19 +433,19 @@ function App() {
             <div className="scope-list">
               <div>
                 <span>Scope type</span>
-                <strong>{profile.scope.type}</strong>
+                <strong>{safeScope.type}</strong>
               </div>
               <div>
                 <span>Solution ID</span>
-                <strong>{profile.scope.solution_id ?? 'All'}</strong>
+                <strong>{safeScope.solution_id ?? 'All'}</strong>
               </div>
               <div>
                 <span>Tenant ID</span>
-                <strong>{profile.scope.tenant_id ?? 'All / none'}</strong>
+                <strong>{safeScope.tenant_id ?? 'All / none'}</strong>
               </div>
               <div>
                 <span>Branch ID</span>
-                <strong>{profile.scope.branch_id ?? 'All / none'}</strong>
+                <strong>{safeScope.branch_id ?? 'All / none'}</strong>
               </div>
             </div>
           </article>
@@ -427,7 +453,7 @@ function App() {
           <article className="panel">
             <h2>Roles</h2>
             <div className="tag-list">
-              {profile.roles.map((role) => (
+              {safeRoles.map((role) => (
                 <span key={`${role.code}-${role.tenant_id ?? 'global'}`}>{role.name}</span>
               ))}
             </div>
@@ -469,20 +495,20 @@ function App() {
               <div className="pharmaco-grid">
                 <section className="pharmaco-card">
                   <span className="section-label">Pharmacy profile</span>
-                  <h3>{pharmaCore.profile.profile.trading_name}</h3>
-                  <p>{pharmaCore.profile.profile.legal_name}</p>
+                  <h3>{safePharmaProfile?.trading_name ?? 'Pharmacy profile'}</h3>
+                  <p>{safePharmaProfile?.legal_name ?? 'Legal name not set'}</p>
                   <div className="mini-facts">
-                    <span>Category: {pharmaCore.profile.profile.pharmacy_category}</span>
-                    <span>Regulator: {pharmaCore.profile.profile.regulator_name}</span>
-                    <span>Status: {pharmaCore.profile.profile.status}</span>
-                    <span>District: {pharmaCore.profile.profile.district ?? 'Not set'}</span>
+                    <span>Category: {safePharmaProfile?.pharmacy_category ?? 'Not set'}</span>
+                    <span>Regulator: {safePharmaProfile?.regulator_name ?? 'Not set'}</span>
+                    <span>Status: {safePharmaProfile?.status ?? 'Not set'}</span>
+                    <span>District: {safePharmaProfile?.district ?? 'Not set'}</span>
                   </div>
                 </section>
 
                 <section className="pharmaco-card">
                   <span className="section-label">Capabilities</span>
                   <div className="tag-list">
-                    {pharmaCore.profile.profile.capabilities.map((capability) => (
+                    {(safePharmaProfile?.capabilities ?? []).map((capability) => (
                       <span key={capability}>{capability.replaceAll('_', ' ')}</span>
                     ))}
                   </div>
@@ -491,7 +517,7 @@ function App() {
                 <section className="pharmaco-card">
                   <span className="section-label">Insurance partners</span>
                   <div className="tag-list">
-                    {pharmaCore.profile.profile.insurance_partners.map((partner) => (
+                    {(safePharmaProfile?.insurance_partners ?? []).map((partner) => (
                       <span key={partner}>{partner}</span>
                     ))}
                   </div>
@@ -500,7 +526,7 @@ function App() {
                 <section className="pharmaco-card">
                   <span className="section-label">Operating hours</span>
                   <div className="mini-facts">
-                    {Object.entries(pharmaCore.profile.profile.operating_hours).map(([day, hours]) => (
+                    {Object.entries(safePharmaProfile?.operating_hours ?? {}).map(([day, hours]) => (
                       <span key={day}>{day.replaceAll('_', ' ')}: {hours}</span>
                     ))}
                   </div>
@@ -602,11 +628,11 @@ function App() {
 
           <article className="panel wide">
             <h2>Tenant assignments</h2>
-            {profile.tenant_assignments.length === 0 ? (
+            {safeTenantAssignments.length === 0 ? (
               <p className="muted">No tenant assignment is attached to this account.</p>
             ) : (
               <div className="tenant-table">
-                {profile.tenant_assignments.map((assignment) => (
+                {safeTenantAssignments.map((assignment) => (
                   <div key={assignment.tenant.slug}>
                     <strong>{assignment.tenant.name}</strong>
                     <span>{assignment.branch?.name ?? 'All branches'}</span>

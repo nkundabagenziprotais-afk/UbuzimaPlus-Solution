@@ -81,6 +81,7 @@ function formatDate(value: string | null | undefined): string {
 
 function getTenantSlug(profile: AccessProfile): string {
   return (
+    profile.tenant_assignments?.find((assignment) => assignment.status === 'active')?.tenant?.slug ||
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '')
   );
@@ -190,7 +191,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
   const [salesFilters, setSalesFilters] = useState<SalesFiltersState>(defaultSalesFilters());
 
   const tenantSlug = useMemo(() => getTenantSlug(profile), [profile]);
-  const canReadSales = profile.permissions.includes('pharmaco.sales.manage');
+  const canReadSales = (profile.permissions ?? []).includes('pharmaco.sales.manage');
 
   const apiSalesFilters = useMemo(() => salesFiltersToApiFilters(salesFilters), [salesFilters]);
 
