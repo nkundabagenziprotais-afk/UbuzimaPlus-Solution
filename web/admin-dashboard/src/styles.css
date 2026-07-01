@@ -2424,3 +2424,118 @@ p {
   }
 }
 
+
+
+.sales-filter-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.sales-queue-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.queue-card {
+  text-align: left;
+  border: 1px solid rgba(16, 107, 79, 0.14);
+  border-radius: 18px;
+  padding: 14px;
+  background: #f8fcfa;
+  color: #183c30;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+}
+
+.queue-card:hover {
+  border-color: rgba(16, 107, 79, 0.34);
+  box-shadow: 0 12px 28px rgba(22, 56, 43, 0.08);
+}
+
+.queue-card span,
+.selected-sale-insight-grid span {
+  color: #6a7f75;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.queue-card strong,
+.selected-sale-insight-grid strong {
+  font-size: 1.18rem;
+  text-transform: capitalize;
+}
+
+.queue-card small,
+.selected-sale-insight-grid small {
+  color: #60766c;
+}
+
+.sales-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.sales-filter-grid label {
+  display: grid;
+  gap: 8px;
+  color: #344840;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.sales-filter-grid select {
+  width: 100%;
+  border: 1px solid rgba(16, 107, 79, 0.2);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fff;
+  color: #16352a;
+}
+
+.filter-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.secondary-action {
+  background: #e9f4ef;
+  color: #106b4f;
+}
+
+.selected-sale-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.selected-sale-insight-grid article {
+  border: 1px solid rgba(16, 107, 79, 0.12);
+  border-radius: 18px;
+  padding: 14px;
+  background: #f8fcfa;
+  display: grid;
+  gap: 4px;
+}
+
+@media (max-width: 1100px) {
+  .sales-queue-grid,
+  .sales-filter-grid,
+  .selected-sale-insight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sales-queue-grid,
+  .sales-filter-grid,
+  .selected-sale-insight-grid {
+    grid-template-columns: 1fr;
+  }
+}

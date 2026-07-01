@@ -10,6 +10,7 @@ import {
   PharmaPayment,
   PharmaProduct,
   PharmaSalesResponse,
+  PharmaSalesFilters,
   PharmaStockBatch,
   confirmPharmaSale,
   getPharmaBranches,
@@ -47,6 +48,17 @@ type PaymentFormState = {
   payment_method: PaymentMethod;
   reference_number: string;
   notes: string;
+};
+
+type SalesStatusFilter = 'all' | 'draft' | 'dispensed' | 'cancelled';
+type PaymentStatusFilter = 'all' | 'unpaid' | 'partial' | 'paid' | 'refunded';
+type SaleTypeFilter = 'all' | 'cash_sale' | 'prescription_sale' | 'insurance_sale' | 'credit_sale';
+
+type SalesFiltersState = {
+  status: SalesStatusFilter;
+  payment_status: PaymentStatusFilter;
+  sale_type: SaleTypeFilter;
+  branch_id: string;
 };
 
 function money(value: number | null | undefined): string {
@@ -133,6 +145,28 @@ function buildPrescriptionChecks(sale: PharmaSale | null): PrescriptionChecks {
   }, {});
 }
 
+function defaultSalesFilters(): SalesFiltersState {
+  return {
+    status: 'all',
+    payment_status: 'all',
+    sale_type: 'all',
+    branch_id: 'all',
+  };
+}
+
+function labelize(value: string): string {
+  return value.replaceAll('_', ' ');
+}
+
+function salesFiltersToApiFilters(filters: SalesFiltersState): PharmaSalesFilters {
+  return {
+    status: filters.status === 'all' ? undefined : filters.status,
+    payment_status: filters.payment_status === 'all' ? undefined : filters.payment_status,
+    sale_type: filters.sale_type === 'all' ? undefined : filters.sale_type,
+    branch_id: filters.branch_id === 'all' ? undefined : Number(filters.branch_id),
+  };
+}
+
 export function SalesDispensingReview({ token, profile }: Props) {
   const [state, setState] = useState<SalesReviewState>({
     branches: [],
@@ -153,9 +187,25 @@ export function SalesDispensingReview({ token, profile }: Props) {
   const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [salesFilters, setSalesFilters] = useState<SalesFiltersState>(defaultSalesFilters());
 
   const tenantSlug = useMemo(() => getTenantSlug(profile), [profile]);
   const canReadSales = profile.permissions.includes('pharmaco.sales.manage');
+
+  const apiSalesFilters = useMemo(() => salesFiltersToApiFilters(salesFilters), [salesFilters]);
+
+  const activeFilterText = useMemo(() => {
+    const values = [
+      salesFilters.status !== 'all' ? `Status: ${labelize(salesFilters.status)}` : null,
+      salesFilters.payment_status !== 'all' ? `Payment: ${labelize(salesFilters.payment_status)}` : null,
+      salesFilters.sale_type !== 'all' ? `Type: ${labelize(salesFilters.sale_type)}` : null,
+      salesFilters.branch_id !== 'all'
+        ? `Branch: ${state.branches.find((branch) => branch.id === Number(salesFilters.branch_id))?.name ?? salesFilters.branch_id}`
+        : null,
+    ].filter(Boolean);
+
+    return values.length ? values.join(' · ') : 'All sales';
+  }, [salesFilters, state.branches]);
 
   const salesSummary = useMemo(() => {
     const draftSales = state.sales.filter((sale) => sale.status === 'draft');
@@ -163,11 +213,36 @@ export function SalesDispensingReview({ token, profile }: Props) {
     const totalValue = state.sales.reduce((sum, sale) => sum + sale.total_amount, 0);
     const openBalance = state.sales.reduce((sum, sale) => sum + sale.balance_amount, 0);
 
+    const unpaidSales = state.sales.filter((sale) => sale.payment_status === 'unpaid');
+    const partialSales = state.sales.filter((sale) => sale.payment_status === 'partial');
+    const paidSales = state.sales.filter((sale) => sale.payment_status === 'paid');
+
     return {
       draftSales: draftSales.length,
       dispensedSales: dispensedSales.length,
+      unpaidSales: unpaidSales.length,
+      partialSales: partialSales.length,
+      paidSales: paidSales.length,
       totalValue,
       openBalance,
+    };
+  }, [state.sales]);
+
+  const salesQueues = useMemo(() => {
+    const draft = state.sales.filter((sale) => sale.status === 'draft');
+    const readyToDispense = draft.filter((sale) => Number(sale.items_count ?? sale.items?.length ?? 0) > 0);
+    const dispensed = state.sales.filter((sale) => sale.status === 'dispensed');
+    const unpaid = state.sales.filter((sale) => sale.payment_status === 'unpaid');
+    const partiallyPaid = state.sales.filter((sale) => sale.payment_status === 'partial');
+    const paid = state.sales.filter((sale) => sale.payment_status === 'paid');
+
+    return {
+      draft,
+      readyToDispense,
+      dispensed,
+      unpaid,
+      partiallyPaid,
+      paid,
     };
   }, [state.sales]);
 
@@ -198,7 +273,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         getPharmaBranches(token, tenantSlug),
         getPharmaCustomers(token, tenantSlug),
         getPharmaPrescriptions(token, tenantSlug),
-        getPharmaSales(token, tenantSlug),
+        getPharmaSales(token, tenantSlug, apiSalesFilters),
         getPharmaInventoryBatches(token, tenantSlug),
         getPharmaProducts(token, tenantSlug),
       ]);
@@ -293,7 +368,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
       });
 
       const [salesResponse, batchesResponse] = await Promise.all([
-        getPharmaSales(token, tenantSlug),
+        getPharmaSales(token, tenantSlug, apiSalesFilters),
         getPharmaInventoryBatches(token, tenantSlug),
       ]);
 
@@ -302,7 +377,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         sales: salesResponse.sales,
         selectedSale: response.sale,
         batches: batchesResponse.batches,
-        products: productsResponse.products,
+        products: current.products,
       }));
       setBatchSelections(buildBatchSelections(response.sale, batchesResponse.batches));
       setPrescriptionChecks(buildPrescriptionChecks(response.sale));
@@ -401,6 +476,12 @@ export function SalesDispensingReview({ token, profile }: Props) {
     setLastPayment(null);
   }
 
+  function handleResetSalesFilters() {
+    setSalesFilters(defaultSalesFilters());
+    setNotice('Sales filters reset. Load sales review to refresh the list.');
+    setError('');
+  }
+
   const selectedSale = state.selectedSale;
   const saleItems = selectedSale?.items ?? [];
   const isDraftSale = selectedSale?.status === 'draft';
@@ -475,6 +556,142 @@ export function SalesDispensingReview({ token, profile }: Props) {
         </article>
       </div>
 
+      <section className="pharmaco-card sales-filter-panel">
+        <div className="panel-heading-row">
+          <div>
+            <span className="section-label">Sales queues and filters</span>
+            <h3>Focus the dispensing review</h3>
+            <p className="muted">
+              Use the existing backend filters to focus work by status, payment state, sale type and branch.
+            </p>
+          </div>
+          <div className="sale-total-box">
+            <span>Current view</span>
+            <strong>{activeFilterText}</strong>
+            <small>{state.sales.length} sale records loaded</small>
+          </div>
+        </div>
+
+        <div className="sales-queue-grid">
+          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, status: 'draft' }))}>
+            <span>Draft queue</span>
+            <strong>{salesQueues.draft.length}</strong>
+            <small>Needs review before stock deduction</small>
+          </button>
+          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, status: 'draft' }))}>
+            <span>Ready to dispense</span>
+            <strong>{salesQueues.readyToDispense.length}</strong>
+            <small>Draft sales with line items</small>
+          </button>
+          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, status: 'dispensed' }))}>
+            <span>Dispensed</span>
+            <strong>{salesQueues.dispensed.length}</strong>
+            <small>Stock already deducted</small>
+          </button>
+          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'unpaid' }))}>
+            <span>Unpaid</span>
+            <strong>{salesQueues.unpaid.length}</strong>
+            <small>Payment follow-up needed</small>
+          </button>
+          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'partial' }))}>
+            <span>Partially paid</span>
+            <strong>{salesQueues.partiallyPaid.length}</strong>
+            <small>Balance still open</small>
+          </button>
+          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'paid' }))}>
+            <span>Paid</span>
+            <strong>{salesQueues.paid.length}</strong>
+            <small>Receipt trail complete</small>
+          </button>
+        </div>
+
+        <div className="sales-filter-grid">
+          <label>
+            Sale status
+            <select
+              value={salesFilters.status}
+              onChange={(event) =>
+                setSalesFilters((current) => ({
+                  ...current,
+                  status: event.target.value as SalesStatusFilter,
+                }))
+              }
+            >
+              <option value="all">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="dispensed">Dispensed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </label>
+
+          <label>
+            Payment status
+            <select
+              value={salesFilters.payment_status}
+              onChange={(event) =>
+                setSalesFilters((current) => ({
+                  ...current,
+                  payment_status: event.target.value as PaymentStatusFilter,
+                }))
+              }
+            >
+              <option value="all">All payment states</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="partial">Partial</option>
+              <option value="paid">Paid</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </label>
+
+          <label>
+            Sale type
+            <select
+              value={salesFilters.sale_type}
+              onChange={(event) =>
+                setSalesFilters((current) => ({
+                  ...current,
+                  sale_type: event.target.value as SaleTypeFilter,
+                }))
+              }
+            >
+              <option value="all">All sale types</option>
+              <option value="cash_sale">Cash sale</option>
+              <option value="prescription_sale">Prescription sale</option>
+              <option value="insurance_sale">Insurance sale</option>
+              <option value="credit_sale">Credit sale</option>
+            </select>
+          </label>
+
+          <label>
+            Branch
+            <select
+              value={salesFilters.branch_id}
+              onChange={(event) =>
+                setSalesFilters((current) => ({
+                  ...current,
+                  branch_id: event.target.value,
+                }))
+              }
+            >
+              <option value="all">All branches</option>
+              {state.branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="filter-action-row">
+          <button type="button" onClick={loadSalesReview} disabled={isLoading}>
+            {isLoading ? 'Applying filters…' : 'Apply filters'}
+          </button>
+          <button type="button" className="secondary-action" onClick={handleResetSalesFilters}>
+            Reset filters
+          </button>
+        </div>
+      </section>
 
       <SalesCreationPanel
         token={token}
@@ -571,6 +788,29 @@ export function SalesDispensingReview({ token, profile }: Props) {
               <strong>{money(selectedSale.total_amount)}</strong>
               <small>Balance: {money(selectedSale.balance_amount)}</small>
             </div>
+          </div>
+
+          <div className="selected-sale-insight-grid">
+            <article>
+              <span>Status</span>
+              <strong>{labelize(selectedSale.status)}</strong>
+              <small>Operational state</small>
+            </article>
+            <article>
+              <span>Payment</span>
+              <strong>{labelize(selectedSale.payment_status)}</strong>
+              <small>{money(selectedSale.paid_amount)} paid</small>
+            </article>
+            <article>
+              <span>Customer</span>
+              <strong>{selectedSale.customer?.full_name ?? 'Walk-in'}</strong>
+              <small>{selectedSale.customer?.phone ?? 'No phone captured'}</small>
+            </article>
+            <article>
+              <span>Created</span>
+              <strong>{formatDate(selectedSale.created_at)}</strong>
+              <small>{selectedSale.sale_type.replaceAll('_', ' ')}</small>
+            </article>
           </div>
 
           <div className="readiness-summary">
