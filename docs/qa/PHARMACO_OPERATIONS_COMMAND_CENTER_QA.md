@@ -771,3 +771,28 @@ Validation confirms:
 - Phase 0 local check remains clean.
 
 This QA phase does not create a package archive, execute package generation, generate checksums, release commands, upload files, run cPanel actions, deploy live code, copy production files, run migrations, change dependencies, or mutate data.
+
+
+## Phase 17.6 — Controlled Package Generation Execution Operator Release Approval QA
+
+Validation requirements:
+
+- Operator release approval ledger exists.
+- Operator release approval exception log exists.
+- Final release gate ledger exists.
+- Readiness sign-off ledger exists.
+- Release readiness ledger exists.
+- Approval closure ledger exists.
+- Decision hold ledger exists.
+- Final execution authorization packet exists.
+- Command release hold ledger exists.
+- Execution evidence preflight ledger exists.
+- Authorization release ledger exists.
+- Readiness lock ledger exists.
+- Protected-file inspection passes.
+- Admin dashboard build passes.
+- No package archive is created.
+- No package generation is executed.
+- No cPanel execution occurs.
+- No live deployment occurs.
+- No data mutation occurs.
