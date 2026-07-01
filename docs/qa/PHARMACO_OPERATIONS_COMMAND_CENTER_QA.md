@@ -658,3 +658,22 @@ Checks:
 12. Stop conditions are defined.
 13. Command release hold exception rows are present.
 14. No package archive creation, package generation execution, checksum generation, approval execution, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 17.0 controlled package generation final execution authorization packet
+
+Checks:
+
+1. Controlled package generation final execution authorization packet exists.
+2. Controlled package generation final execution authorization exception log exists.
+3. Final execution authorization packet states that it does not create a package archive.
+4. Final execution authorization packet states that it does not execute package generation.
+5. Final execution authorization packet states that it does not release a package generation command.
+6. Final execution authorization exception log states that it does not execute package generation.
+7. Required final execution authorization owners are listed.
+8. Final execution authorization rows are present.
+9. Required final execution authorization evidence placeholders are listed.
+10. Allowed final execution authorization decisions are listed.
+11. Final execution authorization requirements are listed.
+12. Stop conditions are defined.
+13. Final execution authorization exception rows are present.
+14. No package archive creation, package generation execution, checksum generation, approval execution, package command release, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
