@@ -717,3 +717,25 @@ Checks:
 14. Stop conditions are defined.
 15. Execution approval closure exception rows are present.
 16. No package archive creation, package generation execution, checksum generation, approval execution, package command release, final execution authorization, execution decision release, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 17.3 controlled package generation execution release readiness ledger
+
+Checks:
+
+1. Controlled package generation execution release readiness ledger exists.
+2. Controlled package generation execution release readiness exception log exists.
+3. Execution release readiness ledger states that it does not create a package archive.
+4. Execution release readiness ledger states that it does not execute package generation.
+5. Execution release readiness ledger states that it does not execute approval.
+6. Execution release readiness ledger states that it does not release a package generation command.
+7. Execution release readiness ledger states that it does not authorize final execution.
+8. Execution release readiness ledger states that it does not release an execution decision.
+9. Execution release readiness ledger states that it does not close execution approval.
+10. Required execution release readiness owners are listed.
+11. Execution release readiness rows are present.
+12. Required execution release readiness evidence placeholders are listed.
+13. Allowed execution release readiness decisions are listed.
+14. Execution release readiness requirements are listed.
+15. Stop conditions are defined.
+16. Execution release readiness exception rows are present.
+17. No package archive creation, package generation execution, checksum generation, approval execution, package command release, final execution authorization, execution decision release, execution approval closure release, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
