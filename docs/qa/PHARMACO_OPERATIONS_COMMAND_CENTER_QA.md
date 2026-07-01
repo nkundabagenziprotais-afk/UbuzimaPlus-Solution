@@ -696,3 +696,24 @@ Checks:
 12. Stop conditions are defined.
 13. Execution decision exception rows are present.
 14. No package archive creation, package generation execution, checksum generation, approval execution, package command release, final execution authorization, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 17.2 controlled package generation execution approval closure ledger
+
+Checks:
+
+1. Controlled package generation execution approval closure ledger exists.
+2. Controlled package generation execution approval closure exception log exists.
+3. Execution approval closure ledger states that it does not create a package archive.
+4. Execution approval closure ledger states that it does not execute package generation.
+5. Execution approval closure ledger states that it does not execute approval.
+6. Execution approval closure ledger states that it does not release a package generation command.
+7. Execution approval closure ledger states that it does not authorize final execution.
+8. Execution approval closure ledger states that it does not release an execution decision.
+9. Required execution approval closure owners are listed.
+10. Execution approval closure rows are present.
+11. Required execution approval closure evidence placeholders are listed.
+12. Allowed execution approval closure decisions are listed.
+13. Execution approval closure requirements are listed.
+14. Stop conditions are defined.
+15. Execution approval closure exception rows are present.
+16. No package archive creation, package generation execution, checksum generation, approval execution, package command release, final execution authorization, execution decision release, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
