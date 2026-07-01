@@ -739,3 +739,11 @@ Checks:
 15. Stop conditions are defined.
 16. Execution release readiness exception rows are present.
 17. No package archive creation, package generation execution, checksum generation, approval execution, package command release, final execution authorization, execution decision release, execution approval closure release, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 17.4 Controlled Package Generation Execution Readiness Sign-Off QA
+
+QA coverage now includes the controlled package generation execution readiness sign-off ledger guardrail.
+
+The guardrail validates that the readiness sign-off ledger and exception log exist, confirms upstream Phase 17.3, 17.2, 17.1, 17.0, 16.9, 16.8, 16.7, and 16.6 evidence continuity, performs protected-file tracked source inspection, and confirms the admin dashboard build remains valid.
+
+Expected result: the execution readiness sign-off ledger check passes while package generation execution remains blocked unless separately and explicitly authorized.

@@ -1707,3 +1707,11 @@ Included:
 - local execution release readiness guardrail script
 
 This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, authorize final execution, release an execution decision, close execution approval, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+## Phase 17.4 Controlled Package Generation Execution Readiness Sign-Off
+
+The PharmaCo360 operations command center now includes a controlled package generation execution readiness sign-off ledger.
+
+This adds a final readiness sign-off hold before any future controlled package generation execution can be considered. The control requires readiness sign-off ownership, evidence capture, upstream ledger continuity, exception review, and explicit stop-condition checks.
+
+This does not create a package archive, execute package generation, generate checksums, release commands, upload files, execute cPanel actions, deploy live changes, mutate backend logic, mutate frontend product behavior, run migrations, change dependencies, or mutate data.
