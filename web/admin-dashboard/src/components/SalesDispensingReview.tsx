@@ -159,6 +159,51 @@ function labelize(value: string): string {
   return value.replaceAll('_', ' ');
 }
 
+function paymentStatusTone(status: string): string {
+  if (status === 'paid') return 'stable';
+  if (status === 'partial') return 'attention';
+  if (status === 'unpaid') return 'warning';
+  if (status === 'refunded') return 'neutral';
+
+  return 'neutral';
+}
+
+function paymentStatusGuidance(status: string, balance: number): string {
+  if (status === 'paid' || balance <= 0) {
+    return 'Receipt trail is complete and no balance remains.';
+  }
+
+  if (status === 'partial') {
+    return 'A balance remains. Confirm the next collection step before closing the sale.';
+  }
+
+  if (status === 'unpaid') {
+    return 'Payment has not been collected yet. Keep this sale visible for follow-up.';
+  }
+
+  return 'Review payment status before dispensing or closing the sale.';
+}
+
+function prescriptionTone(required: number, verified: number): string {
+  if (required === 0) return 'stable';
+  if (verified >= required) return 'stable';
+  if (verified > 0) return 'attention';
+
+  return 'warning';
+}
+
+function prescriptionGuidance(required: number, verified: number): string {
+  if (required === 0) {
+    return 'No prescription verification is required for the current items.';
+  }
+
+  if (verified >= required) {
+    return 'Required prescription checks are complete.';
+  }
+
+  return `${required - verified} prescription check${required - verified === 1 ? '' : 's'} still need confirmation.`;
+}
+
 function salesFiltersToApiFilters(filters: SalesFiltersState): PharmaSalesFilters {
   return {
     status: filters.status === 'all' ? undefined : filters.status,
@@ -505,6 +550,19 @@ export function SalesDispensingReview({ token, profile }: Props) {
 
   const readyCount = readinessItems.filter((item) => item.ready).length;
   const canConfirmSelectedSale = Boolean(selectedSale && isDraftSale && saleItems.length > 0 && readyCount === saleItems.length);
+  const requiredPrescriptionCount = readinessItems.filter((entry) => entry.item.requires_prescription).length;
+  const verifiedPrescriptionCount = readinessItems.filter(
+    (entry) => entry.item.requires_prescription && Boolean(prescriptionChecks[entry.item.id]),
+  ).length;
+  const paymentBalance = Number(selectedSale?.balance_amount ?? 0);
+  const selectedPaymentStatus = selectedSale?.payment_status ?? 'unpaid';
+  const selectedPaymentTone = paymentStatusTone(selectedPaymentStatus);
+  const selectedPrescriptionTone = prescriptionTone(requiredPrescriptionCount, verifiedPrescriptionCount);
+  const selectedDispensingTone = canConfirmSelectedSale || selectedSale?.status === 'dispensed' ? 'stable' : isDraftSale ? 'attention' : 'neutral';
+  const prescriptionStatusText =
+    requiredPrescriptionCount === 0
+      ? 'Not required'
+      : `${verifiedPrescriptionCount}/${requiredPrescriptionCount} verified`;
 
   return (
     <article className="panel wide sales-review-panel">
@@ -573,33 +631,63 @@ export function SalesDispensingReview({ token, profile }: Props) {
           </div>
         </div>
 
-        <div className="sales-queue-grid">
-          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, status: 'draft' }))}>
+        <div className="sales-queue-grid" aria-label="Sales review queues">
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.status === 'draft' ? 'queue-card-active' : ''}`}
+            aria-pressed={salesFilters.status === 'draft'}
+            onClick={() => setSalesFilters((current) => ({ ...current, status: 'draft' }))}
+          >
             <span>Draft queue</span>
             <strong>{salesQueues.draft.length}</strong>
             <small>Needs review before stock deduction</small>
           </button>
-          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, status: 'draft' }))}>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.status === 'draft' ? 'queue-card-active' : ''}`}
+            aria-pressed={salesFilters.status === 'draft'}
+            onClick={() => setSalesFilters((current) => ({ ...current, status: 'draft' }))}
+          >
             <span>Ready to dispense</span>
             <strong>{salesQueues.readyToDispense.length}</strong>
             <small>Draft sales with line items</small>
           </button>
-          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, status: 'dispensed' }))}>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.status === 'dispensed' ? 'queue-card-active' : ''}`}
+            aria-pressed={salesFilters.status === 'dispensed'}
+            onClick={() => setSalesFilters((current) => ({ ...current, status: 'dispensed' }))}
+          >
             <span>Dispensed</span>
             <strong>{salesQueues.dispensed.length}</strong>
             <small>Stock already deducted</small>
           </button>
-          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'unpaid' }))}>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.payment_status === 'unpaid' ? 'queue-card-active warning' : ''}`}
+            aria-pressed={salesFilters.payment_status === 'unpaid'}
+            onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'unpaid' }))}
+          >
             <span>Unpaid</span>
             <strong>{salesQueues.unpaid.length}</strong>
             <small>Payment follow-up needed</small>
           </button>
-          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'partial' }))}>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.payment_status === 'partial' ? 'queue-card-active attention' : ''}`}
+            aria-pressed={salesFilters.payment_status === 'partial'}
+            onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'partial' }))}
+          >
             <span>Partially paid</span>
             <strong>{salesQueues.partiallyPaid.length}</strong>
             <small>Balance still open</small>
           </button>
-          <button type="button" className="queue-card" onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'paid' }))}>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.payment_status === 'paid' ? 'queue-card-active stable' : ''}`}
+            aria-pressed={salesFilters.payment_status === 'paid'}
+            onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'paid' }))}
+          >
             <span>Paid</span>
             <strong>{salesQueues.paid.length}</strong>
             <small>Receipt trail complete</small>
@@ -692,6 +780,9 @@ export function SalesDispensingReview({ token, profile }: Props) {
             Reset filters
           </button>
         </div>
+        <p className="filter-helper-text">
+          Queue cards prepare a focused view. Apply filters reloads the list from the backend; reset returns the team to the full sales view.
+        </p>
       </section>
 
       <SalesCreationPanel
@@ -792,15 +883,25 @@ export function SalesDispensingReview({ token, profile }: Props) {
           </div>
 
           <div className="selected-sale-insight-grid">
-            <article>
+            <article className={`insight-card ${selectedSale.status === 'dispensed' ? 'stable' : 'attention'}`}>
               <span>Status</span>
               <strong>{labelize(selectedSale.status)}</strong>
-              <small>Operational state</small>
+              <small>{selectedSale.status === 'dispensed' ? 'Stock movement completed' : 'Confirm readiness before dispensing'}</small>
             </article>
-            <article>
+            <article className={`insight-card ${selectedPaymentTone}`}>
               <span>Payment</span>
               <strong>{labelize(selectedSale.payment_status)}</strong>
-              <small>{money(selectedSale.paid_amount)} paid</small>
+              <small>{paymentStatusGuidance(selectedPaymentStatus, paymentBalance)}</small>
+            </article>
+            <article className={`insight-card ${selectedPrescriptionTone}`}>
+              <span>Prescription</span>
+              <strong>{prescriptionStatusText}</strong>
+              <small>{prescriptionGuidance(requiredPrescriptionCount, verifiedPrescriptionCount)}</small>
+            </article>
+            <article className={`insight-card ${selectedDispensingTone}`}>
+              <span>Dispensing readiness</span>
+              <strong>{readyCount}/{saleItems.length}</strong>
+              <small>{canConfirmSelectedSale ? 'Ready for controlled confirmation' : 'Review batches and prescription checks'}</small>
             </article>
             <article>
               <span>Customer</span>
@@ -837,6 +938,19 @@ export function SalesDispensingReview({ token, profile }: Props) {
                 <strong>{selectedSale.payment_status.replaceAll('_', ' ')}</strong>
                 <small>Paid: {money(selectedSale.paid_amount)} · Balance: {money(selectedSale.balance_amount)}</small>
               </div>
+            </div>
+
+            <div className="workflow-state-grid" aria-label="Payment and prescription workflow guidance">
+              <article className={`workflow-state-card ${selectedPaymentTone}`}>
+                <span>Payment guidance</span>
+                <strong>{labelize(selectedPaymentStatus)}</strong>
+                <small>{paymentStatusGuidance(selectedPaymentStatus, paymentBalance)}</small>
+              </article>
+              <article className={`workflow-state-card ${selectedPrescriptionTone}`}>
+                <span>Prescription guidance</span>
+                <strong>{prescriptionStatusText}</strong>
+                <small>{prescriptionGuidance(requiredPrescriptionCount, verifiedPrescriptionCount)}</small>
+              </article>
             </div>
 
             {selectedSale.status === 'draft' ? (
