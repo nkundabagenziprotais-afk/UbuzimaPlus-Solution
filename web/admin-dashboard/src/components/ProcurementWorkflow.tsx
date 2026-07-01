@@ -169,7 +169,7 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   const [error, setError] = useState('');
 
   const tenantSlug = useMemo(() => tenantSlugFrom(profile), [profile]);
-  const canManageProcurement = profile.permissions.includes('pharmaco.suppliers.manage');
+  const canManageProcurement = (profile.permissions ?? []).includes('pharmaco.suppliers.manage');
 
   const activeBranches = state.branches.filter((branch) => branch.status === 'active');
   const activeProducts = state.products.filter((product) => product.status === 'active');

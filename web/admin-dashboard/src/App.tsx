@@ -111,7 +111,6 @@ const storageKey = 'ubuzima_admin_session';
 const activeSectionStorageKey = 'ubuzima_admin_active_section';
 const trustedDeviceStorageKey = 'ubuzima_admin_trusted_device_token';
 const brandLogoSrc = '/assets/ubuzima-logo.png';
-const publicWebsiteUrl = import.meta.env.VITE_PUBLIC_WEBSITE_URL?.trim() || 'http://127.0.0.1:5174/';
 
 const demoUsers = [
   {
@@ -965,6 +964,27 @@ function App() {
   const loginStatusText = profile
     ? `Logged in now as ${profile.user.name || profile.user.email}`
     : '';
+
+  const appEnv = import.meta.env;
+  const tenantWebsiteSignals = [
+    profile?.user?.email,
+    ...(profile?.tenant_assignments ?? []).map((assignment) => assignment.tenant?.slug),
+    ...(profile?.tenant_assignments ?? []).map((assignment) => assignment.tenant?.name),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  const ubuzimaPlusWebsiteUrl = appEnv.VITE_UBUZIMA_PLUS_WEBSITE_URL || 'https://www.ubuzimaplus.com';
+  const vitaPharmaWebsiteUrl = appEnv.VITE_VITAPHARMA_WEBSITE_URL || 'https://www.vitapharmaafrica.com';
+  const isVitaPharmaContext =
+    tenantWebsiteSignals.includes('vitapharma') ||
+    tenantWebsiteSignals.includes('vita pharma') ||
+    tenantWebsiteSignals.includes('vita-pharma') ||
+    tenantWebsiteSignals.includes('vitapharmaafrica');
+
+  const publicWebsiteUrl = isVitaPharmaContext ? vitaPharmaWebsiteUrl : ubuzimaPlusWebsiteUrl;
+  const publicWebsiteLabel = isVitaPharmaContext ? 'Vita Pharma website' : 'Ubuzima+ website';
 
   useEffect(() => {
     let cancelled = false;
@@ -2353,7 +2373,7 @@ function App() {
             <button type="button" onClick={goBack} disabled={navigationStack.length === 0}>
               Back
             </button>
-            <a href={publicWebsiteUrl}>Website</a>
+            <a href={publicWebsiteUrl} target="_blank" rel="noreferrer">{publicWebsiteLabel}</a>
             <button
               type="button"
               onClick={() => {

@@ -88,9 +88,9 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
     <article className="panel wide inventory-preview-panel">
       <div className="panel-heading-row">
         <div>
-          <h2>PharmaCo360 product master and inventory snapshot</h2>
+          <h2>PharmaCo360 product master register and inventory snapshot</h2>
           <p className="muted">
-            Read-only tenant-scoped preview of VitaPharma products, stock locations, batches, and expiry exposure.
+            Read-only tenant-scoped register of products, stock locations, batches, and expiry exposure.
           </p>
         </div>
 
@@ -165,22 +165,38 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
       {products && (
         <section className="inventory-section">
           <div className="section-heading">
-            <h3>Product master preview</h3>
+            <h3>Product master register</h3>
             <span>First {Math.min(products.products.length, 6)} of {products.products.length} products</span>
           </div>
 
-          <div className="inventory-table product-preview-table">
-            {products.products.slice(0, 6).map((product) => (
-              <div key={product.id}>
-                <strong>{product.name}</strong>
-                <span>{product.sku}</span>
-                <span>{product.category?.name ?? 'Uncategorised'}</span>
-                <span>{product.requires_prescription ? 'Prescription' : 'OTC/General'}</span>
-                <small>
-                  Available: {formatNumber(product.stock_summary?.available_quantity ?? 0)} {product.unit}
-                </small>
-              </div>
-            ))}
+          <div className="inventory-table-wrap product-master-table-wrap">
+            <table className="inventory-master-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th>Available</th>
+                  <th>Unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.products.slice(0, 6).map((product) => (
+                  <tr key={product.id}>
+                    <td>
+                      <strong>{product.name}</strong>
+                      <small>{product.generic_name ?? 'Generic name not set'}</small>
+                    </td>
+                    <td>{product.sku}</td>
+                    <td>{product.category?.name ?? 'Uncategorised'}</td>
+                    <td>{product.requires_prescription ? 'Prescription' : 'OTC/General'}</td>
+                    <td>{formatNumber(product.stock_summary?.available_quantity ?? 0)}</td>
+                    <td>{product.unit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}
