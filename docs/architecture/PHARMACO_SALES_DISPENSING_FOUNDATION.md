@@ -1779,3 +1779,11 @@ Phase 18.2 adds a controlled archive target quarantine ledger for the PharmaCo36
 This phase documents that any archive target path remains quarantined and cannot be released or executed until explicit future approval is provided.
 
 No archive target release, package archive, package-build command execution, package generation execution, checksum generation, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.3 — Controlled package generation execution checksum target quarantine ledger
+
+Phase 18.3 adds a controlled checksum target quarantine ledger for the PharmaCo360 package generation execution pathway.
+
+This phase documents that any checksum target remains quarantined and cannot be released or executed until explicit future approval is provided.
+
+No checksum target release, checksum generation, archive target release, package archive, package-build command execution, package generation execution, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
