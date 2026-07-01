@@ -677,3 +677,22 @@ Checks:
 12. Stop conditions are defined.
 13. Final execution authorization exception rows are present.
 14. No package archive creation, package generation execution, checksum generation, approval execution, package command release, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
+
+## Phase 17.1 controlled package generation execution decision hold ledger
+
+Checks:
+
+1. Controlled package generation execution decision hold ledger exists.
+2. Controlled package generation execution decision exception log exists.
+3. Execution decision hold ledger states that it does not create a package archive.
+4. Execution decision hold ledger states that it does not execute package generation.
+5. Execution decision hold ledger states that it does not authorize final execution.
+6. Execution decision exception log states that it does not execute package generation.
+7. Required execution decision owners are listed.
+8. Execution decision hold rows are present.
+9. Required execution decision evidence placeholders are listed.
+10. Allowed execution decision outcomes are listed.
+11. Execution decision requirements are listed.
+12. Stop conditions are defined.
+13. Execution decision exception rows are present.
+14. No package archive creation, package generation execution, checksum generation, approval execution, package command release, final execution authorization, upload, cPanel execution, production file copy, migration, dependency, backend, frontend product, or data mutation change is introduced.
