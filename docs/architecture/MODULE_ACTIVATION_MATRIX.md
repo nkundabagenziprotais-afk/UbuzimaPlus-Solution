@@ -5,7 +5,9 @@ Modules exist in the platform structure but are activated progressively by solut
 | Module | Platform | PharmaCo360 | VitaPharma Phase | Initial Status |
 |---|---|---|---|---|
 | Public Website | Yes | Shared | Phase 0 | Active foundation |
-| Authentication | Yes | Shared | Phase 1 | Planned |
+| Authentication | Yes | Shared | Phase 1 | Active foundation |
+| Staff Two-Factor Authentication | Yes | Shared | Phase 1 | Active foundation |
+| Platform Content Management | Yes | Shared | Phase 1 | Active foundation |
 | Admin Scopes | Yes | Shared | Phase 1 | Planned |
 | Tenancy | Yes | Shared | Phase 1 | Planned |
 | Roles and Permissions | Yes | Shared | Phase 1 | Planned |

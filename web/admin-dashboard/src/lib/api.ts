@@ -2,6 +2,16 @@ export type LoginPayload = {
   email: string;
   password: string;
   device_name?: string;
+  trusted_device_token?: string | null;
+};
+
+export type TwoFactorSetupPayload = {
+  type: 'totp';
+  issuer: string;
+  account: string;
+  manual_secret: string;
+  otpauth_uri: string;
+  qr_svg: string;
 };
 
 export type AccessProfile = {
@@ -13,6 +23,13 @@ export type AccessProfile = {
     status: string;
     must_change_password: boolean;
     last_login_at: string | null;
+    two_factor?: {
+      required: boolean;
+      enabled: boolean;
+      confirmed_at: string | null;
+      last_verified_at: string | null;
+      trusted_devices_count: number;
+    };
   };
   scope: {
     type: string;
@@ -62,6 +79,48 @@ export type LoginResponse = {
   token_type: 'Bearer';
   access_token: string;
   profile: AccessProfile;
+} | {
+  status: 'two_factor_setup_required';
+  message: string;
+  challenge_token: string;
+  expires_at: string;
+  setup: TwoFactorSetupPayload;
+} | {
+  status: 'two_factor_challenge_required';
+  message: string;
+  challenge_token: string;
+  expires_at: string;
+  delivery_methods: string[];
+  trust_device_available: boolean;
+};
+
+export type TwoFactorVerifyResponse = {
+  status: 'two_factor_verified';
+  token_type: 'Bearer';
+  access_token: string;
+  profile: AccessProfile;
+  recovery_codes: string[] | null;
+  trusted_device: {
+    trusted_device_token: string;
+    trusted_until: string;
+  } | null;
+};
+
+export type TwoFactorStatusResponse = {
+  two_factor: {
+    required: boolean;
+    enabled: boolean;
+    confirmed_at: string | null;
+    last_verified_at: string | null;
+    trusted_device_days: number;
+    trusted_devices: Array<{
+      id: number;
+      device_name: string | null;
+      ip_address: string | null;
+      trusted_until: string | null;
+      last_used_at: string | null;
+    }>;
+  };
 };
 
 const API_BASE_URL =
@@ -79,7 +138,7 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 
   const data = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
+  if (!response.ok && response.status !== 202) {
     const message =
       data?.message ||
       data?.errors?.email?.[0] ||
@@ -89,6 +148,30 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   }
 
   return data as LoginResponse;
+}
+
+export async function verifyTwoFactor(payload: {
+  challenge_token: string;
+  code: string;
+  trust_device?: boolean;
+  device_name?: string;
+}): Promise<TwoFactorVerifyResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/verify`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.errors?.code?.[0] || data?.message || 'Two-factor verification failed.');
+  }
+
+  return data as TwoFactorVerifyResponse;
 }
 
 export async function getAuthenticatedProfile(token: string): Promise<AccessProfile> {
@@ -117,6 +200,80 @@ export async function logout(token: string): Promise<void> {
       Authorization: `Bearer ${token}`,
     },
   });
+}
+
+export async function getTwoFactorStatus(token: string): Promise<TwoFactorStatusResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/status`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load two-factor status.');
+  }
+
+  return data as TwoFactorStatusResponse;
+}
+
+export async function startTwoFactorSetup(token: string): Promise<{
+  status: 'two_factor_setup_ready';
+  challenge_token: string;
+  expires_at: string;
+  setup: TwoFactorSetupPayload;
+}> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/setup`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to start two-factor setup.');
+  }
+
+  return data;
+}
+
+export async function regenerateRecoveryCodes(token: string): Promise<{ recovery_codes: string[] }> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/recovery-codes`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to regenerate recovery codes.');
+  }
+
+  return data;
+}
+
+export async function revokeTrustedDevice(token: string, trustedDeviceId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/trusted-devices/${trustedDeviceId}`, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.message || 'Unable to revoke trusted device.');
+  }
 }
 
 
@@ -719,6 +876,56 @@ export async function receivePharmaStock(
   return sendJsonWithTenant<ReceivePharmaStockResponse>(
     token,
     '/pharmaco/inventory/receive',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export type ProductBulkOperationResponse = {
+  message: string;
+  bulk_operation: {
+    id: number;
+    uuid: string;
+    status: string;
+    total_rows: number;
+    processed_rows: number;
+    failed_rows: number;
+    summary: Record<string, unknown>;
+  };
+};
+
+export type ProductBulkImportRow = Partial<CreatePharmaProductPayload> & {
+  category_code?: string | null;
+};
+
+export async function bulkImportPharmaProducts(
+  token: string,
+  tenantSlug: string,
+  rows: ProductBulkImportRow[],
+  mode: 'create_only' | 'upsert' = 'upsert',
+): Promise<ProductBulkOperationResponse> {
+  return sendJsonWithTenant<ProductBulkOperationResponse>(
+    token,
+    '/pharmaco/products/bulk-import',
+    tenantSlug,
+    'POST',
+    { rows, mode },
+  );
+}
+
+export async function bulkActionPharmaProducts(
+  token: string,
+  tenantSlug: string,
+  payload: {
+    ids: number[];
+    action: 'approve' | 'activate' | 'deactivate' | 'discontinue' | 'update' | 'delete';
+    values?: Record<string, unknown>;
+  },
+): Promise<ProductBulkOperationResponse> {
+  return sendJsonWithTenant<ProductBulkOperationResponse>(
+    token,
+    '/pharmaco/products/bulk-action',
     tenantSlug,
     'POST',
     payload,
@@ -2010,3 +2217,469 @@ export const recordPharmaReceivablePayment = async (
     },
   );
 };
+
+export type PlatformContentSection = {
+  id: number;
+  section_key: string;
+  eyebrow: string | null;
+  title: string | null;
+  body: string | null;
+  content: Record<string, unknown>;
+  style: Record<string, unknown>;
+  sort_order: number;
+  status: 'active' | 'hidden' | 'draft';
+  updated_at: string | null;
+};
+
+export type PlatformContentPage = {
+  id: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  template: string;
+  status: 'draft' | 'published' | 'archived';
+  seo: Record<string, unknown>;
+  style: Record<string, unknown>;
+  published_at: string | null;
+  sections: PlatformContentSection[];
+};
+
+export async function getPlatformManagementPages(token: string): Promise<{ pages: PlatformContentPage[] }> {
+  const response = await fetch(`${API_BASE_URL}/platform-management/pages`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load platform content pages.');
+  }
+
+  return data as { pages: PlatformContentPage[] };
+}
+
+export async function updatePlatformContentPage(
+  token: string,
+  pageId: number,
+  payload: Partial<Pick<PlatformContentPage, 'title' | 'description' | 'template' | 'status' | 'seo' | 'style'>>,
+): Promise<{ page: PlatformContentPage }> {
+  const response = await fetch(`${API_BASE_URL}/platform-management/pages/${pageId}`, {
+    method: 'PATCH',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to update platform page.');
+  }
+
+  return data as { page: PlatformContentPage };
+}
+
+export async function updatePlatformContentSection(
+  token: string,
+  sectionId: number,
+  payload: Partial<Pick<PlatformContentSection, 'eyebrow' | 'title' | 'body' | 'content' | 'style' | 'sort_order' | 'status'>>,
+): Promise<{ section: PlatformContentSection }> {
+  const response = await fetch(`${API_BASE_URL}/platform-management/sections/${sectionId}`, {
+    method: 'PATCH',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to update platform section.');
+  }
+
+  return data as { section: PlatformContentSection };
+}
+
+export type CorporateMailMessage = {
+  id: number;
+  uuid: string;
+  folder_key: string | null;
+  direction: string;
+  subject: string;
+  from_name: string | null;
+  from_email: string;
+  to_recipients: string[];
+  cc_recipients: string[];
+  body_preview: string | null;
+  body: string | null;
+  importance: string;
+  status: string;
+  read_at: string | null;
+  sent_at: string | null;
+  received_at: string | null;
+  created_at: string | null;
+  metadata: Record<string, unknown>;
+};
+
+export type CorporateMailOverview = {
+  account: {
+    id: number;
+    display_name: string;
+    email_address: string;
+    provider: string;
+    status: string;
+    sync_status: string;
+    last_synced_at: string | null;
+    configuration: Record<string, unknown>;
+  };
+  folders: Array<{
+    id: number;
+    folder_key: string;
+    name: string;
+    unread_count: number;
+  }>;
+  active_folder: string | null;
+  messages: CorporateMailMessage[];
+};
+
+export async function getCorporateMailOverview(
+  token: string,
+  folder = 'inbox',
+): Promise<CorporateMailOverview> {
+  const response = await fetch(`${API_BASE_URL}/corporate-mail/overview?folder=${encodeURIComponent(folder)}`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load corporate mail.');
+  }
+
+  return data as CorporateMailOverview;
+}
+
+export async function sendCorporateMailMessage(
+  token: string,
+  payload: {
+    to: string[];
+    cc?: string[];
+    subject: string;
+    body: string;
+    importance?: 'low' | 'normal' | 'high';
+  },
+): Promise<{ message: string; mail_message: CorporateMailMessage }> {
+  const response = await fetch(`${API_BASE_URL}/corporate-mail/messages`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors ? Object.values(data.errors).flat().join(' ') : null;
+    throw new Error(validationMessage || data?.message || 'Unable to send corporate mail.');
+  }
+
+  return data as { message: string; mail_message: CorporateMailMessage };
+}
+
+export type PharmacistChatConversation = {
+  id: number;
+  uuid: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  customer_email: string | null;
+  source_channel: string;
+  status: string;
+  priority: string;
+  last_message_at: string | null;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  assigned_pharmacist: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  latest_message: PharmacistChatMessage | null;
+};
+
+export type PharmacistChatMessage = {
+  id: number;
+  uuid: string;
+  sender_type: string;
+  sender_user_id: number | null;
+  sender_display_name: string | null;
+  body: string;
+  read_at: string | null;
+  created_at: string | null;
+};
+
+export async function getPharmacistChatConversations(
+  token: string,
+): Promise<{ conversations: PharmacistChatConversation[] }> {
+  const response = await fetch(`${API_BASE_URL}/pharmacist-chat/conversations`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load pharmacist chats.');
+  }
+
+  return data as { conversations: PharmacistChatConversation[] };
+}
+
+export async function getPharmacistChatConversation(
+  token: string,
+  uuid: string,
+): Promise<{ conversation: PharmacistChatConversation; messages: PharmacistChatMessage[] }> {
+  const response = await fetch(`${API_BASE_URL}/pharmacist-chat/conversations/${uuid}`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load chat conversation.');
+  }
+
+  return data as { conversation: PharmacistChatConversation; messages: PharmacistChatMessage[] };
+}
+
+export async function replyToPharmacistChat(
+  token: string,
+  uuid: string,
+  body: string,
+): Promise<{ message: string; chat_message: PharmacistChatMessage; conversation: PharmacistChatConversation }> {
+  const response = await fetch(`${API_BASE_URL}/pharmacist-chat/conversations/${uuid}/messages`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ body }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to send chat reply.');
+  }
+
+  return data as { message: string; chat_message: PharmacistChatMessage; conversation: PharmacistChatConversation };
+}
+
+export async function updatePharmacistChatConversation(
+  token: string,
+  uuid: string,
+  payload: Partial<Pick<PharmacistChatConversation, 'status' | 'priority'>>,
+): Promise<{ message: string; conversation: PharmacistChatConversation }> {
+  const response = await fetch(`${API_BASE_URL}/pharmacist-chat/conversations/${uuid}`, {
+    method: 'PATCH',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to update chat conversation.');
+  }
+
+  return data as { message: string; conversation: PharmacistChatConversation };
+}
+
+export type DataLayerTable = {
+  name: string;
+  columns: Array<{
+    name: string;
+    type: string;
+    nullable: boolean;
+  }>;
+  row_count: number;
+  editable: boolean;
+  relationships: Array<{
+    column: string;
+    hint: string;
+  }>;
+};
+
+export async function getDataLayerSchema(token: string): Promise<{ tables: DataLayerTable[]; guardrails: Record<string, unknown> }> {
+  const response = await fetch(`${API_BASE_URL}/admin/data-layer/schema`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load data-layer schema.');
+  }
+
+  return data as { tables: DataLayerTable[]; guardrails: Record<string, unknown> };
+}
+
+export async function getDataLayerRows(
+  token: string,
+  table: string,
+): Promise<{ table: string; editable: boolean; columns: string[]; rows: Array<Record<string, unknown>>; total_rows: number }> {
+  const response = await fetch(`${API_BASE_URL}/admin/data-layer/tables/${encodeURIComponent(table)}/rows`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load table rows.');
+  }
+
+  return data as { table: string; editable: boolean; columns: string[]; rows: Array<Record<string, unknown>>; total_rows: number };
+}
+
+export async function runDataLayerSql(
+  token: string,
+  sql: string,
+): Promise<{ message: string; results: Array<{ type: string; rows?: Array<Record<string, unknown>>; status?: string }> }> {
+  const response = await fetch(`${API_BASE_URL}/admin/data-layer/sql`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ sql }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors ? Object.values(data.errors).flat().join(' ') : null;
+    throw new Error(validationMessage || data?.message || 'Unable to run SQL.');
+  }
+
+  return data as { message: string; results: Array<{ type: string; rows?: Array<Record<string, unknown>>; status?: string }> };
+}
+
+export type AiCenterOverview = {
+  providers: Array<Record<string, unknown>>;
+  models: Array<Record<string, unknown>>;
+  agents: Array<Record<string, unknown>>;
+  recommendations: Array<AiRecommendation>;
+  summary: {
+    active_models: number;
+    active_agents: number;
+    pending_recommendations: number;
+    implemented_recommendations: number;
+  };
+};
+
+export type AiRecommendation = {
+  id: number;
+  recommendation_type: string;
+  title: string;
+  risk_level: string;
+  confidence_score: number | null;
+  explanation: string | null;
+  data_source_summary: string | null;
+  recommended_action: string | null;
+  requires_approval: boolean;
+  status: string;
+  agent: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  created_at: string | null;
+};
+
+export async function getAiCenterOverview(
+  token: string,
+  tenantSlug: string,
+): Promise<AiCenterOverview> {
+  return getJsonWithTenant<AiCenterOverview>(token, '/ai-center/overview', tenantSlug);
+}
+
+export async function activateAiDefaults(
+  token: string,
+  tenantSlug: string,
+): Promise<{ message: string; models_count: number; agent: Record<string, unknown> }> {
+  return sendJsonWithTenant<{ message: string; models_count: number; agent: Record<string, unknown> }>(
+    token,
+    '/ai-center/activate-defaults',
+    tenantSlug,
+    'POST',
+    {},
+  );
+}
+
+export async function generateInventoryAiRecommendations(
+  token: string,
+  tenantSlug: string,
+): Promise<{ message: string; created_or_refreshed: number; recommendations: AiRecommendation[] }> {
+  return sendJsonWithTenant<{ message: string; created_or_refreshed: number; recommendations: AiRecommendation[] }>(
+    token,
+    '/ai-center/recommendations/inventory/generate',
+    tenantSlug,
+    'POST',
+    {},
+  );
+}
+
+export async function updateAiRecommendationStatus(
+  token: string,
+  tenantSlug: string,
+  recommendationId: number,
+  status: 'approved' | 'rejected' | 'implemented',
+): Promise<{ message: string; recommendation: AiRecommendation }> {
+  return sendJsonWithTenant<{ message: string; recommendation: AiRecommendation }>(
+    token,
+    `/ai-center/recommendations/${recommendationId}`,
+    tenantSlug,
+    'PATCH',
+    { status },
+  );
+}

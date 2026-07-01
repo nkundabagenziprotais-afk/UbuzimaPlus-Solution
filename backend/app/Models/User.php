@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -29,8 +29,14 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-        'must_change_password' => 'boolean',
-        'last_login_at' => 'datetime',
+            'must_change_password' => 'boolean',
+            'last_login_at' => 'datetime',
+            'two_factor_required' => 'boolean',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'array',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_last_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -49,6 +55,16 @@ class User extends Authenticatable
     public function adminScopes(): HasMany
     {
         return $this->hasMany(AdminScope::class);
+    }
+
+    public function twoFactorChallenges(): HasMany
+    {
+        return $this->hasMany(TwoFactorChallenge::class);
+    }
+
+    public function trustedDevices(): HasMany
+    {
+        return $this->hasMany(TrustedDevice::class);
     }
 
 }

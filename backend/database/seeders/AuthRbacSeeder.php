@@ -20,6 +20,9 @@ class AuthRbacSeeder extends Seeder
     {
         $permissions = [
             ['platform.manage', 'Manage Platform', 'platform'],
+            ['platform.content.manage', 'Manage Platform Content', 'platform'],
+            ['communications.email.use', 'Use Corporate Email', 'communications'],
+            ['data.layer.manage', 'Manage Data Layer', 'platform'],
             ['solutions.manage', 'Manage Solutions', 'solutions'],
             ['tenants.manage', 'Manage Tenants', 'tenancy'],
             ['modules.manage', 'Manage Modules', 'modules'],
@@ -28,6 +31,7 @@ class AuthRbacSeeder extends Seeder
             ['audit.view', 'View Audit Logs', 'security'],
             ['ai.manage', 'Manage AI Center', 'ai'],
             ['ai.use', 'Use AI Assistant', 'ai'],
+            ['pharmaco.chat.manage', 'Manage Pharmacist Chat', 'pharmaco'],
             ['pharmaco.profile.manage', 'Manage Pharmacy Profile', 'pharmaco'],
             ['pharmaco.branches.manage', 'Manage Pharmacy Branches', 'pharmaco'],
             ['pharmaco.products.manage', 'Manage Product Master', 'pharmaco'],
@@ -64,6 +68,8 @@ class AuthRbacSeeder extends Seeder
                     'users.manage',
                     'audit.view',
                     'ai.manage',
+                    'communications.email.use',
+                    'pharmaco.chat.manage',
                     'pharmaco.profile.manage',
                     'pharmaco.branches.manage',
                     'pharmaco.products.manage',
@@ -79,7 +85,10 @@ class AuthRbacSeeder extends Seeder
                     'users.manage',
                     'modules.manage',
                     'audit.view',
+                    'ai.manage',
                     'ai.use',
+                    'communications.email.use',
+                    'pharmaco.chat.manage',
                     'pharmaco.profile.manage',
                     'pharmaco.branches.manage',
                     'pharmaco.products.manage',
@@ -96,6 +105,8 @@ class AuthRbacSeeder extends Seeder
                     'pharmaco.products.manage',
                     'pharmaco.inventory.manage',
                     'pharmaco.pos.use',
+                    'communications.email.use',
+                    'pharmaco.chat.manage',
                     'pharmaco.reports.view',
                 ],
             ],
@@ -106,6 +117,8 @@ class AuthRbacSeeder extends Seeder
                     'pharmaco.products.manage',
                     'pharmaco.inventory.manage',
                     'pharmaco.pos.use',
+                    'communications.email.use',
+                    'pharmaco.chat.manage',
                 ],
             ],
             'cashier' => [
@@ -113,6 +126,7 @@ class AuthRbacSeeder extends Seeder
                 'scope_type' => 'branch',
                 'permissions' => [
                     'pharmaco.pos.use',
+                    'communications.email.use',
                 ],
             ],
             'auditor' => [

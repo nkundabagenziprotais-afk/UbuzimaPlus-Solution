@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\PharmaCo360;
 
 use App\Http\Controllers\Controller;
+use App\Models\BulkOperationRun;
 use App\Models\PharmacoPurchaseOrderItem;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -14,6 +15,7 @@ use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -320,6 +322,284 @@ class ProductInventoryController extends Controller
         return response()->json([
             'message' => 'Product updated successfully.',
             'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
+        ]);
+    }
+
+    public function bulkImportProducts(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'rows' => ['sometimes', 'array', 'max:500'],
+            'rows.*' => ['array'],
+            'file' => ['sometimes', 'file', 'max:4096'],
+            'mode' => ['sometimes', Rule::in(['create_only', 'upsert'])],
+        ]);
+
+        $rows = $validated['rows'] ?? [];
+
+        if ($request->hasFile('file')) {
+            $rows = $this->parseProductCsv($request->file('file')->getRealPath());
+        }
+
+        if ($rows === []) {
+            throw ValidationException::withMessages([
+                'rows' => ['Provide CSV rows or upload a CSV file.'],
+            ]);
+        }
+
+        $mode = $validated['mode'] ?? 'upsert';
+        $created = 0;
+        $updated = 0;
+        $failed = [];
+
+        foreach (array_values($rows) as $index => $row) {
+            $rowNumber = $index + 1;
+            $normalized = $this->normalizeProductImportRow($row);
+
+            $validator = Validator::make($normalized, [
+                'name' => ['required', 'string', 'max:255'],
+                'sku' => ['required', 'string', 'max:120'],
+                'category_code' => ['nullable', 'string', 'max:120'],
+                'generic_name' => ['nullable', 'string', 'max:255'],
+                'brand_name' => ['nullable', 'string', 'max:255'],
+                'barcode' => ['nullable', 'string', 'max:120'],
+                'registration_number' => ['nullable', 'string', 'max:120'],
+                'dosage_form' => ['nullable', 'string', 'max:120'],
+                'strength' => ['nullable', 'string', 'max:120'],
+                'unit' => ['nullable', 'string', 'max:80'],
+                'pack_size' => ['nullable', 'string', 'max:120'],
+                'route_of_administration' => ['nullable', 'string', 'max:120'],
+                'product_type' => ['nullable', Rule::in(['medicine', 'consumable', 'device', 'service'])],
+                'regulatory_status' => ['nullable', Rule::in(['approved', 'pending', 'suspended', 'unregistered'])],
+                'requires_prescription' => ['nullable', 'boolean'],
+                'is_controlled' => ['nullable', 'boolean'],
+                'reorder_level' => ['nullable', 'numeric', 'min:0'],
+                'minimum_stock_level' => ['nullable', 'numeric', 'min:0'],
+                'maximum_stock_level' => ['nullable', 'numeric', 'min:0'],
+                'status' => ['nullable', Rule::in(['active', 'inactive', 'discontinued'])],
+            ]);
+
+            if ($validator->fails()) {
+                $failed[] = [
+                    'row' => $rowNumber,
+                    'sku' => $normalized['sku'] ?? null,
+                    'errors' => $validator->errors()->all(),
+                ];
+
+                continue;
+            }
+
+            $data = $validator->validated();
+            $existing = Product::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('sku', $data['sku'])
+                ->first();
+
+            if ($existing && $mode === 'create_only') {
+                $failed[] = [
+                    'row' => $rowNumber,
+                    'sku' => $data['sku'],
+                    'errors' => ['Product already exists.'],
+                ];
+
+                continue;
+            }
+
+            $categoryId = null;
+
+            if (! empty($data['category_code'])) {
+                $categoryId = ProductCategory::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->where('code', $data['category_code'])
+                    ->value('id');
+            }
+
+            $payload = [
+                'product_category_id' => $categoryId,
+                'name' => $data['name'],
+                'generic_name' => $data['generic_name'] ?? null,
+                'brand_name' => $data['brand_name'] ?? null,
+                'barcode' => $data['barcode'] ?? null,
+                'registration_number' => $data['registration_number'] ?? null,
+                'dosage_form' => $data['dosage_form'] ?? null,
+                'strength' => $data['strength'] ?? null,
+                'unit' => $data['unit'] ?? 'unit',
+                'pack_size' => $data['pack_size'] ?? null,
+                'route_of_administration' => $data['route_of_administration'] ?? null,
+                'product_type' => $data['product_type'] ?? 'medicine',
+                'regulatory_status' => $data['regulatory_status'] ?? 'approved',
+                'requires_prescription' => (bool) ($data['requires_prescription'] ?? false),
+                'is_controlled' => (bool) ($data['is_controlled'] ?? false),
+                'reorder_level' => $data['reorder_level'] ?? 0,
+                'minimum_stock_level' => $data['minimum_stock_level'] ?? 0,
+                'maximum_stock_level' => $data['maximum_stock_level'] ?? null,
+                'status' => $data['status'] ?? 'active',
+                'metadata' => [
+                    'imported_from' => 'pharmaco_product_bulk_import',
+                    'imported_at' => now()->toISOString(),
+                ],
+            ];
+
+            if ($existing) {
+                $existing->fill($payload);
+                $existing->save();
+                $updated++;
+            } else {
+                Product::query()->create([
+                    ...$payload,
+                    'uuid' => (string) Str::uuid(),
+                    'tenant_id' => $tenant->id,
+                    'sku' => $data['sku'],
+                ]);
+                $created++;
+            }
+        }
+
+        $run = BulkOperationRun::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'user_id' => $request->user()?->id,
+            'tenant_id' => $tenant->id,
+            'operation_type' => 'product_bulk_import',
+            'target_table' => 'products',
+            'status' => count($failed) > 0 ? 'completed_with_errors' : 'completed',
+            'total_rows' => count($rows),
+            'processed_rows' => $created + $updated,
+            'failed_rows' => count($failed),
+            'summary' => [
+                'created' => $created,
+                'updated' => $updated,
+                'failed' => $failed,
+            ],
+        ]);
+
+        $auditLogService->record(
+            action: 'pharmaco.products.bulk_imported',
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'bulk_operation_run_id' => $run->id,
+                'created' => $created,
+                'updated' => $updated,
+                'failed' => count($failed),
+            ],
+            dataClassification: 'internal',
+            auditableType: BulkOperationRun::class,
+            auditableId: $run->id
+        );
+
+        return response()->json([
+            'message' => 'Product bulk import completed.',
+            'bulk_operation' => [
+                'id' => $run->id,
+                'uuid' => $run->uuid,
+                'status' => $run->status,
+                'total_rows' => $run->total_rows,
+                'processed_rows' => $run->processed_rows,
+                'failed_rows' => $run->failed_rows,
+                'summary' => $run->summary,
+            ],
+        ]);
+    }
+
+    public function bulkProductAction(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:500'],
+            'ids.*' => ['integer'],
+            'action' => ['required', Rule::in(['approve', 'activate', 'deactivate', 'discontinue', 'update', 'delete'])],
+            'values' => ['sometimes', 'array'],
+        ]);
+
+        $products = Product::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        $processed = 0;
+        $failed = [];
+
+        foreach ($products as $product) {
+            try {
+                match ($validated['action']) {
+                    'approve' => $product->forceFill(['regulatory_status' => 'approved', 'status' => 'active'])->save(),
+                    'activate' => $product->forceFill(['status' => 'active'])->save(),
+                    'deactivate' => $product->forceFill(['status' => 'inactive'])->save(),
+                    'discontinue' => $product->forceFill(['status' => 'discontinued'])->save(),
+                    'update' => $this->applyBulkProductUpdate($product, $validated['values'] ?? []),
+                    'delete' => $this->deleteProductIfSafe($product),
+                };
+
+                $processed++;
+            } catch (\Throwable $exception) {
+                $failed[] = [
+                    'id' => $product->id,
+                    'sku' => $product->sku,
+                    'message' => $exception->getMessage(),
+                ];
+            }
+        }
+
+        $missingIds = array_values(array_diff($validated['ids'], $products->pluck('id')->all()));
+
+        foreach ($missingIds as $missingId) {
+            $failed[] = [
+                'id' => $missingId,
+                'sku' => null,
+                'message' => 'Product was not found in this tenant.',
+            ];
+        }
+
+        $run = BulkOperationRun::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'user_id' => $request->user()?->id,
+            'tenant_id' => $tenant->id,
+            'operation_type' => 'product_bulk_' . $validated['action'],
+            'target_table' => 'products',
+            'status' => count($failed) > 0 ? 'completed_with_errors' : 'completed',
+            'total_rows' => count($validated['ids']),
+            'processed_rows' => $processed,
+            'failed_rows' => count($failed),
+            'summary' => [
+                'action' => $validated['action'],
+                'failed' => $failed,
+            ],
+        ]);
+
+        $auditLogService->record(
+            action: 'pharmaco.products.bulk_action',
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'bulk_operation_run_id' => $run->id,
+                'action' => $validated['action'],
+                'processed' => $processed,
+                'failed' => count($failed),
+            ],
+            dataClassification: 'internal',
+            auditableType: BulkOperationRun::class,
+            auditableId: $run->id
+        );
+
+        return response()->json([
+            'message' => 'Product bulk action completed.',
+            'bulk_operation' => [
+                'id' => $run->id,
+                'uuid' => $run->uuid,
+                'status' => $run->status,
+                'total_rows' => $run->total_rows,
+                'processed_rows' => $run->processed_rows,
+                'failed_rows' => $run->failed_rows,
+                'summary' => $run->summary,
+            ],
         ]);
     }
 
@@ -771,5 +1051,89 @@ class ProductInventoryController extends Controller
             ],
             'metadata' => $batch->metadata ?? [],
         ];
+    }
+
+    private function parseProductCsv(string $path): array
+    {
+        $handle = fopen($path, 'r');
+
+        if (! $handle) {
+            return [];
+        }
+
+        $headers = null;
+        $rows = [];
+
+        while (($line = fgetcsv($handle)) !== false) {
+            if ($headers === null) {
+                $headers = array_map(fn ($value) => Str::snake(trim((string) $value)), $line);
+                continue;
+            }
+
+            $row = [];
+
+            foreach ($headers as $index => $header) {
+                $row[$header] = $line[$index] ?? null;
+            }
+
+            if (array_filter($row, fn ($value) => $value !== null && $value !== '') !== []) {
+                $rows[] = $row;
+            }
+        }
+
+        fclose($handle);
+
+        return $rows;
+    }
+
+    private function normalizeProductImportRow(array $row): array
+    {
+        $normalized = [];
+
+        foreach ($row as $key => $value) {
+            $normalized[Str::snake((string) $key)] = is_string($value) ? trim($value) : $value;
+        }
+
+        foreach (['requires_prescription', 'is_controlled'] as $booleanField) {
+            if (array_key_exists($booleanField, $normalized)) {
+                $normalized[$booleanField] = filter_var($normalized[$booleanField], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+            }
+        }
+
+        return $normalized;
+    }
+
+    private function applyBulkProductUpdate(Product $product, array $values): void
+    {
+        $allowed = collect($values)->only([
+            'product_category_id',
+            'regulatory_status',
+            'requires_prescription',
+            'is_controlled',
+            'reorder_level',
+            'minimum_stock_level',
+            'maximum_stock_level',
+            'status',
+        ])->all();
+
+        if ($allowed === []) {
+            throw ValidationException::withMessages([
+                'values' => ['Provide at least one editable bulk field.'],
+            ]);
+        }
+
+        $product->fill($allowed);
+        $product->save();
+    }
+
+    private function deleteProductIfSafe(Product $product): void
+    {
+        if ($product->stockBatches()->exists() || $product->stockMovements()->exists()) {
+            throw ValidationException::withMessages([
+                'product' => ["{$product->sku} has stock history. Discontinue it instead of deleting."],
+            ]);
+        }
+
+        $product->delete();
     }
 }

@@ -94,6 +94,9 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
   const [error, setError] = useState('');
 
   const hasTenantContext = Boolean(token && tenantSlug);
+  const totalSales = Number(state.sales?.total_sales_amount ?? 0);
+  const supplierBalance = Number(state.payables?.open_balance ?? 0);
+  const stockAtCost = Number(state.inventory?.total_cost_value ?? 0);
 
   const collectionRate = useMemo(() => {
     return percentage(Number(state.sales?.paid_amount ?? 0), Number(state.sales?.total_sales_amount ?? 0));
@@ -242,9 +245,6 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
     }
   }
 
-  const totalSales = Number(state.sales?.total_sales_amount ?? 0);
-  const supplierBalance = Number(state.payables?.open_balance ?? state.payables?.overdue_balance ?? 0);
-  const stockAtCost = Number(state.inventory?.total_cost_value ?? 0);
 
   const executiveSummaryItems = [
     {
