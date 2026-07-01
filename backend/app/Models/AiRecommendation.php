@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AiRecommendation extends Model
 {
@@ -29,4 +30,9 @@ class AiRecommendation extends Model
         'confidence_score' => 'decimal:2',
         'requires_approval' => 'boolean',
     ];
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(AiAgent::class, 'ai_agent_id');
+    }
 }

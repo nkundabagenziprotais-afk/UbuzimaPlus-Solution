@@ -1,10 +1,13 @@
-import { type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useState } from 'react';
 import {
   AccessProfile,
   PharmaInventoryLocationsResponse,
   PharmaProduct,
   PharmaProductCategory,
   PharmaProductsResponse,
+  ProductBulkImportRow,
+  bulkActionPharmaProducts,
+  bulkImportPharmaProducts,
   createPharmaProduct,
   getPharmaInventoryLocations,
   getPharmaProducts,
@@ -47,6 +50,8 @@ type StockReceiveFormState = {
   reference_number: string;
   reason: string;
 };
+
+type InventoryTask = 'create' | 'edit' | 'receive' | 'bulk';
 
 const emptyProductForm: ProductFormState = {
   product_category_id: '',
@@ -95,7 +100,14 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
   const [stockReceiveForm, setStockReceiveForm] = useState<StockReceiveFormState>(emptyStockReceiveForm);
+  const [activeTask, setActiveTask] = useState<InventoryTask>('create');
   const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedBulkIds, setSelectedBulkIds] = useState<number[]>([]);
+  const [bulkRows, setBulkRows] = useState<ProductBulkImportRow[]>([]);
+  const [bulkMode, setBulkMode] = useState<'create_only' | 'upsert'>('upsert');
+  const [bulkAction, setBulkAction] = useState<'approve' | 'activate' | 'deactivate' | 'discontinue' | 'update' | 'delete'>('approve');
+  const [bulkUpdateField, setBulkUpdateField] = useState<'status' | 'regulatory_status' | 'reorder_level' | 'minimum_stock_level'>('status');
+  const [bulkUpdateValue, setBulkUpdateValue] = useState('active');
   const [editForm, setEditForm] = useState({
     name: '',
     reorder_level: '',
@@ -106,6 +118,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
   const [isReceivingStock, setIsReceivingStock] = useState(false);
+  const [isRunningBulk, setIsRunningBulk] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -258,6 +271,77 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     }
   }
 
+  async function handleBulkImport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!tenantSlug) {
+      setError('No tenant assignment is available for this account.');
+      return;
+    }
+
+    if (bulkRows.length === 0) {
+      setError('Choose a CSV file before running bulk import.');
+      return;
+    }
+
+    setIsRunningBulk(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await bulkImportPharmaProducts(token, tenantSlug, bulkRows, bulkMode);
+      setMessage(`${response.message} Processed ${response.bulk_operation.processed_rows} row(s), failed ${response.bulk_operation.failed_rows}.`);
+      setBulkRows([]);
+      await refreshProductsAndLocations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to run product bulk import.');
+    } finally {
+      setIsRunningBulk(false);
+    }
+  }
+
+  async function handleBulkAction(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!tenantSlug || selectedBulkIds.length === 0) {
+      setError('Select at least one product before running a bulk action.');
+      return;
+    }
+
+    setIsRunningBulk(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const values = bulkAction === 'update'
+        ? { [bulkUpdateField]: numericBulkFields.includes(bulkUpdateField) ? Number(bulkUpdateValue || 0) : bulkUpdateValue }
+        : undefined;
+
+      const response = await bulkActionPharmaProducts(token, tenantSlug, {
+        ids: selectedBulkIds,
+        action: bulkAction,
+        values,
+      });
+
+      setMessage(`${response.message} Processed ${response.bulk_operation.processed_rows} row(s), failed ${response.bulk_operation.failed_rows}.`);
+      setSelectedBulkIds([]);
+      await refreshProductsAndLocations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to run product bulk action.');
+    } finally {
+      setIsRunningBulk(false);
+    }
+  }
+
+  async function handleBulkCsvUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const text = await file.text();
+    setBulkRows(parseCsvProducts(text));
+  }
+
   function handleSelectProductForEdit(productId: string) {
     setSelectedProductId(productId);
 
@@ -294,9 +378,32 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
       {!products || !locations ? (
         <p className="muted">Load action data first to populate product categories, product list, and stock locations.</p>
       ) : (
-        <div className="inventory-actions-grid">
+        <>
+          <div className="inventory-task-switcher" role="tablist" aria-label="Inventory action">
+            {[
+              ['create', 'Create product'],
+              ['edit', 'Edit product'],
+              ['receive', 'Receive stock'],
+              ['bulk', 'Bulk tools'],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={activeTask === key}
+                className={activeTask === key ? 'active' : ''}
+                onClick={() => setActiveTask(key as InventoryTask)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="inventory-actions-grid inventory-actions-grid--focused">
+          {activeTask === 'create' && (
           <form className="inventory-action-card" onSubmit={handleCreateProduct}>
             <h3>Create product</h3>
+            <p className="form-hint">Required fields are product name, SKU, unit, product type, and regulatory status.</p>
 
             <label>
               Product category
@@ -466,9 +573,12 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               {isSavingProduct ? 'Creating…' : 'Create product'}
             </button>
           </form>
+          )}
 
+          {activeTask === 'edit' && (
           <form className="inventory-action-card" onSubmit={handleUpdateProduct}>
             <h3>Update product settings</h3>
+            <p className="form-hint">Use bulk tools when the same change applies to many products.</p>
 
             <label>
               Product
@@ -536,9 +646,12 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               {isUpdatingProduct ? 'Updating…' : 'Update product'}
             </button>
           </form>
+          )}
 
+          {activeTask === 'receive' && (
           <form className="inventory-action-card" onSubmit={handleReceiveStock}>
             <h3>Receive stock</h3>
+            <p className="form-hint">Receiving creates stock batches and movement history for audit review.</p>
 
             <label>
               Product
@@ -660,10 +773,150 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               {isReceivingStock ? 'Receiving…' : 'Receive stock'}
             </button>
           </form>
+          )}
+
+          {activeTask === 'bulk' && (
+            <section className="inventory-action-card inventory-bulk-card">
+              <h3>Bulk upload and bulk actions</h3>
+              <p className="form-hint">
+                Upload product CSV files or select existing products for approval, edit, status change, or guarded delete.
+              </p>
+
+              <form className="bulk-tool-form" onSubmit={handleBulkImport}>
+                <label htmlFor="product-bulk-csv">
+                  Product CSV
+                  <input id="product-bulk-csv" type="file" accept=".csv,text/csv" onChange={handleBulkCsvUpload} />
+                </label>
+                <label>
+                  Import mode
+                  <select value={bulkMode} onChange={(event) => setBulkMode(event.target.value as 'create_only' | 'upsert')}>
+                    <option value="upsert">Create or update by SKU</option>
+                    <option value="create_only">Create only</option>
+                  </select>
+                </label>
+                <div className="bulk-preview">
+                  <strong>{bulkRows.length}</strong>
+                  <span>rows ready</span>
+                </div>
+                <button type="submit" disabled={isRunningBulk || bulkRows.length === 0}>
+                  Run bulk import
+                </button>
+              </form>
+
+              <form className="bulk-tool-form" onSubmit={handleBulkAction}>
+                <label>
+                  Action
+                  <select value={bulkAction} onChange={(event) => setBulkAction(event.target.value as typeof bulkAction)}>
+                    <option value="approve">Approve and activate</option>
+                    <option value="activate">Activate</option>
+                    <option value="deactivate">Deactivate</option>
+                    <option value="discontinue">Discontinue</option>
+                    <option value="update">Bulk edit field</option>
+                    <option value="delete">Delete if safe</option>
+                  </select>
+                </label>
+
+                {bulkAction === 'update' && (
+                  <>
+                    <label>
+                      Field
+                      <select value={bulkUpdateField} onChange={(event) => setBulkUpdateField(event.target.value as typeof bulkUpdateField)}>
+                        <option value="status">Status</option>
+                        <option value="regulatory_status">Regulatory status</option>
+                        <option value="reorder_level">Reorder level</option>
+                        <option value="minimum_stock_level">Minimum stock</option>
+                      </select>
+                    </label>
+                    <label>
+                      New value
+                      <input value={bulkUpdateValue} onChange={(event) => setBulkUpdateValue(event.target.value)} />
+                    </label>
+                  </>
+                )}
+
+                <div className="bulk-product-picker">
+                  {products.products.map((product) => (
+                    <label key={product.id} className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={selectedBulkIds.includes(product.id)}
+                        onChange={(event) => {
+                          setSelectedBulkIds((current) =>
+                            event.target.checked
+                              ? [...current, product.id]
+                              : current.filter((id) => id !== product.id),
+                          );
+                        }}
+                      />
+                      {product.name} ({product.sku})
+                    </label>
+                  ))}
+                </div>
+
+                <button type="submit" disabled={isRunningBulk || selectedBulkIds.length === 0}>
+                  Run bulk action on {selectedBulkIds.length} product(s)
+                </button>
+              </form>
+            </section>
+          )}
         </div>
+        </>
       )}
     </article>
   );
+}
+
+const numericBulkFields = ['reorder_level', 'minimum_stock_level'];
+
+function parseCsvProducts(text: string): ProductBulkImportRow[] {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return [];
+  }
+
+  const headers = splitCsvLine(lines[0]).map((header) => header.trim().replace(/\s+/g, '_').toLowerCase());
+
+  return lines.slice(1).map((line) => {
+    const values = splitCsvLine(line);
+    const row: Record<string, string> = {};
+
+    headers.forEach((header, index) => {
+      row[header] = values[index]?.trim() ?? '';
+    });
+
+    return row as ProductBulkImportRow;
+  });
+}
+
+function splitCsvLine(line: string): string[] {
+  const values: string[] = [];
+  let current = '';
+  let quoted = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+
+    if (char === '"') {
+      quoted = !quoted;
+      continue;
+    }
+
+    if (char === ',' && !quoted) {
+      values.push(current);
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current);
+
+  return values;
 }
 
 function collectCategories(products: PharmaProduct[]): PharmaProductCategory[] {

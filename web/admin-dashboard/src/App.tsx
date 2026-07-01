@@ -10,6 +10,10 @@ import { ReportingDashboard } from './components/ReportingDashboard';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
 import { PlatformManagementPanel } from './components/PlatformManagementPanel';
+import { CorporateEmailPanel } from './components/CorporateEmailPanel';
+import { PharmacistChatPanel } from './components/PharmacistChatPanel';
+import { DataLayerAdminPanel } from './components/DataLayerAdminPanel';
+import { AiOperationsPanel } from './components/AiOperationsPanel';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 
@@ -85,6 +89,8 @@ type AdminPanelWorkspaceKey =
   | 'backend-api'
   | 'two-factor-auth'
   | 'platform-management'
+  | 'corporate-email'
+  | 'pharmacist-chat'
   | 'web-application'
   | 'mobile-application'
   | 'desktop-application'
@@ -106,7 +112,6 @@ const activeSectionStorageKey = 'ubuzima_admin_active_section';
 const trustedDeviceStorageKey = 'ubuzima_admin_trusted_device_token';
 const brandLogoSrc = '/assets/ubuzima-logo.png';
 const publicWebsiteUrl = import.meta.env.VITE_PUBLIC_WEBSITE_URL?.trim() || 'http://127.0.0.1:5174/';
-const corporateEmailUrl = 'mailto:info@ubuzimaplus.com';
 
 const demoUsers = [
   {
@@ -360,6 +365,8 @@ const menuGroups: Array<{ key: MenuGroupKey; label: string; icon: string; items:
       { key: 'admin-panel', context: 'backend-api', label: 'Backend API', description: 'Laravel API and services', icon: 'BE', status: 'Active' },
       { key: 'admin-panel', context: 'two-factor-auth', label: 'Staff 2FA', description: 'Authenticator and trusted devices', icon: '2FA', status: 'Mandatory' },
       { key: 'admin-panel', context: 'platform-management', label: 'Platform Management', description: 'Website, pages, sections', icon: 'PM', status: 'Active' },
+      { key: 'admin-panel', context: 'corporate-email', label: 'Corporate Email', description: 'Company mailbox workspace', icon: 'EM', status: 'Active' },
+      { key: 'admin-panel', context: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Mobile customer queue', icon: 'CH', status: 'Active' },
       { key: 'admin-panel', context: 'web-application', label: 'Web Application', description: 'Public and staff web apps', icon: 'WEB', status: 'Active' },
       { key: 'admin-panel', context: 'mobile-application', label: 'Mobile Application', description: 'Manager and field apps', icon: 'MOB', status: 'Planned' },
       { key: 'admin-panel', context: 'desktop-application', label: 'Desktop Application', description: 'Installable POS/PWA', icon: 'DSK', status: 'Planned' },
@@ -770,6 +777,20 @@ const adminPanelLayers: Array<{
     components: ['Website pages', 'Sections', 'Copy', 'Style JSON', 'Publishing status'],
   },
   {
+    key: 'corporate-email',
+    title: 'Corporate Email',
+    status: 'Active',
+    summary: 'In-app company mailbox with folders, reading pane, compose flow, and external provider readiness.',
+    components: ['Inbox', 'Sent mail', 'Compose', 'Provider sync configuration', 'Audit trail'],
+  },
+  {
+    key: 'pharmacist-chat',
+    title: 'Pharmacist Chat',
+    status: 'Active',
+    summary: 'Mobile app users can start pharmacy questions and authorized pharmacists can respond from the staff console.',
+    components: ['Mobile entry endpoint', 'Conversation queue', 'Pharmacist replies', 'Resolution status'],
+  },
+  {
     key: 'web-application',
     title: 'Web Application',
     status: 'Active',
@@ -941,6 +962,9 @@ function App() {
 
   const profile = session?.profile;
   const currentSection = sectionMeta[activeSection];
+  const loginStatusText = profile
+    ? `Logged in now as ${profile.user.name || profile.user.email}`
+    : '';
 
   useEffect(() => {
     let cancelled = false;
@@ -1906,6 +1930,8 @@ function App() {
           </article>
         </section>
 
+        <AiOperationsPanel token={session.token} profile={profile} />
+
         <ModuleReadinessGrid items={aiWorkflows} />
 
         <section className="ai-model-grid">
@@ -1948,6 +1974,18 @@ function App() {
           <PlatformManagementPanel token={session.token} />
         )}
 
+        {activeAdminPanelWorkspace === 'corporate-email' && (
+          <CorporateEmailPanel token={session.token} />
+        )}
+
+        {activeAdminPanelWorkspace === 'pharmacist-chat' && (
+          <PharmacistChatPanel token={session.token} />
+        )}
+
+        {activeAdminPanelWorkspace === 'data-layer' && (
+          <DataLayerAdminPanel token={session.token} />
+        )}
+
         <section className="admin-layer-grid">
           {adminPanelLayers.map((layer) => (
             <button
@@ -1963,7 +2001,7 @@ function App() {
           ))}
         </section>
 
-        {activeAdminPanelWorkspace !== 'two-factor-auth' && activeAdminPanelWorkspace !== 'platform-management' && (
+        {!['two-factor-auth', 'platform-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(activeAdminPanelWorkspace) && (
           <article className="panel wide">
             <h2>{selectedLayer.title} control surface</h2>
             <p className="muted">{selectedLayer.summary}</p>
@@ -1975,10 +2013,9 @@ function App() {
           </article>
         )}
 
-        {activeAdminPanelWorkspace !== 'two-factor-auth' && <ModuleReadinessGrid items={settingsBlueprint} />}
+        {!['two-factor-auth', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(activeAdminPanelWorkspace) && <ModuleReadinessGrid items={settingsBlueprint} />}
 
         {activeAdminPanelWorkspace === 'backend-api' && accessControlPanel}
-        {activeAdminPanelWorkspace === 'data-layer' && tenantAssignmentsPanel}
       </section>
     );
   }
@@ -2167,6 +2204,16 @@ function App() {
       default:
         return (
           <section className="section-page">
+            <section className="signed-in-banner">
+              <div>
+                <span className="status-dot" />
+                <strong>{loginStatusText}</strong>
+              </div>
+              <small>
+                Scope: {profile.scope.type} · Tenants: {profile.tenant_assignments.length || 'none'} · 2FA:{' '}
+                {profile.user.two_factor?.enabled ? 'enabled' : 'setup needed'}
+              </small>
+            </section>
             {summaryGrid}
             <section className="system-experience-section">
               <div className="framework-heading">
@@ -2307,12 +2354,20 @@ function App() {
               Back
             </button>
             <a href={publicWebsiteUrl}>Website</a>
-            <a href={corporateEmailUrl}>Email Corporate</a>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveAdminPanelWorkspace('corporate-email');
+                navigateToSection('admin-panel');
+              }}
+            >
+              Email Corporate
+            </button>
           </div>
 
           <div className="user-card">
             <strong>{profile.user.email}</strong>
-            <span>{profile.user.status}</span>
+            <span>{loginStatusText}</span>
             <small>{profile.scope.type} scope</small>
             {profile.user.must_change_password && <small>Password change required</small>}
           </div>

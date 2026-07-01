@@ -1,8 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\AiCenterController;
+use App\Http\Controllers\Api\V1\CorporateMailController;
+use App\Http\Controllers\Api\V1\DataLayerController;
 use App\Http\Controllers\Api\V1\PlatformContentController;
 use App\Http\Controllers\Api\V1\PlatformStatusController;
+use App\Http\Controllers\Api\V1\PharmacistChatController;
 use App\Http\Controllers\Api\V1\SolutionController;
 use App\Http\Controllers\Api\V1\TenantPublicStatusController;
 use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
@@ -19,6 +23,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/platform-content/public', [PlatformContentController::class, 'publicPages']);
     Route::get('/solutions', [SolutionController::class, 'index']);
     Route::get('/tenants/{slug}/public-status', [TenantPublicStatusController::class, 'show']);
+});
+
+Route::prefix('v1/mobile/pharmacist-chat')->group(function () {
+    Route::post('/conversations', [PharmacistChatController::class, 'createMobileConversation']);
+    Route::get('/conversations/{conversation:uuid}', [PharmacistChatController::class, 'mobileConversation']);
+    Route::post('/conversations/{conversation:uuid}/messages', [PharmacistChatController::class, 'createMobileMessage']);
 });
 
 
@@ -60,6 +70,41 @@ Route::middleware(['auth:sanctum', 'permission:platform.content.manage'])
         Route::get('/pages', [PlatformContentController::class, 'adminPages']);
         Route::patch('/pages/{page}', [PlatformContentController::class, 'updatePage']);
         Route::patch('/sections/{section}', [PlatformContentController::class, 'updateSection']);
+    });
+
+Route::middleware(['auth:sanctum', 'permission:communications.email.use'])
+    ->prefix('v1/corporate-mail')
+    ->group(function () {
+        Route::get('/overview', [CorporateMailController::class, 'overview']);
+        Route::post('/messages', [CorporateMailController::class, 'send']);
+    });
+
+Route::middleware(['auth:sanctum', 'permission:pharmaco.chat.manage'])
+    ->prefix('v1/pharmacist-chat')
+    ->group(function () {
+        Route::get('/conversations', [PharmacistChatController::class, 'staffConversations']);
+        Route::get('/conversations/{conversation:uuid}', [PharmacistChatController::class, 'staffConversation']);
+        Route::post('/conversations/{conversation:uuid}/messages', [PharmacistChatController::class, 'staffReply']);
+        Route::patch('/conversations/{conversation:uuid}', [PharmacistChatController::class, 'updateStaffConversation']);
+    });
+
+Route::middleware(['auth:sanctum', 'permission:data.layer.manage'])
+    ->prefix('v1/admin/data-layer')
+    ->group(function () {
+        Route::get('/schema', [DataLayerController::class, 'schema']);
+        Route::get('/tables/{table}/rows', [DataLayerController::class, 'rows']);
+        Route::patch('/tables/{table}/rows/{id}', [DataLayerController::class, 'updateRow']);
+        Route::delete('/tables/{table}/rows/{id}', [DataLayerController::class, 'deleteRow']);
+        Route::post('/sql', [DataLayerController::class, 'runSql']);
+    });
+
+Route::middleware(['auth:sanctum', 'permission:ai.manage', 'tenant.module:platform.ai_center'])
+    ->prefix('v1/ai-center')
+    ->group(function () {
+        Route::get('/overview', [AiCenterController::class, 'overview']);
+        Route::post('/activate-defaults', [AiCenterController::class, 'activateDefaults']);
+        Route::post('/recommendations/inventory/generate', [AiCenterController::class, 'generateInventoryRecommendations']);
+        Route::patch('/recommendations/{recommendation}', [AiCenterController::class, 'updateRecommendation']);
     });
 
 Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
@@ -232,6 +277,18 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ]);
 
     Route::get('/products', [ProductInventoryController::class, 'products'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::post('/products/bulk-import', [ProductInventoryController::class, 'bulkImportProducts'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::post('/products/bulk-action', [ProductInventoryController::class, 'bulkProductAction'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
             'tenant.module:pharmaco.inventory',

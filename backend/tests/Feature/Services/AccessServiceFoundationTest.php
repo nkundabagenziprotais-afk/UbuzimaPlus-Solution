@@ -29,7 +29,7 @@ class AccessServiceFoundationTest extends TestCase
         $this->assertSame('pharmacy', $tenant->tenant_type);
     }
 
-    public function test_module_access_service_detects_active_and_controlled_modules(): void
+    public function test_module_access_service_detects_active_governed_modules(): void
     {
         $this->seed();
 
@@ -37,19 +37,19 @@ class AccessServiceFoundationTest extends TestCase
         $service = app(ModuleAccessService::class);
 
         $this->assertTrue($service->isActiveForTenant($tenant, 'pharmaco.inventory'));
-        $this->assertTrue($service->isControlledForTenant($tenant, 'platform.ai_center'));
-        $this->assertFalse($service->isActiveForTenant($tenant, 'platform.ai_center'));
+        $this->assertTrue($service->isActiveForTenant($tenant, 'platform.ai_center'));
+        $this->assertFalse($service->isControlledForTenant($tenant, 'platform.ai_center'));
     }
 
-    public function test_ai_guard_blocks_ai_until_controlled_activation_becomes_active(): void
+    public function test_ai_guard_allows_active_ai_and_keeps_high_risk_approval_required(): void
     {
         $this->seed();
 
         $tenant = Tenant::query()->where('slug', 'vitapharma')->firstOrFail();
         $guard = app(AIContextGuard::class);
 
-        $this->assertFalse($guard->canUseAIForTenant($tenant));
-        $this->assertTrue($guard->isControlledForTenant($tenant));
+        $this->assertTrue($guard->canUseAIForTenant($tenant));
+        $this->assertFalse($guard->isControlledForTenant($tenant));
         $this->assertTrue($guard->requiresHumanApproval('high'));
         $this->assertFalse($guard->requiresHumanApproval('low'));
     }

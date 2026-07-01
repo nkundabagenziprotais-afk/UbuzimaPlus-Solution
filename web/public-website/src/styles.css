@@ -618,6 +618,242 @@ footer a {
   color: rgba(255, 255, 255, 0.68);
 }
 
+.website-app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.76)),
+    url("/assets/ubuzima-pharmaco-hero.png");
+  background-position: center;
+  background-size: cover;
+}
+
+.website-tree-panel {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.96);
+  border-right: 1px solid var(--line);
+  overflow: auto;
+}
+
+.website-tree-nav {
+  display: grid;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.website-tree-nav section {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.website-tree-nav strong {
+  color: var(--teal);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
+.website-tree-nav button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.72rem 0.8rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.website-tree-nav button.active,
+.website-tree-nav button:hover {
+  border-color: rgba(8, 119, 201, 0.22);
+  background: #eef7ff;
+  color: var(--logo-blue);
+}
+
+.staff-login-card {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: auto;
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--teal);
+  color: var(--white);
+}
+
+.staff-login-card span {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.9rem;
+}
+
+.website-content-panel {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.website-content-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 4vw;
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+}
+
+.website-content-header > span {
+  color: var(--teal);
+  font-weight: 900;
+}
+
+.website-content-header div {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.website-content-header button,
+.website-content-header a,
+.website-focus-section button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  background: var(--white);
+  color: var(--teal);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.website-focus-section {
+  width: min(1060px, 100%);
+  align-self: center;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4.5rem);
+}
+
+.website-hero-panel {
+  min-height: calc(100vh - 74px);
+  display: grid;
+  align-content: center;
+}
+
+.website-focus-section h1 {
+  max-width: 900px;
+  margin-bottom: 1rem;
+}
+
+.website-focus-section > p {
+  max-width: 780px;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.72;
+}
+
+.section-quick-actions {
+  position: static;
+  width: 100%;
+  margin: 2rem 0 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compact-solution-grid,
+.compact-audience-grid,
+.website-mini-grid {
+  margin-top: 2rem;
+}
+
+.compact-solution-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compact-audience-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.website-mini-grid,
+.website-module-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.website-mini-grid article,
+.website-module-list article {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.website-mini-grid span,
+.website-module-list span {
+  display: block;
+  margin: 0.35rem 0;
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.website-module-list p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.contact-focus-section {
+  align-self: center;
+}
+
+@media (max-width: 960px) {
+  .website-app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .website-tree-panel {
+    position: relative;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .website-tree-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .section-quick-actions,
+  .compact-solution-grid,
+  .compact-audience-grid,
+  .website-mini-grid,
+  .website-module-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .website-tree-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .website-content-header,
+  .website-content-header div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 footer p {
   max-width: 420px;
   color: rgba(255, 255, 255, 0.68);

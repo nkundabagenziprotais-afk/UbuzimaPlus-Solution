@@ -14,6 +14,47 @@ type ManagedSection = {
   style: Record<string, unknown>;
 };
 
+type SiteSectionKey =
+  | 'home'
+  | 'about-mission'
+  | 'about-vision'
+  | 'about-team'
+  | 'solutions'
+  | 'pharmaco'
+  | 'customers'
+  | 'security'
+  | 'contact';
+
+const websiteMenu: Array<{
+  label: string;
+  children: Array<{ key: SiteSectionKey; label: string }>;
+}> = [
+  {
+    label: 'About us',
+    children: [
+      { key: 'home', label: 'Overview' },
+      { key: 'about-mission', label: 'Mission' },
+      { key: 'about-vision', label: 'Vision' },
+      { key: 'about-team', label: 'Our Team' },
+    ],
+  },
+  {
+    label: 'Solutions',
+    children: [
+      { key: 'solutions', label: 'Solution Portfolio' },
+      { key: 'pharmaco', label: 'PharmaCo360' },
+      { key: 'customers', label: 'Who We Serve' },
+    ],
+  },
+  {
+    label: 'Trust',
+    children: [
+      { key: 'security', label: 'Security' },
+      { key: 'contact', label: 'Contact' },
+    ],
+  },
+];
+
 const quickActions = [
   {
     title: 'Request a demo',
@@ -116,6 +157,7 @@ const roadmap = [
 
 function App() {
   const [managedSections, setManagedSections] = useState<Record<string, ManagedSection>>({});
+  const [activeWebsiteSection, setActiveWebsiteSection] = useState<SiteSectionKey>('home');
 
   useEffect(() => {
     const normalizedPath = window.location.pathname.replace(/\/$/, '') || '/';
@@ -170,6 +212,216 @@ function App() {
       ? items as string[]
       : [];
   }, [modulesSection]);
+
+  function renderWebsiteSection() {
+    switch (activeWebsiteSection) {
+      case 'about-mission':
+        return (
+          <section className="website-focus-section">
+            <p className="eyebrow">Mission</p>
+            <h1>Make pharmacy and health business operations easier to run, safer to control, and clearer to grow.</h1>
+            <p>
+              Ubuzima+ helps health-sector teams move from paper, scattered spreadsheets, and disconnected tools
+              into one practical operating platform built around real work: stock, sales, people, approvals, reports, and customer service.
+            </p>
+          </section>
+        );
+      case 'about-vision':
+        return (
+          <section className="website-focus-section">
+            <p className="eyebrow">Vision</p>
+            <h1>A connected health operations platform for businesses that serve people every day.</h1>
+            <p>
+              We are building Ubuzima+ so pharmacies, clinics, suppliers, and partners can coordinate work with confidence,
+              protect customer data, and use AI only where it adds clear value and remains accountable.
+            </p>
+          </section>
+        );
+      case 'about-team':
+        return (
+          <section className="website-focus-section">
+            <p className="eyebrow">Our Team</p>
+            <h1>Built with operators, pharmacists, technologists, and implementation partners in mind.</h1>
+            <p>
+              Ubuzima+ is designed for teams that need a dependable daily system, not a complicated technology showcase.
+              The platform focuses on practical onboarding, clean data, staff training, and continuous support.
+            </p>
+            <div className="website-mini-grid">
+              <article><strong>Product</strong><span>Workflow design and module readiness.</span></article>
+              <article><strong>Pharmacy</strong><span>Dispensing safety, inventory, and branch operations.</span></article>
+              <article><strong>Support</strong><span>Tenant onboarding, training, and issue follow-up.</span></article>
+            </div>
+          </section>
+        );
+      case 'solutions':
+        return (
+          <section className="website-focus-section">
+            <p className="eyebrow">{solutionsSection?.eyebrow ?? 'Solution portfolio'}</p>
+            <h1>{solutionsSection?.title ?? 'One platform, focused solutions for health operations.'}</h1>
+            <p>
+              {solutionsSection?.body ??
+                'Start with PharmaCo360 and grow into connected clinic, veterinary, partner, and ERP capabilities when the business is ready.'}
+            </p>
+            <div className="solution-grid compact-solution-grid">
+              {solutionLines.map((solution) => (
+                <article key={solution.name} className="solution-card">
+                  <span>{solution.status}</span>
+                  <h3>{solution.name}</h3>
+                  <p>{solution.summary}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'pharmaco':
+        return (
+          <section className="website-focus-section">
+            <p className="eyebrow">{modulesSection?.eyebrow ?? 'PharmaCo360'}</p>
+            <h1>{modulesSection?.title ?? 'Run pharmacy branches with fewer blind spots.'}</h1>
+            <p>
+              {modulesSection?.body ??
+                'PharmaCo360 brings product master, inventory, POS, suppliers, finance visibility, reports, pharmacist chat, and governed AI into one pharmacy workspace.'}
+            </p>
+            {managedPriorityModules.length > 0 && (
+              <div className="managed-priority-strip">
+                {managedPriorityModules.map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </div>
+            )}
+            <div className="website-module-list">
+              {pharmaModules.slice(0, 8).map(([title, description, status]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{status}</span>
+                  <p>{description}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'customers':
+        return (
+          <section className="website-focus-section">
+            <p className="eyebrow">Who we serve</p>
+            <h1>Built for teams who need daily clarity, not extra complexity.</h1>
+            <div className="audience-grid compact-audience-grid">
+              {audiences.map(([title, text]) => (
+                <article key={title}>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'security':
+        return (
+          <section className="website-focus-section">
+            <p className="eyebrow">{securitySection?.eyebrow ?? 'Security and trust'}</p>
+            <h1>{securitySection?.title ?? 'Control matters as much as speed.'}</h1>
+            <p>
+              {securitySection?.body ??
+                'Ubuzima+ is designed around tenant separation, staff permissions, audit logs, mandatory 2FA, and human approval for sensitive AI actions.'}
+            </p>
+            <div className="trust-grid">
+              {trustControls.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          </section>
+        );
+      case 'contact':
+        return (
+          <section className="website-focus-section contact-focus-section">
+            <p className="eyebrow">Talk to Ubuzima+</p>
+            <h1>Ready to prepare your first pharmacy or health business tenant?</h1>
+            <p>
+              Share your current branch setup, products, stock records, sales flow, and reporting needs.
+              We will map a practical implementation path and keep the first rollout simple.
+            </p>
+            <div className="hero-actions">
+              <a className="primary-action" href="mailto:info@ubuzimaplus.com">Email Ubuzima+</a>
+              <a className="secondary-action" href={staffLoginUrl}>Staff login</a>
+            </div>
+          </section>
+        );
+      case 'home':
+      default:
+        return (
+          <section className="website-focus-section website-hero-panel">
+            <p className="eyebrow">{heroSection?.eyebrow ?? 'Digital health business platform'}</p>
+            <h1>{heroSection?.title ?? 'Ubuzima+ helps health businesses run daily operations with confidence.'}</h1>
+            <p>
+              {heroSection?.body ??
+                'Start with pharmacy operations: products, stock, sales, dispensing, suppliers, finance visibility, reporting, staff access, customer support, and governed AI.'}
+            </p>
+            <div className="hero-actions">
+              <button className="primary-action" type="button" onClick={() => setActiveWebsiteSection('contact')}>Request Demo</button>
+              <button className="secondary-action" type="button" onClick={() => setActiveWebsiteSection('pharmaco')}>Explore PharmaCo360</button>
+            </div>
+            <div className="quick-actions section-quick-actions" aria-label="Quick actions">
+              {quickActions.map((action) => (
+                <a key={action.title} href={action.href.startsWith('#') ? undefined : action.href} onClick={() => {
+                  if (action.title === 'Explore PharmaCo360') setActiveWebsiteSection('pharmaco');
+                  if (action.title === 'Implementation path') setActiveWebsiteSection('contact');
+                  if (action.title === 'Request a demo') setActiveWebsiteSection('contact');
+                }}>
+                  <span>{action.title}</span>
+                  <p>{action.text}</p>
+                </a>
+              ))}
+            </div>
+          </section>
+        );
+    }
+  }
+
+  return (
+    <main className="website-app-shell">
+      <aside className="website-tree-panel">
+        <a className="brand" href="#top" aria-label="Ubuzima+ home" onClick={() => setActiveWebsiteSection('home')}>
+          <img className="brand-logo" src={brandLogoSrc} alt="Ubuzima+" />
+          <span className="brand-caption">Digital health operations</span>
+        </a>
+
+        <nav className="website-tree-nav" aria-label="Website sections">
+          {websiteMenu.map((group) => (
+            <section key={group.label}>
+              <strong>{group.label}</strong>
+              {group.children.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={activeWebsiteSection === item.key ? 'active' : ''}
+                  onClick={() => setActiveWebsiteSection(item.key)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </section>
+          ))}
+        </nav>
+
+        <a className="staff-login-card" href={staffLoginUrl}>
+          <strong>Staff login</strong>
+          <span>Open secure workspace</span>
+        </a>
+      </aside>
+
+      <section className="website-content-panel">
+        <header className="website-content-header">
+          <span>Ubuzima+ Digital Health Operations</span>
+          <div>
+            <button type="button" onClick={() => setActiveWebsiteSection('contact')}>Request Demo</button>
+            <a href={staffLoginUrl}>Staff Login</a>
+          </div>
+        </header>
+
+        {renderWebsiteSection()}
+      </section>
+    </main>
+  );
 
   return (
     <main>

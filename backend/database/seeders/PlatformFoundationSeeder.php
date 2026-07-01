@@ -48,6 +48,8 @@ class PlatformFoundationSeeder extends Seeder
         $modules = [
             ['code' => 'platform.public_website', 'name' => 'Public Website', 'group' => 'platform', 'scope' => 'shared'],
             ['code' => 'platform.auth', 'name' => 'Authentication', 'group' => 'platform', 'scope' => 'shared'],
+            ['code' => 'platform.corporate_email', 'name' => 'Corporate Email', 'group' => 'communications', 'scope' => 'shared'],
+            ['code' => 'platform.data_layer', 'name' => 'Admin Data Layer', 'group' => 'platform', 'scope' => 'shared'],
             ['code' => 'platform.admin_scopes', 'name' => 'Admin Scopes', 'group' => 'security', 'scope' => 'shared'],
             ['code' => 'platform.tenancy', 'name' => 'Tenancy', 'group' => 'platform', 'scope' => 'shared'],
             ['code' => 'platform.rbac', 'name' => 'Roles and Permissions', 'group' => 'security', 'scope' => 'shared'],
@@ -58,6 +60,7 @@ class PlatformFoundationSeeder extends Seeder
             ['code' => 'pharmaco.products', 'name' => 'Product Master', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.inventory', 'name' => 'Inventory', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.pos', 'name' => 'POS and Sales', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
+            ['code' => 'pharmaco.pharmacist_chat', 'name' => 'Pharmacist Chat', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.suppliers', 'name' => 'Supplier Management', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.reports', 'name' => 'Reports', 'group' => 'analytics', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.wholesale', 'name' => 'Wholesale Ecosystem', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
@@ -124,6 +127,8 @@ class PlatformFoundationSeeder extends Seeder
         $phaseOneModules = [
             'platform.public_website',
             'platform.auth',
+            'platform.corporate_email',
+            'platform.data_layer',
             'platform.admin_scopes',
             'platform.tenancy',
             'platform.rbac',
@@ -133,6 +138,7 @@ class PlatformFoundationSeeder extends Seeder
             'pharmaco.products',
             'pharmaco.inventory',
             'pharmaco.pos',
+            'pharmaco.pharmacist_chat',
             'pharmaco.suppliers',
             'pharmaco.reports',
         ];
@@ -164,9 +170,12 @@ class PlatformFoundationSeeder extends Seeder
                 ['tenant_id' => $vita->id, 'module_id' => $aiCenter->id],
                 [
                     'solution_id' => $pharma->id,
-                    'status' => 'controlled',
-                    'configuration' => json_encode(['requires_admin_approval' => true]),
-                    'activated_at' => null,
+                    'status' => 'active',
+                    'configuration' => json_encode([
+                        'requires_admin_approval' => true,
+                        'activation_mode' => 'governed',
+                    ]),
+                    'activated_at' => now(),
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]

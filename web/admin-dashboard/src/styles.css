@@ -4084,3 +4084,370 @@ h3,
     padding: 18px;
   }
 }
+
+.panel-button-row,
+.dashboard-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.signed-in-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid rgba(54, 173, 58, 0.22);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #f2fbf4;
+}
+
+.signed-in-banner > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.signed-in-banner small,
+.form-hint {
+  color: var(--ubuzima-muted);
+  font-weight: 700;
+}
+
+.inventory-task-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.inventory-task-switcher button {
+  border: 1px solid var(--ubuzima-line);
+  background: #ffffff;
+  color: var(--ubuzima-ink);
+}
+
+.inventory-task-switcher button.active {
+  border-color: rgba(8, 119, 201, 0.35);
+  background: #eef7ff;
+  color: var(--ubuzima-blue);
+}
+
+.inventory-actions-grid--focused {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.form-hint {
+  margin: -4px 0 16px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.inventory-bulk-card,
+.mail-panel,
+.chat-panel,
+.data-layer-panel,
+.ai-operations-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.bulk-tool-form,
+.mail-compose {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  padding: 16px;
+  background: #fbfdfc;
+}
+
+.mail-compose .mail-body-field,
+.mail-compose button,
+.bulk-product-picker {
+  grid-column: 1 / -1;
+}
+
+.bulk-preview,
+.mail-account-strip,
+.integration-note {
+  min-height: 44px;
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #f7faf8;
+}
+
+.bulk-preview strong,
+.bulk-preview span {
+  display: block;
+}
+
+.bulk-product-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.mail-workspace,
+.chat-workspace {
+  display: grid;
+  grid-template-columns: 180px minmax(220px, 0.9fr) minmax(0, 1.4fr);
+  min-height: 460px;
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.chat-workspace {
+  grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.4fr);
+}
+
+.mail-folders,
+.mail-list,
+.chat-thread-list {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 12px;
+  background: #f6faf8;
+  border-right: 1px solid var(--ubuzima-line);
+  overflow: auto;
+}
+
+.mail-folders button,
+.mail-list button,
+.chat-thread-list button,
+.data-table-list button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 11px;
+  background: transparent;
+  color: var(--ubuzima-ink);
+  text-align: left;
+}
+
+.mail-folders button.active,
+.mail-list button.active,
+.chat-thread-list button.active,
+.data-table-list button.active {
+  border-color: rgba(8, 119, 201, 0.24);
+  background: #eef7ff;
+}
+
+.mail-list small,
+.chat-thread-list small,
+.data-table-list small {
+  color: var(--ubuzima-muted);
+  line-height: 1.35;
+}
+
+.mail-reading-pane,
+.chat-conversation {
+  padding: 18px;
+  overflow: auto;
+}
+
+.mail-reading-pane article {
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+
+.chat-conversation-header,
+.data-table-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--ubuzima-line);
+  padding-bottom: 12px;
+}
+
+.chat-message-list,
+.ai-registry-grid > div,
+.ai-recommendation-queue,
+.data-layer-main,
+.sql-results {
+  display: grid;
+  gap: 12px;
+}
+
+.chat-bubble {
+  max-width: 78%;
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f7faf8;
+}
+
+.chat-bubble.staff {
+  justify-self: end;
+  background: #eef7ff;
+}
+
+.chat-bubble span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ubuzima-muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.chat-bubble p {
+  margin: 0;
+}
+
+.chat-reply-form,
+.sql-runner {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--ubuzima-line);
+  padding-top: 14px;
+}
+
+.data-layer-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.35fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.data-table-list {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  max-height: 740px;
+  overflow: auto;
+}
+
+.data-table-list button {
+  border-color: var(--ubuzima-line);
+  background: #ffffff;
+}
+
+.data-diagram,
+.data-table-preview,
+.sql-runner,
+.sql-results article {
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  padding: 16px;
+  background: #fbfdfc;
+}
+
+.data-diagram-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.data-diagram-grid article,
+.ai-summary-strip div,
+.ai-registry-grid article,
+.ai-recommendation-queue article {
+  border: 1px solid var(--ubuzima-line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #f7faf8;
+}
+
+.data-diagram-grid article {
+  display: grid;
+  gap: 6px;
+  background: #f2fbf4;
+}
+
+.responsive-table-scroll {
+  overflow: auto;
+}
+
+.responsive-table-scroll table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.responsive-table-scroll th,
+.responsive-table-scroll td {
+  border-bottom: 1px solid var(--ubuzima-line);
+  padding: 9px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.86rem;
+}
+
+.sql-results pre {
+  max-height: 280px;
+  overflow: auto;
+  border-radius: 8px;
+  padding: 12px;
+  background: #10231f;
+  color: #e8fff5;
+}
+
+.ai-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ai-summary-strip span,
+.ai-registry-grid span,
+.ai-recommendation-queue span,
+.ai-recommendation-queue small {
+  color: var(--ubuzima-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.ai-summary-strip strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.6rem;
+}
+
+.ai-registry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ai-recommendation-queue article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.ai-recommendation-queue article > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 1080px) {
+  .mail-workspace,
+  .chat-workspace,
+  .data-layer-layout,
+  .ai-registry-grid,
+  .bulk-tool-form,
+  .mail-compose,
+  .ai-summary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .mail-folders,
+  .mail-list,
+  .chat-thread-list {
+    border-right: 0;
+    border-bottom: 1px solid var(--ubuzima-line);
+  }
+}

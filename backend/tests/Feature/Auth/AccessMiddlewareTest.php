@@ -67,7 +67,7 @@ class AccessMiddlewareTest extends TestCase
             ->assertJsonPath('required_header', 'X-Tenant-Slug');
     }
 
-    public function test_controlled_ai_module_is_not_accessible_until_activated(): void
+    public function test_governed_ai_module_is_accessible_when_active_for_tenant(): void
     {
         $this->seed();
 
@@ -76,9 +76,9 @@ class AccessMiddlewareTest extends TestCase
         $this->withHeader('X-Tenant-Slug', 'vitapharma')
             ->withToken($token)
             ->getJson('/api/v1/access-check/ai')
-            ->assertForbidden()
-            ->assertJsonPath('message', 'This module is not active for the selected tenant.')
-            ->assertJsonPath('status', 'controlled');
+            ->assertOk()
+            ->assertJsonPath('access.status', 'granted')
+            ->assertJsonPath('access.module', 'platform.ai_center');
     }
 
     public function test_tenant_admin_cannot_cross_tenant_boundary(): void
