@@ -58,6 +58,13 @@ type PaymentForm = {
   notes: string;
 };
 
+type PayablesWorkspaceView =
+  | 'overview'
+  | 'create-payable'
+  | 'supplier-invoices'
+  | 'approval-queue'
+  | 'record-payment';
+
 const money = new Intl.NumberFormat('en-RW', {
   style: 'currency',
   currency: 'RWF',
@@ -136,6 +143,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
   const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [activePayablesView, setActivePayablesView] = useState<PayablesWorkspaceView>('overview');
 
   const approvedPurchaseOrders = useMemo(() => {
     return state.purchaseOrders.filter((purchaseOrder) =>
@@ -175,6 +183,22 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
 
     return Math.max(linesTotal - toNumber(invoiceForm.discount_amount) + toNumber(invoiceForm.tax_amount), 0);
   }, [invoiceForm]);
+
+  const invoiceQueues = useMemo(() => {
+    const draft = state.invoices.filter((invoice) => invoice.status === 'draft');
+    const payable = state.invoices.filter(
+      (invoice) => ['approved', 'partially_paid'].includes(invoice.status) && toNumber(invoice.balance_amount) > 0,
+    );
+    const overdue = state.invoices.filter((invoice) => {
+      if (!invoice.due_date || toNumber(invoice.balance_amount) <= 0) {
+        return false;
+      }
+
+      return new Date(invoice.due_date).getTime() < Date.now();
+    });
+
+    return { draft, payable, overdue };
+  }, [state.invoices]);
 
   useEffect(() => {
     if (!token || !tenantSlug || !hasProcurementAccess) {
@@ -228,6 +252,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
         ...current,
         amount: response.supplier_invoice.balance_amount > 0 ? String(response.supplier_invoice.balance_amount) : '',
       }));
+      setActivePayablesView(response.supplier_invoice.status === 'draft' ? 'approval-queue' : 'record-payment');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to open supplier invoice.');
     }
@@ -318,6 +343,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
         amount: String(response.supplier_invoice.balance_amount),
       }));
       setNotice(response.message);
+      setActivePayablesView('approval-queue');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create supplier invoice.');
     } finally {
@@ -345,6 +371,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
         selectedInvoice: response.supplier_invoice,
       }));
       setNotice(response.message);
+      setActivePayablesView('record-payment');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to approve supplier invoice.');
     } finally {
@@ -379,6 +406,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
       }));
       setPaymentForm(blankPaymentForm());
       setNotice(response.message);
+      setActivePayablesView('supplier-invoices');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to record supplier payment.');
     } finally {
@@ -391,20 +419,49 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
   }
 
   return (
-    <section className="payables-panel">
-      <div className="section-heading">
-        <span>Supplier payables</span>
-        <h2>Invoice and accounts payable workflow</h2>
-        <p>
-          Create supplier invoices from approved purchase orders, approve payables, and record supplier payments.
-        </p>
+    <section className="payables-panel payables-workspace-refined">
+      <div className="section-heading payables-commercial-heading">
+        <div>
+          <span>Supplier payables</span>
+          <h2>Supplier invoices and accounts payable</h2>
+          <p>
+            Separate supplier invoice creation, review, approval, payment, and exception follow-up into focused finance workspaces.
+          </p>
+        </div>
+
+        <button type="button" onClick={loadPayables} disabled={isLoading}>
+          {isLoading ? 'Refreshing…' : 'Refresh payables'}
+        </button>
       </div>
 
-      <div className="procurement-kpi-grid payables-kpi-grid">
+      <div className="payables-command-strip" aria-label="Supplier payables workflow map">
+        <article>
+          <span>01</span>
+          <strong>Create payable</strong>
+          <small>Capture supplier invoice details from an approved purchase order.</small>
+        </article>
+        <article>
+          <span>02</span>
+          <strong>Review and approve</strong>
+          <small>Check invoice status, due date, supplier, balance, and supporting items.</small>
+        </article>
+        <article>
+          <span>03</span>
+          <strong>Record payment</strong>
+          <small>Settle only approved or partially paid invoices with a clear payment trail.</small>
+        </article>
+      </div>
+
+      <div className="procurement-kpi-grid payables-kpi-grid" aria-label="Supplier payables summary">
         <article>
           <span>Outstanding payables</span>
           <strong>{money.format(kpis.outstanding)}</strong>
           <small>Open supplier balance</small>
+        </article>
+        <article>
+          <span>Draft invoices</span>
+          <strong>{invoiceQueues.draft.length}</strong>
+          <small>Need approval review</small>
         </article>
         <article>
           <span>Approved invoices</span>
@@ -417,11 +474,6 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
           <small>Still has balance</small>
         </article>
         <article>
-          <span>Paid invoices</span>
-          <strong>{kpis.paid}</strong>
-          <small>Closed payable records</small>
-        </article>
-        <article>
           <span>Overdue</span>
           <strong>{kpis.overdue}</strong>
           <small>Due date passed</small>
@@ -431,281 +483,531 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
       {notice && <div className="notice-banner">{notice}</div>}
       {error && <div className="error-banner">{error}</div>}
 
-      <div className="payables-grid">
-        <section className="draft-sale-builder payables-builder">
-          <div className="form-header">
-            <div>
-              <span>Create payable</span>
-              <h3>Supplier invoice from purchase order</h3>
+      <nav className="payables-child-nav" aria-label="Supplier payables child workspaces">
+        <button
+          type="button"
+          className={activePayablesView === 'overview' ? 'active' : ''}
+          onClick={() => setActivePayablesView('overview')}
+        >
+          <span>Overview</span>
+          <strong>{state.invoices.length}</strong>
+        </button>
+        <button
+          type="button"
+          className={activePayablesView === 'create-payable' ? 'active' : ''}
+          onClick={() => setActivePayablesView('create-payable')}
+        >
+          <span>Create payable</span>
+          <strong>{approvedPurchaseOrders.length}</strong>
+        </button>
+        <button
+          type="button"
+          className={activePayablesView === 'supplier-invoices' ? 'active' : ''}
+          onClick={() => setActivePayablesView('supplier-invoices')}
+        >
+          <span>Supplier invoices</span>
+          <strong>{state.invoices.length}</strong>
+        </button>
+        <button
+          type="button"
+          className={activePayablesView === 'approval-queue' ? 'active' : ''}
+          onClick={() => setActivePayablesView('approval-queue')}
+        >
+          <span>Approval queue</span>
+          <strong>{invoiceQueues.draft.length}</strong>
+        </button>
+        <button
+          type="button"
+          className={activePayablesView === 'record-payment' ? 'active' : ''}
+          onClick={() => setActivePayablesView('record-payment')}
+        >
+          <span>Record payment</span>
+          <strong>{invoiceQueues.payable.length}</strong>
+        </button>
+      </nav>
+
+      {activePayablesView === 'overview' && (
+        <section className="payables-child-page payables-overview-page">
+          <article className="payables-workflow-card">
+            <span className="section-label">Recommended finance flow</span>
+            <h3>Run payables as separate workspaces</h3>
+            <p>
+              The payables process is easier to control when invoice capture, invoice review, approval,
+              and payment are not competing on one screen.
+            </p>
+
+            <div className="payables-overview-grid">
+              <button type="button" onClick={() => setActivePayablesView('create-payable')}>
+                <span>01</span>
+                <strong>Create payable</strong>
+                <small>Supplier invoice from purchase order</small>
+              </button>
+              <button type="button" onClick={() => setActivePayablesView('supplier-invoices')}>
+                <span>02</span>
+                <strong>Supplier invoices</strong>
+                <small>Table-based invoice register</small>
+              </button>
+              <button type="button" onClick={() => setActivePayablesView('approval-queue')}>
+                <span>03</span>
+                <strong>Approval queue</strong>
+                <small>Draft invoices awaiting decision</small>
+              </button>
+              <button type="button" onClick={() => setActivePayablesView('record-payment')}>
+                <span>04</span>
+                <strong>Record payment</strong>
+                <small>Approved balances ready to settle</small>
+              </button>
             </div>
-            <button type="button" onClick={loadPayables} disabled={isLoading}>
-              {isLoading ? 'Refreshing…' : 'Refresh'}
-            </button>
-          </div>
+          </article>
 
-          <div className="creation-form-grid">
-            <label>
-              Approved purchase order
-              <select
-                value={invoiceForm.purchase_order_id}
-                onChange={(event) => applyPurchaseOrderToInvoice(event.target.value)}
-              >
-                <option value="">Select approved PO</option>
-                {approvedPurchaseOrders.map((purchaseOrder) => (
-                  <option key={purchaseOrder.id} value={purchaseOrder.id}>
-                    {purchaseOrder.po_number} · {purchaseOrder.supplier?.name ?? 'Supplier'} ·{' '}
-                    {money.format(purchaseOrder.total_amount)}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <article className="payables-workflow-card">
+            <span className="section-label">Exception focus</span>
+            <h3>Finance attention needed</h3>
+            <div className="payables-exception-list">
+              <div>
+                <strong>{invoiceQueues.overdue.length}</strong>
+                <span>Overdue supplier invoices</span>
+              </div>
+              <div>
+                <strong>{invoiceQueues.draft.length}</strong>
+                <span>Draft invoices needing approval</span>
+              </div>
+              <div>
+                <strong>{invoiceQueues.payable.length}</strong>
+                <span>Approved balances ready for payment</span>
+              </div>
+            </div>
+          </article>
+        </section>
+      )}
 
-            <label>
-              Supplier
-              <select
-                value={invoiceForm.supplier_id}
-                onChange={(event) => setInvoiceForm((current) => ({ ...current, supplier_id: event.target.value }))}
-              >
-                <option value="">Select supplier</option>
-                {state.suppliers.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
-                    {supplier.name} · {supplier.supplier_code}
-                  </option>
-                ))}
-              </select>
-            </label>
+      {activePayablesView === 'create-payable' && (
+        <section className="payables-child-page">
+          <section className="draft-sale-builder payables-builder payables-focused-card">
+            <div className="form-header">
+              <div>
+                <span>Create payable</span>
+                <h3>Supplier invoice from purchase order</h3>
+                <p className="muted">
+                  Use this page only for invoice capture. Approval and payment are handled in their own workspaces.
+                </p>
+              </div>
+              <button type="button" onClick={loadPayables} disabled={isLoading}>
+                {isLoading ? 'Refreshing…' : 'Refresh'}
+              </button>
+            </div>
 
-            <label>
-              Supplier invoice number
-              <input
-                value={invoiceForm.supplier_invoice_number}
-                onChange={(event) =>
-                  setInvoiceForm((current) => ({ ...current, supplier_invoice_number: event.target.value }))
-                }
-                placeholder="External supplier invoice"
-              />
-            </label>
+            <div className="payables-form-section-title">
+              <strong>Purchase order source</strong>
+              <span>Select an approved purchase order to populate invoice items.</span>
+            </div>
 
-            <label>
-              Invoice date
-              <input
-                type="date"
-                value={invoiceForm.invoice_date}
-                onChange={(event) => setInvoiceForm((current) => ({ ...current, invoice_date: event.target.value }))}
-              />
-            </label>
+            <div className="creation-form-grid payables-form-grid">
+              <label>
+                Approved purchase order
+                <select
+                  value={invoiceForm.purchase_order_id}
+                  onChange={(event) => applyPurchaseOrderToInvoice(event.target.value)}
+                >
+                  <option value="">Select approved PO</option>
+                  {approvedPurchaseOrders.map((purchaseOrder) => (
+                    <option key={purchaseOrder.id} value={purchaseOrder.id}>
+                      {purchaseOrder.po_number} · {purchaseOrder.supplier?.name ?? 'Supplier'} ·{' '}
+                      {money.format(purchaseOrder.total_amount)}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              Due date
-              <input
-                type="date"
-                value={invoiceForm.due_date}
-                onChange={(event) => setInvoiceForm((current) => ({ ...current, due_date: event.target.value }))}
-              />
-            </label>
+              <label>
+                Supplier
+                <select
+                  value={invoiceForm.supplier_id}
+                  onChange={(event) => setInvoiceForm((current) => ({ ...current, supplier_id: event.target.value }))}
+                >
+                  <option value="">Select supplier</option>
+                  {state.suppliers.map((supplier) => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.name} · {supplier.supplier_code}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              Invoice-level discount
-              <input
-                type="number"
-                min="0"
-                value={invoiceForm.discount_amount}
-                onChange={(event) =>
-                  setInvoiceForm((current) => ({ ...current, discount_amount: event.target.value }))
-                }
-              />
-            </label>
+              <label>
+                Supplier invoice number
+                <input
+                  value={invoiceForm.supplier_invoice_number}
+                  onChange={(event) =>
+                    setInvoiceForm((current) => ({ ...current, supplier_invoice_number: event.target.value }))
+                  }
+                  placeholder="External supplier invoice"
+                />
+              </label>
 
-            <label>
-              Invoice-level tax
-              <input
-                type="number"
-                min="0"
-                value={invoiceForm.tax_amount}
-                onChange={(event) => setInvoiceForm((current) => ({ ...current, tax_amount: event.target.value }))}
-              />
-            </label>
+              <label>
+                Invoice date
+                <input
+                  type="date"
+                  value={invoiceForm.invoice_date}
+                  onChange={(event) => setInvoiceForm((current) => ({ ...current, invoice_date: event.target.value }))}
+                />
+              </label>
 
-            <label className="wide-field">
-              Notes
-              <input
-                value={invoiceForm.notes}
-                onChange={(event) => setInvoiceForm((current) => ({ ...current, notes: event.target.value }))}
-                placeholder="Optional internal note"
-              />
-            </label>
-          </div>
+              <label>
+                Due date
+                <input
+                  type="date"
+                  value={invoiceForm.due_date}
+                  onChange={(event) => setInvoiceForm((current) => ({ ...current, due_date: event.target.value }))}
+                />
+              </label>
 
-          <div className="payables-line-list">
-            <div className="mini-section-heading">
+              <label>
+                Invoice-level discount
+                <input
+                  type="number"
+                  min="0"
+                  value={invoiceForm.discount_amount}
+                  onChange={(event) =>
+                    setInvoiceForm((current) => ({ ...current, discount_amount: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label>
+                Invoice-level tax
+                <input
+                  type="number"
+                  min="0"
+                  value={invoiceForm.tax_amount}
+                  onChange={(event) => setInvoiceForm((current) => ({ ...current, tax_amount: event.target.value }))}
+                />
+              </label>
+
+              <label className="wide-field">
+                Notes
+                <input
+                  value={invoiceForm.notes}
+                  onChange={(event) => setInvoiceForm((current) => ({ ...current, notes: event.target.value }))}
+                  placeholder="Optional internal note"
+                />
+              </label>
+            </div>
+
+            <div className="payables-form-section-title">
               <strong>Invoice items</strong>
               <span>{selectedPurchaseOrder ? selectedPurchaseOrder.po_number : 'Select a PO to populate items'}</span>
             </div>
 
             {invoiceForm.items.length === 0 ? (
-              <p className="muted">No invoice items selected yet.</p>
+              <div className="payables-empty-state">No invoice items selected yet.</div>
             ) : (
-              invoiceForm.items.map((item, index) => (
-                <div key={`${item.pharmaco_purchase_order_item_id}-${index}`} className="payables-line-row">
-                  <strong>{item.product_name}</strong>
-                  <label>
-                    Qty
-                    <input
-                      type="number"
-                      min="0.001"
-                      step="0.001"
-                      value={item.quantity}
-                      onChange={(event) => updateInvoiceLine(index, { quantity: event.target.value })}
-                    />
-                  </label>
-                  <label>
-                    Unit cost
-                    <input
-                      type="number"
-                      min="0"
-                      value={item.unit_cost}
-                      onChange={(event) => updateInvoiceLine(index, { unit_cost: event.target.value })}
-                    />
-                  </label>
-                  <label>
-                    Discount
-                    <input
-                      type="number"
-                      min="0"
-                      value={item.discount_amount}
-                      onChange={(event) => updateInvoiceLine(index, { discount_amount: event.target.value })}
-                    />
-                  </label>
-                  <label>
-                    Tax
-                    <input
-                      type="number"
-                      min="0"
-                      value={item.tax_amount}
-                      onChange={(event) => updateInvoiceLine(index, { tax_amount: event.target.value })}
-                    />
-                  </label>
-                  <span>
-                    {money.format(
-                      Math.max(
-                        toNumber(item.quantity) * toNumber(item.unit_cost) -
-                          toNumber(item.discount_amount) +
-                          toNumber(item.tax_amount),
-                        0,
-                      ),
-                    )}
-                  </span>
-                </div>
-              ))
+              <div className="payables-line-table-wrap">
+                <table className="payables-line-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Unit cost</th>
+                      <th>Discount</th>
+                      <th>Tax</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoiceForm.items.map((item, index) => (
+                      <tr key={`${item.pharmaco_purchase_order_item_id}-${index}`}>
+                        <td>{item.product_name}</td>
+                        <td>
+                          <input
+                            aria-label={`Quantity for ${item.product_name}`}
+                            type="number"
+                            min="0.001"
+                            step="0.001"
+                            value={item.quantity}
+                            onChange={(event) => updateInvoiceLine(index, { quantity: event.target.value })}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            aria-label={`Unit cost for ${item.product_name}`}
+                            type="number"
+                            min="0"
+                            value={item.unit_cost}
+                            onChange={(event) => updateInvoiceLine(index, { unit_cost: event.target.value })}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            aria-label={`Discount for ${item.product_name}`}
+                            type="number"
+                            min="0"
+                            value={item.discount_amount}
+                            onChange={(event) => updateInvoiceLine(index, { discount_amount: event.target.value })}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            aria-label={`Tax for ${item.product_name}`}
+                            type="number"
+                            min="0"
+                            value={item.tax_amount}
+                            onChange={(event) => updateInvoiceLine(index, { tax_amount: event.target.value })}
+                          />
+                        </td>
+                        <td>
+                          {money.format(
+                            Math.max(
+                              toNumber(item.quantity) * toNumber(item.unit_cost) -
+                                toNumber(item.discount_amount) +
+                                toNumber(item.tax_amount),
+                              0,
+                            ),
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
-          </div>
 
-          <div className="payables-total-row">
-            <span>Invoice preview total</span>
-            <strong>{money.format(invoicePreviewTotal)}</strong>
-          </div>
+            <div className="payables-total-row">
+              <span>Invoice preview total</span>
+              <strong>{money.format(invoicePreviewTotal)}</strong>
+            </div>
 
-          <button type="button" onClick={createInvoice} disabled={isCreatingInvoice || invoiceForm.items.length === 0}>
-            {isCreatingInvoice ? 'Creating invoice…' : 'Create supplier invoice'}
-          </button>
+            <button type="button" onClick={createInvoice} disabled={isCreatingInvoice || invoiceForm.items.length === 0}>
+              {isCreatingInvoice ? 'Creating invoice…' : 'Create supplier invoice'}
+            </button>
+          </section>
         </section>
+      )}
 
-        <section className="procurement-list-card payables-list-card">
-          <div className="mini-section-heading">
-            <strong>Supplier invoices</strong>
-            <span>{state.invoices.length} records</span>
-          </div>
+      {activePayablesView === 'supplier-invoices' && (
+        <section className="payables-child-page">
+          <article className="payables-workflow-card">
+            <div className="mini-section-heading">
+              <strong>Supplier invoices register</strong>
+              <span>{state.invoices.length} records</span>
+            </div>
 
-          {state.invoices.length === 0 ? (
-            <p className="muted">No supplier invoices yet.</p>
-          ) : (
-            state.invoices.slice(0, 12).map((invoice) => (
-              <div
-                key={invoice.id}
-                className={invoice.id === state.selectedInvoice?.id ? 'selected-list-row' : ''}
-              >
-                <strong>{invoice.invoice_number}</strong>
-                <span>{invoice.supplier?.name ?? 'Supplier'} · {invoice.status}</span>
-                <small>
-                  Total {money.format(invoice.total_amount)} · Balance {money.format(invoice.balance_amount)}
-                </small>
-                <button type="button" onClick={() => selectInvoice(invoice.id)}>
-                  Review
+            {state.invoices.length === 0 ? (
+              <div className="payables-empty-state">No supplier invoices yet.</div>
+            ) : (
+              <div className="payables-register-table-wrap">
+                <table className="payables-register-table">
+                  <thead>
+                    <tr>
+                      <th>Invoice</th>
+                      <th>Supplier</th>
+                      <th>Status</th>
+                      <th>Due date</th>
+                      <th>Total</th>
+                      <th>Balance</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.invoices.map((invoice) => (
+                      <tr key={invoice.id} className={invoice.id === state.selectedInvoice?.id ? 'selected-list-row' : ''}>
+                        <td>{invoice.invoice_number}</td>
+                        <td>{invoice.supplier?.name ?? 'Supplier'}</td>
+                        <td><span className={`payables-status-pill ${invoice.status}`}>{invoice.status}</span></td>
+                        <td>{formatDate(invoice.due_date)}</td>
+                        <td>{money.format(invoice.total_amount)}</td>
+                        <td>{money.format(invoice.balance_amount)}</td>
+                        <td>
+                          <button type="button" onClick={() => selectInvoice(invoice.id)}>
+                            Review
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </article>
+        </section>
+      )}
+
+      {activePayablesView === 'approval-queue' && (
+        <section className="payables-child-page payables-approval-page">
+          <article className="payables-workflow-card">
+            <div className="mini-section-heading">
+              <strong>Approval queue</strong>
+              <span>{invoiceQueues.draft.length} draft invoices</span>
+            </div>
+
+            {invoiceQueues.draft.length === 0 ? (
+              <div className="payables-empty-state">No draft supplier invoices need approval.</div>
+            ) : (
+              <div className="payables-register-table-wrap">
+                <table className="payables-register-table">
+                  <thead>
+                    <tr>
+                      <th>Invoice</th>
+                      <th>Supplier</th>
+                      <th>Due date</th>
+                      <th>Total</th>
+                      <th>Balance</th>
+                      <th>Review</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoiceQueues.draft.map((invoice) => (
+                      <tr key={invoice.id} className={invoice.id === state.selectedInvoice?.id ? 'selected-list-row' : ''}>
+                        <td>{invoice.invoice_number}</td>
+                        <td>{invoice.supplier?.name ?? 'Supplier'}</td>
+                        <td>{formatDate(invoice.due_date)}</td>
+                        <td>{money.format(invoice.total_amount)}</td>
+                        <td>{money.format(invoice.balance_amount)}</td>
+                        <td>
+                          <button type="button" onClick={() => selectInvoice(invoice.id)}>
+                            Open
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </article>
+
+          {state.selectedInvoice && (
+            <article className="payables-workflow-card payables-review-card">
+              <div className="form-header">
+                <div>
+                  <span>Selected payable</span>
+                  <h3>{state.selectedInvoice.invoice_number}</h3>
+                  <p className="muted">
+                    {state.selectedInvoice.supplier?.name ?? 'Supplier'} · {state.selectedInvoice.status} · Due{' '}
+                    {formatDate(state.selectedInvoice.due_date)}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={approveSelectedInvoice}
+                  disabled={isApprovingInvoice || state.selectedInvoice.status !== 'draft'}
+                >
+                  {isApprovingInvoice ? 'Approving…' : 'Approve invoice'}
                 </button>
               </div>
-            ))
+
+              <div className="payables-detail-grid">
+                <article>
+                  <span>Total</span>
+                  <strong>{money.format(state.selectedInvoice.total_amount)}</strong>
+                </article>
+                <article>
+                  <span>Paid</span>
+                  <strong>{money.format(state.selectedInvoice.paid_amount)}</strong>
+                </article>
+                <article>
+                  <span>Balance</span>
+                  <strong>{money.format(state.selectedInvoice.balance_amount)}</strong>
+                </article>
+                <article>
+                  <span>Items</span>
+                  <strong>{state.selectedInvoice.items?.length ?? state.selectedInvoice.items_count ?? 0}</strong>
+                </article>
+              </div>
+
+              <div className="payables-register-table-wrap">
+                <table className="payables-register-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Unit cost</th>
+                      <th>Line total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(state.selectedInvoice.items ?? []).length === 0 ? (
+                      <tr>
+                        <td colSpan={4}>Open the invoice again to load item details.</td>
+                      </tr>
+                    ) : (
+                      state.selectedInvoice.items?.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.product_name_snapshot}</td>
+                          <td>{item.quantity}</td>
+                          <td>{money.format(item.unit_cost)}</td>
+                          <td>{money.format(item.line_total)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
           )}
         </section>
-      </div>
+      )}
 
-      {state.selectedInvoice && (
-        <section className="draft-sale-builder payables-detail-card">
-          <div className="form-header">
-            <div>
-              <span>Selected payable</span>
-              <h3>{state.selectedInvoice.invoice_number}</h3>
-              <p>
-                {state.selectedInvoice.supplier?.name ?? 'Supplier'} · {state.selectedInvoice.status} · Due{' '}
-                {formatDate(state.selectedInvoice.due_date)}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={approveSelectedInvoice}
-              disabled={isApprovingInvoice || state.selectedInvoice.status !== 'draft'}
-            >
-              {isApprovingInvoice ? 'Approving…' : 'Approve invoice'}
-            </button>
-          </div>
-
-          <div className="payables-detail-grid">
-            <article>
-              <span>Total</span>
-              <strong>{money.format(state.selectedInvoice.total_amount)}</strong>
-            </article>
-            <article>
-              <span>Paid</span>
-              <strong>{money.format(state.selectedInvoice.paid_amount)}</strong>
-            </article>
-            <article>
-              <span>Balance</span>
-              <strong>{money.format(state.selectedInvoice.balance_amount)}</strong>
-            </article>
-            <article>
-              <span>Items</span>
-              <strong>{state.selectedInvoice.items?.length ?? state.selectedInvoice.items_count ?? 0}</strong>
-            </article>
-          </div>
-
-          <div className="payables-grid">
-            <div className="procurement-list-card">
-              <div className="mini-section-heading">
-                <strong>Invoice items</strong>
-                <span>Backend source of truth</span>
-              </div>
-
-              {(state.selectedInvoice.items ?? []).length === 0 ? (
-                <p className="muted">Open the invoice again to load item details.</p>
-              ) : (
-                state.selectedInvoice.items?.map((item) => (
-                  <div key={item.id}>
-                    <strong>{item.product_name_snapshot}</strong>
-                    <span>
-                      Qty {item.quantity} · Unit {money.format(item.unit_cost)}
-                    </span>
-                    <small>Total {money.format(item.line_total)}</small>
-                  </div>
-                ))
-              )}
+      {activePayablesView === 'record-payment' && (
+        <section className="payables-child-page payables-payment-page">
+          <article className="payables-workflow-card">
+            <div className="mini-section-heading">
+              <strong>Invoices ready for payment</strong>
+              <span>{invoiceQueues.payable.length} payable balances</span>
             </div>
 
-            <div className="procurement-list-card">
-              <div className="mini-section-heading">
-                <strong>Record supplier payment</strong>
-                <span>Payable settlement</span>
+            {invoiceQueues.payable.length === 0 ? (
+              <div className="payables-empty-state">No approved or partially paid invoice has an open balance.</div>
+            ) : (
+              <div className="payables-register-table-wrap">
+                <table className="payables-register-table">
+                  <thead>
+                    <tr>
+                      <th>Invoice</th>
+                      <th>Supplier</th>
+                      <th>Status</th>
+                      <th>Due date</th>
+                      <th>Balance</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoiceQueues.payable.map((invoice) => (
+                      <tr key={invoice.id} className={invoice.id === state.selectedInvoice?.id ? 'selected-list-row' : ''}>
+                        <td>{invoice.invoice_number}</td>
+                        <td>{invoice.supplier?.name ?? 'Supplier'}</td>
+                        <td><span className={`payables-status-pill ${invoice.status}`}>{invoice.status}</span></td>
+                        <td>{formatDate(invoice.due_date)}</td>
+                        <td>{money.format(invoice.balance_amount)}</td>
+                        <td>
+                          <button type="button" onClick={() => selectInvoice(invoice.id)}>
+                            Pay
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </article>
+
+          {state.selectedInvoice && (
+            <article className="payables-workflow-card payables-payment-card">
+              <div className="form-header">
+                <div>
+                  <span>Record supplier payment</span>
+                  <h3>{state.selectedInvoice.invoice_number}</h3>
+                  <p className="muted">
+                    {state.selectedInvoice.supplier?.name ?? 'Supplier'} · Balance{' '}
+                    {money.format(state.selectedInvoice.balance_amount)}
+                  </p>
+                </div>
               </div>
 
-              <div className="creation-form-grid">
+              <div className="creation-form-grid payables-form-grid">
                 <label>
                   Amount
                   <input
@@ -778,24 +1080,38 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
                 {isRecordingPayment ? 'Recording payment…' : 'Record supplier payment'}
               </button>
 
-              <div className="mini-section-heading payables-history-heading">
-                <strong>Payment history</strong>
-                <span>{state.selectedInvoice.payments?.length ?? 0} payments</span>
+              <div className="payables-register-table-wrap payables-history-table">
+                <table className="payables-register-table">
+                  <thead>
+                    <tr>
+                      <th>Payment</th>
+                      <th>Method</th>
+                      <th>Status</th>
+                      <th>Amount</th>
+                      <th>Paid at</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(state.selectedInvoice.payments ?? []).length === 0 ? (
+                      <tr>
+                        <td colSpan={5}>No supplier payments recorded yet.</td>
+                      </tr>
+                    ) : (
+                      state.selectedInvoice.payments?.map((payment) => (
+                        <tr key={payment.id}>
+                          <td>{payment.payment_number}</td>
+                          <td>{payment.payment_method}</td>
+                          <td>{payment.status}</td>
+                          <td>{money.format(payment.amount)}</td>
+                          <td>{formatDate(payment.paid_at)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-
-              {(state.selectedInvoice.payments ?? []).length === 0 ? (
-                <p className="muted">No supplier payments recorded yet.</p>
-              ) : (
-                state.selectedInvoice.payments?.map((payment) => (
-                  <div key={payment.id} className="payment-history-row">
-                    <strong>{payment.payment_number}</strong>
-                    <span>{payment.payment_method} · {payment.status}</span>
-                    <small>{money.format(payment.amount)} · {formatDate(payment.paid_at)}</small>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+            </article>
+          )}
         </section>
       )}
     </section>

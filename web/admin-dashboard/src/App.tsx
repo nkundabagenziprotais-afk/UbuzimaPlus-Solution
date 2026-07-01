@@ -27,6 +27,225 @@ type PharmaCoreState = {
   departments: BranchDepartmentsResponse | null;
 };
 
+type AdminSectionKey =
+  | 'overview'
+  | 'solutions'
+  | 'tenants'
+  | 'modules'
+  | 'ai-center'
+  | 'audit-logs'
+  | 'security'
+  | 'settings'
+  | 'command-center'
+  | 'reporting'
+  | 'procurement'
+  | 'payables'
+  | 'receivables'
+  | 'sales-dispensing'
+  | 'pharma-core'
+  | 'inventory';
+
+type AdminNavItem = {
+  key: AdminSectionKey;
+  label: string;
+  description: string;
+  icon: string;
+};
+
+type AdminNavGroupKey = 'platform' | 'operations' | 'commerce' | 'finance' | 'governance';
+
+type AdminNavGroup = {
+  key: AdminNavGroupKey;
+  title: string;
+  description: string;
+  icon: string;
+  items: AdminNavItem[];
+};
+
+const adminNavGroups: AdminNavGroup[] = [
+  {
+    key: 'platform',
+    title: 'Platform workspace',
+    description: 'Overview, solutions, tenants, modules',
+    icon: '⌂',
+    items: [
+      {
+        key: 'overview',
+        label: 'Overview',
+        description: 'Relevant profile, scope, and access summary',
+        icon: '⌂',
+      },
+      {
+        key: 'solutions',
+        label: 'Solutions',
+        description: 'Enabled business solutions',
+        icon: '◫',
+      },
+      {
+        key: 'tenants',
+        label: 'Tenants',
+        description: 'Tenant and branch assignments',
+        icon: '☷',
+      },
+      {
+        key: 'modules',
+        label: 'Modules',
+        description: 'Real Admin Home sub-modules',
+        icon: '▦',
+      },
+    ],
+  },
+  {
+    key: 'operations',
+    title: 'PharmaCo360 operations',
+    description: 'Command, reporting, core setup',
+    icon: '◎',
+    items: [
+      {
+        key: 'command-center',
+        label: 'Command Center',
+        description: 'Daily operating picture',
+        icon: '◎',
+      },
+      {
+        key: 'reporting',
+        label: 'Operating View',
+        description: 'Stock, sales, purchasing, credit, payables',
+        icon: '▣',
+      },
+      {
+        key: 'pharma-core',
+        label: 'Pharma Core',
+        description: 'Tenant profile, branches, departments',
+        icon: '◇',
+      },
+    ],
+  },
+  {
+    key: 'commerce',
+    title: 'Sales and stock',
+    description: 'Inventory, sales, dispensing',
+    icon: '▤',
+    items: [
+      {
+        key: 'inventory',
+        label: 'Inventory',
+        description: 'Products, batches, and stock movement',
+        icon: '▤',
+      },
+      {
+        key: 'sales-dispensing',
+        label: 'Sales & Dispensing',
+        description: 'Sales queues, payment, prescription review',
+        icon: '＋',
+      },
+    ],
+  },
+  {
+    key: 'finance',
+    title: 'Finance workflows',
+    description: 'Purchase orders, payables, receivables',
+    icon: '₣',
+    items: [
+      {
+        key: 'procurement',
+        label: 'Purchase Orders',
+        description: 'Suppliers, PO creation, and receiving',
+        icon: '↗',
+      },
+      {
+        key: 'payables',
+        label: 'Supplier Payables',
+        description: 'Supplier invoices and payments',
+        icon: '₣',
+      },
+      {
+        key: 'receivables',
+        label: 'Customer Receivables',
+        description: 'Customer credit and collections',
+        icon: '◌',
+      },
+    ],
+  },
+  {
+    key: 'governance',
+    title: 'Governance',
+    description: 'Security, audit, AI, settings',
+    icon: '◈',
+    items: [
+      {
+        key: 'security',
+        label: 'Security',
+        description: 'Roles, permissions, and access checks',
+        icon: '◈',
+      },
+      {
+        key: 'audit-logs',
+        label: 'Audit Logs',
+        description: 'Review traceability and controls',
+        icon: '◷',
+      },
+      {
+        key: 'ai-center',
+        label: 'AI Center',
+        description: 'Controlled AI access area',
+        icon: '✦',
+      },
+      {
+        key: 'settings',
+        label: 'Settings',
+        description: 'Account and workspace settings',
+        icon: '⚙',
+      },
+    ],
+  },
+];
+
+const adminNavItems: AdminNavItem[] = adminNavGroups.flatMap((group) => group.items);
+
+function isAdminSectionKey(value: string | null): value is AdminSectionKey {
+  return Boolean(value && adminNavItems.some((item) => item.key === value));
+}
+
+function loadStoredAdminSection(): AdminSectionKey {
+  try {
+    const stored = sessionStorage.getItem('ubuzima_admin_active_section');
+    return isAdminSectionKey(stored) ? stored : 'overview';
+  } catch {
+    return 'overview';
+  }
+}
+
+function loadStoredExpandedNavGroups(): Record<AdminNavGroupKey, boolean> {
+  const defaults: Record<AdminNavGroupKey, boolean> = {
+    platform: true,
+    operations: false,
+    commerce: false,
+    finance: false,
+    governance: false,
+  };
+
+  try {
+    const stored = sessionStorage.getItem('ubuzima_admin_expanded_nav_groups');
+
+    if (!stored) {
+      return defaults;
+    }
+
+    const parsed = JSON.parse(stored) as Partial<Record<AdminNavGroupKey, boolean>>;
+
+    return {
+      ...defaults,
+      ...parsed,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+
+
+
 const storageKey = 'ubuzima_admin_session';
 
 const demoUsers = [
@@ -73,6 +292,8 @@ function App() {
   });
   const [isLoadingPharmaCore, setIsLoadingPharmaCore] = useState(false);
   const [pharmaCoreError, setPharmaCoreError] = useState('');
+  const [activeSection, setActiveSection] = useState<AdminSectionKey>(() => loadStoredAdminSection());
+  const [expandedNavGroups, setExpandedNavGroups] = useState<Record<AdminNavGroupKey, boolean>>(() => loadStoredExpandedNavGroups());
 
   const profile = session?.profile;
 
@@ -144,6 +365,33 @@ function App() {
     is_branch: false,
   };
   const safePharmaProfile = pharmaCore.profile?.profile ?? null;
+  const activeNavItem = adminNavItems.find((item) => item.key === activeSection) ?? adminNavItems[0];
+  const activeNavGroup = adminNavGroups.find((group) => group.items.some((item) => item.key === activeSection)) ?? adminNavGroups[0];
+  const appEnv = (import.meta as any).env ?? {};
+  const tenantWebsiteSignals = [
+    safeUser.email,
+    (safePharmaProfile as any)?.trading_name,
+    (safePharmaProfile as any)?.legal_name,
+    (safePharmaProfile as any)?.name,
+    ...safeTenantAssignments.map((assignment) => assignment.tenant?.slug),
+    ...safeTenantAssignments.map((assignment) => assignment.tenant?.name),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  const ubuzimaPlusWebsiteUrl = appEnv.VITE_UBUZIMA_PLUS_WEBSITE_URL || 'https://www.ubuzimaplus.com';
+  const vitaPharmaWebsiteUrl = appEnv.VITE_VITAPHARMA_WEBSITE_URL || 'https://www.vitapharmaafrica.com';
+  const isVitaPharmaContext =
+    tenantWebsiteSignals.includes('vitapharma') ||
+    tenantWebsiteSignals.includes('vita pharma') ||
+    tenantWebsiteSignals.includes('vita-pharma') ||
+    tenantWebsiteSignals.includes('vitapharmaafrica');
+
+  const publicWebsiteUrl = isVitaPharmaContext ? vitaPharmaWebsiteUrl : ubuzimaPlusWebsiteUrl;
+  const publicWebsiteLabel = isVitaPharmaContext ? 'Vita Pharma website' : 'Ubuzima+ website';
+  const companyEmail = appEnv.VITE_COMPANY_EMAIL || (safePharmaProfile as any)?.email || (safePharmaProfile as any)?.contact_email || safeUser.email;
+  const sectionViewClass = (section: AdminSectionKey, extra = '') => `admin-section-view ${activeSection === section ? 'active' : ''}${extra ? ` ${extra}` : ''}`;
 
   const permissionGroups = useMemo(() => {
     if (!profile) return [];
@@ -260,6 +508,45 @@ function App() {
   }
 
 
+  function handleNavGroupToggle(groupKey: AdminNavGroupKey) {
+    setExpandedNavGroups((current) => {
+      const next = {
+        ...current,
+        [groupKey]: !current[groupKey],
+      };
+
+      try {
+        sessionStorage.setItem('ubuzima_admin_expanded_nav_groups', JSON.stringify(next));
+      } catch {
+        // Keep the tree usable even if session storage is unavailable.
+      }
+
+      return next;
+    });
+  }
+
+  function handleAdminNavigation(section: AdminSectionKey) {
+    setActiveSection(section);
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(`admin-section-${section}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  }
+
+
+  function handleBackNavigation() {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    handleAdminNavigation('overview');
+  }
+
+
   if (isRestoringSession) {
     return (
       <main className="auth-shell">
@@ -372,15 +659,49 @@ function App() {
           </div>
         </div>
 
-        <nav>
-          <a className="active">Overview</a>
-          <a>Solutions</a>
-          <a>Tenants</a>
-          <a>Modules</a>
-          <a>AI Center</a>
-          <a>Audit Logs</a>
-          <a>Security</a>
-          <a>Settings</a>
+        <nav className="admin-home-nav admin-home-nav-tree" aria-label="Admin home sections">
+          {adminNavGroups.map((group) => {
+            const isExpanded = expandedNavGroups[group.key];
+            const groupHasActiveItem = group.items.some((item) => item.key === activeSection);
+
+            return (
+              <section key={group.key} className={`admin-nav-group ${groupHasActiveItem ? 'has-active' : ''}`}>
+                <button
+                  type="button"
+                  className="admin-nav-group-toggle"
+                  aria-expanded={isExpanded}
+                  onClick={() => handleNavGroupToggle(group.key)}
+                >
+                  <span className="admin-nav-icon" aria-hidden="true">{group.icon}</span>
+                  <span className="admin-nav-copy">
+                    <strong>{group.title}</strong>
+                    <small>{group.description}</small>
+                  </span>
+                  <span className="admin-nav-chevron" aria-hidden="true">{isExpanded ? '⌃' : '⌄'}</span>
+                </button>
+
+                {isExpanded && (
+                  <div className="admin-nav-children">
+                    {group.items.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        className={item.key === activeSection ? 'active' : ''}
+                        aria-current={item.key === activeSection ? 'page' : undefined}
+                        onClick={() => handleAdminNavigation(item.key)}
+                      >
+                        <span className="admin-nav-icon" aria-hidden="true">{item.icon}</span>
+                        <span className="admin-nav-copy">
+                          <strong>{item.label}</strong>
+                          <small>{item.description}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
         </nav>
 
         <button className="logout-button" type="button" onClick={handleLogout}>
@@ -399,14 +720,40 @@ function App() {
             </p>
           </div>
 
-          <div className="user-card">
-            <strong>{safeUser.email}</strong>
-            <span>{safeUser.status}</span>
-            {safeUser.must_change_password && <small>Password change required</small>}
+          <div className="dashboard-header-actions" aria-label="Workspace quick actions">
+            <button className="header-icon-action" type="button" onClick={handleBackNavigation}>
+              <span aria-hidden="true">←</span>
+              <strong>Back</strong>
+            </button>
+
+            <a className="header-icon-action" href={publicWebsiteUrl} target="_blank" rel="noreferrer">
+              <span aria-hidden="true">↗</span>
+              <strong>{publicWebsiteLabel}</strong>
+            </a>
+
+            <a className="header-icon-action" href={`mailto:${companyEmail}`}>
+              <span aria-hidden="true">✉</span>
+              <strong>Company email</strong>
+            </a>
+
+            <div className="user-card">
+              <strong>{safeUser.email}</strong>
+              <span>{safeUser.status}</span>
+              {safeUser.must_change_password && <small>Password change required</small>}
+            </div>
           </div>
         </header>
 
-        <section className="summary-grid">
+        <section className="admin-workspace-scroll" aria-label="Admin workspace content">
+        <section className="admin-home-orientation" aria-live="polite">
+          <span>{activeNavItem.icon}</span>
+          <div>
+            <strong>{activeNavGroup.title} · {activeNavItem.label}</strong>
+            <p>{activeNavItem.description}. The left menu, top action bar, and workspace scroll independently. Section changes do not refresh the page or reset your working position.</p>
+          </div>
+        </section>
+
+        <section id="admin-section-overview" className={sectionViewClass('overview', 'summary-grid admin-overview-grid')} hidden={activeSection !== 'overview'}>
           <article>
             <span>Active roles</span>
             <strong>{safeRoles.length}</strong>
@@ -423,12 +770,22 @@ function App() {
             <span>Admin scopes</span>
             <strong>{safeAdminScopes.length}</strong>
           </article>
+
+          <article className="summary-website-card">
+            <span>Main website</span>
+            <strong>{publicWebsiteLabel}</strong>
+            <a href={publicWebsiteUrl} target="_blank" rel="noreferrer">
+              Open website
+            </a>
+          </article>
         </section>
 
-        <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
+        <section id="admin-section-command-center" className={sectionViewClass('command-center', 'admin-module-anchor admin-module-command-center')} hidden={activeSection !== 'command-center'}>
+          <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
+        </section>
 
         <section className="content-grid">
-          <article className="panel">
+          <article className={sectionViewClass('overview', 'panel')} hidden={activeSection !== 'overview'}>
             <h2>Resolved access profile</h2>
             <div className="scope-list">
               <div>
@@ -450,7 +807,7 @@ function App() {
             </div>
           </article>
 
-          <article className="panel">
+          <article className={sectionViewClass('overview', 'panel')} hidden={activeSection !== 'overview'}>
             <h2>Roles</h2>
             <div className="tag-list">
               {safeRoles.map((role) => (
@@ -459,7 +816,7 @@ function App() {
             </div>
           </article>
 
-          <article className="panel wide">
+          <article className={sectionViewClass('overview', 'panel wide')} hidden={activeSection !== 'overview'}>
             <h2>Permissions by area</h2>
             <div className="permission-grid">
               {permissionGroups.map((group) => (
@@ -475,7 +832,7 @@ function App() {
 
 
 
-          <article className="panel wide pharmaco-panel">
+          <article id="admin-section-pharma-core" className={sectionViewClass('pharma-core', 'panel wide pharmaco-panel admin-module-anchor')} hidden={activeSection !== 'pharma-core'}>
             <div className="panel-heading-row">
               <div>
                 <h2>PharmaCo360 tenant operations preview</h2>
@@ -563,23 +920,80 @@ function App() {
             )}
           </article>
 
-          <PharmaCoreEditor token={session.token} profile={profile} />
+          <section className={sectionViewClass('pharma-core', 'admin-module-anchor admin-module-stack')} hidden={activeSection !== 'pharma-core'}>
+            <PharmaCoreEditor token={session.token} profile={profile} />
+          </section>
 
-          <ProductInventoryPreview token={session.token} profile={profile} />
+          <section id="admin-section-inventory" className={sectionViewClass('inventory', 'admin-module-anchor admin-module-stack')} hidden={activeSection !== 'inventory'}>
+            <ProductInventoryPreview token={session.token} profile={profile} />
 
-          <ProductInventoryActions token={session.token} profile={profile} />
+            <ProductInventoryActions token={session.token} profile={profile} />
+          </section>
 
-          <ProcurementWorkflow token={session.token} profile={profile} />
+          <section id="admin-section-procurement" className={sectionViewClass('procurement', 'admin-module-anchor admin-module-stack')} hidden={activeSection !== 'procurement'}>
+            <ProcurementWorkflow token={session.token} profile={profile} />
+          </section>
 
 
-          <PayablesWorkflow token={session.token} profile={profile} />
+          <section id="admin-section-payables" className={sectionViewClass('payables', 'admin-module-anchor admin-module-stack payables-workspace-shell')} hidden={activeSection !== 'payables'}>
+            <article className="panel wide finance-workspace-guide">
+              <div className="admin-placeholder-heading">
+                <span aria-hidden="true">₣</span>
+                <div>
+                  <h2>Supplier Payables workspace</h2>
+                  <p className="muted">Payables contains several actions, so this page starts with a simple map before the working forms.</p>
+                </div>
+              </div>
 
-          <ReportingDashboard token={session.token} profile={profile} />
-          <ReceivablesWorkflow token={session.token} profile={profile} />
+              <div className="finance-workspace-table-wrap">
+                <table className="finance-workspace-table">
+                  <thead>
+                    <tr>
+                      <th>Step</th>
+                      <th>Workspace area</th>
+                      <th>User action</th>
+                      <th>UX purpose</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>01</td>
+                      <td>Create payable</td>
+                      <td>Start from approved purchase order and supplier invoice details.</td>
+                      <td>Separate data capture from approval work.</td>
+                    </tr>
+                    <tr>
+                      <td>02</td>
+                      <td>Supplier invoices</td>
+                      <td>Review invoice status, balance, supplier, and due date.</td>
+                      <td>Give finance users a clean review queue.</td>
+                    </tr>
+                    <tr>
+                      <td>03</td>
+                      <td>Approval and payment</td>
+                      <td>Approve payable and record payment only after review.</td>
+                      <td>Reduce accidental finance actions.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
 
-          <SalesDispensingReview token={session.token} profile={profile} />
+            <PayablesWorkflow token={session.token} profile={profile} />
+          </section>
 
-          <article className="panel wide">
+          <section id="admin-section-reporting" className={sectionViewClass('reporting', 'admin-module-anchor admin-module-stack')} hidden={activeSection !== 'reporting'}>
+            <ReportingDashboard token={session.token} profile={profile} />
+          </section>
+          <section id="admin-section-receivables" className={sectionViewClass('receivables', 'admin-module-anchor admin-module-stack')} hidden={activeSection !== 'receivables'}>
+            <ReceivablesWorkflow token={session.token} profile={profile} />
+          </section>
+
+          <section id="admin-section-sales-dispensing" className={sectionViewClass('sales-dispensing', 'admin-module-anchor admin-module-stack')} hidden={activeSection !== 'sales-dispensing'}>
+            <SalesDispensingReview token={session.token} profile={profile} />
+          </section>
+
+          <article id="admin-section-security" className={sectionViewClass('security', 'panel wide admin-module-anchor')} hidden={activeSection !== 'security'}>
             <h2>Live access control checks</h2>
             <p className="muted">
               These buttons call protected backend endpoints using your current Bearer token.
@@ -626,7 +1040,7 @@ function App() {
             )}
           </article>
 
-          <article className="panel wide">
+          <article id="admin-section-tenants" className={sectionViewClass('tenants', 'panel wide admin-module-anchor')} hidden={activeSection !== 'tenants'}>
             <h2>Tenant assignments</h2>
             {safeTenantAssignments.length === 0 ? (
               <p className="muted">No tenant assignment is attached to this account.</p>
@@ -643,6 +1057,137 @@ function App() {
               </div>
             )}
           </article>
+
+
+          <article id="admin-section-solutions" className={sectionViewClass('solutions', 'panel wide admin-module-anchor admin-placeholder-panel')} hidden={activeSection !== 'solutions'}>
+            <div className="admin-placeholder-heading">
+              <span aria-hidden="true">◫</span>
+              <div>
+                <h2>Solutions</h2>
+                <p className="muted">A focused view of enabled business solutions for this workspace.</p>
+              </div>
+            </div>
+
+            <div className="admin-ux-card-grid">
+              <div>
+                <strong>PharmaCo360</strong>
+                <span>Active pharmacy operating solution</span>
+                <small>Connected to tenant-safe pharmacy operations, inventory, sales, procurement, payables, receivables, and reporting workflows.</small>
+              </div>
+              <div>
+                <strong>Access scope</strong>
+                <span>{safeScope.type}</span>
+                <small>Visible actions are controlled by roles, permissions, tenant assignments, and enabled modules.</small>
+              </div>
+            </div>
+          </article>
+
+          <article id="admin-section-modules" className={sectionViewClass('modules', 'panel wide admin-module-anchor admin-placeholder-panel')} hidden={activeSection !== 'modules'}>
+            <div className="admin-placeholder-heading">
+              <span aria-hidden="true">▦</span>
+              <div>
+                <h2>Modules</h2>
+                <p className="muted">A folded directory of real Admin Home modules. ERP is not shown because it is not currently implemented in this dashboard.</p>
+              </div>
+            </div>
+
+            <div className="admin-module-directory grouped">
+              {adminNavGroups
+                .filter((group) => ['operations', 'commerce', 'finance', 'governance'].includes(group.key))
+                .map((group) => (
+                  <section key={group.key} className="admin-module-directory-group">
+                    <div>
+                      <span aria-hidden="true">{group.icon}</span>
+                      <strong>{group.title}</strong>
+                      <small>{group.description}</small>
+                    </div>
+
+                    <div>
+                      {group.items.map((item) => (
+                        <button key={item.key} type="button" onClick={() => handleAdminNavigation(item.key)}>
+                          <span aria-hidden="true">{item.icon}</span>
+                          <strong>{item.label}</strong>
+                          <small>{item.description}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+            </div>
+          </article>
+
+          <article id="admin-section-ai-center" className={sectionViewClass('ai-center', 'panel wide admin-module-anchor admin-placeholder-panel')} hidden={activeSection !== 'ai-center'}>
+            <div className="admin-placeholder-heading">
+              <span aria-hidden="true">✦</span>
+              <div>
+                <h2>AI Center</h2>
+                <p className="muted">Controlled AI access remains permission-aware and tenant-aware.</p>
+              </div>
+            </div>
+
+            <div className="admin-ux-card-grid">
+              <div>
+                <strong>Controlled access</strong>
+                <span>AI features must pass backend access checks.</span>
+                <small>No sensitive AI recommendation should bypass human approval in health, finance, insurance, or pharmacy workflows.</small>
+              </div>
+              <div>
+                <strong>Quick check</strong>
+                <span>Validate AI access for VitaPharma.</span>
+                <button type="button" onClick={() => handleAccessCheck('AI Center controlled-module check', 'ai', 'vitapharma')} disabled={isCheckingAccess}>
+                  {isCheckingAccess ? 'Checking…' : 'Check AI Center access'}
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article id="admin-section-audit-logs" className={sectionViewClass('audit-logs', 'panel wide admin-module-anchor admin-placeholder-panel')} hidden={activeSection !== 'audit-logs'}>
+            <div className="admin-placeholder-heading">
+              <span aria-hidden="true">◷</span>
+              <div>
+                <h2>Audit Logs</h2>
+                <p className="muted">Audit readiness view for controlled operating workflows.</p>
+              </div>
+            </div>
+
+            <div className="admin-ux-card-grid">
+              <div>
+                <strong>Current control position</strong>
+                <span>Permission checks and tenant boundaries remain visible.</span>
+                <small>Operational actions should remain traceable through backend audit services where enabled.</small>
+              </div>
+              <div>
+                <strong>Review focus</strong>
+                <span>Prioritize finance, inventory, credit, payables, and dispensing changes.</span>
+                <small>This phase does not add a new backend audit-log endpoint.</small>
+              </div>
+            </div>
+          </article>
+
+          <article id="admin-section-settings" className={sectionViewClass('settings', 'panel wide admin-module-anchor admin-placeholder-panel')} hidden={activeSection !== 'settings'}>
+            <div className="admin-placeholder-heading">
+              <span aria-hidden="true">⚙</span>
+              <div>
+                <h2>Settings</h2>
+                <p className="muted">Workspace settings and account context for the logged-in administrator.</p>
+              </div>
+            </div>
+
+            <div className="admin-ux-card-grid">
+              <div>
+                <strong>Signed-in account</strong>
+                <span>{safeUser.email}</span>
+                <small>Status: {safeUser.status}. Scope: {safeScope.type}.</small>
+              </div>
+              <div>
+                <strong>Session behavior</strong>
+                <span>Section selection is preserved for the active browser session.</span>
+                <small>Menu changes do not force a page refresh or reset the page to the top.</small>
+              </div>
+            </div>
+          </article>
+
+        </section>
         </section>
       </section>
     </main>
