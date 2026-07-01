@@ -114,4 +114,10 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'two_factor' => [
+        'staff_required' => env('UBUZIMA_ENFORCE_STAFF_2FA', true),
+        'challenge_minutes' => env('UBUZIMA_2FA_CHALLENGE_MINUTES', 10),
+        'trusted_device_days' => env('UBUZIMA_2FA_TRUSTED_DEVICE_DAYS', 30),
+    ],
+
 ];

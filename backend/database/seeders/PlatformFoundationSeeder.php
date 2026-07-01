@@ -6,6 +6,8 @@ use App\Models\AiAgent;
 use App\Models\AiProvider;
 use App\Models\Branch;
 use App\Models\Module;
+use App\Models\PlatformContentPage;
+use App\Models\PlatformContentSection;
 use App\Models\Solution;
 use App\Models\Tenant;
 use Illuminate\Database\Seeder;
@@ -199,5 +201,111 @@ class PlatformFoundationSeeder extends Seeder
                 'instructions_summary' => 'Advisory only. Must respect tenant scope and require human approval for reorder or stock movement decisions.',
             ]
         );
+
+        $homePage = PlatformContentPage::query()->updateOrCreate(
+            ['slug' => 'home'],
+            [
+                'title' => 'Ubuzima+ Digital Health Operations',
+                'description' => 'Commercial public website content for Ubuzima+ and PharmaCo360.',
+                'template' => 'public_home',
+                'status' => 'published',
+                'seo' => [
+                    'title' => 'Ubuzima+ | Digital health operations platform',
+                    'description' => 'Run pharmacy branches, inventory, POS, procurement, finance, reporting and governed AI from Ubuzima+.',
+                ],
+                'style' => [
+                    'font_family' => 'Inter',
+                    'primary_color' => '#0877c9',
+                    'accent_color' => '#36ad3a',
+                    'radius' => 8,
+                ],
+                'published_at' => now(),
+            ]
+        );
+
+        $sections = [
+            [
+                'section_key' => 'hero',
+                'eyebrow' => 'Digital health business platform',
+                'title' => 'Ubuzima+ digital health operations platform.',
+                'body' => 'Run pharmacy branches, stock, sales, dispensing, procurement, finance visibility, reporting, customer follow-up, and AI-assisted decisions from a secure modular platform.',
+                'sort_order' => 1,
+                'content' => [
+                    'primary_action' => 'Request Demo',
+                    'secondary_action' => 'Explore PharmaCo360',
+                ],
+                'style' => [
+                    'layout' => 'image_hero',
+                    'text_width' => '620px',
+                ],
+            ],
+            [
+                'section_key' => 'solutions',
+                'eyebrow' => 'Solution portfolio',
+                'title' => 'One platform foundation, multiple health-sector solutions.',
+                'body' => 'PharmaCore 360 is active for the first tenant. ClinicCore, VetCore, and InsuCore remain visible as portfolio-ready solutions until activated.',
+                'sort_order' => 2,
+                'content' => [
+                    'items' => ['PharmaCore 360', 'ClinicCore 360', 'VetCore 360', 'InsuCore 260'],
+                ],
+                'style' => [
+                    'columns' => 4,
+                    'background' => 'white',
+                ],
+            ],
+            [
+                'section_key' => 'pharmaco_modules',
+                'eyebrow' => 'PharmaCore 360',
+                'title' => 'A full pharmacy ecosystem, not only a POS.',
+                'body' => 'Start with product master, inventory, POS, procurement, finance, reports, and branch controls. Activate AI, wholesale, delivery, insurance, and clinic links when ready.',
+                'sort_order' => 3,
+                'content' => [
+                    'priority_modules' => ['AI Model', 'Inventory', 'POS', 'Procurement', 'Reports'],
+                ],
+                'style' => [
+                    'background' => 'soft',
+                    'columns' => 3,
+                ],
+            ],
+            [
+                'section_key' => 'security',
+                'eyebrow' => 'Security and trust',
+                'title' => 'Commercial viability depends on confidence.',
+                'body' => 'Ubuzima+ is designed around tenant separation, permissioned access, auditability, mandatory staff 2FA, trusted devices, and controlled AI.',
+                'sort_order' => 4,
+                'content' => [
+                    'controls' => ['Tenant data separation', 'Role and branch scope', 'Two-factor authentication', 'Audit logs', 'Human approval for sensitive AI'],
+                ],
+                'style' => [
+                    'background' => 'white',
+                    'accent' => '#073844',
+                ],
+            ],
+            [
+                'section_key' => 'onboarding',
+                'eyebrow' => 'First tenant readiness',
+                'title' => 'Move from setup to daily use in controlled stages.',
+                'body' => 'Prepare VitaPharma with staff security, business setup, branches, products, opening stock, suppliers, POS, reports, and daily close routines before adding advanced modules.',
+                'sort_order' => 5,
+                'content' => [
+                    'steps' => ['Secure staff access', 'Confirm branch setup', 'Load products and stock', 'Practice POS and receiving', 'Go live with daily review'],
+                ],
+                'style' => [
+                    'background' => 'teal',
+                    'text_color' => 'white',
+                ],
+            ],
+        ];
+
+        foreach ($sections as $section) {
+            PlatformContentSection::query()->updateOrCreate(
+                ['page_id' => $homePage->id, 'section_key' => $section['section_key']],
+                [
+                    ...$section,
+                    'page_id' => $homePage->id,
+                    'status' => 'active',
+                ]
+            );
+        }
     }
 }

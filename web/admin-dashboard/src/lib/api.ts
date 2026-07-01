@@ -2,6 +2,16 @@ export type LoginPayload = {
   email: string;
   password: string;
   device_name?: string;
+  trusted_device_token?: string | null;
+};
+
+export type TwoFactorSetupPayload = {
+  type: 'totp';
+  issuer: string;
+  account: string;
+  manual_secret: string;
+  otpauth_uri: string;
+  qr_svg: string;
 };
 
 export type AccessProfile = {
@@ -13,6 +23,13 @@ export type AccessProfile = {
     status: string;
     must_change_password: boolean;
     last_login_at: string | null;
+    two_factor?: {
+      required: boolean;
+      enabled: boolean;
+      confirmed_at: string | null;
+      last_verified_at: string | null;
+      trusted_devices_count: number;
+    };
   };
   scope: {
     type: string;
@@ -62,6 +79,48 @@ export type LoginResponse = {
   token_type: 'Bearer';
   access_token: string;
   profile: AccessProfile;
+} | {
+  status: 'two_factor_setup_required';
+  message: string;
+  challenge_token: string;
+  expires_at: string;
+  setup: TwoFactorSetupPayload;
+} | {
+  status: 'two_factor_challenge_required';
+  message: string;
+  challenge_token: string;
+  expires_at: string;
+  delivery_methods: string[];
+  trust_device_available: boolean;
+};
+
+export type TwoFactorVerifyResponse = {
+  status: 'two_factor_verified';
+  token_type: 'Bearer';
+  access_token: string;
+  profile: AccessProfile;
+  recovery_codes: string[] | null;
+  trusted_device: {
+    trusted_device_token: string;
+    trusted_until: string;
+  } | null;
+};
+
+export type TwoFactorStatusResponse = {
+  two_factor: {
+    required: boolean;
+    enabled: boolean;
+    confirmed_at: string | null;
+    last_verified_at: string | null;
+    trusted_device_days: number;
+    trusted_devices: Array<{
+      id: number;
+      device_name: string | null;
+      ip_address: string | null;
+      trusted_until: string | null;
+      last_used_at: string | null;
+    }>;
+  };
 };
 
 const API_BASE_URL =
@@ -79,7 +138,7 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 
   const data = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
+  if (!response.ok && response.status !== 202) {
     const message =
       data?.message ||
       data?.errors?.email?.[0] ||
@@ -89,6 +148,30 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   }
 
   return data as LoginResponse;
+}
+
+export async function verifyTwoFactor(payload: {
+  challenge_token: string;
+  code: string;
+  trust_device?: boolean;
+  device_name?: string;
+}): Promise<TwoFactorVerifyResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/verify`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.errors?.code?.[0] || data?.message || 'Two-factor verification failed.');
+  }
+
+  return data as TwoFactorVerifyResponse;
 }
 
 export async function getAuthenticatedProfile(token: string): Promise<AccessProfile> {
@@ -117,6 +200,80 @@ export async function logout(token: string): Promise<void> {
       Authorization: `Bearer ${token}`,
     },
   });
+}
+
+export async function getTwoFactorStatus(token: string): Promise<TwoFactorStatusResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/status`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load two-factor status.');
+  }
+
+  return data as TwoFactorStatusResponse;
+}
+
+export async function startTwoFactorSetup(token: string): Promise<{
+  status: 'two_factor_setup_ready';
+  challenge_token: string;
+  expires_at: string;
+  setup: TwoFactorSetupPayload;
+}> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/setup`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to start two-factor setup.');
+  }
+
+  return data;
+}
+
+export async function regenerateRecoveryCodes(token: string): Promise<{ recovery_codes: string[] }> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/recovery-codes`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to regenerate recovery codes.');
+  }
+
+  return data;
+}
+
+export async function revokeTrustedDevice(token: string, trustedDeviceId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/auth/two-factor/trusted-devices/${trustedDeviceId}`, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.message || 'Unable to revoke trusted device.');
+  }
 }
 
 
@@ -1981,3 +2138,95 @@ export const recordPharmaReceivablePayment = async (
     },
   );
 };
+
+export type PlatformContentSection = {
+  id: number;
+  section_key: string;
+  eyebrow: string | null;
+  title: string | null;
+  body: string | null;
+  content: Record<string, unknown>;
+  style: Record<string, unknown>;
+  sort_order: number;
+  status: 'active' | 'hidden' | 'draft';
+  updated_at: string | null;
+};
+
+export type PlatformContentPage = {
+  id: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  template: string;
+  status: 'draft' | 'published' | 'archived';
+  seo: Record<string, unknown>;
+  style: Record<string, unknown>;
+  published_at: string | null;
+  sections: PlatformContentSection[];
+};
+
+export async function getPlatformManagementPages(token: string): Promise<{ pages: PlatformContentPage[] }> {
+  const response = await fetch(`${API_BASE_URL}/platform-management/pages`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load platform content pages.');
+  }
+
+  return data as { pages: PlatformContentPage[] };
+}
+
+export async function updatePlatformContentPage(
+  token: string,
+  pageId: number,
+  payload: Partial<Pick<PlatformContentPage, 'title' | 'description' | 'template' | 'status' | 'seo' | 'style'>>,
+): Promise<{ page: PlatformContentPage }> {
+  const response = await fetch(`${API_BASE_URL}/platform-management/pages/${pageId}`, {
+    method: 'PATCH',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to update platform page.');
+  }
+
+  return data as { page: PlatformContentPage };
+}
+
+export async function updatePlatformContentSection(
+  token: string,
+  sectionId: number,
+  payload: Partial<Pick<PlatformContentSection, 'eyebrow' | 'title' | 'body' | 'content' | 'style' | 'sort_order' | 'status'>>,
+): Promise<{ section: PlatformContentSection }> {
+  const response = await fetch(`${API_BASE_URL}/platform-management/sections/${sectionId}`, {
+    method: 'PATCH',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to update platform section.');
+  }
+
+  return data as { section: PlatformContentSection };
+}

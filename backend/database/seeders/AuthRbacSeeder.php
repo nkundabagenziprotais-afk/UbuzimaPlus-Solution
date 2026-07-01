@@ -20,6 +20,7 @@ class AuthRbacSeeder extends Seeder
     {
         $permissions = [
             ['platform.manage', 'Manage Platform', 'platform'],
+            ['platform.content.manage', 'Manage Platform Content', 'platform'],
             ['solutions.manage', 'Manage Solutions', 'solutions'],
             ['tenants.manage', 'Manage Tenants', 'tenancy'],
             ['modules.manage', 'Manage Modules', 'modules'],

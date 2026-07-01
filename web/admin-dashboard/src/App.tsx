@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, PharmacyProfileResponse, getAuthenticatedProfile, getBranchDepartments, getPharmaBranches, getPharmacyProfile, login, logout, runAccessCheck } from './lib/api';
+import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getPharmaBranches, getPharmacyProfile, login, logout, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
@@ -8,6 +8,8 @@ import { ProcurementWorkflow } from './components/ProcurementWorkflow';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
+import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
+import { PlatformManagementPanel } from './components/PlatformManagementPanel';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 
@@ -20,6 +22,14 @@ type AccessCheckState = {
   label: string;
   result: AccessCheckResult;
 } | null;
+
+type TwoFactorFlowState = {
+  status: 'two_factor_setup_required' | 'two_factor_challenge_required';
+  message: string;
+  challenge_token: string;
+  expires_at: string;
+  setup?: TwoFactorSetupPayload;
+};
 
 type PharmaCoreState = {
   profile: PharmacyProfileResponse | null;
@@ -73,6 +83,8 @@ type AiWorkspaceKey =
   | 'insights-dashboard';
 type AdminPanelWorkspaceKey =
   | 'backend-api'
+  | 'two-factor-auth'
+  | 'platform-management'
   | 'web-application'
   | 'mobile-application'
   | 'desktop-application'
@@ -91,6 +103,7 @@ type MenuItem = {
 
 const storageKey = 'ubuzima_admin_session';
 const activeSectionStorageKey = 'ubuzima_admin_active_section';
+const trustedDeviceStorageKey = 'ubuzima_admin_trusted_device_token';
 const brandLogoSrc = '/assets/ubuzima-logo.png';
 const publicWebsiteUrl = import.meta.env.VITE_PUBLIC_WEBSITE_URL?.trim() || 'http://127.0.0.1:5174/';
 const corporateEmailUrl = 'mailto:info@ubuzimaplus.com';
@@ -345,6 +358,8 @@ const menuGroups: Array<{ key: MenuGroupKey; label: string; icon: string; items:
     icon: 'ADM',
     items: [
       { key: 'admin-panel', context: 'backend-api', label: 'Backend API', description: 'Laravel API and services', icon: 'BE', status: 'Active' },
+      { key: 'admin-panel', context: 'two-factor-auth', label: 'Staff 2FA', description: 'Authenticator and trusted devices', icon: '2FA', status: 'Mandatory' },
+      { key: 'admin-panel', context: 'platform-management', label: 'Platform Management', description: 'Website, pages, sections', icon: 'PM', status: 'Active' },
       { key: 'admin-panel', context: 'web-application', label: 'Web Application', description: 'Public and staff web apps', icon: 'WEB', status: 'Active' },
       { key: 'admin-panel', context: 'mobile-application', label: 'Mobile Application', description: 'Manager and field apps', icon: 'MOB', status: 'Planned' },
       { key: 'admin-panel', context: 'desktop-application', label: 'Desktop Application', description: 'Installable POS/PWA', icon: 'DSK', status: 'Planned' },
@@ -741,6 +756,20 @@ const adminPanelLayers: Array<{
     components: ['Auth and profile', 'Tenant scope', 'PharmaCore endpoints', 'Protected access checks'],
   },
   {
+    key: 'two-factor-auth',
+    title: 'Staff two-factor authentication',
+    status: 'Mandatory',
+    summary: 'Authenticator app setup with QR scanning, manual text key, recovery codes, and trusted-device approval.',
+    components: ['TOTP authenticator', 'QR scanning', 'Manual setup key', 'Trusted devices', 'Recovery codes'],
+  },
+  {
+    key: 'platform-management',
+    title: 'Platform Management',
+    status: 'Active',
+    summary: 'No-code control for website pages, blog/content sections, text, section visibility, and style metadata.',
+    components: ['Website pages', 'Sections', 'Copy', 'Style JSON', 'Publishing status'],
+  },
+  {
     key: 'web-application',
     title: 'Web Application',
     status: 'Active',
@@ -882,6 +911,10 @@ function App() {
   const [password, setPassword] = useState('ChangeThisPassword123!');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [twoFactorFlow, setTwoFactorFlow] = useState<TwoFactorFlowState | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [trustThisDevice, setTrustThisDevice] = useState(true);
+  const [newRecoveryCodes, setNewRecoveryCodes] = useState<string[] | null>(null);
   const [accessCheck, setAccessCheck] = useState<AccessCheckState>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(false);
   const [pharmaCore, setPharmaCore] = useState<PharmaCoreState>({
@@ -1048,15 +1081,65 @@ function App() {
     }));
   }
 
+  function persistSession(nextSession: StoredSession, trustedDeviceToken?: string) {
+    localStorage.setItem(storageKey, JSON.stringify(nextSession));
+
+    if (trustedDeviceToken) {
+      localStorage.setItem(trustedDeviceStorageKey, trustedDeviceToken);
+    }
+
+    setSession(nextSession);
+  }
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    setTwoFactorFlow(null);
+    setNewRecoveryCodes(null);
     setIsSubmitting(true);
 
     try {
       const response = await login({
         email,
         password,
+        device_name: 'Ubuzima+ Admin Dashboard',
+        trusted_device_token: localStorage.getItem(trustedDeviceStorageKey),
+      });
+
+      if ('status' in response && response.status?.startsWith('two_factor_')) {
+        setTwoFactorFlow(response as TwoFactorFlowState);
+        setPassword('');
+        return;
+      }
+
+      const nextSession = {
+        token: response.access_token,
+        profile: response.profile,
+      };
+
+      persistSession(nextSession);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleTwoFactorVerify(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!twoFactorFlow) {
+      return;
+    }
+
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await verifyTwoFactor({
+        challenge_token: twoFactorFlow.challenge_token,
+        code: twoFactorCode,
+        trust_device: trustThisDevice,
         device_name: 'Ubuzima+ Admin Dashboard',
       });
 
@@ -1065,10 +1148,12 @@ function App() {
         profile: response.profile,
       };
 
-      localStorage.setItem(storageKey, JSON.stringify(nextSession));
-      setSession(nextSession);
+      setNewRecoveryCodes(response.recovery_codes);
+      setTwoFactorFlow(null);
+      setTwoFactorCode('');
+      persistSession(nextSession, response.trusted_device?.trusted_device_token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed.');
+      setError(err instanceof Error ? err.message : 'Two-factor verification failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1170,74 +1255,148 @@ function App() {
 
   if (!profile) {
     return (
-      <main className="auth-shell">
-        <section className="auth-panel">
+      <main className="auth-shell auth-shell--identity">
+        <section className="auth-side auth-info-panel">
           <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
           <p className="eyebrow">Ubuzima+ Platform</p>
-          <h1>Sign in to manage trusted health operations.</h1>
+          <h1>Secure access for real pharmacy operations.</h1>
           <p className="auth-copy">
-            Access is role-based and tenant-aware. PharmaCo360 administrators see only the
-            modules, tenants, and actions assigned to their scope.
+            Ubuzima+ connects PharmaCore 360 operations, tenant data, staff permissions, stock,
+            POS, procurement, finance, reports, and controlled AI in one governed workspace.
           </p>
 
-          <form className="login-form" onSubmit={handleLogin}>
-            <label>
-              Email address
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-                required
-              />
-            </label>
-
-            <label>
-              Password
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </label>
-
-            {error && <div className="form-error">{error}</div>}
-
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Checking access…' : 'Sign in securely'}
-            </button>
-          </form>
-
-          <div className="demo-users">
-            <p>Development users</p>
-            {demoUsers.map((user) => (
-              <button key={user.email} type="button" onClick={() => setEmail(user.email)}>
-                <span>{user.label}</span>
-                <small>{user.scope} scope</small>
-              </button>
-            ))}
+          <div className="auth-info-grid">
+            <div>
+              <strong>First tenant</strong>
+              <span>VitaPharma onboarding</span>
+            </div>
+            <div>
+              <strong>Staff security</strong>
+              <span>Mandatory authenticator with trusted-device control</span>
+            </div>
+            <div>
+              <strong>Operational modules</strong>
+              <span>Inventory, POS, suppliers, finance, reports, AI</span>
+            </div>
           </div>
         </section>
 
-        <section className="auth-side">
-          <div className="status-card">
-            <span className="status-dot" />
-            <div>
-              <strong>Backend API ready</strong>
-              <p>Login uses `/api/v1/auth/login` with Sanctum Bearer tokens.</p>
-            </div>
+        <section className="auth-panel auth-form-panel">
+          <div className="auth-language-row">
+            <span>Staff Identity</span>
+            <button type="button">English</button>
           </div>
 
-          <div className="principle-card">
-            <h2>Security by design</h2>
-            <ul>
-              <li>Permission-based navigation</li>
-              <li>Tenant boundary protection</li>
-              <li>Controlled AI Center access</li>
-              <li>Audit-ready administration</li>
-            </ul>
+          <div className="login-card">
+            <p className="eyebrow">Sign in</p>
+            <h2>Access your workspace</h2>
+            <p className="auth-copy">
+              Use your staff account. Access is tenant-aware and limited by your role, branch, package, and permissions.
+            </p>
+
+            <div className="login-method-tabs" aria-label="Login method">
+              <button type="button" className="active">Email</button>
+              <button type="button" disabled>Phone</button>
+            </div>
+
+            {!twoFactorFlow ? (
+              <form className="login-form" onSubmit={handleLogin}>
+                <label>
+                  Email address
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Password
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                </label>
+
+                {error && <div className="form-error">{error}</div>}
+
+                <button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Checking access...' : 'Continue'}
+                </button>
+              </form>
+            ) : (
+              <form className="login-form two-factor-login-form" onSubmit={handleTwoFactorVerify}>
+                <div className="two-factor-login-copy">
+                  <strong>
+                    {twoFactorFlow.status === 'two_factor_setup_required'
+                      ? 'Set up authenticator'
+                      : 'Two-factor verification'}
+                  </strong>
+                  <span>{twoFactorFlow.message}</span>
+                </div>
+
+                {twoFactorFlow.setup && (
+                  <div className="two-factor-login-setup">
+                    <div dangerouslySetInnerHTML={{ __html: twoFactorFlow.setup.qr_svg }} />
+                    <code>{twoFactorFlow.setup.manual_secret}</code>
+                  </div>
+                )}
+
+                <label>
+                  Authenticator or recovery code
+                  <input
+                    value={twoFactorCode}
+                    onChange={(event) => setTwoFactorCode(event.target.value)}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="000000"
+                    required
+                  />
+                </label>
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={trustThisDevice}
+                    onChange={(event) => setTrustThisDevice(event.target.checked)}
+                  />
+                  Trust this device after approval
+                </label>
+
+                {error && <div className="form-error">{error}</div>}
+
+                <button type="submit" disabled={isSubmitting || twoFactorCode.trim().length < 6}>
+                  {isSubmitting ? 'Verifying...' : 'Verify and continue'}
+                </button>
+              </form>
+            )}
+
+            {newRecoveryCodes && (
+              <div className="recovery-code-panel auth-recovery-panel">
+                <h3>Recovery codes</h3>
+                <p className="muted">Store these codes securely. They are shown once.</p>
+                <div>
+                  {newRecoveryCodes.map((code) => (
+                    <code key={code}>{code}</code>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="demo-users">
+              <p>Development shortcuts</p>
+              {demoUsers.map((user) => (
+                <button key={user.email} type="button" onClick={() => setEmail(user.email)}>
+                  <span>{user.label}</span>
+                  <small>{user.scope} scope</small>
+                </button>
+              ))}
+            </div>
           </div>
         </section>
       </main>
@@ -1775,6 +1934,20 @@ function App() {
           status={selectedLayer.status}
         />
 
+        {activeAdminPanelWorkspace === 'two-factor-auth' && (
+          <TwoFactorAdminPanel
+            token={session.token}
+            profile={profile}
+            onVerified={(nextToken, nextProfile, trustedDeviceToken) => {
+              persistSession({ token: nextToken, profile: nextProfile }, trustedDeviceToken);
+            }}
+          />
+        )}
+
+        {activeAdminPanelWorkspace === 'platform-management' && (
+          <PlatformManagementPanel token={session.token} />
+        )}
+
         <section className="admin-layer-grid">
           {adminPanelLayers.map((layer) => (
             <button
@@ -1790,17 +1963,19 @@ function App() {
           ))}
         </section>
 
-        <article className="panel wide">
-          <h2>{selectedLayer.title} control surface</h2>
-          <p className="muted">{selectedLayer.summary}</p>
-          <div className="framework-chip-list">
-            {selectedLayer.components.map((component) => (
-              <small key={component}>{component}</small>
-            ))}
-          </div>
-        </article>
+        {activeAdminPanelWorkspace !== 'two-factor-auth' && activeAdminPanelWorkspace !== 'platform-management' && (
+          <article className="panel wide">
+            <h2>{selectedLayer.title} control surface</h2>
+            <p className="muted">{selectedLayer.summary}</p>
+            <div className="framework-chip-list">
+              {selectedLayer.components.map((component) => (
+                <small key={component}>{component}</small>
+              ))}
+            </div>
+          </article>
+        )}
 
-        <ModuleReadinessGrid items={settingsBlueprint} />
+        {activeAdminPanelWorkspace !== 'two-factor-auth' && <ModuleReadinessGrid items={settingsBlueprint} />}
 
         {activeAdminPanelWorkspace === 'backend-api' && accessControlPanel}
         {activeAdminPanelWorkspace === 'data-layer' && tenantAssignmentsPanel}
@@ -2146,6 +2321,26 @@ function App() {
         <section className="dashboard-scroll-panel">
           {renderActiveSection()}
         </section>
+
+        {newRecoveryCodes && (
+          <div className="recovery-overlay" role="dialog" aria-modal="true" aria-label="Recovery codes">
+            <section className="recovery-overlay-card">
+              <p className="eyebrow">Two-factor recovery</p>
+              <h2>Store these recovery codes securely.</h2>
+              <p className="muted">
+                They are shown once and can be used if an authenticator device is unavailable.
+              </p>
+              <div>
+                {newRecoveryCodes.map((code) => (
+                  <code key={code}>{code}</code>
+                ))}
+              </div>
+              <button type="button" onClick={() => setNewRecoveryCodes(null)}>
+                Continue to workspace
+              </button>
+            </section>
+          </div>
+        )}
       </section>
     </main>
   );

@@ -1,8 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const brandLogoSrc = '/assets/ubuzima-logo.png';
 const staffLoginUrl = import.meta.env.VITE_STAFF_LOGIN_URL?.trim() || 'http://127.0.0.1:5175/';
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || 'http://127.0.0.1:8000/api/v1';
 const staffLoginRedirectPaths = new Set(['/login', '/staff', '/staff-login']);
+
+type ManagedSection = {
+  section_key: string;
+  eyebrow: string | null;
+  title: string | null;
+  body: string | null;
+  content: Record<string, unknown>;
+  style: Record<string, unknown>;
+};
 
 const quickActions = [
   {
@@ -105,6 +115,8 @@ const roadmap = [
 ];
 
 function App() {
+  const [managedSections, setManagedSections] = useState<Record<string, ManagedSection>>({});
+
   useEffect(() => {
     const normalizedPath = window.location.pathname.replace(/\/$/, '') || '/';
 
@@ -112,6 +124,52 @@ function App() {
       window.location.replace(staffLoginUrl);
     }
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadManagedContent() {
+      try {
+        const response = await fetch(`${apiBaseUrl}/platform-content/public`, {
+          headers: { Accept: 'application/json' },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const home = data?.pages?.find((page: { slug: string }) => page.slug === 'home');
+        const sections = Object.fromEntries(
+          (home?.sections ?? []).map((section: ManagedSection) => [section.section_key, section]),
+        );
+
+        if (!cancelled) {
+          setManagedSections(sections);
+        }
+      } catch {
+        // Static content remains the fallback when the API is not available.
+      }
+    }
+
+    void loadManagedContent();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const heroSection = managedSections.hero;
+  const solutionsSection = managedSections.solutions;
+  const modulesSection = managedSections.pharmaco_modules;
+  const securitySection = managedSections.security;
+  const onboardingSection = managedSections.onboarding;
+
+  const managedPriorityModules = useMemo(() => {
+    const items = modulesSection?.content?.priority_modules;
+
+    return Array.isArray(items) && items.every((item) => typeof item === 'string')
+      ? items as string[]
+      : [];
+  }, [modulesSection]);
 
   return (
     <main>
@@ -144,11 +202,11 @@ function App() {
 
       <section id="top" className="hero">
         <div className="hero-content">
-          <p className="eyebrow">Digital health business platform</p>
-          <h1>Ubuzima+ digital health operations platform.</h1>
+          <p className="eyebrow">{heroSection?.eyebrow ?? 'Digital health business platform'}</p>
+          <h1>{heroSection?.title ?? 'Ubuzima+ digital health operations platform.'}</h1>
           <p className="hero-copy">
-            Run pharmacy branches, stock, sales, dispensing, procurement, finance visibility, reporting,
-            customer follow-up, and AI-assisted decisions from a secure modular platform.
+            {heroSection?.body ??
+              'Run pharmacy branches, stock, sales, dispensing, procurement, finance visibility, reporting, customer follow-up, and AI-assisted decisions from a secure modular platform.'}
           </p>
 
           <div className="hero-actions">
@@ -184,11 +242,11 @@ function App() {
 
       <section id="solutions" className="section section-white">
         <div className="section-heading">
-          <p className="eyebrow">Solution lines</p>
-          <h2>One platform foundation, multiple health-sector solutions.</h2>
+          <p className="eyebrow">{solutionsSection?.eyebrow ?? 'Solution lines'}</p>
+          <h2>{solutionsSection?.title ?? 'One platform foundation, multiple health-sector solutions.'}</h2>
           <p>
-            Ubuzima+ gives growing health businesses a clear path from daily operations to connected
-            branch management, partner workflows, and controlled AI support.
+            {solutionsSection?.body ??
+              'Ubuzima+ gives growing health businesses a clear path from daily operations to connected branch management, partner workflows, and controlled AI support.'}
           </p>
         </div>
 
@@ -205,13 +263,21 @@ function App() {
 
       <section id="modules" className="section section-soft">
         <div className="section-heading">
-          <p className="eyebrow">PharmaCo360 module framework</p>
-          <h2>A full pharmacy ecosystem, not only a POS.</h2>
+          <p className="eyebrow">{modulesSection?.eyebrow ?? 'PharmaCo360 module framework'}</p>
+          <h2>{modulesSection?.title ?? 'A full pharmacy ecosystem, not only a POS.'}</h2>
           <p>
-            Start with the pharmacy workflows you need today, then activate advanced modules by package,
-            role, branch, readiness, and business policy.
+            {modulesSection?.body ??
+              'Start with the pharmacy workflows you need today, then activate advanced modules by package, role, branch, readiness, and business policy.'}
           </p>
         </div>
+
+        {managedPriorityModules.length > 0 && (
+          <div className="managed-priority-strip">
+            {managedPriorityModules.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        )}
 
         <div className="module-grid">
           {pharmaModules.map(([title, description, status]) => (
@@ -294,11 +360,11 @@ function App() {
 
       <section id="security" className="section section-white security-section">
         <div className="section-heading">
-          <p className="eyebrow">Security and trust</p>
-          <h2>Commercial viability depends on confidence, not decoration.</h2>
+          <p className="eyebrow">{securitySection?.eyebrow ?? 'Security and trust'}</p>
+          <h2>{securitySection?.title ?? 'Commercial viability depends on confidence, not decoration.'}</h2>
           <p>
-            Ubuzima+ is designed around tenant separation, permissioned access, auditability, and
-            controlled AI so health businesses can grow without losing operational control.
+            {securitySection?.body ??
+              'Ubuzima+ is designed around tenant separation, permissioned access, auditability, and controlled AI so health businesses can grow without losing operational control.'}
           </p>
         </div>
 
@@ -311,11 +377,11 @@ function App() {
 
       <section id="onboarding" className="section pilot-section">
         <div>
-          <p className="eyebrow">Implementation path</p>
-          <h2>Go live in controlled, practical stages.</h2>
+          <p className="eyebrow">{onboardingSection?.eyebrow ?? 'Implementation path'}</p>
+          <h2>{onboardingSection?.title ?? 'Go live in controlled, practical stages.'}</h2>
           <p>
-            Begin with business setup, branches, users, products, stock, sales, suppliers, and reports.
-            Add AI, wholesale, delivery, insurance, and clinic workflows when your team is ready.
+            {onboardingSection?.body ??
+              'Begin with business setup, branches, users, products, stock, sales, suppliers, and reports. Add AI, wholesale, delivery, insurance, and clinic workflows when your team is ready.'}
           </p>
         </div>
 

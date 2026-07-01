@@ -50,6 +50,27 @@ The authenticated dashboard should feel like an operating console, not a marketi
 - 360 views: platform, solution, tenant, branch, product, supplier, customer, AI.
 - Channel readiness: public website, admin dashboard, tenant portal, mobile app, desktop/PWA POS.
 
+## Staff Authentication And 2FA
+
+Staff authentication now includes a mandatory two-factor foundation unless `UBUZIMA_ENFORCE_STAFF_2FA=false` is explicitly configured for development or controlled test environments.
+
+- First staff login without enrollment returns a 2FA setup challenge, not a staff API token.
+- Setup supports authenticator image scanning with an SVG QR code and a manual text secret for users who cannot scan.
+- Verification uses a six-digit authenticator code, creates recovery codes, and can register a trusted device when the user chooses that option.
+- Trusted device tokens are stored client-side and validated server-side against the user, token hash, expiry, and revocation status.
+- The Admin Panel exposes Staff 2FA status, setup, recovery-code regeneration, and trusted-device revocation.
+- Staff access profile responses expose non-secret 2FA status so future dashboards can guide users without leaking secrets.
+
+## No-Code Platform Management
+
+The Admin Panel includes Platform Management as the control layer for customer-facing website content and future platform copy management.
+
+- Content is modeled as pages and sections, with ordered section keys, status, JSON content, and JSON style settings.
+- The public website reads published content from `/api/v1/platform-content/public` and falls back to static launch copy when the API is unavailable.
+- Admin users with `platform.content.manage` can update page status, section text, section status, and section style JSON through the interface.
+- Font, color, spacing, and section behavior settings should be stored as controlled JSON tokens and rendered by approved frontend components, not as arbitrary executable code.
+- Blog, knowledge, landing pages, and customer notices should reuse the same page-section model before adding a separate CMS.
+
 ## Solution Portfolio Flow
 
 PharmaCore 360 is the active solution. Selecting it from the left tree should immediately show the dedicated solution segments below the fixed header:
