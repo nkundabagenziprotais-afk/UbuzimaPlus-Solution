@@ -1,0 +1,1029 @@
+
+============================================================
+Phase 18.8 Controlled Package Generation Final Owner Authorization Evidence Packet Check
+============================================================
+Current branch: feature/phase-18-8-final-owner-authorization-evidence-packet
+
+============================================================
+1. Source branch is not a production branch
+============================================================
+PASS: Current branch 'feature/phase-18-8-final-owner-authorization-evidence-packet' is not a production branch.
+
+============================================================
+2. Source branch is based on latest development
+============================================================
+PASS: Current branch contains latest origin/development.
+
+============================================================
+3. Phase 18.6 dry-run evidence exists
+============================================================
+PASS: Phase 18.6 dry-run evidence exists.
+
+============================================================
+4. Phase 18.6 dry-run evidence passed
+============================================================
+PASS: Phase 18.6 committed evidence contains pass marker.
+
+============================================================
+Phase 18.6 Controlled Package Generation Dry-Run Evidence Check
+============================================================
+Current branch: feature/phase-18-8-final-owner-authorization-evidence-packet
+
+============================================================
+1. Source branch is not a production branch
+============================================================
+PASS: Current branch 'feature/phase-18-8-final-owner-authorization-evidence-packet' is not a production branch.
+
+============================================================
+2. Source branch is based on latest development
+============================================================
+PASS: Current branch contains latest origin/development.
+
+============================================================
+3. Protected tracked files are blocked
+============================================================
+PASS: No protected tracked files detected.
+
+============================================================
+4. Safe .env.example files are allowed
+============================================================
+backend/.env.example
+web/admin-dashboard/.env.example
+PASS: Safe .env.example files are allowed.
+
+============================================================
+5. Real .env files are blocked
+============================================================
+PASS: No real .env files are tracked.
+
+============================================================
+6. Private keys are blocked
+============================================================
+PASS: No private key files are tracked.
+
+============================================================
+7. Credential files are blocked
+============================================================
+PASS: No credential files are tracked.
+
+============================================================
+8. Secret files are blocked
+============================================================
+PASS: No secret files are tracked.
+
+============================================================
+9. Production SQLite/database SQLite files are blocked
+============================================================
+PASS: No SQLite/database files are tracked.
+
+============================================================
+10. Required Phase 18.5 guardrails pass
+============================================================
+== Controlled package generation execution package contents quarantine ledger source identity ==
+Current branch: feature/phase-18-8-final-owner-authorization-evidence-packet
+Current commit: 1b89a9d
+== Protected-file tracked source inspection ==
+No protected tracked files found.
+== Required Phase 18.5 documents ==
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_CONTENTS_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_CONTENTS_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_MANIFEST_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_MANIFEST_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_CHECKSUM_TARGET_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_CHECKSUM_TARGET_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_ARCHIVE_TARGET_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_ARCHIVE_TARGET_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_BUILD_COMMAND_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_BUILD_COMMAND_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_FINAL_GO_NO_GO_HOLD_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_FINAL_GO_NO_GO_HOLD_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_FINAL_AUTHORIZATION_EVIDENCE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_FINAL_AUTHORIZATION_EVIDENCE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_OWNER_AUTHORIZATION_LOCK_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_OWNER_AUTHORIZATION_LOCK_EXCEPTION_LOG.md
+
+> ubuzima-admin-dashboard@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.28 kB
+dist/assets/index-IuJRpnMg.css   32.61 kB │ gzip:  6.24 kB
+dist/assets/index-JnjlJc9r.js   283.04 kB │ gzip: 74.85 kB
+✓ built in 370ms
+PharmaCo360 operations controlled package generation execution package contents quarantine ledger check passed.
+PASS: Phase 18.5 guardrail passed.
+
+============================================================
+11. Reporting UI guardrail passes
+============================================================
+
+> ubuzima-admin-dashboard@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.28 kB
+dist/assets/index-IuJRpnMg.css   32.61 kB │ gzip:  6.24 kB
+dist/assets/index-JnjlJc9r.js   283.04 kB │ gzip: 74.85 kB
+✓ built in 304ms
+Reporting dashboard UI guardrail check passed.
+PASS: Reporting UI guardrail passed.
+
+============================================================
+12. Phase 0 local check passes
+============================================================
+
+== Ubuzima+ Phase 0 Local Check ==
+
+== Git branch/status ==
+feature/phase-18-8-final-owner-authorization-evidence-packet
+## feature/phase-18-8-final-owner-authorization-evidence-packet
+?? docs/pharmaco/controlled-package-generation/final-owner-authorization-evidence-packet/
+?? scripts/pharmaco-operations-controlled-package-generation-final-owner-authorization-evidence-packet-check.sh
+
+== Backend tests ==
+
+  Dropping all tables .................................................................................... 2.79ms DONE
+
+   INFO  Preparing database.  
+
+  Creating migration table ............................................................................... 1.42ms DONE
+
+   INFO  Running migrations.  
+
+  0001_01_01_000000_create_users_table ................................................................... 1.71ms DONE
+  0001_01_01_000001_create_cache_table ................................................................... 0.87ms DONE
+  0001_01_01_000002_create_jobs_table .................................................................... 1.44ms DONE
+  2026_06_28_000010_create_platform_foundation_tables .................................................... 9.59ms DONE
+  2026_06_28_000020_create_ai_center_foundation_tables ................................................... 5.44ms DONE
+  2026_06_28_000030_create_auth_rbac_foundation_tables ................................................... 6.15ms DONE
+  2026_06_28_000040_create_pharmaco_core_profile_tables .................................................. 5.83ms DONE
+  2026_06_28_000050_create_pharmaco_product_inventory_tables ............................................. 5.34ms DONE
+  2026_06_28_192946_create_personal_access_tokens_table .................................................. 1.00ms DONE
+  2026_06_29_000060_create_pharmaco_sales_dispensing_tables .............................................. 3.95ms DONE
+  2026_06_29_000070_add_receipt_number_to_pharmaco_payments .............................................. 0.73ms DONE
+  2026_06_29_000080_create_pharmaco_procurement_tables ................................................... 3.37ms DONE
+  2026_06_29_000090_create_pharmaco_supplier_invoice_tables .............................................. 2.79ms DONE
+  2026_06_29_000100_create_pharmaco_customer_receivables_tables .......................................... 5.24ms DONE
+
+
+   INFO  Seeding database.  
+
+  Database\Seeders\PlatformFoundationSeeder .................................................................. RUNNING  
+  Database\Seeders\PlatformFoundationSeeder ............................................................... 28 ms DONE  
+
+  Database\Seeders\AuthRbacSeeder ............................................................................ RUNNING  
+  Database\Seeders\AuthRbacSeeder ........................................................................ 563 ms DONE  
+
+  Database\Seeders\PharmacoCoreSeeder ........................................................................ RUNNING  
+  Database\Seeders\PharmacoCoreSeeder ...................................................................... 3 ms DONE  
+
+  Database\Seeders\PharmacoProductInventorySeeder ............................................................ RUNNING  
+  Database\Seeders\PharmacoProductInventorySeeder .......................................................... 9 ms DONE  
+
+  Database\Seeders\PharmacoSalesDispensingSeeder ............................................................. RUNNING  
+  Database\Seeders\PharmacoSalesDispensingSeeder ........................................................... 5 ms DONE  
+
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\ExampleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mthat true is true[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Api\ApiFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mhealth endpoint returns ok[39m[90m                                          [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mplatform status endpoint returns foundation summary[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msolutions endpoint returns registered solutions[39m[90m                     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant public status does not expose sensitive data[39m[90m                 [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\AccessMiddlewareTest[39m
+  [32;1m✓[39;22m[90m [39m[90mplatform admin can access security area with permission[39m[90m             [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin is blocked from platform security area[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can access active inventory module for own tenant[39m[90m      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant module middleware requires tenant context[39m[90m                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcontrolled ai module is not accessible until activated[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot cross tenant boundary[39m[90m                           [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\AuthApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can login and receive access profile[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90minvalid login is rejected[39m[90m                                           [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90minactive user cannot login[39m[90m                                          [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mme endpoint requires authentication[39m[90m                                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mauthenticated user can view profile and logout[39m[90m                      [39m [90m0.04s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\RbacFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90madmin roles permissions and scopes are seeded[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mplatform solution and tenant admin users are seeded[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mscope resolver identifies seeded admin levels[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin does not receive platform super admin role[39m[90m             [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ExampleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mthe application returns a successful response[39m[90m                       [39m [90m0.01s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoCoreApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view own pharmacy profile[39m[90m                          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpharmacy profile requires tenant header[39m[90m                             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list own branches[39m[90m                                  [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list branch departments[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot use other tenant context[39m[90m                        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot read departments for branch outside tenant[39m[90m      [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoCoreFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mvitapharma pharmacy profile is seeded[39m[90m                               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mvitapharma main branch departments are seeded[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mbranch department is tenant and branch scoped[39m[90m                       [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoCoreMutationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update own branch and audit is recorded[39m[90m            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create branch department and audit is recorded[39m[90m     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update branch department and audit is recorded[39m[90m     [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate department code is rejected within same branch[39m[90m            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update branch outside tenant[39m[90m                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update department outside branch[39m[90m                [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoCustomerReceivablesApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update customer credit profile[39m[90m                     [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create customer receivable within credit limit[39m[90m     [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceivable creation rejects disabled credit customer[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceivable creation rejects amount above credit limit[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can record partial and full receivable payment[39m[90m         [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceivable payment cannot exceed balance[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view receivable detail[39m[90m                             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceivables require tenant header[39m[90m                                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access receivable outside current tenant[39m[90m        [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoPaymentRecordingApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can record full payment and generate receipt[39m[90m           [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpartial payment updates sale balance and status[39m[90m                     [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpayment amount cannot exceed current balance[39m[90m                        [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpayment cannot be recorded on draft sale[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpayment recording requires tenant header[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot record payment for sale outside current tenant[39m[90m  [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProcurementApprovalControlsApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update supplier and audit is recorded[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate supplier code is rejected on update[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can approve draft purchase order[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon draft purchase order cannot be approved again[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can cancel draft purchase order without receipts[39m[90m       [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order with received stock cannot be cancelled[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update supplier outside current tenant[39m[90m          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot approve purchase order outside current tenant[39m[90m   [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProcurementFoundationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create supplier and audit is recorded[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate supplier code is rejected within tenant[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list suppliers[39m[90m                                     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create purchase order with items and totals[39m[90m        [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order product must belong to current tenant[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order supplier must belong to current tenant[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view own purchase order detail[39m[90m                     [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprocurement endpoints require tenant header[39m[90m                         [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuppliers module permission is seeded[39m[90m                               [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProductInventoryApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list products with stock summary[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproducts endpoint can filter by category code[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view product with batches[39m[90m                          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list inventory locations and batches[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view inventory summary[39m[90m                             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproduct inventory endpoints require tenant header[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot view product outside tenant[39m[90m                     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot use other tenant inventory context[39m[90m              [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProductInventoryFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mvitapharma product categories and products are seeded[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock locations are branch scoped[39m[90m                                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock batches and opening movements are seeded[39m[90m                      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproduct inventory records remain tenant scoped[39m[90m                      [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProductInventoryMutationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create product and audit is recorded[39m[90m               [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update product and audit is recorded[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate sku is rejected within same tenant[39m[90m                        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproduct category must belong to current tenant[39m[90m                      [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update product outside tenant[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproduct mutations require tenant header[39m[90m                             [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoPurchaseOrderStockReceivingApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can receive stock against purchase order item[39m[90m          [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfull purchase order item receipt marks item and purchase order rece[39m[90m…[39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order linked receiving rejects over receipt[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order linked receiving requires matching product[39m[90m           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order linked receiving rejects item outside current tenant[39m[90m [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmanual stock receiving still works without purchase order item[39m[90m      [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoReportingAnalyticsApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view reporting overview[39m[90m                            [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view inventory valuation report[39m[90m                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view sales summary report with date filters[39m[90m        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view procurement summary report[39m[90m                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view payables summary report[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view customer credit exposure report[39m[90m               [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view customer credit exposure export rows[39m[90m          [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcustomer credit exposure report requires tenant header[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreporting endpoints require tenant header[39m[90m                           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreporting endpoints require authentication[39m[90m                          [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSaleConfirmationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can confirm sale and deduct stock once[39m[90m                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprescription required item must be verified before dispensing[39m[90m       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90minsufficient stock is rejected without deducting sale[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mconfirmed sale cannot be confirmed twice[39m[90m                            [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90msale confirmation requires tenant header[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot confirm sale outside current tenant[39m[90m             [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSalesCreationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create customer and audit is recorded[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate customer phone is rejected within tenant[39m[90m                  [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create prescription for customer[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprescription customer must belong to current tenant[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create draft sale with items and totals[39m[90m            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprescription required product requires prescription on sale creatio[39m[90m…[39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msale creation rejects product outside current tenant[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreation endpoints require tenant header[39m[90m                            [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSalesDispensingApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list sales[39m[90m                                         [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view sale detail with items[39m[90m                        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list customers and prescriptions[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msales endpoints require tenant header[39m[90m                               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot view sale outside current tenant[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msales module and permission are seeded[39m[90m                              [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSalesDispensingFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mvitapharma customer prescription and draft sale are seeded[39m[90m          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mseeded draft sale has items and no stock deduction[39m[90m                  [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprescription sale links customer prescription branch and items[39m[90m      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msales records are tenant scoped[39m[90m                                     [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoStockReceivingApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can receive new stock batch and audit is recorded[39m[90m      [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceiving existing batch increases quantity and records movement[39m[90m    [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock receiving rejects product outside current tenant[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock receiving rejects location outside current tenant[39m[90m             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock receiving requires tenant header[39m[90m                              [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSupplierInvoicePayablesApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create supplier invoice from purchase order[39m[90m        [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order supplier must match invoice supplier[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90monly approved or received purchase orders can be invoiced[39m[90m           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can approve supplier invoice[39m[90m                           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msupplier payment updates invoice balance and status[39m[90m                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90msupplier payment cannot exceed invoice balance[39m[90m                      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msupplier payment requires approved invoice[39m[90m                          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access supplier invoice outside current tenant[39m[90m  [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mplatform foundation seed data is created[39m[90m                            [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\AccessServiceFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant resolver finds vitapharma[39m[90m                                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmodule access service detects active and controlled modules[39m[90m         [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mai guard blocks ai until controlled activation becomes active[39m[90m       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mconfiguration service stores entity level configuration[39m[90m             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mscope resolver prioritizes platform scope[39m[90m                           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90maudit log service records sensitive action[39m[90m                          [39m [90m0.03s[39m  
+
+  [90mTests:[39m    [32;1m146 passed[39;22m[90m (813 assertions)[39m
+  [90mDuration:[39m [39m4.85s[39m
+
+
+== Public website build ==
+
+> ubuzima-public-website@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 31 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.43 kB │ gzip:  0.29 kB
+dist/assets/index-DeRCgSNX.css    4.25 kB │ gzip:  1.45 kB
+dist/assets/index-Dw5cKeWe.js   149.46 kB │ gzip: 47.67 kB
+✓ built in 236ms
+
+== Admin dashboard build ==
+
+> ubuzima-admin-dashboard@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.28 kB
+dist/assets/index-IuJRpnMg.css   32.61 kB │ gzip:  6.24 kB
+dist/assets/index-JnjlJc9r.js   283.04 kB │ gzip: 74.85 kB
+✓ built in 296ms
+
+== Phase 0 local check completed successfully ==
+PASS: Phase 0 local check passed.
+
+============================================================
+13. Final owner authorization remains locked until explicitly granted
+============================================================
+PASS: Owner authorization remains locked. Current value: LOCKED
+
+============================================================
+Final Result
+============================================================
+PHASE 18.6 DRY-RUN EVIDENCE CHECK PASSED
+PASS: Phase 18.6 guardrail re-run passed.
+
+============================================================
+5. Phase 18.7 owner authorization gate evidence exists
+============================================================
+PASS: Phase 18.7 owner authorization gate evidence exists.
+
+============================================================
+6. Phase 18.7 owner authorization gate passed
+============================================================
+PASS: Phase 18.7 committed evidence contains pass marker.
+
+============================================================
+Phase 18.7 Controlled Package Generation Owner Authorization Gate Check
+============================================================
+Current branch: feature/phase-18-8-final-owner-authorization-evidence-packet
+
+============================================================
+1. Source branch is not a production branch
+============================================================
+PASS: Current branch 'feature/phase-18-8-final-owner-authorization-evidence-packet' is not a production branch.
+
+============================================================
+2. Source branch is based on latest development
+============================================================
+PASS: Current branch contains latest origin/development.
+
+============================================================
+3. Phase 18.6 dry-run evidence exists
+============================================================
+PASS: Phase 18.6 dry-run evidence output exists.
+
+============================================================
+4. Phase 18.6 dry-run evidence passed
+============================================================
+PASS: Phase 18.6 committed evidence contains pass marker.
+Phase 18.6 committed evidence does not include stored exit-code line; re-running Phase 18.6 guardrail to verify exit code.
+
+============================================================
+Phase 18.6 Controlled Package Generation Dry-Run Evidence Check
+============================================================
+Current branch: feature/phase-18-8-final-owner-authorization-evidence-packet
+
+============================================================
+1. Source branch is not a production branch
+============================================================
+PASS: Current branch 'feature/phase-18-8-final-owner-authorization-evidence-packet' is not a production branch.
+
+============================================================
+2. Source branch is based on latest development
+============================================================
+PASS: Current branch contains latest origin/development.
+
+============================================================
+3. Protected tracked files are blocked
+============================================================
+PASS: No protected tracked files detected.
+
+============================================================
+4. Safe .env.example files are allowed
+============================================================
+backend/.env.example
+web/admin-dashboard/.env.example
+PASS: Safe .env.example files are allowed.
+
+============================================================
+5. Real .env files are blocked
+============================================================
+PASS: No real .env files are tracked.
+
+============================================================
+6. Private keys are blocked
+============================================================
+PASS: No private key files are tracked.
+
+============================================================
+7. Credential files are blocked
+============================================================
+PASS: No credential files are tracked.
+
+============================================================
+8. Secret files are blocked
+============================================================
+PASS: No secret files are tracked.
+
+============================================================
+9. Production SQLite/database SQLite files are blocked
+============================================================
+PASS: No SQLite/database files are tracked.
+
+============================================================
+10. Required Phase 18.5 guardrails pass
+============================================================
+== Controlled package generation execution package contents quarantine ledger source identity ==
+Current branch: feature/phase-18-8-final-owner-authorization-evidence-packet
+Current commit: 1b89a9d
+== Protected-file tracked source inspection ==
+No protected tracked files found.
+== Required Phase 18.5 documents ==
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_CONTENTS_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_CONTENTS_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_MANIFEST_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_MANIFEST_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_CHECKSUM_TARGET_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_CHECKSUM_TARGET_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_ARCHIVE_TARGET_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_ARCHIVE_TARGET_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_BUILD_COMMAND_QUARANTINE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_PACKAGE_BUILD_COMMAND_QUARANTINE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_FINAL_GO_NO_GO_HOLD_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_FINAL_GO_NO_GO_HOLD_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_FINAL_AUTHORIZATION_EVIDENCE_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_FINAL_AUTHORIZATION_EVIDENCE_EXCEPTION_LOG.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_OWNER_AUTHORIZATION_LOCK_LEDGER.md
+Found: docs/deployment/PHARMACO_OPERATIONS_COMMAND_CENTER_CONTROLLED_PACKAGE_GENERATION_EXECUTION_OWNER_AUTHORIZATION_LOCK_EXCEPTION_LOG.md
+
+> ubuzima-admin-dashboard@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.28 kB
+dist/assets/index-IuJRpnMg.css   32.61 kB │ gzip:  6.24 kB
+dist/assets/index-JnjlJc9r.js   283.04 kB │ gzip: 74.85 kB
+✓ built in 307ms
+PharmaCo360 operations controlled package generation execution package contents quarantine ledger check passed.
+PASS: Phase 18.5 guardrail passed.
+
+============================================================
+11. Reporting UI guardrail passes
+============================================================
+
+> ubuzima-admin-dashboard@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.28 kB
+dist/assets/index-IuJRpnMg.css   32.61 kB │ gzip:  6.24 kB
+dist/assets/index-JnjlJc9r.js   283.04 kB │ gzip: 74.85 kB
+✓ built in 311ms
+Reporting dashboard UI guardrail check passed.
+PASS: Reporting UI guardrail passed.
+
+============================================================
+12. Phase 0 local check passes
+============================================================
+
+== Ubuzima+ Phase 0 Local Check ==
+
+== Git branch/status ==
+feature/phase-18-8-final-owner-authorization-evidence-packet
+## feature/phase-18-8-final-owner-authorization-evidence-packet
+?? docs/pharmaco/controlled-package-generation/final-owner-authorization-evidence-packet/
+?? scripts/pharmaco-operations-controlled-package-generation-final-owner-authorization-evidence-packet-check.sh
+
+== Backend tests ==
+
+  Dropping all tables .................................................................................... 1.75ms DONE
+
+   INFO  Preparing database.  
+
+  Creating migration table ............................................................................... 1.14ms DONE
+
+   INFO  Running migrations.  
+
+  0001_01_01_000000_create_users_table ................................................................... 1.65ms DONE
+  0001_01_01_000001_create_cache_table ................................................................... 0.91ms DONE
+  0001_01_01_000002_create_jobs_table .................................................................... 1.31ms DONE
+  2026_06_28_000010_create_platform_foundation_tables .................................................... 9.55ms DONE
+  2026_06_28_000020_create_ai_center_foundation_tables ................................................... 6.36ms DONE
+  2026_06_28_000030_create_auth_rbac_foundation_tables ................................................... 6.60ms DONE
+  2026_06_28_000040_create_pharmaco_core_profile_tables .................................................. 3.38ms DONE
+  2026_06_28_000050_create_pharmaco_product_inventory_tables ............................................. 6.23ms DONE
+  2026_06_28_192946_create_personal_access_tokens_table .................................................. 1.22ms DONE
+  2026_06_29_000060_create_pharmaco_sales_dispensing_tables .............................................. 4.71ms DONE
+  2026_06_29_000070_add_receipt_number_to_pharmaco_payments .............................................. 0.90ms DONE
+  2026_06_29_000080_create_pharmaco_procurement_tables ................................................... 3.52ms DONE
+  2026_06_29_000090_create_pharmaco_supplier_invoice_tables .............................................. 2.80ms DONE
+  2026_06_29_000100_create_pharmaco_customer_receivables_tables .......................................... 5.51ms DONE
+
+
+   INFO  Seeding database.  
+
+  Database\Seeders\PlatformFoundationSeeder .................................................................. RUNNING  
+  Database\Seeders\PlatformFoundationSeeder ............................................................... 24 ms DONE  
+
+  Database\Seeders\AuthRbacSeeder ............................................................................ RUNNING  
+  Database\Seeders\AuthRbacSeeder ........................................................................ 576 ms DONE  
+
+  Database\Seeders\PharmacoCoreSeeder ........................................................................ RUNNING  
+  Database\Seeders\PharmacoCoreSeeder ...................................................................... 2 ms DONE  
+
+  Database\Seeders\PharmacoProductInventorySeeder ............................................................ RUNNING  
+  Database\Seeders\PharmacoProductInventorySeeder ......................................................... 10 ms DONE  
+
+  Database\Seeders\PharmacoSalesDispensingSeeder ............................................................. RUNNING  
+  Database\Seeders\PharmacoSalesDispensingSeeder ........................................................... 5 ms DONE  
+
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\ExampleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mthat true is true[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Api\ApiFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mhealth endpoint returns ok[39m[90m                                          [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mplatform status endpoint returns foundation summary[39m[90m                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90msolutions endpoint returns registered solutions[39m[90m                     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant public status does not expose sensitive data[39m[90m                 [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\AccessMiddlewareTest[39m
+  [32;1m✓[39;22m[90m [39m[90mplatform admin can access security area with permission[39m[90m             [39m [90m0.05s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin is blocked from platform security area[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can access active inventory module for own tenant[39m[90m      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant module middleware requires tenant context[39m[90m                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcontrolled ai module is not accessible until activated[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot cross tenant boundary[39m[90m                           [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\AuthApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can login and receive access profile[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90minvalid login is rejected[39m[90m                                           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90minactive user cannot login[39m[90m                                          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mme endpoint requires authentication[39m[90m                                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mauthenticated user can view profile and logout[39m[90m                      [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\RbacFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90madmin roles permissions and scopes are seeded[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mplatform solution and tenant admin users are seeded[39m[90m                 [39m [90m0.02s[39m  
+  [32;1m✓[39;22m[90m [39m[90mscope resolver identifies seeded admin levels[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin does not receive platform super admin role[39m[90m             [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ExampleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mthe application returns a successful response[39m[90m                       [39m [90m0.01s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoCoreApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view own pharmacy profile[39m[90m                          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpharmacy profile requires tenant header[39m[90m                             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list own branches[39m[90m                                  [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list branch departments[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot use other tenant context[39m[90m                        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot read departments for branch outside tenant[39m[90m      [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoCoreFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mvitapharma pharmacy profile is seeded[39m[90m                               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mvitapharma main branch departments are seeded[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mbranch department is tenant and branch scoped[39m[90m                       [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoCoreMutationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update own branch and audit is recorded[39m[90m            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create branch department and audit is recorded[39m[90m     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update branch department and audit is recorded[39m[90m     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate department code is rejected within same branch[39m[90m            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update branch outside tenant[39m[90m                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update department outside branch[39m[90m                [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoCustomerReceivablesApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update customer credit profile[39m[90m                     [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create customer receivable within credit limit[39m[90m     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceivable creation rejects disabled credit customer[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceivable creation rejects amount above credit limit[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can record partial and full receivable payment[39m[90m         [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceivable payment cannot exceed balance[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view receivable detail[39m[90m                             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceivables require tenant header[39m[90m                                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access receivable outside current tenant[39m[90m        [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoPaymentRecordingApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can record full payment and generate receipt[39m[90m           [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpartial payment updates sale balance and status[39m[90m                     [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpayment amount cannot exceed current balance[39m[90m                        [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpayment cannot be recorded on draft sale[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpayment recording requires tenant header[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot record payment for sale outside current tenant[39m[90m  [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProcurementApprovalControlsApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update supplier and audit is recorded[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate supplier code is rejected on update[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can approve draft purchase order[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mnon draft purchase order cannot be approved again[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can cancel draft purchase order without receipts[39m[90m       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order with received stock cannot be cancelled[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update supplier outside current tenant[39m[90m          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot approve purchase order outside current tenant[39m[90m   [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProcurementFoundationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create supplier and audit is recorded[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate supplier code is rejected within tenant[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list suppliers[39m[90m                                     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create purchase order with items and totals[39m[90m        [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order product must belong to current tenant[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order supplier must belong to current tenant[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view own purchase order detail[39m[90m                     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprocurement endpoints require tenant header[39m[90m                         [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuppliers module permission is seeded[39m[90m                               [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProductInventoryApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list products with stock summary[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproducts endpoint can filter by category code[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view product with batches[39m[90m                          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list inventory locations and batches[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view inventory summary[39m[90m                             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproduct inventory endpoints require tenant header[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot view product outside tenant[39m[90m                     [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot use other tenant inventory context[39m[90m              [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProductInventoryFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mvitapharma product categories and products are seeded[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock locations are branch scoped[39m[90m                                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock batches and opening movements are seeded[39m[90m                      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproduct inventory records remain tenant scoped[39m[90m                      [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoProductInventoryMutationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create product and audit is recorded[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can update product and audit is recorded[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate sku is rejected within same tenant[39m[90m                        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproduct category must belong to current tenant[39m[90m                      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update product outside tenant[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mproduct mutations require tenant header[39m[90m                             [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoPurchaseOrderStockReceivingApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can receive stock against purchase order item[39m[90m          [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfull purchase order item receipt marks item and purchase order rece[39m[90m…[39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order linked receiving rejects over receipt[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order linked receiving requires matching product[39m[90m           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order linked receiving rejects item outside current tenant[39m[90m [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmanual stock receiving still works without purchase order item[39m[90m      [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoReportingAnalyticsApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view reporting overview[39m[90m                            [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view inventory valuation report[39m[90m                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view sales summary report with date filters[39m[90m        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view procurement summary report[39m[90m                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view payables summary report[39m[90m                       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view customer credit exposure report[39m[90m               [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view customer credit exposure export rows[39m[90m          [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcustomer credit exposure report requires tenant header[39m[90m              [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreporting endpoints require tenant header[39m[90m                           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreporting endpoints require authentication[39m[90m                          [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSaleConfirmationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can confirm sale and deduct stock once[39m[90m                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprescription required item must be verified before dispensing[39m[90m       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90minsufficient stock is rejected without deducting sale[39m[90m               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mconfirmed sale cannot be confirmed twice[39m[90m                            [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90msale confirmation requires tenant header[39m[90m                            [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot confirm sale outside current tenant[39m[90m             [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSalesCreationApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create customer and audit is recorded[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate customer phone is rejected within tenant[39m[90m                  [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create prescription for customer[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprescription customer must belong to current tenant[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create draft sale with items and totals[39m[90m            [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprescription required product requires prescription on sale creatio[39m[90m…[39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msale creation rejects product outside current tenant[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcreation endpoints require tenant header[39m[90m                            [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSalesDispensingApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list sales[39m[90m                                         [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view sale detail with items[39m[90m                        [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can list customers and prescriptions[39m[90m                   [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msales endpoints require tenant header[39m[90m                               [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot view sale outside current tenant[39m[90m                [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msales module and permission are seeded[39m[90m                              [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSalesDispensingFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mvitapharma customer prescription and draft sale are seeded[39m[90m          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mseeded draft sale has items and no stock deduction[39m[90m                  [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprescription sale links customer prescription branch and items[39m[90m      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msales records are tenant scoped[39m[90m                                     [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoStockReceivingApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can receive new stock batch and audit is recorded[39m[90m      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreceiving existing batch increases quantity and records movement[39m[90m    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock receiving rejects product outside current tenant[39m[90m              [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock receiving rejects location outside current tenant[39m[90m             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstock receiving requires tenant header[39m[90m                              [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PharmaCo360\PharmacoSupplierInvoicePayablesApiTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create supplier invoice from purchase order[39m[90m        [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpurchase order supplier must match invoice supplier[39m[90m                 [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90monly approved or received purchase orders can be invoiced[39m[90m           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can approve supplier invoice[39m[90m                           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msupplier payment updates invoice balance and status[39m[90m                 [39m [90m0.04s[39m  
+  [32;1m✓[39;22m[90m [39m[90msupplier payment cannot exceed invoice balance[39m[90m                      [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90msupplier payment requires approved invoice[39m[90m                          [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access supplier invoice outside current tenant[39m[90m  [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mplatform foundation seed data is created[39m[90m                            [39m [90m0.03s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Services\AccessServiceFoundationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant resolver finds vitapharma[39m[90m                                    [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mmodule access service detects active and controlled modules[39m[90m         [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mai guard blocks ai until controlled activation becomes active[39m[90m       [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mconfiguration service stores entity level configuration[39m[90m             [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mscope resolver prioritizes platform scope[39m[90m                           [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90maudit log service records sensitive action[39m[90m                          [39m [90m0.03s[39m  
+
+  [90mTests:[39m    [32;1m146 passed[39;22m[90m (813 assertions)[39m
+  [90mDuration:[39m [39m4.80s[39m
+
+
+== Public website build ==
+
+> ubuzima-public-website@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 31 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.43 kB │ gzip:  0.29 kB
+dist/assets/index-DeRCgSNX.css    4.25 kB │ gzip:  1.45 kB
+dist/assets/index-Dw5cKeWe.js   149.46 kB │ gzip: 47.67 kB
+✓ built in 232ms
+
+== Admin dashboard build ==
+
+> ubuzima-admin-dashboard@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.28 kB
+dist/assets/index-IuJRpnMg.css   32.61 kB │ gzip:  6.24 kB
+dist/assets/index-JnjlJc9r.js   283.04 kB │ gzip: 74.85 kB
+✓ built in 314ms
+
+== Phase 0 local check completed successfully ==
+PASS: Phase 0 local check passed.
+
+============================================================
+13. Final owner authorization remains locked until explicitly granted
+============================================================
+PASS: Owner authorization remains locked. Current value: LOCKED
+
+============================================================
+Final Result
+============================================================
+PHASE 18.6 DRY-RUN EVIDENCE CHECK PASSED
+PASS: Phase 18.6 guardrail re-run exited with code 0.
+
+============================================================
+5. Owner authorization status file exists
+============================================================
+PASS: Owner authorization status file exists.
+
+============================================================
+6. Owner authorization status remains LOCKED
+============================================================
+PASS: Owner authorization status remains LOCKED.
+
+============================================================
+7. Package generation remains unauthorized
+============================================================
+PASS: Package generation remains unauthorized.
+
+============================================================
+8. Production deployment remains unauthorized
+============================================================
+PASS: Production deployment remains unauthorized.
+
+============================================================
+9. Production migration remains unauthorized
+============================================================
+PASS: Production migration remains unauthorized.
+
+============================================================
+10. Production dependency installation remains unauthorized
+============================================================
+PASS: Production dependency installation remains unauthorized.
+
+============================================================
+11. Environment-based authorization override is blocked
+============================================================
+PASS: No environment owner authorization override detected.
+PASS: No environment package generation override detected.
+
+============================================================
+12. No premature package archive/checksum artifacts are tracked
+============================================================
+PASS: No premature package archive/checksum artifacts are tracked.
+
+============================================================
+13. Protected tracked files remain blocked
+============================================================
+PASS: No protected tracked files detected.
+
+============================================================
+Final Result
+============================================================
+PHASE 18.7 OWNER AUTHORIZATION GATE CHECK PASSED
+PASS: Phase 18.7 guardrail re-run passed.
+
+============================================================
+7. Phase 18.7 owner authorization status remains LOCKED
+============================================================
+PASS: Phase 18.7 owner authorization status remains LOCKED.
+PASS: Phase 18.7 package generation remains unauthorized.
+
+============================================================
+8. Final owner authorization status remains NOT_GRANTED
+============================================================
+PASS: Final owner authorization status remains NOT_GRANTED.
+
+============================================================
+9. Final package generation remains unauthorized
+============================================================
+PASS: Final package generation remains unauthorized.
+
+============================================================
+10. Final package archive creation remains unauthorized
+============================================================
+PASS: Final package archive creation remains unauthorized.
+
+============================================================
+11. Final checksum generation remains unauthorized
+============================================================
+PASS: Final checksum generation remains unauthorized.
+
+============================================================
+12. Production deployment remains unauthorized
+============================================================
+PASS: Production deployment remains unauthorized.
+
+============================================================
+13. Production migration remains unauthorized
+============================================================
+PASS: Production migration remains unauthorized.
+
+============================================================
+14. Production dependency installation remains unauthorized
+============================================================
+PASS: Production dependency installation remains unauthorized.
+
+============================================================
+15. Owner approval evidence remains uncaptured
+============================================================
+PASS: Owner approval evidence remains uncaptured.
+
+============================================================
+16. Environment-based authorization overrides are blocked
+============================================================
+PHARMACO_FINAL_OWNER_AUTHORIZATION=NOT_GRANTED
+PHARMACO_FINAL_PACKAGE_GENERATION_AUTHORIZED=NO
+PHARMACO_FINAL_PACKAGE_ARCHIVE_AUTHORIZED=NO
+PHARMACO_FINAL_CHECKSUM_GENERATION_AUTHORIZED=NO
+PHARMACO_PRODUCTION_DEPLOYMENT_AUTHORIZED=NO
+PHARMACO_PRODUCTION_MIGRATION_AUTHORIZED=NO
+PHARMACO_PRODUCTION_DEPENDENCY_INSTALLATION_AUTHORIZED=NO
+PASS: No environment-based authorization override detected.
+
+============================================================
+17. No premature package archive/checksum artifacts are tracked
+============================================================
+PASS: No premature package archive/checksum artifacts are tracked.
+
+============================================================
+18. Protected tracked files remain blocked
+============================================================
+PASS: No protected tracked files detected.
+
+============================================================
+Completion Summary
+============================================================
+Phase 18.8 evidence packet script execution: 100%
+Overall controlled package-generation readiness after successful Phase 18.8 evidence: approximately 96%
+Final package generation authorization: 0% — still locked
+
+============================================================
+Final Result
+============================================================
+PHASE 18.8 FINAL OWNER AUTHORIZATION EVIDENCE PACKET CHECK PASSED
