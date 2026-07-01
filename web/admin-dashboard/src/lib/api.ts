@@ -883,11 +883,40 @@ export async function getPharmaPrescriptions(
   return getJsonWithTenant<PharmaPrescriptionsResponse>(token, '/pharmaco/prescriptions', tenantSlug);
 }
 
+export type PharmaSalesFilters = {
+  status?: string;
+  payment_status?: string;
+  sale_type?: string;
+  branch_id?: number;
+};
+
+function buildPharmaQueryString(params: Record<string, string | number | null | undefined>): string {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== '') {
+      query.set(key, String(value));
+    }
+  });
+
+  const queryString = query.toString();
+
+  return queryString ? `?${queryString}` : '';
+}
+
 export async function getPharmaSales(
   token: string,
   tenantSlug: string,
+  filters: PharmaSalesFilters = {},
 ): Promise<PharmaSalesResponse> {
-  return getJsonWithTenant<PharmaSalesResponse>(token, '/pharmaco/sales', tenantSlug);
+  const query = buildPharmaQueryString({
+    status: filters.status,
+    payment_status: filters.payment_status,
+    sale_type: filters.sale_type,
+    branch_id: filters.branch_id,
+  });
+
+  return getJsonWithTenant<PharmaSalesResponse>(token, `/pharmaco/sales${query}`, tenantSlug);
 }
 
 export async function getPharmaSale(
