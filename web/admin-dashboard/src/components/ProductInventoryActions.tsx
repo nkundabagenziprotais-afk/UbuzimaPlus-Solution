@@ -48,6 +48,8 @@ type StockReceiveFormState = {
   reason: string;
 };
 
+type InventoryActionsView = 'create-product' | 'update-product' | 'receive-stock';
+
 const emptyProductForm: ProductFormState = {
   product_category_id: '',
   name: '',
@@ -108,6 +110,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   const [isReceivingStock, setIsReceivingStock] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [activeInventoryAction, setActiveInventoryAction] = useState<InventoryActionsView>('create-product');
 
   const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ||
@@ -277,9 +280,9 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     <article className="panel wide inventory-actions-panel">
       <div className="panel-heading-row">
         <div>
-          <h2>Product master and stock receiving actions</h2>
+          <h2>Inventory actions workspace</h2>
           <p className="muted">
-            Controlled forms for creating products, updating product settings, and receiving stock into the movement ledger.
+            Focused workspaces for product master setup, product settings updates, and controlled stock receiving.
           </p>
         </div>
 
@@ -294,9 +297,45 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
       {!products || !locations ? (
         <p className="muted">Load action data first to populate product categories, product list, and stock locations.</p>
       ) : (
-        <div className="inventory-actions-grid">
-          <form className="inventory-action-card" onSubmit={handleCreateProduct}>
-            <h3>Create product</h3>
+        <>
+          <nav className="inventory-actions-child-nav" aria-label="Inventory action workspaces">
+            <button
+              type="button"
+              className={activeInventoryAction === 'create-product' ? 'active' : ''}
+              onClick={() => setActiveInventoryAction('create-product')}
+            >
+              <span>Product master</span>
+              <strong>Create</strong>
+            </button>
+            <button
+              type="button"
+              className={activeInventoryAction === 'update-product' ? 'active' : ''}
+              onClick={() => setActiveInventoryAction('update-product')}
+            >
+              <span>Product settings</span>
+              <strong>Update</strong>
+            </button>
+            <button
+              type="button"
+              className={activeInventoryAction === 'receive-stock' ? 'active' : ''}
+              onClick={() => setActiveInventoryAction('receive-stock')}
+            >
+              <span>Stock receiving</span>
+              <strong>Receive</strong>
+            </button>
+          </nav>
+
+          <div className="inventory-actions-grid inventory-actions-grid-refined">
+          <form
+            className="inventory-action-card inventory-action-card-focused"
+            onSubmit={handleCreateProduct}
+            hidden={activeInventoryAction !== 'create-product'}
+          >
+            <div className="inventory-action-heading">
+              <span>Product master</span>
+              <h3>Create product</h3>
+              <p>Use this workspace for new medicines, consumables, devices, or services before stock can be received.</p>
+            </div>
 
             <label>
               Product category
@@ -467,8 +506,16 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
             </button>
           </form>
 
-          <form className="inventory-action-card" onSubmit={handleUpdateProduct}>
-            <h3>Update product settings</h3>
+          <form
+            className="inventory-action-card inventory-action-card-focused"
+            onSubmit={handleUpdateProduct}
+            hidden={activeInventoryAction !== 'update-product'}
+          >
+            <div className="inventory-action-heading">
+              <span>Product settings</span>
+              <h3>Update product settings</h3>
+              <p>Adjust reorder levels, minimum stock, status, and basic product identity without mixing this task with receiving.</p>
+            </div>
 
             <label>
               Product
@@ -661,6 +708,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
             </button>
           </form>
         </div>
+        </>
       )}
     </article>
   );

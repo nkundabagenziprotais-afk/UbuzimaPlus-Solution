@@ -107,6 +107,91 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
   const openCredit = Number(state.customerCredit?.open_balance ?? 0);
   const creditRiskRate = percentage(overdueCredit, openCredit);
 
+  const operationalAlerts = useMemo(() => {
+    const payablesOverdue = Number(state.payables?.overdue_balance ?? 0);
+    const purchaseOrdersApproved = Number(state.procurement?.approved_orders_count ?? 0);
+    const stockValue = Number(state.inventory?.total_cost_value ?? 0);
+
+    const alerts = [
+      {
+        tone: overdueCredit > 0 ? 'warning' : 'stable',
+        label: 'Customer credit',
+        title: overdueCredit > 0 ? 'Overdue customer balances need follow-up' : 'No overdue customer credit flagged',
+        detail:
+          overdueCredit > 0
+            ? `${formatMoney(overdueCredit)} is overdue from ${formatMoney(openCredit)} open credit.`
+            : 'Customer credit exposure is not showing overdue risk from the latest report.',
+      },
+      {
+        tone: payablesOverdue > 0 ? 'warning' : 'stable',
+        label: 'Supplier payables',
+        title: payablesOverdue > 0 ? 'Supplier overdue balance requires review' : 'Supplier balance is under control',
+        detail:
+          payablesOverdue > 0
+            ? `${formatMoney(payablesOverdue)} is overdue and should be reviewed before new commitments.`
+            : 'No overdue supplier balance is flagged from the latest payable report.',
+      },
+      {
+        tone: collectionRate > 0 && collectionRate < 80 ? 'attention' : 'stable',
+        label: 'Sales collection',
+        title: collectionRate > 0 && collectionRate < 80 ? 'Collection rate needs attention' : 'Collection rate is acceptable',
+        detail:
+          collectionRate > 0 && collectionRate < 80
+            ? `${collectionRate}% of generated sales has been collected in the current period.`
+            : `${collectionRate}% collection rate based on the current reporting period.`,
+      },
+      {
+        tone: purchaseOrdersApproved > 0 ? 'attention' : 'stable',
+        label: 'Purchasing',
+        title: purchaseOrdersApproved > 0 ? 'Approved purchase orders need receiving review' : 'No approved purchase queue flagged',
+        detail:
+          purchaseOrdersApproved > 0
+            ? `${formatNumber(purchaseOrdersApproved)} approved order ${purchaseOrdersApproved === 1 ? 'is' : 'are'} ready for follow-up.`
+            : 'No approved purchase order queue is highlighted from the current report.',
+      },
+      {
+        tone: stockValue > 0 ? 'stable' : 'attention',
+        label: 'Stock visibility',
+        title: stockValue > 0 ? 'Stock value is visible for review' : 'Stock value needs verification',
+        detail:
+          stockValue > 0
+            ? `${formatMoney(stockValue)} stock at cost is available for management review.`
+            : 'No stock value is currently visible from the inventory valuation report.',
+      },
+    ];
+
+    return alerts;
+  }, [collectionRate, openCredit, overdueCredit, state.inventory, state.payables, state.procurement]);
+
+  const reviewQueues = useMemo(() => {
+    return [
+      {
+        title: 'Credit collection queue',
+        count: formatNumber(state.customerCredit?.open_receivables_count),
+        value: formatMoney(state.customerCredit?.open_balance),
+        note: `${formatNumber(state.customerCredit?.overdue_receivables_count)} overdue receivables need review`,
+      },
+      {
+        title: 'Supplier payment queue',
+        count: formatNumber(state.payables?.open_invoices_count),
+        value: formatMoney(state.payables?.open_balance),
+        note: `${formatMoney(state.payables?.overdue_balance)} overdue supplier exposure`,
+      },
+      {
+        title: 'Purchase receiving queue',
+        count: formatNumber(state.procurement?.approved_orders_count),
+        value: formatMoney(state.procurement?.approved_amount),
+        note: 'Approved orders should be checked against received stock.',
+      },
+      {
+        title: 'Sales collection queue',
+        count: formatNumber(state.sales?.sales_count),
+        value: formatMoney(state.sales?.balance_amount),
+        note: `${collectionRate}% of generated sales has been collected.`,
+      },
+    ];
+  }, [collectionRate, state.customerCredit, state.payables, state.procurement, state.sales]);
+
   useEffect(() => {
     if (!hasTenantContext) {
       return;
@@ -156,6 +241,81 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
       setIsLoading(false);
     }
   }
+
+  const totalSales = Number(state.sales?.total_sales_amount ?? 0);
+  const supplierBalance = Number(state.payables?.open_balance ?? state.payables?.overdue_balance ?? 0);
+  const stockAtCost = Number(state.inventory?.total_cost_value ?? 0);
+
+  const executiveSummaryItems = [
+    {
+      label: 'Operating position',
+      title: collectionRate >= 80 ? 'Collections are supporting daily operations' : 'Collections need executive attention',
+      detail: `${collectionRate}% of generated sales has been collected from ${formatMoney(totalSales)} total sales.`,
+      tone: collectionRate >= 80 ? 'stable' : 'attention',
+    },
+    {
+      label: 'Credit discipline',
+      title: overdueCredit > 0 ? 'Overdue customer credit requires action' : 'Customer credit is within review comfort',
+      detail:
+        overdueCredit > 0
+          ? `${formatMoney(overdueCredit)} is overdue from ${formatMoney(openCredit)} open credit.`
+          : 'No overdue customer credit is highlighted in the current snapshot.',
+      tone: overdueCredit > 0 ? 'warning' : 'stable',
+    },
+    {
+      label: 'Supplier exposure',
+      title: supplierBalance > 0 ? 'Supplier obligations should be reviewed' : 'Supplier exposure is currently light',
+      detail: `${formatMoney(supplierBalance)} remains open with suppliers in the latest payable view.`,
+      tone: supplierBalance > 0 ? 'attention' : 'stable',
+    },
+    {
+      label: 'Stock investment',
+      title: stockAtCost > 0 ? 'Stock value is visible for executive review' : 'Stock valuation needs confirmation',
+      detail:
+        stockAtCost > 0
+          ? `${formatMoney(stockAtCost)} stock at cost is visible for pharmacy operating review.`
+          : 'Inventory value is not visible in the current reporting snapshot.',
+      tone: stockAtCost > 0 ? 'stable' : 'attention',
+    },
+  ];
+
+  const decisionNotes = [
+    {
+      title: 'Approve daily position',
+      note: 'Use sales collected, open customer credit, and supplier balance to decide whether the day can be closed cleanly.',
+    },
+    {
+      title: 'Prioritize collection follow-up',
+      note: 'Escalate overdue receivables before extending additional credit or releasing large-value products on account.',
+    },
+    {
+      title: 'Control purchasing pressure',
+      note: 'Check approved purchase orders, open supplier balances, and current stock value before new buying commitments.',
+    },
+    {
+      title: 'Prepare manager handover',
+      note: 'Use alerts, queues, and operator notes as the handover agenda between cashier, stock, procurement, and management.',
+    },
+  ];
+
+  const operatorChecklist = [
+    {
+      title: 'Cash and collections',
+      note: 'Compare sales generated, collected cash, and open customer credit before closing the day.',
+    },
+    {
+      title: 'Credit control',
+      note: 'Review overdue receivables before approving additional credit sales.',
+    },
+    {
+      title: 'Supplier exposure',
+      note: 'Check open and overdue supplier balances before confirming new purchase commitments.',
+    },
+    {
+      title: 'Stock attention',
+      note: 'Use the stock value and queue notes to guide replenishment, expiry, and receiving conversations.',
+    },
+  ];
 
   const focusItems = [
     {
@@ -226,6 +386,100 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
           <span>Supplier balance</span>
           <strong>{formatMoney(state.payables?.open_balance)}</strong>
           <small>{formatMoney(state.payables?.overdue_balance)} overdue</small>
+        </div>
+      </section>
+
+      <section className="operations-alerts-section">
+        <div className="section-heading">
+          <div>
+            <h3>Operational alerts</h3>
+            <span>Read-only alerts generated from the current tenant reporting snapshot.</span>
+          </div>
+        </div>
+
+        <div className="operations-alert-grid">
+          {operationalAlerts.map((alert) => (
+            <div key={alert.label} className={`operations-alert-card operations-alert-card--${alert.tone}`}>
+              <span>{alert.label}</span>
+              <strong>{alert.title}</strong>
+              <small>{alert.detail}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="operations-review-section">
+        <div className="section-heading">
+          <div>
+            <h3>Review queues</h3>
+            <span>Queues that managers can use for daily follow-up discussions.</span>
+          </div>
+        </div>
+
+        <div className="operations-review-grid">
+          {reviewQueues.map((queue) => (
+            <div key={queue.title}>
+              <span>{queue.title}</span>
+              <strong>{queue.count}</strong>
+              <small>{queue.value}</small>
+              <p>{queue.note}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="operations-executive-section">
+        <div className="section-heading">
+          <div>
+            <h3>Executive operating summary</h3>
+            <span>Management-level interpretation of the current pharmacy reporting snapshot.</span>
+          </div>
+        </div>
+
+        <div className="operations-executive-grid">
+          {executiveSummaryItems.map((item) => (
+            <div key={item.label} className={`operations-executive-card operations-executive-card--${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.title}</strong>
+              <p>{item.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="operations-decision-section">
+        <div className="section-heading">
+          <div>
+            <h3>Decision notes</h3>
+            <span>Executive prompts for daily review, escalation, and handover.</span>
+          </div>
+        </div>
+
+        <div className="operations-decision-grid">
+          {decisionNotes.map((note) => (
+            <div key={note.title}>
+              <strong>{note.title}</strong>
+              <p>{note.note}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="operations-operator-section">
+        <div className="section-heading">
+          <div>
+            <h3>Operator review checklist</h3>
+            <span>Daily questions for a pharmacy manager before moving into detailed workflows.</span>
+          </div>
+        </div>
+
+        <div className="operations-operator-grid">
+          {operatorChecklist.map((item) => (
+            <div key={item.title}>
+              <strong>{item.title}</strong>
+              <p>{item.note}</p>
+            </div>
+          ))}
         </div>
       </section>
 

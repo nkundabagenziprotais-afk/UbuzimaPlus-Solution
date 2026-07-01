@@ -854,6 +854,7 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-ui-check.sh`
 - `./scripts/phase0-check.sh`
 
+
 ### PharmaCo360 command center alerts and review queues
 
 Phase 14.2 adds read-only operational alerts and manager review queues to the PharmaCo360 operations command center.
@@ -879,3 +880,924 @@ Expected approval evidence:
 - `./scripts/pharmaco-reporting-ui-check.sh`
 - `./scripts/phase0-check.sh`
 
+### PharmaCo360 command center responsive polish and operator review
+
+Phase 14.3 improves the command center approval experience by adding an operator review checklist and additional responsive polish.
+
+Included:
+
+- operator review checklist inside the command center
+- small-mobile polish at 360px and 430px
+- tablet and laptop layout polish
+- wide-screen readability guardrails
+- standalone operator review QA document
+- local operator review guardrail script
+
+The feature is UI and QA documentation only. It does not introduce backend changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-operations-command-center-check.sh`
+- `./scripts/pharmaco-operations-alerts-check.sh`
+- `./scripts/pharmaco-operations-operator-review-check.sh`
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
+
+### PharmaCo360 command center executive operating summary
+
+Phase 14.4 adds an executive operating summary and decision notes to the PharmaCo360 operations command center.
+
+Included:
+
+- operating position summary
+- credit discipline summary
+- supplier exposure summary
+- stock investment summary
+- daily close decision note
+- collection follow-up decision note
+- purchasing control decision note
+- manager handover decision note
+- standalone executive summary QA document
+- local executive summary guardrail script
+
+The feature is UI and QA documentation only. It uses existing tenant-safe reporting data and does not introduce backend changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-operations-command-center-check.sh`
+- `./scripts/pharmaco-operations-alerts-check.sh`
+- `./scripts/pharmaco-operations-operator-review-check.sh`
+- `./scripts/pharmaco-operations-executive-summary-check.sh`
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
+
+### PharmaCo360 command center release closure
+
+Phase 14.5 adds release closure and deployment evidence documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- release closure checklist
+- stakeholder review checklist
+- technical review checklist
+- deployment review checklist
+- production evidence checklist
+- cPanel deployment notes
+- local release closure guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- `./scripts/pharmaco-operations-command-center-check.sh`
+- `./scripts/pharmaco-operations-alerts-check.sh`
+- `./scripts/pharmaco-operations-operator-review-check.sh`
+- `./scripts/pharmaco-operations-executive-summary-check.sh`
+- `./scripts/pharmaco-operations-release-closure-check.sh`
+- `./scripts/pharmaco-reporting-ui-check.sh`
+- `./scripts/phase0-check.sh`
+
+### PharmaCo360 command center production deployment runbook
+
+Phase 14.6 adds production deployment and post-deployment verification documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- production deployment runbook
+- GitHub source-of-truth deployment flow
+- cPanel production runtime checklist
+- safe migration warning
+- frontend deployment checklist
+- post-deployment verification checklist
+- responsive production review checklist
+- rollback checklist
+- deployment evidence archive checklist
+- local production deployment guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center release evidence package
+
+Phase 14.7 adds a release evidence index and deployment package for the PharmaCo360 operations command center.
+
+Included:
+
+- release evidence index
+- production deployment package
+- validation evidence register
+- approval evidence register
+- responsive evidence checklist
+- post-deployment evidence checklist
+- rollback evidence checklist
+- local release evidence guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center live verification pack
+
+Phase 14.8 adds deployment execution and live production verification documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment execution checklist
+- live verification pack
+- health verification checklist
+- authentication verification checklist
+- dashboard verification checklist
+- read-only verification checklist
+- responsive live verification checklist
+- production log verification checklist
+- rollback trigger checklist
+- local live verification guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center go-live approval dossier
+
+Phase 14.9 adds go-live approval and readiness sign-off documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- go-live approval dossier
+- go-live readiness sign-off checklist
+- business approval evidence
+- operations approval evidence
+- technical approval evidence
+- deployment approval evidence
+- rollback readiness evidence
+- live verification readiness evidence
+- go / no-go decision register
+- local go-live approval guardrail script
+
+The phase is documentation and validation only. It does not introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center controlled production preparation and cPanel dry-run
+
+Phase 15.0 adds controlled production deployment preparation and cPanel dry-run readiness documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled production deployment preparation checklist
+- cPanel dry-run checklist
+- cPanel readiness checklist
+- production backup readiness checklist
+- deployment package readiness checklist
+- dry-run boundary checklist
+- not-approved production command list
+- dry-run evidence register
+- local cPanel dry-run guardrail script
+
+The phase is documentation and validation only. It does not deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center production package build and deployment handoff
+
+Phase 15.1 adds controlled production package build and deployment handoff documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- production package build checklist
+- package source control requirements
+- package exclusion rules
+- environment protection requirements
+- package build evidence register
+- deployment handoff checklist
+- operator readiness checklist
+- backup and rollback handoff checklist
+- live verification handoff checklist
+- local package handoff guardrail script
+
+The phase is documentation and validation only. It does not deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center package manifest and checksum evidence
+
+Phase 15.2 adds production package manifest and checksum evidence documentation for the PharmaCo360 operations command center.
+
+Included:
+
+- package manifest checklist
+- source traceability requirements
+- package content group verification
+- protected-file exclusion evidence
+- protected production asset warning
+- checksum evidence checklist
+- checksum method requirements
+- integrity verification checklist
+- local package manifest guardrail script
+
+The phase is documentation and validation only. It does not build a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center package dry-run and protected-file inspection
+
+Phase 15.3 adds production package dry-run and protected-file inspection controls for the PharmaCo360 operations command center.
+
+Included:
+
+- package dry-run checklist
+- local package readiness controls
+- file inventory verification requirements
+- package exclusion simulation
+- protected-file inspection checklist
+- special-review file controls
+- protected production asset warnings
+- local package dry-run guardrail script
+
+The phase is documentation and validation only. It does not create a production package, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center package generation dry-run and checksum register
+
+Phase 15.4 adds controlled production package generation dry-run and checksum register controls for the PharmaCo360 operations command center.
+
+Included:
+
+- package generation dry-run document
+- inventory-only package readiness evidence
+- protected tracked source inspection requirement
+- checksum register template
+- checksum generation rules
+- checksum verification rules
+- package integrity evidence fields
+- local package generation dry-run guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center deployment approval freeze and release candidate sign-off
+
+Phase 15.5 adds deployment approval freeze and final release candidate sign-off controls for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment approval freeze document
+- release candidate sign-off checklist
+- freeze no-change boundary
+- final go/no-go evidence register
+- release owner checklist
+- deployment operator checklist
+- rollback owner checklist
+- local release candidate freeze guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-operations-release-candidate-freeze-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center package approval ledger and release freeze evidence index
+
+Phase 15.6 adds the production package approval ledger and release freeze evidence index for the PharmaCo360 operations command center.
+
+Included:
+
+- production package approval ledger
+- release freeze evidence index
+- approval role traceability
+- evidence location index
+- final go/no-go evidence reference
+- release freeze evidence guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-operations-release-candidate-freeze-check.sh
+- ./scripts/pharmaco-operations-release-freeze-evidence-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center final approval decision log and deployment authorization checklist
+
+Phase 15.7 adds the final approval decision log and deployment authorization checklist for the PharmaCo360 operations command center.
+
+Included:
+
+- final approval decision log
+- deployment authorization checklist
+- go/no-go decision options
+- authorization scope controls
+- final go/no-go owner controls
+- rollback confirmation controls
+- local final approval guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-operations-release-candidate-freeze-check.sh
+- ./scripts/pharmaco-operations-release-freeze-evidence-check.sh
+- ./scripts/pharmaco-operations-final-approval-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center deployment execution authorization packet and operator evidence capture
+
+Phase 15.8 adds the deployment execution authorization packet and operator evidence capture checklist for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment execution authorization packet
+- operator evidence capture document
+- execution decision options
+- execution scope controls
+- pre-execution evidence capture
+- during-execution evidence capture
+- post-execution evidence capture
+- local deployment execution authorization guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, introduce backend changes, frontend product changes, migrations, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-operations-release-candidate-freeze-check.sh
+- ./scripts/pharmaco-operations-release-freeze-evidence-check.sh
+- ./scripts/pharmaco-operations-final-approval-check.sh
+- ./scripts/pharmaco-operations-deployment-execution-authorization-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center deployment runbook command sequence and rollback evidence placeholders
+
+Phase 15.9 adds the deployment runbook command sequence and rollback evidence placeholders for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment runbook command sequence
+- command sequence categories
+- command execution rules
+- explicit prohibited production command boundary
+- rollback evidence placeholders
+- rollback readiness register
+- rollback decision table
+- rollback command placeholder rules
+- local deployment runbook guardrail script
+
+The phase is documentation and validation only. It does not create a production package archive, upload a production package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+Expected approval evidence:
+
+- ./scripts/pharmaco-operations-command-center-check.sh
+- ./scripts/pharmaco-operations-alerts-check.sh
+- ./scripts/pharmaco-operations-operator-review-check.sh
+- ./scripts/pharmaco-operations-executive-summary-check.sh
+- ./scripts/pharmaco-operations-release-closure-check.sh
+- ./scripts/pharmaco-operations-production-deployment-check.sh
+- ./scripts/pharmaco-operations-release-evidence-check.sh
+- ./scripts/pharmaco-operations-live-verification-check.sh
+- ./scripts/pharmaco-operations-go-live-approval-check.sh
+- ./scripts/pharmaco-operations-cpanel-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-handoff-check.sh
+- ./scripts/pharmaco-operations-package-manifest-check.sh
+- ./scripts/pharmaco-operations-package-dry-run-check.sh
+- ./scripts/pharmaco-operations-package-generation-dry-run-check.sh
+- ./scripts/pharmaco-operations-release-candidate-freeze-check.sh
+- ./scripts/pharmaco-operations-release-freeze-evidence-check.sh
+- ./scripts/pharmaco-operations-final-approval-check.sh
+- ./scripts/pharmaco-operations-deployment-execution-authorization-check.sh
+- ./scripts/pharmaco-operations-deployment-runbook-check.sh
+- ./scripts/pharmaco-reporting-ui-check.sh
+- ./scripts/phase0-check.sh
+
+### PharmaCo360 command center deployment runbook and rollback evidence
+
+Phase 15.9 adds a clean deployment runbook and rollback evidence structure for the PharmaCo360 operations command center.
+
+Included:
+
+- deployment runbook command sequence
+- operator evidence placeholders
+- prohibited production action boundary
+- rollback trigger register
+- rollback readiness register
+- protected-file, `.env`, storage, migration, and database boundaries
+- local deployment runbook guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation authorization gate
+
+Phase 16.0 adds a controlled authorization gate before any future production package generation.
+
+Included:
+
+- package generation authorization gate
+- package generation decision evidence
+- required gate owners
+- required authorization checks
+- pre-generation evidence register
+- post-generation evidence register
+- package exclusion rules
+- local package generation authorization guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 package generation dry-run command binder
+
+Phase 16.1 adds a controlled package generation dry-run command binder for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run command preview register
+- required binder owners
+- dry-run command categories
+- stop conditions
+- dry-run evidence capture placeholders
+- package exclusion preview
+- protected-file inspection boundary
+- local dry-run binder guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 package generation dry-run evidence manifest
+
+Phase 16.2 adds a dry-run evidence manifest for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run evidence manifest
+- dry-run evidence index
+- evidence naming rules
+- evidence ownership placeholders
+- storage reference placeholders
+- review checkpoints
+- missing evidence handling
+- local evidence manifest guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 dry-run package manifest preview ledger
+
+Phase 16.3 adds dry-run package manifest and exclusion preview ledgers for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run package manifest preview ledger
+- dry-run package exclusion preview ledger
+- inclusion category placeholders
+- exclusion category placeholders
+- preview ownership placeholders
+- stop conditions
+- local manifest preview ledger guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 dry-run checksum preview ledger
+
+Phase 16.4 adds dry-run checksum preview controls for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run checksum preview ledger
+- dry-run checksum review index
+- checksum method preview placeholders
+- checksum evidence ownership placeholders
+- checksum storage placeholders
+- checksum review outcomes
+- stop conditions
+- local checksum preview ledger guardrail script
+
+This phase is documentation and validation only. It does not generate checksums, create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 dry-run approval evidence closure ledger
+
+Phase 16.5 adds approval evidence closure controls for the PharmaCo360 operations command center.
+
+Included:
+
+- dry-run approval evidence closure ledger
+- dry-run approval evidence exception log
+- approval evidence ownership placeholders
+- closure decision placeholders
+- exception handling rows
+- escalation rules
+- stop conditions
+- local approval evidence closure guardrail script
+
+This phase is documentation and validation only. It does not execute approval, generate checksums, create a package archive, execute package generation, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 package generation readiness lock ledger
+
+Phase 16.6 adds package generation readiness lock controls for the PharmaCo360 operations command center.
+
+Included:
+
+- package generation readiness lock ledger
+- package generation readiness unlock exception log
+- readiness lock ownership placeholders
+- lock and unlock decision placeholders
+- unlock exception handling rows
+- unlock requirements
+- stop conditions
+- local readiness lock guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation authorization release ledger
+
+Phase 16.7 adds controlled package generation authorization release controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation authorization release ledger
+- controlled package generation release exception log
+- authorization release owner placeholders
+- controlled release decision placeholders
+- release requirements
+- release exception handling rows
+- stop conditions
+- local controlled authorization release guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation execution evidence preflight ledger
+
+Phase 16.8 adds controlled package generation execution evidence preflight controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation execution evidence preflight ledger
+- controlled package generation execution preflight exception log
+- execution evidence owner placeholders
+- execution preflight decision placeholders
+- required execution evidence placeholders
+- preflight requirements
+- execution preflight exception handling rows
+- stop conditions
+- local execution evidence preflight guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation command release hold ledger
+
+Phase 16.9 adds controlled package generation command release hold controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation command release hold ledger
+- controlled package generation command release hold exception log
+- command hold owner placeholders
+- command release decision placeholders
+- command identity placeholders
+- evidence storage placeholders
+- command release requirements
+- command release hold exception handling rows
+- stop conditions
+- local command release hold guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation final execution authorization packet
+
+Phase 17.0 adds controlled package generation final execution authorization packet controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation final execution authorization packet
+- controlled package generation final execution authorization exception log
+- final authorization owner placeholders
+- final execution decision placeholders
+- execution authorization evidence placeholders
+- final execution authorization requirements
+- final execution authorization exception handling rows
+- stop conditions
+- local final execution authorization guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation execution decision hold ledger
+
+Phase 17.1 adds controlled package generation execution decision hold controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation execution decision hold ledger
+- controlled package generation execution decision exception log
+- execution decision owner placeholders
+- decision hold evidence placeholders
+- decision outcome placeholders
+- execution decision requirements
+- execution decision exception handling rows
+- stop conditions
+- local execution decision hold guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, authorize final execution, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation execution approval closure ledger
+
+Phase 17.2 adds controlled package generation execution approval closure controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation execution approval closure ledger
+- controlled package generation execution approval closure exception log
+- approval closure owner placeholders
+- execution approval closure evidence placeholders
+- execution approval closure decision placeholders
+- execution approval closure requirements
+- execution approval closure exception handling rows
+- stop conditions
+- local execution approval closure guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, authorize final execution, release an execution decision, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+### PharmaCo360 controlled package generation execution release readiness ledger
+
+Phase 17.3 adds controlled package generation execution release readiness controls for the PharmaCo360 operations command center.
+
+Included:
+
+- controlled package generation execution release readiness ledger
+- controlled package generation execution release readiness exception log
+- execution release readiness owner placeholders
+- execution release readiness evidence placeholders
+- execution release readiness decision placeholders
+- execution release readiness requirements
+- execution release readiness exception handling rows
+- stop conditions
+- local execution release readiness guardrail script
+
+This phase is documentation and validation only. It does not create a package archive, execute package generation, generate checksums, execute approval, release a package generation command, authorize final execution, release an execution decision, close execution approval, upload a package, deploy to production, copy production files, execute production commands, run migrations, introduce backend changes, frontend product changes, dependency changes, or data mutation.
+
+## Phase 17.4 Controlled Package Generation Execution Readiness Sign-Off
+
+The PharmaCo360 operations command center now includes a controlled package generation execution readiness sign-off ledger.
+
+This adds a final readiness sign-off hold before any future controlled package generation execution can be considered. The control requires readiness sign-off ownership, evidence capture, upstream ledger continuity, exception review, and explicit stop-condition checks.
+
+This does not create a package archive, execute package generation, generate checksums, release commands, upload files, execute cPanel actions, deploy live changes, mutate backend logic, mutate frontend product behavior, run migrations, change dependencies, or mutate data.
+
+
+## Phase 17.5 Controlled Package Generation Execution Final Release Gate Ledger
+
+Phase 17.5 adds the controlled package generation execution final release gate ledger. This phase records the final release gate status before any controlled package generation execution may be separately considered.
+
+The phase adds release gate evidence placeholders, owner placeholders, decision placeholders, exception handling, stop conditions, and non-execution confirmation.
+
+No package archive is created. No package generation is executed. No checksum is generated. No approval is executed. No package command is released. No upload, cPanel action, live deployment, production file copy, migration, dependency change, backend product change, frontend product change, or data mutation occurs.
+
+
+## Phase 17.6 — Controlled Package Generation Execution Operator Release Approval Ledger
+
+Phase 17.6 adds controlled operator release approval documentation for package generation execution.
+
+This phase confirms that operator approval evidence is represented as documentation only. It does not authorize package archive creation, package generation execution, checksum generation, package command release, upload, cPanel execution, live deployment, production file copy, migration, dependency change, backend product change, frontend product change, or data mutation.
+
+## Phase 17.7 Controlled Package Generation Execution Release Authorization Hold
+
+Phase 17.7 adds a release authorization hold ledger and exception log for the controlled package generation execution pathway.
+
+This phase keeps package generation execution blocked until explicit release authorization evidence is completed and validated.
+
+No package archive, checksum, package upload, cPanel execution, live deployment, production file copy, migration, dependency change, backend product change, frontend product change, or data mutation is introduced.
+
+## Phase 17.8 — Controlled package generation execution owner authorization lock ledger
+
+Phase 17.8 adds a controlled package generation execution owner authorization lock ledger for the PharmaCo360 operations command center.
+
+This phase keeps package generation execution blocked until explicit future owner authorization is captured. It introduces owner placeholders, authorization lock evidence placeholders, exception handling, and stop conditions.
+
+No package archive, package generation execution, checksum generation, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 17.9 — Controlled package generation execution final authorization evidence ledger
+
+Phase 17.9 adds a controlled final authorization evidence ledger for the PharmaCo360 package generation execution pathway.
+
+This phase documents final authorization evidence placeholders and keeps final execution authorization blocked until explicit future approval is provided.
+
+No package archive, package generation execution, checksum generation, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.0 — Controlled package generation execution final go/no-go hold ledger
+
+Phase 18.0 adds a controlled final go/no-go hold ledger for the PharmaCo360 package generation execution pathway.
+
+This phase documents final go/no-go evidence placeholders and keeps final execution blocked until explicit future approval is provided.
+
+No package archive, package generation execution, checksum generation, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.1 — Controlled package generation execution package-build command quarantine ledger
+
+Phase 18.1 adds a controlled package-build command quarantine ledger for the PharmaCo360 package generation execution pathway.
+
+This phase documents that any package-build command remains quarantined and cannot be released or executed until explicit future approval is provided.
+
+No package archive, package-build command execution, package generation execution, checksum generation, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.2 — Controlled package generation execution archive target quarantine ledger
+
+Phase 18.2 adds a controlled archive target quarantine ledger for the PharmaCo360 package generation execution pathway.
+
+This phase documents that any archive target path remains quarantined and cannot be released or executed until explicit future approval is provided.
+
+No archive target release, package archive, package-build command execution, package generation execution, checksum generation, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.3 — Controlled package generation execution checksum target quarantine ledger
+
+Phase 18.3 adds a controlled checksum target quarantine ledger for the PharmaCo360 package generation execution pathway.
+
+This phase documents that any checksum target remains quarantined and cannot be released or executed until explicit future approval is provided.
+
+No checksum target release, checksum generation, archive target release, package archive, package-build command execution, package generation execution, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.4 — Controlled package generation execution package manifest quarantine ledger
+
+Phase 18.4 adds a controlled package manifest quarantine ledger for the PharmaCo360 package generation execution pathway.
+
+This phase documents that any future package manifest remains quarantined and cannot be created, released, or executed until explicit future approval is provided.
+
+No package manifest creation, package manifest target release, checksum target release, checksum generation, archive target release, package archive, package-build command execution, package generation execution, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.5 Package Contents Quarantine Ledger
+
+The PharmaCo360 controlled package generation execution workflow now includes a package contents quarantine ledger.
+
+This phase confirms that package contents remain evidence-only. No package contents list was released or executed. No package manifest was created. No package archive was created. No checksum was generated. No package-build command was released or executed. No package generation, upload, cPanel execution, live deployment, production file copy, migration, dependency change, backend product change, frontend product change, or data mutation occurred.
