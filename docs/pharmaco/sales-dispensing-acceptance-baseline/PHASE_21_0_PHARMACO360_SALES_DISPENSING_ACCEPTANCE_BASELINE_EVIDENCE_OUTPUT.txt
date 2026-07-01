@@ -1,0 +1,163 @@
+
+============================================================
+Phase 21.0 PharmaCo360 Sales/Dispensing Acceptance Baseline Check
+============================================================
+Current branch: feature/phase-21-0-pharmaco360-sales-dispensing-acceptance-baseline
+
+============================================================
+1. Source branch is not a production branch
+============================================================
+PASS: Current branch 'feature/phase-21-0-pharmaco360-sales-dispensing-acceptance-baseline' is not a production branch.
+
+============================================================
+2. Source branch is based on latest development
+============================================================
+PASS: Current branch contains latest origin/development.
+
+============================================================
+3. Phase 20.9 evidence exists and passed
+============================================================
+PASS: Phase 20.9 evidence exists and passed.
+
+============================================================
+4. Phase 21.0 files exist
+============================================================
+PASS: Phase 21.0 acceptance baseline document exists.
+PASS: Phase 21.0 acceptance baseline status file exists.
+
+============================================================
+5. Phase 21.0 status values are correct
+============================================================
+PASS: Acceptance baseline status is PREPARED.
+PASS: Target module is PHARMACO360_SALES_DISPENSING.
+PASS: Source preview phase is Phase 20.9.
+PASS: Phase 20.8 implementation merge is YES.
+PASS: Phase 20.9 preview evidence merge is YES.
+PASS: Admin dashboard build status is PASSED.
+PASS: Login/home baseline verification is YES.
+PASS: Known critical blockers remains NO.
+PASS: Acceptance status is READY_FOR_OWNER_REVIEW.
+
+============================================================
+6. No new implementation is included in Phase 21.0
+============================================================
+PASS: NEW_IMPLEMENTATION_INCLUDED remains NO.
+PASS: FRONTEND_CHANGES_INCLUDED remains NO.
+PASS: BACKEND_CHANGES_INCLUDED remains NO.
+PASS: DATABASE_CHANGES_INCLUDED remains NO.
+PASS: MIGRATION_CHANGES_INCLUDED remains NO.
+PASS: PRODUCTION_CHANGES_INCLUDED remains NO.
+
+============================================================
+7. Package generation and production actions remain blocked
+============================================================
+PASS: PACKAGE_GENERATION_ALLOWED remains NO.
+PASS: PACKAGE_ARCHIVE_CREATION_ALLOWED remains NO.
+PASS: CHECKSUM_GENERATION_ALLOWED remains NO.
+PASS: PRODUCTION_DEPLOYMENT_ALLOWED remains NO.
+PASS: PRODUCTION_MIGRATION_ALLOWED remains NO.
+PASS: PRODUCTION_DEPENDENCY_INSTALLATION_ALLOWED remains NO.
+PASS: Package generation status remains LOCKED.
+PASS: Owner authorization remains not granted.
+PASS: Final package generation authorization remains 0%.
+
+============================================================
+8. Overall system completion is tracked separately
+============================================================
+PASS: Overall system completion is recorded as 95%.
+PASS: Controlled package-generation readiness is recorded separately as 96%.
+
+============================================================
+9. Acceptance baseline includes source phases
+============================================================
+PASS: Acceptance baseline includes required source phases.
+
+============================================================
+10. Accepted working baseline is documented
+============================================================
+PASS: Accepted working baseline sections are documented.
+
+============================================================
+11. Acceptance criteria are documented
+============================================================
+PASS: Acceptance criteria are documented.
+
+============================================================
+12. Owner review notes are documented
+============================================================
+PASS: Owner review notes are documented.
+
+============================================================
+13. Responsive review baseline is present
+============================================================
+PASS: Responsive review baseline is present.
+
+============================================================
+14. Safety boundary is documented
+============================================================
+PASS: Safety boundary is documented.
+
+============================================================
+15. Only allowed Phase 21.0 files are changed
+============================================================
+PASS: Only allowed Phase 21.0 acceptance/evidence files are changed.
+
+============================================================
+16. Backend and database files are not changed
+============================================================
+PASS: No backend or database files are changed.
+
+============================================================
+17. Admin dashboard build passes
+============================================================
+
+> ubuzima-admin-dashboard@0.1.0 build
+> vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.28 kB
+dist/assets/index-CVRnkdM7.css   36.37 kB │ gzip:  6.93 kB
+dist/assets/index-BrHxeujJ.js   293.39 kB │ gzip: 77.18 kB
+✓ built in 304ms
+PASS: Admin dashboard build passes.
+
+============================================================
+18. Environment authorization overrides are blocked
+============================================================
+PHARMACO_OWNER_AUTHORIZATION_GRANTED=NO
+PHARMACO_PACKAGE_GENERATION_ALLOWED=NO
+PHARMACO_PACKAGE_ARCHIVE_CREATION_ALLOWED=NO
+PHARMACO_CHECKSUM_GENERATION_ALLOWED=NO
+PHARMACO_PRODUCTION_DEPLOYMENT_ALLOWED=NO
+PHARMACO_PRODUCTION_MIGRATION_ALLOWED=NO
+PHARMACO_PRODUCTION_DEPENDENCY_INSTALLATION_ALLOWED=NO
+PASS: No environment-based authorization override detected.
+
+============================================================
+19. No premature package archive/checksum artifacts are tracked
+============================================================
+PASS: No premature package archive/checksum artifacts are tracked.
+
+============================================================
+20. Protected tracked files remain blocked
+============================================================
+PASS: No protected tracked files detected.
+
+============================================================
+Completion Summary
+============================================================
+Overall system completion: approximately 95%
+Phase 21.0 PharmaCo360 sales/dispensing acceptance baseline check: 100%
+Controlled package-generation readiness: approximately 96%
+Final package generation authorization: 0% — still locked
+Normal development: allowed
+
+============================================================
+Final Result
+============================================================
+PHASE 21.0 PHARMACO360 SALES/DISPENSING ACCEPTANCE BASELINE CHECK PASSED
