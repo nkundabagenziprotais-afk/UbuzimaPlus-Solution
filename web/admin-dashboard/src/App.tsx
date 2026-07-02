@@ -1925,7 +1925,12 @@ function App() {
   function handleLeftSubmenuClick(item: MenuItem, submenu: LeftMenuSubmenu) {
     openPrincipalMenu(item);
 
-    if (item.key === 'inventory' && submenu.target) setActiveInventoryView(submenu.target as InventoryView);
+    if (item.key === 'inventory' && submenu.target) {
+      setActiveInventoryView(submenu.target as InventoryView);
+      navigateToSection('inventory');
+      return;
+    }
+
     if (item.key === 'pos' && submenu.target) setActivePosWorkspace(submenu.target as PosWorkspaceKey);
     if (item.key === 'suppliers' && submenu.target) setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
     if (item.key === 'finance' && submenu.target) setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
@@ -3686,9 +3691,22 @@ function App() {
         return renderAdminPanel();
       case 'inventory':
         return (
-          <section className="section-page">
-<ProductInventoryPreview token={session.token} profile={profile} />
-            <ProductInventoryActions token={session.token} profile={profile} />
+          <section
+            className="section-page inventory-route-page"
+            data-inventory-page={activeInventoryView}
+          >
+            <ProductInventoryPreview
+              key={activeInventoryView}
+              token={session.token}
+              profile={profile}
+              activeView={activeInventoryView}
+              onActiveViewChange={setActiveInventoryView}
+              showInternalNavigation={false}
+            />
+
+            {activeInventoryView === 'product-master' && (
+              <ProductInventoryActions token={session.token} profile={profile} />
+            )}
           </section>
         );
       case 'pos':

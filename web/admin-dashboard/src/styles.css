@@ -7659,3 +7659,34 @@ h3,
     grid-template-columns: 1fr;
   }
 }
+
+/* Phase I Inventory page routing marker: confirms each submenu opens its own page */
+.inventory-active-page-marker {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.inventory-active-page-marker span {
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inventory-active-page-marker strong {
+  color: #1f2937;
+  font-size: 0.92rem;
+}
+
+.inventory-active-page-marker small {
+  color: #64748b;
+  font-size: 0.76rem;
+}

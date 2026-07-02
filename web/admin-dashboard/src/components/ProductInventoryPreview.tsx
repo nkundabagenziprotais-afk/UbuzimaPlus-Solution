@@ -33,14 +33,24 @@ const inventoryViews: Array<{
   label: string;
   description: string;
 }> = [
-  { key: 'overview', label: 'Overview Summary', description: 'KPIs, charts, and AI inventory analytics' },
+  { key: 'overview', label: 'Overview Summary', description: 'Inventory summary only' },
   { key: 'low-stock', label: 'Low Stock Watch List', description: 'Products below reorder level' },
-  { key: 'shelf', label: 'Retail Product Shelf', description: 'Customer-facing product shelf view' },
-  { key: 'batches', label: 'Batch and Expiry Preview', description: 'Batch register sorted by expiry' },
+  { key: 'shelf', label: 'Retail Product Shelf', description: 'Shelf-ready product view' },
+  { key: 'batches', label: 'Batch and Expiry Preview', description: 'Batch and FEFO register' },
   { key: 'near-expiry', label: 'Near Expiry Watch List', description: 'Expiry risk within 180 days' },
-  { key: 'product-master', label: 'Product Master', description: 'Product register and bulk tools' },
+  { key: 'product-master', label: 'Product Master', description: 'Product register and product actions' },
   { key: 'locations', label: 'Stock Locations', description: 'Branch stock storage points' },
 ];
+
+const inventoryPageDescriptions: Record<InventoryView, string> = {
+  overview: 'Summary of stock health only. Detailed lists stay in their own pages.',
+  'low-stock': 'Products below reorder or minimum stock level. Reorder action belongs here.',
+  shelf: 'Retail shelf view for searchable products, customer-facing price, stock and category filters.',
+  batches: 'Batch, expiry, FEFO, supplier reference, cost and selling price review.',
+  'near-expiry': 'Batches approaching expiry and actions for manager/pharmacist review.',
+  'product-master': 'Product master, create product, edit product, receive stock and bulk tools.',
+  locations: 'Stock locations, branches, shelves, stores and storage points.',
+};
 
 type InventorySmartCardKey =
   | 'products'
@@ -187,6 +197,7 @@ export function ProductInventoryPreview({ token, profile, activeView, onActiveVi
   const [inventorySmartCardFieldVisibility, setInventorySmartCardFieldVisibility] = useState<Record<InventorySmartCardKey, Record<InventorySmartCardField, boolean>>>(loadStoredInventorySmartCardFieldVisibility);
 
   const activeInventoryView = activeView ?? internalInventoryView;
+  const activeInventoryMeta = inventoryViews.find((view) => view.key === activeInventoryView) ?? inventoryViews[0];
 
   function selectInventoryView(view: InventoryView) {
     if (onActiveViewChange) {
@@ -419,10 +430,8 @@ const tenantSlug =
     <article className="panel wide inventory-preview-panel">
       <div className="panel-heading-row">
         <div>
-          <h2>Product Master</h2>
-          <p className="muted">
-            Inventory command workspace for product master, shelf, stock locations, batches, low stock, expiry exposure, and AI weekly trends.
-          </p>
+          <h2>{activeInventoryMeta.label}</h2>
+          <p className="muted">{inventoryPageDescriptions[activeInventoryView]}</p>
         </div>
 
         <button type="button" onClick={loadInventoryPreview} disabled={isLoading}>
@@ -434,6 +443,12 @@ const tenantSlug =
 
       {error && <div className="form-error">{error}</div>}
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
+
+      <section className="inventory-active-page-marker" data-active-inventory-view={activeInventoryView}>
+        <span>Inventory page</span>
+        <strong>{activeInventoryMeta.label}</strong>
+        <small>{activeInventoryMeta.description}</small>
+      </section>
 
       <section className="module-workspace-shell inventory-workspace-shell">
         {showInternalNavigation && (
