@@ -12,3 +12,4 @@ deployment:
     - /bin/rm -f "$ADMIN_DEPLOYPATH/index.html"
     - if [ -d "$REPOPATH/web/public-website/dist" ]; then /bin/cp -a "$REPOPATH/web/public-website/dist/." "$PUBLIC_DEPLOYPATH"/; else echo "Public website dist not found"; exit 1; fi
     - if [ -d "$REPOPATH/web/admin-dashboard/dist" ]; then /bin/cp -a "$REPOPATH/web/admin-dashboard/dist/." "$ADMIN_DEPLOYPATH"/; else echo "Admin dashboard dist not found"; exit 1; fi
+    - if [ -f "$REPOPATH/infra/cpanel/api-front-controller.php" ]; then /bin/cp "$REPOPATH/infra/cpanel/api-front-controller.php" "$PUBLIC_DEPLOYPATH/index.php"; else echo "API front controller missing"; exit 1; fi
