@@ -11,3 +11,4 @@ backend/storage/logs/*
 !backend/storage/logs/.gitignore
 .idea/
 .vscode/
+public_html/
