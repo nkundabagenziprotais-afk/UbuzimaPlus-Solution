@@ -14,6 +14,9 @@ import { CorporateEmailPanel } from './components/CorporateEmailPanel';
 import { PharmacistChatPanel } from './components/PharmacistChatPanel';
 import { DataLayerAdminPanel } from './components/DataLayerAdminPanel';
 import { AiOperationsPanel } from './components/AiOperationsPanel';
+import { NotificationCenterPanel } from './components/NotificationCenterPanel';
+import { MarketLocalizationPanel } from './components/MarketLocalizationPanel';
+import { NearbyProvidersPanel } from './components/NearbyProvidersPanel';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 
@@ -54,9 +57,16 @@ type AdminSectionKey =
   | 'reports'
   | 'tenant-setup'
   | 'security'
+  | 'corporate-email'
+  | 'pharmacist-chat'
+  | 'notifications'
+  | 'market-management'
+  | 'localization'
+  | 'nearby-providers'
+  | 'vitapharma-website'
   | 'settings';
 
-type MenuGroupKey = 'erp' | 'solutions' | 'ai' | 'admin';
+type MenuGroupKey = 'erp' | 'solutions' | 'ai' | 'admin' | 'tenant-ops' | 'tenant-admin' | 'market';
 type ErpWorkspaceKey = 'erp-overview' | 'finance' | 'hr' | 'procurement' | 'projects' | 'customer-care';
 type SolutionKey = 'pharmaco' | 'vetcore' | 'cliniccore' | 'insucore';
 type PharmaSegmentKey = 'retail' | 'wholesale' | 'retail-procurement' | 'delivery' | 'insurance-clinic' | 'ai-insights';
@@ -107,10 +117,16 @@ type MenuItem = {
   status?: string;
 };
 
+type MenuGroup = { key: MenuGroupKey; label: string; icon: string; items: MenuItem[] };
+
 const storageKey = 'ubuzima_admin_session';
 const activeSectionStorageKey = 'ubuzima_admin_active_section';
 const trustedDeviceStorageKey = 'ubuzima_admin_trusted_device_token';
 const brandLogoSrc = '/assets/ubuzima-logo.png';
+const vitaPharmaLogoSrc = '/assets/vitapharma-logo.png';
+const staffLoginLanguages = ['English', 'French', 'Portuguese'] as const;
+type StaffLoginLanguage = typeof staffLoginLanguages[number];
+
 
 const demoUsers = [
   {
@@ -302,6 +318,41 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     title: 'Security, roles, and tenant scope',
     description: 'Resolved permissions, access checks, tenant assignments, audit posture, and protected modules.',
   },
+  'corporate-email': {
+    eyebrow: 'Corporate Email',
+    title: 'Company mailbox workspace',
+    description: 'Outlook-style email access prepared for company mail provider integration.',
+  },
+  'pharmacist-chat': {
+    eyebrow: 'Pharmacist Chat',
+    title: 'Customer pharmacist conversations',
+    description: 'Mobile app customer conversations routed to authorized pharmacists and tenant staff.',
+  },
+  notifications: {
+    eyebrow: 'Notification Center',
+    title: 'In-app communication and SMS-ready notices',
+    description: 'Publish operational messages to platform, market, and tenant audiences.',
+  },
+  'market-management': {
+    eyebrow: 'Market Management',
+    title: 'Market onboarding and tenant availability',
+    description: 'Assign tenants to markets and prepare customer discovery by market and service radius.',
+  },
+  localization: {
+    eyebrow: 'Localization',
+    title: 'Language, region, and access context',
+    description: 'Support English, French, and Portuguese with market-aware default language behavior.',
+  },
+  'nearby-providers': {
+    eyebrow: 'Nearby Providers',
+    title: 'Customer service-provider discovery',
+    description: 'Preview nearby pharmacy, clinic, and partner recommendations for the mobile app.',
+  },
+  'vitapharma-website': {
+    eyebrow: 'Tenant Website',
+    title: 'VitaPharma public website',
+    description: 'First-tenant public website surface integrated with Ubuzima+ and PharmaCo360.',
+  },
   settings: {
     eyebrow: 'System framework',
     title: 'Platform settings blueprint',
@@ -309,7 +360,7 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
   },
 };
 
-const menuGroups: Array<{ key: MenuGroupKey; label: string; icon: string; items: MenuItem[] }> = [
+const menuGroups: MenuGroup[] = [
   {
     key: 'erp',
     label: 'ERP Module',
@@ -366,6 +417,11 @@ const menuGroups: Array<{ key: MenuGroupKey; label: string; icon: string; items:
       { key: 'admin-panel', context: 'platform-management', label: 'Platform Management', description: 'Website, pages, sections', icon: 'PM', status: 'Active' },
       { key: 'admin-panel', context: 'corporate-email', label: 'Corporate Email', description: 'Company mailbox workspace', icon: 'EM', status: 'Active' },
       { key: 'admin-panel', context: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Mobile customer queue', icon: 'CH', status: 'Active' },
+      { key: 'notifications', label: 'Notification Center', description: 'In-app and SMS-ready notices', icon: 'NT', status: 'Active' },
+      { key: 'market-management', label: 'Market Management', description: 'Markets and tenant assignment', icon: 'MK', status: 'Active' },
+      { key: 'localization', label: 'Localization', description: 'Language and market policy', icon: 'LG', status: 'Active' },
+      { key: 'nearby-providers', label: 'Nearby Providers', description: 'Customer provider discovery', icon: 'NP', status: 'Active' },
+      { key: 'vitapharma-website', label: 'VitaPharma Website', description: 'First tenant public site', icon: 'VP', status: 'Active' },
       { key: 'admin-panel', context: 'web-application', label: 'Web Application', description: 'Public and staff web apps', icon: 'WEB', status: 'Active' },
       { key: 'admin-panel', context: 'mobile-application', label: 'Mobile Application', description: 'Manager and field apps', icon: 'MOB', status: 'Planned' },
       { key: 'admin-panel', context: 'desktop-application', label: 'Desktop Application', description: 'Installable POS/PWA', icon: 'DSK', status: 'Planned' },
@@ -374,6 +430,131 @@ const menuGroups: Array<{ key: MenuGroupKey; label: string; icon: string; items:
     ],
   },
 ];
+
+function hasAnyPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
+  if (!profile) return false;
+  return permissions.some((permission) => profile.permissions.includes(permission));
+}
+
+function tenantDisplayName(profile: AccessProfile | undefined): string {
+  return profile?.tenant_assignments?.[0]?.tenant?.name ?? 'Tenant';
+}
+
+function itemIsVisibleForProfile(profile: AccessProfile | undefined, item: MenuItem): boolean {
+  if (!profile || profile.scope.is_platform) return true;
+
+  if (item.key === 'inventory') return hasAnyPermission(profile, ['pharmaco.inventory.manage']);
+  if (item.key === 'pos') return hasAnyPermission(profile, ['pharmaco.pos.use', 'pharmaco.sales.manage']);
+  if (item.key === 'suppliers') return hasAnyPermission(profile, ['pharmaco.suppliers.manage']);
+  if (item.key === 'finance') return hasAnyPermission(profile, ['pharmaco.sales.manage', 'pharmaco.suppliers.manage']);
+  if (item.key === 'reports') return hasAnyPermission(profile, ['pharmaco.reports.view', 'pharmaco.sales.manage', 'pharmaco.inventory.manage']);
+  if (item.key === 'tenant-setup') return hasAnyPermission(profile, ['pharmaco.profile.manage', 'pharmaco.branches.manage']);
+  if (item.key === 'ai-center') return hasAnyPermission(profile, ['ai.use', 'ai.manage']);
+  if (item.key === 'corporate-email') return hasAnyPermission(profile, ['communications.email.use']);
+  if (item.key === 'pharmacist-chat') return hasAnyPermission(profile, ['pharmaco.chat.manage']);
+  if (item.key === 'notifications') return hasAnyPermission(profile, ['notifications.view', 'notifications.manage']);
+  if (item.key === 'market-management') return hasAnyPermission(profile, ['markets.manage']);
+  if (item.key === 'localization') return hasAnyPermission(profile, ['localization.use', 'localization.manage']);
+  if (item.key === 'nearby-providers') return hasAnyPermission(profile, ['markets.view', 'markets.manage', 'localization.use']);
+  if (item.key === 'security') return true;
+  if (item.key === 'admin-panel') return item.context === 'two-factor-auth';
+  if (item.key === 'solution-portfolio') return profile.scope.is_solution;
+
+  return false;
+}
+
+function pruneMenuGroups(profile: AccessProfile | undefined, groups: MenuGroup[]): MenuGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => itemIsVisibleForProfile(profile, item)),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[] {
+  if (!profile || profile.scope.is_platform) {
+    return menuGroups;
+  }
+
+  if (profile.scope.is_solution) {
+    return pruneMenuGroups(profile, [
+      {
+        key: 'solutions',
+        label: 'Solution Portfolio',
+        icon: 'SOL',
+        items: [
+          { key: 'solution-portfolio', context: 'pharmaco', label: 'PharmaCore 360', description: 'Assigned solution tenants', icon: 'PH', status: 'Active' },
+        ],
+      },
+      {
+        key: 'tenant-ops',
+        label: 'PharmaCo360 Operations',
+        icon: 'PH',
+        items: [
+          { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
+          { key: 'pos', label: 'POS', description: 'Sales and dispensing', icon: 'PS', status: 'Live' },
+          { key: 'suppliers', label: 'Suppliers', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
+          { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
+          { key: 'reports', label: 'Reports', description: 'Executive and daily reports', icon: 'RP', status: 'Live' },
+          { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer queue', icon: 'CH', status: 'Live' },
+        ],
+      },
+      {
+        key: 'ai',
+        label: 'AI Center',
+        icon: 'AI',
+        items: [
+          { key: 'ai-center', context: 'recommendations', label: 'AI Operations', description: 'Recommendations and approvals', icon: 'AI', status: 'Active' },
+        ],
+      },
+      {
+        key: 'market',
+        label: 'Market & Communication',
+        icon: 'MK',
+        items: [
+          { key: 'market-management', label: 'Market Management', description: 'Assign tenants to markets', icon: 'MK', status: 'Active' },
+          { key: 'nearby-providers', label: 'Nearby Providers', description: 'Customer discovery', icon: 'NP', status: 'Active' },
+          { key: 'notifications', label: 'Notifications', description: 'In-app notices', icon: 'NT', status: 'Active' },
+          { key: 'corporate-email', label: 'Corporate Email', description: 'Company mail', icon: 'EM', status: 'Active' },
+        ],
+      },
+    ]);
+  }
+
+  const tenantName = tenantDisplayName(profile);
+
+  return pruneMenuGroups(profile, [
+    {
+      key: 'tenant-ops',
+      label: `${tenantName} Pharmacy`,
+      icon: 'PH',
+      items: [
+        { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
+        { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
+        { key: 'suppliers', label: 'Suppliers', description: 'Purchasing and receiving', icon: 'SP', status: 'Live' },
+        { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN', status: 'Live' },
+        { key: 'reports', label: 'Reports', description: 'Daily and monthly review', icon: 'RP', status: 'Live' },
+        { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer questions', icon: 'CH', status: 'Live' },
+        { key: 'ai-center', context: 'recommendations', label: 'AI Recommendations', description: 'Stock and expiry advice', icon: 'AI', status: 'Active' },
+      ],
+    },
+    {
+      key: 'tenant-admin',
+      label: 'Tenant Administration',
+      icon: 'ADM',
+      items: [
+        { key: 'tenant-setup', label: 'Business Setup', description: 'Profile, branches, departments', icon: 'TS', status: 'Live' },
+        { key: 'security', label: 'Users and Security', description: 'Scope, roles, access', icon: 'SC', status: 'Protected' },
+        { key: 'admin-panel', context: 'two-factor-auth', label: 'Staff 2FA', description: 'Authenticator and trusted devices', icon: '2F', status: 'Mandatory' },
+        { key: 'corporate-email', label: 'Corporate Email', description: 'Company mail', icon: 'EM', status: 'Active' },
+        { key: 'notifications', label: 'Notifications', description: 'Staff communication', icon: 'NT', status: 'Active' },
+        { key: 'localization', label: 'Language and Market', description: 'EN, FR, PT preference', icon: 'LG', status: 'Active' },
+        { key: 'nearby-providers', label: 'Nearby Providers', description: 'Customer app discovery', icon: 'NP', status: 'Active' },
+      ],
+    },
+  ]);
+}
 
 const erpModules: Array<{
   key: ErpWorkspaceKey;
@@ -929,6 +1110,7 @@ function App() {
   const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [email, setEmail] = useState('admin@vitapharmaafrica.com');
   const [password, setPassword] = useState('ChangeThisPassword123!');
+  const [staffLoginLanguage, setStaffLoginLanguage] = useState<StaffLoginLanguage>('English');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [twoFactorFlow, setTwoFactorFlow] = useState<TwoFactorFlowState | null>(null);
@@ -957,13 +1139,25 @@ function App() {
     solutions: false,
     ai: false,
     admin: false,
+    'tenant-ops': false,
+    'tenant-admin': false,
+    market: false,
   });
 
   const profile = session?.profile;
-  const currentSection = sectionMeta[activeSection];
+  const visibleMenuGroups = useMemo(() => buildVisibleMenuGroups(profile), [profile]);
+  const visibleSectionKeys = useMemo(() => {
+    const keys = new Set<AdminSectionKey>(['overview']);
+    visibleMenuGroups.forEach((group) => group.items.forEach((item) => keys.add(item.key)));
+    return keys;
+  }, [visibleMenuGroups]);
+  const currentSection = sectionMeta[activeSection] ?? sectionMeta.overview;
   const loginStatusText = profile
     ? `Logged in now as ${profile.user.name || profile.user.email}`
     : '';
+  const nextStaffLoginLanguage = staffLoginLanguages[
+    (staffLoginLanguages.indexOf(staffLoginLanguage) + 1) % staffLoginLanguages.length
+  ];
 
   const appEnv = import.meta.env;
   const tenantWebsiteSignals = [
@@ -1052,6 +1246,13 @@ function App() {
   useEffect(() => {
     localStorage.setItem(activeSectionStorageKey, activeSection);
   }, [activeSection]);
+
+  useEffect(() => {
+    if (profile && !visibleSectionKeys.has(activeSection)) {
+      setActiveSection('overview');
+      setNavigationStack([]);
+    }
+  }, [activeSection, profile, visibleSectionKeys]);
 
   function navigateToSection(section: AdminSectionKey) {
     if (section === activeSection) {
@@ -1328,7 +1529,9 @@ function App() {
         <section className="auth-panel auth-form-panel">
           <div className="auth-language-row">
             <span>Staff Identity</span>
-            <button type="button">English</button>
+            <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
+              {staffLoginLanguage}
+            </button>
           </div>
 
           <div className="login-card">
@@ -1969,7 +2172,13 @@ function App() {
   }
 
   function renderAdminPanel() {
-    const selectedLayer = adminPanelLayers.find((layer) => layer.key === activeAdminPanelWorkspace) ?? adminPanelLayers[0];
+    const visibleAdminPanelLayers = profile.scope.is_platform
+      ? adminPanelLayers
+      : adminPanelLayers.filter((layer) => layer.key === 'two-factor-auth');
+    const selectedWorkspace = visibleAdminPanelLayers.some((layer) => layer.key === activeAdminPanelWorkspace)
+      ? activeAdminPanelWorkspace
+      : visibleAdminPanelLayers[0].key;
+    const selectedLayer = visibleAdminPanelLayers.find((layer) => layer.key === selectedWorkspace) ?? visibleAdminPanelLayers[0];
 
     return (
       <section className="section-page">
@@ -1980,7 +2189,7 @@ function App() {
           status={selectedLayer.status}
         />
 
-        {activeAdminPanelWorkspace === 'two-factor-auth' && (
+        {selectedWorkspace === 'two-factor-auth' && (
           <TwoFactorAdminPanel
             token={session.token}
             profile={profile}
@@ -1990,28 +2199,28 @@ function App() {
           />
         )}
 
-        {activeAdminPanelWorkspace === 'platform-management' && (
+        {selectedWorkspace === 'platform-management' && (
           <PlatformManagementPanel token={session.token} />
         )}
 
-        {activeAdminPanelWorkspace === 'corporate-email' && (
+        {selectedWorkspace === 'corporate-email' && (
           <CorporateEmailPanel token={session.token} />
         )}
 
-        {activeAdminPanelWorkspace === 'pharmacist-chat' && (
+        {selectedWorkspace === 'pharmacist-chat' && (
           <PharmacistChatPanel token={session.token} />
         )}
 
-        {activeAdminPanelWorkspace === 'data-layer' && (
+        {selectedWorkspace === 'data-layer' && (
           <DataLayerAdminPanel token={session.token} />
         )}
 
         <section className="admin-layer-grid">
-          {adminPanelLayers.map((layer) => (
+          {visibleAdminPanelLayers.map((layer) => (
             <button
               key={layer.key}
               type="button"
-              className={activeAdminPanelWorkspace === layer.key ? 'active' : ''}
+              className={selectedWorkspace === layer.key ? 'active' : ''}
               onClick={() => setActiveAdminPanelWorkspace(layer.key)}
             >
               <span>{layer.status}</span>
@@ -2021,7 +2230,7 @@ function App() {
           ))}
         </section>
 
-        {!['two-factor-auth', 'platform-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(activeAdminPanelWorkspace) && (
+        {!['two-factor-auth', 'platform-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && (
           <article className="panel wide">
             <h2>{selectedLayer.title} control surface</h2>
             <p className="muted">{selectedLayer.summary}</p>
@@ -2033,9 +2242,9 @@ function App() {
           </article>
         )}
 
-        {!['two-factor-auth', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(activeAdminPanelWorkspace) && <ModuleReadinessGrid items={settingsBlueprint} />}
+        {!['two-factor-auth', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && <ModuleReadinessGrid items={settingsBlueprint} />}
 
-        {activeAdminPanelWorkspace === 'backend-api' && accessControlPanel}
+        {selectedWorkspace === 'backend-api' && accessControlPanel}
       </section>
     );
   }
@@ -2174,6 +2383,96 @@ function App() {
               {accessControlPanel}
               {tenantAssignmentsPanel}
             </section>
+          </section>
+        );
+      case 'corporate-email':
+        return (
+          <section className="section-page">
+            <ModulePageIntro
+              eyebrow="Corporate Email"
+              title="Outlook-style company mailbox"
+              description="Staff can work from an in-app mailbox while external Microsoft Graph or IMAP/SMTP integration is configured."
+              status="Active"
+            />
+            <CorporateEmailPanel token={session.token} />
+          </section>
+        );
+      case 'pharmacist-chat':
+        return (
+          <section className="section-page">
+            <ModulePageIntro
+              eyebrow="Pharmacist Chat"
+              title="Mobile customer conversations"
+              description="Customer mobile app conversations are available to authorized pharmacists and tenant staff."
+              status="Active"
+            />
+            <PharmacistChatPanel token={session.token} />
+          </section>
+        );
+      case 'notifications':
+        return (
+          <section className="section-page">
+            <ModulePageIntro
+              eyebrow="Notification Center"
+              title="In-app communication and SMS-ready notices"
+              description="Publish messages to staff by platform, market, and tenant while keeping the same model ready for SMS integration."
+              status="Active"
+            />
+            <NotificationCenterPanel token={session.token} profile={profile} />
+          </section>
+        );
+      case 'market-management':
+      case 'localization':
+        return (
+          <section className="section-page">
+            <ModulePageIntro
+              eyebrow={activeSection === 'market-management' ? 'Market Management' : 'Localization'}
+              title={activeSection === 'market-management' ? 'Tenant market onboarding' : 'Language and regional access context'}
+              description="Manage tenant market assignment, default languages, service radius, and regional context for expansion."
+              status="Active"
+            />
+            <MarketLocalizationPanel token={session.token} profile={profile} />
+          </section>
+        );
+      case 'nearby-providers':
+        return (
+          <section className="section-page">
+            <ModulePageIntro
+              eyebrow="Nearby Providers"
+              title="Customer service-provider discovery"
+              description="Preview how the customer mobile app recommends nearby pharmacies and other service providers."
+              status="Active"
+            />
+            <NearbyProvidersPanel />
+          </section>
+        );
+      case 'vitapharma-website':
+        return (
+          <section className="section-page">
+            <ModulePageIntro
+              eyebrow="Tenant Website"
+              title="VitaPharma public website"
+              description="The first tenant website is served from the public web app and can run at vitapharmaafrica.com or the local /vitapharma path."
+              status="Active"
+            />
+            <article className="panel wide tenant-website-panel">
+              <img src={vitaPharmaLogoSrc} alt="VitaPharma" />
+              <div>
+                <h2>VitaPharma Africa</h2>
+                <p className="muted">
+                  Customer-facing pharmacy website with section navigation, staff login, language selector, and Ubuzima+ platform integration.
+                </p>
+                <div className="framework-chip-list">
+                  <small>Retail pharmacy</small>
+                  <small>Pharmacist support</small>
+                  <small>Nearby providers</small>
+                  <small>Powered by Ubuzima+</small>
+                </div>
+              </div>
+              <a className="panel-action-link" href={`${publicWebsiteUrl.replace(/\/$/, '')}/vitapharma`}>
+                Open tenant website
+              </a>
+            </article>
           </section>
         );
       case 'settings':
@@ -2317,7 +2616,7 @@ function App() {
               </span>
             </button>
 
-            {menuGroups.map((group) => (
+            {visibleMenuGroups.map((group) => (
               <div key={group.key} className="tree-group">
                 <button
                   type="button"
@@ -2377,8 +2676,7 @@ function App() {
             <button
               type="button"
               onClick={() => {
-                setActiveAdminPanelWorkspace('corporate-email');
-                navigateToSection('admin-panel');
+                navigateToSection('corporate-email');
               }}
             >
               Email Corporate

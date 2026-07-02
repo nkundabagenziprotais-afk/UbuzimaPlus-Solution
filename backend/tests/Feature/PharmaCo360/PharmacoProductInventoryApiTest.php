@@ -102,7 +102,7 @@ class PharmacoProductInventoryApiTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('tenant.slug', 'vitapharma')
-            ->assertJsonPath('summary.product_categories_count', 5)
+            ->assertJsonPath('summary.product_categories_count', 15)
             ->assertJsonPath('summary.products_count', 5)
             ->assertJsonPath('summary.stock_locations_count', 2)
             ->assertJsonPath('summary.stock_batches_count', 5)

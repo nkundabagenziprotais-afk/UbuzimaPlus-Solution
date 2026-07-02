@@ -20,6 +20,16 @@ class PharmacoProductInventorySeeder extends Seeder
         $branch = Branch::where('tenant_id', $tenant->id)->where('code', 'HQ')->firstOrFail();
 
         $categories = [
+            ['name' => 'Prescription Medicines', 'code' => 'PRESCRIPTION_MEDICINES', 'description' => 'Medicines that require pharmacist or prescriber control.'],
+            ['name' => 'Over-the-counter Medicines', 'code' => 'OTC_MEDICINES', 'description' => 'Common non-prescription medicines for everyday care.'],
+            ['name' => 'Chronic Care', 'code' => 'CHRONIC_CARE', 'description' => 'Long-term treatment categories such as hypertension and diabetes.'],
+            ['name' => 'Mother and Baby Care', 'code' => 'MOTHER_BABY', 'description' => 'Family, maternity, infant and child health essentials.'],
+            ['name' => 'First Aid and Wound Care', 'code' => 'FIRST_AID', 'description' => 'Dressings, wound care and first aid supplies.'],
+            ['name' => 'Personal Care and Hygiene', 'code' => 'PERSONAL_CARE', 'description' => 'Hygiene, wellness and daily personal-care products.'],
+            ['name' => 'Medical Devices', 'code' => 'MEDICAL_DEVICES', 'description' => 'Approved devices and diagnostic equipment.'],
+            ['name' => 'Vitamins and Supplements', 'code' => 'SUPPLEMENTS', 'description' => 'Vitamins, minerals and nutritional supplements.'],
+            ['name' => 'Diagnostics and Tests', 'code' => 'DIAGNOSTICS', 'description' => 'Rapid tests, strips and basic diagnostic supplies.'],
+            ['name' => 'Household Health Essentials', 'code' => 'HOUSEHOLD_HEALTH', 'description' => 'Practical home health products and consumables.'],
             ['name' => 'Antibiotics', 'code' => 'ANTIBIOTICS', 'description' => 'Antibacterial medicines.'],
             ['name' => 'Analgesics', 'code' => 'ANALGESICS', 'description' => 'Pain and fever medicines.'],
             ['name' => 'Hypertension', 'code' => 'HYPERTENSION', 'description' => 'Cardiovascular and blood pressure medicines.'],
