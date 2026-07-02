@@ -14,9 +14,12 @@ import {
 type ProductInventoryPreviewProps = {
   token: string;
   profile: AccessProfile;
+  activeView?: InventoryView;
+  onActiveViewChange?: (view: InventoryView) => void;
+  showInternalNavigation?: boolean;
 };
 
-type InventoryView =
+export type InventoryView =
   | 'overview'
   | 'low-stock'
   | 'shelf'
@@ -63,7 +66,7 @@ function formatDate(value: string | null): string {
   }).format(new Date(value));
 }
 
-export function ProductInventoryPreview({ token, profile }: ProductInventoryPreviewProps) {
+export function ProductInventoryPreview({ token, profile, activeView, onActiveViewChange, showInternalNavigation = true }: ProductInventoryPreviewProps) {
   const [summary, setSummary] = useState<PharmaInventorySummaryResponse | null>(null);
   const [products, setProducts] = useState<PharmaProductsResponse | null>(null);
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
@@ -71,13 +74,25 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
   const [nearExpiryBatches, setNearExpiryBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
-  const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
+  const [internalInventoryView, setInternalInventoryView] = useState<InventoryView>('overview');
   const [expandedViews, setExpandedViews] = useState<Partial<Record<InventoryView, boolean>>>({});
   const [inventoryNotice, setInventoryNotice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const tenantSlug =
+  const activeInventoryView = activeView ?? internalInventoryView;
+
+  function selectInventoryView(view: InventoryView) {
+    if (onActiveViewChange) {
+      onActiveViewChange(view);
+      return;
+    }
+
+    setInternalInventoryView(view);
+  }
+
+
+const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '');
 
@@ -136,7 +151,7 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
   }
 
   function openFullRegister(view: InventoryView) {
-    setActiveInventoryView(view);
+    selectInventoryView(view);
     setExpandedViews((current) => ({ ...current, [view]: true }));
     setInventoryNotice(`${inventoryViews.find((item) => item.key === view)?.label ?? 'Register'} opened in full register mode.`);
   }
@@ -202,20 +217,22 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
 
       <section className="module-workspace-shell inventory-workspace-shell">
-        <aside className="module-section-rail" aria-label="Inventory module sections">
-          <span>Inventory</span>
-          {inventoryViews.map((view) => (
-            <button
-              key={view.key}
-              type="button"
-              className={activeInventoryView === view.key ? 'active' : ''}
-              onClick={() => setActiveInventoryView(view.key)}
-            >
-              <strong>{view.label}</strong>
-              <small>{view.description}</small>
-            </button>
-          ))}
-        </aside>
+        {showInternalNavigation && (
+          <aside className="module-section-rail" aria-label="Inventory module sections">
+            <span>Inventory</span>
+            {inventoryViews.map((view) => (
+              <button
+                key={view.key}
+                type="button"
+                className={activeInventoryView === view.key ? 'active' : ''}
+                onClick={() => selectInventoryView(view.key)}
+              >
+                <strong>{view.label}</strong>
+                <small>{view.description}</small>
+              </button>
+            ))}
+          </aside>
+        )}
 
         <div className="module-section-stage">
           {activeInventoryView === 'overview' && summary && (
