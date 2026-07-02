@@ -1374,8 +1374,8 @@ function App() {
     summary: true,
     'tenant-dashboard': true,
     'quick-actions': true,
-    'system-experience': true,
-    'role-workspaces': true,
+    'system-experience': false,
+    'role-workspaces': false,
   });
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<MenuGroupKey, boolean>>({
     erp: false,
@@ -3182,22 +3182,12 @@ function App() {
       default:
         return (
           <section className="section-page">
-            <section className="signed-in-banner">
-              <div>
-                <span className="status-dot" />
-                <strong>{loginStatusText}</strong>
-              </div>
-              <small>
-                Scope: {profile.scope.type} · Tenants: {profile.tenant_assignments.length || 'none'} · 2FA:{' '}
-                {profile.user.two_factor?.enabled ? 'enabled' : 'setup needed'}
-              </small>
-            </section>
-            <section className="home-control-panel">
+<section className="home-control-panel">
               <div>
                 <p className="eyebrow">Home display controls</p>
-                <h2>Keep only the home sections this user needs.</h2>
+                <h2>Choose what stays visible on this Home page.</h2>
                 <p className="muted">
-                  The home page stays compact. Users can leave a section visible or hide it and continue working in the selected module.
+                  Keep the Home page focused. Hide sections that are not needed today and continue working from the left menu.
                 </p>
               </div>
               <div className="home-widget-toggle-grid">
@@ -3425,8 +3415,8 @@ function App() {
                 navigateToSection('corporate-email');
               }}
             >
-              Email Corporate
-              {unreadMailCount > 0 && <span className="action-badge">{unreadMailCount}</span>}
+              Corporate Email
+              {unreadMailCount > 0 && <span className="action-badge" aria-label={`${unreadMailCount} unread emails`}>{unreadMailCount}</span>}
             </button>
           </div>
 

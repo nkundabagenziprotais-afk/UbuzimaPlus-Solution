@@ -5728,3 +5728,25 @@ h3,
   justify-content: flex-end;
   margin-top: -6px;
 }
+
+/* Phase I Home/header notification refinement */
+.header-mail-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.header-mail-button .action-badge {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
