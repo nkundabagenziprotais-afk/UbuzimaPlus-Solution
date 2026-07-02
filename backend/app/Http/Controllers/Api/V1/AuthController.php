@@ -9,6 +9,7 @@ use App\Services\Auth\UserAccessProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -83,6 +84,27 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'access_token' => $token,
             'profile' => $profileService->build($user->fresh()),
+        ]);
+    }
+
+
+    public function passwordResetRequest(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        try {
+            Password::sendResetLink([
+                'email' => $data['email'],
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => 'If this email is registered, password reset instructions will be processed. If email delivery is not configured yet, contact the platform administrator to reset access.',
         ]);
     }
 

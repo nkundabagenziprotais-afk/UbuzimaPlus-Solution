@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getPharmaBranches, getPharmacyProfile, login, logout, runAccessCheck, verifyTwoFactor } from './lib/api';
+import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getPharmaBranches, getPharmacyProfile, login, logout, requestPasswordReset, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
@@ -128,7 +128,6 @@ const staffLoginLanguages = ['English', 'French', 'Portuguese'] as const;
 type StaffLoginLanguage = typeof staffLoginLanguages[number];
 
 
-const demoUsers: Array<Record<string, any>> = [];
 
 const commercialFramework = [
   {
@@ -1101,6 +1100,11 @@ function App() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [trustThisDevice, setTrustThisDevice] = useState(true);
   const [newRecoveryCodes, setNewRecoveryCodes] = useState<string[] | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false);
+  const [passwordResetEmail, setPasswordResetEmail] = useState('');
+  const [passwordResetStatus, setPasswordResetStatus] = useState('');
+  const [isRequestingPasswordReset, setIsRequestingPasswordReset] = useState(false);
   const [accessCheck, setAccessCheck] = useState<AccessCheckState>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(false);
   const [pharmaCore, setPharmaCore] = useState<PharmaCoreState>({
@@ -1354,6 +1358,34 @@ function App() {
     }
   }
 
+  async function handlePasswordResetRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const targetEmail = (passwordResetEmail || email).trim();
+
+    if (!targetEmail) {
+      setPasswordResetStatus('Enter your staff email address before requesting a reset.');
+      return;
+    }
+
+    setError('');
+    setPasswordResetStatus('');
+    setIsRequestingPasswordReset(true);
+
+    try {
+      const response = await requestPasswordReset({ email: targetEmail });
+      setPasswordResetStatus(response.message);
+    } catch (err) {
+      setPasswordResetStatus(
+        err instanceof Error
+          ? err.message
+          : 'Unable to submit the password reset request. Please contact the platform administrator.',
+      );
+    } finally {
+      setIsRequestingPasswordReset(false);
+    }
+  }
+
   async function handleTwoFactorVerify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -1545,14 +1577,38 @@ function App() {
 
                 <label>
                   Password
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    autoComplete="new-password"
-                    required
-                  />
+                  <div className="password-input-row">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-visibility-button"
+                      onClick={() => setShowPassword((current) => !current)}
+                      aria-label={showPassword ? 'Hide password' : 'View password'}
+                    >
+                      {showPassword ? 'Hide' : 'View'}
+                    </button>
+                  </div>
                 </label>
+
+                <div className="login-assist-row">
+                  <button
+                    type="button"
+                    className="auth-link-button"
+                    onClick={() => {
+                      setPasswordResetEmail(email);
+                      setPasswordResetStatus('');
+                      setIsPasswordResetOpen((current) => !current);
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
 
                 {error && <div className="form-error">{error}</div>}
 
@@ -1618,16 +1674,48 @@ function App() {
                 </div>
               </div>
             )}
+            {isPasswordResetOpen && (
+              <form className="password-reset-panel" onSubmit={handlePasswordResetRequest}>
+                <div>
+                  <strong>Reset staff password</strong>
+                  <p className="muted">
+                    Enter your staff email. If the account exists, reset instructions will be processed securely.
+                  </p>
+                </div>
 
-            <div className="demo-users">
-              <p>Development shortcuts</p>
-              {demoUsers.map((user) => (
-                <button key={user.email} type="button" onClick={() => setEmail(user.email)}>
-                  <span>{user.label}</span>
-                  <small>{user.scope} scope</small>
-                </button>
-              ))}
-            </div>
+                <label>
+                  Staff email
+                  <input
+                    type="email"
+                    value={passwordResetEmail}
+                    onChange={(event) => setPasswordResetEmail(event.target.value)}
+                    placeholder="name@example.com"
+                    autoComplete="off"
+                    required
+                  />
+                </label>
+
+                {passwordResetStatus && (
+                  <div className="form-success password-reset-status">{passwordResetStatus}</div>
+                )}
+
+                <div className="password-reset-actions">
+                  <button type="submit" disabled={isRequestingPasswordReset}>
+                    {isRequestingPasswordReset ? 'Submitting...' : 'Request reset'}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      setIsPasswordResetOpen(false);
+                      setPasswordResetStatus('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </section>
       </main>

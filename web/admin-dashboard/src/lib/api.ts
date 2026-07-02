@@ -94,6 +94,11 @@ export type LoginResponse = {
   trust_device_available: boolean;
 };
 
+export type PasswordResetRequestResponse = {
+  status: 'ok';
+  message: string;
+};
+
 export type TwoFactorVerifyResponse = {
   status: 'two_factor_verified';
   token_type: 'Bearer';
@@ -148,6 +153,29 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   }
 
   return data as LoginResponse;
+}
+
+export async function requestPasswordReset(payload: { email: string }): Promise<PasswordResetRequestResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/password-reset-request`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      data?.errors?.email?.[0] ||
+        data?.message ||
+        'Unable to submit password reset request.',
+    );
+  }
+
+  return data as PasswordResetRequestResponse;
 }
 
 export async function verifyTwoFactor(payload: {

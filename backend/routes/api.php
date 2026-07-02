@@ -40,6 +40,7 @@ Route::prefix('v1/mobile/pharmacist-chat')->group(function () {
 
 Route::prefix('v1/auth')->group(function () {
     Route::post('/login', [\App\Http\Controllers\Api\V1\AuthController::class, 'login']);
+    Route::post('/password-reset-request', [\App\Http\Controllers\Api\V1\AuthController::class, 'passwordResetRequest']);
     Route::post('/two-factor/verify', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'verify']);
 
     Route::middleware('auth:sanctum')->group(function () {

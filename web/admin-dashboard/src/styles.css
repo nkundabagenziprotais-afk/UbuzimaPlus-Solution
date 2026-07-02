@@ -108,8 +108,7 @@ p {
 }
 
 .login-form button,
-.logout-button,
-.demo-users button {
+.logout-button {
   border: none;
   cursor: pointer;
 }
@@ -134,34 +133,6 @@ p {
   background: #fff1f0;
   color: #a02b21;
   font-weight: 700;
-}
-
-.demo-users {
-  margin-top: 28px;
-  display: grid;
-  gap: 10px;
-}
-
-.demo-users p {
-  margin-bottom: 4px;
-  color: #6d7d76;
-  font-size: 0.85rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.demo-users button {
-  text-align: left;
-  border-radius: 16px;
-  padding: 13px 14px;
-  background: #edf6f1;
-  color: #16352a;
-  display: grid;
-  gap: 3px;
-}
-
-.demo-users small {
-  color: #648074;
 }
 
 .auth-side {
@@ -454,7 +425,6 @@ p {
   }
 }
 
-
 .access-actions {
   display: flex;
   flex-wrap: wrap;
@@ -494,7 +464,6 @@ p {
   background: #fff4ee;
   color: #8a3a15;
 }
-
 
 .panel-heading-row {
   display: flex;
@@ -594,7 +563,6 @@ p {
   }
 }
 
-
 .form-success {
   border-radius: 14px;
   padding: 12px 14px;
@@ -692,7 +660,6 @@ p {
     grid-column: auto;
   }
 }
-
 
 .inventory-preview-panel {
   background:
@@ -805,7 +772,6 @@ p {
   }
 }
 
-
 .inventory-actions-panel {
   background:
     radial-gradient(circle at top left, rgba(18, 123, 90, 0.08), transparent 22rem),
@@ -887,7 +853,6 @@ p {
     grid-template-columns: 1fr;
   }
 }
-
 
 .sales-review-panel {
   display: flex;
@@ -1067,7 +1032,6 @@ p {
   }
 }
 
-
 .confirmation-controls {
   display: grid;
   gap: 0.75rem;
@@ -1138,7 +1102,6 @@ p {
     align-items: stretch;
   }
 }
-
 
 .payment-recording-card {
   border: 1px solid rgba(20, 83, 45, 0.12);
@@ -1237,7 +1200,6 @@ p {
     grid-template-columns: 1fr;
   }
 }
-
 
 .sales-creation-card {
   border: 1px solid rgba(20, 83, 45, 0.12);
@@ -1346,7 +1308,6 @@ p {
   }
 }
 
-
 .procurement-panel {
   border-color: rgba(15, 118, 110, 0.16);
 }
@@ -1384,7 +1345,6 @@ p {
   }
 }
 
-
 .selected-list-row {
   border-color: rgba(15, 118, 110, 0.35) !important;
   background: rgba(240, 253, 250, 0.78);
@@ -1408,7 +1368,6 @@ p {
 .approval-actions button {
   width: fit-content;
 }
-
 
 .payables-panel {
   display: grid;
@@ -1515,7 +1474,6 @@ p {
     grid-template-columns: 1fr;
   }
 }
-
 
 .reporting-dashboard-panel {
   display: grid;
@@ -1666,7 +1624,6 @@ p {
     justify-self: start;
   }
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* PharmaCo360 Customer Credit & Receivables                                  */
@@ -2668,16 +2625,6 @@ h3,
 .inventory-action-card input,
 .inventory-action-card select,
 .inventory-action-card textarea {
-  border-radius: 8px;
-}
-
-.login-form button,
-.logout-button,
-.demo-users button,
-.access-actions button,
-.panel-heading-row button,
-.inline-edit-form button,
-.editor-departments button {
   border-radius: 8px;
 }
 
@@ -4787,4 +4734,110 @@ h3,
   .inventory-setup-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.password-input-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-row input {
+  padding-right: 88px;
+}
+
+.login-form .password-visibility-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: #edf6f1;
+  color: #106b4f;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.login-assist-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
+.login-form .auth-link-button,
+.auth-link-button {
+  margin: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: #106b4f;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.password-reset-panel {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(16, 107, 79, 0.16);
+  border-radius: 20px;
+  padding: 16px;
+  background: #f7fbf8;
+}
+
+.password-reset-panel label {
+  display: grid;
+  gap: 8px;
+  color: #344840;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.password-reset-panel input {
+  width: 100%;
+  border: 1px solid rgba(16, 107, 79, 0.2);
+  border-radius: 16px;
+  padding: 14px 16px;
+  outline: none;
+  background: #fff;
+}
+
+.password-reset-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.password-reset-actions button {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.password-reset-actions button[type='submit'] {
+  background: #106b4f;
+  color: #fff;
+}
+
+.password-reset-actions .secondary-button {
+  background: #e8f1ed;
+  color: #16352a;
+}
+
+.form-success {
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #eaf8f1;
+  color: #146044;
+  font-weight: 700;
+}
+
+.password-reset-status {
+  line-height: 1.5;
 }
