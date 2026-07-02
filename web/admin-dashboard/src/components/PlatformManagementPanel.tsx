@@ -112,6 +112,19 @@ export function PlatformManagementPanel({ token }: PlatformManagementPanelProps)
     }
   }
 
+  function mergeStylePatch(patch: Record<string, string>) {
+    try {
+      const currentStyle = JSON.parse(sectionDraft.style || '{}') as Record<string, unknown>;
+      setSectionDraft({
+        ...sectionDraft,
+        style: JSON.stringify({ ...currentStyle, ...patch }, null, 2),
+      });
+      setError('');
+    } catch {
+      setError('Fix the Style JSON syntax before using appearance controls.');
+    }
+  }
+
   return (
     <article className="panel wide platform-management-panel">
       <div className="panel-heading-row">
@@ -223,6 +236,42 @@ export function PlatformManagementPanel({ token }: PlatformManagementPanelProps)
                   spellCheck={false}
                 />
               </label>
+
+              <div className="appearance-control-grid">
+                <h4>Appearance controls</h4>
+                <label>
+                  Font family
+                  <select onChange={(event) => mergeStylePatch({ fontFamily: event.target.value })} defaultValue="">
+                    <option value="" disabled>Select font</option>
+                    <option value="Inter">Inter</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="system-ui">System UI</option>
+                  </select>
+                </label>
+                <label>
+                  Font size
+                  <select onChange={(event) => mergeStylePatch({ fontSize: event.target.value })} defaultValue="">
+                    <option value="" disabled>Select size</option>
+                    <option value="small">Small</option>
+                    <option value="normal">Normal</option>
+                    <option value="large">Large</option>
+                  </select>
+                </label>
+                <label>
+                  Primary color
+                  <input type="color" onChange={(event) => mergeStylePatch({ primaryColor: event.target.value })} />
+                </label>
+                <label>
+                  Section style
+                  <select onChange={(event) => mergeStylePatch({ sectionStyle: event.target.value })} defaultValue="">
+                    <option value="" disabled>Select style</option>
+                    <option value="plain">Plain</option>
+                    <option value="band">Full-width band</option>
+                    <option value="compact">Compact</option>
+                  </select>
+                </label>
+              </div>
 
               <button type="button" onClick={() => handleSaveSection(selectedSection)} disabled={isLoading}>
                 Save section

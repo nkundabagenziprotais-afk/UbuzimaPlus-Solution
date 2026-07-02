@@ -97,6 +97,21 @@ export function NotificationCenterPanel({ token, profile }: NotificationCenterPa
       {error && <div className="form-error">{error}</div>}
       {message && <div className="form-success">{message}</div>}
 
+      <section className="notification-management-grid">
+        {[
+          ['Create New Notification', 'Publish in-app messages by tenant, market, or platform scope.'],
+          ['Manage Recurring Notifications', 'Prepare daily close, stock, payment, and reminder communication schedules.'],
+          ['Edit Notification', 'Update draft or scheduled messages before publishing.'],
+          ['Disable Notification', 'Turn off old or repeated communication without deleting audit history.'],
+          ['Platform Notification Management Center', 'Control in-app notices now and SMS-ready communication later.'],
+        ].map(([label, detail]) => (
+          <button key={label} type="button" onClick={() => setMessage(`${label} selected.`)}>
+            <strong>{label}</strong>
+            <span>{detail}</span>
+          </button>
+        ))}
+      </section>
+
       <section className="notification-layout">
         {canManage && (
           <form className="notification-compose" onSubmit={handleCreate}>

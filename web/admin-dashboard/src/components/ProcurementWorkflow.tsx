@@ -23,7 +23,16 @@ import {
 type Props = {
   token: string;
   profile: AccessProfile;
+  workspaceView?: ProcurementWorkspaceView;
 };
+
+type ProcurementWorkspaceView =
+  | 'create-supplier'
+  | 'supplier-list'
+  | 'create-purchase-order'
+  | 'outstanding-purchase-orders'
+  | 'receive-purchase-order'
+  | 'received-purchase-orders';
 
 type ProcurementState = {
   branches: PharmaBranch[];
@@ -142,7 +151,7 @@ function blankReceiveForm(locationId = ''): ReceiveForm {
   };
 }
 
-export function ProcurementWorkflow({ token, profile }: Props) {
+export function ProcurementWorkflow({ token, profile, workspaceView = 'create-supplier' }: Props) {
   const [state, setState] = useState<ProcurementState>({
     branches: [],
     products: [],
@@ -504,6 +513,15 @@ export function ProcurementWorkflow({ token, profile }: Props) {
       ),
     }));
   }
+  const showCreateSupplier = workspaceView === 'create-supplier';
+  const showSupplierList = workspaceView === 'supplier-list';
+  const showCreatePurchaseOrder = workspaceView === 'create-purchase-order';
+  const showPurchaseOrderList = workspaceView === 'outstanding-purchase-orders' || workspaceView === 'received-purchase-orders';
+  const showReceivePurchaseOrder = workspaceView === 'receive-purchase-order';
+  const purchaseOrdersForView = workspaceView === 'received-purchase-orders'
+    ? state.purchaseOrders.filter((purchaseOrder) => purchaseOrder.status === 'received')
+    : state.purchaseOrders.filter((purchaseOrder) => purchaseOrder.status !== 'received');
+  const registerActionMessage = `${workspaceView.replaceAll('-', ' ')} register action is ready for permission-controlled backend execution.`;
 
   return (
     <article className="panel wide procurement-panel">
@@ -544,7 +562,9 @@ export function ProcurementWorkflow({ token, profile }: Props) {
         </article>
       </div>
 
+      {(showCreateSupplier || showSupplierList) && (
       <div className="procurement-workflow-grid">
+        {showCreateSupplier && (
         <section className="pharmaco-card">
           <span className="section-label">Supplier setup</span>
           <h3>Create supplier</h3>
@@ -625,16 +645,24 @@ export function ProcurementWorkflow({ token, profile }: Props) {
             {isSavingSupplier ? 'Creating supplier…' : 'Create supplier'}
           </button>
         </section>
+        )}
 
+        {showSupplierList && (
         <section className="pharmaco-card">
           <span className="section-label">Suppliers</span>
           <h3>Supplier list</h3>
+          <div className="bulk-action-row">
+            <button type="button" onClick={() => setNotice(registerActionMessage)}>Bulk Edit</button>
+            <button type="button" onClick={() => setNotice(registerActionMessage)}>Export</button>
+            <button type="button" onClick={() => setNotice(registerActionMessage)}>Bulk Approval</button>
+            <button type="button" className="danger" onClick={() => setNotice(registerActionMessage)}>Bulk Delete</button>
+          </div>
 
           {state.suppliers.length === 0 ? (
             <p className="muted">No suppliers loaded yet.</p>
           ) : (
             <div className="compact-list">
-              {state.suppliers.slice(0, 6).map((supplier) => (
+              {state.suppliers.slice(0, 15).map((supplier) => (
                 <div key={supplier.id} className={supplier.id === Number(selectedSupplierId) ? 'selected-list-row' : ''}>
                   <strong>{supplier.name}</strong>
                   <span>{supplier.supplier_code} · {supplier.supplier_type}</span>
@@ -647,8 +675,9 @@ export function ProcurementWorkflow({ token, profile }: Props) {
             </div>
           )}
         </section>
+        )}
 
-          {selectedSupplier && (
+          {showSupplierList && selectedSupplier && (
             <div className="approval-control-box">
               <strong>Selected supplier</strong>
               <span>{selectedSupplier.name}</span>
@@ -659,7 +688,9 @@ export function ProcurementWorkflow({ token, profile }: Props) {
             </div>
           )}
       </div>
+      )}
 
+      {showCreatePurchaseOrder && (
       <section className="draft-sale-builder purchase-order-builder">
         <div className="panel-heading-row">
           <div>
@@ -820,17 +851,26 @@ export function ProcurementWorkflow({ token, profile }: Props) {
           </button>
         </div>
       </section>
+      )}
 
+      {(showPurchaseOrderList || showReceivePurchaseOrder) && (
       <div className="procurement-workflow-grid">
+        {showPurchaseOrderList && (
         <section className="pharmaco-card">
-          <span className="section-label">Purchase orders</span>
-          <h3>PO list</h3>
+          <span className="section-label">{workspaceView === 'received-purchase-orders' ? 'Received purchase orders' : 'Outstanding purchase orders'}</span>
+          <h3>{workspaceView === 'received-purchase-orders' ? 'Received PO list' : 'Outstanding PO list'}</h3>
+          <div className="bulk-action-row">
+            <button type="button" onClick={() => setNotice(registerActionMessage)}>Bulk Edit</button>
+            <button type="button" onClick={() => setNotice(registerActionMessage)}>Export</button>
+            <button type="button" onClick={() => setNotice(registerActionMessage)}>Bulk Approval</button>
+            <button type="button" className="danger" onClick={() => setNotice(registerActionMessage)}>Bulk Delete</button>
+          </div>
 
-          {state.purchaseOrders.length === 0 ? (
+          {purchaseOrdersForView.length === 0 ? (
             <p className="muted">No purchase orders loaded yet.</p>
           ) : (
             <div className="compact-list">
-              {state.purchaseOrders.map((purchaseOrder) => (
+              {purchaseOrdersForView.slice(0, 15).map((purchaseOrder) => (
                 <div key={purchaseOrder.id}>
                   <strong>{purchaseOrder.po_number}</strong>
                   <span>{purchaseOrder.supplier?.name ?? 'No supplier'}</span>
@@ -843,7 +883,9 @@ export function ProcurementWorkflow({ token, profile }: Props) {
             </div>
           )}
         </section>
+        )}
 
+        {showReceivePurchaseOrder && (
         <section className="pharmaco-card">
           <span className="section-label">Receiving</span>
           <h3>{state.selectedPurchaseOrder?.po_number ?? 'Select purchase order'}</h3>
@@ -1002,7 +1044,9 @@ export function ProcurementWorkflow({ token, profile }: Props) {
             </>
           )}
         </section>
+        )}
       </div>
+      )}
     </article>
   );
 }

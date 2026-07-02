@@ -14,9 +14,12 @@ import {
 type ProductInventoryPreviewProps = {
   token: string;
   profile: AccessProfile;
+  activeView?: InventoryView;
+  onActiveViewChange?: (view: InventoryView) => void;
+  hideRail?: boolean;
 };
 
-type InventoryView =
+export type InventoryView =
   | 'overview'
   | 'low-stock'
   | 'shelf'
@@ -33,7 +36,7 @@ const inventoryViews: Array<{
   { key: 'overview', label: 'Overview Summary', description: 'KPIs, charts, and AI inventory analytics' },
   { key: 'low-stock', label: 'Low Stock Watch List', description: 'Products below reorder level' },
   { key: 'shelf', label: 'Retail Product Shelf', description: 'Customer-facing product shelf view' },
-  { key: 'batches', label: 'Batch and Expiry Preview', description: 'Batch register sorted by expiry' },
+  { key: 'batches', label: 'Batch / Expiry Preview', description: 'Batch register sorted by expiry' },
   { key: 'near-expiry', label: 'Near Expiry Watch List', description: 'Expiry risk within 180 days' },
   { key: 'product-master', label: 'Product Master', description: 'Product register and bulk tools' },
   { key: 'locations', label: 'Stock Locations', description: 'Branch stock storage points' },
@@ -63,7 +66,13 @@ function formatDate(value: string | null): string {
   }).format(new Date(value));
 }
 
-export function ProductInventoryPreview({ token, profile }: ProductInventoryPreviewProps) {
+export function ProductInventoryPreview({
+  token,
+  profile,
+  activeView,
+  onActiveViewChange,
+  hideRail = false,
+}: ProductInventoryPreviewProps) {
   const [summary, setSummary] = useState<PharmaInventorySummaryResponse | null>(null);
   const [products, setProducts] = useState<PharmaProductsResponse | null>(null);
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
@@ -71,7 +80,7 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
   const [nearExpiryBatches, setNearExpiryBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
-  const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
+  const [internalInventoryView, setInternalInventoryView] = useState<InventoryView>('overview');
   const [expandedViews, setExpandedViews] = useState<Partial<Record<InventoryView, boolean>>>({});
   const [inventoryNotice, setInventoryNotice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -80,6 +89,7 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
   const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '');
+  const activeInventoryView = activeView ?? internalInventoryView;
 
   const productCategories = useMemo(() => {
     const categories = new Map<string, string>();
@@ -120,6 +130,11 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
       });
   }, [activeCategory, products, searchTerm]);
 
+  function setInventoryView(view: InventoryView) {
+    setInternalInventoryView(view);
+    onActiveViewChange?.(view);
+  }
+
   function preferredPrice(productId: number): string {
     const batch = (batches?.batches ?? [])
       .filter((entry) => entry.product.id === productId && entry.selling_price !== null)
@@ -136,7 +151,7 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
   }
 
   function openFullRegister(view: InventoryView) {
-    setActiveInventoryView(view);
+    setInventoryView(view);
     setExpandedViews((current) => ({ ...current, [view]: true }));
     setInventoryNotice(`${inventoryViews.find((item) => item.key === view)?.label ?? 'Register'} opened in full register mode.`);
   }
@@ -201,7 +216,8 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
       {error && <div className="form-error">{error}</div>}
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
 
-      <section className="module-workspace-shell inventory-workspace-shell">
+      <section className={`module-workspace-shell inventory-workspace-shell ${hideRail ? 'module-workspace-shell--stage-only' : ''}`}>
+        {!hideRail && (
         <aside className="module-section-rail" aria-label="Inventory module sections">
           <span>Inventory</span>
           {inventoryViews.map((view) => (
@@ -209,13 +225,14 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
               key={view.key}
               type="button"
               className={activeInventoryView === view.key ? 'active' : ''}
-              onClick={() => setActiveInventoryView(view.key)}
+              onClick={() => setInventoryView(view.key)}
             >
               <strong>{view.label}</strong>
               <small>{view.description}</small>
             </button>
           ))}
         </aside>
+        )}
 
         <div className="module-section-stage">
           {activeInventoryView === 'overview' && summary && (
@@ -555,9 +572,9 @@ function BulkActionButtons({
 }) {
   return (
     <div className="bulk-action-row" aria-label="Bulk table actions">
-      <button type="button" onClick={onBulkEdit}>Bulk edit</button>
+      <button type="button" onClick={onBulkEdit}>Bulk Edit</button>
       <button type="button" onClick={onExport}>Export</button>
-      <button type="button" className="danger" onClick={onBulkDelete}>Bulk delete</button>
+      <button type="button" className="danger" onClick={onBulkDelete}>Bulk Delete</button>
     </div>
   );
 }

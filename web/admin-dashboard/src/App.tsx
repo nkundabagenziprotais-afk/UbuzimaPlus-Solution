@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmacyProfile, login, logout, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
-import { ProductInventoryPreview } from './components/ProductInventoryPreview';
+import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
@@ -127,6 +127,7 @@ type AdminPanelWorkspaceKey =
 type PosWorkspaceKey =
   | 'overview'
   | 'pos'
+  | 'dispensing-review'
   | 'customers'
   | 'prescriptions'
   | 'sales-performance'
@@ -1151,10 +1152,21 @@ const settingsBlueprint = [
 const posWorkspaceItems: Array<{ key: PosWorkspaceKey; label: string; description: string }> = [
   { key: 'overview', label: 'Overview Summary', description: 'Sales, customers, prescriptions, charts, and queues' },
   { key: 'pos', label: 'POS', description: 'Counter sale, cart, insurance, payment, receipt' },
+  { key: 'dispensing-review', label: 'Focus Dispensing Review', description: 'FEFO batch, prescription, and confirmation controls' },
   { key: 'customers', label: 'Customers / Patients', description: 'Customer records, invoice-ready capture, bulk tools' },
   { key: 'prescriptions', label: 'Prescriptions', description: 'Rx capture, AI extraction, previous records' },
   { key: 'sales-performance', label: 'Sales Performance', description: '15-row register, review detail, export' },
   { key: 'payment-receipt', label: 'Payment / Receipt', description: 'Payments, balances, printer, WhatsApp, email' },
+];
+
+const inventoryWorkspaceItems: Array<{ key: InventoryView; label: string; description: string }> = [
+  { key: 'overview', label: 'Overview Summary', description: 'Charts, graphs, and AI analytics' },
+  { key: 'low-stock', label: 'Low Stock Watch List', description: 'Products below reorder level' },
+  { key: 'shelf', label: 'Retail Product Shelf', description: 'Two-row customer shelf view' },
+  { key: 'batches', label: 'Batch / Expiry Preview', description: 'Five rows then full register' },
+  { key: 'near-expiry', label: 'Near Expiry Watch List', description: 'Batches approaching expiry' },
+  { key: 'product-master', label: 'Product Master', description: 'Create, edit, receive, bulk tools' },
+  { key: 'locations', label: 'Stock Locations', description: 'Branch storage points' },
 ];
 
 const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; description: string }> = [
@@ -1209,7 +1221,7 @@ const financialStatementItems = [
   ['Income Statement', 'Revenue, cost, margin, and operating expense view for management review.'],
   ['Balance Sheet', 'Stock value, cash, receivables, payables, and equity-position draft.'],
   ['Bank Reconciliation', 'Bank receipts and payments matched against recorded transactions.'],
-  ['MoMo Reconciliation', 'Mobile money references compared with POS and receivable payments.'],
+  ['Momo Reconciliation', 'Mobile money references compared with POS and receivable payments.'],
   ['Cash Reconciliation', 'Teller cash expected versus counted cash and approved variance notes.'],
 ];
 
@@ -1348,6 +1360,39 @@ function FocusRegisterPreview({
   );
 }
 
+function ModuleAnalyticsPanel({
+  title,
+  subtitle,
+  metrics,
+}: {
+  title: string;
+  subtitle: string;
+  metrics: Array<[string, string, string]>;
+}) {
+  return (
+    <section className="inventory-ai-analytics module-ai-analytics-panel">
+      <div className="section-heading">
+        <div>
+          <h3>{title}</h3>
+          <span>{subtitle}</span>
+        </div>
+        <button type="button">Open AI detail</button>
+      </div>
+      <div className="analytics-bar-grid">
+        {metrics.map(([label, value, width]) => (
+          <article key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+            <div>
+              <i style={{ width }} />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function App() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
@@ -1381,10 +1426,12 @@ function App() {
   const [activePharmaFeature, setActivePharmaFeature] = useState<PharmaFeatureKey>('ai-model');
   const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
   const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
+  const [activeInventoryWorkspace, setActiveInventoryWorkspace] = useState<InventoryView>('overview');
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
+  const [chatMePrompt, setChatMePrompt] = useState('');
   const [homeWidgets, setHomeWidgets] = useState<Record<HomeWidgetKey, boolean>>({
     summary: true,
     'tenant-dashboard': true,
@@ -1410,6 +1457,33 @@ function App() {
     return keys;
   }, [visibleMenuGroups]);
   const currentSection = sectionMeta[activeSection] ?? sectionMeta.overview;
+  const activeWorkspaceTitle = useMemo(() => {
+    if (activeSection === 'inventory') {
+      return inventoryWorkspaceItems.find((item) => item.key === activeInventoryWorkspace)?.label;
+    }
+
+    if (activeSection === 'pos') {
+      return posWorkspaceItems.find((item) => item.key === activePosWorkspace)?.label;
+    }
+
+    if (activeSection === 'suppliers') {
+      return supplierWorkspaceItems.find((item) => item.key === activeSupplierWorkspace)?.label;
+    }
+
+    if (activeSection === 'finance') {
+      return financeWorkspaceItems.find((item) => item.key === activeFinanceWorkspace)?.label;
+    }
+
+    if (activeSection === 'reports') {
+      return adhocReportWorkspaceItems.find((item) => item.key === activeAdhocReportWorkspace)?.label;
+    }
+
+    if (activeSection === 'ai-center') {
+      return aiCenterModules.find((item) => item.key === activeAiWorkspace)?.title;
+    }
+
+    return currentSection.title;
+  }, [activeAdhocReportWorkspace, activeAiWorkspace, activeFinanceWorkspace, activeInventoryWorkspace, activePosWorkspace, activeSection, activeSupplierWorkspace, currentSection.title]);
   const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
   const tenantFlatMenuItems = useMemo(
     () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
@@ -1467,7 +1541,7 @@ function App() {
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
+  }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activeInventoryWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1621,6 +1695,10 @@ function App() {
     }
 
     if (item.key === 'ai-center') {
+      if (shouldShowTenantOperationsDashboard) {
+        return true;
+      }
+
       return item.context === activeAiWorkspace;
     }
 
@@ -1647,6 +1725,75 @@ function App() {
       ...current,
       [group]: !current[group],
     }));
+  }
+
+  function renderSidebarSubmenu(item: MenuItem) {
+    if (activeSection !== item.key) return null;
+
+    const renderButtons = <K extends string,>(
+      items: Array<{ key: K; label: string; description: string }>,
+      activeKey: K,
+      onSelect: (key: K) => void,
+    ) => (
+      <div className="sidebar-module-submenu">
+        {items.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            className={activeKey === entry.key ? 'active' : ''}
+            onClick={() => {
+              onSelect(entry.key);
+              if (activeSection !== item.key) {
+                navigateToSection(item.key);
+              }
+            }}
+          >
+            <strong>{entry.label}</strong>
+            <small>{entry.description}</small>
+          </button>
+        ))}
+      </div>
+    );
+
+    if (item.key === 'inventory') {
+      return renderButtons(inventoryWorkspaceItems, activeInventoryWorkspace, setActiveInventoryWorkspace);
+    }
+
+    if (item.key === 'pos') {
+      return renderButtons(posWorkspaceItems, activePosWorkspace, setActivePosWorkspace);
+    }
+
+    if (item.key === 'suppliers') {
+      return renderButtons(supplierWorkspaceItems, activeSupplierWorkspace, setActiveSupplierWorkspace);
+    }
+
+    if (item.key === 'finance') {
+      return renderButtons(financeWorkspaceItems, activeFinanceWorkspace, setActiveFinanceWorkspace);
+    }
+
+    if (item.key === 'reports') {
+      return renderButtons(adhocReportWorkspaceItems, activeAdhocReportWorkspace, setActiveAdhocReportWorkspace);
+    }
+
+    if (item.key === 'ai-center') {
+      return (
+        <div className="sidebar-module-submenu sidebar-module-submenu--dense">
+          {aiCenterModules.map((module) => (
+            <button
+              key={module.key}
+              type="button"
+              className={activeAiWorkspace === module.key ? 'active' : ''}
+              onClick={() => setActiveAiWorkspace(module.key)}
+            >
+              <strong>{module.title}</strong>
+              <small>{module.status}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
   }
 
   function persistSession(nextSession: StoredSession, trustedDeviceToken?: string) {
@@ -2333,7 +2480,13 @@ function App() {
         {selectedFeature.key === 'inventory' && (
           <>
             <ModuleReadinessGrid items={inventoryReadiness} />
-            <ProductInventoryPreview token={session.token} profile={profile} />
+            <ProductInventoryPreview
+              token={session.token}
+              profile={profile}
+              activeView={activeInventoryWorkspace}
+              onActiveViewChange={setActiveInventoryWorkspace}
+              hideRail
+            />
             <ProductInventoryActions token={session.token} profile={profile} />
           </>
         )}
@@ -2361,13 +2514,23 @@ function App() {
 
         {selectedFeature.key === 'product-master' && (
           <>
-            <ProductInventoryPreview token={session.token} profile={profile} />
+            <ProductInventoryPreview
+              token={session.token}
+              profile={profile}
+              activeView="product-master"
+              onActiveViewChange={setActiveInventoryWorkspace}
+              hideRail
+            />
             <ProductInventoryActions token={session.token} profile={profile} />
           </>
         )}
 
         {['prescriptions', 'customers'].includes(selectedFeature.key) && (
-          <SalesDispensingReview token={session.token} profile={profile} />
+          <SalesDispensingReview
+            token={session.token}
+            profile={profile}
+            workspaceView={selectedFeature.key === 'prescriptions' ? 'prescriptions' : 'customers'}
+          />
         )}
       </section>
     );
@@ -2504,12 +2667,6 @@ function App() {
 
   function renderPosWorkspace() {
     const selected = posWorkspaceItems.find((item) => item.key === activePosWorkspace) ?? posWorkspaceItems[0];
-    const previewRows: Array<[string, string, string, string]> = [
-      ['Walk-in customer', 'Counter sale draft', 'Needs payment', 'RWF 18,500'],
-      ['Insurance customer', 'Co-pay plus insurer split', 'Receipt pending', 'RWF 64,200'],
-      ['Chronic refill', 'Prescription review required', 'Pharmacist review', 'RWF 32,800'],
-      ['Corporate client', 'Institution balance', 'Credit follow-up', 'RWF 118,400'],
-    ];
 
     return (
       <section className="section-page">
@@ -2520,18 +2677,19 @@ function App() {
           status="Live sales APIs plus pharmacy workflow"
         />
 
-        <section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="POS and Sales"
-            items={posWorkspaceItems}
-            activeKey={activePosWorkspace}
-            onSelect={setActivePosWorkspace}
-          />
-
+        <section className="module-workspace-shell module-workspace-shell--stage-only">
           <div className="module-section-stage">
             {activePosWorkspace === 'overview' && (
               <>
-                <ModuleReadinessGrid items={posReadiness} />
+                <ModuleAnalyticsPanel
+                  title="AI POS analytics"
+                  subtitle="Operating signals for sales flow, dispensing readiness, customer capture, insurance split, and receipt delivery."
+                  metrics={[
+                    ['Cart readiness', '86%', '86%'],
+                    ['Prescription prompt coverage', '100%', '100%'],
+                    ['Payment and receipt control', '92%', '92%'],
+                  ]}
+                />
                 <section className="document-action-grid">
                   {[
                     ['POS transaction summary', 'Customer contribution, insurer or partner contribution, tax, and balance are shown before commit.'],
@@ -2548,39 +2706,13 @@ function App() {
               </>
             )}
 
-            {activePosWorkspace === 'customers' && (
-              <FocusRegisterPreview
-                title="Customers / patients register"
-                description="The module starts with summary cards, then a 15-row working register with bulk edit, export, approval, and controlled delete actions."
-                rows={previewRows}
+            {activePosWorkspace !== 'overview' && (
+              <SalesDispensingReview
+                token={session.token}
+                profile={profile}
+                workspaceView={activePosWorkspace}
               />
             )}
-
-            {activePosWorkspace === 'prescriptions' && (
-              <FocusRegisterPreview
-                title="Prescription register"
-                description="Prescription-required products prompt camera capture, AI text extraction where possible, previous-customer lookup, and manual completion when extraction is unclear."
-                rows={previewRows.map(([primary, secondary, status, amount]) => [primary, secondary.replace('sale', 'prescription'), status, amount])}
-              />
-            )}
-
-            {activePosWorkspace === 'sales-performance' && (
-              <FocusRegisterPreview
-                title="Sales performance register"
-                description="Performance review uses a compact 15-row list beside selected-sale detail, with export and bulk tools available from the header."
-                rows={previewRows}
-              />
-            )}
-
-            {activePosWorkspace === 'payment-receipt' && (
-              <FocusRegisterPreview
-                title="Payment and receipt register"
-                description="Payments and receipts follow the same two-section pattern: 15-row list, selected detail, printer, WhatsApp, email, and corporate email actions."
-                rows={previewRows}
-              />
-            )}
-
-            {activePosWorkspace !== 'overview' && <SalesDispensingReview token={session.token} profile={profile} />}
           </div>
         </section>
       </section>
@@ -2589,12 +2721,6 @@ function App() {
 
   function renderSupplierWorkspace() {
     const selected = supplierWorkspaceItems.find((item) => item.key === activeSupplierWorkspace) ?? supplierWorkspaceItems[0];
-    const supplierRows: Array<[string, string, string, string]> = [
-      ['Wholesale distributor', 'Medicines and hospital consumables', 'Approved', 'Net 30'],
-      ['Manufacturer partner', 'Direct import product line', 'Review', 'Net 45'],
-      ['Local supplier', 'Fast-moving OTC and cosmetics', 'Active', 'Cash / MoMo'],
-      ['Service provider', 'Delivery and maintenance partner', 'Active', 'Contract'],
-    ];
 
     return (
       <section className="section-page">
@@ -2605,18 +2731,19 @@ function App() {
           status="Live procurement APIs plus supplier workspace"
         />
 
-        <section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Suppliers"
-            items={supplierWorkspaceItems}
-            activeKey={activeSupplierWorkspace}
-            onSelect={setActiveSupplierWorkspace}
-          />
-
+        <section className="module-workspace-shell module-workspace-shell--stage-only">
           <div className="module-section-stage">
             {activeSupplierWorkspace === 'overview' && (
               <>
-                <ModuleReadinessGrid items={supplierReadiness} />
+                <ModuleAnalyticsPanel
+                  title="AI supplier analytics"
+                  subtitle="Supplier signals for PO pressure, receiving risk, supplier type coverage, and outstanding commitments."
+                  metrics={[
+                    ['Supplier coverage', '8 types', '88%'],
+                    ['PO receiving readiness', '74%', '74%'],
+                    ['Outstanding commitment review', '91%', '91%'],
+                  ]}
+                />
                 <section className="document-action-grid">
                   {[
                     ['Supplier overview charts', 'Supplier count, open PO value, approved receiving queue, overdue commitments, and active supplier types.'],
@@ -2632,15 +2759,13 @@ function App() {
               </>
             )}
 
-            {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
-              <FocusRegisterPreview
-                title={selected.label}
-                description="Registers show 15 rows by default, then open the full page with bulk edit, export, approval, and controlled delete actions."
-                rows={supplierRows}
+            {activeSupplierWorkspace !== 'overview' && (
+              <ProcurementWorkflow
+                token={session.token}
+                profile={profile}
+                workspaceView={activeSupplierWorkspace}
               />
             )}
-
-            {activeSupplierWorkspace !== 'overview' && <ProcurementWorkflow token={session.token} profile={profile} />}
           </div>
         </section>
       </section>
@@ -2665,17 +2790,24 @@ function App() {
           status="Live finance APIs"
         />
 
-        <section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Finance"
-            items={financeWorkspaceItems}
-            activeKey={activeFinanceWorkspace}
-            onSelect={setActiveFinanceWorkspace}
-          />
-
+        <section className="module-workspace-shell module-workspace-shell--stage-only">
           <div className="module-section-stage">
             {activeFinanceWorkspace === 'overview' && (
               <>
+                <section className="inventory-kpi-grid finance-overview-grid">
+                  {[
+                    ['Cash position', 'Review teller cash, bank, MoMo, and card collection.'],
+                    ['Supplier exposure', 'Approved, partial, overdue, and paid supplier obligations.'],
+                    ['Customer credit', 'Open receivables, overdue balances, limits, and collection focus.'],
+                    ['Statement readiness', 'AI-assisted statements require manual refresh and finance approval.'],
+                  ].map(([title, text]) => (
+                    <div key={title}>
+                      <span>{title}</span>
+                      <strong>Ready</strong>
+                      <small>{text}</small>
+                    </div>
+                  ))}
+                </section>
                 <section className="document-action-grid">
                   {[
                     ['Finance overview', 'Cash, MoMo, card, credit, supplier balance, receivables, and exception count.'],
@@ -2688,8 +2820,6 @@ function App() {
                     </article>
                   ))}
                 </section>
-                <PayablesWorkflow token={session.token} profile={profile} />
-                <ReceivablesWorkflow token={session.token} profile={profile} />
               </>
             )}
 
@@ -2713,6 +2843,22 @@ function App() {
                   ))}
                 </div>
               </article>
+            )}
+
+            {activeFinanceWorkspace === 'credits-receivables' && (
+              <section className="document-action-grid">
+                {[
+                  ['Create Customer Credits', 'Set customer credit limit, terms, status, and review controls.'],
+                  ['Create Customer Receivables', 'Create a receivable with amount, due date, notes, and collection status.'],
+                  ['Receivable Register', 'Open 15-row register with export, bulk edit, and selected receivable detail.'],
+                  ['Collection', 'Record payment by cash, MoMo, card, bank transfer, or cheque with reference.'],
+                ].map(([title, text]) => (
+                  <article key={title}>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </article>
+                ))}
+              </section>
             )}
 
             {['receivable-register', 'collection', 'exception-focus'].includes(activeFinanceWorkspace) && (
@@ -2748,14 +2894,7 @@ function App() {
           status="Read-only analytics"
         />
 
-        <section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Ad-hoc Report"
-            items={adhocReportWorkspaceItems}
-            activeKey={activeAdhocReportWorkspace}
-            onSelect={setActiveAdhocReportWorkspace}
-          />
-
+        <section className="module-workspace-shell module-workspace-shell--stage-only">
           <div className="module-section-stage">
             <article className="panel wide report-focus-note">
               <strong>{selected.label}</strong>
@@ -2764,7 +2903,11 @@ function App() {
               </span>
             </article>
 
-            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
+            <PharmacoOperationsCommandCenter
+              token={session.token}
+              profile={profile}
+              focus={activeAdhocReportWorkspace}
+            />
 
             {activeAdhocReportWorkspace === 'overview' && (
               <ReportingDashboard token={session.token} profile={profile} />
@@ -2813,6 +2956,34 @@ function App() {
                 </div>
               ))}
             </div>
+            {selectedAiModule.key === 'chat-me-ai' && (
+              <div className="chat-me-ai-panel">
+                <p className="muted">
+                  Ask the platform how to complete a task, learn a module, follow a tutorial, or understand a policy.
+                </p>
+                <label>
+                  Ask for platform guidance
+                  <textarea
+                    value={chatMePrompt}
+                    onChange={(event) => setChatMePrompt(event.target.value)}
+                    placeholder="Example: How do I receive stock against a purchase order?"
+                    rows={4}
+                  />
+                </label>
+                <button type="button" disabled={!chatMePrompt.trim()}>
+                  Generate guidance
+                </button>
+                {chatMePrompt.trim() && (
+                  <div>
+                    <strong>Guidance draft</strong>
+                    <span>
+                      I will use your role, active tenant, and selected module to guide you step by step. For production,
+                      this response should be generated from approved SOPs, module permissions, and tenant data boundaries.
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </article>
         </section>
 
@@ -2875,13 +3046,29 @@ function App() {
         )}
 
         {selectedWorkspace === 'two-factor-auth' && (
-          <TwoFactorAdminPanel
-            token={session.token}
-            profile={profile}
-            onVerified={(nextToken, nextProfile, trustedDeviceToken) => {
-              persistSession({ token: nextToken, profile: nextProfile }, trustedDeviceToken);
-            }}
-          />
+          <>
+            <section className="document-action-grid">
+              {[
+                ['Self 2FA', 'Staff can scan QR, use text code, verify authenticator, regenerate recovery codes, and trust device when approved.'],
+                ['User 2FA Management', 'Admin-facing view for user reset, activation, deactivation, trusted-device review, and recovery support.'],
+                ['Reset 2FA', 'Reset authenticator setup when a staff member loses access.'],
+                ['Activate 2FA', 'Require authenticator setup for staff before workspace access.'],
+                ['Deactivate 2FA', 'Disable trusted device or suspend 2FA access through controlled admin permission.'],
+              ].map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </section>
+            <TwoFactorAdminPanel
+              token={session.token}
+              profile={profile}
+              onVerified={(nextToken, nextProfile, trustedDeviceToken) => {
+                persistSession({ token: nextToken, profile: nextProfile }, trustedDeviceToken);
+              }}
+            />
+          </>
         )}
 
         {selectedWorkspace === 'platform-management' && (
@@ -2957,8 +3144,13 @@ function App() {
               description="Inventory is now isolated as its own workspace so staff can work without the previous long dashboard flood."
               status="Live APIs plus framework"
             />
-            <ModuleReadinessGrid items={inventoryReadiness} />
-            <ProductInventoryPreview token={session.token} profile={profile} />
+            <ProductInventoryPreview
+              token={session.token}
+              profile={profile}
+              activeView={activeInventoryWorkspace}
+              onActiveViewChange={setActiveInventoryWorkspace}
+              hideRail
+            />
             <ProductInventoryActions token={session.token} profile={profile} />
           </section>
         );
@@ -3168,16 +3360,6 @@ function App() {
       default:
         return (
           <section className="section-page">
-            <section className="signed-in-banner">
-              <div>
-                <span className="status-dot" />
-                <strong>{loginStatusText}</strong>
-              </div>
-              <small>
-                Scope: {profile.scope.type} · Tenants: {profile.tenant_assignments.length || 'none'} · 2FA:{' '}
-                {profile.user.two_factor?.enabled ? 'enabled' : 'setup needed'}
-              </small>
-            </section>
             <section className="home-control-panel">
               <div>
                 <p className="eyebrow">Home display controls</p>
@@ -3327,20 +3509,22 @@ function App() {
 
             {shouldShowTenantOperationsDashboard ? (
               tenantFlatMenuItems.map(({ group, item }) => (
-                <button
-                  key={`${group.key}-${item.label}`}
-                  type="button"
-                  className={`flat-menu-button ${isActiveMenuItem(item) ? 'active' : ''}`}
-                  data-section={item.key}
-                  onClick={() => handleMenuItemClick(item)}
-                >
-                  <span className="nav-icon">{item.icon}</span>
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>{item.description}</small>
-                  </span>
-                  {item.status && <em>{item.status}</em>}
-                </button>
+                <div key={`${group.key}-${item.label}`} className="flat-menu-entry">
+                  <button
+                    type="button"
+                    className={`flat-menu-button ${isActiveMenuItem(item) ? 'active' : ''}`}
+                    data-section={item.key}
+                    onClick={() => handleMenuItemClick(item)}
+                  >
+                    <span className="nav-icon">{item.icon}</span>
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.description}</small>
+                    </span>
+                    {item.status && <em>{item.status}</em>}
+                  </button>
+                  {renderSidebarSubmenu(item)}
+                </div>
               ))
             ) : (
               visibleMenuGroups.map((group) => (
@@ -3360,20 +3544,22 @@ function App() {
                   {openMenuGroups[group.key] && (
                     <div className="tree-submenu">
                       {group.items.map((item) => (
-                        <button
-                          key={`${group.key}-${item.label}`}
-                          type="button"
-                          className={isActiveMenuItem(item) ? 'active' : ''}
-                          data-section={item.key}
-                          onClick={() => handleMenuItemClick(item)}
-                        >
-                          <span className="nav-icon">{item.icon}</span>
-                          <span>
-                            <strong>{item.label}</strong>
-                            <small>{item.description}</small>
-                          </span>
-                          {item.status && <em>{item.status}</em>}
-                        </button>
+                        <div key={`${group.key}-${item.label}`} className="tree-submenu-entry">
+                          <button
+                            type="button"
+                            className={isActiveMenuItem(item) ? 'active' : ''}
+                            data-section={item.key}
+                            onClick={() => handleMenuItemClick(item)}
+                          >
+                            <span className="nav-icon">{item.icon}</span>
+                            <span>
+                              <strong>{item.label}</strong>
+                              <small>{item.description}</small>
+                            </span>
+                            {item.status && <em>{item.status}</em>}
+                          </button>
+                          {renderSidebarSubmenu(item)}
+                        </div>
                       ))}
                     </div>
                   )}
@@ -3392,7 +3578,7 @@ function App() {
         <header className="dashboard-header dashboard-header--fixed">
           <div>
             <p className="eyebrow">{currentSection.eyebrow}</p>
-            <h1>{currentSection.title}</h1>
+            <h1>{activeWorkspaceTitle ?? currentSection.title}</h1>
             <p>{currentSection.description}</p>
           </div>
 

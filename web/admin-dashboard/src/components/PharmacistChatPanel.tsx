@@ -19,6 +19,7 @@ export function PharmacistChatPanel({ token }: PharmacistChatPanelProps) {
   const [reply, setReply] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [activeChannel, setActiveChannel] = useState<'in_app' | 'whatsapp'>('in_app');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -109,9 +110,55 @@ export function PharmacistChatPanel({ token }: PharmacistChatPanelProps) {
         Mobile endpoint ready: <code>POST /api/v1/mobile/pharmacist-chat/conversations</code>
       </div>
 
+      <div className="chat-channel-tabs" aria-label="Pharmacist chat channels">
+        <button
+          type="button"
+          className={activeChannel === 'in_app' ? 'active' : ''}
+          onClick={() => setActiveChannel('in_app')}
+        >
+          <strong>In-app chat</strong>
+          <span>Mobile app customer conversations</span>
+        </button>
+        <button
+          type="button"
+          className={activeChannel === 'whatsapp' ? 'active' : ''}
+          onClick={() => setActiveChannel('whatsapp')}
+        >
+          <strong>WhatsApp messages</strong>
+          <span>Company WhatsApp handoff queue with Availability reply and Refill reminder templates</span>
+        </button>
+      </div>
+
       {error && <div className="form-error">{error}</div>}
       {message && <div className="form-success">{message}</div>}
 
+      {activeChannel === 'whatsapp' ? (
+        <section className="whatsapp-chat-panel">
+          <div>
+            <h3>WhatsApp message handoff</h3>
+            <p className="muted">
+              WhatsApp conversations will use the company number once the integration is connected. Staff can prepare
+              pharmacist-approved replies, receipt messages, refill reminders, and customer follow-up notes here.
+            </p>
+          </div>
+          <div className="whatsapp-template-grid">
+            {[
+              ['Availability reply', 'Confirm product availability and invite the customer to visit or request delivery.'],
+              ['Receipt message', 'Send receipt PDF or invoice summary from POS after customer confirmation.'],
+              ['Refill reminder', 'Follow up chronic-care customers with approved refill reminders.'],
+              ['Pharmacist follow-up', 'Continue an advisory conversation from the mobile app or POS customer record.'],
+            ].map(([title, text]) => (
+              <article key={title}>
+                <strong>{title}</strong>
+                <span>{text}</span>
+                <button type="button" onClick={() => setMessage(`${title} WhatsApp draft prepared for integration handoff.`)}>
+                  Prepare draft
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : (
       <div className="chat-workspace">
         <aside className="chat-thread-list" aria-label="Chat conversations">
           {conversations.map((conversation) => (
@@ -172,6 +219,7 @@ export function PharmacistChatPanel({ token }: PharmacistChatPanelProps) {
           )}
         </section>
       </div>
+      )}
     </article>
   );
 }

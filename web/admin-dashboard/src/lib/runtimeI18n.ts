@@ -18,6 +18,7 @@ const dictionaries: Record<Exclude<RuntimeLanguage, 'en'>, Record<string, string
     'Low Stock Watch List': 'Liste stock faible',
     'Retail Product Shelf': 'Rayon produits detail',
     'Batch and Expiry Preview': 'Lots et expirations',
+    'Batch / Expiry Preview': 'Lots et expirations',
     'Near Expiry Watch List': 'Liste expiration proche',
     'Product Master': 'Referentiel produits',
     'Stock Locations': 'Emplacements stock',
@@ -76,6 +77,7 @@ const dictionaries: Record<Exclude<RuntimeLanguage, 'en'>, Record<string, string
     'Low Stock Watch List': 'Lista stock baixo',
     'Retail Product Shelf': 'Prateleira de produtos',
     'Batch and Expiry Preview': 'Lotes e validade',
+    'Batch / Expiry Preview': 'Lotes e validade',
     'Near Expiry Watch List': 'Lista validade proxima',
     'Product Master': 'Cadastro de produtos',
     'Stock Locations': 'Locais de stock',
@@ -128,6 +130,25 @@ function translateText(value: string, language: RuntimeLanguage): string {
   return dictionaries[language][value.trim()] ?? value;
 }
 
+function textLooksLikeStoredTranslation(value: string, original: string): boolean {
+  return (Object.keys(dictionaries) as Array<Exclude<RuntimeLanguage, 'en'>>).some(
+    (language) => dictionaries[language][original.trim()] === value.trim(),
+  );
+}
+
+function resolveCurrentOriginal(currentValue: string, storedOriginal?: string): string {
+  if (!storedOriginal) return currentValue;
+
+  const currentTrimmed = currentValue.trim();
+  const storedTrimmed = storedOriginal.trim();
+
+  if (currentTrimmed === storedTrimmed || textLooksLikeStoredTranslation(currentValue, storedOriginal)) {
+    return storedOriginal;
+  }
+
+  return currentValue;
+}
+
 export function applyRuntimeLanguage(language: RuntimeLanguage, root: ParentNode = document): void {
   document.documentElement.lang = language;
 
@@ -144,7 +165,7 @@ export function applyRuntimeLanguage(language: RuntimeLanguage, root: ParentNode
 
   let current = walker.nextNode() as Text | null;
   while (current) {
-    const original = textOriginals.get(current) ?? current.nodeValue ?? '';
+    const original = resolveCurrentOriginal(current.nodeValue ?? '', textOriginals.get(current));
     textOriginals.set(current, original);
     const leading = original.match(/^\s*/)?.[0] ?? '';
     const trailing = original.match(/\s*$/)?.[0] ?? '';
@@ -154,7 +175,7 @@ export function applyRuntimeLanguage(language: RuntimeLanguage, root: ParentNode
   }
 
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[placeholder], textarea[placeholder]').forEach((input) => {
-    const original = placeholderOriginals.get(input) ?? input.placeholder;
+    const original = resolveCurrentOriginal(input.placeholder, placeholderOriginals.get(input));
     placeholderOriginals.set(input, original);
     input.placeholder = translateText(original, language);
   });

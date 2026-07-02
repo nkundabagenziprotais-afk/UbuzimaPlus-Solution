@@ -26,7 +26,16 @@ import {
 type Props = {
   token: string;
   profile: AccessProfile;
+  workspaceView?: SalesWorkspaceView;
 };
+
+type SalesWorkspaceView =
+  | 'pos'
+  | 'dispensing-review'
+  | 'customers'
+  | 'prescriptions'
+  | 'sales-performance'
+  | 'payment-receipt';
 
 type SalesReviewState = {
   branches: PharmaBranch[];
@@ -213,7 +222,7 @@ function salesFiltersToApiFilters(filters: SalesFiltersState): PharmaSalesFilter
   };
 }
 
-export function SalesDispensingReview({ token, profile }: Props) {
+export function SalesDispensingReview({ token, profile, workspaceView = 'pos' }: Props) {
   const [state, setState] = useState<SalesReviewState>({
     branches: [],
     customers: [],
@@ -564,10 +573,28 @@ export function SalesDispensingReview({ token, profile }: Props) {
   const selectedPaymentTone = paymentStatusTone(selectedPaymentStatus);
   const selectedPrescriptionTone = prescriptionTone(requiredPrescriptionCount, verifiedPrescriptionCount);
   const selectedDispensingTone = canConfirmSelectedSale || selectedSale?.status === 'dispensed' ? 'stable' : isDraftSale ? 'attention' : 'neutral';
+  const selectedCustomerContribution = selectedSale
+    ? selectedSale.sale_type === 'insurance_sale'
+      ? Number(selectedSale.paid_amount ?? 0)
+      : Number(selectedSale.total_amount ?? 0)
+    : 0;
+  const selectedPartnerContribution = selectedSale
+    ? selectedSale.sale_type === 'insurance_sale'
+      ? Math.max(Number(selectedSale.total_amount ?? 0) - selectedCustomerContribution, 0)
+      : 0
+    : 0;
   const prescriptionStatusText =
     requiredPrescriptionCount === 0
       ? 'Not required'
       : `${verifiedPrescriptionCount}/${requiredPrescriptionCount} verified`;
+  const showPosBuilder = workspaceView === 'pos';
+  const showDispensingReview = workspaceView === 'dispensing-review';
+  const showCustomers = workspaceView === 'customers';
+  const showPrescriptions = workspaceView === 'prescriptions';
+  const showSalesPerformance = workspaceView === 'sales-performance';
+  const showPaymentReceipt = workspaceView === 'payment-receipt';
+  const showSalesRegister = showDispensingReview || showSalesPerformance || showPaymentReceipt;
+  const showSelectedSaleDetail = showDispensingReview || showSalesPerformance || showPaymentReceipt;
 
   return (
     <article className="panel wide sales-review-panel">
@@ -622,6 +649,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         </article>
       </div>
 
+      {showSalesRegister && (
       <section className="pharmaco-card sales-filter-panel">
         <div className="panel-heading-row">
           <div>
@@ -791,7 +819,9 @@ export function SalesDispensingReview({ token, profile }: Props) {
           Queue cards prepare a focused view. Apply filters reloads the list from the backend; reset returns the team to the full sales view.
         </p>
       </section>
+      )}
 
+      {showPosBuilder && (
       <SalesCreationPanel
         token={token}
         tenantSlug={tenantSlug}
@@ -804,15 +834,28 @@ export function SalesDispensingReview({ token, profile }: Props) {
         onPrescriptionCreated={handlePrescriptionCreated}
         onSaleCreated={handleSaleCreated}
       />
+      )}
 
+      {(showCustomers || showPrescriptions) && (
       <div className="sales-review-grid">
+        {showCustomers && (
         <section className="pharmaco-card">
           <span className="section-label">Customers / patients</span>
+          <div className="sales-page-summary-grid">
+            <div><span>Total customers</span><strong>{state.customers.length}</strong></div>
+            <div><span>Insured</span><strong>{state.customers.filter((customer) => customer.insurance_provider).length}</strong></div>
+            <div><span>With phone</span><strong>{state.customers.filter((customer) => customer.phone).length}</strong></div>
+          </div>
+          <div className="bulk-action-row">
+            <button type="button" onClick={() => setNotice('Customer bulk edit is ready for permission-controlled backend execution.')}>Bulk Edit</button>
+            <button type="button" onClick={() => setNotice('Customer export prepared for the current register.')}>Export</button>
+            <button type="button" className="danger" onClick={() => setNotice('Customer bulk delete requires admin approval and audit confirmation.')}>Bulk Delete</button>
+          </div>
           {state.customers.length === 0 ? (
             <p className="muted">No customers loaded yet.</p>
           ) : (
             <div className="compact-list">
-              {state.customers.slice(0, 5).map((customer) => (
+              {state.customers.slice(0, 15).map((customer) => (
                 <div key={customer.id}>
                   <strong>{customer.full_name}</strong>
                   <span>{customer.phone ?? 'No phone'} · {customer.insurance_provider ?? 'No insurer'}</span>
@@ -822,14 +865,30 @@ export function SalesDispensingReview({ token, profile }: Props) {
             </div>
           )}
         </section>
+        )}
 
+        {showPrescriptions && (
         <section className="pharmaco-card">
           <span className="section-label">Prescriptions</span>
+          <div className="sales-page-summary-grid">
+            <div><span>Total prescriptions</span><strong>{state.prescriptions.length}</strong></div>
+            <div><span>Active</span><strong>{state.prescriptions.filter((prescription) => prescription.status === 'active').length}</strong></div>
+            <div><span>Expired</span><strong>{state.prescriptions.filter((prescription) => prescription.status === 'expired').length}</strong></div>
+          </div>
+          <div className="rx-capture-guidance">
+            <strong>Prescription capture flow</strong>
+            <span>RX products prompt camera capture, AI text extraction, previous-customer lookup, and manual completion when handwriting is unclear.</span>
+          </div>
+          <div className="bulk-action-row">
+            <button type="button" onClick={() => setNotice('Prescription bulk edit is ready for permission-controlled backend execution.')}>Bulk Edit</button>
+            <button type="button" onClick={() => setNotice('Prescription export prepared for the current register.')}>Export</button>
+            <button type="button" className="danger" onClick={() => setNotice('Prescription bulk delete requires admin approval and audit confirmation.')}>Bulk Delete</button>
+          </div>
           {state.prescriptions.length === 0 ? (
             <p className="muted">No prescriptions loaded yet.</p>
           ) : (
             <div className="compact-list">
-              {state.prescriptions.slice(0, 5).map((prescription) => (
+              {state.prescriptions.slice(0, 15).map((prescription) => (
                 <div key={prescription.id}>
                   <strong>{prescription.prescription_number}</strong>
                   <span>{prescription.prescriber_name ?? 'No prescriber'} · {prescription.prescriber_facility ?? 'No facility'}</span>
@@ -839,8 +898,11 @@ export function SalesDispensingReview({ token, profile }: Props) {
             </div>
           )}
         </section>
+        )}
       </div>
+      )}
 
+      {showSalesRegister && (
       <div className="sales-table">
         <div className="sales-table-header">
           <strong>Sale</strong>
@@ -853,7 +915,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         {state.sales.length === 0 ? (
           <p className="muted">No sales loaded yet.</p>
         ) : (
-          state.sales.map((sale) => (
+          state.sales.slice(0, 15).map((sale) => (
             <div key={sale.id} className={selectedSale?.id === sale.id ? 'active-sale-row' : ''}>
               <span>
                 <strong>{sale.sale_number}</strong>
@@ -872,8 +934,9 @@ export function SalesDispensingReview({ token, profile }: Props) {
           ))
         )}
       </div>
+      )}
 
-      {selectedSale && (
+      {selectedSale && showSelectedSaleDetail && (
         <section className="sale-detail-card">
           <div className="panel-heading-row">
             <div>
@@ -932,6 +995,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
           </div>
 
 
+          {(showPaymentReceipt || showSalesPerformance) && (
           <section className="payment-recording-card">
             <div className="panel-heading-row">
               <div>
@@ -958,6 +1022,41 @@ export function SalesDispensingReview({ token, profile }: Props) {
                 <span>Prescription guidance</span>
                 <strong>{prescriptionStatusText}</strong>
                 <small>{prescriptionGuidance(requiredPrescriptionCount, verifiedPrescriptionCount)}</small>
+              </article>
+            </div>
+
+            <div className="bulk-action-row">
+              <button type="button" onClick={() => setNotice('Payment receipt bulk edit is ready for permission-controlled backend execution.')}>
+                Bulk Edit
+              </button>
+              <button type="button" onClick={() => setNotice('Payment receipt export prepared for the current selected sale and register.')}>
+                Export
+              </button>
+              <button type="button" className="danger" onClick={() => setNotice('Payment receipt bulk delete requires admin approval and audit confirmation.')}>
+                Bulk Delete
+              </button>
+            </div>
+
+            <div className="transaction-contribution-grid" aria-label="Transaction summary before receipt">
+              <article>
+                <span>Customer contribution</span>
+                <strong>{money(selectedCustomerContribution)}</strong>
+                <small>Cash, card, MoMo, or patient share from the selected sale.</small>
+              </article>
+              <article>
+                <span>Insurance / partner contribution</span>
+                <strong>{money(selectedPartnerContribution)}</strong>
+                <small>Calculated from the insurance or partner share when the sale type is insurance.</small>
+              </article>
+              <article>
+                <span>Tax</span>
+                <strong>{money(selectedSale.tax_amount)}</strong>
+                <small>Recorded tax amount from the sale transaction.</small>
+              </article>
+              <article>
+                <span>Total</span>
+                <strong>{money(selectedSale.total_amount)}</strong>
+                <small>Final receipt value before delivery channel selection.</small>
               </article>
             </div>
 
@@ -1052,6 +1151,9 @@ export function SalesDispensingReview({ token, profile }: Props) {
                   {money(lastPayment.amount)} · {lastPayment.payment_method.replaceAll('_', ' ')} · {lastPayment.status}
                 </small>
                 <div className="receipt-delivery-actions">
+                  <button type="button" onClick={() => setNotice('PDF receipt generated for customer delivery and audit storage once file storage is connected.')}>
+                    PDF receipt
+                  </button>
                   <button type="button" onClick={() => setNotice('Receipt queued for the physical or Bluetooth printer connector.')}>
                     Physical printer
                   </button>
@@ -1059,11 +1161,31 @@ export function SalesDispensingReview({ token, profile }: Props) {
                     WhatsApp
                   </button>
                   <button type="button" onClick={() => setNotice('Corporate email compose is ready to open with the receipt attached once file storage is connected.')}>
-                    Email
+                    Email receipt
                   </button>
                 </div>
               </div>
             )}
+
+            <div className="receipt-preview receipt-preview--channels">
+              <span>Receipt delivery channels</span>
+              <strong>PDF receipt, physical printer, WhatsApp, and Email receipt</strong>
+              <small>Prepared for Bluetooth printing, company WhatsApp handoff, and Corporate Email attachment delivery.</small>
+              <div className="receipt-delivery-actions">
+                <button type="button" onClick={() => setNotice('PDF receipt will be generated from the selected sale once receipt storage is connected.')}>
+                  PDF receipt
+                </button>
+                <button type="button" onClick={() => setNotice('Receipt queued for physical printer or Bluetooth printer connector.')}>
+                  Physical printer
+                </button>
+                <button type="button" onClick={() => setNotice('Receipt PDF handoff is prepared for the company WhatsApp integration.')}>
+                  WhatsApp
+                </button>
+                <button type="button" onClick={() => setNotice('Corporate Email compose is prepared with receipt PDF attachment.')}>
+                  Email receipt
+                </button>
+              </div>
+            </div>
 
             {selectedSale.payments?.length ? (
               <div className="payment-history">
@@ -1080,7 +1202,9 @@ export function SalesDispensingReview({ token, profile }: Props) {
               <p className="muted">No payment has been recorded for this sale yet.</p>
             )}
           </section>
+          )}
 
+          {(showSalesPerformance || showDispensingReview) && (
           <div className="sale-items-grid">
             {readinessItems.map(({ item, selectedBatch, eligibleBatches, needsPrescription, needsBatch, ready }) => (
               <div key={item.id} className={ready ? 'ready-item' : 'pending-item'}>
@@ -1149,7 +1273,9 @@ export function SalesDispensingReview({ token, profile }: Props) {
               </div>
             ))}
           </div>
+          )}
 
+          {(showSalesPerformance || showDispensingReview) && (
           <div className="confirmation-footer">
             <div>
               <strong>Controlled sale confirmation</strong>
@@ -1167,6 +1293,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
               {isConfirming ? 'Confirming…' : selectedSale.status === 'draft' ? 'Confirm and dispense stock' : 'Sale already dispensed'}
             </button>
           </div>
+          )}
         </section>
       )}
     </article>

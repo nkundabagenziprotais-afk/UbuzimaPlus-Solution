@@ -17,8 +17,18 @@ type PharmacoOperationsCommandCenterProps = {
   token?: string;
   tenantSlug?: string;
   profile?: Record<string, any>;
+  focus?: OperationsFocus;
   [key: string]: any;
 };
+
+type OperationsFocus =
+  | 'overview'
+  | 'operation-alerts'
+  | 'review-queues'
+  | 'executive-summary'
+  | 'decision-note'
+  | 'operation-checklist'
+  | 'priority-follow-up';
 
 type CommandCenterState = {
   period: PharmaReportPeriod | null;
@@ -92,6 +102,7 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
   const [isLoading, setIsLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const focus = props.focus ?? 'overview';
 
   const hasTenantContext = Boolean(token && tenantSlug);
   const totalSales = Number(state.sales?.total_sales_amount ?? 0);
@@ -334,13 +345,23 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
       helper: `${formatNumber(state.procurement?.approved_orders_count)} approved orders`,
     },
   ];
+  const showOverview = focus === 'overview';
+  const showAlerts = showOverview || focus === 'operation-alerts';
+  const showQueues = showOverview || focus === 'review-queues';
+  const showExecutive = showOverview || focus === 'executive-summary';
+  const showDecision = showOverview || focus === 'decision-note';
+  const showChecklist = showOverview || focus === 'operation-checklist';
+  const showPriority = showOverview || focus === 'priority-follow-up';
+  const exportSection = (section: string) => {
+    setNotice(`${section} export is prepared from the current read-only Operations 360 figures.`);
+  };
 
   return (
     <article className="panel wide operations-command-center">
       <div className="operations-hero">
         <div>
-          <p className="eyebrow">PharmaCo360 command center</p>
-          <h2>Today’s operating picture</h2>
+          <p className="eyebrow">Operations 360 View</p>
+          <h2>{showOverview ? 'Today’s operating picture' : focus.replaceAll('-', ' ')}</h2>
           <p className="muted">
             A read-only pharmacy command view for stock value, sales collection, purchasing,
             customer credit risk, and supplier exposure.
@@ -366,6 +387,7 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
       {error && <div className="form-error">{error}</div>}
       {notice && <div className="form-success">{notice}</div>}
 
+      {showOverview && (
       <section className="operations-kpi-grid">
         <div>
           <span>Stock at cost</span>
@@ -388,13 +410,16 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
           <small>{formatMoney(state.payables?.overdue_balance)} overdue</small>
         </div>
       </section>
+      )}
 
+      {showAlerts && (
       <section className="operations-alerts-section">
         <div className="section-heading">
           <div>
             <h3>Operational alerts</h3>
             <span>Read-only alerts generated from the current tenant reporting snapshot.</span>
           </div>
+          <button type="button" onClick={() => exportSection('Operational alerts')}>Export alerts</button>
         </div>
 
         <div className="operations-alert-grid">
@@ -407,13 +432,16 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
           ))}
         </div>
       </section>
+      )}
 
+      {showQueues && (
       <section className="operations-review-section">
         <div className="section-heading">
           <div>
             <h3>Review queues</h3>
             <span>Queues that managers can use for daily follow-up discussions.</span>
           </div>
+          <button type="button" onClick={() => exportSection('Review queues')}>Export queues</button>
         </div>
 
         <div className="operations-review-grid">
@@ -427,13 +455,16 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
           ))}
         </div>
       </section>
+      )}
 
+      {showExecutive && (
       <section className="operations-executive-section">
         <div className="section-heading">
           <div>
             <h3>Executive operating summary</h3>
             <span>Management-level interpretation of the current pharmacy reporting snapshot.</span>
           </div>
+          <button type="button" onClick={() => exportSection('Executive operating summary')}>Export summary</button>
         </div>
 
         <div className="operations-executive-grid">
@@ -446,13 +477,16 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
           ))}
         </div>
       </section>
+      )}
 
+      {showDecision && (
       <section className="operations-decision-section">
         <div className="section-heading">
           <div>
             <h3>Decision notes</h3>
             <span>Executive prompts for daily review, escalation, and handover.</span>
           </div>
+          <button type="button" onClick={() => exportSection('Decision notes')}>Export notes</button>
         </div>
 
         <div className="operations-decision-grid">
@@ -464,13 +498,16 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
           ))}
         </div>
       </section>
+      )}
 
+      {showChecklist && (
       <section className="operations-operator-section">
         <div className="section-heading">
           <div>
             <h3>Operator review checklist</h3>
             <span>Daily questions for a pharmacy manager before moving into detailed workflows.</span>
           </div>
+          <button type="button" onClick={() => exportSection('Operator checklist')}>Export checklist</button>
         </div>
 
         <div className="operations-operator-grid">
@@ -482,7 +519,9 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
           ))}
         </div>
       </section>
+      )}
 
+      {showPriority && (
       <section className="operations-action-grid">
         <div className="operations-focus-card">
           <h3>Priority follow-up</h3>
@@ -505,6 +544,7 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
           </ul>
         </div>
       </section>
+      )}
     </article>
   );
 }
