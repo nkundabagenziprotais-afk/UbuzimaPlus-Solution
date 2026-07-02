@@ -176,21 +176,34 @@ const trustControls = [
   'Human approval for sensitive AI',
 ];
 
-type VitaSectionKey = 'home' | 'services' | 'pharmacy-care' | 'wellness' | 'contact';
+type VitaSectionKey =
+  | 'home'
+  | 'products'
+  | 'pharmacy-care'
+  | 'ncd-care'
+  | 'nutrition'
+  | 'baby-care'
+  | 'cosmetics'
+  | 'contact';
 
 const vitaSections: Array<{ key: VitaSectionKey; label: string }> = [
   { key: 'home', label: 'Overview' },
-  { key: 'services', label: 'Services' },
+  { key: 'products', label: 'Products' },
   { key: 'pharmacy-care', label: 'Pharmacy Care' },
-  { key: 'wellness', label: 'Wellness' },
+  { key: 'ncd-care', label: 'NCD Care' },
+  { key: 'nutrition', label: 'Nutrition' },
+  { key: 'baby-care', label: 'Baby Care' },
+  { key: 'cosmetics', label: 'Cosmetics' },
   { key: 'contact', label: 'Contact' },
 ];
 
 const vitaServices = [
-  ['Prescription support', 'Pharmacist-guided dispensing, prescription checks, refill help, and practical medicine explanations.'],
-  ['Everyday pharmacy care', 'Over-the-counter medicines, family health essentials, hygiene, first aid, wellness, and home-care products.'],
-  ['Chronic care support', 'Availability checks and refill support for customers managing long-term treatment routines.'],
-  ['Digital service readiness', 'Mobile pharmacist chat, nearby-provider discovery, and Ubuzima+ powered branch operations.'],
+  ['Prescription medicines', 'Dispensing support, refill assistance, medicine-use guidance, and prescription safety checks.'],
+  ['OTC and family health', 'Everyday medicines, first aid, hygiene, pain relief, cough and cold care, and home health essentials.'],
+  ['Cosmetics and personal care', 'Skin care, beauty, hygiene, hair care, oral care, and pharmacist-guided product selection.'],
+  ['Nutrition and supplements', 'Vitamins, minerals, wellness nutrition, dietary support, and supplement suitability guidance.'],
+  ['NCD care and advisory', 'Support for chronic routines including hypertension, diabetes, asthma, adherence, and monitoring essentials.'],
+  ['Baby care products', 'Mother and baby essentials, infant hygiene, feeding accessories, baby skin care, and family guidance.'],
 ];
 
 const vitaCarePrinciples = [
@@ -203,10 +216,28 @@ const vitaCarePrinciples = [
 ];
 
 const vitaCustomerCategories = [
-  ['Medicines', 'Prescription and non-prescription pharmacy products handled with professional care.'],
-  ['Family health', 'Mother and baby, personal care, first aid, hygiene, and home health essentials.'],
-  ['Wellness', 'Supplements, diagnostics, devices, and everyday prevention products.'],
-  ['Support', 'Clear answers from pharmacists before, during, and after purchase.'],
+  ['Pharmaceutical Drugs', 'Prescription and non-prescription medicines handled with professional pharmacy care.'],
+  ['Cosmetics', 'Beauty, skin, hair, hygiene, and personal-care products selected with safety in mind.'],
+  ['Nutrition', 'Vitamins, supplements, wellness nutrition, and practical dietary support.'],
+  ['NCD Care', 'Advisory support for chronic-care routines, refill planning, and monitoring essentials.'],
+  ['Baby Care', 'Mother and baby products, infant hygiene, feeding accessories, and gentle care essentials.'],
+  ['Advisory', 'Clear pharmacist guidance before, during, and after purchase.'],
+];
+
+const vitaProductCollections = [
+  ['Pharmaceutical Drugs', 'Prescription medicines, OTC care, pain relief, antibiotics by prescription, cough and cold, digestive care, allergy care, and first aid.'],
+  ['Cosmetics and Personal Care', 'Skin care, sun care, hair care, oral care, hygiene, beauty essentials, and sensitive-skin product guidance.'],
+  ['Nutrition and Wellness', 'Supplements, vitamins, minerals, immune support, sports nutrition, weight-management support, and healthy routine advice.'],
+  ['NCD Care and Advisory', 'Diabetes, hypertension, asthma, cholesterol, adherence reminders, refill planning, monitoring devices, and lifestyle guidance.'],
+  ['Baby and Mother Care', 'Baby hygiene, diapers, feeding accessories, infant skin care, maternity essentials, and family wellness products.'],
+  ['Diagnostics and Devices', 'Glucometers, BP monitors, thermometers, test strips, nebulizer support, and home-care devices.'],
+];
+
+const vitaNcdServices = [
+  ['Blood pressure support', 'Monitoring essentials, refill reminders, and practical adherence guidance.'],
+  ['Diabetes care', 'Glucometer support, test strips, lifestyle advice, and medicine routine support.'],
+  ['Asthma and respiratory care', 'Inhaler support, nebulizer accessories, and correct-use guidance.'],
+  ['Chronic refill planning', 'Customer history, refill follow-up, and pharmacist-led advisory conversations.'],
 ];
 
 function readStoredLanguage(): LanguageCode {
@@ -247,17 +278,17 @@ function VitaPharmaWebsite({
 
   function renderSection() {
     switch (activeSection) {
-      case 'services':
+      case 'products':
         return (
           <section className="vita-focus-section">
-            <p className="eyebrow">Services</p>
-            <h1>Everyday pharmacy support with a calmer digital backbone.</h1>
+            <p className="eyebrow">Products</p>
+            <h1>Everything customers expect from a modern retail pharmacy, organized clearly.</h1>
             <p>
-              VitaPharma brings pharmacy care closer to customers through a practical mix of in-store service,
-              pharmacist guidance, mobile-ready conversations, and Ubuzima+ powered operational controls.
+              VitaPharma serves everyday medicine needs, family care, personal care, nutrition, chronic-care support,
+              and pharmacist-guided product selection through one connected retail pharmacy experience.
             </p>
             <div className="vita-service-grid">
-              {vitaServices.map(([title, text]) => (
+              {vitaProductCollections.map(([title, text]) => (
                 <article key={title}>
                   <strong>{title}</strong>
                   <p>{text}</p>
@@ -282,19 +313,75 @@ function VitaPharmaWebsite({
             </div>
           </section>
         );
-      case 'wellness':
+      case 'ncd-care':
         return (
           <section className="vita-focus-section">
-            <p className="eyebrow">Wellness</p>
-            <h1>Health essentials organized around how families actually shop.</h1>
+            <p className="eyebrow">NCD care and advisory</p>
+            <h1>Practical support for customers managing long-term health routines.</h1>
             <p>
-              VitaPharma categories are prepared for simple customer navigation: prescription medicines,
-              over-the-counter care, chronic care, mother and baby, first aid, personal care, devices,
-              vitamins, diagnostics, and household health essentials.
+              Customers managing hypertension, diabetes, asthma, cholesterol, and other chronic needs should find
+              respectful guidance, consistent refill support, and the right monitoring essentials.
             </p>
-            <div className="managed-priority-strip">
-              {['Mother and baby', 'Chronic care', 'First aid', 'Diagnostics', 'Supplements'].map((item) => (
+            <div className="vita-service-grid vita-ncd-grid">
+              {vitaNcdServices.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <p>{text}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'nutrition':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">Nutrition</p>
+            <h1>Supplements and nutrition support selected with care.</h1>
+            <p>
+              VitaPharma helps customers choose vitamins, minerals, wellness nutrition, immune support,
+              and dietary products with practical guidance on suitability, safe use, and consistency.
+            </p>
+            <div className="managed-priority-strip vita-priority-strip">
+              {['Vitamins', 'Minerals', 'Immune support', 'Wellness nutrition', 'Dietary guidance', 'Supplement safety'].map((item) => (
                 <span key={item}>{item}</span>
+              ))}
+            </div>
+          </section>
+        );
+      case 'baby-care':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">Baby care products</p>
+            <h1>Gentle essentials for babies, mothers, and families.</h1>
+            <p>
+              From baby hygiene and skin care to feeding accessories and mother-care essentials, VitaPharma keeps
+              family shopping simple while giving parents access to respectful pharmacist support.
+            </p>
+            <div className="vita-category-grid vita-family-grid">
+              {['Baby hygiene', 'Feeding accessories', 'Infant skin care', 'Mother care', 'Family first aid', 'Gentle wellness'].map((item) => (
+                <article key={item}>
+                  <strong>{item}</strong>
+                  <span>Curated for safe, practical family care.</span>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'cosmetics':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">Cosmetics and personal care</p>
+            <h1>Beauty and personal care with pharmacy-level attention.</h1>
+            <p>
+              Customers can shop skin care, hair care, oral care, hygiene, and beauty essentials with product guidance
+              that considers sensitivity, safe use, and everyday confidence.
+            </p>
+            <div className="vita-category-grid vita-family-grid">
+              {['Skin care', 'Hair care', 'Oral care', 'Hygiene', 'Beauty essentials', 'Sensitive-skin support'].map((item) => (
+                <article key={item}>
+                  <strong>{item}</strong>
+                  <span>Selected for daily care and customer confidence.</span>
+                </article>
               ))}
             </div>
           </section>
@@ -305,8 +392,8 @@ function VitaPharmaWebsite({
             <p className="eyebrow">{labels.contact}</p>
             <h1>Talk to VitaPharma for pharmacy support and product availability.</h1>
             <p>
-              The first digital tenant workspace is prepared for VitaPharma. Customer-facing contact,
-              branch hours, and pharmacist chat can be connected as live business details are confirmed.
+              Ask about product availability, prescription support, nutrition, cosmetics, baby care, or chronic-care
+              advisory. The customer chat and nearby-provider flow are ready to connect when live details are confirmed.
             </p>
             <div className="hero-actions">
               <a className="primary-action" href="mailto:care@vitapharmaafrica.com">care@vitapharmaafrica.com</a>
@@ -319,18 +406,30 @@ function VitaPharmaWebsite({
         return (
           <section className="vita-focus-section vita-hero-section">
             <p className="eyebrow">VitaPharma Africa</p>
-            <h1>Pharmacy care that is easy to access, easy to understand, and properly supported.</h1>
+            <h1>Retail pharmacy care for medicines, cosmetics, nutrition, NCD support, and baby products.</h1>
             <p>
-              VitaPharma is prepared as the first Ubuzima+ tenant for practical retail pharmacy service:
-              medicine access, family health products, pharmacist support, and a connected workflow behind the counter.
+              VitaPharma brings practical pharmacy service closer to customers: pharmaceutical drugs, personal care,
+              nutrition and supplements, chronic-care advisory, baby care products, and clear pharmacist guidance.
             </p>
             <div className="hero-actions">
-              <button className="primary-action" type="button" onClick={() => setActiveSection('services')}>
-                Explore services
+              <button className="primary-action" type="button" onClick={() => setActiveSection('products')}>
+                Explore products
               </button>
               <button className="secondary-action" type="button" onClick={() => setActiveSection('contact')}>
                 {labels.contact}
               </button>
+            </div>
+            <div className="vita-hero-brand-card">
+              <img src={vitaPharmaLogoSrc} alt="VitaPharma" />
+              <div>
+                <strong>Retail pharmacy and advisory care</strong>
+                <span>Medicines, cosmetics, nutrition, NCD support, and baby care products.</span>
+              </div>
+            </div>
+            <div className="vita-hero-assurance" aria-label="VitaPharma service highlights">
+              {['Pharmacist guidance', 'Prescription support', 'NCD advisory', 'Family essentials'].map((item) => (
+                <span key={item}>{item}</span>
+              ))}
             </div>
             <div className="vita-category-grid">
               {vitaCustomerCategories.map(([title, text]) => (

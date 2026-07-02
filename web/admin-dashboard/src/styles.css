@@ -700,6 +700,64 @@ p {
     rgba(255, 255, 255, 0.86);
 }
 
+.module-workspace-shell {
+  display: grid;
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.module-section-rail {
+  position: sticky;
+  top: 128px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.module-section-rail > span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.module-section-rail button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+  color: #123d30;
+  cursor: pointer;
+  text-align: left;
+}
+
+.module-section-rail button.active,
+.module-section-rail button:hover {
+  border-color: rgba(8, 119, 201, 0.22);
+  background: #eef7ff;
+}
+
+.module-section-rail strong,
+.module-section-rail small {
+  display: block;
+}
+
+.module-section-rail small {
+  margin-top: 3px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.module-section-stage {
+  min-width: 0;
+}
+
 .inventory-kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(140px, 1fr));
@@ -728,7 +786,11 @@ p {
 }
 
 .inventory-section {
-  margin-top: 22px;
+  margin-top: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 16px;
+  background: #ffffff;
 }
 
 .section-heading {
@@ -784,13 +846,152 @@ p {
   font-weight: 700;
 }
 
+.inventory-ai-analytics,
+.inventory-action-card-grid,
+.bulk-action-row,
+.analytics-bar-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.inventory-ai-analytics {
+  margin-top: 16px;
+  border: 1px solid rgba(8, 119, 201, 0.12);
+  border-radius: 8px;
+  padding: 16px;
+  background: #f4faff;
+}
+
+.analytics-bar-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.analytics-bar-grid article {
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+  display: grid;
+  gap: 7px;
+}
+
+.analytics-bar-grid div {
+  height: 9px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.analytics-bar-grid i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--ubuzima-blue), var(--ubuzima-green));
+}
+
+.bulk-action-row {
+  grid-template-columns: repeat(3, auto);
+  justify-content: end;
+}
+
+.bulk-action-row button,
+.view-more-button,
+.inventory-action-card-grid button,
+.section-heading button,
+.view-toggle button,
+.receipt-delivery-actions button {
+  min-height: 38px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  background: #ffffff;
+  color: #123d30;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.bulk-action-row button:hover,
+.view-more-button:hover,
+.inventory-action-card-grid button:hover,
+.section-heading button:hover,
+.view-toggle button:hover,
+.view-toggle button.active,
+.receipt-delivery-actions button:hover {
+  border-color: rgba(8, 119, 201, 0.32);
+  background: #eef7ff;
+  color: var(--ubuzima-blue);
+}
+
+.bulk-action-row button.danger {
+  color: #b42318;
+}
+
+.view-more-button {
+  margin-top: 12px;
+}
+
+.inventory-action-card-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.inventory-action-card-grid button {
+  min-height: 104px;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+
+.inventory-action-card-grid span {
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.inventory-master-table {
+  display: grid;
+  gap: 6px;
+}
+
+.inventory-master-table > div {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) 0.8fr 1fr 0.9fr 0.8fr 0.6fr;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.inventory-master-table__header {
+  background: #f1f5f9 !important;
+  color: #334155;
+}
+
+.inventory-master-table small {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-weight: 750;
+}
+
 @media (max-width: 980px) {
+  .module-workspace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .module-section-rail {
+    position: static;
+  }
+
   .inventory-kpi-grid {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 
   .section-heading,
   .inventory-table > div,
+  .inventory-master-table > div,
   .product-preview-table > div,
   .batch-preview-table > div,
   .location-preview-table > div {
@@ -802,6 +1003,14 @@ p {
 @media (max-width: 640px) {
   .inventory-kpi-grid {
     grid-template-columns: 1fr;
+  }
+
+  .analytics-bar-grid,
+  .inventory-action-card-grid,
+  .bulk-action-row,
+  .product-shelf-grid--fixed {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
   }
 }
 
@@ -828,6 +1037,7 @@ p {
 .inventory-filter-bar select,
 .pos-product-toolbar input,
 .pos-product-toolbar select,
+.pos-meta-grid input,
 .pos-meta-grid select,
 .pos-cart-line input,
 .pos-cart-footer input {
@@ -846,6 +1056,10 @@ p {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
+}
+
+.product-shelf-grid--fixed {
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
 }
 
 .product-shelf-grid article,
@@ -1393,13 +1607,29 @@ p {
   gap: 0.75rem;
 }
 
+.view-toggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .pos-product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   max-height: 560px;
   overflow: auto;
   padding-right: 4px;
+}
+
+.pos-product-grid--list {
+  grid-template-columns: 1fr;
+}
+
+.pos-product-grid--list button {
+  min-height: 104px;
+  grid-template-columns: auto 1fr;
+  align-items: center;
 }
 
 .pos-product-grid button {
@@ -1474,6 +1704,126 @@ p {
   font: inherit;
   font-weight: 900;
   cursor: pointer;
+}
+
+.invoice-checkbox {
+  align-self: end;
+  min-height: 42px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  background: #f8fafc;
+}
+
+.prescription-capture-alert {
+  border: 1px solid rgba(201, 129, 28, 0.26);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff8ed;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.prescription-capture-alert strong,
+.prescription-capture-alert span,
+.prescription-capture-alert label {
+  display: block;
+}
+
+.prescription-capture-alert span {
+  margin-top: 3px;
+  color: #8a5b18;
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.prescription-capture-alert label {
+  color: #7a4d11;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.prescription-capture-alert input {
+  width: 100%;
+  margin-top: 5px;
+}
+
+.prescription-capture-alert button,
+.transaction-summary-panel button {
+  min-height: 40px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  background: #ffffff;
+  color: #123d30;
+  font: inherit;
+  font-weight: 900;
+}
+
+.prescription-capture-alert button:disabled {
+  opacity: 0.48;
+}
+
+.transaction-summary-panel {
+  border: 1px solid rgba(8, 119, 201, 0.14);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f2f8ff;
+  display: grid;
+  gap: 8px;
+}
+
+.transaction-summary-panel > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  color: #334155;
+  font-weight: 800;
+}
+
+.transaction-summary-panel small {
+  color: #123d30;
+  font-weight: 950;
+}
+
+.transaction-summary-total {
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+  padding-top: 8px;
+}
+
+.customer-capture-gate {
+  align-content: start;
+}
+
+.receipt-delivery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.header-mail-button {
+  position: relative;
+  display: inline-flex !important;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-badge {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  background: #b42318;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 950;
 }
 
 .pos-action-footer button:last-child,

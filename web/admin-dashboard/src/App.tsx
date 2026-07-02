@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getPharmaBranches, getPharmacyProfile, login, logout, runAccessCheck, verifyTwoFactor } from './lib/api';
+import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmacyProfile, login, logout, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
@@ -557,7 +557,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
         { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN', status: 'Live' },
         { key: 'reports', label: 'Reports', description: 'Daily and monthly review', icon: 'RP', status: 'Live' },
         { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer questions', icon: 'CH', status: 'Live' },
-        { key: 'ai-center', context: 'recommendations', label: 'AI Recommendations', description: 'Stock and expiry advice', icon: 'AI', status: 'Active' },
+        { key: 'ai-center', context: 'recommendations', label: 'AI Center', description: 'Stock, expiry, and operating guidance', icon: 'AI', status: 'Active' },
       ],
     },
     {
@@ -1137,6 +1137,7 @@ function App() {
   const [staffLoginLanguage, setStaffLoginLanguage] = useState<StaffLoginLanguage>(readStoredStaffLanguage);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [unreadMailCount, setUnreadMailCount] = useState(0);
   const [twoFactorFlow, setTwoFactorFlow] = useState<TwoFactorFlowState | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [trustThisDevice, setTrustThisDevice] = useState(true);
@@ -1305,6 +1306,36 @@ function App() {
   useEffect(() => {
     localStorage.setItem(staffLanguageStorageKey, staffLoginLanguage);
   }, [staffLoginLanguage]);
+
+  useEffect(() => {
+    if (!session?.token) {
+      setUnreadMailCount(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadUnreadMailCount() {
+      try {
+        const response = await getCorporateMailOverview(session.token, 'inbox');
+        const unread = response.folders.reduce((sum, folder) => sum + folder.unread_count, 0);
+
+        if (!cancelled) {
+          setUnreadMailCount(unread);
+        }
+      } catch {
+        if (!cancelled) {
+          setUnreadMailCount(0);
+        }
+      }
+    }
+
+    void loadUnreadMailCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.token]);
 
   useEffect(() => {
     if (profile && !visibleSectionKeys.has(activeSection)) {
@@ -2836,11 +2867,13 @@ function App() {
             </button>
             <button
               type="button"
+              className="header-mail-button"
               onClick={() => {
                 navigateToSection('corporate-email');
               }}
             >
               Email Corporate
+              {unreadMailCount > 0 && <span className="action-badge">{unreadMailCount}</span>}
             </button>
           </div>
 

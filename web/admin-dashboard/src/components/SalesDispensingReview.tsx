@@ -1051,6 +1051,17 @@ export function SalesDispensingReview({ token, profile }: Props) {
                 <small>
                   {money(lastPayment.amount)} · {lastPayment.payment_method.replaceAll('_', ' ')} · {lastPayment.status}
                 </small>
+                <div className="receipt-delivery-actions">
+                  <button type="button" onClick={() => setNotice('Receipt queued for the physical or Bluetooth printer connector.')}>
+                    Physical printer
+                  </button>
+                  <button type="button" onClick={() => setNotice('WhatsApp receipt handoff is ready for the customer chat integration.')}>
+                    WhatsApp
+                  </button>
+                  <button type="button" onClick={() => setNotice('Corporate email compose is ready to open with the receipt attached once file storage is connected.')}>
+                    Email
+                  </button>
+                </div>
               </div>
             )}
 

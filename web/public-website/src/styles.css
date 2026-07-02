@@ -923,8 +923,10 @@ footer a {
   display: grid;
   grid-template-rows: auto 1fr;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 248, 0.88)),
-    radial-gradient(circle at 80% 18%, rgba(145, 198, 83, 0.14), transparent 24rem);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.97), rgba(247, 250, 248, 0.9)),
+    url("/assets/ubuzima-pharmaco-hero.png");
+  background-position: center;
+  background-size: cover;
 }
 
 .vita-top-header,
@@ -937,8 +939,8 @@ footer a {
 }
 
 .vita-logo {
-  width: min(190px, 34vw);
-  max-height: 62px;
+  width: min(180px, 34vw);
+  max-height: 58px;
   object-fit: contain;
   object-position: left center;
 }
@@ -948,9 +950,7 @@ footer a {
 }
 
 .vita-content-panel {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 250, 248, 0.96)),
-    radial-gradient(circle at 88% 28%, rgba(31, 107, 54, 0.12), transparent 26rem);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 250, 248, 0.97));
 }
 
 .vita-focus-section {
@@ -961,9 +961,10 @@ footer a {
 }
 
 .vita-hero-section {
-  min-height: calc(100vh - 74px);
+  min-height: calc(100vh - 88px);
   display: grid;
   align-content: center;
+  gap: 1rem;
 }
 
 .vita-focus-section h1 {
@@ -977,9 +978,61 @@ footer a {
   line-height: 1.72;
 }
 
+.vita-hero-brand-card {
+  width: min(620px, 100%);
+  border: 1px solid rgba(31, 107, 54, 0.16);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  box-shadow: 0 18px 40px rgba(20, 83, 45, 0.08);
+}
+
+.vita-hero-brand-card img {
+  width: min(170px, 34vw);
+  max-height: 76px;
+  object-fit: contain;
+}
+
+.vita-hero-brand-card strong,
+.vita-hero-brand-card span {
+  display: block;
+}
+
+.vita-hero-brand-card strong {
+  color: var(--green-deep);
+}
+
+.vita-hero-brand-card span {
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-weight: 760;
+  line-height: 1.5;
+}
+
+.vita-hero-assurance,
+.vita-priority-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.vita-hero-assurance span,
+.vita-priority-strip span {
+  border: 1px solid rgba(31, 107, 54, 0.16);
+  border-radius: 999px;
+  padding: 0.5rem 0.72rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--green-deep);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
 .vita-category-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
   margin-top: 2rem;
 }
@@ -1007,7 +1060,7 @@ footer a {
 
 .vita-service-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 2rem;
 }
@@ -1023,6 +1076,14 @@ footer a {
   margin: 0.55rem 0 0;
   color: var(--muted);
   line-height: 1.58;
+}
+
+.vita-ncd-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vita-family-grid article {
+  min-height: 120px;
 }
 
 .vita-care-grid {

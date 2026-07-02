@@ -64,6 +64,8 @@ type SaleForm = {
   items: SaleLineForm[];
 };
 
+type ProductBrowserView = 'grid' | 'list';
+
 function blankCustomerForm(): CustomerForm {
   return {
     first_name: '',
@@ -148,6 +150,10 @@ export function SalesCreationPanel({
   );
   const [productSearch, setProductSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [productBrowserView, setProductBrowserView] = useState<ProductBrowserView>('grid');
+  const [invoiceRequested, setInvoiceRequested] = useState(false);
+  const [insuranceCustomerPercent, setInsuranceCustomerPercent] = useState('20');
+  const [insurancePartnerPercent, setInsurancePartnerPercent] = useState('80');
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const [isSavingPrescription, setIsSavingPrescription] = useState(false);
   const [isSavingSale, setIsSavingSale] = useState(false);
@@ -176,12 +182,22 @@ export function SalesCreationPanel({
     const saleDiscount = toNumber(saleForm.discount_amount);
     const saleTax = toNumber(saleForm.tax_amount);
     const total = Math.max(lineSubtotal - saleDiscount + saleTax, 0);
+    const customerPercent = saleForm.sale_type === 'insurance_sale'
+      ? Math.max(Math.min(toNumber(insuranceCustomerPercent), 100), 0)
+      : 100;
+    const partnerPercent = saleForm.sale_type === 'insurance_sale'
+      ? Math.max(Math.min(toNumber(insurancePartnerPercent), 100), 0)
+      : 0;
 
     return {
       lineSubtotal,
+      saleDiscount,
+      saleTax,
       total,
+      customerContribution: total * (customerPercent / 100),
+      partnerContribution: total * (partnerPercent / 100),
     };
-  }, [saleForm]);
+  }, [insuranceCustomerPercent, insurancePartnerPercent, saleForm]);
 
   const prescriptionRequiredWithoutPrescription = saleForm.items.some((item) => {
     const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
@@ -437,10 +453,10 @@ export function SalesCreationPanel({
       <div className="panel-heading-row">
         <div>
           <span className="section-label">Retail pharmacy counter</span>
-          <h3>Fast product search, cart, customer, prescription, and draft sale</h3>
+          <h3>POS</h3>
           <p className="muted">
-            Use this first at the counter. Create the draft sale, then assign FEFO batches, confirm dispensing,
-            and record payment in the review panel below.
+            Search products, build the sale cart, confirm customer contribution, capture prescription when needed,
+            then create the draft sale for FEFO dispensing and payment review.
           </p>
         </div>
         <div className="sale-total-box">
@@ -459,6 +475,22 @@ export function SalesCreationPanel({
             <div>
               <h4>Product browser</h4>
               <span>Search by medicine, SKU, barcode, brand, or category.</span>
+            </div>
+            <div className="view-toggle" aria-label="Product browser view">
+              <button
+                type="button"
+                className={productBrowserView === 'grid' ? 'active' : ''}
+                onClick={() => setProductBrowserView('grid')}
+              >
+                Grid
+              </button>
+              <button
+                type="button"
+                className={productBrowserView === 'list' ? 'active' : ''}
+                onClick={() => setProductBrowserView('list')}
+              >
+                List
+              </button>
             </div>
           </div>
 
@@ -485,8 +517,8 @@ export function SalesCreationPanel({
             </label>
           </div>
 
-          <div className="pos-product-grid">
-            {visibleProducts.slice(0, 12).map((product) => {
+          <div className={`pos-product-grid ${productBrowserView === 'list' ? 'pos-product-grid--list' : ''}`}>
+            {visibleProducts.slice(0, productBrowserView === 'grid' ? 10 : 16).map((product) => {
               const batch = bestBatch(product.id);
               const price = preferredPrice(product);
 
@@ -593,6 +625,42 @@ export function SalesCreationPanel({
                 <option value="credit_sale">Credit sale</option>
               </select>
             </label>
+
+            {saleForm.sale_type === 'insurance_sale' && (
+              <>
+                <label>
+                  Customer %
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={insuranceCustomerPercent}
+                    onChange={(event) => setInsuranceCustomerPercent(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Insurance %
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={insurancePartnerPercent}
+                    onChange={(event) => setInsurancePartnerPercent(event.target.value)}
+                  />
+                </label>
+              </>
+            )}
+
+            <label className="checkbox-label invoice-checkbox">
+              <input
+                type="checkbox"
+                checked={invoiceRequested}
+                onChange={(event) => setInvoiceRequested(event.target.checked)}
+              />
+              Customer wants invoice
+            </label>
           </div>
 
           <div className="pos-cart-lines">
@@ -650,8 +718,21 @@ export function SalesCreationPanel({
           </div>
 
           {prescriptionRequiredWithoutPrescription && (
-            <div className="form-error">
-              One or more selected products require a prescription before the draft sale can be created.
+            <div className="prescription-capture-alert">
+              <div>
+                <strong>Prescription required</strong>
+                <span>Capture an image for AI extraction or enter the details manually before checkout.</span>
+              </div>
+              <label>
+                Capture prescription image
+                <input type="file" accept="image/*" capture="environment" />
+              </label>
+              <button type="button" onClick={() => setPrescriptionForm(blankPrescriptionForm(saleForm.pharmaco_customer_id))}>
+                Manual prescription entry
+              </button>
+              <button type="button" disabled={!saleForm.pharmaco_customer_id}>
+                Retrieve customer history
+              </button>
             </div>
           )}
 
@@ -688,6 +769,18 @@ export function SalesCreationPanel({
             </label>
           </div>
 
+          <div className="transaction-summary-panel">
+            <strong>Transaction summary</strong>
+            <div><span>Subtotal</span><small>{money(salePreview.lineSubtotal)}</small></div>
+            <div><span>Discount</span><small>{money(salePreview.saleDiscount)}</small></div>
+            <div><span>Tax</span><small>{money(salePreview.saleTax)}</small></div>
+            <div><span>Customer contribution</span><small>{money(salePreview.customerContribution)}</small></div>
+            {saleForm.sale_type === 'insurance_sale' && (
+              <div><span>Insurance / partner contribution</span><small>{money(salePreview.partnerContribution)}</small></div>
+            )}
+            <div className="transaction-summary-total"><span>Total due</span><small>{money(salePreview.total)}</small></div>
+          </div>
+
           <div className="draft-sale-footer pos-action-footer">
             <button
               type="button"
@@ -709,70 +802,83 @@ export function SalesCreationPanel({
       </div>
 
       <div className="pos-support-grid">
-        <section className="quick-customer-panel">
-          <h4>Customer capture</h4>
-          <p className="muted">Use for patients who need receipts, insurance, refill follow-up, or pharmacist chat.</p>
-          <div className="creation-form-grid">
-            <label>
-              First name
-              <input
-                value={customerForm.first_name}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, first_name: event.target.value }))}
-              />
-            </label>
-            <label>
-              Last name
-              <input
-                value={customerForm.last_name}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, last_name: event.target.value }))}
-              />
-            </label>
-            <label>
-              Phone
-              <input
-                value={customerForm.phone}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, phone: event.target.value }))}
-              />
-            </label>
-            <label>
-              Email
-              <input
-                type="email"
-                value={customerForm.email}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, email: event.target.value }))}
-              />
-            </label>
-            <label>
-              Gender
-              <input
-                value={customerForm.gender}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, gender: event.target.value }))}
-              />
-            </label>
-            <label>
-              Insurer
-              <input
-                value={customerForm.insurance_provider}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, insurance_provider: event.target.value }))}
-              />
-            </label>
-            <label>
-              Insurance number
-              <input
-                value={customerForm.insurance_membership_number}
-                onChange={(event) =>
-                  setCustomerForm((current) => ({
-                    ...current,
-                    insurance_membership_number: event.target.value,
-                  }))
-                }
-              />
-            </label>
-          </div>
-          <button type="button" onClick={handleCreateCustomer} disabled={isSavingCustomer}>
-            {isSavingCustomer ? 'Creating customer...' : 'Create customer'}
-          </button>
-        </section>
+        {invoiceRequested ? (
+          <section className="quick-customer-panel">
+            <h4>Customer capture</h4>
+            <p className="muted">Use for patients who need receipts, insurance, refill follow-up, or pharmacist chat.</p>
+            <div className="creation-form-grid">
+              <label>
+                First name
+                <input
+                  value={customerForm.first_name}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, first_name: event.target.value }))}
+                />
+              </label>
+              <label>
+                Last name
+                <input
+                  value={customerForm.last_name}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, last_name: event.target.value }))}
+                />
+              </label>
+              <label>
+                Phone
+                <input
+                  value={customerForm.phone}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, phone: event.target.value }))}
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={customerForm.email}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, email: event.target.value }))}
+                />
+              </label>
+              <label>
+                Gender
+                <input
+                  value={customerForm.gender}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, gender: event.target.value }))}
+                />
+              </label>
+              <label>
+                Insurer
+                <input
+                  value={customerForm.insurance_provider}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, insurance_provider: event.target.value }))}
+                />
+              </label>
+              <label>
+                Insurance number
+                <input
+                  value={customerForm.insurance_membership_number}
+                  onChange={(event) =>
+                    setCustomerForm((current) => ({
+                      ...current,
+                      insurance_membership_number: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+            <button type="button" onClick={handleCreateCustomer} disabled={isSavingCustomer}>
+              {isSavingCustomer ? 'Creating customer...' : 'Create customer'}
+            </button>
+          </section>
+        ) : (
+          <section className="quick-customer-panel customer-capture-gate">
+            <h4>Customer capture</h4>
+            <p className="muted">
+              Keep walk-in checkout fast. Turn on “Customer wants invoice” in the cart when the customer needs
+              invoice details, insurance support, refill follow-up, or a pharmacist chat record.
+            </p>
+            <button type="button" onClick={() => setInvoiceRequested(true)}>
+              Capture customer now
+            </button>
+          </section>
+        )}
 
         <section className="quick-customer-panel">
           <h4>Prescription capture</h4>
