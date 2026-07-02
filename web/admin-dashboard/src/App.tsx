@@ -128,23 +128,7 @@ const staffLoginLanguages = ['English', 'French', 'Portuguese'] as const;
 type StaffLoginLanguage = typeof staffLoginLanguages[number];
 
 
-const demoUsers = [
-  {
-    label: 'Ubuzima+ Super Admin',
-    email: 'admin@ubuzimaplus.local',
-    scope: 'Platform',
-  },
-  {
-    label: 'PharmaCo360 Solution Admin',
-    email: 'pharmaco.admin@ubuzimaplus.local',
-    scope: 'Solution',
-  },
-  {
-    label: 'VitaPharma Tenant Admin',
-    email: '',
-    scope: 'Tenant',
-  },
-];
+const demoUsers: Array<Record<string, any>> = [];
 
 const commercialFramework = [
   {
@@ -421,7 +405,7 @@ const menuGroups: MenuGroup[] = [
       { key: 'market-management', label: 'Market Management', description: 'Markets and tenant assignment', icon: 'MK', status: 'Active' },
       { key: 'localization', label: 'Localization', description: 'Language and market policy', icon: 'LG', status: 'Active' },
       { key: 'nearby-providers', label: 'Nearby Providers', description: 'Customer provider discovery', icon: 'NP', status: 'Active' },
-      { key: 'vitapharma-website', label: 'VitaPharma Website', description: 'First tenant public site', icon: 'VP', status: 'Active' },
+      { key: 'vitapharma-website', label: 'VitaPharma Website', description: 'Protected workspace public site', icon: 'VP', status: 'Active' },
       { key: 'admin-panel', context: 'web-application', label: 'Web Application', description: 'Public and staff web apps', icon: 'WEB', status: 'Active' },
       { key: 'admin-panel', context: 'mobile-application', label: 'Mobile Application', description: 'Manager and field apps', icon: 'MOB', status: 'Planned' },
       { key: 'admin-panel', context: 'desktop-application', label: 'Desktop Application', description: 'Installable POS/PWA', icon: 'DSK', status: 'Planned' },
@@ -1478,7 +1462,7 @@ function App() {
       <main className="auth-shell">
         <section className="auth-panel">
           <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
-          <p className="eyebrow">Ubuzima+ Platform</p>
+          <p className="eyebrow">Secure Staff Access</p>
           <h1>Checking your secure session.</h1>
           <p className="auth-copy">
             We are validating your stored access token before opening the admin workspace.
@@ -1503,7 +1487,7 @@ function App() {
       <main className="auth-shell auth-shell--identity">
         <section className="auth-side auth-info-panel">
           <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
-          <p className="eyebrow">Ubuzima+ Platform</p>
+          <p className="eyebrow">Secure Staff Access</p>
           <h1>Secure access for real pharmacy operations.</h1>
           <p className="auth-copy">
             Ubuzima+ connects PharmaCore 360 operations, tenant data, staff permissions, stock,
@@ -1512,7 +1496,7 @@ function App() {
 
           <div className="auth-info-grid">
             <div>
-              <strong>First tenant</strong>
+              <strong>Protected workspace</strong>
               <span>VitaPharma onboarding</span>
             </div>
             <div>
@@ -1538,7 +1522,7 @@ function App() {
             <p className="eyebrow">Sign in</p>
             <h2>Access your workspace</h2>
             <p className="auth-copy">
-              Use your staff account. Access is tenant-aware and limited by your role, branch, package, and permissions.
+              Use your authorized staff account. Access is protected and automatically limited by your assigned role and permissions.
             </p>
 
             <div className="login-method-tabs" aria-label="Login method">
@@ -1554,7 +1538,7 @@ function App() {
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    autoComplete="email"
+                    autoComplete="off"
                     required
                   />
                 </label>
@@ -1565,7 +1549,7 @@ function App() {
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     required
                   />
                 </label>
