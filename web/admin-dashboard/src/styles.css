@@ -4451,3 +4451,77 @@ h3,
     border-bottom: 1px solid var(--ubuzima-line);
   }
 }
+
+/* Phase 22.0A inventory formula readability and stock-health explanation */
+.inventory-formula-panel {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.inventory-formula-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.inventory-formula-grid div {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.inventory-formula-grid span,
+.inventory-formula-grid small {
+  display: block;
+  color: #64748b;
+}
+
+.inventory-formula-grid strong {
+  display: block;
+  margin: 0.3rem 0;
+  font-size: 1.08rem;
+  color: #0f172a;
+}
+
+@media (max-width: 900px) {
+  .inventory-formula-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .inventory-formula-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Phase 22.0D inventory setup workspace */
+.inventory-setup-card {
+  grid-column: 1 / -1;
+}
+
+.inventory-setup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.inventory-setup-form {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.inventory-setup-form h4 {
+  margin: 0 0 0.75rem;
+  color: #0f172a;
+}
+
+@media (max-width: 780px) {
+  .inventory-setup-grid {
+    grid-template-columns: 1fr;
+  }
+}

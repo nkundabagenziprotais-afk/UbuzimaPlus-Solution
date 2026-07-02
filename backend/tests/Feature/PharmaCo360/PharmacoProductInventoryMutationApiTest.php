@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\PharmaCo360;
 
+use App\Models\Branch;
 use App\Models\Module;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Solution;
+use App\Models\StockLocation;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -182,6 +184,167 @@ class PharmacoProductInventoryMutationApiTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonPath('required_header', 'X-Tenant-Slug');
+    }
+
+    public function test_tenant_admin_can_create_product_category_and_audit_is_recorded(): void
+    {
+        $this->seed();
+
+        $tenant = Tenant::where('slug', 'vitapharma')->firstOrFail();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/product-categories', [
+                'name' => 'Inventory Setup Category',
+                'code' => 'inventory-setup-category',
+                'category_type' => 'medicine',
+                'status' => 'active',
+                'description' => 'Created from the inventory setup API test.',
+            ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('tenant.slug', 'vitapharma')
+            ->assertJsonPath('category.name', 'Inventory Setup Category')
+            ->assertJsonPath('category.code', 'INVENTORY-SETUP-CATEGORY')
+            ->assertJsonPath('category.products_count', 0);
+
+        $categoryId = $response->json('category.id');
+
+        $this->assertDatabaseHas('product_categories', [
+            'id' => $categoryId,
+            'tenant_id' => $tenant->id,
+            'name' => 'Inventory Setup Category',
+            'code' => 'INVENTORY-SETUP-CATEGORY',
+            'category_type' => 'medicine',
+            'status' => 'active',
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'tenant_id' => $tenant->id,
+            'action' => 'pharmaco.product_category.created',
+            'auditable_type' => ProductCategory::class,
+            'auditable_id' => $categoryId,
+        ]);
+    }
+
+    public function test_tenant_admin_can_update_product_category_and_audit_is_recorded(): void
+    {
+        $this->seed();
+
+        $tenant = Tenant::where('slug', 'vitapharma')->firstOrFail();
+        $category = ProductCategory::where('tenant_id', $tenant->id)->where('code', 'CONSUMABLES')->firstOrFail();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->patchJson("/api/v1/pharmaco/product-categories/{$category->id}", [
+                'name' => 'Updated Inventory Setup Category',
+                'code' => 'updated-inventory-setup-category',
+                'status' => 'active',
+                'description' => 'Updated from the inventory setup API test.',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('tenant.slug', 'vitapharma')
+            ->assertJsonPath('category.name', 'Updated Inventory Setup Category')
+            ->assertJsonPath('category.code', 'UPDATED-INVENTORY-SETUP-CATEGORY');
+
+        $this->assertDatabaseHas('product_categories', [
+            'id' => $category->id,
+            'tenant_id' => $tenant->id,
+            'name' => 'Updated Inventory Setup Category',
+            'code' => 'UPDATED-INVENTORY-SETUP-CATEGORY',
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'tenant_id' => $tenant->id,
+            'action' => 'pharmaco.product_category.updated',
+            'auditable_type' => ProductCategory::class,
+            'auditable_id' => $category->id,
+        ]);
+    }
+
+    public function test_tenant_admin_can_create_stock_location_and_audit_is_recorded(): void
+    {
+        $this->seed();
+
+        $tenant = Tenant::where('slug', 'vitapharma')->firstOrFail();
+        $branch = Branch::where('tenant_id', $tenant->id)->firstOrFail();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/inventory/locations', [
+                'branch_id' => $branch->id,
+                'name' => 'Inventory Setup Reserve Store',
+                'code' => 'inventory-setup-reserve',
+                'location_type' => 'reserve_store',
+                'status' => 'active',
+            ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('tenant.slug', 'vitapharma')
+            ->assertJsonPath('location.name', 'Inventory Setup Reserve Store')
+            ->assertJsonPath('location.code', 'INVENTORY-SETUP-RESERVE')
+            ->assertJsonPath('location.branch_id', $branch->id);
+
+        $locationId = $response->json('location.id');
+
+        $this->assertDatabaseHas('stock_locations', [
+            'id' => $locationId,
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'code' => 'INVENTORY-SETUP-RESERVE',
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'tenant_id' => $tenant->id,
+            'action' => 'pharmaco.stock_location.created',
+            'auditable_type' => StockLocation::class,
+            'auditable_id' => $locationId,
+        ]);
+    }
+
+    public function test_tenant_admin_can_update_stock_location_and_audit_is_recorded(): void
+    {
+        $this->seed();
+
+        $tenant = Tenant::where('slug', 'vitapharma')->firstOrFail();
+        $location = StockLocation::where('tenant_id', $tenant->id)->where('code', 'HQ-STORE')->firstOrFail();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->patchJson("/api/v1/pharmaco/inventory/locations/{$location->id}", [
+                'name' => 'Updated HQ Inventory Store',
+                'code' => 'updated-hq-inventory-store',
+                'location_type' => 'main_store',
+                'status' => 'active',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('tenant.slug', 'vitapharma')
+            ->assertJsonPath('location.name', 'Updated HQ Inventory Store')
+            ->assertJsonPath('location.code', 'UPDATED-HQ-INVENTORY-STORE');
+
+        $this->assertDatabaseHas('stock_locations', [
+            'id' => $location->id,
+            'tenant_id' => $tenant->id,
+            'name' => 'Updated HQ Inventory Store',
+            'code' => 'UPDATED-HQ-INVENTORY-STORE',
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'tenant_id' => $tenant->id,
+            'action' => 'pharmaco.stock_location.updated',
+            'auditable_type' => StockLocation::class,
+            'auditable_id' => $location->id,
+        ]);
     }
 
     private function loginAs(string $email): string

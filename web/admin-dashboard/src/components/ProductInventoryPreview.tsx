@@ -138,6 +138,36 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
             </div>
           </section>
 
+          <section className="inventory-section inventory-formula-panel">
+            <div className="section-heading">
+              <h3>Inventory formulas and stock health</h3>
+              <span>Cost value, retail value, margin exposure, low stock, and expiry controls</span>
+            </div>
+
+            <div className="inventory-formula-grid">
+              <div>
+                <span>Stock cost value</span>
+                <strong>{formatRwf(summary.summary.estimated_stock_cost_value ?? 0)}</strong>
+                <small>Formula: quantity on hand × unit cost</small>
+              </div>
+              <div>
+                <span>Stock retail value</span>
+                <strong>{formatRwf(summary.summary.estimated_stock_retail_value ?? summary.summary.estimated_stock_value)}</strong>
+                <small>Formula: quantity on hand × selling price</small>
+              </div>
+              <div>
+                <span>Potential margin</span>
+                <strong>{formatRwf(summary.summary.estimated_potential_margin_value ?? 0)}</strong>
+                <small>Formula: retail value − cost value</small>
+              </div>
+              <div>
+                <span>Expired batches</span>
+                <strong>{summary.summary.expired_batches_count ?? 0}</strong>
+                <small>Control: expiry date before today</small>
+              </div>
+            </div>
+          </section>
+
           <section className="inventory-section">
             <div className="section-heading">
               <h3>Low-stock watchlist</h3>
