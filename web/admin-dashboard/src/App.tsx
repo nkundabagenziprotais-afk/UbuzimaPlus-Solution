@@ -141,7 +141,7 @@ const demoUsers = [
   },
   {
     label: 'VitaPharma Tenant Admin',
-    email: 'admin@vitapharmaafrica.com',
+    email: '',
     scope: 'Tenant',
   },
 ];
@@ -1108,8 +1108,8 @@ function ModulePageIntro({
 function App() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
-  const [email, setEmail] = useState('admin@vitapharmaafrica.com');
-  const [password, setPassword] = useState('ChangeThisPassword123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [staffLoginLanguage, setStaffLoginLanguage] = useState<StaffLoginLanguage>('English');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
