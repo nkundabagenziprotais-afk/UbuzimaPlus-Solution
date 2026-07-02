@@ -541,6 +541,7 @@ export function ProcurementWorkflow({ token, profile, workspaceView = 'create-su
       {error && <div className="form-error">{error}</div>}
       {notice && <div className="form-success">{notice}</div>}
 
+      {workspaceView === 'overview' && (
       <div className="inventory-kpi-grid procurement-kpi-grid">
         <article>
           <span>Suppliers</span>
@@ -561,6 +562,7 @@ export function ProcurementWorkflow({ token, profile, workspaceView = 'create-su
           <strong>{money(purchaseOrderTotal)}</strong>
         </article>
       </div>
+      )}
 
       {(showCreateSupplier || showSupplierList) && (
       <div className="procurement-workflow-grid">
@@ -658,22 +660,42 @@ export function ProcurementWorkflow({ token, profile, workspaceView = 'create-su
             <button type="button" className="danger" onClick={() => setNotice(registerActionMessage)}>Bulk Delete</button>
           </div>
 
-          {state.suppliers.length === 0 ? (
-            <p className="muted">No suppliers loaded yet.</p>
-          ) : (
-            <div className="compact-list">
-              {state.suppliers.slice(0, 15).map((supplier) => (
-                <div key={supplier.id} className={supplier.id === Number(selectedSupplierId) ? 'selected-list-row' : ''}>
-                  <strong>{supplier.name}</strong>
-                  <span>{supplier.supplier_code} · {supplier.supplier_type}</span>
-                  <small>{supplier.status} · {supplier.payment_terms ?? 'No terms'}</small>
-                  <button type="button" onClick={() => setSelectedSupplierId(String(supplier.id))}>
-                    Select
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="data-table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Code</th>
+                  <th>Type</th>
+                  <th>Terms</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.suppliers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>No suppliers loaded yet.</td>
+                  </tr>
+                ) : (
+                  state.suppliers.slice(0, 15).map((supplier) => (
+                    <tr key={supplier.id} className={supplier.id === Number(selectedSupplierId) ? 'selected-list-row' : ''}>
+                      <td><strong>{supplier.name}</strong></td>
+                      <td>{supplier.supplier_code}</td>
+                      <td>{supplier.supplier_type}</td>
+                      <td>{supplier.payment_terms ?? 'No terms'}</td>
+                      <td><span className={`status-pill ${supplier.status}`}>{supplier.status}</span></td>
+                      <td>
+                        <button type="button" onClick={() => setSelectedSupplierId(String(supplier.id))}>
+                          Select
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
         )}
 
@@ -866,22 +888,42 @@ export function ProcurementWorkflow({ token, profile, workspaceView = 'create-su
             <button type="button" className="danger" onClick={() => setNotice(registerActionMessage)}>Bulk Delete</button>
           </div>
 
-          {purchaseOrdersForView.length === 0 ? (
-            <p className="muted">No purchase orders loaded yet.</p>
-          ) : (
-            <div className="compact-list">
-              {purchaseOrdersForView.slice(0, 15).map((purchaseOrder) => (
-                <div key={purchaseOrder.id}>
-                  <strong>{purchaseOrder.po_number}</strong>
-                  <span>{purchaseOrder.supplier?.name ?? 'No supplier'}</span>
-                  <small>{purchaseOrder.status} · {money(purchaseOrder.total_amount)}</small>
-                  <button type="button" onClick={() => selectPurchaseOrder(purchaseOrder.id)}>
-                    Review / receive
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="data-table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>PO number</th>
+                  <th>Supplier</th>
+                  <th>Branch</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {purchaseOrdersForView.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>No purchase orders loaded yet.</td>
+                  </tr>
+                ) : (
+                  purchaseOrdersForView.slice(0, 15).map((purchaseOrder) => (
+                    <tr key={purchaseOrder.id}>
+                      <td><strong>{purchaseOrder.po_number}</strong></td>
+                      <td>{purchaseOrder.supplier?.name ?? 'No supplier'}</td>
+                      <td>{purchaseOrder.branch?.name ?? 'No branch'}</td>
+                      <td><span className={`status-pill ${purchaseOrder.status}`}>{purchaseOrder.status}</span></td>
+                      <td>{money(purchaseOrder.total_amount)}</td>
+                      <td>
+                        <button type="button" onClick={() => selectPurchaseOrder(purchaseOrder.id)}>
+                          Review / receive
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
         )}
 

@@ -5976,3 +5976,260 @@ h3,
     border-bottom: 1px solid var(--ubuzima-line);
   }
 }
+
+/* Commercial operating framework: stable tables, restrained cards, and task-first workspaces. */
+.panel,
+.pharmaco-card,
+.inventory-section,
+.sales-creation-card,
+.pos-product-browser,
+.pos-cart-panel,
+.quick-customer-panel,
+.payment-recording-card,
+.sale-detail-card,
+.approval-control-box,
+.document-action-grid article,
+.home-control-panel,
+.report-focus-note,
+.focus-register-panel {
+  border-radius: 8px !important;
+  box-shadow: 0 10px 28px rgba(7, 56, 68, 0.045);
+}
+
+.panel.wide,
+.section-page {
+  max-width: 100%;
+}
+
+.panel-heading-row h2,
+.panel-heading-row h3,
+.section-heading h3 {
+  letter-spacing: 0;
+}
+
+.panel-heading-row p,
+.section-heading span,
+.muted {
+  line-height: 1.5;
+}
+
+.inventory-kpi-grid {
+  margin-top: 0;
+}
+
+.inventory-kpi-grid article,
+.inventory-kpi-grid div,
+.sales-page-summary-grid div,
+.workflow-state-card,
+.insight-card,
+.transaction-contribution-grid article {
+  border-radius: 8px !important;
+  min-width: 0;
+}
+
+.data-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  text-align: left;
+  vertical-align: middle;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+  color: #14532d;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.data-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table td strong,
+.data-table td small {
+  display: block;
+}
+
+.data-table td small {
+  margin-top: 2px;
+  color: #64748b;
+  font-weight: 750;
+}
+
+.data-table button {
+  min-height: 34px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  background: #ffffff;
+  color: #123d30;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.data-table button:hover {
+  border-color: rgba(8, 119, 201, 0.3);
+  background: #eef7ff;
+  color: var(--ubuzima-blue);
+}
+
+.sales-register-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.procurement-workflow-grid,
+.sales-review-grid,
+.module-section-stage,
+.pharmaco-card,
+.inventory-section,
+.panel,
+.section-page {
+  min-width: 0;
+}
+
+.sales-register-workbench--with-detail {
+  grid-template-columns: minmax(520px, 0.92fr) minmax(380px, 1.08fr);
+}
+
+.sales-register-table {
+  align-self: start;
+}
+
+.sales-register-table .data-table {
+  min-width: 720px;
+}
+
+.sale-detail-card {
+  max-height: calc(100vh - 180px);
+  overflow: auto;
+  position: sticky;
+  top: 132px;
+}
+
+.sales-table {
+  display: none;
+}
+
+.compact-list > div {
+  border-radius: 8px;
+}
+
+.retail-pos-grid {
+  grid-template-columns: minmax(420px, 1.05fr) minmax(420px, 0.95fr);
+}
+
+.pos-product-grid {
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  max-height: 520px;
+}
+
+.pos-product-grid button {
+  min-height: 142px;
+}
+
+.pos-cart-panel {
+  position: sticky;
+  top: 132px;
+}
+
+.pos-cart-lines {
+  max-height: 430px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.pos-cart-line {
+  grid-template-columns: minmax(180px, 1.35fr) minmax(72px, 0.45fr) minmax(96px, 0.55fr) minmax(96px, 0.55fr) auto;
+}
+
+.transaction-contribution-grid {
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+}
+
+.document-action-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.document-action-grid article {
+  min-height: 110px;
+}
+
+.bulk-action-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.bulk-action-row button {
+  white-space: nowrap;
+}
+
+.selected-list-row,
+.active-sale-row {
+  background: #ecfdf3 !important;
+}
+
+@media (max-width: 1280px) {
+  .sales-register-workbench--with-detail,
+  .retail-pos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sale-detail-card,
+  .pos-cart-panel {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .data-table {
+    min-width: 680px;
+  }
+
+  .panel,
+  .pharmaco-card,
+  .inventory-section {
+    padding: 14px;
+  }
+
+  .pos-product-toolbar,
+  .pos-meta-grid,
+  .pos-cart-footer,
+  .pos-cart-line,
+  .transaction-contribution-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

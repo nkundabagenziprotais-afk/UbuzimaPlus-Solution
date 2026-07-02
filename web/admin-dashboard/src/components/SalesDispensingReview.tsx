@@ -595,6 +595,7 @@ export function SalesDispensingReview({ token, profile, workspaceView = 'pos' }:
   const showPaymentReceipt = workspaceView === 'payment-receipt';
   const showSalesRegister = showDispensingReview || showSalesPerformance || showPaymentReceipt;
   const showSelectedSaleDetail = showDispensingReview || showSalesPerformance || showPaymentReceipt;
+  const showGlobalSalesSummary = showPosBuilder;
 
   return (
     <article className="panel wide sales-review-panel">
@@ -622,6 +623,7 @@ export function SalesDispensingReview({ token, profile, workspaceView = 'pos' }:
         </div>
       )}
 
+      {showGlobalSalesSummary && (
       <div className="inventory-kpi-grid sales-kpi-grid">
         <article>
           <span>Customers</span>
@@ -648,6 +650,7 @@ export function SalesDispensingReview({ token, profile, workspaceView = 'pos' }:
           <strong>{money(salesSummary.openBalance)}</strong>
         </article>
       </div>
+      )}
 
       {showSalesRegister && (
       <section className="pharmaco-card sales-filter-panel">
@@ -851,19 +854,36 @@ export function SalesDispensingReview({ token, profile, workspaceView = 'pos' }:
             <button type="button" onClick={() => setNotice('Customer export prepared for the current register.')}>Export</button>
             <button type="button" className="danger" onClick={() => setNotice('Customer bulk delete requires admin approval and audit confirmation.')}>Bulk Delete</button>
           </div>
-          {state.customers.length === 0 ? (
-            <p className="muted">No customers loaded yet.</p>
-          ) : (
-            <div className="compact-list">
-              {state.customers.slice(0, 15).map((customer) => (
-                <div key={customer.id}>
-                  <strong>{customer.full_name}</strong>
-                  <span>{customer.phone ?? 'No phone'} · {customer.insurance_provider ?? 'No insurer'}</span>
-                  <small>{customer.status}</small>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="data-table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Phone</th>
+                  <th>Insurance</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.customers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4}>No customers loaded yet.</td>
+                  </tr>
+                ) : (
+                  state.customers.slice(0, 15).map((customer) => (
+                    <tr key={customer.id}>
+                      <td>
+                        <strong>{customer.full_name}</strong>
+                      </td>
+                      <td>{customer.phone ?? 'No phone'}</td>
+                      <td>{customer.insurance_provider ?? 'No insurer'}</td>
+                      <td><span className={`status-pill ${customer.status}`}>{customer.status}</span></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
         )}
 
@@ -884,59 +904,86 @@ export function SalesDispensingReview({ token, profile, workspaceView = 'pos' }:
             <button type="button" onClick={() => setNotice('Prescription export prepared for the current register.')}>Export</button>
             <button type="button" className="danger" onClick={() => setNotice('Prescription bulk delete requires admin approval and audit confirmation.')}>Bulk Delete</button>
           </div>
-          {state.prescriptions.length === 0 ? (
-            <p className="muted">No prescriptions loaded yet.</p>
-          ) : (
-            <div className="compact-list">
-              {state.prescriptions.slice(0, 15).map((prescription) => (
-                <div key={prescription.id}>
-                  <strong>{prescription.prescription_number}</strong>
-                  <span>{prescription.prescriber_name ?? 'No prescriber'} · {prescription.prescriber_facility ?? 'No facility'}</span>
-                  <small>{prescription.status} · expires {formatDate(prescription.expires_at)}</small>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="data-table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Prescription</th>
+                  <th>Prescriber</th>
+                  <th>Facility</th>
+                  <th>Expires</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.prescriptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>No prescriptions loaded yet.</td>
+                  </tr>
+                ) : (
+                  state.prescriptions.slice(0, 15).map((prescription) => (
+                    <tr key={prescription.id}>
+                      <td><strong>{prescription.prescription_number}</strong></td>
+                      <td>{prescription.prescriber_name ?? 'No prescriber'}</td>
+                      <td>{prescription.prescriber_facility ?? 'No facility'}</td>
+                      <td>{formatDate(prescription.expires_at)}</td>
+                      <td><span className={`status-pill ${prescription.status}`}>{prescription.status}</span></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
         )}
       </div>
       )}
 
-      {showSalesRegister && (
-      <div className="sales-table">
-        <div className="sales-table-header">
-          <strong>Sale</strong>
-          <strong>Customer</strong>
-          <strong>Status</strong>
-          <strong>Total</strong>
-          <strong>Action</strong>
+      {(showSalesRegister || (selectedSale && showSelectedSaleDetail)) && (
+      <div className={`sales-register-workbench ${selectedSale && showSelectedSaleDetail ? 'sales-register-workbench--with-detail' : ''}`}>
+        {showSalesRegister && (
+        <div className="data-table-scroll sales-register-table">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Sale</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {state.sales.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>No sales loaded yet.</td>
+                </tr>
+              ) : (
+                state.sales.slice(0, 15).map((sale) => (
+                  <tr key={sale.id} className={selectedSale?.id === sale.id ? 'active-sale-row' : ''}>
+                    <td>
+                      <strong>{sale.sale_number}</strong>
+                      <small>{sale.sale_type.replaceAll('_', ' ')}</small>
+                    </td>
+                    <td>{sale.customer?.full_name ?? 'Walk-in customer'}</td>
+                    <td><span className={`status-pill ${sale.status}`}>{sale.status}</span></td>
+                    <td>{sale.payment_status}</td>
+                    <td>{money(sale.total_amount)}</td>
+                    <td>
+                      <button type="button" onClick={() => selectSale(sale.id)} disabled={isLoadingSale}>
+                        Review
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-
-        {state.sales.length === 0 ? (
-          <p className="muted">No sales loaded yet.</p>
-        ) : (
-          state.sales.slice(0, 15).map((sale) => (
-            <div key={sale.id} className={selectedSale?.id === sale.id ? 'active-sale-row' : ''}>
-              <span>
-                <strong>{sale.sale_number}</strong>
-                <small>{sale.sale_type.replaceAll('_', ' ')}</small>
-              </span>
-              <span>{sale.customer?.full_name ?? 'Walk-in customer'}</span>
-              <span>
-                <span className={`status-pill ${sale.status}`}>{sale.status}</span>
-                <small>{sale.payment_status}</small>
-              </span>
-              <span>{money(sale.total_amount)}</span>
-              <button type="button" onClick={() => selectSale(sale.id)} disabled={isLoadingSale}>
-                Review
-              </button>
-            </div>
-          ))
         )}
-      </div>
-      )}
 
-      {selectedSale && showSelectedSaleDetail && (
+        {selectedSale && showSelectedSaleDetail && (
         <section className="sale-detail-card">
           <div className="panel-heading-row">
             <div>
@@ -1295,6 +1342,8 @@ export function SalesDispensingReview({ token, profile, workspaceView = 'pos' }:
           </div>
           )}
         </section>
+        )}
+      </div>
       )}
     </article>
   );
