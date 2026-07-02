@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 const brandLogoSrc = '/assets/ubuzima-logo.png';
 const vitaPharmaLogoSrc = '/assets/vitapharma-logo.png';
-const staffLoginUrl = import.meta.env.VITE_STAFF_LOGIN_URL?.trim() || 'http://127.0.0.1:5175/';
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || 'http://127.0.0.1:8000/api/v1';
+const staffLoginUrl = import.meta.env.VITE_STAFF_LOGIN_URL?.trim() || '/admin/';
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '/api/v1';
 const staffLoginRedirectPaths = new Set(['/login', '/staff', '/staff-login']);
 const languageStorageKey = 'ubuzima_public_language';
 
