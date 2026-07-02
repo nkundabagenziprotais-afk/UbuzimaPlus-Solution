@@ -2650,8 +2650,7 @@ function App() {
 
         {selectedFeature.key === 'ai-model' && (
           <>
-            <ModuleReadinessGrid items={aiWorkflows} />
-            <AiOperationsPanel token={session.token} profile={profile} />
+<AiOperationsPanel token={session.token} profile={profile} />
             <section className="ai-model-grid">
               {pharmaAiModels.map(([model, description]) => (
                 <article key={model}>
@@ -2666,8 +2665,7 @@ function App() {
 
         {selectedFeature.key === 'inventory' && (
           <>
-            <ModuleReadinessGrid items={inventoryReadiness} />
-            <ProductInventoryPreview
+<ProductInventoryPreview
               token={session.token}
               profile={profile}
               activeView={activeInventoryView}
@@ -2682,15 +2680,13 @@ function App() {
 
         {selectedFeature.key === 'pos' && (
           <>
-            <ModuleReadinessGrid items={posReadiness} />
-            <SalesDispensingReview token={session.token} profile={profile} />
+<SalesDispensingReview token={session.token} profile={profile} />
           </>
         )}
 
         {selectedFeature.key === 'procurement' && (
           <>
-            <ModuleReadinessGrid items={supplierReadiness} />
-            <ProcurementWorkflow token={session.token} profile={profile} />
+<ProcurementWorkflow token={session.token} profile={profile} />
           </>
         )}
 
@@ -2859,8 +2855,7 @@ function App() {
           <div className="module-section-stage">
             {activePosWorkspace === 'overview' && (
               <>
-                <ModuleReadinessGrid items={posReadiness} />
-                <section className="document-action-grid">
+<section className="document-action-grid">
                   {[
                     ['POS transaction summary', 'Customer contribution, insurer or partner contribution, tax, and balance are shown before commit.'],
                     ['Prescription capture', 'RX products trigger prescription image/manual capture before the item proceeds to cart.'],
@@ -2937,8 +2932,7 @@ function App() {
           <div className="module-section-stage">
             {activeSupplierWorkspace === 'overview' && (
               <>
-                <ModuleReadinessGrid items={supplierReadiness} />
-                <section className="document-action-grid">
+<section className="document-action-grid">
                   {[
                     ['Supplier overview charts', 'Supplier count, open PO value, approved receiving queue, overdue commitments, and active supplier types.'],
                     ['Create supplier', 'Wholesaler, manufacturer, distributor, importer, local supplier, service provider, delivery supplier, technology/API supplier, or other.'],
@@ -3117,10 +3111,7 @@ function App() {
         </section>
 
         <AiOperationsPanel token={session.token} profile={profile} />
-
-        <ModuleReadinessGrid items={aiWorkflows} />
-
-        <section className="ai-model-grid">
+<section className="ai-model-grid">
           {pharmaAiModels.map(([model, description]) => (
             <article key={model}>
               <strong>{model}</strong>
@@ -3292,10 +3283,7 @@ function App() {
             </div>
           </article>
         )}
-
-        {!['user-profiles', 'two-factor-auth', 'notification-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && <ModuleReadinessGrid items={settingsBlueprint} />}
-
-        {selectedWorkspace === 'backend-api' && accessControlPanel}
+{selectedWorkspace === 'backend-api' && accessControlPanel}
       </section>
     );
   }
@@ -3601,8 +3589,7 @@ function App() {
       case 'inventory':
         return (
           <section className="section-page">
-<ModuleReadinessGrid items={inventoryReadiness} />
-            <ProductInventoryPreview token={session.token} profile={profile} />
+<ProductInventoryPreview token={session.token} profile={profile} />
             <ProductInventoryActions token={session.token} profile={profile} />
           </section>
         );
@@ -3719,8 +3706,7 @@ function App() {
       case 'settings':
         return (
           <section className="section-page">
-<ModuleReadinessGrid items={settingsBlueprint} />
-            <section className="commercial-framework-section">
+<section className="commercial-framework-section">
               <div className="framework-heading">
                 <div>
                   <p className="eyebrow">Commercial platform framework</p>
