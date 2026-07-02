@@ -621,12 +621,92 @@ footer a {
 .website-app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.76)),
     url("/assets/ubuzima-pharmaco-hero.png");
   background-position: center;
   background-size: cover;
+}
+
+.website-top-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(210px, auto) minmax(280px, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 4vw;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+}
+
+.website-top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.website-top-nav button,
+.website-top-actions button,
+.website-top-actions a {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.62rem 0.82rem;
+  background: transparent;
+  color: var(--teal);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.website-top-nav button:hover,
+.website-top-nav button.active,
+.website-top-actions button,
+.website-top-actions a {
+  border-color: rgba(8, 119, 201, 0.2);
+  background: #eef7ff;
+  color: var(--logo-blue);
+}
+
+.website-top-group {
+  position: relative;
+}
+
+.website-top-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 210px;
+  display: none;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.website-top-group:hover .website-top-dropdown,
+.website-top-group:focus-within .website-top-dropdown {
+  display: grid;
+}
+
+.website-top-dropdown button {
+  width: 100%;
+  text-align: left;
+}
+
+.website-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  align-items: center;
 }
 
 .website-tree-panel {
@@ -696,7 +776,6 @@ footer a {
 .website-content-panel {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr;
 }
 
 .website-content-header {
@@ -842,25 +921,24 @@ footer a {
 .vita-website-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 248, 0.88)),
     radial-gradient(circle at 80% 18%, rgba(145, 198, 83, 0.14), transparent 24rem);
 }
 
+.vita-top-header,
 .vita-tree-panel {
   background: #fbfdf9;
 }
 
 .vita-brand {
   min-width: 0;
-  align-items: flex-start;
-  flex-direction: column;
 }
 
 .vita-logo {
-  width: min(230px, 100%);
-  max-height: 96px;
+  width: min(190px, 34vw);
+  max-height: 62px;
   object-fit: contain;
   object-position: left center;
 }
@@ -899,6 +977,34 @@ footer a {
   line-height: 1.72;
 }
 
+.vita-category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 2rem;
+}
+
+.vita-category-grid article {
+  min-height: 142px;
+  border: 1px solid rgba(15, 111, 85, 0.14);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.vita-category-grid strong {
+  color: var(--green-deep);
+}
+
+.vita-category-grid span {
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .vita-service-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -929,6 +1035,16 @@ footer a {
     grid-template-columns: 1fr;
   }
 
+  .website-top-header {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .website-top-nav,
+  .website-top-actions {
+    justify-content: flex-start;
+  }
+
   .website-tree-panel {
     position: relative;
     height: auto;
@@ -945,6 +1061,7 @@ footer a {
   .compact-audience-grid,
   .website-mini-grid,
   .website-module-list,
+  .vita-category-grid,
   .vita-service-grid {
     grid-template-columns: 1fr;
   }

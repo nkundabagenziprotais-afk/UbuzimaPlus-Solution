@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AccessProfile,
   PharmaInventoryBatchesResponse,
@@ -46,12 +46,68 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
   const [batches, setBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
   const [nearExpiryBatches, setNearExpiryBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '');
+
+  const productCategories = useMemo(() => {
+    const categories = new Map<string, string>();
+
+    products?.products.forEach((product) => {
+      if (product.category?.code && product.category.name) {
+        categories.set(product.category.code, product.category.name);
+      }
+    });
+
+    return Array.from(categories.entries()).map(([code, name]) => ({ code, name }));
+  }, [products]);
+
+  const visibleProducts = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return (products?.products ?? [])
+      .filter((product) => activeCategory === 'all' || product.category?.code === activeCategory)
+      .filter((product) => {
+        if (!normalizedSearch) return true;
+
+        return [
+          product.name,
+          product.generic_name,
+          product.brand_name,
+          product.sku,
+          product.barcode,
+          product.category?.name,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+      })
+      .sort((left, right) => {
+        const leftRisk = left.stock_summary?.is_below_reorder_level ? 0 : 1;
+        const rightRisk = right.stock_summary?.is_below_reorder_level ? 0 : 1;
+
+        return leftRisk - rightRisk || left.name.localeCompare(right.name);
+      });
+  }, [activeCategory, products, searchTerm]);
+
+  function preferredPrice(productId: number): string {
+    const batch = (batches?.batches ?? [])
+      .filter((entry) => entry.product.id === productId && entry.selling_price !== null)
+      .sort((left, right) => {
+        const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+
+        return leftExpiry - rightExpiry;
+      })[0];
+
+    return batch?.selling_price === null || batch?.selling_price === undefined
+      ? 'Price pending'
+      : formatRwf(batch.selling_price);
+  }
 
   async function loadInventoryPreview() {
     if (!tenantSlug) {
@@ -84,20 +140,26 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
     }
   }
 
+  useEffect(() => {
+    void loadInventoryPreview();
+  }, [tenantSlug, token]);
+
   return (
     <article className="panel wide inventory-preview-panel">
       <div className="panel-heading-row">
         <div>
           <h2>PharmaCo360 product master register and inventory snapshot</h2>
           <p className="muted">
-            Read-only tenant-scoped register of products, stock locations, batches, and expiry exposure.
+            Tenant-scoped shelf view for products, stock locations, batches, low stock, and expiry exposure.
           </p>
         </div>
 
         <button type="button" onClick={loadInventoryPreview} disabled={isLoading}>
-          {isLoading ? 'Loading…' : 'Load inventory snapshot'}
+          {isLoading ? 'Loading...' : summary ? 'Refresh inventory' : 'Load inventory'}
         </button>
       </div>
+
+      {isLoading && !summary && <p className="muted">Loading inventory automatically...</p>}
 
       {error && <div className="form-error">{error}</div>}
 
@@ -163,40 +225,55 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
       )}
 
       {products && (
-        <section className="inventory-section">
+        <section className="inventory-section product-shelf-section">
           <div className="section-heading">
-            <h3>Product master register</h3>
-            <span>First {Math.min(products.products.length, 6)} of {products.products.length} products</span>
+            <div>
+              <h3>Retail product shelf</h3>
+              <span>{visibleProducts.length} visible of {products.products.length} products</span>
+            </div>
           </div>
 
-          <div className="inventory-table-wrap product-master-table-wrap">
-            <table className="inventory-master-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>SKU</th>
-                  <th>Category</th>
-                  <th>Type</th>
-                  <th>Available</th>
-                  <th>Unit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.products.slice(0, 6).map((product) => (
-                  <tr key={product.id}>
-                    <td>
-                      <strong>{product.name}</strong>
-                      <small>{product.generic_name ?? 'Generic name not set'}</small>
-                    </td>
-                    <td>{product.sku}</td>
-                    <td>{product.category?.name ?? 'Uncategorised'}</td>
-                    <td>{product.requires_prescription ? 'Prescription' : 'OTC/General'}</td>
-                    <td>{formatNumber(product.stock_summary?.available_quantity ?? 0)}</td>
-                    <td>{product.unit}</td>
-                  </tr>
+          <div className="inventory-filter-bar">
+            <label>
+              Search product, SKU, barcode
+              <input
+                value={searchTerm}
+                placeholder="Search medicines and health products"
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </label>
+
+            <label>
+              Category
+              <select value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)}>
+                <option value="all">All categories</option>
+                {productCategories.map((category) => (
+                  <option key={category.code} value={category.code}>
+                    {category.name}
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </label>
+          </div>
+
+          <div className="product-shelf-grid">
+            {visibleProducts.slice(0, 12).map((product) => (
+              <article key={product.id}>
+                <div className="product-shelf-card-header">
+                  <span className={product.requires_prescription ? 'rx-chip' : 'otc-chip'}>
+                    {product.requires_prescription ? 'RX' : 'OTC'}
+                  </span>
+                  {product.stock_summary?.is_below_reorder_level && <span className="risk-chip">Low stock</span>}
+                </div>
+                <strong>{product.name}</strong>
+                <span>{product.generic_name || product.brand_name || product.dosage_form || product.sku}</span>
+                <small>{product.category?.name ?? 'Uncategorised'} · SKU {product.sku}</small>
+                <footer>
+                  <span>{preferredPrice(product.id)}</span>
+                  <strong>{formatNumber(product.stock_summary?.available_quantity ?? 0)} {product.unit}</strong>
+                </footer>
+              </article>
+            ))}
           </div>
         </section>
       )}

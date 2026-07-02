@@ -193,13 +193,15 @@ class AuthRbacSeeder extends Seeder
             ->firstOrFail();
 
         $defaultPassword = env('UBUZIMA_SEED_ADMIN_PASSWORD', 'ChangeThisPassword123!');
+        $defaultPin = env('UBUZIMA_SEED_ADMIN_PIN', '1234');
 
         $platformAdmin = User::query()->updateOrCreate(
             ['email' => 'admin@ubuzimaplus.local'],
             [
                 'name' => 'Ubuzima+ Super Admin',
-                'phone' => null,
+                'phone' => '+250780000001',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]
@@ -209,8 +211,9 @@ class AuthRbacSeeder extends Seeder
             ['email' => 'pharmaco.admin@ubuzimaplus.local'],
             [
                 'name' => 'PharmaCo360 Solution Admin',
-                'phone' => null,
+                'phone' => '+250780000002',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]
@@ -220,8 +223,9 @@ class AuthRbacSeeder extends Seeder
             ['email' => 'admin@vitapharmaafrica.com'],
             [
                 'name' => 'VitaPharma Tenant Admin',
-                'phone' => null,
+                'phone' => '+250780000003',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]

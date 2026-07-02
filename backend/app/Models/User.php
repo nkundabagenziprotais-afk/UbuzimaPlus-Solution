@@ -13,8 +13,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'login_pin'])]
+#[Hidden(['password', 'login_pin', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -38,6 +38,7 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_last_verified_at' => 'datetime',
             'password' => 'hashed',
+            'login_pin' => 'hashed',
         ];
     }
     public function roles(): BelongsToMany

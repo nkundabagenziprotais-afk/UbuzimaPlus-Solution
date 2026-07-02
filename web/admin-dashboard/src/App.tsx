@@ -17,6 +17,9 @@ import { AiOperationsPanel } from './components/AiOperationsPanel';
 import { NotificationCenterPanel } from './components/NotificationCenterPanel';
 import { MarketLocalizationPanel } from './components/MarketLocalizationPanel';
 import { NearbyProvidersPanel } from './components/NearbyProvidersPanel';
+import { TenantPharmacyDashboard } from './components/TenantPharmacyDashboard';
+import { applyInputKeyboardModes } from './lib/formUsability';
+import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 
@@ -107,6 +110,7 @@ type AdminPanelWorkspaceKey =
   | 'data-layer'
   | 'infrastructure';
 type MenuContextKey = ErpWorkspaceKey | SolutionKey | AiWorkspaceKey | AdminPanelWorkspaceKey;
+type LoginMethod = 'email' | 'phone';
 
 type MenuItem = {
   key: AdminSectionKey;
@@ -122,26 +126,43 @@ type MenuGroup = { key: MenuGroupKey; label: string; icon: string; items: MenuIt
 const storageKey = 'ubuzima_admin_session';
 const activeSectionStorageKey = 'ubuzima_admin_active_section';
 const trustedDeviceStorageKey = 'ubuzima_admin_trusted_device_token';
+const staffLanguageStorageKey = 'ubuzima_admin_language';
 const brandLogoSrc = '/assets/ubuzima-logo.png';
 const vitaPharmaLogoSrc = '/assets/vitapharma-logo.png';
 const staffLoginLanguages = ['English', 'French', 'Portuguese'] as const;
 type StaffLoginLanguage = typeof staffLoginLanguages[number];
 
+function staffLanguageCode(language: StaffLoginLanguage): RuntimeLanguage {
+  if (language === 'French') return 'fr';
+  if (language === 'Portuguese') return 'pt';
+  return 'en';
+}
+
+function readStoredStaffLanguage(): StaffLoginLanguage {
+  const stored = localStorage.getItem(staffLanguageStorageKey);
+
+  return staffLoginLanguages.includes(stored as StaffLoginLanguage)
+    ? (stored as StaffLoginLanguage)
+    : 'English';
+}
 
 const demoUsers = [
   {
     label: 'Ubuzima+ Super Admin',
     email: 'admin@ubuzimaplus.local',
+    phone: '+250780000001',
     scope: 'Platform',
   },
   {
     label: 'PharmaCo360 Solution Admin',
     email: 'pharmaco.admin@ubuzimaplus.local',
+    phone: '+250780000002',
     scope: 'Solution',
   },
   {
     label: 'VitaPharma Tenant Admin',
     email: 'admin@vitapharmaafrica.com',
+    phone: '+250780000003',
     scope: 'Tenant',
   },
 ];
@@ -1108,9 +1129,12 @@ function ModulePageIntro({
 function App() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [email, setEmail] = useState('admin@vitapharmaafrica.com');
+  const [phone, setPhone] = useState('+250780000003');
   const [password, setPassword] = useState('ChangeThisPassword123!');
-  const [staffLoginLanguage, setStaffLoginLanguage] = useState<StaffLoginLanguage>('English');
+  const [pin, setPin] = useState('1234');
+  const [staffLoginLanguage, setStaffLoginLanguage] = useState<StaffLoginLanguage>(readStoredStaffLanguage);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [twoFactorFlow, setTwoFactorFlow] = useState<TwoFactorFlowState | null>(null);
@@ -1152,6 +1176,11 @@ function App() {
     return keys;
   }, [visibleMenuGroups]);
   const currentSection = sectionMeta[activeSection] ?? sectionMeta.overview;
+  const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
+  const tenantFlatMenuItems = useMemo(
+    () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
+    [visibleMenuGroups],
+  );
   const loginStatusText = profile
     ? `Logged in now as ${profile.user.name || profile.user.email}`
     : '';
@@ -1179,6 +1208,32 @@ function App() {
 
   const publicWebsiteUrl = isVitaPharmaContext ? vitaPharmaWebsiteUrl : ubuzimaPlusWebsiteUrl;
   const publicWebsiteLabel = isVitaPharmaContext ? 'Vita Pharma website' : 'Ubuzima+ website';
+
+  useEffect(() => {
+    const language = staffLanguageCode(staffLoginLanguage);
+    let frame = 0;
+
+    const applyUsability = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        applyInputKeyboardModes();
+        applyRuntimeLanguage(language);
+      });
+    };
+
+    applyUsability();
+
+    const observer = new MutationObserver(applyUsability);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [activeAdminPanelWorkspace, activeAiWorkspace, activeErpWorkspace, activePharmaFeature, activeSection, loginMethod, profile, staffLoginLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1246,6 +1301,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem(activeSectionStorageKey, activeSection);
   }, [activeSection]);
+
+  useEffect(() => {
+    localStorage.setItem(staffLanguageStorageKey, staffLoginLanguage);
+  }, [staffLoginLanguage]);
 
   useEffect(() => {
     if (profile && !visibleSectionKeys.has(activeSection)) {
@@ -1345,8 +1404,10 @@ function App() {
 
     try {
       const response = await login({
-        email,
-        password,
+        identifier: loginMethod === 'phone' ? phone : email,
+        email: loginMethod === 'email' ? email : undefined,
+        password: loginMethod === 'email' ? password : undefined,
+        pin: loginMethod === 'phone' ? pin : undefined,
         device_name: 'Ubuzima+ Admin Dashboard',
         trusted_device_token: localStorage.getItem(trustedDeviceStorageKey),
       });
@@ -1354,6 +1415,7 @@ function App() {
       if ('status' in response && response.status?.startsWith('two_factor_')) {
         setTwoFactorFlow(response as TwoFactorFlowState);
         setPassword('');
+        setPin('');
         return;
       }
 
@@ -1529,9 +1591,12 @@ function App() {
         <section className="auth-panel auth-form-panel">
           <div className="auth-language-row">
             <span>Staff Identity</span>
-            <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
-              {staffLoginLanguage}
-            </button>
+            <div>
+              <a href={publicWebsiteUrl}>Back to website</a>
+              <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
+                {staffLoginLanguage}
+              </button>
+            </div>
           </div>
 
           <div className="login-card">
@@ -1542,33 +1607,80 @@ function App() {
             </p>
 
             <div className="login-method-tabs" aria-label="Login method">
-              <button type="button" className="active">Email</button>
-              <button type="button" disabled>Phone</button>
+              <button
+                type="button"
+                className={loginMethod === 'email' ? 'active' : ''}
+                onClick={() => setLoginMethod('email')}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                className={loginMethod === 'phone' ? 'active' : ''}
+                onClick={() => setLoginMethod('phone')}
+              >
+                Phone PIN
+              </button>
             </div>
 
             {!twoFactorFlow ? (
               <form className="login-form" onSubmit={handleLogin}>
-                <label>
-                  Email address
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    autoComplete="email"
-                    required
-                  />
-                </label>
+                {loginMethod === 'email' ? (
+                  <>
+                    <label>
+                      Email address
+                      <input
+                        type="email"
+                        inputMode="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        autoComplete="email"
+                        required
+                      />
+                    </label>
 
-                <label>
-                  Password
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
-                </label>
+                    <label>
+                      Password
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        autoComplete="current-password"
+                        required
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <label>
+                      Phone number
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        autoComplete="tel"
+                        placeholder="+250780000003"
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      4-digit PIN
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        pattern="[0-9]{4}"
+                        maxLength={4}
+                        value={pin}
+                        onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
+                        autoComplete="one-time-code"
+                        placeholder="1234"
+                        required
+                      />
+                    </label>
+                  </>
+                )}
 
                 {error && <div className="form-error">{error}</div>}
 
@@ -1638,7 +1750,19 @@ function App() {
             <div className="demo-users">
               <p>Development shortcuts</p>
               {demoUsers.map((user) => (
-                <button key={user.email} type="button" onClick={() => setEmail(user.email)}>
+                <button
+                  key={user.email}
+                  type="button"
+                  onClick={() => {
+                    if (loginMethod === 'phone') {
+                      setPhone(user.phone);
+                      setPin('1234');
+                    } else {
+                      setEmail(user.email);
+                      setPassword('ChangeThisPassword123!');
+                    }
+                  }}
+                >
                   <span>{user.label}</span>
                   <small>{user.scope} scope</small>
                 </button>
@@ -1929,6 +2053,7 @@ function App() {
         {selectedFeature.key === 'ai-model' && (
           <>
             <ModuleReadinessGrid items={aiWorkflows} />
+            <AiOperationsPanel token={session.token} profile={profile} />
             <section className="ai-model-grid">
               {pharmaAiModels.map(([model, description]) => (
                 <article key={model}>
@@ -1970,14 +2095,15 @@ function App() {
           </>
         )}
 
-        {['product-master', 'prescriptions', 'customers'].includes(selectedFeature.key) && (
-          <article className="panel wide roadmap-panel">
-            <h2>{selectedFeature.title} framework</h2>
-            <p className="muted">
-              The workflow is now represented in the platform shell and is ready for backend activation,
-              migration design, permission mapping, and tenant rollout when prioritized.
-            </p>
-          </article>
+        {selectedFeature.key === 'product-master' && (
+          <>
+            <ProductInventoryPreview token={session.token} profile={profile} />
+            <ProductInventoryActions token={session.token} profile={profile} />
+          </>
+        )}
+
+        {['prescriptions', 'customers'].includes(selectedFeature.key) && (
+          <SalesDispensingReview token={session.token} profile={profile} />
         )}
       </section>
     );
@@ -2533,58 +2659,68 @@ function App() {
                 {profile.user.two_factor?.enabled ? 'enabled' : 'setup needed'}
               </small>
             </section>
-            {summaryGrid}
-            <section className="system-experience-section">
-              <div className="framework-heading">
-                <div>
-                  <p className="eyebrow">System experience blueprint</p>
-                  <h2>Choose a module from the left menu and work in that section.</h2>
-                  <p className="muted">
-                    The dashboard is no longer one long page. AI, Inventory, POS, Suppliers, Finance,
-                    Reports, Setup, Security, and Settings each have their own focused workspace.
-                  </p>
-                </div>
-
-                <div className="framework-scope-card design-system-card">
-                  <span>Design infrastructure</span>
-                  <strong>Section based</strong>
-                  <small>Independent sidebar, sticky header, persisted active section</small>
-                </div>
-              </div>
-
-              <div className="experience-lane-grid">
-                {experienceBlueprint.map((lane) => (
-                  <article key={lane.lane} className="experience-lane-card">
-                    <span>{lane.signal}</span>
-                    <h3>{lane.lane}</h3>
-                    <p>{lane.outcome}</p>
+            {shouldShowTenantOperationsDashboard ? (
+              <TenantPharmacyDashboard
+                token={session.token}
+                profile={profile}
+                onOpenSection={(section) => navigateToSection(section)}
+              />
+            ) : (
+              <>
+                {summaryGrid}
+                <section className="system-experience-section">
+                  <div className="framework-heading">
                     <div>
-                      {lane.modules.map((module) => (
-                        <small key={module}>{module}</small>
+                      <p className="eyebrow">System experience blueprint</p>
+                      <h2>Choose a module from the left menu and work in that section.</h2>
+                      <p className="muted">
+                        The dashboard is no longer one long page. AI, Inventory, POS, Suppliers, Finance,
+                        Reports, Setup, Security, and Settings each have their own focused workspace.
+                      </p>
+                    </div>
+
+                    <div className="framework-scope-card design-system-card">
+                      <span>Design infrastructure</span>
+                      <strong>Section based</strong>
+                      <small>Independent sidebar, sticky header, persisted active section</small>
+                    </div>
+                  </div>
+
+                  <div className="experience-lane-grid">
+                    {experienceBlueprint.map((lane) => (
+                      <article key={lane.lane} className="experience-lane-card">
+                        <span>{lane.signal}</span>
+                        <h3>{lane.lane}</h3>
+                        <p>{lane.outcome}</p>
+                        <div>
+                          {lane.modules.map((module) => (
+                            <small key={module}>{module}</small>
+                          ))}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+
+                  <div className="workspace-model-panel">
+                    <div>
+                      <h2>Role-based workspaces to build next</h2>
+                      <p className="muted">
+                        Existing modules keep their current APIs and progressively adopt this structure.
+                      </p>
+                    </div>
+
+                    <div className="workspace-model-grid">
+                      {workspaceModel.map(([role, text]) => (
+                        <div key={role}>
+                          <strong>{role}</strong>
+                          <span>{text}</span>
+                        </div>
                       ))}
                     </div>
-                  </article>
-                ))}
-              </div>
-
-              <div className="workspace-model-panel">
-                <div>
-                  <h2>Role-based workspaces to build next</h2>
-                  <p className="muted">
-                    Existing modules keep their current APIs and progressively adopt this structure.
-                  </p>
-                </div>
-
-                <div className="workspace-model-grid">
-                  {workspaceModel.map(([role, text]) => (
-                    <div key={role}>
-                      <strong>{role}</strong>
-                      <span>{text}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
+                  </div>
+                </section>
+              </>
+            )}
           </section>
         );
     }
@@ -2602,7 +2738,10 @@ function App() {
             </div>
           </div>
 
-          <nav className="tree-nav" aria-label="Admin workspace navigation">
+          <nav
+            className={`tree-nav ${shouldShowTenantOperationsDashboard ? 'tree-nav--flat' : ''}`}
+            aria-label="Admin workspace navigation"
+          >
             <button
               type="button"
               className={`tree-root-button ${activeSection === 'overview' ? 'active' : ''}`}
@@ -2616,42 +2755,61 @@ function App() {
               </span>
             </button>
 
-            {visibleMenuGroups.map((group) => (
-              <div key={group.key} className="tree-group">
+            {shouldShowTenantOperationsDashboard ? (
+              tenantFlatMenuItems.map(({ group, item }) => (
                 <button
+                  key={`${group.key}-${item.label}`}
                   type="button"
-                  className="tree-group-button"
-                  data-group={group.key}
-                  aria-expanded={Boolean(openMenuGroups[group.key])}
-                  onClick={() => toggleMenuGroup(group.key)}
+                  className={`flat-menu-button ${isActiveMenuItem(item) ? 'active' : ''}`}
+                  data-section={item.key}
+                  onClick={() => handleMenuItemClick(item)}
                 >
-                  <span className="nav-icon">{group.icon}</span>
-                  <span>{group.label}</span>
-                  <small>{openMenuGroups[group.key] ? '-' : '+'}</small>
+                  <span className="nav-icon">{item.icon}</span>
+                  <span>
+                    <strong>{item.label}</strong>
+                    <small>{item.description}</small>
+                  </span>
+                  {item.status && <em>{item.status}</em>}
                 </button>
+              ))
+            ) : (
+              visibleMenuGroups.map((group) => (
+                <div key={group.key} className="tree-group">
+                  <button
+                    type="button"
+                    className="tree-group-button"
+                    data-group={group.key}
+                    aria-expanded={Boolean(openMenuGroups[group.key])}
+                    onClick={() => toggleMenuGroup(group.key)}
+                  >
+                    <span className="nav-icon">{group.icon}</span>
+                    <span>{group.label}</span>
+                    <small>{openMenuGroups[group.key] ? '-' : '+'}</small>
+                  </button>
 
-                {openMenuGroups[group.key] && (
-                  <div className="tree-submenu">
-                    {group.items.map((item) => (
-                      <button
-                        key={`${group.key}-${item.label}`}
-                        type="button"
-                        className={isActiveMenuItem(item) ? 'active' : ''}
-                        data-section={item.key}
-                        onClick={() => handleMenuItemClick(item)}
-                      >
-                        <span className="nav-icon">{item.icon}</span>
-                        <span>
-                          <strong>{item.label}</strong>
-                          <small>{item.description}</small>
-                        </span>
-                        {item.status && <em>{item.status}</em>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                  {openMenuGroups[group.key] && (
+                    <div className="tree-submenu">
+                      {group.items.map((item) => (
+                        <button
+                          key={`${group.key}-${item.label}`}
+                          type="button"
+                          className={isActiveMenuItem(item) ? 'active' : ''}
+                          data-section={item.key}
+                          onClick={() => handleMenuItemClick(item)}
+                        >
+                          <span className="nav-icon">{item.icon}</span>
+                          <span>
+                            <strong>{item.label}</strong>
+                            <small>{item.description}</small>
+                          </span>
+                          {item.status && <em>{item.status}</em>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </nav>
 
           <button className="logout-button" type="button" onClick={handleLogout}>
@@ -2673,6 +2831,9 @@ function App() {
               Back
             </button>
             <a href={publicWebsiteUrl} target="_blank" rel="noreferrer">{publicWebsiteLabel}</a>
+            <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
+              {staffLoginLanguage}
+            </button>
             <button
               type="button"
               onClick={() => {

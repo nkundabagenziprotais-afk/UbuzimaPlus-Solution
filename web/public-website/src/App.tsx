@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { applyRuntimeLanguage } from './runtimeI18n';
 
 const brandLogoSrc = '/assets/ubuzima-logo.png';
 const vitaPharmaLogoSrc = '/assets/vitapharma-logo.png';
@@ -186,10 +187,10 @@ const vitaSections: Array<{ key: VitaSectionKey; label: string }> = [
 ];
 
 const vitaServices = [
-  ['Prescription support', 'Pharmacist-guided medicine access, refill help, and safe dispensing conversations.'],
-  ['Everyday pharmacy care', 'Over-the-counter medicines, family health essentials, hygiene, first aid, and wellness products.'],
-  ['Chronic care support', 'Practical refill and product availability support for long-term treatment routines.'],
-  ['Digital service readiness', 'Mobile pharmacist chat, nearby-provider discovery, and Ubuzima+ powered operations.'],
+  ['Prescription support', 'Pharmacist-guided dispensing, prescription checks, refill help, and practical medicine explanations.'],
+  ['Everyday pharmacy care', 'Over-the-counter medicines, family health essentials, hygiene, first aid, wellness, and home-care products.'],
+  ['Chronic care support', 'Availability checks and refill support for customers managing long-term treatment routines.'],
+  ['Digital service readiness', 'Mobile pharmacist chat, nearby-provider discovery, and Ubuzima+ powered branch operations.'],
 ];
 
 const vitaCarePrinciples = [
@@ -199,6 +200,13 @@ const vitaCarePrinciples = [
   'Safe customer data handling',
   'Simple family health guidance',
   'Connected digital follow-up',
+];
+
+const vitaCustomerCategories = [
+  ['Medicines', 'Prescription and non-prescription pharmacy products handled with professional care.'],
+  ['Family health', 'Mother and baby, personal care, first aid, hygiene, and home health essentials.'],
+  ['Wellness', 'Supplements, diagnostics, devices, and everyday prevention products.'],
+  ['Support', 'Clear answers from pharmacists before, during, and after purchase.'],
 ];
 
 function readStoredLanguage(): LanguageCode {
@@ -311,10 +319,10 @@ function VitaPharmaWebsite({
         return (
           <section className="vita-focus-section vita-hero-section">
             <p className="eyebrow">VitaPharma Africa</p>
-            <h1>Friendly pharmacy care, supported by a smarter operating platform.</h1>
+            <h1>Pharmacy care that is easy to access, easy to understand, and properly supported.</h1>
             <p>
-              VitaPharma is the first Ubuzima+ tenant, prepared to serve customers with pharmacy essentials,
-              practical pharmacist support, nearby-service discovery, and a digital workflow built for safe growth.
+              VitaPharma is prepared as the first Ubuzima+ tenant for practical retail pharmacy service:
+              medicine access, family health products, pharmacist support, and a connected workflow behind the counter.
             </p>
             <div className="hero-actions">
               <button className="primary-action" type="button" onClick={() => setActiveSection('services')}>
@@ -324,51 +332,48 @@ function VitaPharmaWebsite({
                 {labels.contact}
               </button>
             </div>
+            <div className="vita-category-grid">
+              {vitaCustomerCategories.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </div>
           </section>
         );
     }
   }
 
   return (
-    <main className="vita-website-shell">
-      <aside className="website-tree-panel vita-tree-panel">
+    <main className="vita-website-shell website-top-shell">
+      <header className="website-top-header vita-top-header">
         <a className="brand vita-brand" href="#top" aria-label="VitaPharma home" onClick={() => setActiveSection('home')}>
           <img className="brand-logo vita-logo" src={vitaPharmaLogoSrc} alt="VitaPharma" />
           <span className="brand-caption">Powered by Ubuzima+</span>
         </a>
 
-        <nav className="website-tree-nav" aria-label="VitaPharma website sections">
-          <section>
-            <strong>VitaPharma</strong>
-            {vitaSections.map((section) => (
-              <button
-                key={section.key}
-                type="button"
-                className={activeSection === section.key ? 'active' : ''}
-                onClick={() => setActiveSection(section.key)}
-              >
-                {section.label}
-              </button>
-            ))}
-          </section>
+        <nav className="website-top-nav vita-top-nav" aria-label="VitaPharma website sections">
+          {vitaSections.map((section) => (
+            <button
+              key={section.key}
+              type="button"
+              className={activeSection === section.key ? 'active' : ''}
+              onClick={() => setActiveSection(section.key)}
+            >
+              {section.label}
+            </button>
+          ))}
         </nav>
 
-        <a className="staff-login-card vita-powered-card" href="https://www.ubuzimaplus.com">
-          <strong>Ubuzima+</strong>
-          <span>Platform integration</span>
-        </a>
-      </aside>
+        <div className="website-top-actions">
+          <LanguageSelector value={language} onChange={onLanguageChange} />
+          <button type="button" onClick={() => setActiveSection('contact')}>{labels.contact}</button>
+          <a href={staffLoginUrl}>{labels.staffLogin}</a>
+        </div>
+      </header>
 
       <section className="website-content-panel vita-content-panel">
-        <header className="website-content-header">
-          <span>VitaPharma Africa</span>
-          <div>
-            <LanguageSelector value={language} onChange={onLanguageChange} />
-            <button type="button" onClick={() => setActiveSection('contact')}>{labels.contact}</button>
-            <a href={staffLoginUrl}>{labels.staffLogin}</a>
-          </div>
-        </header>
-
         {renderSection()}
       </section>
     </main>
@@ -385,6 +390,27 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem(languageStorageKey, language);
+  }, [language]);
+
+  useEffect(() => {
+    let frame = 0;
+    const applyLanguage = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => applyRuntimeLanguage(language));
+    };
+
+    applyLanguage();
+
+    const observer = new MutationObserver(applyLanguage);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, [language]);
 
   useEffect(() => {
@@ -645,47 +671,41 @@ function App() {
   }
 
   return (
-    <main className="website-app-shell">
-      <aside className="website-tree-panel">
+    <main className="website-app-shell website-top-shell">
+      <header className="website-top-header">
         <a className="brand" href="#top" aria-label="Ubuzima+ home" onClick={() => setActiveWebsiteSection('home')}>
           <img className="brand-logo" src={brandLogoSrc} alt="Ubuzima+" />
           <span className="brand-caption">Digital health operations</span>
         </a>
 
-          <nav className="website-tree-nav" aria-label="Website sections">
+        <nav className="website-top-nav" aria-label="Website sections">
           {websiteMenu.map((group) => (
-            <section key={group.label}>
-              <strong>{group.label}</strong>
-              {group.children.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={activeWebsiteSection === item.key ? 'active' : ''}
-                  onClick={() => setActiveWebsiteSection(item.key)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </section>
+            <div key={group.label} className="website-top-group">
+              <button type="button">{group.label}</button>
+              <div className="website-top-dropdown">
+                {group.children.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={activeWebsiteSection === item.key ? 'active' : ''}
+                    onClick={() => setActiveWebsiteSection(item.key)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
-        <a className="staff-login-card" href={staffLoginUrl}>
-          <strong>{labels.staffLogin}</strong>
-          <span>Open secure workspace</span>
-        </a>
-      </aside>
+        <div className="website-top-actions">
+          <LanguageSelector value={language} onChange={setLanguage} />
+          <button type="button" onClick={() => setActiveWebsiteSection('contact')}>{labels.requestDemo}</button>
+          <a href={staffLoginUrl}>{labels.staffLogin}</a>
+        </div>
+      </header>
 
       <section className="website-content-panel">
-        <header className="website-content-header">
-          <span>Ubuzima+ Digital Health Operations</span>
-          <div>
-            <LanguageSelector value={language} onChange={setLanguage} />
-            <button type="button" onClick={() => setActiveWebsiteSection('contact')}>{labels.requestDemo}</button>
-            <a href={staffLoginUrl}>{labels.staffLogin}</a>
-          </div>
-        </header>
-
         {renderWebsiteSection()}
       </section>
     </main>
