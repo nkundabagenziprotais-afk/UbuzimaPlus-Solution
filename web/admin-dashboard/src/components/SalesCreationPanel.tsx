@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   PharmaBranch,
   PharmaCustomer,
   PharmaPrescription,
   PharmaProduct,
   PharmaSale,
+  PharmaStockBatch,
   createPharmaCustomer,
   createPharmaPrescription,
   createPharmaSale,
@@ -17,6 +18,7 @@ type Props = {
   customers: PharmaCustomer[];
   prescriptions: PharmaPrescription[];
   products: PharmaProduct[];
+  batches: PharmaStockBatch[];
   onCustomerCreated: (customer: PharmaCustomer) => void;
   onPrescriptionCreated: (prescription: PharmaPrescription) => void;
   onSaleCreated: (sale: PharmaSale) => void;
@@ -61,6 +63,8 @@ type SaleForm = {
   notes: string;
   items: SaleLineForm[];
 };
+
+type ProductBrowserView = 'grid' | 'list';
 
 function blankCustomerForm(): CustomerForm {
   return {
@@ -131,6 +135,7 @@ export function SalesCreationPanel({
   customers,
   prescriptions,
   products,
+  batches,
   onCustomerCreated,
   onPrescriptionCreated,
   onSaleCreated,
@@ -143,11 +148,26 @@ export function SalesCreationPanel({
   const [saleForm, setSaleForm] = useState<SaleForm>(
     blankSaleForm(String(activeBranches[0]?.id ?? ''), '', ''),
   );
+  const [productSearch, setProductSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [productBrowserView, setProductBrowserView] = useState<ProductBrowserView>('grid');
+  const [invoiceRequested, setInvoiceRequested] = useState(false);
+  const [insuranceCustomerPercent, setInsuranceCustomerPercent] = useState('20');
+  const [insurancePartnerPercent, setInsurancePartnerPercent] = useState('80');
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const [isSavingPrescription, setIsSavingPrescription] = useState(false);
   const [isSavingSale, setIsSavingSale] = useState(false);
   const [creationNotice, setCreationNotice] = useState('');
   const [creationError, setCreationError] = useState('');
+
+  useEffect(() => {
+    if (!saleForm.branch_id && activeBranches[0]?.id) {
+      setSaleForm((current) => ({
+        ...current,
+        branch_id: String(activeBranches[0].id),
+      }));
+    }
+  }, [activeBranches, saleForm.branch_id]);
 
   const salePreview = useMemo(() => {
     const lineSubtotal = saleForm.items.reduce((sum, item) => {
@@ -162,18 +182,121 @@ export function SalesCreationPanel({
     const saleDiscount = toNumber(saleForm.discount_amount);
     const saleTax = toNumber(saleForm.tax_amount);
     const total = Math.max(lineSubtotal - saleDiscount + saleTax, 0);
+    const customerPercent = saleForm.sale_type === 'insurance_sale'
+      ? Math.max(Math.min(toNumber(insuranceCustomerPercent), 100), 0)
+      : 100;
+    const partnerPercent = saleForm.sale_type === 'insurance_sale'
+      ? Math.max(Math.min(toNumber(insurancePartnerPercent), 100), 0)
+      : 0;
 
     return {
       lineSubtotal,
+      saleDiscount,
+      saleTax,
       total,
+      customerContribution: total * (customerPercent / 100),
+      partnerContribution: total * (partnerPercent / 100),
     };
-  }, [saleForm]);
+  }, [insuranceCustomerPercent, insurancePartnerPercent, saleForm]);
 
   const prescriptionRequiredWithoutPrescription = saleForm.items.some((item) => {
     const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
 
     return product?.requires_prescription && !saleForm.pharmaco_prescription_id;
   });
+
+  const productCategories = useMemo(() => {
+    const categories = new Map<string, string>();
+
+    activeProducts.forEach((product) => {
+      if (product.category?.code && product.category.name) {
+        categories.set(product.category.code, product.category.name);
+      }
+    });
+
+    return Array.from(categories.entries()).map(([code, name]) => ({ code, name }));
+  }, [activeProducts]);
+
+  const visibleProducts = useMemo(() => {
+    const normalizedSearch = productSearch.trim().toLowerCase();
+
+    return activeProducts
+      .filter((product) => activeCategory === 'all' || product.category?.code === activeCategory)
+      .filter((product) => {
+        if (!normalizedSearch) return true;
+
+        return [
+          product.name,
+          product.generic_name,
+          product.brand_name,
+          product.sku,
+          product.barcode,
+          product.category?.name,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+      })
+      .sort((left, right) => {
+        const leftRisk = left.stock_summary?.is_below_reorder_level ? 0 : 1;
+        const rightRisk = right.stock_summary?.is_below_reorder_level ? 0 : 1;
+
+        return leftRisk - rightRisk || left.name.localeCompare(right.name);
+      });
+  }, [activeCategory, activeProducts, productSearch]);
+
+  function bestBatch(productId: number): PharmaStockBatch | undefined {
+    return batches
+      .filter((batch) => batch.product.id === productId)
+      .filter((batch) => batch.status === 'active' && batch.available_quantity > 0)
+      .sort((left, right) => {
+        const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+
+        return leftExpiry - rightExpiry || left.id - right.id;
+      })[0];
+  }
+
+  function preferredPrice(product: PharmaProduct): string {
+    const price = bestBatch(product.id)?.selling_price;
+
+    return price === null || price === undefined ? '' : String(price);
+  }
+
+  function addProductToCart(product: PharmaProduct) {
+    const price = preferredPrice(product);
+
+    setSaleForm((current) => {
+      const existingIndex = current.items.findIndex((item) => item.product_id === String(product.id));
+
+      if (existingIndex >= 0) {
+        return {
+          ...current,
+          items: current.items.map((item, index) =>
+            index === existingIndex
+              ? {
+                  ...item,
+                  quantity: String(toNumber(item.quantity) + 1),
+                  unit_price: item.unit_price || price,
+                }
+              : item,
+          ),
+        };
+      }
+
+      const nextLine = blankSaleLine(String(product.id));
+      nextLine.unit_price = price;
+
+      const currentItems = current.items.length === 1 && !current.items[0].product_id
+        ? []
+        : current.items;
+
+      return {
+        ...current,
+        items: [...currentItems, nextLine],
+        sale_type: product.requires_prescription ? 'prescription_sale' : current.sale_type,
+      };
+    });
+  }
 
   async function handleCreateCustomer() {
     if (!customerForm.first_name.trim()) {
@@ -316,98 +439,450 @@ export function SalesCreationPanel({
     setSaleForm((current) => ({
       ...current,
       items: current.items.length === 1
-        ? current.items
+        ? [blankSaleLine()]
         : current.items.filter((_, itemIndex) => itemIndex !== index),
     }));
   }
+
+  const cartLineCount = saleForm.items.filter((item) => item.product_id).length;
+  const selectedCustomer = customers.find((customer) => customer.id === Number(saleForm.pharmaco_customer_id));
+  const selectedPrescription = prescriptions.find((prescription) => prescription.id === Number(saleForm.pharmaco_prescription_id));
 
   return (
     <section className="sales-creation-card">
       <div className="panel-heading-row">
         <div>
-          <span className="section-label">Create workflow</span>
-          <h3>Customer → prescription → draft sale</h3>
+          <span className="section-label">Retail pharmacy counter</span>
+          <h3>POS</h3>
           <p className="muted">
-            Start a pharmacy transaction before controlled dispensing and payment recording.
+            Search products, build the sale cart, confirm customer contribution, capture prescription when needed,
+            then create the draft sale for FEFO dispensing and payment review.
           </p>
         </div>
         <div className="sale-total-box">
-          <span>Draft preview</span>
+          <span>Cart total</span>
           <strong>{money(salePreview.total)}</strong>
-          <small>Line subtotal: {money(salePreview.lineSubtotal)}</small>
+          <small>{cartLineCount} line{cartLineCount === 1 ? '' : 's'} · subtotal {money(salePreview.lineSubtotal)}</small>
         </div>
       </div>
 
       {creationError && <div className="form-error">{creationError}</div>}
       {creationNotice && <div className="form-success">{creationNotice}</div>}
 
-      <div className="creation-workflow-grid">
-        <section>
-          <h4>1. New customer</h4>
-          <div className="creation-form-grid">
+      <div className="retail-pos-grid">
+        <section className="pos-product-browser" aria-label="Product browser">
+          <div className="section-heading">
+            <div>
+              <h4>Product browser</h4>
+              <span>Search by medicine, SKU, barcode, brand, or category.</span>
+            </div>
+            <div className="view-toggle" aria-label="Product browser view">
+              <button
+                type="button"
+                className={productBrowserView === 'grid' ? 'active' : ''}
+                onClick={() => setProductBrowserView('grid')}
+              >
+                Grid
+              </button>
+              <button
+                type="button"
+                className={productBrowserView === 'list' ? 'active' : ''}
+                onClick={() => setProductBrowserView('list')}
+              >
+                List
+              </button>
+            </div>
+          </div>
+
+          <div className="pos-product-toolbar">
             <label>
-              First name
+              Search
               <input
-                value={customerForm.first_name}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, first_name: event.target.value }))}
+                value={productSearch}
+                placeholder="Amoxicillin, paracetamol, barcode..."
+                onChange={(event) => setProductSearch(event.target.value)}
               />
             </label>
+
             <label>
-              Last name
-              <input
-                value={customerForm.last_name}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, last_name: event.target.value }))}
-              />
+              Category
+              <select value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)}>
+                <option value="all">All categories</option>
+                {productCategories.map((category) => (
+                  <option key={category.code} value={category.code}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </label>
+          </div>
+
+          <div className={`pos-product-grid ${productBrowserView === 'list' ? 'pos-product-grid--list' : ''}`}>
+            {visibleProducts.slice(0, productBrowserView === 'grid' ? 10 : 16).map((product) => {
+              const batch = bestBatch(product.id);
+              const price = preferredPrice(product);
+
+              return (
+                <button key={product.id} type="button" onClick={() => addProductToCart(product)}>
+                  <span className={product.requires_prescription ? 'rx-chip' : 'otc-chip'}>
+                    {product.requires_prescription ? 'RX' : 'OTC'}
+                  </span>
+                  <strong>{product.name}</strong>
+                  <small>{product.sku} · {product.category?.name ?? 'Uncategorised'}</small>
+                  <em>
+                    {price ? money(Number(price)) : 'Set price in cart'} · stock {product.stock_summary?.available_quantity ?? 0}
+                  </em>
+                  <small>FEFO batch: {batch?.batch_number ?? 'No active batch'}</small>
+                </button>
+              );
+            })}
+
+            {visibleProducts.length === 0 && (
+              <p className="muted">No matching products. Try another product name, SKU, barcode, or category.</p>
+            )}
+          </div>
+        </section>
+
+        <section className="pos-cart-panel" aria-label="Current sale cart">
+          <div className="section-heading">
+            <div>
+              <h4>Sale cart</h4>
+              <span>{selectedCustomer?.full_name ?? 'Walk-in customer'} · {selectedPrescription?.prescription_number ?? 'No prescription selected'}</span>
+            </div>
+          </div>
+
+          <div className="pos-meta-grid">
             <label>
-              Phone
-              <input
-                value={customerForm.phone}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, phone: event.target.value }))}
-              />
+              Branch
+              <select
+                value={saleForm.branch_id}
+                onChange={(event) => setSaleForm((current) => ({ ...current, branch_id: event.target.value }))}
+              >
+                <option value="">Select branch</option>
+                {activeBranches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
             </label>
+
             <label>
-              Email
-              <input
-                type="email"
-                value={customerForm.email}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, email: event.target.value }))}
-              />
-            </label>
-            <label>
-              Gender
-              <input
-                value={customerForm.gender}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, gender: event.target.value }))}
-              />
-            </label>
-            <label>
-              Insurer
-              <input
-                value={customerForm.insurance_provider}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, insurance_provider: event.target.value }))}
-              />
-            </label>
-            <label>
-              Insurance number
-              <input
-                value={customerForm.insurance_membership_number}
+              Customer
+              <select
+                value={saleForm.pharmaco_customer_id}
                 onChange={(event) =>
-                  setCustomerForm((current) => ({
+                  setSaleForm((current) => ({
                     ...current,
-                    insurance_membership_number: event.target.value,
+                    pharmaco_customer_id: event.target.value,
                   }))
+                }
+              >
+                <option value="">Walk-in customer</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.full_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Prescription
+              <select
+                value={saleForm.pharmaco_prescription_id}
+                onChange={(event) =>
+                  setSaleForm((current) => ({
+                    ...current,
+                    pharmaco_prescription_id: event.target.value,
+                    sale_type: event.target.value ? 'prescription_sale' : current.sale_type,
+                  }))
+                }
+              >
+                <option value="">No prescription</option>
+                {prescriptions.map((prescription) => (
+                  <option key={prescription.id} value={prescription.id}>
+                    {prescription.prescription_number}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Sale type
+              <select
+                value={saleForm.sale_type}
+                onChange={(event) =>
+                  setSaleForm((current) => ({
+                    ...current,
+                    sale_type: event.target.value as SaleForm['sale_type'],
+                  }))
+                }
+              >
+                <option value="cash_sale">Cash sale</option>
+                <option value="prescription_sale">Prescription sale</option>
+                <option value="insurance_sale">Insurance sale</option>
+                <option value="credit_sale">Credit sale</option>
+              </select>
+            </label>
+
+            {saleForm.sale_type === 'insurance_sale' && (
+              <>
+                <label>
+                  Customer %
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={insuranceCustomerPercent}
+                    onChange={(event) => setInsuranceCustomerPercent(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Insurance %
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={insurancePartnerPercent}
+                    onChange={(event) => setInsurancePartnerPercent(event.target.value)}
+                  />
+                </label>
+              </>
+            )}
+
+            <label className="checkbox-label invoice-checkbox">
+              <input
+                type="checkbox"
+                checked={invoiceRequested}
+                onChange={(event) => setInvoiceRequested(event.target.checked)}
+              />
+              Customer wants invoice
+            </label>
+          </div>
+
+          <div className="pos-cart-lines">
+            {saleForm.items.some((item) => item.product_id) ? (
+              saleForm.items.map((item, index) => {
+                if (!item.product_id) return null;
+
+                const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
+
+                return (
+                  <div key={`${item.product_id}-${index}`} className="pos-cart-line">
+                    <div>
+                      <strong>{product?.name ?? 'Selected product'}</strong>
+                      <small>{product?.sku ?? 'SKU pending'} · {product?.requires_prescription ? 'Prescription required' : 'OTC/general'}</small>
+                    </div>
+                    <label>
+                      Qty
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        value={item.quantity}
+                        onChange={(event) => updateSaleLine(index, { quantity: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Price
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.unit_price}
+                        onChange={(event) => updateSaleLine(index, { unit_price: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Discount
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.discount_amount}
+                        onChange={(event) => updateSaleLine(index, { discount_amount: event.target.value })}
+                      />
+                    </label>
+                    <button type="button" onClick={() => removeSaleLine(index)}>
+                      Remove
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="muted">Add products from the browser to start a sale.</p>
+            )}
+          </div>
+
+          {prescriptionRequiredWithoutPrescription && (
+            <div className="prescription-capture-alert">
+              <div>
+                <strong>Prescription required</strong>
+                <span>Capture an image for AI extraction or enter the details manually before checkout.</span>
+              </div>
+              <label>
+                Capture prescription image
+                <input type="file" accept="image/*" capture="environment" />
+              </label>
+              <button type="button" onClick={() => setPrescriptionForm(blankPrescriptionForm(saleForm.pharmaco_customer_id))}>
+                Manual prescription entry
+              </button>
+              <button type="button" disabled={!saleForm.pharmaco_customer_id}>
+                Retrieve customer history
+              </button>
+            </div>
+          )}
+
+          <div className="pos-cart-footer">
+            <label>
+              Sale discount
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={saleForm.discount_amount}
+                onChange={(event) =>
+                  setSaleForm((current) => ({ ...current, discount_amount: event.target.value }))
                 }
               />
             </label>
+            <label>
+              Sale tax
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={saleForm.tax_amount}
+                onChange={(event) => setSaleForm((current) => ({ ...current, tax_amount: event.target.value }))}
+              />
+            </label>
+            <label>
+              Note
+              <input
+                value={saleForm.notes}
+                placeholder="Optional sale note"
+                onChange={(event) => setSaleForm((current) => ({ ...current, notes: event.target.value }))}
+              />
+            </label>
           </div>
-          <button type="button" onClick={handleCreateCustomer} disabled={isSavingCustomer}>
-            {isSavingCustomer ? 'Creating customer…' : 'Create customer'}
-          </button>
-        </section>
 
-        <section>
-          <h4>2. New prescription</h4>
+          <div className="transaction-summary-panel">
+            <strong>Transaction summary</strong>
+            <div><span>Subtotal</span><small>{money(salePreview.lineSubtotal)}</small></div>
+            <div><span>Discount</span><small>{money(salePreview.saleDiscount)}</small></div>
+            <div><span>Tax</span><small>{money(salePreview.saleTax)}</small></div>
+            <div><span>Customer contribution</span><small>{money(salePreview.customerContribution)}</small></div>
+            {saleForm.sale_type === 'insurance_sale' && (
+              <div><span>Insurance / partner contribution</span><small>{money(salePreview.partnerContribution)}</small></div>
+            )}
+            <div className="transaction-summary-total"><span>Total due</span><small>{money(salePreview.total)}</small></div>
+          </div>
+
+          <div className="draft-sale-footer pos-action-footer">
+            <button
+              type="button"
+              onClick={() =>
+                setSaleForm((current) => ({
+                  ...current,
+                  items: [blankSaleLine()],
+                }))
+              }
+            >
+              Clear cart
+            </button>
+
+            <button type="button" onClick={handleCreateSale} disabled={isSavingSale || cartLineCount === 0}>
+              {isSavingSale ? 'Creating draft sale...' : 'Create draft sale'}
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div className="pos-support-grid">
+        {invoiceRequested ? (
+          <section className="quick-customer-panel">
+            <h4>Customer capture</h4>
+            <p className="muted">Use for patients who need receipts, insurance, refill follow-up, or pharmacist chat.</p>
+            <div className="creation-form-grid">
+              <label>
+                First name
+                <input
+                  value={customerForm.first_name}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, first_name: event.target.value }))}
+                />
+              </label>
+              <label>
+                Last name
+                <input
+                  value={customerForm.last_name}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, last_name: event.target.value }))}
+                />
+              </label>
+              <label>
+                Phone
+                <input
+                  value={customerForm.phone}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, phone: event.target.value }))}
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={customerForm.email}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, email: event.target.value }))}
+                />
+              </label>
+              <label>
+                Gender
+                <input
+                  value={customerForm.gender}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, gender: event.target.value }))}
+                />
+              </label>
+              <label>
+                Insurer
+                <input
+                  value={customerForm.insurance_provider}
+                  onChange={(event) => setCustomerForm((current) => ({ ...current, insurance_provider: event.target.value }))}
+                />
+              </label>
+              <label>
+                Insurance number
+                <input
+                  value={customerForm.insurance_membership_number}
+                  onChange={(event) =>
+                    setCustomerForm((current) => ({
+                      ...current,
+                      insurance_membership_number: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+            <button type="button" onClick={handleCreateCustomer} disabled={isSavingCustomer}>
+              {isSavingCustomer ? 'Creating customer...' : 'Create customer'}
+            </button>
+          </section>
+        ) : (
+          <section className="quick-customer-panel customer-capture-gate">
+            <h4>Customer capture</h4>
+            <p className="muted">
+              Keep walk-in checkout fast. Turn on “Customer wants invoice” in the cart when the customer needs
+              invoice details, insurance support, refill follow-up, or a pharmacist chat record.
+            </p>
+            <button type="button" onClick={() => setInvoiceRequested(true)}>
+              Capture customer now
+            </button>
+          </section>
+        )}
+
+        <section className="quick-customer-panel">
+          <h4>Prescription capture</h4>
+          <p className="muted">Required before a prescription-only product can become a draft sale.</p>
           <div className="creation-form-grid">
             <label>
               Customer
@@ -477,184 +952,10 @@ export function SalesCreationPanel({
             </label>
           </div>
           <button type="button" onClick={handleCreatePrescription} disabled={isSavingPrescription}>
-            {isSavingPrescription ? 'Creating prescription…' : 'Create prescription'}
+            {isSavingPrescription ? 'Creating prescription...' : 'Create prescription'}
           </button>
         </section>
       </div>
-
-      <section className="draft-sale-builder">
-        <h4>3. Draft sale</h4>
-        <div className="creation-form-grid">
-          <label>
-            Branch
-            <select
-              value={saleForm.branch_id}
-              onChange={(event) => setSaleForm((current) => ({ ...current, branch_id: event.target.value }))}
-            >
-              <option value="">Select branch</option>
-              {activeBranches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Customer
-            <select
-              value={saleForm.pharmaco_customer_id}
-              onChange={(event) => setSaleForm((current) => ({ ...current, pharmaco_customer_id: event.target.value }))}
-            >
-              <option value="">Walk-in customer</option>
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.full_name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Prescription
-            <select
-              value={saleForm.pharmaco_prescription_id}
-              onChange={(event) =>
-                setSaleForm((current) => ({
-                  ...current,
-                  pharmaco_prescription_id: event.target.value,
-                  sale_type: event.target.value ? 'prescription_sale' : current.sale_type,
-                }))
-              }
-            >
-              <option value="">No prescription</option>
-              {prescriptions.map((prescription) => (
-                <option key={prescription.id} value={prescription.id}>
-                  {prescription.prescription_number}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Sale type
-            <select
-              value={saleForm.sale_type}
-              onChange={(event) =>
-                setSaleForm((current) => ({
-                  ...current,
-                  sale_type: event.target.value as SaleForm['sale_type'],
-                }))
-              }
-            >
-              <option value="cash_sale">Cash sale</option>
-              <option value="prescription_sale">Prescription sale</option>
-              <option value="insurance_sale">Insurance sale</option>
-              <option value="credit_sale">Credit sale</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="sale-line-builder">
-          {saleForm.items.map((item, index) => {
-            const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
-
-            return (
-              <div key={index} className="sale-line-row">
-                <label>
-                  Product
-                  <select
-                    value={item.product_id}
-                    onChange={(event) => updateSaleLine(index, { product_id: event.target.value })}
-                  >
-                    <option value="">Select product</option>
-                    {activeProducts.map((entry) => (
-                      <option key={entry.id} value={entry.id}>
-                        {entry.name} · {entry.sku}{entry.requires_prescription ? ' · RX' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  Qty
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.001"
-                    value={item.quantity}
-                    onChange={(event) => updateSaleLine(index, { quantity: event.target.value })}
-                  />
-                </label>
-
-                <label>
-                  Unit price
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.unit_price}
-                    onChange={(event) => updateSaleLine(index, { unit_price: event.target.value })}
-                  />
-                </label>
-
-                <label>
-                  Discount
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.discount_amount}
-                    onChange={(event) => updateSaleLine(index, { discount_amount: event.target.value })}
-                  />
-                </label>
-
-                <label>
-                  Tax
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.tax_amount}
-                    onChange={(event) => updateSaleLine(index, { tax_amount: event.target.value })}
-                  />
-                </label>
-
-                <div className="line-meta">
-                  <span>{product?.requires_prescription ? 'Prescription required' : 'Open sale item'}</span>
-                  <button type="button" onClick={() => removeSaleLine(index)}>
-                    Remove
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {prescriptionRequiredWithoutPrescription && (
-          <div className="form-error">
-            One or more selected products require a prescription before the draft sale can be created.
-          </div>
-        )}
-
-        <div className="draft-sale-footer">
-          <button
-            type="button"
-            onClick={() =>
-              setSaleForm((current) => ({
-                ...current,
-                items: [...current.items, blankSaleLine()],
-              }))
-            }
-          >
-            Add line item
-          </button>
-
-          <button type="button" onClick={handleCreateSale} disabled={isSavingSale}>
-            {isSavingSale ? 'Creating draft sale…' : 'Create draft sale'}
-          </button>
-        </div>
-      </section>
     </section>
   );
 }

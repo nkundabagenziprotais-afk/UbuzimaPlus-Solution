@@ -621,12 +621,92 @@ footer a {
 .website-app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.76)),
     url("/assets/ubuzima-pharmaco-hero.png");
   background-position: center;
   background-size: cover;
+}
+
+.website-top-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(210px, auto) minmax(280px, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 4vw;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+}
+
+.website-top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.website-top-nav button,
+.website-top-actions button,
+.website-top-actions a {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.62rem 0.82rem;
+  background: transparent;
+  color: var(--teal);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.website-top-nav button:hover,
+.website-top-nav button.active,
+.website-top-actions button,
+.website-top-actions a {
+  border-color: rgba(8, 119, 201, 0.2);
+  background: #eef7ff;
+  color: var(--logo-blue);
+}
+
+.website-top-group {
+  position: relative;
+}
+
+.website-top-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 210px;
+  display: none;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.website-top-group:hover .website-top-dropdown,
+.website-top-group:focus-within .website-top-dropdown {
+  display: grid;
+}
+
+.website-top-dropdown button {
+  width: 100%;
+  text-align: left;
+}
+
+.website-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  align-items: center;
 }
 
 .website-tree-panel {
@@ -696,7 +776,6 @@ footer a {
 .website-content-panel {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr;
 }
 
 .website-content-header {
@@ -842,25 +921,26 @@ footer a {
 .vita-website-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 248, 0.88)),
-    radial-gradient(circle at 80% 18%, rgba(145, 198, 83, 0.14), transparent 24rem);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.97), rgba(247, 250, 248, 0.9)),
+    url("/assets/ubuzima-pharmaco-hero.png");
+  background-position: center;
+  background-size: cover;
 }
 
+.vita-top-header,
 .vita-tree-panel {
   background: #fbfdf9;
 }
 
 .vita-brand {
   min-width: 0;
-  align-items: flex-start;
-  flex-direction: column;
 }
 
 .vita-logo {
-  width: min(230px, 100%);
-  max-height: 96px;
+  width: min(180px, 34vw);
+  max-height: 58px;
   object-fit: contain;
   object-position: left center;
 }
@@ -870,9 +950,49 @@ footer a {
 }
 
 .vita-content-panel {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 250, 248, 0.96)),
-    radial-gradient(circle at 88% 28%, rgba(31, 107, 54, 0.12), transparent 26rem);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 250, 248, 0.97));
+}
+
+.vita-status-strip {
+  position: sticky;
+  top: 76px;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 4vw;
+  border-bottom: 1px solid rgba(31, 107, 54, 0.12);
+  background: rgba(251, 253, 249, 0.94);
+  color: var(--green-deep);
+  backdrop-filter: blur(12px);
+}
+
+.vita-status-strip span {
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.vita-status-strip span:first-child {
+  border-radius: 999px;
+  padding: 0.38rem 0.68rem;
+  background: #eaf8ef;
+  color: #1f6b36;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+}
+
+.vita-status-strip button {
+  min-height: 36px;
+  border: 1px solid rgba(31, 107, 54, 0.18);
+  border-radius: 8px;
+  padding: 0.45rem 0.72rem;
+  background: #ffffff;
+  color: var(--green-deep);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .vita-focus-section {
@@ -883,9 +1003,10 @@ footer a {
 }
 
 .vita-hero-section {
-  min-height: calc(100vh - 74px);
+  min-height: calc(100vh - 88px);
   display: grid;
   align-content: center;
+  gap: 1rem;
 }
 
 .vita-focus-section h1 {
@@ -899,9 +1020,89 @@ footer a {
   line-height: 1.72;
 }
 
+.vita-hero-brand-card {
+  width: min(620px, 100%);
+  border: 1px solid rgba(31, 107, 54, 0.16);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  box-shadow: 0 18px 40px rgba(20, 83, 45, 0.08);
+}
+
+.vita-hero-brand-card img {
+  width: min(170px, 34vw);
+  max-height: 76px;
+  object-fit: contain;
+}
+
+.vita-hero-brand-card strong,
+.vita-hero-brand-card span {
+  display: block;
+}
+
+.vita-hero-brand-card strong {
+  color: var(--green-deep);
+}
+
+.vita-hero-brand-card span {
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-weight: 760;
+  line-height: 1.5;
+}
+
+.vita-hero-assurance,
+.vita-priority-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.vita-hero-assurance span,
+.vita-priority-strip span {
+  border: 1px solid rgba(31, 107, 54, 0.16);
+  border-radius: 999px;
+  padding: 0.5rem 0.72rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--green-deep);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.vita-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 2rem;
+}
+
+.vita-category-grid article {
+  min-height: 142px;
+  border: 1px solid rgba(15, 111, 85, 0.14);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.vita-category-grid strong {
+  color: var(--green-deep);
+}
+
+.vita-category-grid span {
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .vita-service-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 2rem;
 }
@@ -919,14 +1120,78 @@ footer a {
   line-height: 1.58;
 }
 
+.vita-ncd-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vita-family-grid article {
+  min-height: 120px;
+}
+
 .vita-care-grid {
   margin-top: 2rem;
+}
+
+.vita-route-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.vita-route-grid article,
+.vita-product-note {
+  border: 1px solid rgba(31, 107, 54, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 36px rgba(20, 83, 45, 0.06);
+}
+
+.vita-route-grid article {
+  min-height: 118px;
+  padding: 1rem;
+}
+
+.vita-route-grid strong,
+.vita-route-grid span,
+.vita-product-note strong,
+.vita-product-note span {
+  display: block;
+}
+
+.vita-route-grid strong,
+.vita-product-note strong {
+  color: var(--green-deep);
+}
+
+.vita-route-grid span,
+.vita-product-note span {
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 720;
+  line-height: 1.52;
+}
+
+.vita-product-note {
+  margin-top: 1rem;
+  padding: 1rem;
 }
 
 @media (max-width: 960px) {
   .website-app-shell,
   .vita-website-shell {
     grid-template-columns: 1fr;
+  }
+
+  .website-top-header {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .website-top-nav,
+  .website-top-actions {
+    justify-content: flex-start;
   }
 
   .website-tree-panel {
@@ -944,11 +1209,17 @@ footer a {
   .compact-solution-grid,
   .compact-audience-grid,
   .website-mini-grid,
-  .website-module-list,
-  .vita-service-grid {
-    grid-template-columns: 1fr;
-  }
-}
+	  .website-module-list,
+	  .vita-category-grid,
+	  .vita-service-grid,
+	  .vita-route-grid {
+	    grid-template-columns: 1fr;
+	  }
+
+	  .vita-status-strip {
+	    position: static;
+	  }
+	}
 
 @media (max-width: 620px) {
   .website-tree-nav {

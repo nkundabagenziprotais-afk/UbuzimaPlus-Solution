@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SalesCreationPanel } from './SalesCreationPanel';
 import {
   AccessProfile,
@@ -349,6 +349,10 @@ export function SalesDispensingReview({ token, profile }: Props) {
     }
   }
 
+  useEffect(() => {
+    void loadSalesReview();
+  }, [canReadSales, tenantSlug, token]);
+
   async function selectSale(saleId: number) {
     setIsLoadingSale(true);
     setError('');
@@ -413,9 +417,10 @@ export function SalesDispensingReview({ token, profile }: Props) {
         })),
       });
 
-      const [salesResponse, batchesResponse] = await Promise.all([
+      const [salesResponse, batchesResponse, productsResponse] = await Promise.all([
         getPharmaSales(token, tenantSlug, apiSalesFilters),
         getPharmaInventoryBatches(token, tenantSlug),
+        getPharmaProducts(token, tenantSlug),
       ]);
 
       setState((current) => ({
@@ -423,7 +428,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         sales: salesResponse.sales,
         selectedSale: response.sale,
         batches: batchesResponse.batches,
-        products: current.products,
+        products: productsResponse.products,
       }));
       setBatchSelections(buildBatchSelections(response.sale, batchesResponse.batches));
       setPrescriptionChecks(buildPrescriptionChecks(response.sale));
@@ -568,16 +573,18 @@ export function SalesDispensingReview({ token, profile }: Props) {
     <article className="panel wide sales-review-panel">
       <div className="panel-heading-row">
         <div>
-          <h2>Sales and dispensing review</h2>
+          <h2>Retail pharmacy POS and dispensing</h2>
           <p className="muted">
-            Review customers, prescriptions, draft sales and controlled dispensing readiness before stock deduction.
+            Create the counter sale, confirm FEFO dispensing, record payment, and keep receipt status visible.
           </p>
         </div>
 
         <button type="button" onClick={loadSalesReview} disabled={isLoading}>
-          {isLoading ? 'Loading…' : 'Load sales review'}
+          {isLoading ? 'Loading...' : state.sales.length ? 'Refresh POS data' : 'Load POS data'}
         </button>
       </div>
+
+      {isLoading && state.sales.length === 0 && <p className="muted">Loading POS, products, customers, and batches automatically...</p>}
 
       {error && <div className="form-error">{error}</div>}
       {notice && <div className="form-success">{notice}</div>}
@@ -792,6 +799,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         customers={state.customers}
         prescriptions={state.prescriptions}
         products={state.products}
+        batches={state.batches}
         onCustomerCreated={handleCustomerCreated}
         onPrescriptionCreated={handlePrescriptionCreated}
         onSaleCreated={handleSaleCreated}
@@ -1043,6 +1051,17 @@ export function SalesDispensingReview({ token, profile }: Props) {
                 <small>
                   {money(lastPayment.amount)} · {lastPayment.payment_method.replaceAll('_', ' ')} · {lastPayment.status}
                 </small>
+                <div className="receipt-delivery-actions">
+                  <button type="button" onClick={() => setNotice('Receipt queued for the physical or Bluetooth printer connector.')}>
+                    Physical printer
+                  </button>
+                  <button type="button" onClick={() => setNotice('WhatsApp receipt handoff is ready for the customer chat integration.')}>
+                    WhatsApp
+                  </button>
+                  <button type="button" onClick={() => setNotice('Corporate email compose is ready to open with the receipt attached once file storage is connected.')}>
+                    Email
+                  </button>
+                </div>
               </div>
             )}
 

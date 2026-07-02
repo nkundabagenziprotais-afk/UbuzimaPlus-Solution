@@ -1,6 +1,9 @@
 export type LoginPayload = {
-  email: string;
-  password: string;
+  login_method: 'email' | 'phone';
+  email?: string;
+  phone?: string;
+  password?: string;
+  pin?: string;
   device_name?: string;
   trusted_device_token?: string | null;
 };
@@ -147,6 +150,9 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     const message =
       data?.message ||
       data?.errors?.email?.[0] ||
+        data?.errors?.phone?.[0] ||
+      data?.errors?.email?.[0] ||
+      data?.errors?.pin?.[0] ||
       'Login failed. Please check your credentials and try again.';
 
     throw new Error(message);
