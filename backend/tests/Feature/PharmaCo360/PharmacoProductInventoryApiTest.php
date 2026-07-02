@@ -95,15 +95,45 @@ class PharmacoProductInventoryApiTest extends TestCase
 
         $token = $this->loginAs('admin@vitapharmaafrica.com');
 
-        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
             ->withToken($token)
-            ->getJson('/api/v1/pharmaco/inventory/summary')
+            ->getJson('/api/v1/pharmaco/inventory/summary');
+
+        $response
             ->assertOk()
             ->assertJsonPath('tenant.slug', 'vitapharma')
             ->assertJsonPath('summary.product_categories_count', 5)
             ->assertJsonPath('summary.products_count', 5)
             ->assertJsonPath('summary.stock_locations_count', 2)
-            ->assertJsonPath('summary.stock_batches_count', 5);
+            ->assertJsonPath('summary.stock_batches_count', 5)
+            ->assertJsonStructure([
+                'summary' => [
+                    'estimated_stock_value',
+                    'estimated_stock_cost_value',
+                    'estimated_stock_retail_value',
+                    'estimated_potential_margin_value',
+                    'expired_batches_count',
+                ],
+            ]);
+
+        $summary = $response->json('summary');
+
+        $this->assertGreaterThanOrEqual(0, $summary['estimated_stock_cost_value']);
+        $this->assertGreaterThanOrEqual(0, $summary['estimated_stock_retail_value']);
+        $this->assertGreaterThanOrEqual(0, $summary['estimated_potential_margin_value']);
+        $this->assertGreaterThanOrEqual(0, $summary['expired_batches_count']);
+
+        $this->assertSame(
+            $summary['estimated_stock_retail_value'],
+            $summary['estimated_stock_value'],
+            'Legacy estimated_stock_value must remain aligned with retail value for backward compatibility.'
+        );
+
+        $this->assertSame(
+            max($summary['estimated_stock_retail_value'] - $summary['estimated_stock_cost_value'], 0),
+            $summary['estimated_potential_margin_value'],
+            'Potential margin must equal retail value minus cost value, floored at zero.'
+        );
     }
 
     public function test_product_inventory_endpoints_require_tenant_header(): void

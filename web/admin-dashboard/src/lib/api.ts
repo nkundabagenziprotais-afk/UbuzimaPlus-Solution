@@ -579,9 +579,13 @@ export async function updatePharmaBranchDepartment(
 
 export type PharmaProductCategory = {
   id: number;
+  uuid?: string;
   name: string;
   code: string;
   category_type: string;
+  status?: string;
+  description?: string | null;
+  products_count?: number;
 };
 
 export type PharmaProductStockSummary = {
@@ -621,6 +625,8 @@ export type PharmaProduct = {
 export type PharmaStockLocation = {
   id: number;
   uuid: string;
+  branch_id?: number;
+  branch_name?: string | null;
   name: string;
   code: string;
   location_type: string;
@@ -679,6 +685,15 @@ export type PharmaProductsResponse = {
   products: PharmaProduct[];
 };
 
+export type PharmaProductCategoriesResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  categories: PharmaProductCategory[];
+};
+
 export type PharmaInventoryLocationsResponse = {
   tenant: {
     id: number;
@@ -710,6 +725,10 @@ export type PharmaInventorySummaryResponse = {
     stock_batches_count: number;
     total_quantity_on_hand: number;
     estimated_stock_value: number;
+    estimated_stock_cost_value?: number;
+    estimated_stock_retail_value?: number;
+    estimated_potential_margin_value?: number;
+    expired_batches_count?: number;
     low_stock_products_count: number;
     near_expiry_batches_180_days_count: number;
   };
@@ -721,6 +740,17 @@ export async function getPharmaProducts(
   tenantSlug: string,
 ): Promise<PharmaProductsResponse> {
   return getJsonWithTenant<PharmaProductsResponse>(token, '/pharmaco/products', tenantSlug);
+}
+
+export async function getPharmaProductCategories(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaProductCategoriesResponse> {
+  return getJsonWithTenant<PharmaProductCategoriesResponse>(
+    token,
+    '/pharmaco/product-categories',
+    tenantSlug,
+  );
 }
 
 export async function getPharmaInventoryLocations(
@@ -784,6 +814,46 @@ export type CreatePharmaProductPayload = {
 };
 
 export type UpdatePharmaProductPayload = Partial<CreatePharmaProductPayload>;
+
+export type CreatePharmaProductCategoryPayload = {
+  name: string;
+  code: string;
+  category_type?: string;
+  status?: 'active' | 'inactive';
+  description?: string | null;
+};
+
+export type UpdatePharmaProductCategoryPayload = Partial<CreatePharmaProductCategoryPayload>;
+
+export type PharmaProductCategoryMutationResponse = {
+  message: string;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  category: PharmaProductCategory;
+};
+
+export type CreatePharmaStockLocationPayload = {
+  branch_id: number;
+  name: string;
+  code: string;
+  location_type?: string;
+  status?: 'active' | 'inactive';
+};
+
+export type UpdatePharmaStockLocationPayload = Partial<Omit<CreatePharmaStockLocationPayload, 'branch_id'>>;
+
+export type PharmaStockLocationMutationResponse = {
+  message: string;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  location: PharmaStockLocation;
+};
 
 export type PharmaProductMutationResponse = {
   message: string;
@@ -862,6 +932,64 @@ export async function updatePharmaProduct(
   return sendJsonWithTenant<PharmaProductMutationResponse>(
     token,
     `/pharmaco/products/${productId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export async function createPharmaProductCategory(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaProductCategoryPayload,
+): Promise<PharmaProductCategoryMutationResponse> {
+  return sendJsonWithTenant<PharmaProductCategoryMutationResponse>(
+    token,
+    '/pharmaco/product-categories',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function updatePharmaProductCategory(
+  token: string,
+  tenantSlug: string,
+  categoryId: number,
+  payload: UpdatePharmaProductCategoryPayload,
+): Promise<PharmaProductCategoryMutationResponse> {
+  return sendJsonWithTenant<PharmaProductCategoryMutationResponse>(
+    token,
+    `/pharmaco/product-categories/${categoryId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export async function createPharmaStockLocation(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaStockLocationPayload,
+): Promise<PharmaStockLocationMutationResponse> {
+  return sendJsonWithTenant<PharmaStockLocationMutationResponse>(
+    token,
+    '/pharmaco/inventory/locations',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function updatePharmaStockLocation(
+  token: string,
+  tenantSlug: string,
+  locationId: number,
+  payload: UpdatePharmaStockLocationPayload,
+): Promise<PharmaStockLocationMutationResponse> {
+  return sendJsonWithTenant<PharmaStockLocationMutationResponse>(
+    token,
+    `/pharmaco/inventory/locations/${locationId}`,
     tenantSlug,
     'PATCH',
     payload,

@@ -270,6 +270,24 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ]);
 
 
+    Route::get('/product-categories', [ProductInventoryController::class, 'productCategories'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::post('/product-categories', [ProductInventoryController::class, 'createProductCategory'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::patch('/product-categories/{productCategory}', [ProductInventoryController::class, 'updateProductCategory'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
     Route::post('/products', [ProductInventoryController::class, 'createProduct'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
@@ -313,6 +331,18 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ]);
 
     Route::get('/inventory/locations', [ProductInventoryController::class, 'locations'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::post('/inventory/locations', [ProductInventoryController::class, 'createStockLocation'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::patch('/inventory/locations/{stockLocation}', [ProductInventoryController::class, 'updateStockLocation'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
             'tenant.module:pharmaco.inventory',

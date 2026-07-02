@@ -76,6 +76,138 @@ class ProductInventoryController extends Controller
         ]);
     }
 
+    public function productCategories(Request $request): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        $categories = ProductCategory::query()
+            ->where('tenant_id', $tenant->id)
+            ->withCount('products')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (ProductCategory $category) => $this->serializeCategory($category))
+            ->values();
+
+        return response()->json([
+            'tenant' => $this->tenantPayload($tenant),
+            'categories' => $categories,
+        ]);
+    }
+
+    public function createProductCategory(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:191'],
+            'code' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('product_categories', 'code')->where('tenant_id', $tenant->id),
+            ],
+            'category_type' => ['nullable', 'string', 'max:50'],
+            'status' => ['nullable', 'string', 'max:30'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $category = ProductCategory::create([
+            'uuid' => (string) Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'name' => $validated['name'],
+            'code' => strtoupper($validated['code']),
+            'category_type' => $validated['category_type'] ?? 'medicine',
+            'status' => $validated['status'] ?? 'active',
+            'description' => $validated['description'] ?? null,
+            'metadata' => [
+                'created_from' => 'pharmaco_inventory_setup_api',
+            ],
+        ]);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.product_category.created',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'category_code' => $category->code,
+                'category_name' => $category->name,
+            ],
+            dataClassification: 'internal',
+            auditableType: ProductCategory::class,
+            auditableId: $category->id
+        );
+
+        return response()->json([
+            'message' => 'Product category created successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'category' => $this->serializeCategory($category),
+        ], 201);
+    }
+
+    public function updateProductCategory(
+        Request $request,
+        ProductCategory $productCategory,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless((int) $productCategory->tenant_id === (int) $tenant->id, 404);
+
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:191'],
+            'code' => [
+                'sometimes',
+                'string',
+                'max:100',
+                Rule::unique('product_categories', 'code')
+                    ->where('tenant_id', $tenant->id)
+                    ->ignore($productCategory->id),
+            ],
+            'category_type' => ['sometimes', 'string', 'max:50'],
+            'status' => ['sometimes', 'string', 'max:30'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if (array_key_exists('code', $validated)) {
+            $validated['code'] = strtoupper($validated['code']);
+        }
+
+        $before = $productCategory->only(['name', 'code', 'category_type', 'status', 'description']);
+
+        $productCategory->fill($validated);
+        $productCategory->save();
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.product_category.updated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'category_code' => $productCategory->code,
+                'before' => $before,
+                'after' => $productCategory->only(['name', 'code', 'category_type', 'status', 'description']),
+            ],
+            dataClassification: 'internal',
+            auditableType: ProductCategory::class,
+            auditableId: $productCategory->id
+        );
+
+        return response()->json([
+            'message' => 'Product category updated successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'category' => $this->serializeCategory($productCategory),
+        ]);
+    }
+
     public function locations(Request $request): JsonResponse
     {
         $tenant = $request->attributes->get('tenant');
@@ -108,6 +240,124 @@ class ProductInventoryController extends Controller
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
             'locations' => $locations,
+        ]);
+    }
+
+    public function createStockLocation(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'branch_id' => [
+                'required',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'name' => ['required', 'string', 'max:191'],
+            'code' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('stock_locations', 'code')->where('branch_id', $request->input('branch_id')),
+            ],
+            'location_type' => ['nullable', 'string', 'max:50'],
+            'status' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $location = StockLocation::create([
+            'uuid' => (string) Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'branch_id' => $validated['branch_id'],
+            'name' => $validated['name'],
+            'code' => strtoupper($validated['code']),
+            'location_type' => $validated['location_type'] ?? 'store',
+            'status' => $validated['status'] ?? 'active',
+            'metadata' => [
+                'created_from' => 'pharmaco_inventory_setup_api',
+            ],
+        ]);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.stock_location.created',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'location_code' => $location->code,
+                'location_name' => $location->name,
+                'branch_id' => $location->branch_id,
+            ],
+            dataClassification: 'internal',
+            auditableType: StockLocation::class,
+            auditableId: $location->id
+        );
+
+        return response()->json([
+            'message' => 'Stock location created successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'location' => $this->serializeLocation($location->load('branch')),
+        ], 201);
+    }
+
+    public function updateStockLocation(
+        Request $request,
+        StockLocation $stockLocation,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless((int) $stockLocation->tenant_id === (int) $tenant->id, 404);
+
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:191'],
+            'code' => [
+                'sometimes',
+                'string',
+                'max:100',
+                Rule::unique('stock_locations', 'code')
+                    ->where('branch_id', $stockLocation->branch_id)
+                    ->ignore($stockLocation->id),
+            ],
+            'location_type' => ['sometimes', 'string', 'max:50'],
+            'status' => ['sometimes', 'string', 'max:30'],
+        ]);
+
+        if (array_key_exists('code', $validated)) {
+            $validated['code'] = strtoupper($validated['code']);
+        }
+
+        $before = $stockLocation->only(['name', 'code', 'location_type', 'status']);
+
+        $stockLocation->fill($validated);
+        $stockLocation->save();
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.stock_location.updated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'location_code' => $stockLocation->code,
+                'before' => $before,
+                'after' => $stockLocation->only(['name', 'code', 'location_type', 'status']),
+            ],
+            dataClassification: 'internal',
+            auditableType: StockLocation::class,
+            auditableId: $stockLocation->id
+        );
+
+        return response()->json([
+            'message' => 'Stock location updated successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'location' => $this->serializeLocation($stockLocation->load('branch')),
         ]);
     }
 
@@ -149,10 +399,23 @@ class ProductInventoryController extends Controller
             ->filter(fn (Product $product) => (float) ($product->total_quantity_on_hand ?? 0) <= (float) $product->reorder_level)
             ->values();
 
-        $stockValue = StockBatch::query()
+        $stockCostValue = (float) StockBatch::query()
+            ->where('tenant_id', $tenant->id)
+            ->selectRaw('COALESCE(SUM(quantity_on_hand * COALESCE(unit_cost, 0)), 0) as value')
+            ->value('value');
+
+        $stockRetailValue = (float) StockBatch::query()
             ->where('tenant_id', $tenant->id)
             ->selectRaw('COALESCE(SUM(quantity_on_hand * COALESCE(selling_price, 0)), 0) as value')
             ->value('value');
+
+        $potentialMarginValue = max($stockRetailValue - $stockCostValue, 0);
+
+        $expiredBatchesCount = StockBatch::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereNotNull('expiry_date')
+            ->whereDate('expiry_date', '<', now()->toDateString())
+            ->count();
 
         $summary = [
             'product_categories_count' => ProductCategory::where('tenant_id', $tenant->id)->count(),
@@ -160,7 +423,11 @@ class ProductInventoryController extends Controller
             'stock_locations_count' => StockLocation::where('tenant_id', $tenant->id)->count(),
             'stock_batches_count' => StockBatch::where('tenant_id', $tenant->id)->count(),
             'total_quantity_on_hand' => (float) StockBatch::where('tenant_id', $tenant->id)->sum('quantity_on_hand'),
-            'estimated_stock_value' => (float) $stockValue,
+            'estimated_stock_value' => $stockRetailValue,
+            'estimated_stock_cost_value' => $stockCostValue,
+            'estimated_stock_retail_value' => $stockRetailValue,
+            'estimated_potential_margin_value' => $potentialMarginValue,
+            'expired_batches_count' => $expiredBatchesCount,
             'low_stock_products_count' => $lowStockProducts->count(),
             'near_expiry_batches_180_days_count' => StockBatch::where('tenant_id', $tenant->id)
                 ->whereNotNull('expiry_date')
@@ -938,6 +1205,41 @@ class ProductInventoryController extends Controller
             'movement' => $this->serializeMovement($movement),
             'purchase_order_receipt' => $purchaseOrderReceipt,
         ], 201);
+    }
+
+    private function serializeCategory(ProductCategory $category): array
+    {
+        return [
+            'id' => $category->id,
+            'uuid' => $category->uuid,
+            'name' => $category->name,
+            'code' => $category->code,
+            'category_type' => $category->category_type,
+            'status' => $category->status,
+            'description' => $category->description,
+            'products_count' => $category->products_count ?? $category->products()->count(),
+        ];
+    }
+
+    private function serializeLocation(StockLocation $location): array
+    {
+        return [
+            'id' => $location->id,
+            'uuid' => $location->uuid,
+            'branch_id' => $location->branch_id,
+            'branch_name' => $location->branch?->name,
+            'branch' => $location->branch ? [
+                'id' => $location->branch->id,
+                'name' => $location->branch->name,
+                'code' => $location->branch->code,
+            ] : null,
+            'name' => $location->name,
+            'code' => $location->code,
+            'location_type' => $location->location_type,
+            'status' => $location->status,
+            'stock_batches_count' => $location->stock_batches_count ?? $location->stockBatches()->count(),
+            'metadata' => $location->metadata ?? [],
+        ];
     }
 
     private function tenantPayload($tenant): array

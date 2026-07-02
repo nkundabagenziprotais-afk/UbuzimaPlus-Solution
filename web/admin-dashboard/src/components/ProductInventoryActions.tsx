@@ -1,7 +1,10 @@
 import { type ChangeEvent, type FormEvent, useState } from 'react';
 import {
   AccessProfile,
+  CreatePharmaProductCategoryPayload,
+  CreatePharmaStockLocationPayload,
   PharmaInventoryLocationsResponse,
+  PharmaProductCategoriesResponse,
   PharmaProduct,
   PharmaProductCategory,
   PharmaProductsResponse,
@@ -9,10 +12,15 @@ import {
   bulkActionPharmaProducts,
   bulkImportPharmaProducts,
   createPharmaProduct,
+  createPharmaProductCategory,
+  createPharmaStockLocation,
   getPharmaInventoryLocations,
+  getPharmaProductCategories,
   getPharmaProducts,
   receivePharmaStock,
   updatePharmaProduct,
+  updatePharmaProductCategory,
+  updatePharmaStockLocation,
 } from '../lib/api';
 
 type ProductInventoryActionsProps = {
@@ -51,7 +59,23 @@ type StockReceiveFormState = {
   reason: string;
 };
 
-type InventoryTask = 'create' | 'edit' | 'receive' | 'bulk';
+type CategorySetupFormState = {
+  name: string;
+  code: string;
+  category_type: string;
+  status: 'active' | 'inactive';
+  description: string;
+};
+
+type LocationSetupFormState = {
+  branch_id: string;
+  name: string;
+  code: string;
+  location_type: string;
+  status: 'active' | 'inactive';
+};
+
+type InventoryTask = 'setup' | 'create' | 'edit' | 'receive' | 'bulk';
 
 const emptyProductForm: ProductFormState = {
   product_category_id: '',
@@ -84,6 +108,22 @@ const emptyStockReceiveForm: StockReceiveFormState = {
   reason: '',
 };
 
+const emptyCategorySetupForm: CategorySetupFormState = {
+  name: '',
+  code: '',
+  category_type: 'medicine',
+  status: 'active',
+  description: '',
+};
+
+const emptyLocationSetupForm: LocationSetupFormState = {
+  branch_id: '',
+  name: '',
+  code: '',
+  location_type: 'store',
+  status: 'active',
+};
+
 function toNullableNumber(value: string): number | null {
   if (!value.trim()) return null;
   return Number(value);
@@ -98,10 +138,15 @@ function formatNumber(value: number): string {
 export function ProductInventoryActions({ token, profile }: ProductInventoryActionsProps) {
   const [products, setProducts] = useState<PharmaProductsResponse | null>(null);
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
+  const [categoriesResponse, setCategoriesResponse] = useState<PharmaProductCategoriesResponse | null>(null);
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
   const [stockReceiveForm, setStockReceiveForm] = useState<StockReceiveFormState>(emptyStockReceiveForm);
-  const [activeTask, setActiveTask] = useState<InventoryTask>('create');
+  const [categoryForm, setCategoryForm] = useState<CategorySetupFormState>(emptyCategorySetupForm);
+  const [locationForm, setLocationForm] = useState<LocationSetupFormState>(emptyLocationSetupForm);
+  const [activeTask, setActiveTask] = useState<InventoryTask>('setup');
   const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedLocationId, setSelectedLocationId] = useState('');
   const [selectedBulkIds, setSelectedBulkIds] = useState<number[]>([]);
   const [bulkRows, setBulkRows] = useState<ProductBulkImportRow[]>([]);
   const [bulkMode, setBulkMode] = useState<'create_only' | 'upsert'>('upsert');
@@ -118,6 +163,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
   const [isReceivingStock, setIsReceivingStock] = useState(false);
+  const [isSavingSetup, setIsSavingSetup] = useState(false);
   const [isRunningBulk, setIsRunningBulk] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -126,7 +172,10 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '');
 
-  const categories = collectCategories(products?.products ?? []);
+  const categories = categoriesResponse?.categories ?? collectCategories(products?.products ?? []);
+  const branchOptions = Array.from(
+    new Map((locations?.locations ?? []).map((location) => [location.branch.id, location.branch])).values(),
+  );
 
   async function loadReferenceData() {
     if (!tenantSlug) {
@@ -139,13 +188,15 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     setMessage('');
 
     try {
-      const [productsResponse, locationsResponse] = await Promise.all([
+      const [productsResponse, locationsResponse, categoriesResult] = await Promise.all([
         getPharmaProducts(token, tenantSlug),
         getPharmaInventoryLocations(token, tenantSlug),
+        getPharmaProductCategories(token, tenantSlug),
       ]);
 
       setProducts(productsResponse);
       setLocations(locationsResponse);
+      setCategoriesResponse(categoriesResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load inventory form data.');
     } finally {
@@ -156,13 +207,180 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   async function refreshProductsAndLocations() {
     if (!tenantSlug) return;
 
-    const [productsResponse, locationsResponse] = await Promise.all([
+    const [productsResponse, locationsResponse, categoriesResult] = await Promise.all([
       getPharmaProducts(token, tenantSlug),
       getPharmaInventoryLocations(token, tenantSlug),
+      getPharmaProductCategories(token, tenantSlug),
     ]);
 
     setProducts(productsResponse);
     setLocations(locationsResponse);
+    setCategoriesResponse(categoriesResult);
+  }
+
+  async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!tenantSlug) {
+      setError('No tenant assignment is available for this account.');
+      return;
+    }
+
+    setIsSavingSetup(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const payload: CreatePharmaProductCategoryPayload = {
+        name: categoryForm.name,
+        code: categoryForm.code,
+        category_type: categoryForm.category_type || 'medicine',
+        status: categoryForm.status,
+        description: categoryForm.description || null,
+      };
+
+      const response = await createPharmaProductCategory(token, tenantSlug, payload);
+
+      setMessage(`${response.message} ${response.category.name} is ready for product setup.`);
+      setCategoryForm(emptyCategorySetupForm);
+      setSelectedCategoryId(String(response.category.id));
+      await refreshProductsAndLocations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create product category.');
+    } finally {
+      setIsSavingSetup(false);
+    }
+  }
+
+  async function handleUpdateCategory(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!tenantSlug || !selectedCategoryId) {
+      setError('Select a product category before updating.');
+      return;
+    }
+
+    setIsSavingSetup(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await updatePharmaProductCategory(token, tenantSlug, Number(selectedCategoryId), {
+        name: categoryForm.name,
+        code: categoryForm.code,
+        category_type: categoryForm.category_type || 'medicine',
+        status: categoryForm.status,
+        description: categoryForm.description || null,
+      });
+
+      setMessage(`${response.message} ${response.category.name} is updated.`);
+      await refreshProductsAndLocations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update product category.');
+    } finally {
+      setIsSavingSetup(false);
+    }
+  }
+
+  async function handleCreateLocation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!tenantSlug) {
+      setError('No tenant assignment is available for this account.');
+      return;
+    }
+
+    setIsSavingSetup(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const payload: CreatePharmaStockLocationPayload = {
+        branch_id: Number(locationForm.branch_id),
+        name: locationForm.name,
+        code: locationForm.code,
+        location_type: locationForm.location_type || 'store',
+        status: locationForm.status,
+      };
+
+      const response = await createPharmaStockLocation(token, tenantSlug, payload);
+
+      setMessage(`${response.message} ${response.location.name} is available for receiving.`);
+      setLocationForm(emptyLocationSetupForm);
+      setSelectedLocationId(String(response.location.id));
+      await refreshProductsAndLocations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create stock location.');
+    } finally {
+      setIsSavingSetup(false);
+    }
+  }
+
+  async function handleUpdateLocation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!tenantSlug || !selectedLocationId) {
+      setError('Select a stock location before updating.');
+      return;
+    }
+
+    setIsSavingSetup(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await updatePharmaStockLocation(token, tenantSlug, Number(selectedLocationId), {
+        name: locationForm.name,
+        code: locationForm.code,
+        location_type: locationForm.location_type || 'store',
+        status: locationForm.status,
+      });
+
+      setMessage(`${response.message} ${response.location.name} is updated.`);
+      await refreshProductsAndLocations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update stock location.');
+    } finally {
+      setIsSavingSetup(false);
+    }
+  }
+
+  function handleSelectCategoryForEdit(categoryId: string) {
+    setSelectedCategoryId(categoryId);
+
+    const category = categories.find((item) => String(item.id) === categoryId);
+
+    if (!category) {
+      setCategoryForm(emptyCategorySetupForm);
+      return;
+    }
+
+    setCategoryForm({
+      name: category.name,
+      code: category.code,
+      category_type: category.category_type,
+      status: category.status === 'inactive' ? 'inactive' : 'active',
+      description: category.description ?? '',
+    });
+  }
+
+  function handleSelectLocationForEdit(locationId: string) {
+    setSelectedLocationId(locationId);
+
+    const location = locations?.locations.find((item) => String(item.id) === locationId);
+
+    if (!location) {
+      setLocationForm(emptyLocationSetupForm);
+      return;
+    }
+
+    setLocationForm({
+      branch_id: String(location.branch.id),
+      name: location.name,
+      code: location.code,
+      location_type: location.location_type,
+      status: location.status === 'inactive' ? 'inactive' : 'active',
+    });
   }
 
   async function handleCreateProduct(event: FormEvent<HTMLFormElement>) {
@@ -375,12 +593,13 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
       {error && <div className="form-error">{error}</div>}
       {message && <div className="form-success">{message}</div>}
 
-      {!products || !locations ? (
-        <p className="muted">Load action data first to populate product categories, product list, and stock locations.</p>
+      {!products || !locations || !categoriesResponse ? (
+        <p className="muted">Load action data first to populate product categories, product list, branches, and stock locations.</p>
       ) : (
         <>
           <div className="inventory-task-switcher" role="tablist" aria-label="Inventory action">
             {[
+              ['setup', 'Setup'],
               ['create', 'Create product'],
               ['edit', 'Edit product'],
               ['receive', 'Receive stock'],
@@ -400,6 +619,166 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
           </div>
 
           <div className="inventory-actions-grid inventory-actions-grid--focused">
+          {activeTask === 'setup' && (
+            <section className="inventory-action-card inventory-setup-card">
+              <h3>Inventory setup</h3>
+              <p className="form-hint">
+                Prepare product categories and stock locations before product creation and stock receiving.
+              </p>
+
+              <div className="inventory-setup-grid">
+                <form className="inventory-setup-form" onSubmit={handleCreateCategory}>
+                  <h4>Create category</h4>
+                  <label>
+                    Category name
+                    <input
+                      value={categoryForm.name}
+                      onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })}
+                      placeholder="e.g. Antibiotics"
+                      required
+                    />
+                  </label>
+                  <label>
+                    Category code
+                    <input
+                      value={categoryForm.code}
+                      onChange={(event) => setCategoryForm({ ...categoryForm, code: event.target.value })}
+                      placeholder="e.g. antibiotics"
+                      required
+                    />
+                  </label>
+                  <div className="form-two-column">
+                    <label>
+                      Type
+                      <input
+                        value={categoryForm.category_type}
+                        onChange={(event) => setCategoryForm({ ...categoryForm, category_type: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Status
+                      <select
+                        value={categoryForm.status}
+                        onChange={(event) => setCategoryForm({ ...categoryForm, status: event.target.value as CategorySetupFormState['status'] })}
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    Description
+                    <textarea
+                      value={categoryForm.description}
+                      onChange={(event) => setCategoryForm({ ...categoryForm, description: event.target.value })}
+                      placeholder="Short setup note"
+                    />
+                  </label>
+                  <button type="submit" disabled={isSavingSetup}>
+                    {isSavingSetup ? 'Saving…' : 'Create category'}
+                  </button>
+                </form>
+
+                <form className="inventory-setup-form" onSubmit={handleUpdateCategory}>
+                  <h4>Update category</h4>
+                  <label>
+                    Category
+                    <select value={selectedCategoryId} onChange={(event) => handleSelectCategoryForEdit(event.target.value)} required>
+                      <option value="">Select category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name} ({category.code})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="form-hint">After selecting a category, adjust the same fields in the create form and submit here.</p>
+                  <button type="submit" disabled={isSavingSetup || !selectedCategoryId}>
+                    Update selected category
+                  </button>
+                </form>
+
+                <form className="inventory-setup-form" onSubmit={handleCreateLocation}>
+                  <h4>Create stock location</h4>
+                  <label>
+                    Branch
+                    <select
+                      value={locationForm.branch_id}
+                      onChange={(event) => setLocationForm({ ...locationForm, branch_id: event.target.value })}
+                      required
+                    >
+                      <option value="">Select branch</option>
+                      {branchOptions.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name} ({branch.code})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Location name
+                    <input
+                      value={locationForm.name}
+                      onChange={(event) => setLocationForm({ ...locationForm, name: event.target.value })}
+                      placeholder="e.g. Reserve Store"
+                      required
+                    />
+                  </label>
+                  <label>
+                    Location code
+                    <input
+                      value={locationForm.code}
+                      onChange={(event) => setLocationForm({ ...locationForm, code: event.target.value })}
+                      placeholder="e.g. reserve-store"
+                      required
+                    />
+                  </label>
+                  <div className="form-two-column">
+                    <label>
+                      Type
+                      <input
+                        value={locationForm.location_type}
+                        onChange={(event) => setLocationForm({ ...locationForm, location_type: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Status
+                      <select
+                        value={locationForm.status}
+                        onChange={(event) => setLocationForm({ ...locationForm, status: event.target.value as LocationSetupFormState['status'] })}
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button type="submit" disabled={isSavingSetup || branchOptions.length === 0}>
+                    Create stock location
+                  </button>
+                </form>
+
+                <form className="inventory-setup-form" onSubmit={handleUpdateLocation}>
+                  <h4>Update stock location</h4>
+                  <label>
+                    Stock location
+                    <select value={selectedLocationId} onChange={(event) => handleSelectLocationForEdit(event.target.value)} required>
+                      <option value="">Select location</option>
+                      {locations.locations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name} ({location.code})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="form-hint">After selecting a location, adjust the same location fields in the create form and submit here.</p>
+                  <button type="submit" disabled={isSavingSetup || !selectedLocationId}>
+                    Update selected location
+                  </button>
+                </form>
+              </div>
+            </section>
+          )}
+
           {activeTask === 'create' && (
           <form className="inventory-action-card" onSubmit={handleCreateProduct}>
             <h3>Create product</h3>
