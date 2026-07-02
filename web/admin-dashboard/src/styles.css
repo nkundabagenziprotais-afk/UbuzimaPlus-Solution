@@ -5750,3 +5750,53 @@ h3,
   font-weight: 800;
   line-height: 1;
 }
+
+/* Phase I corrective feedback:
+   Module tree/section navigation belongs in the left menu panel, not inside the main page body. */
+.module-workspace-shell {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.module-section-rail {
+  display: none !important;
+}
+
+.mail-notification-banner {
+  margin: 0 1.5rem 1rem;
+  border: 1px solid rgba(180, 33, 41, 0.18);
+  background: linear-gradient(135deg, rgba(180, 33, 41, 0.08), rgba(255, 255, 255, 0.94));
+  border-radius: 18px;
+  padding: 0.85rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  align-self: flex-start;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  color: #1f2937;
+}
+
+.mail-notification-banner strong {
+  font-size: 0.92rem;
+}
+
+.mail-notification-banner small {
+  color: #b42129;
+  font-weight: 800;
+}
+
+.mail-notification-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: #b42129;
+  box-shadow: 0 0 0 6px rgba(180, 33, 41, 0.12);
+}
+
+@media (max-width: 720px) {
+  .mail-notification-banner {
+    margin: 0 1rem 1rem;
+    width: calc(100% - 2rem);
+    justify-content: flex-start;
+  }
+}

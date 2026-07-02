@@ -2237,14 +2237,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="ERP Module"
-          title={selectedErpModule.title}
-          description={selectedErpModule.summary}
-          status={selectedErpModule.status}
-        />
-
-        <div className="workspace-selector erp-selector">
+<div className="workspace-selector erp-selector">
           {erpModules.map((module) => (
             <button
               key={module.key}
@@ -2394,14 +2387,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Solution Portfolio"
-          title={selectedSolution.title}
-          description={selectedSolution.summary}
-          status={selectedSolution.status}
-        />
-
-        <section className="solution-card-grid">
+<section className="solution-card-grid">
           {solutionPortfolio.map((solution) => (
             <button
               key={solution.key}
@@ -2527,14 +2513,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="POS module"
-          title={selected.label}
-          description={selected.description}
-          status="Live sales APIs plus pharmacy workflow"
-        />
-
-        <section className="module-workspace-shell">
+<section className="module-workspace-shell">
           <ModuleWorkspaceRail
             label="POS and Sales"
             items={posWorkspaceItems}
@@ -2612,14 +2591,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Supplier module"
-          title={selected.label}
-          description={selected.description}
-          status="Live procurement APIs plus supplier workspace"
-        />
-
-        <section className="module-workspace-shell">
+<section className="module-workspace-shell">
           <ModuleWorkspaceRail
             label="Suppliers"
             items={supplierWorkspaceItems}
@@ -2672,14 +2644,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Finance module"
-          title={selected.label}
-          description={selected.description}
-          status="Live finance APIs"
-        />
-
-        <section className="module-workspace-shell">
+<section className="module-workspace-shell">
           <ModuleWorkspaceRail
             label="Finance"
             items={financeWorkspaceItems}
@@ -2755,14 +2720,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Ad-hoc Report"
-          title={selected.label}
-          description={selected.description}
-          status="Read-only analytics"
-        />
-
-        <section className="module-workspace-shell">
+<section className="module-workspace-shell">
           <ModuleWorkspaceRail
             label="Ad-hoc Report"
             items={adhocReportWorkspaceItems}
@@ -2794,14 +2752,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="AI Center"
-          title={selectedAiModule.title}
-          description={selectedAiModule.purpose}
-          status={selectedAiModule.status}
-        />
-
-        <section className="ai-center-layout">
+<section className="ai-center-layout">
           <div className="ai-center-module-grid">
             {aiCenterModules.map((module) => (
               <button
@@ -2859,14 +2810,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Admin Panel"
-          title={selectedLayer.title}
-          description={selectedLayer.summary}
-          status={selectedLayer.status}
-        />
-
-        {selectedWorkspace === 'user-profiles' && (
+{selectedWorkspace === 'user-profiles' && (
           <article className="panel wide">
             <div className="panel-heading-row">
               <div>
@@ -2965,13 +2909,7 @@ function App() {
       case 'inventory':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Inventory module"
-              title="Batch, expiry, FEFO, receiving, and shelf control"
-              description="Inventory is now isolated as its own workspace so staff can work without the previous long dashboard flood."
-              status="Live APIs plus framework"
-            />
-            <ModuleReadinessGrid items={inventoryReadiness} />
+<ModuleReadinessGrid items={inventoryReadiness} />
             <ProductInventoryPreview token={session.token} profile={profile} />
             <ProductInventoryActions token={session.token} profile={profile} />
           </section>
@@ -2987,26 +2925,14 @@ function App() {
       case 'tenant-setup':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Tenant setup"
-              title="Business profile, branch, and department configuration"
-              description="Tenant setup has its own workspace for profile verification, branch structure, departments, and operating capabilities."
-              status="Live tenant APIs"
-            />
-            {tenantOperationsPanel}
+{tenantOperationsPanel}
             <PharmaCoreEditor token={session.token} profile={profile} />
           </section>
         );
       case 'security':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Security module"
-              title="Role, permission, tenant, and access control"
-              description="Security keeps access scope visible and provides protected endpoint checks without mixing them into daily operator pages."
-              status="Protected backend checks"
-            />
-            <section className="content-grid security-content-grid">
+<section className="content-grid security-content-grid">
               <article className="panel">
                 <h2>Resolved access profile</h2>
                 <div className="scope-list">
@@ -3047,74 +2973,38 @@ function App() {
       case 'corporate-email':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Corporate Email"
-              title="Outlook-style company mailbox"
-              description="Staff can work from an in-app mailbox while external Microsoft Graph or IMAP/SMTP integration is configured."
-              status="Active"
-            />
-            <CorporateEmailPanel token={session.token} />
+<CorporateEmailPanel token={session.token} />
           </section>
         );
       case 'pharmacist-chat':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Pharmacist Chat"
-              title="Mobile customer conversations"
-              description="Customer mobile app conversations are available to authorized pharmacists and tenant staff."
-              status="Active"
-            />
-            <PharmacistChatPanel token={session.token} />
+<PharmacistChatPanel token={session.token} />
           </section>
         );
       case 'notifications':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Notification Center"
-              title="In-app communication and SMS-ready notices"
-              description="Publish messages to staff by platform, market, and tenant while keeping the same model ready for SMS integration."
-              status="Active"
-            />
-            <NotificationCenterPanel token={session.token} profile={profile} />
+<NotificationCenterPanel token={session.token} profile={profile} />
           </section>
         );
       case 'market-management':
       case 'localization':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow={activeSection === 'market-management' ? 'Market Management' : 'Localization'}
-              title={activeSection === 'market-management' ? 'Tenant market onboarding' : 'Language and regional access context'}
-              description="Manage tenant market assignment, default languages, service radius, and regional context for expansion."
-              status="Active"
-            />
-            <MarketLocalizationPanel token={session.token} profile={profile} />
+<MarketLocalizationPanel token={session.token} profile={profile} />
           </section>
         );
       case 'nearby-providers':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Nearby Providers"
-              title="Customer service-provider discovery"
-              description="Preview how the customer mobile app recommends nearby pharmacies and other service providers."
-              status="Active"
-            />
-            <NearbyProvidersPanel />
+<NearbyProvidersPanel />
           </section>
         );
       case 'vitapharma-website':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Tenant Website"
-              title="VitaPharma public website"
-              description="The first tenant website is served from the public web app and can run at vitapharmaafrica.com or the local /vitapharma path."
-              status="Active"
-            />
-            <article className="panel wide tenant-website-panel">
+<article className="panel wide tenant-website-panel">
               <img src={vitaPharmaLogoSrc} alt="VitaPharma" />
               <div>
                 <h2>VitaPharma Africa</h2>
@@ -3137,13 +3027,7 @@ function App() {
       case 'settings':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Settings blueprint"
-              title="Offline, integration, notification, numbering, and channel policy"
-              description="This page gives the deployable UI direction for settings that still need backend activation and administrator approval."
-              status="Configuration framework"
-            />
-            <ModuleReadinessGrid items={settingsBlueprint} />
+<ModuleReadinessGrid items={settingsBlueprint} />
             <section className="commercial-framework-section">
               <div className="framework-heading">
                 <div>
@@ -3427,6 +3311,21 @@ function App() {
             {profile.user.must_change_password && <small>Password change required</small>}
           </div>
         </header>
+
+        {unreadMailCount > 0 && (
+          <button
+            type="button"
+            className="mail-notification-banner"
+            onClick={() => navigateToSection('corporate-email')}
+            aria-label={`${unreadMailCount} unread corporate emails`}
+          >
+            <span className="mail-notification-dot" />
+            <strong>
+              {unreadMailCount} unread corporate email{unreadMailCount === 1 ? '' : 's'}
+            </strong>
+            <small>Open Corporate Email</small>
+          </button>
+        )}
 
         <section className="dashboard-scroll-panel">
           {renderActiveSection()}
