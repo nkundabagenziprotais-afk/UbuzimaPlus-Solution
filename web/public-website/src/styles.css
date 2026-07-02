@@ -953,6 +953,48 @@ footer a {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 250, 248, 0.97));
 }
 
+.vita-status-strip {
+  position: sticky;
+  top: 76px;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 4vw;
+  border-bottom: 1px solid rgba(31, 107, 54, 0.12);
+  background: rgba(251, 253, 249, 0.94);
+  color: var(--green-deep);
+  backdrop-filter: blur(12px);
+}
+
+.vita-status-strip span {
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.vita-status-strip span:first-child {
+  border-radius: 999px;
+  padding: 0.38rem 0.68rem;
+  background: #eaf8ef;
+  color: #1f6b36;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+}
+
+.vita-status-strip button {
+  min-height: 36px;
+  border: 1px solid rgba(31, 107, 54, 0.18);
+  border-radius: 8px;
+  padding: 0.45rem 0.72rem;
+  background: #ffffff;
+  color: var(--green-deep);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .vita-focus-section {
   width: min(1040px, 100%);
   align-self: center;
@@ -1090,6 +1132,52 @@ footer a {
   margin-top: 2rem;
 }
 
+.vita-route-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.vita-route-grid article,
+.vita-product-note {
+  border: 1px solid rgba(31, 107, 54, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 36px rgba(20, 83, 45, 0.06);
+}
+
+.vita-route-grid article {
+  min-height: 118px;
+  padding: 1rem;
+}
+
+.vita-route-grid strong,
+.vita-route-grid span,
+.vita-product-note strong,
+.vita-product-note span {
+  display: block;
+}
+
+.vita-route-grid strong,
+.vita-product-note strong {
+  color: var(--green-deep);
+}
+
+.vita-route-grid span,
+.vita-product-note span {
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 720;
+  line-height: 1.52;
+}
+
+.vita-product-note {
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
 @media (max-width: 960px) {
   .website-app-shell,
   .vita-website-shell {
@@ -1121,12 +1209,17 @@ footer a {
   .compact-solution-grid,
   .compact-audience-grid,
   .website-mini-grid,
-  .website-module-list,
-  .vita-category-grid,
-  .vita-service-grid {
-    grid-template-columns: 1fr;
-  }
-}
+	  .website-module-list,
+	  .vita-category-grid,
+	  .vita-service-grid,
+	  .vita-route-grid {
+	    grid-template-columns: 1fr;
+	  }
+
+	  .vita-status-strip {
+	    position: static;
+	  }
+	}
 
 @media (max-width: 620px) {
   .website-tree-nav {

@@ -83,6 +83,18 @@ type PharmaFeatureKey =
   | 'customers'
   | 'reports';
 type AiWorkspaceKey =
+  | 'business-chat'
+  | 'customer-retention'
+  | 'demand-forecast'
+  | 'expiry-risk'
+  | 'finance-forecast'
+  | 'fraud-anomaly'
+  | 'pricing-margin'
+  | 'reorder-recommendation'
+  | 'stock-out'
+  | 'supplier-performance'
+  | 'inventory-assistance'
+  | 'operations-copilot'
   | 'governance'
   | 'provider-management'
   | 'model-registry'
@@ -97,11 +109,14 @@ type AiWorkspaceKey =
   | 'usage-cost'
   | 'risk-compliance'
   | 'audit-logs'
-  | 'insights-dashboard';
+  | 'insights-dashboard'
+  | 'chat-me-ai';
 type AdminPanelWorkspaceKey =
+  | 'user-profiles'
   | 'backend-api'
   | 'two-factor-auth'
   | 'platform-management'
+  | 'notification-management'
   | 'corporate-email'
   | 'pharmacist-chat'
   | 'web-application'
@@ -109,6 +124,43 @@ type AdminPanelWorkspaceKey =
   | 'desktop-application'
   | 'data-layer'
   | 'infrastructure';
+type PosWorkspaceKey =
+  | 'overview'
+  | 'pos'
+  | 'customers'
+  | 'prescriptions'
+  | 'sales-performance'
+  | 'payment-receipt';
+type SupplierWorkspaceKey =
+  | 'overview'
+  | 'create-supplier'
+  | 'supplier-list'
+  | 'create-purchase-order'
+  | 'outstanding-purchase-orders'
+  | 'receive-purchase-order'
+  | 'received-purchase-orders';
+type FinanceWorkspaceKey =
+  | 'overview'
+  | 'finance-flow'
+  | 'exception-focus'
+  | 'credits-receivables'
+  | 'receivable-register'
+  | 'collection'
+  | 'financial-statements';
+type AdhocReportWorkspaceKey =
+  | 'overview'
+  | 'operation-alerts'
+  | 'review-queues'
+  | 'executive-summary'
+  | 'decision-note'
+  | 'operation-checklist'
+  | 'priority-follow-up';
+type HomeWidgetKey =
+  | 'summary'
+  | 'tenant-dashboard'
+  | 'quick-actions'
+  | 'system-experience'
+  | 'role-workspaces';
 type MenuContextKey = ErpWorkspaceKey | SolutionKey | AiWorkspaceKey | AdminPanelWorkspaceKey;
 type LoginMethod = 'email' | 'phone';
 
@@ -192,7 +244,7 @@ const commercialFramework = [
       'Procurement',
       'Payables',
       'Receivables',
-      'Reports',
+      'Ad-hoc Report',
     ],
   },
   {
@@ -252,7 +304,7 @@ const experienceBlueprint = [
   {
     lane: 'Control',
     outcome: 'Keep finance, access, risk, and approvals visible without slowing operators.',
-    modules: ['Roles', 'Audit logs', 'Payables', 'Receivables', 'Reports', 'AI approvals'],
+    modules: ['Roles', 'Audit logs', 'Payables', 'Receivables', 'Ad-hoc Report', 'AI approvals'],
     signal: 'Governed',
   },
   {
@@ -325,9 +377,9 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     description: 'Supplier invoices, payments, customer credit, collections, and finance visibility.',
   },
   reports: {
-    eyebrow: 'Reports and command view',
-    title: 'Reporting and executive review',
-    description: 'Stock valuation, sales, procurement, payables, credit exposure, and daily management review.',
+    eyebrow: 'Ad-hoc Report and command view',
+    title: 'Ad-hoc Report and executive review',
+    description: 'Stock valuation, sales, procurement, payables, credit exposure, operating alerts, and daily management review.',
   },
   'tenant-setup': {
     eyebrow: 'Tenant and branch setup',
@@ -433,9 +485,11 @@ const menuGroups: MenuGroup[] = [
     label: 'Admin Panel',
     icon: 'ADM',
     items: [
+      { key: 'admin-panel', context: 'user-profiles', label: 'User Profiles', description: 'Create, edit, deactivate users', icon: 'US', status: 'Active' },
       { key: 'admin-panel', context: 'backend-api', label: 'Backend API', description: 'Laravel API and services', icon: 'BE', status: 'Active' },
       { key: 'admin-panel', context: 'two-factor-auth', label: 'Staff 2FA', description: 'Authenticator and trusted devices', icon: '2FA', status: 'Mandatory' },
       { key: 'admin-panel', context: 'platform-management', label: 'Platform Management', description: 'Website, pages, sections', icon: 'PM', status: 'Active' },
+      { key: 'admin-panel', context: 'notification-management', label: 'Notification Management', description: 'Recurring and platform notices', icon: 'NM', status: 'Active' },
       { key: 'admin-panel', context: 'corporate-email', label: 'Corporate Email', description: 'Company mailbox workspace', icon: 'EM', status: 'Active' },
       { key: 'admin-panel', context: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Mobile customer queue', icon: 'CH', status: 'Active' },
       { key: 'notifications', label: 'Notification Center', description: 'In-app and SMS-ready notices', icon: 'NT', status: 'Active' },
@@ -517,7 +571,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
           { key: 'pos', label: 'POS', description: 'Sales and dispensing', icon: 'PS', status: 'Live' },
           { key: 'suppliers', label: 'Suppliers', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
           { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
-          { key: 'reports', label: 'Reports', description: 'Executive and daily reports', icon: 'RP', status: 'Live' },
+          { key: 'reports', label: 'Ad-hoc Report', description: 'Executive and daily reports', icon: 'AR', status: 'Live' },
           { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer queue', icon: 'CH', status: 'Live' },
         ],
       },
@@ -555,7 +609,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
         { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
         { key: 'suppliers', label: 'Suppliers', description: 'Purchasing and receiving', icon: 'SP', status: 'Live' },
         { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN', status: 'Live' },
-        { key: 'reports', label: 'Reports', description: 'Daily and monthly review', icon: 'RP', status: 'Live' },
+        { key: 'reports', label: 'Ad-hoc Report', description: 'Daily and monthly review', icon: 'AR', status: 'Live' },
         { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer questions', icon: 'CH', status: 'Live' },
         { key: 'ai-center', context: 'recommendations', label: 'AI Center', description: 'Stock, expiry, and operating guidance', icon: 'AI', status: 'Active' },
       ],
@@ -641,7 +695,7 @@ const solutionPortfolio: Array<{
     title: 'PharmaCore 360',
     status: 'Active',
     audience: 'Retail pharmacies, wholesale pharmacies, suppliers, and health-commerce partners.',
-    summary: 'A pharmacy ecosystem for product master, inventory, POS, procurement, finance, reports, AI, and partner growth.',
+    summary: 'A pharmacy ecosystem for product master, inventory, POS, procurement, finance, ad-hoc reporting, AI, and partner growth.',
     next: 'Use the segment selector below to open retail pharmacy, wholesale, procurement, delivery, partner, and AI workspaces.',
   },
   {
@@ -778,10 +832,10 @@ const pharmaFeaturesBySegment: Record<PharmaSegmentKey, {
       },
       {
         key: 'reports',
-        title: 'Reports and BI',
+        title: 'Ad-hoc Report and BI',
         status: 'Live APIs',
-        summary: 'Sales, stock, margin, branch performance, supplier performance, expiry, and stockout reports.',
-        actions: ['Review daily command center', 'Export finance-ready reports', 'Track branch performance'],
+        summary: 'Sales, stock, margin, branch performance, supplier performance, expiry, and stockout ad-hoc reports.',
+        actions: ['Review daily command center', 'Export finance-ready ad-hoc reports', 'Track branch performance'],
       },
     ],
   },
@@ -905,7 +959,7 @@ const pharmaFeaturesBySegment: Record<PharmaSegmentKey, {
 
 const roleDashboardModels = [
   ['Owner dashboard', 'Sales health, cash and credit position, stock value, branch performance, supplier aging, exceptions, and strategic AI recommendations.'],
-  ['Finance dashboard', 'Receivables, payables, collections, supplier payments, daily close, payment variance, reports, and export readiness.'],
+  ['Finance dashboard', 'Receivables, payables, collections, supplier payments, daily close, payment variance, ad-hoc reports, and export readiness.'],
   ['Branch manager dashboard', 'Today sales, active tills, stock alerts, expiry risk, branch tasks, approvals, and staff activity.'],
   ['Inventory officer dashboard', 'Product master, batch/expiry, receiving, adjustments, transfers, low stock, and shelf readiness.'],
   ['Cashier/POS dashboard', 'Open teller session, product search, cart, payment, prescription flags, held sales, returns, and close till.'],
@@ -919,6 +973,18 @@ const aiCenterModules: Array<{
   purpose: string;
   controls: string[];
 }> = [
+  { key: 'business-chat', title: 'Business Chat AI', status: 'Active', purpose: 'Authorized users ask operational questions about their own tenant data, sales, stock, credit, suppliers, and branch activity.', controls: ['Tenant-scoped answers', 'Source-linked responses', 'No cross-tenant data'] },
+  { key: 'customer-retention', title: 'Customer Retention AI', status: 'Framework', purpose: 'Identify refill, chronic-care, inactive-customer, and follow-up opportunities without sending messages until a human approves.', controls: ['Consent-aware audience', 'Human-approved messages', 'Follow-up tracking'] },
+  { key: 'demand-forecast', title: 'Demand Forecast AI', status: 'Priority', purpose: 'Forecast product demand by branch, category, season, stock movement, sale velocity, and prescription trend.', controls: ['Forecast window', 'Branch scope', 'Confidence band'] },
+  { key: 'expiry-risk', title: 'Expiry Risk AI', status: 'Priority', purpose: 'Predict batches likely to expire before sale and recommend markdown, transfer, or supplier return review.', controls: ['FEFO evidence', 'Batch age', 'Approval before action'] },
+  { key: 'finance-forecast', title: 'Finance Forecast AI', status: 'Framework', purpose: 'Forecast revenue, cash collection, supplier obligations, margin pressure, and daily-close risks.', controls: ['Finance-only scope', 'Export evidence', 'Manual refresh'] },
+  { key: 'fraud-anomaly', title: 'Fraud and Anomaly AI', status: 'Controlled', purpose: 'Flag unusual refunds, discounts, stock adjustments, payments, supplier invoices, and user behavior for review.', controls: ['Sensitive alert approval', 'Audit evidence', 'No automatic penalties'] },
+  { key: 'pricing-margin', title: 'Pricing and Margin AI', status: 'Framework', purpose: 'Highlight margin gaps, price review opportunities, regulatory pricing issues, and category profitability.', controls: ['Margin threshold', 'Regulatory flag', 'Manager approval'] },
+  { key: 'reorder-recommendation', title: 'Reorder Recommendation AI', status: 'Priority', purpose: 'Recommend what to reorder, from which supplier, at what quantity, and why, based on demand and stock position.', controls: ['Supplier comparison', 'Quantity reason', 'Purchase draft only'] },
+  { key: 'stock-out', title: 'Stock-out Risk AI', status: 'Priority', purpose: 'Detect products likely to run out before the next supply cycle and push controlled reorder or transfer tasks.', controls: ['Risk days', 'Alternative products', 'Branch task'] },
+  { key: 'supplier-performance', title: 'Supplier Performance AI', status: 'Framework', purpose: 'Score suppliers by delivery reliability, pricing, fill rate, returns, payment terms, and issue history.', controls: ['Supplier scorecard', 'Evidence trail', 'No hidden ranking'] },
+  { key: 'inventory-assistance', title: 'Inventory Assistance AI', status: 'Active', purpose: 'Help inventory staff interpret batch, expiry, low-stock, shelf, and product-master signals in plain language.', controls: ['Read-only by default', 'Inventory permission check', 'Human update action'] },
+  { key: 'operations-copilot', title: 'Operations Copilot', status: 'Active', purpose: 'Guide managers through daily close, priority follow-up, report review, and cross-module operating decisions.', controls: ['Role-aware guidance', 'Checklist trail', 'Manager review notes'] },
   { key: 'governance', title: 'AI Governance', status: 'Controlled', purpose: 'Policies, consent, risk levels, approval rules, data-sharing controls, and audit requirements.', controls: ['Global safety rules', 'Tenant data boundaries', 'Sensitive action approvals'] },
   { key: 'provider-management', title: 'AI Provider Management', status: 'Framework', purpose: 'OpenAI, local/internal models, future providers, sandbox/production status, and encrypted keys.', controls: ['Provider disabled by default', 'Sandbox before production', 'Encrypted secret ownership'] },
   { key: 'model-registry', title: 'AI Model Registry', status: 'Priority', purpose: 'Model name, provider, version, use case, risk level, approved data types, and status.', controls: ['Risk level', 'Approved data classes', 'Versioned model use case'] },
@@ -934,6 +1000,7 @@ const aiCenterModules: Array<{
   { key: 'risk-compliance', title: 'AI Risk and Compliance', status: 'Controlled', purpose: 'Sensitive data checks, anomaly flags, access violations, and policy exceptions.', controls: ['Data classification', 'Risk scoring', 'Compliance escalation'] },
   { key: 'audit-logs', title: 'AI Audit Logs', status: 'Required', purpose: 'Complete audit trail of AI inputs, outputs, context, provider, model, user, and approval path.', controls: ['Immutable trail', 'Provider context', 'Approval path'] },
   { key: 'insights-dashboard', title: 'AI Insights Dashboard', status: 'Framework', purpose: 'AI performance, recommendation adoption, risk posture, cost trend, and operational impact.', controls: ['Adoption rate', 'Pending risk', 'Cost-to-value view'] },
+  { key: 'chat-me-ai', title: 'Chat Me AI', status: 'Active guide', purpose: 'In-platform guidance assistant for training, navigation, tutorials, policy questions, and module-specific help.', controls: ['No clinical diagnosis', 'Screen-aware help', 'Escalate to support'] },
 ];
 
 const pharmaAiModels = [
@@ -957,6 +1024,13 @@ const adminPanelLayers: Array<{
   components: string[];
 }> = [
   {
+    key: 'user-profiles',
+    title: 'User Profiles',
+    status: 'Active',
+    summary: 'Create users, edit profile and role details, deactivate staff, delete draft users, and review access readiness.',
+    components: ['Create user', 'Edit user', 'Delete draft user', 'Deactivate user', 'Access readiness'],
+  },
+  {
     key: 'backend-api',
     title: 'Backend API',
     status: 'Active',
@@ -976,6 +1050,13 @@ const adminPanelLayers: Array<{
     status: 'Active',
     summary: 'No-code control for website pages, blog/content sections, text, section visibility, and style metadata.',
     components: ['Website pages', 'Sections', 'Copy', 'Style JSON', 'Publishing status'],
+  },
+  {
+    key: 'notification-management',
+    title: 'Platform Notification Management Center',
+    status: 'Active',
+    summary: 'Create notifications, manage recurring communication, edit drafts, disable old messages, and prepare SMS delivery.',
+    components: ['Create new notification', 'Manage recurring notifications', 'Edit notification', 'Disable notification', 'SMS-ready channel'],
   },
   {
     key: 'corporate-email',
@@ -1067,6 +1148,71 @@ const settingsBlueprint = [
   ['Deployment readiness', 'Frontend framework is active; backend migrations and production deployment remain separate approval phases.'],
 ];
 
+const posWorkspaceItems: Array<{ key: PosWorkspaceKey; label: string; description: string }> = [
+  { key: 'overview', label: 'Overview Summary', description: 'Sales, customers, prescriptions, charts, and queues' },
+  { key: 'pos', label: 'POS', description: 'Counter sale, cart, insurance, payment, receipt' },
+  { key: 'customers', label: 'Customers / Patients', description: 'Customer records, invoice-ready capture, bulk tools' },
+  { key: 'prescriptions', label: 'Prescriptions', description: 'Rx capture, AI extraction, previous records' },
+  { key: 'sales-performance', label: 'Sales Performance', description: '15-row register, review detail, export' },
+  { key: 'payment-receipt', label: 'Payment / Receipt', description: 'Payments, balances, printer, WhatsApp, email' },
+];
+
+const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; description: string }> = [
+  { key: 'overview', label: 'Overview Summary', description: 'Supplier charts, PO signals, receiving alerts' },
+  { key: 'create-supplier', label: 'Create Supplier', description: 'Supplier profile and category setup' },
+  { key: 'supplier-list', label: 'Supplier List', description: '15-row register with bulk controls' },
+  { key: 'create-purchase-order', label: 'Create Purchase Order', description: 'PO builder and approval-ready draft' },
+  { key: 'outstanding-purchase-orders', label: 'Outstanding PO List', description: 'Draft, approved, partial, and delayed POs' },
+  { key: 'receive-purchase-order', label: 'Receive Purchase Order', description: 'PO-linked stock receiving and batch capture' },
+  { key: 'received-purchase-orders', label: 'Received PO List', description: 'Received register and export tools' },
+];
+
+const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; description: string }> = [
+  { key: 'overview', label: 'Finance Overview', description: 'Cards, charts, and finance position' },
+  { key: 'finance-flow', label: 'Finance Flow', description: 'Supplier invoices, approval, and payment' },
+  { key: 'exception-focus', label: 'Exception Focus', description: 'Overdue, partial, variance, and approval risks' },
+  { key: 'credits-receivables', label: 'Customer Credits / Receivables', description: 'Credit setup and receivable creation' },
+  { key: 'receivable-register', label: 'Receivable Register', description: '15-row register with bulk and export tools' },
+  { key: 'collection', label: 'Collection', description: 'Payment collection and selected detail' },
+  { key: 'financial-statements', label: 'AI Financial Statements', description: 'Manual refresh statements and reconciliations' },
+];
+
+const adhocReportWorkspaceItems: Array<{ key: AdhocReportWorkspaceKey; label: string; description: string }> = [
+  { key: 'overview', label: 'Overview Summary', description: 'Today operating picture and core ad-hoc reports' },
+  { key: 'operation-alerts', label: 'Operation Alerts', description: 'Real operating alerts from tenant figures' },
+  { key: 'review-queues', label: 'Review Queues', description: 'Credit, supplier, receiving, and sales queues' },
+  { key: 'executive-summary', label: 'Executive Operating Summary', description: 'Management interpretation of the period' },
+  { key: 'decision-note', label: 'Decision Note', description: 'Daily decisions and handover prompts' },
+  { key: 'operation-checklist', label: 'Operation Checklist', description: 'Manager checklist before close' },
+  { key: 'priority-follow-up', label: 'Priority Follow-up', description: 'Manager review notes and follow-up list' },
+];
+
+const homeWidgetOptions: Array<{ key: HomeWidgetKey; label: string; description: string }> = [
+  { key: 'summary', label: 'Access summary', description: 'Roles, permissions, assignments, scopes' },
+  { key: 'tenant-dashboard', label: 'Tenant dashboard', description: 'Daily pharmacy control for tenant users' },
+  { key: 'quick-actions', label: 'Quick actions', description: 'Open the most-used operating pages' },
+  { key: 'system-experience', label: 'System experience', description: 'Commercial framework and module direction' },
+  { key: 'role-workspaces', label: 'Role workspaces', description: 'Recommended dashboard by user type' },
+];
+
+const adminUserActions = [
+  ['Create User', 'Add staff with phone/email identity, role, tenant, branch, language, and 2FA requirement.'],
+  ['Edit User', 'Update profile, job title, branch, role, market, contact details, and notification preferences.'],
+  ['Delete User', 'Delete only draft or unactivated records after permission and audit checks.'],
+  ['Deactivate User', 'Suspend login while retaining audit history, sales ownership, and approval records.'],
+];
+
+const financialStatementItems = [
+  ['Trial Balance', 'AI-assisted draft generated from posted account movements after manual refresh.'],
+  ['General Ledger', 'Account-level transaction trail prepared for finance review and export.'],
+  ['Cash Flow', 'Operating cash view based on sales collection, supplier payments, and adjustments.'],
+  ['Income Statement', 'Revenue, cost, margin, and operating expense view for management review.'],
+  ['Balance Sheet', 'Stock value, cash, receivables, payables, and equity-position draft.'],
+  ['Bank Reconciliation', 'Bank receipts and payments matched against recorded transactions.'],
+  ['MoMo Reconciliation', 'Mobile money references compared with POS and receivable payments.'],
+  ['Cash Reconciliation', 'Teller cash expected versus counted cash and approved variance notes.'],
+];
+
 function loadStoredSession(): StoredSession | null {
   try {
     const raw = localStorage.getItem(storageKey);
@@ -1126,6 +1272,82 @@ function ModulePageIntro({
   );
 }
 
+function ModuleWorkspaceRail<K extends string>({
+  label,
+  items,
+  activeKey,
+  onSelect,
+}: {
+  label: string;
+  items: Array<{ key: K; label: string; description: string }>;
+  activeKey: K;
+  onSelect: (key: K) => void;
+}) {
+  return (
+    <aside className="module-section-rail" aria-label={`${label} sections`}>
+      <span>{label}</span>
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          className={activeKey === item.key ? 'active' : ''}
+          onClick={() => onSelect(item.key)}
+        >
+          <strong>{item.label}</strong>
+          <small>{item.description}</small>
+        </button>
+      ))}
+    </aside>
+  );
+}
+
+function BulkActionStrip({ label = 'Selected rows' }: { label?: string }) {
+  return (
+    <div className="bulk-action-row" aria-label={`${label} bulk actions`}>
+      <button type="button">Bulk edit</button>
+      <button type="button">Export</button>
+      <button type="button">Bulk approval</button>
+      <button type="button" className="danger">Bulk delete</button>
+    </div>
+  );
+}
+
+function FocusRegisterPreview({
+  title,
+  description,
+  rows,
+}: {
+  title: string;
+  description: string;
+  rows: Array<[string, string, string, string]>;
+}) {
+  return (
+    <article className="panel wide focus-register-panel">
+      <div className="panel-heading-row">
+        <div>
+          <h2>{title}</h2>
+          <p className="muted">{description}</p>
+        </div>
+        <BulkActionStrip label={title} />
+      </div>
+
+      <div className="focus-register-table">
+        {rows.slice(0, 15).map(([primary, secondary, status, amount]) => (
+          <div key={`${primary}-${secondary}`}>
+            <span>
+              <strong>{primary}</strong>
+              <small>{secondary}</small>
+            </span>
+            <span>{status}</span>
+            <small>{amount}</small>
+            <button type="button">Open detail</button>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
 function App() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
@@ -1159,6 +1381,17 @@ function App() {
   const [activePharmaFeature, setActivePharmaFeature] = useState<PharmaFeatureKey>('ai-model');
   const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
   const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
+  const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
+  const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
+  const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
+  const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
+  const [homeWidgets, setHomeWidgets] = useState<Record<HomeWidgetKey, boolean>>({
+    summary: true,
+    'tenant-dashboard': true,
+    'quick-actions': true,
+    'system-experience': true,
+    'role-workspaces': true,
+  });
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<MenuGroupKey, boolean>>({
     erp: false,
     solutions: false,
@@ -1234,7 +1467,7 @@ function App() {
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [activeAdminPanelWorkspace, activeAiWorkspace, activeErpWorkspace, activePharmaFeature, activeSection, loginMethod, profile, staffLoginLanguage]);
+  }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1600,7 +1833,7 @@ function App() {
           <h1>Secure access for real pharmacy operations.</h1>
           <p className="auth-copy">
             Ubuzima+ connects PharmaCore 360 operations, tenant data, staff permissions, stock,
-            POS, procurement, finance, reports, and controlled AI in one governed workspace.
+            POS, procurement, finance, ad-hoc reports, and controlled AI in one governed workspace.
           </p>
 
           <div className="auth-info-grid">
@@ -1614,7 +1847,7 @@ function App() {
             </div>
             <div>
               <strong>Operational modules</strong>
-              <span>Inventory, POS, suppliers, finance, reports, AI</span>
+              <span>Inventory, POS, suppliers, finance, ad-hoc reports, AI</span>
             </div>
           </div>
         </section>
@@ -2269,6 +2502,279 @@ function App() {
     );
   }
 
+  function renderPosWorkspace() {
+    const selected = posWorkspaceItems.find((item) => item.key === activePosWorkspace) ?? posWorkspaceItems[0];
+    const previewRows: Array<[string, string, string, string]> = [
+      ['Walk-in customer', 'Counter sale draft', 'Needs payment', 'RWF 18,500'],
+      ['Insurance customer', 'Co-pay plus insurer split', 'Receipt pending', 'RWF 64,200'],
+      ['Chronic refill', 'Prescription review required', 'Pharmacist review', 'RWF 32,800'],
+      ['Corporate client', 'Institution balance', 'Credit follow-up', 'RWF 118,400'],
+    ];
+
+    return (
+      <section className="section-page">
+        <ModulePageIntro
+          eyebrow="POS module"
+          title={selected.label}
+          description={selected.description}
+          status="Live sales APIs plus pharmacy workflow"
+        />
+
+        <section className="module-workspace-shell">
+          <ModuleWorkspaceRail
+            label="POS and Sales"
+            items={posWorkspaceItems}
+            activeKey={activePosWorkspace}
+            onSelect={setActivePosWorkspace}
+          />
+
+          <div className="module-section-stage">
+            {activePosWorkspace === 'overview' && (
+              <>
+                <ModuleReadinessGrid items={posReadiness} />
+                <section className="document-action-grid">
+                  {[
+                    ['POS transaction summary', 'Customer contribution, insurer or partner contribution, tax, and balance are shown before commit.'],
+                    ['Prescription capture', 'RX products trigger prescription image/manual capture before the item proceeds to cart.'],
+                    ['Receipt channels', 'Physical/Bluetooth print, WhatsApp handoff, email, and corporate email delivery are prepared.'],
+                    ['Customer capture', 'Customer details are only requested when invoice, insurance, credit, or follow-up is needed.'],
+                  ].map(([title, text]) => (
+                    <article key={title}>
+                      <strong>{title}</strong>
+                      <span>{text}</span>
+                    </article>
+                  ))}
+                </section>
+              </>
+            )}
+
+            {activePosWorkspace === 'customers' && (
+              <FocusRegisterPreview
+                title="Customers / patients register"
+                description="The module starts with summary cards, then a 15-row working register with bulk edit, export, approval, and controlled delete actions."
+                rows={previewRows}
+              />
+            )}
+
+            {activePosWorkspace === 'prescriptions' && (
+              <FocusRegisterPreview
+                title="Prescription register"
+                description="Prescription-required products prompt camera capture, AI text extraction where possible, previous-customer lookup, and manual completion when extraction is unclear."
+                rows={previewRows.map(([primary, secondary, status, amount]) => [primary, secondary.replace('sale', 'prescription'), status, amount])}
+              />
+            )}
+
+            {activePosWorkspace === 'sales-performance' && (
+              <FocusRegisterPreview
+                title="Sales performance register"
+                description="Performance review uses a compact 15-row list beside selected-sale detail, with export and bulk tools available from the header."
+                rows={previewRows}
+              />
+            )}
+
+            {activePosWorkspace === 'payment-receipt' && (
+              <FocusRegisterPreview
+                title="Payment and receipt register"
+                description="Payments and receipts follow the same two-section pattern: 15-row list, selected detail, printer, WhatsApp, email, and corporate email actions."
+                rows={previewRows}
+              />
+            )}
+
+            {activePosWorkspace !== 'overview' && <SalesDispensingReview token={session.token} profile={profile} />}
+          </div>
+        </section>
+      </section>
+    );
+  }
+
+  function renderSupplierWorkspace() {
+    const selected = supplierWorkspaceItems.find((item) => item.key === activeSupplierWorkspace) ?? supplierWorkspaceItems[0];
+    const supplierRows: Array<[string, string, string, string]> = [
+      ['Wholesale distributor', 'Medicines and hospital consumables', 'Approved', 'Net 30'],
+      ['Manufacturer partner', 'Direct import product line', 'Review', 'Net 45'],
+      ['Local supplier', 'Fast-moving OTC and cosmetics', 'Active', 'Cash / MoMo'],
+      ['Service provider', 'Delivery and maintenance partner', 'Active', 'Contract'],
+    ];
+
+    return (
+      <section className="section-page">
+        <ModulePageIntro
+          eyebrow="Supplier module"
+          title={selected.label}
+          description={selected.description}
+          status="Live procurement APIs plus supplier workspace"
+        />
+
+        <section className="module-workspace-shell">
+          <ModuleWorkspaceRail
+            label="Suppliers"
+            items={supplierWorkspaceItems}
+            activeKey={activeSupplierWorkspace}
+            onSelect={setActiveSupplierWorkspace}
+          />
+
+          <div className="module-section-stage">
+            {activeSupplierWorkspace === 'overview' && (
+              <>
+                <ModuleReadinessGrid items={supplierReadiness} />
+                <section className="document-action-grid">
+                  {[
+                    ['Supplier overview charts', 'Supplier count, open PO value, approved receiving queue, overdue commitments, and active supplier types.'],
+                    ['Create supplier', 'Wholesaler, manufacturer, distributor, importer, local supplier, service provider, delivery supplier, technology/API supplier, or other.'],
+                    ['Purchase order flow', 'Create PO, approve, track outstanding orders, receive against PO, and update inventory with batch details.'],
+                  ].map(([title, text]) => (
+                    <article key={title}>
+                      <strong>{title}</strong>
+                      <span>{text}</span>
+                    </article>
+                  ))}
+                </section>
+              </>
+            )}
+
+            {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
+              <FocusRegisterPreview
+                title={selected.label}
+                description="Registers show 15 rows by default, then open the full page with bulk edit, export, approval, and controlled delete actions."
+                rows={supplierRows}
+              />
+            )}
+
+            {activeSupplierWorkspace !== 'overview' && <ProcurementWorkflow token={session.token} profile={profile} />}
+          </div>
+        </section>
+      </section>
+    );
+  }
+
+  function renderFinanceWorkspace() {
+    const selected = financeWorkspaceItems.find((item) => item.key === activeFinanceWorkspace) ?? financeWorkspaceItems[0];
+    const financeRows: Array<[string, string, string, string]> = [
+      ['Customer receivable', 'Open balance and due date', 'Collection', 'RWF 42,000'],
+      ['Supplier invoice', 'Approved payable', 'Payment due', 'RWF 180,000'],
+      ['Cash close', 'Expected versus counted cash', 'Review', 'RWF 8,500'],
+      ['Mobile money', 'Reference reconciliation', 'Matched', 'RWF 94,000'],
+    ];
+
+    return (
+      <section className="section-page">
+        <ModulePageIntro
+          eyebrow="Finance module"
+          title={selected.label}
+          description={selected.description}
+          status="Live finance APIs"
+        />
+
+        <section className="module-workspace-shell">
+          <ModuleWorkspaceRail
+            label="Finance"
+            items={financeWorkspaceItems}
+            activeKey={activeFinanceWorkspace}
+            onSelect={setActiveFinanceWorkspace}
+          />
+
+          <div className="module-section-stage">
+            {activeFinanceWorkspace === 'overview' && (
+              <>
+                <section className="document-action-grid">
+                  {[
+                    ['Finance overview', 'Cash, MoMo, card, credit, supplier balance, receivables, and exception count.'],
+                    ['Finance flow', 'Supplier invoice creation, approval, payment, and selected invoice detail.'],
+                    ['Exception focus', 'Overdue receivables, overdue payables, payment variance, and approval risks.'],
+                  ].map(([title, text]) => (
+                    <article key={title}>
+                      <strong>{title}</strong>
+                      <span>{text}</span>
+                    </article>
+                  ))}
+                </section>
+                <PayablesWorkflow token={session.token} profile={profile} />
+                <ReceivablesWorkflow token={session.token} profile={profile} />
+              </>
+            )}
+
+            {activeFinanceWorkspace === 'financial-statements' && (
+              <article className="panel wide">
+                <div className="panel-heading-row">
+                  <div>
+                    <h2>AI-generated financial statements</h2>
+                    <p className="muted">
+                      Statements are generated only after a manual refresh, then reviewed by finance before export or posting.
+                    </p>
+                  </div>
+                  <button type="button">Manual refresh</button>
+                </div>
+                <div className="document-action-grid">
+                  {financialStatementItems.map(([title, text]) => (
+                    <article key={title}>
+                      <strong>{title}</strong>
+                      <span>{text}</span>
+                    </article>
+                  ))}
+                </div>
+              </article>
+            )}
+
+            {['receivable-register', 'collection', 'exception-focus'].includes(activeFinanceWorkspace) && (
+              <FocusRegisterPreview
+                title={selected.label}
+                description="Finance tables use a compact default register with bulk edit, export, approval, and selected-detail controls."
+                rows={financeRows}
+              />
+            )}
+
+            {['finance-flow', 'exception-focus'].includes(activeFinanceWorkspace) && (
+              <PayablesWorkflow token={session.token} profile={profile} />
+            )}
+
+            {['credits-receivables', 'receivable-register', 'collection', 'exception-focus'].includes(activeFinanceWorkspace) && (
+              <ReceivablesWorkflow token={session.token} profile={profile} />
+            )}
+          </div>
+        </section>
+      </section>
+    );
+  }
+
+  function renderAdhocReportWorkspace() {
+    const selected = adhocReportWorkspaceItems.find((item) => item.key === activeAdhocReportWorkspace) ?? adhocReportWorkspaceItems[0];
+
+    return (
+      <section className="section-page">
+        <ModulePageIntro
+          eyebrow="Ad-hoc Report"
+          title={selected.label}
+          description={selected.description}
+          status="Read-only analytics"
+        />
+
+        <section className="module-workspace-shell">
+          <ModuleWorkspaceRail
+            label="Ad-hoc Report"
+            items={adhocReportWorkspaceItems}
+            activeKey={activeAdhocReportWorkspace}
+            onSelect={setActiveAdhocReportWorkspace}
+          />
+
+          <div className="module-section-stage">
+            <article className="panel wide report-focus-note">
+              <strong>{selected.label}</strong>
+              <span>
+                This view uses the live command center and reporting endpoints, while keeping reports read-only and separate from operational forms.
+              </span>
+            </article>
+
+            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
+
+            {activeAdhocReportWorkspace === 'overview' && (
+              <ReportingDashboard token={session.token} profile={profile} />
+            )}
+          </div>
+        </section>
+      </section>
+    );
+  }
+
   function renderAiCenter() {
     const selectedAiModule = aiCenterModules.find((module) => module.key === activeAiWorkspace) ?? aiCenterModules[0];
 
@@ -2346,6 +2852,28 @@ function App() {
           status={selectedLayer.status}
         />
 
+        {selectedWorkspace === 'user-profiles' && (
+          <article className="panel wide">
+            <div className="panel-heading-row">
+              <div>
+                <h2>User profile management</h2>
+                <p className="muted">
+                  Admin users can manage staff identity, tenant scope, branch assignment, role, language, 2FA readiness, and status from this surface.
+                </p>
+              </div>
+              <button type="button">Create user</button>
+            </div>
+            <div className="document-action-grid">
+              {adminUserActions.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </div>
+          </article>
+        )}
+
         {selectedWorkspace === 'two-factor-auth' && (
           <TwoFactorAdminPanel
             token={session.token}
@@ -2358,6 +2886,10 @@ function App() {
 
         {selectedWorkspace === 'platform-management' && (
           <PlatformManagementPanel token={session.token} />
+        )}
+
+        {selectedWorkspace === 'notification-management' && (
+          <NotificationCenterPanel token={session.token} profile={profile} />
         )}
 
         {selectedWorkspace === 'corporate-email' && (
@@ -2387,7 +2919,7 @@ function App() {
           ))}
         </section>
 
-        {!['two-factor-auth', 'platform-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && (
+        {!['user-profiles', 'two-factor-auth', 'platform-management', 'notification-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && (
           <article className="panel wide">
             <h2>{selectedLayer.title} control surface</h2>
             <p className="muted">{selectedLayer.summary}</p>
@@ -2399,7 +2931,7 @@ function App() {
           </article>
         )}
 
-        {!['two-factor-auth', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && <ModuleReadinessGrid items={settingsBlueprint} />}
+        {!['user-profiles', 'two-factor-auth', 'notification-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && <ModuleReadinessGrid items={settingsBlueprint} />}
 
         {selectedWorkspace === 'backend-api' && accessControlPanel}
       </section>
@@ -2431,57 +2963,13 @@ function App() {
           </section>
         );
       case 'pos':
-        return (
-          <section className="section-page">
-            <ModulePageIntro
-              eyebrow="POS module"
-              title="Fast pharmacy POS with dispensing safety"
-              description="The POS workspace now starts with teller-session, FEFO, prescription, payment, and closure expectations before the live sales review tools."
-              status="Live sales APIs plus roadmap"
-            />
-            <ModuleReadinessGrid items={posReadiness} />
-            <SalesDispensingReview token={session.token} profile={profile} />
-          </section>
-        );
+        return renderPosWorkspace();
       case 'suppliers':
-        return (
-          <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Supplier module"
-              title="Supplier, wholesale, and procurement workspace"
-              description="Supplier work is separated from inventory so supplier categories, wholesale pharmacy profiles, procurement, and dispatch readiness can evolve cleanly."
-              status="Live procurement APIs plus framework"
-            />
-            <ModuleReadinessGrid items={supplierReadiness} />
-            <ProcurementWorkflow token={session.token} profile={profile} />
-          </section>
-        );
+        return renderSupplierWorkspace();
       case 'finance':
-        return (
-          <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Finance module"
-              title="Payables, receivables, and collection control"
-              description="Finance is grouped separately from reports so operational users can focus on invoices, supplier payments, customer credit, and collections."
-              status="Live finance APIs"
-            />
-            <PayablesWorkflow token={session.token} profile={profile} />
-            <ReceivablesWorkflow token={session.token} profile={profile} />
-          </section>
-        );
+        return renderFinanceWorkspace();
       case 'reports':
-        return (
-          <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Reports module"
-              title="Executive reporting and daily command center"
-              description="Reporting stays read-only and separated from operational forms to avoid accidental mutation while reviewing performance."
-              status="Read-only analytics"
-            />
-            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
-            <ReportingDashboard token={session.token} profile={profile} />
-          </section>
-        );
+        return renderAdhocReportWorkspace();
       case 'tenant-setup':
         return (
           <section className="section-page">
@@ -2690,7 +3178,55 @@ function App() {
                 {profile.user.two_factor?.enabled ? 'enabled' : 'setup needed'}
               </small>
             </section>
-            {shouldShowTenantOperationsDashboard ? (
+            <section className="home-control-panel">
+              <div>
+                <p className="eyebrow">Home display controls</p>
+                <h2>Keep only the home sections this user needs.</h2>
+                <p className="muted">
+                  The home page stays compact. Users can leave a section visible or hide it and continue working in the selected module.
+                </p>
+              </div>
+              <div className="home-widget-toggle-grid">
+                {homeWidgetOptions.map((option) => (
+                  <label key={option.key}>
+                    <input
+                      type="checkbox"
+                      checked={homeWidgets[option.key]}
+                      onChange={(event) =>
+                        setHomeWidgets((current) => ({
+                          ...current,
+                          [option.key]: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>
+                      <strong>{option.label}</strong>
+                      <small>{option.description}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {homeWidgets.summary && summaryGrid}
+
+            {homeWidgets['quick-actions'] && (
+              <section className="home-quick-action-grid">
+                {[
+                  ['Open POS', 'Start or review counter sales', 'pos' as AdminSectionKey],
+                  ['Review Inventory', 'Products, stock, batches, expiry', 'inventory' as AdminSectionKey],
+                  ['Suppliers', 'Supplier setup, PO, receiving', 'suppliers' as AdminSectionKey],
+                  ['Ad-hoc Report', 'Operating alerts and reports', 'reports' as AdminSectionKey],
+                ].map(([title, text, section]) => (
+                  <button key={title} type="button" onClick={() => navigateToSection(section)}>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </button>
+                ))}
+              </section>
+            )}
+
+            {shouldShowTenantOperationsDashboard && homeWidgets['tenant-dashboard'] ? (
               <TenantPharmacyDashboard
                 token={session.token}
                 profile={profile}
@@ -2698,7 +3234,7 @@ function App() {
               />
             ) : (
               <>
-                {summaryGrid}
+                {homeWidgets['system-experience'] && (
                 <section className="system-experience-section">
                   <div className="framework-heading">
                     <div>
@@ -2706,7 +3242,7 @@ function App() {
                       <h2>Choose a module from the left menu and work in that section.</h2>
                       <p className="muted">
                         The dashboard is no longer one long page. AI, Inventory, POS, Suppliers, Finance,
-                        Reports, Setup, Security, and Settings each have their own focused workspace.
+                        Ad-hoc Report, Setup, Security, and Settings each have their own focused workspace.
                       </p>
                     </div>
 
@@ -2731,12 +3267,15 @@ function App() {
                       </article>
                     ))}
                   </div>
+                </section>
+                )}
 
+                {homeWidgets['role-workspaces'] && (
                   <div className="workspace-model-panel">
                     <div>
-                      <h2>Role-based workspaces to build next</h2>
+                      <h2>Role-based workspaces</h2>
                       <p className="muted">
-                        Existing modules keep their current APIs and progressively adopt this structure.
+                        Existing modules keep their current APIs while each user lands in the workspace that fits their job.
                       </p>
                     </div>
 
@@ -2749,7 +3288,7 @@ function App() {
                       ))}
                     </div>
                   </div>
-                </section>
+                )}
               </>
             )}
           </section>

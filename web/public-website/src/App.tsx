@@ -240,6 +240,18 @@ const vitaNcdServices = [
   ['Chronic refill planning', 'Customer history, refill follow-up, and pharmacist-led advisory conversations.'],
 ];
 
+const vitaCustomerRoutes = [
+  ['Find product', 'Check availability for medicines, cosmetics, nutrition, NCD essentials, and baby care.'],
+  ['Ask pharmacist', 'Get practical guidance on safe use, alternatives, refills, and product suitability.'],
+  ['Plan follow-up', 'Use digital reminders and chat support when the Ubuzima+ customer app is activated.'],
+];
+
+const vitaContactChannels = [
+  ['Product availability', 'Confirm stock before visiting the pharmacy.'],
+  ['Prescription support', 'Ask what information is needed before dispensing.'],
+  ['Family care', 'Get help with baby care, nutrition, personal care, and NCD routines.'],
+];
+
 function readStoredLanguage(): LanguageCode {
   const stored = localStorage.getItem(languageStorageKey);
   return stored === 'fr' || stored === 'pt' || stored === 'en' ? stored : 'en';
@@ -295,6 +307,10 @@ function VitaPharmaWebsite({
                 </article>
               ))}
             </div>
+            <div className="vita-product-note">
+              <strong>Customer-first product browsing</strong>
+              <span>Products are grouped by the way customers shop: medicine, wellness, chronic care, baby care, personal care, and devices.</span>
+            </div>
           </section>
         );
       case 'pharmacy-care':
@@ -306,6 +322,14 @@ function VitaPharmaWebsite({
               Customers should be able to ask practical medicine questions, understand product options,
               and receive respectful support without feeling rushed or overloaded with technical wording.
             </p>
+            <div className="vita-route-grid">
+              {vitaCustomerRoutes.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </div>
             <div className="trust-grid vita-care-grid">
               {vitaCarePrinciples.map((item) => (
                 <span key={item}>{item}</span>
@@ -399,6 +423,14 @@ function VitaPharmaWebsite({
               <a className="primary-action" href="mailto:care@vitapharmaafrica.com">care@vitapharmaafrica.com</a>
               <a className="secondary-action" href={staffLoginUrl}>{labels.staffLogin}</a>
             </div>
+            <div className="vita-route-grid">
+              {vitaContactChannels.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </div>
           </section>
         );
       case 'home':
@@ -429,6 +461,14 @@ function VitaPharmaWebsite({
             <div className="vita-hero-assurance" aria-label="VitaPharma service highlights">
               {['Pharmacist guidance', 'Prescription support', 'NCD advisory', 'Family essentials'].map((item) => (
                 <span key={item}>{item}</span>
+              ))}
+            </div>
+            <div className="vita-route-grid">
+              {vitaCustomerRoutes.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
               ))}
             </div>
             <div className="vita-category-grid">
@@ -473,6 +513,11 @@ function VitaPharmaWebsite({
       </header>
 
       <section className="website-content-panel vita-content-panel">
+        <div className="vita-status-strip" aria-label="VitaPharma customer service summary">
+          <span>Retail pharmacy</span>
+          <span>Medicines, cosmetics, nutrition, NCD care, and baby products</span>
+          <button type="button" onClick={() => setActiveSection('contact')}>Ask about availability</button>
+        </div>
         {renderSection()}
       </section>
     </main>
