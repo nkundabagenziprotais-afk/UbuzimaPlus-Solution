@@ -2491,7 +2491,7 @@ p {
   }
 }
 
-/* PharmaCo360 reporting dashboard readability bundle */
+/* Operations 360 reporting dashboard readability bundle */
 .reporting-dashboard-panel--business .section-heading p {
   max-width: 840px;
 }
@@ -2551,7 +2551,7 @@ p {
   }
 }
 
-/* PharmaCo360 reporting dashboard empty and loading states */
+/* Operations 360 reporting dashboard empty and loading states */
 .reporting-loading-state,
 .reporting-empty-overview,
 .report-empty-state {

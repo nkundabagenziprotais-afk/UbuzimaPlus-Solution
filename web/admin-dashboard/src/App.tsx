@@ -214,7 +214,7 @@ const commercialFramework = [
     ],
   },
   {
-    family: 'PharmaCo360 operations',
+    family: 'Operations 360 View',
     state: 'Pilot active',
     modules: [
       'Profile and branches',
@@ -257,7 +257,7 @@ const commercialFramework = [
 
 const viewFramework = [
   ['Ubuzima+ Admin 360', 'Tenants, solutions, modules, security, support, billing, platform health, and aggregated insights.'],
-  ['Solution Admin 360', 'PharmaCo360 tenants, onboarding, workflow templates, module usage, AI performance, and solution alerts.'],
+  ['Solution Admin 360', 'Tenant operations, onboarding, workflow templates, module usage, AI performance, and solution alerts.'],
   ['Tenant Admin 360', 'VitaPharma branches, users, modules, sales, stock, suppliers, finance, customer risk, and AI insights.'],
   ['Branch 360', 'Branch stock, POS activity, cashier sessions, daily close, expiry risk, low stock, and local alerts.'],
   ['Product 360', 'Batches, expiry, purchases, sales history, supplier options, margin, forecast, and reorder advice.'],
@@ -268,7 +268,7 @@ const viewFramework = [
 
 const channelReadiness = [
   ['Public website', 'Repositioned for commercial lead capture and solution discovery.'],
-  ['Admin dashboard', 'Current working control center with live PharmaCo360 modules.'],
+  ['Admin dashboard', 'Current working control center with live tenant operation modules.'],
   ['Tenant portal', 'Next framework for VitaPharma setup, package, branding, and onboarding.'],
   ['Mobile app', 'Future manager alerts, approvals, delivery tasks, and stock summaries.'],
   ['Desktop/PWA POS', 'Future counter-optimized sales, barcode, receipt, and installable POS flow.'],
@@ -303,7 +303,7 @@ const experienceBlueprint = [
 
 const workspaceModel = [
   ['Platform admin', 'Tenants, packages, security, support, billing, AI governance, and platform health.'],
-  ['Solution admin', 'PharmaCo360 templates, tenant readiness, module adoption, reports, and support oversight.'],
+  ['Solution admin', 'Operations templates, tenant readiness, module adoption, ad-hoc reports, and support oversight.'],
   ['Tenant admin', 'Branches, users, modules, finance visibility, sales, stock, suppliers, and local policy.'],
   ['Branch manager', 'Daily close, stock movement, cashier activity, expiry risk, transfers, and local alerts.'],
   ['Counter team', 'Fast POS, barcode search, prescription checks, receipt, payment, and controlled dispensing.'],
@@ -363,7 +363,7 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
   },
   'tenant-setup': {
     eyebrow: 'Tenant and branch setup',
-    title: 'PharmaCo360 tenant configuration',
+    title: 'Operations 360 tenant configuration',
     description: 'Business profile, branches, departments, capabilities, operating hours, and local setup.',
   },
   security: {
@@ -404,7 +404,7 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
   'vitapharma-website': {
     eyebrow: 'Tenant Website',
     title: 'VitaPharma public website',
-    description: 'First-tenant public website surface integrated with Ubuzima+ and PharmaCo360.',
+    description: 'First-tenant public website surface integrated with Ubuzima+ tenant operations.',
   },
   settings: {
     eyebrow: 'System framework',
@@ -544,7 +544,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       },
       {
         key: 'tenant-ops',
-        label: 'PharmaCo360 Operations',
+        label: 'Operations 360 View',
         icon: 'PH',
         items: [
           { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
@@ -552,7 +552,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
           { key: 'suppliers', label: 'Suppliers', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
           { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
           { key: 'reports', label: 'Ad-hoc Report', description: 'Executive and daily reports', icon: 'AR', status: 'Live' },
-          { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer queue', icon: 'CH', status: 'Live' },
+          { key: 'pharmacist-chat', label: 'Pharmacist Chats', description: 'In-app and WhatsApp customer conversations', icon: 'CH', status: 'Live' },
         ],
       },
       {
@@ -1507,7 +1507,7 @@ function App() {
         items: profile.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
       },
       {
-        title: 'PharmaCo360',
+        title: 'Operations 360',
         items: profile.permissions.filter((item) => item.startsWith('pharmaco.')),
       },
       {
@@ -1806,7 +1806,7 @@ function App() {
         departments: departmentsResponse,
       });
     } catch (err) {
-      setPharmaCoreError(err instanceof Error ? err.message : 'Unable to load PharmaCo360 data.');
+      setPharmaCoreError(err instanceof Error ? err.message : 'Unable to load Operations 360 data.');
     } finally {
       setIsLoadingPharmaCore(false);
     }
@@ -2077,9 +2077,9 @@ function App() {
     <article className="panel wide pharmaco-panel">
       <div className="panel-heading-row">
         <div>
-          <h2>PharmaCo360 tenant operations preview</h2>
+          <h2>Operations 360 View tenant operations preview</h2>
           <p className="muted">
-            Live tenant-scoped data from the PharmaCo360 profile, branches, and department APIs.
+            Live tenant-scoped data from profile, branch, inventory, sales, finance, supplier, and department APIs.
           </p>
         </div>
 
@@ -3158,7 +3158,7 @@ function App() {
                 <div className="framework-scope-card">
                   <span>Current pilot</span>
                   <strong>VitaPharma</strong>
-                  <small>PharmaCo360 tenant scope</small>
+                  <small>Operations 360 tenant scope</small>
                 </div>
               </div>
 
