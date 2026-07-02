@@ -83,6 +83,7 @@ type PharmaFeatureKey =
   | 'customers'
   | 'reports';
 type AiWorkspaceKey =
+  | 'operational-ai-center'
   | 'business-chat'
   | 'customer-retention'
   | 'demand-forecast'
@@ -109,6 +110,7 @@ type AiWorkspaceKey =
   | 'usage-cost'
   | 'risk-compliance'
   | 'audit-logs'
+  | 'recommendation-approval-queue'
   | 'insights-dashboard'
   | 'chat-me-ai';
 type AdminPanelWorkspaceKey =
@@ -127,6 +129,7 @@ type AdminPanelWorkspaceKey =
 type PosWorkspaceKey =
   | 'overview'
   | 'pos'
+  | 'dispensing-review'
   | 'customers'
   | 'prescriptions'
   | 'sales-performance'
@@ -344,7 +347,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'pos-overview', label: 'POS and Sales Overview', target: 'overview' },
     { key: 'pos-counter', label: 'POS', target: 'pos' },
     { key: 'pos-dispensing', label: 'Dispensing Review', target: 'dispensing-review' },
-    { key: 'pos-customers', label: 'Customers and Patients', target: 'customers-patients' },
+    { key: 'pos-customers', label: 'Customers and Patients', target: 'customers' },
     { key: 'pos-prescriptions', label: 'Prescriptions', target: 'prescriptions' },
     { key: 'pos-performance', label: 'Sales Performance', target: 'sales-performance' },
     { key: 'pos-payment-receipt', label: 'Payment and Receipt', target: 'payment-receipt' },
@@ -362,10 +365,10 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'finance-overview', label: 'Finance Overview', target: 'overview' },
     { key: 'finance-flow', label: 'Finance Flow', target: 'finance-flow' },
     { key: 'finance-exception', label: 'Exception Focus', target: 'exception-focus' },
-    { key: 'finance-credits-receivables', label: 'Customer Credits and Receivables', target: 'customer-credits-receivables' },
+    { key: 'finance-credits-receivables', label: 'Customer Credits and Receivables', target: 'credits-receivables' },
     { key: 'finance-receivable-register', label: 'Receivable Register', target: 'receivable-register' },
     { key: 'finance-collection', label: 'Collection', target: 'collection' },
-    { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statement' },
+    { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statements' },
   ],
   reports: [
     { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
@@ -374,7 +377,46 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'adhoc-executive-summary', label: 'Executive Operating Summary', target: 'executive-summary' },
     { key: 'adhoc-decision-note', label: 'Decision Note', target: 'decision-note' },
     { key: 'adhoc-checklist', label: 'Operation Checklist', target: 'operation-checklist' },
-    { key: 'adhoc-manager-notes', label: 'Priority Follow-up and Manager Review Notes', target: 'manager-review-notes' },
+    { key: 'adhoc-priority-follow-up', label: 'Priority Follow-up and Manager Review Notes', target: 'priority-follow-up' },
+  ],
+  'ai-center': [
+    { key: 'ai-governance', label: 'AI Governance', target: 'governance' },
+    { key: 'ai-operational-center', label: 'Operational AI Center', target: 'operational-ai-center' },
+    { key: 'ai-provider-management', label: 'AI Provider Management', target: 'provider-management' },
+    { key: 'ai-model-registry', label: 'AI Model Registry', target: 'model-registry' },
+    { key: 'ai-agent-management', label: 'AI Agent Management', target: 'agent-management' },
+    { key: 'ai-prompt-library', label: 'AI Prompt Library', target: 'prompt-library' },
+    { key: 'ai-knowledge-base', label: 'AI Knowledge Base', target: 'knowledge-base' },
+    { key: 'ai-data-connectors', label: 'AI Data Connectors', target: 'data-connectors' },
+    { key: 'ai-recommendations', label: 'AI Recommendations', target: 'recommendations' },
+    { key: 'ai-workflow-automations', label: 'AI Workflow Automations', target: 'workflow-automation' },
+    { key: 'ai-human-approval-center', label: 'AI Human Approval Center', target: 'approval-center' },
+    { key: 'ai-feedback-learning', label: 'AI Feedback and Learning', target: 'feedback-learning' },
+    { key: 'ai-usage-cost-quota', label: 'AI Usage, Cost and Quota Control', target: 'usage-cost' },
+    { key: 'ai-risk-compliance', label: 'AI Risk and Compliance', target: 'risk-compliance' },
+    { key: 'ai-audit-logs', label: 'AI Audit Logs', target: 'audit-logs' },
+    { key: 'ai-recommendation-approval-queue', label: 'Recommendation Approval Queue', target: 'recommendation-approval-queue' },
+    { key: 'ai-insight-dashboard', label: 'AI Insight Dashboard', target: 'insights-dashboard' },
+    { key: 'ai-chat-me', label: 'Chat Me AI', target: 'chat-me-ai' },
+  ],
+  notifications: [
+    { key: 'notification-overview', label: 'Notification Overview', target: 'overview' },
+    { key: 'notification-create', label: 'Create New Notification', target: 'create-notification' },
+    { key: 'notification-recurring', label: 'Manage Recurring Notifications', target: 'recurring-notifications' },
+    { key: 'notification-center', label: 'Platform Notification Management Center', target: 'platform-notification-center' },
+  ],
+  'pharmacist-chat': [
+    { key: 'chat-in-app', label: 'In-app Chat', target: 'in-app-chat' },
+    { key: 'chat-whatsapp', label: 'WhatsApp Message Chats', target: 'whatsapp-chat' },
+  ],
+  'admin-panel': [
+    { key: 'admin-users', label: 'User Profiles', target: 'user-profiles' },
+    { key: 'admin-2fa', label: '2FA Management', target: 'two-factor-auth' },
+    { key: 'admin-platform', label: 'Platform Management', target: 'platform-management' },
+    { key: 'admin-notifications', label: 'Notification Management', target: 'notification-management' },
+    { key: 'admin-email', label: 'Corporate Email', target: 'corporate-email' },
+    { key: 'admin-chat', label: 'Pharmacist Chat', target: 'pharmacist-chat' },
+    { key: 'admin-data', label: 'Data Layer', target: 'data-layer' },
   ],
 };
 
@@ -1574,6 +1616,8 @@ function App() {
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
+  const [activeNotificationWorkspace, setActiveNotificationWorkspace] = useState<'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center'>('overview');
+  const [activePharmacistChatWorkspace, setActivePharmacistChatWorkspace] = useState<'in-app-chat' | 'whatsapp-chat'>('in-app-chat');
   const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [openPrincipalMenus, setOpenPrincipalMenus] = useState<Partial<Record<AdminSectionKey, boolean>>>({});
@@ -1616,6 +1660,10 @@ function App() {
       if (activeSection === 'suppliers') return submenu.target === activeSupplierWorkspace;
       if (activeSection === 'finance') return submenu.target === activeFinanceWorkspace;
       if (activeSection === 'reports') return submenu.target === activeAdhocReportWorkspace;
+      if (activeSection === 'ai-center') return submenu.target === activeAiWorkspace;
+      if (activeSection === 'admin-panel') return submenu.target === activeAdminPanelWorkspace;
+      if (activeSection === 'notifications') return submenu.target === activeNotificationWorkspace;
+      if (activeSection === 'pharmacist-chat') return submenu.target === activePharmacistChatWorkspace;
       return false;
     })?.label ?? null;
   const loginStatusText = profile
@@ -1823,25 +1871,15 @@ function App() {
   function activateModuleDefaultPage(item: MenuItem) {
     const firstSubmenu = leftMenuSubmenus[item.key]?.[0];
 
-    if (item.key === 'inventory' && firstSubmenu?.target) {
-      setActiveInventoryView(firstSubmenu.target as InventoryView);
-    }
-
-    if (item.key === 'pos' && firstSubmenu?.target) {
-      setActivePosWorkspace(firstSubmenu.target as PosWorkspaceKey);
-    }
-
-    if (item.key === 'suppliers' && firstSubmenu?.target) {
-      setActiveSupplierWorkspace(firstSubmenu.target as SupplierWorkspaceKey);
-    }
-
-    if (item.key === 'finance' && firstSubmenu?.target) {
-      setActiveFinanceWorkspace(firstSubmenu.target as FinanceWorkspaceKey);
-    }
-
-    if (item.key === 'reports' && firstSubmenu?.target) {
-      setActiveAdhocReportWorkspace(firstSubmenu.target as AdhocReportWorkspaceKey);
-    }
+    if (item.key === 'inventory' && firstSubmenu?.target) setActiveInventoryView(firstSubmenu.target as InventoryView);
+    if (item.key === 'pos' && firstSubmenu?.target) setActivePosWorkspace(firstSubmenu.target as PosWorkspaceKey);
+    if (item.key === 'suppliers' && firstSubmenu?.target) setActiveSupplierWorkspace(firstSubmenu.target as SupplierWorkspaceKey);
+    if (item.key === 'finance' && firstSubmenu?.target) setActiveFinanceWorkspace(firstSubmenu.target as FinanceWorkspaceKey);
+    if (item.key === 'reports' && firstSubmenu?.target) setActiveAdhocReportWorkspace(firstSubmenu.target as AdhocReportWorkspaceKey);
+    if (item.key === 'ai-center' && firstSubmenu?.target) setActiveAiWorkspace(firstSubmenu.target as AiWorkspaceKey);
+    if (item.key === 'admin-panel' && firstSubmenu?.target) setActiveAdminPanelWorkspace(firstSubmenu.target as AdminPanelWorkspaceKey);
+    if (item.key === 'notifications' && firstSubmenu?.target) setActiveNotificationWorkspace(firstSubmenu.target as 'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center');
+    if (item.key === 'pharmacist-chat' && firstSubmenu?.target) setActivePharmacistChatWorkspace(firstSubmenu.target as 'in-app-chat' | 'whatsapp-chat');
   }
 
   function togglePrincipalMenu(item: MenuItem) {
@@ -1886,25 +1924,16 @@ function App() {
 
   function handleLeftSubmenuClick(item: MenuItem, submenu: LeftMenuSubmenu) {
     openPrincipalMenu(item);
-    if (item.key === 'inventory' && submenu.target) {
-      setActiveInventoryView(submenu.target as InventoryView);
-    }
 
-    if (item.key === 'pos' && submenu.target) {
-      setActivePosWorkspace(submenu.target as PosWorkspaceKey);
-    }
-
-    if (item.key === 'suppliers' && submenu.target) {
-      setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
-    }
-
-    if (item.key === 'finance' && submenu.target) {
-      setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
-    }
-
-    if (item.key === 'reports' && submenu.target) {
-      setActiveAdhocReportWorkspace(submenu.target as AdhocReportWorkspaceKey);
-    }
+    if (item.key === 'inventory' && submenu.target) setActiveInventoryView(submenu.target as InventoryView);
+    if (item.key === 'pos' && submenu.target) setActivePosWorkspace(submenu.target as PosWorkspaceKey);
+    if (item.key === 'suppliers' && submenu.target) setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
+    if (item.key === 'finance' && submenu.target) setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
+    if (item.key === 'reports' && submenu.target) setActiveAdhocReportWorkspace(submenu.target as AdhocReportWorkspaceKey);
+    if (item.key === 'ai-center' && submenu.target) setActiveAiWorkspace(submenu.target as AiWorkspaceKey);
+    if (item.key === 'admin-panel' && submenu.target) setActiveAdminPanelWorkspace(submenu.target as AdminPanelWorkspaceKey);
+    if (item.key === 'notifications' && submenu.target) setActiveNotificationWorkspace(submenu.target as 'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center');
+    if (item.key === 'pharmacist-chat' && submenu.target) setActivePharmacistChatWorkspace(submenu.target as 'in-app-chat' | 'whatsapp-chat');
 
     navigateToSection(item.key);
   }
@@ -1917,6 +1946,10 @@ function App() {
     if (item.key === 'suppliers') return submenu.target === activeSupplierWorkspace;
     if (item.key === 'finance') return submenu.target === activeFinanceWorkspace;
     if (item.key === 'reports') return submenu.target === activeAdhocReportWorkspace;
+    if (item.key === 'ai-center') return submenu.target === activeAiWorkspace;
+    if (item.key === 'admin-panel') return submenu.target === activeAdminPanelWorkspace;
+    if (item.key === 'notifications') return submenu.target === activeNotificationWorkspace;
+    if (item.key === 'pharmacist-chat') return submenu.target === activePharmacistChatWorkspace;
 
     return false;
   }
@@ -2844,68 +2877,55 @@ function App() {
 
     return (
       <section className="section-page">
-<section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="POS and Sales"
-            items={posWorkspaceItems}
-            activeKey={activePosWorkspace}
-            onSelect={setActivePosWorkspace}
-          />
+        <div className="module-section-stage">
+          {activePosWorkspace === 'overview' && (
+            <FocusRegisterPreview
+              title="POS and Sales Overview"
+              description="Daily sales, dispensing readiness, customer flow, receipt status, and checkout attention."
+              rows={previewRows}
+            />
+          )}
 
-          <div className="module-section-stage">
-            {activePosWorkspace === 'overview' && (
-              <>
-<section className="document-action-grid">
-                  {[
-                    ['POS transaction summary', 'Customer contribution, insurer or partner contribution, tax, and balance are shown before commit.'],
-                    ['Prescription capture', 'RX products trigger prescription image/manual capture before the item proceeds to cart.'],
-                    ['Receipt channels', 'Physical/Bluetooth print, WhatsApp handoff, email, and corporate email delivery are prepared.'],
-                    ['Customer capture', 'Customer details are only requested when invoice, insurance, credit, or follow-up is needed.'],
-                  ].map(([title, text]) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </article>
-                  ))}
-                </section>
-              </>
-            )}
+          {activePosWorkspace === 'pos' && (
+            <SalesDispensingReview token={session.token} profile={profile} />
+          )}
 
-            {activePosWorkspace === 'customers' && (
-              <FocusRegisterPreview
-                title="Customers / patients register"
-                description="The module starts with summary cards, then a 15-row working register with bulk edit, export, approval, and controlled delete actions."
-                rows={previewRows}
-              />
-            )}
+          {activePosWorkspace === 'dispensing-review' && (
+            <SalesDispensingReview token={session.token} profile={profile} />
+          )}
 
-            {activePosWorkspace === 'prescriptions' && (
-              <FocusRegisterPreview
-                title="Prescription register"
-                description="Prescription-required products prompt camera capture, AI text extraction where possible, previous-customer lookup, and manual completion when extraction is unclear."
-                rows={previewRows.map(([primary, secondary, status, amount]) => [primary, secondary.replace('sale', 'prescription'), status, amount])}
-              />
-            )}
+          {activePosWorkspace === 'customers' && (
+            <FocusRegisterPreview
+              title="Customers and Patients"
+              description="Customer and patient register with default 15-row view, export, bulk edit, and controlled delete."
+              rows={previewRows}
+            />
+          )}
 
-            {activePosWorkspace === 'sales-performance' && (
-              <FocusRegisterPreview
-                title="Sales performance register"
-                description="Performance review uses a compact 15-row list beside selected-sale detail, with export and bulk tools available from the header."
-                rows={previewRows}
-              />
-            )}
+          {activePosWorkspace === 'prescriptions' && (
+            <FocusRegisterPreview
+              title="Prescriptions"
+              description="Prescription capture, camera readiness, AI text extraction, manual correction, and returning customer lookup."
+              rows={previewRows.map(([primary, secondary, status, amount]) => [primary, secondary.replace('sale', 'prescription'), status, amount])}
+            />
+          )}
 
-            {activePosWorkspace === 'payment-receipt' && (
-              <FocusRegisterPreview
-                title="Payment and receipt register"
-                description="Payments and receipts follow the same two-section pattern: 15-row list, selected detail, printer, WhatsApp, email, and corporate email actions."
-                rows={previewRows}
-              />
-            )}
+          {activePosWorkspace === 'sales-performance' && (
+            <FocusRegisterPreview
+              title="Sales Performance"
+              description="Sales list with selected sale detail, export, review, and manager follow-up."
+              rows={previewRows}
+            />
+          )}
 
-            {activePosWorkspace !== 'overview' && <SalesDispensingReview token={session.token} profile={profile} />}
-          </div>
-        </section>
+          {activePosWorkspace === 'payment-receipt' && (
+            <FocusRegisterPreview
+              title="Payment and Receipt"
+              description="Payment register with receipt print, Bluetooth readiness, WhatsApp, email, and corporate email delivery."
+              rows={previewRows}
+            />
+          )}
+        </div>
       </section>
     );
   }
@@ -2921,43 +2941,31 @@ function App() {
 
     return (
       <section className="section-page">
-<section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Suppliers"
-            items={supplierWorkspaceItems}
-            activeKey={activeSupplierWorkspace}
-            onSelect={setActiveSupplierWorkspace}
-          />
+        <div className="module-section-stage">
+          {activeSupplierWorkspace === 'overview' && (
+            <FocusRegisterPreview
+              title="Supplier Overview"
+              description="Supplier performance, open PO status, receiving readiness, and procurement attention."
+              rows={supplierRows}
+            />
+          )}
 
-          <div className="module-section-stage">
-            {activeSupplierWorkspace === 'overview' && (
-              <>
-<section className="document-action-grid">
-                  {[
-                    ['Supplier overview charts', 'Supplier count, open PO value, approved receiving queue, overdue commitments, and active supplier types.'],
-                    ['Create supplier', 'Wholesaler, manufacturer, distributor, importer, local supplier, service provider, delivery supplier, technology/API supplier, or other.'],
-                    ['Purchase order flow', 'Create PO, approve, track outstanding orders, receive against PO, and update inventory with batch details.'],
-                  ].map(([title, text]) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </article>
-                  ))}
-                </section>
-              </>
-            )}
+          {activeSupplierWorkspace === 'create-supplier' && (
+            <ProcurementWorkflow token={session.token} profile={profile} />
+          )}
 
-            {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
-              <FocusRegisterPreview
-                title={selected.label}
-                description="Registers show 15 rows by default, then open the full page with bulk edit, export, approval, and controlled delete actions."
-                rows={supplierRows}
-              />
-            )}
+          {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
+            <FocusRegisterPreview
+              title={selected.label}
+              description="This page keeps its own focused register with 15-row default view, export, bulk edit, and controlled delete where allowed."
+              rows={supplierRows}
+            />
+          )}
 
-            {activeSupplierWorkspace !== 'overview' && <ProcurementWorkflow token={session.token} profile={profile} />}
-          </div>
-        </section>
+          {['create-purchase-order', 'receive-purchase-order'].includes(activeSupplierWorkspace) && (
+            <ProcurementWorkflow token={session.token} profile={profile} />
+          )}
+        </div>
       </section>
     );
   }
@@ -2973,154 +2981,244 @@ function App() {
 
     return (
       <section className="section-page">
-<section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Finance"
-            items={financeWorkspaceItems}
-            activeKey={activeFinanceWorkspace}
-            onSelect={setActiveFinanceWorkspace}
-          />
+        <div className="module-section-stage">
+          {activeFinanceWorkspace === 'overview' && (
+            <FocusRegisterPreview
+              title="Finance Overview"
+              description="Cash, MoMo, card, credit, receivables, payables, and exception status."
+              rows={financeRows}
+            />
+          )}
 
-          <div className="module-section-stage">
-            {activeFinanceWorkspace === 'overview' && (
-              <>
-                <section className="document-action-grid">
-                  {[
-                    ['Finance overview', 'Cash, MoMo, card, credit, supplier balance, receivables, and exception count.'],
-                    ['Finance flow', 'Supplier invoice creation, approval, payment, and selected invoice detail.'],
-                    ['Exception focus', 'Overdue receivables, overdue payables, payment variance, and approval risks.'],
-                  ].map(([title, text]) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </article>
-                  ))}
-                </section>
-                <PayablesWorkflow token={session.token} profile={profile} />
-                <ReceivablesWorkflow token={session.token} profile={profile} />
-              </>
-            )}
+          {activeFinanceWorkspace === 'finance-flow' && (
+            <PayablesWorkflow token={session.token} profile={profile} />
+          )}
 
-            {activeFinanceWorkspace === 'financial-statements' && (
-              <article className="panel wide">
-                <div className="panel-heading-row">
-                  <div>
-                    <h2>AI-generated financial statements</h2>
-                    <p className="muted">
-                      Statements are generated only after a manual refresh, then reviewed by finance before export or posting.
-                    </p>
-                  </div>
-                  <button type="button">Manual refresh</button>
-                </div>
-                <div className="document-action-grid">
-                  {financialStatementItems.map(([title, text]) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </article>
-                  ))}
-                </div>
-              </article>
-            )}
-
-            {['receivable-register', 'collection', 'exception-focus'].includes(activeFinanceWorkspace) && (
+          {activeFinanceWorkspace === 'exception-focus' && (
+            <>
               <FocusRegisterPreview
-                title={selected.label}
-                description="Finance tables use a compact default register with bulk edit, export, approval, and selected-detail controls."
+                title="Exception Focus"
+                description="Overdue receivables, overdue payables, payment variance, cash variance, and approval risks."
                 rows={financeRows}
               />
-            )}
-
-            {['finance-flow', 'exception-focus'].includes(activeFinanceWorkspace) && (
               <PayablesWorkflow token={session.token} profile={profile} />
-            )}
+            </>
+          )}
 
-            {['credits-receivables', 'receivable-register', 'collection', 'exception-focus'].includes(activeFinanceWorkspace) && (
-              <ReceivablesWorkflow token={session.token} profile={profile} />
-            )}
-          </div>
-        </section>
+          {activeFinanceWorkspace === 'credits-receivables' && (
+            <ReceivablesWorkflow token={session.token} profile={profile} />
+          )}
+
+          {['receivable-register', 'collection'].includes(activeFinanceWorkspace) && (
+            <FocusRegisterPreview
+              title={selected.label}
+              description="Receivables and collections use a focused table with export, bulk edit, and selected-detail review."
+              rows={financeRows}
+            />
+          )}
+
+          {activeFinanceWorkspace === 'financial-statements' && (
+            <article className="panel wide">
+              <div className="panel-heading-row">
+                <div>
+                  <h2>Financial Statement</h2>
+                  <p className="muted">
+                    AI-assisted Trial Balance, General Ledger, Cash Flow Statement, Income Statement, Balance Sheet, Bank, MoMo, and Cash Reconciliation.
+                  </p>
+                </div>
+                <button type="button">Manual refresh</button>
+              </div>
+              <div className="document-action-grid document-action-grid--tablelike">
+                {financialStatementItems.map(([title, text]) => (
+                  <article key={title}>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </article>
+                ))}
+              </div>
+            </article>
+          )}
+        </div>
       </section>
     );
   }
 
   function renderAdhocReportWorkspace() {
     const selected = adhocReportWorkspaceItems.find((item) => item.key === activeAdhocReportWorkspace) ?? adhocReportWorkspaceItems[0];
+    const reportRows: Array<[string, string, string, string]> = [
+      ['Low stock attention', 'Inventory signal', 'Open', 'Manager review'],
+      ['Expiry watch', 'Batch register', 'Priority', 'Pharmacist action'],
+      ['Sales exception', 'POS signal', 'Review', 'Finance follow-up'],
+      ['Supplier delay', 'Purchase order', 'Pending', 'Procurement follow-up'],
+    ];
 
     return (
       <section className="section-page">
-<section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Ad-hoc Report"
-            items={adhocReportWorkspaceItems}
-            activeKey={activeAdhocReportWorkspace}
-            onSelect={setActiveAdhocReportWorkspace}
-          />
+        <div className="module-section-stage">
+          {activeAdhocReportWorkspace === 'overview' && (
+            <ReportingDashboard token={session.token} profile={profile} />
+          )}
 
-          <div className="module-section-stage">
-            <article className="panel wide report-focus-note">
-              <strong>{selected.label}</strong>
-              <span>
-                This view uses the live command center and reporting endpoints, while keeping reports read-only and separate from operational forms.
-              </span>
-            </article>
-
-            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
-
-            {activeAdhocReportWorkspace === 'overview' && (
-              <ReportingDashboard token={session.token} profile={profile} />
-            )}
-          </div>
-        </section>
+          {activeAdhocReportWorkspace !== 'overview' && (
+            <FocusRegisterPreview
+              title={selected.label}
+              description="This ad-hoc report page keeps its own focused operating data without repeating unrelated dashboard content."
+              rows={reportRows}
+            />
+          )}
+        </div>
       </section>
     );
   }
 
   function renderAiCenter() {
-    const selectedAiModule = aiCenterModules.find((module) => module.key === activeAiWorkspace) ?? aiCenterModules[0];
+    const operationalAiCards: Array<{ key: AiWorkspaceKey; title: string; summary: string }> = [
+      { key: 'business-chat', title: 'Business Chat', summary: 'Ask operational questions and get business guidance.' },
+      { key: 'customer-retention', title: 'Customer Retention', summary: 'Identify customers needing follow-up.' },
+      { key: 'demand-forecast', title: 'Demand Forecast', summary: 'Forecast product demand by period.' },
+      { key: 'expiry-risk', title: 'Expiry Risk', summary: 'Detect expiry exposure and FEFO actions.' },
+      { key: 'finance-forecast', title: 'Finance Forecast', summary: 'Forecast cash, receivables, and payables.' },
+      { key: 'fraud-anomaly', title: 'Fraud and Anomaly', summary: 'Flag unusual sales, stock, or finance patterns.' },
+      { key: 'pricing-margin', title: 'Pricing and Margin', summary: 'Review pricing, margin, and discount impact.' },
+      { key: 'reorder-recommendation', title: 'Reorder Recommendation', summary: 'Recommend reorder timing and quantities.' },
+      { key: 'stock-out', title: 'Stock-out', summary: 'Predict and prevent stock-out risks.' },
+      { key: 'supplier-performance', title: 'Supplier Performance', summary: 'Evaluate supplier reliability and delays.' },
+      { key: 'inventory-assistance', title: 'Inventory Assistance', summary: 'Support product, batch, and location decisions.' },
+      { key: 'operations-copilot', title: 'Operations Copilot', summary: 'Guide daily pharmacy operations.' },
+    ];
+
+    const aiPageDetails: Record<AiWorkspaceKey, { title: string; summary: string; controls: string[] }> = {
+      'operational-ai-center': {
+        title: 'Operational AI Center',
+        summary: 'Run pharmacy AI models from clear operational cards. Each model opens its own workspace.',
+        controls: ['Model cards', 'Human approval', 'Audit trail'],
+      },
+      'business-chat': { title: 'Business Chat', summary: 'Business guidance and operating questions.', controls: ['Ask question', 'Review answer', 'Save decision'] },
+      'customer-retention': { title: 'Customer Retention', summary: 'Customer follow-up and retention signals.', controls: ['Retention score', 'Follow-up task', 'Approval'] },
+      'demand-forecast': { title: 'Demand Forecast', summary: 'Demand prediction for products and categories.', controls: ['Forecast period', 'Data source', 'Confidence'] },
+      'expiry-risk': { title: 'Expiry Risk', summary: 'Expiry exposure and FEFO actions.', controls: ['Risk list', 'Action proposal', 'Approval'] },
+      'finance-forecast': { title: 'Finance Forecast', summary: 'Cash, receivables, payables, and statement forecast.', controls: ['Forecast', 'Variance', 'Refresh'] },
+      'fraud-anomaly': { title: 'Fraud and Anomaly', summary: 'Sales, stock, and finance anomaly detection.', controls: ['Anomaly list', 'Risk level', 'Escalation'] },
+      'pricing-margin': { title: 'Pricing and Margin', summary: 'Pricing and margin recommendations.', controls: ['Margin signal', 'Price proposal', 'Approval'] },
+      'reorder-recommendation': { title: 'Reorder Recommendation', summary: 'AI reorder recommendations and purchase draft support.', controls: ['Reorder list', 'Supplier link', 'Human approval'] },
+      'stock-out': { title: 'Stock-out', summary: 'Stock-out risk prediction and prevention.', controls: ['Risk items', 'Transfer option', 'Purchase option'] },
+      'supplier-performance': { title: 'Supplier Performance', summary: 'Supplier reliability and procurement risk.', controls: ['Delay score', 'Fill rate', 'Action note'] },
+      'inventory-assistance': { title: 'Inventory Assistance', summary: 'Inventory assistant for product, batch, and shelf control.', controls: ['Product help', 'Batch help', 'Shelf proposal'] },
+      'operations-copilot': { title: 'Operations Copilot', summary: 'Daily operational copilot for managers and staff.', controls: ['Task guidance', 'Checklist', 'Decision note'] },
+      governance: { title: 'AI Governance', summary: 'Policies, consent, human approval, and AI safety rules.', controls: ['Policy', 'Approval', 'Audit'] },
+      'provider-management': { title: 'AI Provider Management', summary: 'Provider configuration, mode, status, and secure keys.', controls: ['Provider', 'Mode', 'Key reference'] },
+      'model-registry': { title: 'AI Model Registry', summary: 'Models, versions, use cases, status, and risk level.', controls: ['Model', 'Version', 'Risk'] },
+      'agent-management': { title: 'AI Agent Management', summary: 'AI agents, tools, scopes, and permissions.', controls: ['Agent', 'Tools', 'Scope'] },
+      'prompt-library': { title: 'AI Prompt Library', summary: 'Approved prompts, versions, tenant overrides, and reuse.', controls: ['Prompt', 'Version', 'Approval'] },
+      'knowledge-base': { title: 'AI Knowledge Base', summary: 'Trusted SOPs, FAQs, policies, and pharmacy knowledge.', controls: ['Source', 'Status', 'Review'] },
+      'data-connectors': { title: 'AI Data Connectors', summary: 'Controlled AI access to inventory, sales, finance, supplier, and support data.', controls: ['Connector', 'Scope', 'Permission'] },
+      recommendations: { title: 'AI Recommendations', summary: 'Structured recommendations with confidence and explanation.', controls: ['Recommendation', 'Confidence', 'Action'] },
+      'workflow-automation': { title: 'AI Workflow Automations', summary: 'Draft reminders, reorder proposals, alerts, and report generation.', controls: ['Workflow', 'Trigger', 'Approval'] },
+      'approval-center': { title: 'AI Human Approval Center', summary: 'Human review for sensitive AI actions.', controls: ['Queue', 'Risk', 'Decision'] },
+      'feedback-learning': { title: 'AI Feedback and Learning', summary: 'Accepted, rejected, corrected, and improved AI feedback.', controls: ['Feedback', 'Learning', 'Review'] },
+      'usage-cost': { title: 'AI Usage, Cost and Quota Control', summary: 'Usage by model, feature, tenant, user, quota, and estimated cost.', controls: ['Usage', 'Quota', 'Cost'] },
+      'risk-compliance': { title: 'AI Risk and Compliance', summary: 'Sensitive data checks, policy exceptions, and compliance monitoring.', controls: ['Risk', 'Policy', 'Exception'] },
+      'audit-logs': { title: 'AI Audit Logs', summary: 'Complete AI input, output, provider, model, user, and decision trail.', controls: ['Input', 'Output', 'Decision'] },
+      'recommendation-approval-queue': { title: 'Recommendation Approval Queue', summary: 'Pending AI recommendations waiting for human approval.', controls: ['Pending', 'Reviewer', 'Decision'] },
+      'insights-dashboard': { title: 'AI Insight Dashboard', summary: 'AI adoption, accuracy, cost, risk, and operational impact.', controls: ['Insight', 'Trend', 'Impact'] },
+      'chat-me-ai': { title: 'Chat Me AI', summary: 'Ask for platform guidance, tutorials, navigation help, and safe operating support.', controls: ['Ask', 'Guide', 'Tutorial'] },
+    };
+
+    const selectedAiPage = aiPageDetails[activeAiWorkspace] ?? aiPageDetails['operational-ai-center'];
 
     return (
       <section className="section-page">
-<section className="ai-center-layout">
-          <div className="ai-center-module-grid">
-            {aiCenterModules.map((module) => (
-              <button
-                key={module.key}
-                type="button"
-                className={activeAiWorkspace === module.key ? 'active' : ''}
-                onClick={() => setActiveAiWorkspace(module.key)}
-              >
-                <strong>{module.title}</strong>
-                <span>{module.status}</span>
-              </button>
-            ))}
-          </div>
+        {activeAiWorkspace === 'operational-ai-center' ? (
+          <section className="operational-ai-workspace">
+            <div className="section-heading">
+              <div>
+                <span>AI Center</span>
+                <h2>Operational AI Center</h2>
+                <p className="muted">Choose an operational AI model to open its working area.</p>
+              </div>
+            </div>
 
-          <article className="panel ai-detail-panel">
-            <h2>{selectedAiModule.title}</h2>
-            <p className="muted">{selectedAiModule.purpose}</p>
+            <div className="operational-ai-card-grid">
+              {operationalAiCards.map((card) => (
+                <button key={card.key} type="button" onClick={() => setActiveAiWorkspace(card.key)}>
+                  <strong>{card.title}</strong>
+                  <span>{card.summary}</span>
+                  <small>Open model workspace</small>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : (
+          <article className="panel wide ai-detail-panel">
+            <div className="panel-heading-row">
+              <div>
+                <h2>{selectedAiPage.title}</h2>
+                <p className="muted">{selectedAiPage.summary}</p>
+              </div>
+              <button type="button">Run / Open</button>
+            </div>
+
             <div className="workflow-list">
-              {selectedAiModule.controls.map((control) => (
+              {selectedAiPage.controls.map((control) => (
                 <div key={control}>
                   <strong>{control}</strong>
-                  <span>Configured per platform, solution, tenant, role, branch, and data classification.</span>
+                  <span>Controlled by permissions, audit logs, and human approval where required.</span>
                 </div>
               ))}
             </div>
           </article>
-        </section>
+        )}
+
+        {activeAiWorkspace === 'chat-me-ai' && (
+          <article className="panel wide chat-me-ai-panel">
+            <h2>Chat Me AI</h2>
+            <p className="muted">Ask for platform guidance, tutorials, navigation help, or how to complete a task safely.</p>
+            <textarea placeholder="Ask Chat Me AI how to use this platform..." rows={4} />
+            <button type="button">Ask Chat Me AI</button>
+          </article>
+        )}
 
         <AiOperationsPanel token={session.token} profile={profile} />
-<section className="ai-model-grid">
-          {pharmaAiModels.map(([model, description]) => (
-            <article key={model}>
-              <strong>{model}</strong>
-              <span>{description}</span>
-            </article>
-          ))}
-        </section>
+      </section>
+    );
+  }
 
-        {accessControlPanel}
+
+  function renderNotificationWorkspace() {
+    return (
+      <section className="section-page">
+        <article className="panel wide">
+          <div className="panel-heading-row">
+            <div>
+              <h2>
+                {activeNotificationWorkspace === 'overview' && 'Notification Overview'}
+                {activeNotificationWorkspace === 'create-notification' && 'Create New Notification'}
+                {activeNotificationWorkspace === 'recurring-notifications' && 'Manage Recurring Notifications'}
+                {activeNotificationWorkspace === 'platform-notification-center' && 'Platform Notification Management Center'}
+              </h2>
+              <p className="muted">Notification work is separated by page so creation, recurring rules, and platform management do not repeat the same information.</p>
+            </div>
+          </div>
+        </article>
+
+        <NotificationCenterPanel token={session.token} profile={profile} />
+      </section>
+    );
+  }
+
+  function renderPharmacistChatWorkspace() {
+    return (
+      <section className="section-page">
+        <article className="panel wide">
+          <h2>{activePharmacistChatWorkspace === 'in-app-chat' ? 'In-app Chat' : 'WhatsApp Message Chats'}</h2>
+          <p className="muted">
+            {activePharmacistChatWorkspace === 'in-app-chat'
+              ? 'Internal and customer in-app conversations.'
+              : 'Company WhatsApp conversations and customer-linked messages.'}
+          </p>
+        </article>
+
+        <PharmacistChatPanel token={session.token} />
       </section>
     );
   }

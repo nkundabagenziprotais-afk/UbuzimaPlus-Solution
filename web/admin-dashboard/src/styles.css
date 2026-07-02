@@ -7556,3 +7556,106 @@ h3,
     grid-template-columns: 1fr;
   }
 }
+
+/* Phase I golden rule: left menu is the only section navigator */
+.module-workspace-shell {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.module-workspace-shell > .module-section-rail {
+  display: none !important;
+}
+
+.operational-ai-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.operational-ai-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.operational-ai-card-grid button {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: #ffffff;
+  border-radius: 20px;
+  min-height: 8.4rem;
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.55rem;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+}
+
+.operational-ai-card-grid button:hover {
+  border-color: rgba(75, 83, 32, 0.28);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+.operational-ai-card-grid strong {
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 0.92rem;
+}
+
+.operational-ai-card-grid span {
+  color: #334155;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.operational-ai-card-grid small {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.chat-me-ai-panel {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.chat-me-ai-panel textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  padding: 0.9rem;
+  resize: vertical;
+  font: inherit;
+}
+
+.chat-me-ai-panel button {
+  justify-self: flex-start;
+  background: var(--left-menu-accent, #4B5320);
+  color: var(--left-menu-title-color, #ffffff);
+  border: 0;
+  border-radius: 999px;
+  padding: 0.6rem 0.9rem;
+  font-weight: 850;
+}
+
+.document-action-grid--tablelike article {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.2fr);
+  gap: 0.6rem;
+  align-items: start;
+}
+
+@media (max-width: 1280px) {
+  .operational-ai-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .operational-ai-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .document-action-grid--tablelike article {
+    grid-template-columns: 1fr;
+  }
+}
