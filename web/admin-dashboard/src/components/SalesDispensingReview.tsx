@@ -10,6 +10,7 @@ import {
   PharmaPayment,
   PharmaProduct,
   PharmaSalesResponse,
+  PharmaSalesFilters,
   PharmaStockBatch,
   confirmPharmaSale,
   getPharmaBranches,
@@ -49,6 +50,17 @@ type PaymentFormState = {
   notes: string;
 };
 
+type SalesStatusFilter = 'all' | 'draft' | 'dispensed' | 'cancelled';
+type PaymentStatusFilter = 'all' | 'unpaid' | 'partial' | 'paid' | 'refunded';
+type SaleTypeFilter = 'all' | 'cash_sale' | 'prescription_sale' | 'insurance_sale' | 'credit_sale';
+
+type SalesFiltersState = {
+  status: SalesStatusFilter;
+  payment_status: PaymentStatusFilter;
+  sale_type: SaleTypeFilter;
+  branch_id: string;
+};
+
 function money(value: number | null | undefined): string {
   return new Intl.NumberFormat('en-RW', {
     style: 'currency',
@@ -69,6 +81,7 @@ function formatDate(value: string | null | undefined): string {
 
 function getTenantSlug(profile: AccessProfile): string {
   return (
+    profile.tenant_assignments?.find((assignment) => assignment.status === 'active')?.tenant?.slug ||
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '')
   );
@@ -133,6 +146,73 @@ function buildPrescriptionChecks(sale: PharmaSale | null): PrescriptionChecks {
   }, {});
 }
 
+function defaultSalesFilters(): SalesFiltersState {
+  return {
+    status: 'all',
+    payment_status: 'all',
+    sale_type: 'all',
+    branch_id: 'all',
+  };
+}
+
+function labelize(value: string): string {
+  return value.replaceAll('_', ' ');
+}
+
+function paymentStatusTone(status: string): string {
+  if (status === 'paid') return 'stable';
+  if (status === 'partial') return 'attention';
+  if (status === 'unpaid') return 'warning';
+  if (status === 'refunded') return 'neutral';
+
+  return 'neutral';
+}
+
+function paymentStatusGuidance(status: string, balance: number): string {
+  if (status === 'paid' || balance <= 0) {
+    return 'Receipt trail is complete and no balance remains.';
+  }
+
+  if (status === 'partial') {
+    return 'A balance remains. Confirm the next collection step before closing the sale.';
+  }
+
+  if (status === 'unpaid') {
+    return 'Payment has not been collected yet. Keep this sale visible for follow-up.';
+  }
+
+  return 'Review payment status before dispensing or closing the sale.';
+}
+
+function prescriptionTone(required: number, verified: number): string {
+  if (required === 0) return 'stable';
+  if (verified >= required) return 'stable';
+  if (verified > 0) return 'attention';
+
+  return 'warning';
+}
+
+function prescriptionGuidance(required: number, verified: number): string {
+  if (required === 0) {
+    return 'No prescription verification is required for the current items.';
+  }
+
+  if (verified >= required) {
+    return 'Required prescription checks are complete.';
+  }
+
+  return `${required - verified} prescription check${required - verified === 1 ? '' : 's'} still need confirmation.`;
+}
+
+function salesFiltersToApiFilters(filters: SalesFiltersState): PharmaSalesFilters {
+  return {
+    status: filters.status === 'all' ? undefined : filters.status,
+    payment_status: filters.payment_status === 'all' ? undefined : filters.payment_status,
+    sale_type: filters.sale_type === 'all' ? undefined : filters.sale_type,
+    branch_id: filters.branch_id === 'all' ? undefined : Number(filters.branch_id),
+  };
+}
+
 export function SalesDispensingReview({ token, profile }: Props) {
   const [state, setState] = useState<SalesReviewState>({
     branches: [],
@@ -153,9 +233,25 @@ export function SalesDispensingReview({ token, profile }: Props) {
   const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [salesFilters, setSalesFilters] = useState<SalesFiltersState>(defaultSalesFilters());
 
   const tenantSlug = useMemo(() => getTenantSlug(profile), [profile]);
-  const canReadSales = profile.permissions.includes('pharmaco.sales.manage');
+  const canReadSales = (profile.permissions ?? []).includes('pharmaco.sales.manage');
+
+  const apiSalesFilters = useMemo(() => salesFiltersToApiFilters(salesFilters), [salesFilters]);
+
+  const activeFilterText = useMemo(() => {
+    const values = [
+      salesFilters.status !== 'all' ? `Status: ${labelize(salesFilters.status)}` : null,
+      salesFilters.payment_status !== 'all' ? `Payment: ${labelize(salesFilters.payment_status)}` : null,
+      salesFilters.sale_type !== 'all' ? `Type: ${labelize(salesFilters.sale_type)}` : null,
+      salesFilters.branch_id !== 'all'
+        ? `Branch: ${state.branches.find((branch) => branch.id === Number(salesFilters.branch_id))?.name ?? salesFilters.branch_id}`
+        : null,
+    ].filter(Boolean);
+
+    return values.length ? values.join(' · ') : 'All sales';
+  }, [salesFilters, state.branches]);
 
   const salesSummary = useMemo(() => {
     const draftSales = state.sales.filter((sale) => sale.status === 'draft');
@@ -163,11 +259,36 @@ export function SalesDispensingReview({ token, profile }: Props) {
     const totalValue = state.sales.reduce((sum, sale) => sum + sale.total_amount, 0);
     const openBalance = state.sales.reduce((sum, sale) => sum + sale.balance_amount, 0);
 
+    const unpaidSales = state.sales.filter((sale) => sale.payment_status === 'unpaid');
+    const partialSales = state.sales.filter((sale) => sale.payment_status === 'partial');
+    const paidSales = state.sales.filter((sale) => sale.payment_status === 'paid');
+
     return {
       draftSales: draftSales.length,
       dispensedSales: dispensedSales.length,
+      unpaidSales: unpaidSales.length,
+      partialSales: partialSales.length,
+      paidSales: paidSales.length,
       totalValue,
       openBalance,
+    };
+  }, [state.sales]);
+
+  const salesQueues = useMemo(() => {
+    const draft = state.sales.filter((sale) => sale.status === 'draft');
+    const readyToDispense = draft.filter((sale) => Number(sale.items_count ?? sale.items?.length ?? 0) > 0);
+    const dispensed = state.sales.filter((sale) => sale.status === 'dispensed');
+    const unpaid = state.sales.filter((sale) => sale.payment_status === 'unpaid');
+    const partiallyPaid = state.sales.filter((sale) => sale.payment_status === 'partial');
+    const paid = state.sales.filter((sale) => sale.payment_status === 'paid');
+
+    return {
+      draft,
+      readyToDispense,
+      dispensed,
+      unpaid,
+      partiallyPaid,
+      paid,
     };
   }, [state.sales]);
 
@@ -198,7 +319,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         getPharmaBranches(token, tenantSlug),
         getPharmaCustomers(token, tenantSlug),
         getPharmaPrescriptions(token, tenantSlug),
-        getPharmaSales(token, tenantSlug),
+        getPharmaSales(token, tenantSlug, apiSalesFilters),
         getPharmaInventoryBatches(token, tenantSlug),
         getPharmaProducts(token, tenantSlug),
       ]);
@@ -293,7 +414,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
       });
 
       const [salesResponse, batchesResponse] = await Promise.all([
-        getPharmaSales(token, tenantSlug),
+        getPharmaSales(token, tenantSlug, apiSalesFilters),
         getPharmaInventoryBatches(token, tenantSlug),
       ]);
 
@@ -302,7 +423,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         sales: salesResponse.sales,
         selectedSale: response.sale,
         batches: batchesResponse.batches,
-        products: productsResponse.products,
+        products: current.products,
       }));
       setBatchSelections(buildBatchSelections(response.sale, batchesResponse.batches));
       setPrescriptionChecks(buildPrescriptionChecks(response.sale));
@@ -401,6 +522,12 @@ export function SalesDispensingReview({ token, profile }: Props) {
     setLastPayment(null);
   }
 
+  function handleResetSalesFilters() {
+    setSalesFilters(defaultSalesFilters());
+    setNotice('Sales filters reset. Load sales review to refresh the list.');
+    setError('');
+  }
+
   const selectedSale = state.selectedSale;
   const saleItems = selectedSale?.items ?? [];
   const isDraftSale = selectedSale?.status === 'draft';
@@ -423,6 +550,19 @@ export function SalesDispensingReview({ token, profile }: Props) {
 
   const readyCount = readinessItems.filter((item) => item.ready).length;
   const canConfirmSelectedSale = Boolean(selectedSale && isDraftSale && saleItems.length > 0 && readyCount === saleItems.length);
+  const requiredPrescriptionCount = readinessItems.filter((entry) => entry.item.requires_prescription).length;
+  const verifiedPrescriptionCount = readinessItems.filter(
+    (entry) => entry.item.requires_prescription && Boolean(prescriptionChecks[entry.item.id]),
+  ).length;
+  const paymentBalance = Number(selectedSale?.balance_amount ?? 0);
+  const selectedPaymentStatus = selectedSale?.payment_status ?? 'unpaid';
+  const selectedPaymentTone = paymentStatusTone(selectedPaymentStatus);
+  const selectedPrescriptionTone = prescriptionTone(requiredPrescriptionCount, verifiedPrescriptionCount);
+  const selectedDispensingTone = canConfirmSelectedSale || selectedSale?.status === 'dispensed' ? 'stable' : isDraftSale ? 'attention' : 'neutral';
+  const prescriptionStatusText =
+    requiredPrescriptionCount === 0
+      ? 'Not required'
+      : `${verifiedPrescriptionCount}/${requiredPrescriptionCount} verified`;
 
   return (
     <article className="panel wide sales-review-panel">
@@ -475,6 +615,175 @@ export function SalesDispensingReview({ token, profile }: Props) {
         </article>
       </div>
 
+      <section className="pharmaco-card sales-filter-panel">
+        <div className="panel-heading-row">
+          <div>
+            <span className="section-label">Sales queues and filters</span>
+            <h3>Focus the dispensing review</h3>
+            <p className="muted">
+              Use the existing backend filters to focus work by status, payment state, sale type and branch.
+            </p>
+          </div>
+          <div className="sale-total-box">
+            <span>Current view</span>
+            <strong>{activeFilterText}</strong>
+            <small>{state.sales.length} sale records loaded</small>
+          </div>
+        </div>
+
+        <div className="sales-queue-grid" aria-label="Sales review queues">
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.status === 'draft' ? 'queue-card-active' : ''}`}
+            aria-pressed={salesFilters.status === 'draft'}
+            onClick={() => setSalesFilters((current) => ({ ...current, status: 'draft' }))}
+          >
+            <span>Draft queue</span>
+            <strong>{salesQueues.draft.length}</strong>
+            <small>Needs review before stock deduction</small>
+          </button>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.status === 'draft' ? 'queue-card-active' : ''}`}
+            aria-pressed={salesFilters.status === 'draft'}
+            onClick={() => setSalesFilters((current) => ({ ...current, status: 'draft' }))}
+          >
+            <span>Ready to dispense</span>
+            <strong>{salesQueues.readyToDispense.length}</strong>
+            <small>Draft sales with line items</small>
+          </button>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.status === 'dispensed' ? 'queue-card-active' : ''}`}
+            aria-pressed={salesFilters.status === 'dispensed'}
+            onClick={() => setSalesFilters((current) => ({ ...current, status: 'dispensed' }))}
+          >
+            <span>Dispensed</span>
+            <strong>{salesQueues.dispensed.length}</strong>
+            <small>Stock already deducted</small>
+          </button>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.payment_status === 'unpaid' ? 'queue-card-active warning' : ''}`}
+            aria-pressed={salesFilters.payment_status === 'unpaid'}
+            onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'unpaid' }))}
+          >
+            <span>Unpaid</span>
+            <strong>{salesQueues.unpaid.length}</strong>
+            <small>Payment follow-up needed</small>
+          </button>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.payment_status === 'partial' ? 'queue-card-active attention' : ''}`}
+            aria-pressed={salesFilters.payment_status === 'partial'}
+            onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'partial' }))}
+          >
+            <span>Partially paid</span>
+            <strong>{salesQueues.partiallyPaid.length}</strong>
+            <small>Balance still open</small>
+          </button>
+          <button
+            type="button"
+            className={`queue-card ${salesFilters.payment_status === 'paid' ? 'queue-card-active stable' : ''}`}
+            aria-pressed={salesFilters.payment_status === 'paid'}
+            onClick={() => setSalesFilters((current) => ({ ...current, payment_status: 'paid' }))}
+          >
+            <span>Paid</span>
+            <strong>{salesQueues.paid.length}</strong>
+            <small>Receipt trail complete</small>
+          </button>
+        </div>
+
+        <div className="sales-filter-grid">
+          <label>
+            Sale status
+            <select
+              value={salesFilters.status}
+              onChange={(event) =>
+                setSalesFilters((current) => ({
+                  ...current,
+                  status: event.target.value as SalesStatusFilter,
+                }))
+              }
+            >
+              <option value="all">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="dispensed">Dispensed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </label>
+
+          <label>
+            Payment status
+            <select
+              value={salesFilters.payment_status}
+              onChange={(event) =>
+                setSalesFilters((current) => ({
+                  ...current,
+                  payment_status: event.target.value as PaymentStatusFilter,
+                }))
+              }
+            >
+              <option value="all">All payment states</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="partial">Partial</option>
+              <option value="paid">Paid</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </label>
+
+          <label>
+            Sale type
+            <select
+              value={salesFilters.sale_type}
+              onChange={(event) =>
+                setSalesFilters((current) => ({
+                  ...current,
+                  sale_type: event.target.value as SaleTypeFilter,
+                }))
+              }
+            >
+              <option value="all">All sale types</option>
+              <option value="cash_sale">Cash sale</option>
+              <option value="prescription_sale">Prescription sale</option>
+              <option value="insurance_sale">Insurance sale</option>
+              <option value="credit_sale">Credit sale</option>
+            </select>
+          </label>
+
+          <label>
+            Branch
+            <select
+              value={salesFilters.branch_id}
+              onChange={(event) =>
+                setSalesFilters((current) => ({
+                  ...current,
+                  branch_id: event.target.value,
+                }))
+              }
+            >
+              <option value="all">All branches</option>
+              {state.branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="filter-action-row">
+          <button type="button" onClick={loadSalesReview} disabled={isLoading}>
+            {isLoading ? 'Applying filters…' : 'Apply filters'}
+          </button>
+          <button type="button" className="secondary-action" onClick={handleResetSalesFilters}>
+            Reset filters
+          </button>
+        </div>
+        <p className="filter-helper-text">
+          Queue cards prepare a focused view. Apply filters reloads the list from the backend; reset returns the team to the full sales view.
+        </p>
+      </section>
 
       <SalesCreationPanel
         token={token}
@@ -573,6 +882,39 @@ export function SalesDispensingReview({ token, profile }: Props) {
             </div>
           </div>
 
+          <div className="selected-sale-insight-grid">
+            <article className={`insight-card ${selectedSale.status === 'dispensed' ? 'stable' : 'attention'}`}>
+              <span>Status</span>
+              <strong>{labelize(selectedSale.status)}</strong>
+              <small>{selectedSale.status === 'dispensed' ? 'Stock movement completed' : 'Confirm readiness before dispensing'}</small>
+            </article>
+            <article className={`insight-card ${selectedPaymentTone}`}>
+              <span>Payment</span>
+              <strong>{labelize(selectedSale.payment_status)}</strong>
+              <small>{paymentStatusGuidance(selectedPaymentStatus, paymentBalance)}</small>
+            </article>
+            <article className={`insight-card ${selectedPrescriptionTone}`}>
+              <span>Prescription</span>
+              <strong>{prescriptionStatusText}</strong>
+              <small>{prescriptionGuidance(requiredPrescriptionCount, verifiedPrescriptionCount)}</small>
+            </article>
+            <article className={`insight-card ${selectedDispensingTone}`}>
+              <span>Dispensing readiness</span>
+              <strong>{readyCount}/{saleItems.length}</strong>
+              <small>{canConfirmSelectedSale ? 'Ready for controlled confirmation' : 'Review batches and prescription checks'}</small>
+            </article>
+            <article>
+              <span>Customer</span>
+              <strong>{selectedSale.customer?.full_name ?? 'Walk-in'}</strong>
+              <small>{selectedSale.customer?.phone ?? 'No phone captured'}</small>
+            </article>
+            <article>
+              <span>Created</span>
+              <strong>{formatDate(selectedSale.created_at)}</strong>
+              <small>{selectedSale.sale_type.replaceAll('_', ' ')}</small>
+            </article>
+          </div>
+
           <div className="readiness-summary">
             <strong>{readyCount}/{saleItems.length}</strong>
             <span>items ready for controlled confirmation</span>
@@ -596,6 +938,19 @@ export function SalesDispensingReview({ token, profile }: Props) {
                 <strong>{selectedSale.payment_status.replaceAll('_', ' ')}</strong>
                 <small>Paid: {money(selectedSale.paid_amount)} · Balance: {money(selectedSale.balance_amount)}</small>
               </div>
+            </div>
+
+            <div className="workflow-state-grid" aria-label="Payment and prescription workflow guidance">
+              <article className={`workflow-state-card ${selectedPaymentTone}`}>
+                <span>Payment guidance</span>
+                <strong>{labelize(selectedPaymentStatus)}</strong>
+                <small>{paymentStatusGuidance(selectedPaymentStatus, paymentBalance)}</small>
+              </article>
+              <article className={`workflow-state-card ${selectedPrescriptionTone}`}>
+                <span>Prescription guidance</span>
+                <strong>{prescriptionStatusText}</strong>
+                <small>{prescriptionGuidance(requiredPrescriptionCount, verifiedPrescriptionCount)}</small>
+              </article>
             </div>
 
             {selectedSale.status === 'draft' ? (

@@ -1795,3 +1795,9 @@ Phase 18.4 adds a controlled package manifest quarantine ledger for the PharmaCo
 This phase documents that any future package manifest remains quarantined and cannot be created, released, or executed until explicit future approval is provided.
 
 No package manifest creation, package manifest target release, checksum target release, checksum generation, archive target release, package archive, package-build command execution, package generation execution, package upload, cPanel execution, live deployment, production file copy, migration, dependency, backend product, frontend product, or data mutation is introduced.
+
+## Phase 18.5 Package Contents Quarantine Ledger
+
+The PharmaCo360 controlled package generation execution workflow now includes a package contents quarantine ledger.
+
+This phase confirms that package contents remain evidence-only. No package contents list was released or executed. No package manifest was created. No package archive was created. No checksum was generated. No package-build command was released or executed. No package generation, upload, cPanel execution, live deployment, production file copy, migration, dependency change, backend product change, frontend product change, or data mutation occurred.

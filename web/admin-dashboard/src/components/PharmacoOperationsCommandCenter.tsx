@@ -245,6 +245,7 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
     }
   }
 
+
   const executiveSummaryItems = [
     {
       label: 'Operating position',
