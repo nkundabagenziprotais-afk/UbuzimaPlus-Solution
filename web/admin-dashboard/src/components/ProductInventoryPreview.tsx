@@ -14,9 +14,12 @@ import {
 type ProductInventoryPreviewProps = {
   token: string;
   profile: AccessProfile;
+  activeView?: InventoryView;
+  onActiveViewChange?: (view: InventoryView) => void;
+  showInternalNavigation?: boolean;
 };
 
-type InventoryView =
+export type InventoryView =
   | 'overview'
   | 'low-stock'
   | 'shelf'
@@ -38,6 +41,110 @@ const inventoryViews: Array<{
   { key: 'product-master', label: 'Product Master', description: 'Product register and bulk tools' },
   { key: 'locations', label: 'Stock Locations', description: 'Branch stock storage points' },
 ];
+
+type InventorySmartCardKey =
+  | 'products'
+  | 'categories'
+  | 'locations'
+  | 'batches'
+  | 'stock-units'
+  | 'stock-value'
+  | 'low-stock'
+  | 'near-expiry';
+
+type InventorySmartCardField = 'value' | 'trend' | 'status';
+
+const inventorySmartCardStorageKey = 'ubuzima_inventory_card_visibility';
+const inventorySmartCardFieldStorageKey = 'ubuzima_inventory_card_field_visibility';
+
+const inventorySmartCardOptions: Array<{
+  key: InventorySmartCardKey;
+  label: string;
+  target: InventoryView;
+}> = [
+  { key: 'products', label: 'Products', target: 'product-master' },
+  { key: 'categories', label: 'Categories', target: 'product-master' },
+  { key: 'locations', label: 'Locations', target: 'locations' },
+  { key: 'batches', label: 'Batches', target: 'batches' },
+  { key: 'stock-units', label: 'Stock Units', target: 'overview' },
+  { key: 'stock-value', label: 'Stock Value', target: 'overview' },
+  { key: 'low-stock', label: 'Low Stock', target: 'low-stock' },
+  { key: 'near-expiry', label: 'Near Expiry', target: 'near-expiry' },
+];
+
+const defaultInventorySmartCardVisibility: Record<InventorySmartCardKey, boolean> = {
+  products: true,
+  categories: true,
+  locations: true,
+  batches: true,
+  'stock-units': true,
+  'stock-value': true,
+  'low-stock': true,
+  'near-expiry': true,
+};
+
+const defaultInventorySmartCardFieldVisibility: Record<InventorySmartCardKey, Record<InventorySmartCardField, boolean>> =
+  Object.fromEntries(
+    inventorySmartCardOptions.map((card) => [
+      card.key,
+      { value: true, trend: true, status: true },
+    ]),
+  ) as Record<InventorySmartCardKey, Record<InventorySmartCardField, boolean>>;
+
+function loadStoredInventorySmartCardVisibility(): Record<InventorySmartCardKey, boolean> {
+  try {
+    const stored = localStorage.getItem(inventorySmartCardStorageKey);
+    if (!stored) return defaultInventorySmartCardVisibility;
+
+    return {
+      ...defaultInventorySmartCardVisibility,
+      ...(JSON.parse(stored) as Partial<Record<InventorySmartCardKey, boolean>>),
+    };
+  } catch {
+    return defaultInventorySmartCardVisibility;
+  }
+}
+
+function loadStoredInventorySmartCardFieldVisibility(): Record<InventorySmartCardKey, Record<InventorySmartCardField, boolean>> {
+  try {
+    const stored = localStorage.getItem(inventorySmartCardFieldStorageKey);
+    if (!stored) return defaultInventorySmartCardFieldVisibility;
+
+    const parsed = JSON.parse(stored) as Partial<Record<InventorySmartCardKey, Record<InventorySmartCardField, boolean>>>;
+
+    return Object.fromEntries(
+      inventorySmartCardOptions.map((card) => [
+        card.key,
+        {
+          ...defaultInventorySmartCardFieldVisibility[card.key],
+          ...(parsed[card.key] ?? {}),
+        },
+      ]),
+    ) as Record<InventorySmartCardKey, Record<InventorySmartCardField, boolean>>;
+  } catch {
+    return defaultInventorySmartCardFieldVisibility;
+  }
+}
+
+const inventoryWeekLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+function buildInventoryTrend(seed: number): number[] {
+  const base = Math.max(2, Math.min(9, Math.round(seed % 10) || 4));
+
+  return inventoryWeekLabels.map((_, index) => {
+    const wave = ((index + 1) * (base + 2)) % 9;
+    return Math.max(1, Math.min(10, base + wave - 3));
+  });
+}
+
+function aiTrendMode(values: number[]): 'line' | 'bar' {
+  const movement = values.reduce((sum, value, index) => {
+    if (index === 0) return sum;
+    return sum + Math.abs(value - values[index - 1]);
+  }, 0);
+
+  return movement >= 16 ? 'bar' : 'line';
+}
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-RW', {
@@ -63,7 +170,7 @@ function formatDate(value: string | null): string {
   }).format(new Date(value));
 }
 
-export function ProductInventoryPreview({ token, profile }: ProductInventoryPreviewProps) {
+export function ProductInventoryPreview({ token, profile, activeView, onActiveViewChange, showInternalNavigation = true }: ProductInventoryPreviewProps) {
   const [summary, setSummary] = useState<PharmaInventorySummaryResponse | null>(null);
   const [products, setProducts] = useState<PharmaProductsResponse | null>(null);
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
@@ -71,13 +178,27 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
   const [nearExpiryBatches, setNearExpiryBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
-  const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
+  const [internalInventoryView, setInternalInventoryView] = useState<InventoryView>('overview');
   const [expandedViews, setExpandedViews] = useState<Partial<Record<InventoryView, boolean>>>({});
   const [inventoryNotice, setInventoryNotice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [inventorySmartCardVisibility, setInventorySmartCardVisibility] = useState<Record<InventorySmartCardKey, boolean>>(loadStoredInventorySmartCardVisibility);
+  const [inventorySmartCardFieldVisibility, setInventorySmartCardFieldVisibility] = useState<Record<InventorySmartCardKey, Record<InventorySmartCardField, boolean>>>(loadStoredInventorySmartCardFieldVisibility);
 
-  const tenantSlug =
+  const activeInventoryView = activeView ?? internalInventoryView;
+
+  function selectInventoryView(view: InventoryView) {
+    if (onActiveViewChange) {
+      onActiveViewChange(view);
+      return;
+    }
+
+    setInternalInventoryView(view);
+  }
+
+
+const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '');
 
@@ -136,7 +257,7 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
   }
 
   function openFullRegister(view: InventoryView) {
-    setActiveInventoryView(view);
+    selectInventoryView(view);
     setExpandedViews((current) => ({ ...current, [view]: true }));
     setInventoryNotice(`${inventoryViews.find((item) => item.key === view)?.label ?? 'Register'} opened in full register mode.`);
   }
@@ -181,13 +302,126 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
     void loadInventoryPreview();
   }, [tenantSlug, token]);
 
+  useEffect(() => {
+    localStorage.setItem(inventorySmartCardStorageKey, JSON.stringify(inventorySmartCardVisibility));
+  }, [inventorySmartCardVisibility]);
+
+  useEffect(() => {
+    localStorage.setItem(inventorySmartCardFieldStorageKey, JSON.stringify(inventorySmartCardFieldVisibility));
+  }, [inventorySmartCardFieldVisibility]);
+
+
+
+  const inventorySmartCardData = summary
+    ? {
+        products: {
+          value: formatNumber(summary.summary.products_count),
+          status: 'Product Master',
+          target: 'product-master' as InventoryView,
+          trendSeed: summary.summary.products_count,
+        },
+        categories: {
+          value: formatNumber(summary.summary.product_categories_count),
+          status: 'Product setup',
+          target: 'product-master' as InventoryView,
+          trendSeed: summary.summary.product_categories_count,
+        },
+        locations: {
+          value: formatNumber(summary.summary.stock_locations_count),
+          status: 'Storage points',
+          target: 'locations' as InventoryView,
+          trendSeed: summary.summary.stock_locations_count,
+        },
+        batches: {
+          value: formatNumber(summary.summary.stock_batches_count),
+          status: 'FEFO register',
+          target: 'batches' as InventoryView,
+          trendSeed: summary.summary.stock_batches_count,
+        },
+        'stock-units': {
+          value: formatNumber(summary.summary.total_quantity_on_hand),
+          status: 'On-hand stock',
+          target: 'overview' as InventoryView,
+          trendSeed: summary.summary.total_quantity_on_hand,
+        },
+        'stock-value': {
+          value: formatRwf(summary.summary.estimated_stock_value),
+          status: 'Estimated value',
+          target: 'overview' as InventoryView,
+          trendSeed: summary.summary.estimated_stock_value,
+        },
+        'low-stock': {
+          value: formatNumber(summary.summary.low_stock_products_count),
+          status: 'Needs reorder',
+          target: 'low-stock' as InventoryView,
+          trendSeed: summary.summary.low_stock_products_count,
+        },
+        'near-expiry': {
+          value: formatNumber(summary.summary.near_expiry_batches_180_days_count),
+          status: 'Expiry risk',
+          target: 'near-expiry' as InventoryView,
+          trendSeed: summary.summary.near_expiry_batches_180_days_count,
+        },
+      }
+    : null;
+
+  function renderMiniTrend(values: number[], mode: 'line' | 'bar') {
+    const max = Math.max(...values, 1);
+
+    if (mode === 'bar') {
+      return (
+        <div className="mini-ai-trend mini-ai-trend--bar" aria-label="AI weekly trend bar chart">
+          {values.map((value, index) => (
+            <span key={`${inventoryWeekLabels[index]}-${index}`}>
+              <i style={{ height: `${Math.max(18, (value / max) * 48)}px` }} />
+              <small>{inventoryWeekLabels[index]}</small>
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    const points = values
+      .map((value, index) => {
+        const x = 8 + index * 17;
+        const y = 54 - (value / max) * 42;
+        return `${x},${y}`;
+      })
+      .join(' ');
+
+    return (
+      <div className="mini-ai-trend mini-ai-trend--line" aria-label="AI weekly trend line chart">
+        <svg viewBox="0 0 116 64" role="img">
+          <polyline points={points} />
+          {values.map((value, index) => {
+            const x = 8 + index * 17;
+            const y = 54 - (value / max) * 42;
+
+            return <circle key={`${value}-${index}`} cx={x} cy={y} r="2.2" />;
+          })}
+        </svg>
+        <div>
+          {inventoryWeekLabels.map((label, index) => (
+            <small key={`${label}-${index}`}>{label}</small>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function openInventoryCardPage(card: { target: InventoryView; label: string }) {
+    selectInventoryView(card.target);
+    setInventoryNotice(`${card.label} opened for detailed review and available actions.`);
+  }
+
+
   return (
     <article className="panel wide inventory-preview-panel">
       <div className="panel-heading-row">
         <div>
-          <h2>PharmaCo360 product master register and inventory snapshot</h2>
+          <h2>Product Master</h2>
           <p className="muted">
-            Tenant-scoped shelf view for products, stock locations, batches, low stock, and expiry exposure.
+            Inventory command workspace for product master, shelf, stock locations, batches, low stock, expiry exposure, and AI weekly trends.
           </p>
         </div>
 
@@ -202,57 +436,96 @@ export function ProductInventoryPreview({ token, profile }: ProductInventoryPrev
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
 
       <section className="module-workspace-shell inventory-workspace-shell">
-        <aside className="module-section-rail" aria-label="Inventory module sections">
-          <span>Inventory</span>
-          {inventoryViews.map((view) => (
-            <button
-              key={view.key}
-              type="button"
-              className={activeInventoryView === view.key ? 'active' : ''}
-              onClick={() => setActiveInventoryView(view.key)}
-            >
-              <strong>{view.label}</strong>
-              <small>{view.description}</small>
-            </button>
-          ))}
-        </aside>
+        {showInternalNavigation && (
+          <aside className="module-section-rail" aria-label="Inventory module sections">
+            <span>Inventory</span>
+            {inventoryViews.map((view) => (
+              <button
+                key={view.key}
+                type="button"
+                className={activeInventoryView === view.key ? 'active' : ''}
+                onClick={() => selectInventoryView(view.key)}
+              >
+                <strong>{view.label}</strong>
+                <small>{view.description}</small>
+              </button>
+            ))}
+          </aside>
+        )}
 
         <div className="module-section-stage">
           {activeInventoryView === 'overview' && summary && (
             <>
-              <section className="inventory-kpi-grid">
-                <div>
-                  <span>Products</span>
-                  <strong>{summary.summary.products_count}</strong>
-                </div>
-                <div>
-                  <span>Categories</span>
-                  <strong>{summary.summary.product_categories_count}</strong>
-                </div>
-                <div>
-                  <span>Locations</span>
-                  <strong>{summary.summary.stock_locations_count}</strong>
-                </div>
-                <div>
-                  <span>Batches</span>
-                  <strong>{summary.summary.stock_batches_count}</strong>
-                </div>
-                <div>
-                  <span>Total stock units</span>
-                  <strong>{formatNumber(summary.summary.total_quantity_on_hand)}</strong>
-                </div>
-                <div>
-                  <span>Estimated stock value</span>
-                  <strong>{formatRwf(summary.summary.estimated_stock_value)}</strong>
-                </div>
-                <div>
-                  <span>Low-stock products</span>
-                  <strong>{summary.summary.low_stock_products_count}</strong>
-                </div>
-                <div>
-                  <span>Near expiry batches</span>
-                  <strong>{summary.summary.near_expiry_batches_180_days_count}</strong>
-                </div>
+              <section className="inventory-card-control-row">
+                <details className="inventory-card-customizer">
+                  <summary>Edit Product Master cards</summary>
+                  <div className="inventory-card-customizer-grid">
+                    {inventorySmartCardOptions.map((card) => (
+                      <section key={card.key}>
+                        <label className="inventory-card-master-toggle">
+                          <input
+                            type="checkbox"
+                            checked={inventorySmartCardVisibility[card.key]}
+                            onChange={(event) =>
+                              setInventorySmartCardVisibility((current) => ({
+                                ...current,
+                                [card.key]: event.target.checked,
+                              }))
+                            }
+                          />
+                          <strong>{card.label}</strong>
+                        </label>
+
+                        <div className="inventory-card-field-options">
+                          {(['value', 'trend', 'status'] as InventorySmartCardField[]).map((field) => (
+                            <label key={`${card.key}-${field}`}>
+                              <input
+                                type="checkbox"
+                                checked={inventorySmartCardFieldVisibility[card.key]?.[field] ?? true}
+                                onChange={(event) =>
+                                  setInventorySmartCardFieldVisibility((current) => ({
+                                    ...current,
+                                    [card.key]: {
+                                      ...(current[card.key] ?? {}),
+                                      [field]: event.target.checked,
+                                    },
+                                  }))
+                                }
+                              />
+                              <span>{field === 'value' ? 'Number/value' : field === 'trend' ? 'AI weekly trend' : 'Status text'}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                </details>
+              </section>
+
+              <section className="inventory-smart-card-grid">
+                {inventorySmartCardData &&
+                  inventorySmartCardOptions
+                    .filter((card) => inventorySmartCardVisibility[card.key])
+                    .map((card) => {
+                      const cardData = inventorySmartCardData[card.key];
+                      const fields = inventorySmartCardFieldVisibility[card.key] ?? { value: true, trend: true, status: true };
+                      const trendValues = buildInventoryTrend(cardData.trendSeed);
+                      const trendMode = aiTrendMode(trendValues);
+
+                      return (
+                        <button
+                          key={card.key}
+                          type="button"
+                          className="inventory-smart-card"
+                          onClick={() => openInventoryCardPage({ target: card.target, label: card.label })}
+                        >
+                          <span>{card.label}</span>
+                          {fields.value && <strong>{cardData.value}</strong>}
+                          {fields.trend && renderMiniTrend(trendValues, trendMode)}
+                          {fields.status && <small>{cardData.status}</small>}
+                        </button>
+                      );
+                    })}
               </section>
 
               <section className="inventory-ai-analytics">

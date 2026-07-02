@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmacyProfile, login, logout, requestPasswordReset, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
-import { ProductInventoryPreview } from './components/ProductInventoryPreview';
+import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
@@ -175,6 +175,210 @@ type MenuItem = {
 
 type MenuGroup = { key: MenuGroupKey; label: string; icon: string; items: MenuItem[] };
 
+
+type DashboardCardKey =
+  | 'inventory'
+  | 'pos'
+  | 'finance'
+  | 'suppliers'
+  | 'communications'
+  | 'ai-reports'
+  | 'profile';
+
+const dashboardCardVisibilityStorageKey = 'ubuzima_admin_dashboard_card_visibility';
+const dashboardCardFieldVisibilityStorageKey = 'ubuzima_admin_dashboard_card_field_visibility';
+
+const dashboardCardOptions: Array<{ key: DashboardCardKey; label: string }> = [
+  { key: 'inventory', label: 'Inventory Control' },
+  { key: 'pos', label: 'POS and Sales' },
+  { key: 'finance', label: 'Finance Watch' },
+  { key: 'suppliers', label: 'Supplier and Purchase Orders' },
+  { key: 'communications', label: 'Communication Center' },
+  { key: 'ai-reports', label: 'AI and Reports' },
+  { key: 'profile', label: 'Profile and Access' },
+];
+
+const dashboardCardFieldOptions: Record<DashboardCardKey, Array<{ key: string; label: string }>> = {
+  inventory: [
+    { key: 'pages', label: 'Inventory pages' },
+    { key: 'expiry', label: 'Expiry watch' },
+    { key: 'permission', label: 'Permission status' },
+  ],
+  pos: [
+    { key: 'pages', label: 'Sales pages' },
+    { key: 'receipts', label: 'Receipt readiness' },
+    { key: 'permission', label: 'POS access' },
+  ],
+  finance: [
+    { key: 'pages', label: 'Finance pages' },
+    { key: 'statements', label: 'AI statements' },
+    { key: 'reconcile', label: 'Reconciliation' },
+  ],
+  suppliers: [
+    { key: 'pages', label: 'Supplier pages' },
+    { key: 'po', label: 'Purchase orders' },
+    { key: 'permission', label: 'Permission status' },
+  ],
+  communications: [
+    { key: 'unread', label: 'Unread email' },
+    { key: 'channel', label: 'Official channel' },
+    { key: 'alerts', label: 'Alert readiness' },
+  ],
+  'ai-reports': [
+    { key: 'ai-tools', label: 'AI tools' },
+    { key: 'report-pages', label: 'Report pages' },
+    { key: 'permission', label: 'AI access' },
+  ],
+  profile: [
+    { key: 'permissions', label: 'Permissions' },
+    { key: 'scope', label: 'Scope' },
+    { key: 'edit', label: 'Edit profile' },
+  ],
+};
+
+const defaultDashboardCardVisibility: Record<DashboardCardKey, boolean> = {
+  inventory: true,
+  pos: true,
+  finance: true,
+  suppliers: true,
+  communications: true,
+  'ai-reports': true,
+  profile: true,
+};
+
+const defaultDashboardCardFieldVisibility: Record<DashboardCardKey, Record<string, boolean>> =
+  Object.fromEntries(
+    dashboardCardOptions.map((card) => [
+      card.key,
+      Object.fromEntries(dashboardCardFieldOptions[card.key].map((field) => [field.key, true])),
+    ]),
+  ) as Record<DashboardCardKey, Record<string, boolean>>;
+
+function loadStoredDashboardCardVisibility(): Record<DashboardCardKey, boolean> {
+  try {
+    const stored = localStorage.getItem(dashboardCardVisibilityStorageKey);
+    if (!stored) return defaultDashboardCardVisibility;
+
+    const parsed = JSON.parse(stored) as Partial<Record<DashboardCardKey, boolean>>;
+
+    return {
+      ...defaultDashboardCardVisibility,
+      ...parsed,
+    };
+  } catch {
+    return defaultDashboardCardVisibility;
+  }
+}
+
+function loadStoredDashboardCardFieldVisibility(): Record<DashboardCardKey, Record<string, boolean>> {
+  try {
+    const stored = localStorage.getItem(dashboardCardFieldVisibilityStorageKey);
+    if (!stored) return defaultDashboardCardFieldVisibility;
+
+    const parsed = JSON.parse(stored) as Partial<Record<DashboardCardKey, Record<string, boolean>>>;
+
+    return Object.fromEntries(
+      dashboardCardOptions.map((card) => [
+        card.key,
+        {
+          ...defaultDashboardCardFieldVisibility[card.key],
+          ...(parsed[card.key] ?? {}),
+        },
+      ]),
+    ) as Record<DashboardCardKey, Record<string, boolean>>;
+  } catch {
+    return defaultDashboardCardFieldVisibility;
+  }
+}
+
+
+type LeftMenuAppearance = {
+  primaryColor: string;
+  titleColor: string;
+  density: 'compact' | 'comfortable';
+};
+
+const leftMenuAppearanceStorageKey = 'ubuzima_admin_left_menu_appearance';
+
+const defaultLeftMenuAppearance: LeftMenuAppearance = {
+  primaryColor: '#4B5320',
+  titleColor: '#ffffff',
+  density: 'compact',
+};
+
+function loadStoredLeftMenuAppearance(): LeftMenuAppearance {
+  try {
+    const stored = localStorage.getItem(leftMenuAppearanceStorageKey);
+    if (!stored) return defaultLeftMenuAppearance;
+
+    const parsed = JSON.parse(stored) as Partial<LeftMenuAppearance>;
+
+    return {
+      primaryColor: parsed.primaryColor || defaultLeftMenuAppearance.primaryColor,
+      titleColor: parsed.titleColor || defaultLeftMenuAppearance.titleColor,
+      density: parsed.density === 'comfortable' ? 'comfortable' : 'compact',
+    };
+  } catch {
+    return defaultLeftMenuAppearance;
+  }
+}
+
+
+type LeftMenuSubmenu = {
+  key: string;
+  label: string;
+  target?: string;
+};
+
+const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
+  inventory: [
+    { key: 'inventory-overview', label: 'Overview Summary', target: 'overview' },
+    { key: 'inventory-low-stock', label: 'Low Stock Watch List', target: 'low-stock' },
+    { key: 'inventory-shelf', label: 'Retail Product Shelf', target: 'shelf' },
+    { key: 'inventory-batches', label: 'Batch and Expiry Preview', target: 'batches' },
+    { key: 'inventory-near-expiry', label: 'Near Expiry Watch List', target: 'near-expiry' },
+    { key: 'inventory-product-master', label: 'Product Master', target: 'product-master' },
+    { key: 'inventory-locations', label: 'Stock Locations', target: 'locations' },
+  ],
+  pos: [
+    { key: 'pos-overview', label: 'POS and Sales Overview', target: 'overview' },
+    { key: 'pos-counter', label: 'POS', target: 'pos' },
+    { key: 'pos-dispensing', label: 'Dispensing Review', target: 'dispensing-review' },
+    { key: 'pos-customers', label: 'Customers and Patients', target: 'customers-patients' },
+    { key: 'pos-prescriptions', label: 'Prescriptions', target: 'prescriptions' },
+    { key: 'pos-performance', label: 'Sales Performance', target: 'sales-performance' },
+    { key: 'pos-payment-receipt', label: 'Payment and Receipt', target: 'payment-receipt' },
+  ],
+  suppliers: [
+    { key: 'supplier-overview', label: 'Supplier Overview', target: 'overview' },
+    { key: 'supplier-create', label: 'Create Supplier', target: 'create-supplier' },
+    { key: 'supplier-list', label: 'Supplier List', target: 'supplier-list' },
+    { key: 'supplier-create-po', label: 'Create Purchase Order', target: 'create-purchase-order' },
+    { key: 'supplier-outstanding-po', label: 'Outstanding Purchase Order List', target: 'outstanding-purchase-orders' },
+    { key: 'supplier-receive-po', label: 'Receive Purchase Order', target: 'receive-purchase-order' },
+    { key: 'supplier-received-po', label: 'Received Purchase Order List', target: 'received-purchase-orders' },
+  ],
+  finance: [
+    { key: 'finance-overview', label: 'Finance Overview', target: 'overview' },
+    { key: 'finance-flow', label: 'Finance Flow', target: 'finance-flow' },
+    { key: 'finance-exception', label: 'Exception Focus', target: 'exception-focus' },
+    { key: 'finance-credits-receivables', label: 'Customer Credits and Receivables', target: 'customer-credits-receivables' },
+    { key: 'finance-receivable-register', label: 'Receivable Register', target: 'receivable-register' },
+    { key: 'finance-collection', label: 'Collection', target: 'collection' },
+    { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statement' },
+  ],
+  reports: [
+    { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
+    { key: 'adhoc-alerts', label: 'Operation Alerts', target: 'operation-alerts' },
+    { key: 'adhoc-review-queues', label: 'Review Queues', target: 'review-queues' },
+    { key: 'adhoc-executive-summary', label: 'Executive Operating Summary', target: 'executive-summary' },
+    { key: 'adhoc-decision-note', label: 'Decision Note', target: 'decision-note' },
+    { key: 'adhoc-checklist', label: 'Operation Checklist', target: 'operation-checklist' },
+    { key: 'adhoc-manager-notes', label: 'Priority Follow-up and Manager Review Notes', target: 'manager-review-notes' },
+  ],
+};
+
+
 const storageKey = 'ubuzima_admin_session';
 const activeSectionStorageKey = 'ubuzima_admin_active_section';
 const trustedDeviceStorageKey = 'ubuzima_admin_trusted_device_token';
@@ -214,7 +418,7 @@ const commercialFramework = [
     ],
   },
   {
-    family: 'PharmaCo360 operations',
+    family: 'Operations 360 View',
     state: 'Pilot active',
     modules: [
       'Profile and branches',
@@ -257,7 +461,7 @@ const commercialFramework = [
 
 const viewFramework = [
   ['Ubuzima+ Admin 360', 'Tenants, solutions, modules, security, support, billing, platform health, and aggregated insights.'],
-  ['Solution Admin 360', 'PharmaCo360 tenants, onboarding, workflow templates, module usage, AI performance, and solution alerts.'],
+  ['Solution Admin 360', 'Tenant operations, onboarding, workflow templates, module usage, AI performance, and solution alerts.'],
   ['Tenant Admin 360', 'VitaPharma branches, users, modules, sales, stock, suppliers, finance, customer risk, and AI insights.'],
   ['Branch 360', 'Branch stock, POS activity, cashier sessions, daily close, expiry risk, low stock, and local alerts.'],
   ['Product 360', 'Batches, expiry, purchases, sales history, supplier options, margin, forecast, and reorder advice.'],
@@ -268,7 +472,7 @@ const viewFramework = [
 
 const channelReadiness = [
   ['Public website', 'Repositioned for commercial lead capture and solution discovery.'],
-  ['Admin dashboard', 'Current working control center with live PharmaCo360 modules.'],
+  ['Admin dashboard', 'Current working control center with live tenant operation modules.'],
   ['Tenant portal', 'Next framework for VitaPharma setup, package, branding, and onboarding.'],
   ['Mobile app', 'Future manager alerts, approvals, delivery tasks, and stock summaries.'],
   ['Desktop/PWA POS', 'Future counter-optimized sales, barcode, receipt, and installable POS flow.'],
@@ -303,7 +507,7 @@ const experienceBlueprint = [
 
 const workspaceModel = [
   ['Platform admin', 'Tenants, packages, security, support, billing, AI governance, and platform health.'],
-  ['Solution admin', 'PharmaCo360 templates, tenant readiness, module adoption, reports, and support oversight.'],
+  ['Solution admin', 'Operations templates, tenant readiness, module adoption, ad-hoc reports, and support oversight.'],
   ['Tenant admin', 'Branches, users, modules, finance visibility, sales, stock, suppliers, and local policy.'],
   ['Branch manager', 'Daily close, stock movement, cashier activity, expiry risk, transfers, and local alerts.'],
   ['Counter team', 'Fast POS, barcode search, prescription checks, receipt, payment, and controlled dispensing.'],
@@ -363,7 +567,7 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
   },
   'tenant-setup': {
     eyebrow: 'Tenant and branch setup',
-    title: 'PharmaCo360 tenant configuration',
+    title: 'Operations 360 tenant configuration',
     description: 'Business profile, branches, departments, capabilities, operating hours, and local setup.',
   },
   security: {
@@ -404,7 +608,7 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
   'vitapharma-website': {
     eyebrow: 'Tenant Website',
     title: 'VitaPharma public website',
-    description: 'First-tenant public website surface integrated with Ubuzima+ and PharmaCo360.',
+    description: 'First-tenant public website surface integrated with Ubuzima+ tenant operations.',
   },
   settings: {
     eyebrow: 'System framework',
@@ -544,7 +748,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       },
       {
         key: 'tenant-ops',
-        label: 'PharmaCo360 Operations',
+        label: 'Operations 360 View',
         icon: 'PH',
         items: [
           { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
@@ -552,7 +756,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
           { key: 'suppliers', label: 'Suppliers', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
           { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
           { key: 'reports', label: 'Ad-hoc Report', description: 'Executive and daily reports', icon: 'AR', status: 'Live' },
-          { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer queue', icon: 'CH', status: 'Live' },
+          { key: 'pharmacist-chat', label: 'Pharmacist Chats', description: 'In-app and WhatsApp customer conversations', icon: 'CH', status: 'Live' },
         ],
       },
       {
@@ -1370,20 +1574,26 @@ function App() {
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
+  const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [openPrincipalMenus, setOpenPrincipalMenus] = useState<Partial<Record<AdminSectionKey, boolean>>>({});
   const [homeWidgets, setHomeWidgets] = useState<Record<HomeWidgetKey, boolean>>({
     summary: true,
     'tenant-dashboard': true,
     'quick-actions': true,
-    'system-experience': true,
-    'role-workspaces': true,
+    'system-experience': false,
+    'role-workspaces': false,
   });
+  const [leftMenuAppearance, setLeftMenuAppearance] = useState<LeftMenuAppearance>(loadStoredLeftMenuAppearance);
+  const [dashboardCardVisibility, setDashboardCardVisibility] = useState<Record<DashboardCardKey, boolean>>(loadStoredDashboardCardVisibility);
+  const [dashboardCardFieldVisibility, setDashboardCardFieldVisibility] = useState<Record<DashboardCardKey, Record<string, boolean>>>(loadStoredDashboardCardFieldVisibility);
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<MenuGroupKey, boolean>>({
     erp: false,
     solutions: false,
     ai: false,
     admin: false,
-    'tenant-ops': false,
-    'tenant-admin': false,
+    'tenant-ops': true,
+    'tenant-admin': true,
     market: false,
   });
 
@@ -1394,15 +1604,34 @@ function App() {
     visibleMenuGroups.forEach((group) => group.items.forEach((item) => keys.add(item.key)));
     return keys;
   }, [visibleMenuGroups]);
-  const currentSection = sectionMeta[activeSection] ?? sectionMeta.overview;
-  const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
-  const tenantFlatMenuItems = useMemo(
+  const principalMenuItems = useMemo(
     () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
     [visibleMenuGroups],
   );
+  const currentSection = sectionMeta[activeSection] ?? sectionMeta.overview;
+  const activeLeftSubmenuLabel =
+    leftMenuSubmenus[activeSection]?.find((submenu) => {
+      if (activeSection === 'inventory') return submenu.target === activeInventoryView;
+      if (activeSection === 'pos') return submenu.target === activePosWorkspace;
+      if (activeSection === 'suppliers') return submenu.target === activeSupplierWorkspace;
+      if (activeSection === 'finance') return submenu.target === activeFinanceWorkspace;
+      if (activeSection === 'reports') return submenu.target === activeAdhocReportWorkspace;
+      return false;
+    })?.label ?? null;
   const loginStatusText = profile
     ? `Logged in now as ${profile.user.name || profile.user.email}`
     : '';
+  const profileDisplayName = profile?.user.name || profile?.user.email || 'User';
+  const profileInitials = profileDisplayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'U';
+  const profileInstitution =
+    profile?.tenant_assignments?.[0]?.tenant?.name ||
+    (profile?.scope.type ? `${profile.scope.type} scope` : 'Ubuzima+');
+  const profileAvatarUrl = ((profile?.user ?? {}) as { avatar_url?: string }).avatar_url || '';
   const nextStaffLoginLanguage = staffLoginLanguages[
     (staffLoginLanguages.indexOf(staffLoginLanguage) + 1) % staffLoginLanguages.length
   ];
@@ -1507,7 +1736,7 @@ function App() {
         items: profile.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
       },
       {
-        title: 'PharmaCo360',
+        title: 'Operations 360',
         items: profile.permissions.filter((item) => item.startsWith('pharmaco.')),
       },
       {
@@ -1524,6 +1753,26 @@ function App() {
   useEffect(() => {
     localStorage.setItem(staffLanguageStorageKey, staffLoginLanguage);
   }, [staffLoginLanguage]);
+
+  useEffect(() => {
+    localStorage.setItem(leftMenuAppearanceStorageKey, JSON.stringify(leftMenuAppearance));
+  }, [leftMenuAppearance]);
+
+  useEffect(() => {
+    localStorage.setItem(dashboardCardVisibilityStorageKey, JSON.stringify(dashboardCardVisibility));
+  }, [dashboardCardVisibility]);
+
+  useEffect(() => {
+    localStorage.setItem(dashboardCardFieldVisibilityStorageKey, JSON.stringify(dashboardCardFieldVisibility));
+  }, [dashboardCardFieldVisibility]);
+
+  const leftMenuStyle = {
+    '--left-menu-accent': leftMenuAppearance.primaryColor,
+    '--left-menu-title-color': leftMenuAppearance.titleColor,
+    '--left-menu-card-padding-y': leftMenuAppearance.density === 'compact' ? '0.34rem' : '0.52rem',
+    '--left-menu-card-padding-x': leftMenuAppearance.density === 'compact' ? '0.48rem' : '0.62rem',
+    '--left-menu-submenu-font-size': leftMenuAppearance.density === 'compact' ? '0.7rem' : '0.76rem',
+  } as CSSProperties;
 
   useEffect(() => {
     if (!session?.token) {
@@ -1571,6 +1820,46 @@ function App() {
     setActiveSection(section);
   }
 
+  function activateModuleDefaultPage(item: MenuItem) {
+    const firstSubmenu = leftMenuSubmenus[item.key]?.[0];
+
+    if (item.key === 'inventory' && firstSubmenu?.target) {
+      setActiveInventoryView(firstSubmenu.target as InventoryView);
+    }
+
+    if (item.key === 'pos' && firstSubmenu?.target) {
+      setActivePosWorkspace(firstSubmenu.target as PosWorkspaceKey);
+    }
+
+    if (item.key === 'suppliers' && firstSubmenu?.target) {
+      setActiveSupplierWorkspace(firstSubmenu.target as SupplierWorkspaceKey);
+    }
+
+    if (item.key === 'finance' && firstSubmenu?.target) {
+      setActiveFinanceWorkspace(firstSubmenu.target as FinanceWorkspaceKey);
+    }
+
+    if (item.key === 'reports' && firstSubmenu?.target) {
+      setActiveAdhocReportWorkspace(firstSubmenu.target as AdhocReportWorkspaceKey);
+    }
+  }
+
+  function togglePrincipalMenu(item: MenuItem) {
+    setOpenPrincipalMenus((current) => ({
+      ...current,
+      [item.key]: !current[item.key],
+    }));
+
+    handleMenuItemClick(item);
+  }
+
+  function openPrincipalMenu(item: MenuItem) {
+    setOpenPrincipalMenus((current) => ({
+      ...current,
+      [item.key]: true,
+    }));
+  }
+
   function handleMenuItemClick(item: MenuItem) {
     if (item.key === 'erp' && item.context) {
       setActiveErpWorkspace(item.context as ErpWorkspaceKey);
@@ -1591,7 +1880,45 @@ function App() {
       setActiveAdminPanelWorkspace(item.context as AdminPanelWorkspaceKey);
     }
 
+    activateModuleDefaultPage(item);
     navigateToSection(item.key);
+  }
+
+  function handleLeftSubmenuClick(item: MenuItem, submenu: LeftMenuSubmenu) {
+    openPrincipalMenu(item);
+    if (item.key === 'inventory' && submenu.target) {
+      setActiveInventoryView(submenu.target as InventoryView);
+    }
+
+    if (item.key === 'pos' && submenu.target) {
+      setActivePosWorkspace(submenu.target as PosWorkspaceKey);
+    }
+
+    if (item.key === 'suppliers' && submenu.target) {
+      setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
+    }
+
+    if (item.key === 'finance' && submenu.target) {
+      setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
+    }
+
+    if (item.key === 'reports' && submenu.target) {
+      setActiveAdhocReportWorkspace(submenu.target as AdhocReportWorkspaceKey);
+    }
+
+    navigateToSection(item.key);
+  }
+
+  function isActiveLeftSubmenu(item: MenuItem, submenu: LeftMenuSubmenu) {
+    if (activeSection !== item.key) return false;
+
+    if (item.key === 'inventory') return submenu.target === activeInventoryView;
+    if (item.key === 'pos') return submenu.target === activePosWorkspace;
+    if (item.key === 'suppliers') return submenu.target === activeSupplierWorkspace;
+    if (item.key === 'finance') return submenu.target === activeFinanceWorkspace;
+    if (item.key === 'reports') return submenu.target === activeAdhocReportWorkspace;
+
+    return false;
   }
 
   function isActiveMenuItem(item: MenuItem) {
@@ -1806,7 +2133,7 @@ function App() {
         departments: departmentsResponse,
       });
     } catch (err) {
-      setPharmaCoreError(err instanceof Error ? err.message : 'Unable to load PharmaCo360 data.');
+      setPharmaCoreError(err instanceof Error ? err.message : 'Unable to load Operations 360 data.');
     } finally {
       setIsLoadingPharmaCore(false);
     }
@@ -2077,9 +2404,9 @@ function App() {
     <article className="panel wide pharmaco-panel">
       <div className="panel-heading-row">
         <div>
-          <h2>PharmaCo360 tenant operations preview</h2>
+          <h2>Operation Helicopter View</h2>
           <p className="muted">
-            Live tenant-scoped data from the PharmaCo360 profile, branches, and department APIs.
+            Live tenant-scoped data from profile, branch, inventory, sales, finance, supplier, and department APIs.
           </p>
         </div>
 
@@ -2237,14 +2564,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="ERP Module"
-          title={selectedErpModule.title}
-          description={selectedErpModule.summary}
-          status={selectedErpModule.status}
-        />
-
-        <div className="workspace-selector erp-selector">
+<div className="workspace-selector erp-selector">
           {erpModules.map((module) => (
             <button
               key={module.key}
@@ -2347,8 +2667,16 @@ function App() {
         {selectedFeature.key === 'inventory' && (
           <>
             <ModuleReadinessGrid items={inventoryReadiness} />
-            <ProductInventoryPreview token={session.token} profile={profile} />
-            <ProductInventoryActions token={session.token} profile={profile} />
+            <ProductInventoryPreview
+              token={session.token}
+              profile={profile}
+              activeView={activeInventoryView}
+              onActiveViewChange={setActiveInventoryView}
+              showInternalNavigation={false}
+            />
+            {activeInventoryView === 'product-master' && (
+              <ProductInventoryActions token={session.token} profile={profile} />
+            )}
           </>
         )}
 
@@ -2394,14 +2722,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Solution Portfolio"
-          title={selectedSolution.title}
-          description={selectedSolution.summary}
-          status={selectedSolution.status}
-        />
-
-        <section className="solution-card-grid">
+<section className="solution-card-grid">
           {solutionPortfolio.map((solution) => (
             <button
               key={solution.key}
@@ -2527,14 +2848,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="POS module"
-          title={selected.label}
-          description={selected.description}
-          status="Live sales APIs plus pharmacy workflow"
-        />
-
-        <section className="module-workspace-shell">
+<section className="module-workspace-shell">
           <ModuleWorkspaceRail
             label="POS and Sales"
             items={posWorkspaceItems}
@@ -2612,14 +2926,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Supplier module"
-          title={selected.label}
-          description={selected.description}
-          status="Live procurement APIs plus supplier workspace"
-        />
-
-        <section className="module-workspace-shell">
+<section className="module-workspace-shell">
           <ModuleWorkspaceRail
             label="Suppliers"
             items={supplierWorkspaceItems}
@@ -2672,14 +2979,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Finance module"
-          title={selected.label}
-          description={selected.description}
-          status="Live finance APIs"
-        />
-
-        <section className="module-workspace-shell">
+<section className="module-workspace-shell">
           <ModuleWorkspaceRail
             label="Finance"
             items={financeWorkspaceItems}
@@ -2755,14 +3055,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Ad-hoc Report"
-          title={selected.label}
-          description={selected.description}
-          status="Read-only analytics"
-        />
-
-        <section className="module-workspace-shell">
+<section className="module-workspace-shell">
           <ModuleWorkspaceRail
             label="Ad-hoc Report"
             items={adhocReportWorkspaceItems}
@@ -2794,14 +3087,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="AI Center"
-          title={selectedAiModule.title}
-          description={selectedAiModule.purpose}
-          status={selectedAiModule.status}
-        />
-
-        <section className="ai-center-layout">
+<section className="ai-center-layout">
           <div className="ai-center-module-grid">
             {aiCenterModules.map((module) => (
               <button
@@ -2859,14 +3145,7 @@ function App() {
 
     return (
       <section className="section-page">
-        <ModulePageIntro
-          eyebrow="Admin Panel"
-          title={selectedLayer.title}
-          description={selectedLayer.summary}
-          status={selectedLayer.status}
-        />
-
-        {selectedWorkspace === 'user-profiles' && (
+{selectedWorkspace === 'user-profiles' && (
           <article className="panel wide">
             <div className="panel-heading-row">
               <div>
@@ -2933,6 +3212,75 @@ function App() {
           ))}
         </section>
 
+        {selectedWorkspace === 'platform-management' && (
+          <article className="panel wide platform-appearance-panel">
+            <div className="section-heading">
+              <div>
+                <span>Platform management</span>
+                <h2>Left Menu Appearance</h2>
+                <p className="muted">
+                  Customize the admin left menu without touching source code. These settings are saved for this admin workspace.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLeftMenuAppearance(defaultLeftMenuAppearance)}
+              >
+                Reset default
+              </button>
+            </div>
+
+            <div className="appearance-control-grid">
+              <label>
+                <span>Menu card color</span>
+                <input
+                  type="color"
+                  value={leftMenuAppearance.primaryColor}
+                  onChange={(event) =>
+                    setLeftMenuAppearance((current) => ({
+                      ...current,
+                      primaryColor: event.target.value,
+                    }))
+                  }
+                />
+                <small>{leftMenuAppearance.primaryColor}</small>
+              </label>
+
+              <label>
+                <span>Title text color</span>
+                <input
+                  type="color"
+                  value={leftMenuAppearance.titleColor}
+                  onChange={(event) =>
+                    setLeftMenuAppearance((current) => ({
+                      ...current,
+                      titleColor: event.target.value,
+                    }))
+                  }
+                />
+                <small>{leftMenuAppearance.titleColor}</small>
+              </label>
+
+              <label>
+                <span>Menu card size</span>
+                <select
+                  value={leftMenuAppearance.density}
+                  onChange={(event) =>
+                    setLeftMenuAppearance((current) => ({
+                      ...current,
+                      density: event.target.value === 'comfortable' ? 'comfortable' : 'compact',
+                    }))
+                  }
+                >
+                  <option value="compact">Compact</option>
+                  <option value="comfortable">Comfortable</option>
+                </select>
+                <small>Compact reduces empty vertical space.</small>
+              </label>
+            </div>
+          </article>
+        )}
+
         {!['user-profiles', 'two-factor-auth', 'platform-management', 'notification-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && (
           <article className="panel wide">
             <h2>{selectedLayer.title} control surface</h2>
@@ -2954,6 +3302,294 @@ function App() {
 
   function renderActiveSection() {
     switch (activeSection) {
+      case 'overview':
+        return (
+          <section className="section-page dashboard-overview-page dashboard-operating-page">
+            <section className="dashboard-operating-hero dashboard-operating-hero--compact">
+              <div>
+                <p className="eyebrow">Operating Dashboard</p>
+                <h2>{profileInstitution}</h2>
+              </div>
+
+              <details className="dashboard-card-customizer">
+                <summary>Customize Dashboard Cards</summary>
+                <div className="dashboard-card-customizer-grid">
+                  {dashboardCardOptions.map((option) => (
+                    <section key={option.key}>
+                      <label className="dashboard-card-master-toggle">
+                        <input
+                          type="checkbox"
+                          checked={dashboardCardVisibility[option.key]}
+                          onChange={(event) =>
+                            setDashboardCardVisibility((current) => ({
+                              ...current,
+                              [option.key]: event.target.checked,
+                            }))
+                          }
+                        />
+                        <strong>{option.label}</strong>
+                      </label>
+
+                      <div className="dashboard-card-field-options">
+                        {dashboardCardFieldOptions[option.key].map((field) => (
+                          <label key={field.key}>
+                            <input
+                              type="checkbox"
+                              checked={dashboardCardFieldVisibility[option.key]?.[field.key] ?? true}
+                              onChange={(event) =>
+                                setDashboardCardFieldVisibility((current) => ({
+                                  ...current,
+                                  [option.key]: {
+                                    ...(current[option.key] ?? {}),
+                                    [field.key]: event.target.checked,
+                                  },
+                                }))
+                              }
+                            />
+                            <span>{field.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </details>
+            </section>
+
+            <section className="dashboard-operating-grid dashboard-operating-grid--focused">
+              {dashboardCardVisibility.inventory && (
+                <button
+                  type="button"
+                  className="dashboard-operating-card dashboard-operating-card--metrics priority"
+                  onClick={() => {
+                    setActiveInventoryView('overview');
+                    navigateToSection('inventory');
+                  }}
+                >
+                  <span>Inventory Control</span>
+                  <div className="dashboard-card-metrics">
+                    {dashboardCardFieldVisibility.inventory.pages && <span><b>7</b><small>Inventory pages</small></span>}
+                    {dashboardCardFieldVisibility.inventory.expiry && <span><b>180d</b><small>Expiry watch</small></span>}
+                    {dashboardCardFieldVisibility.inventory.permission && <span><b>{profile.permissions.includes('pharmaco.inventory.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
+                  </div>
+                </button>
+              )}
+
+              {dashboardCardVisibility.pos && (
+                <button
+                  type="button"
+                  className="dashboard-operating-card dashboard-operating-card--metrics"
+                  onClick={() => {
+                    setActivePosWorkspace('overview');
+                    navigateToSection('pos');
+                  }}
+                >
+                  <span>POS and Sales</span>
+                  <div className="dashboard-card-metrics">
+                    {dashboardCardFieldVisibility.pos.pages && <span><b>7</b><small>Sales pages</small></span>}
+                    {dashboardCardFieldVisibility.pos.receipts && <span><b>PDF</b><small>Receipts</small></span>}
+                    {dashboardCardFieldVisibility.pos.permission && <span><b>{profile.permissions.includes('pharmaco.pos.use') ? 'On' : 'Off'}</b><small>POS access</small></span>}
+                  </div>
+                </button>
+              )}
+
+              {dashboardCardVisibility.finance && (
+                <button
+                  type="button"
+                  className="dashboard-operating-card dashboard-operating-card--metrics"
+                  onClick={() => {
+                    setActiveFinanceWorkspace('overview');
+                    navigateToSection('finance');
+                  }}
+                >
+                  <span>Finance Watch</span>
+                  <div className="dashboard-card-metrics">
+                    {dashboardCardFieldVisibility.finance.pages && <span><b>7</b><small>Finance pages</small></span>}
+                    {dashboardCardFieldVisibility.finance.statements && <span><b>AI</b><small>Statements</small></span>}
+                    {dashboardCardFieldVisibility.finance.reconcile && <span><b>MoMo</b><small>Reconcile</small></span>}
+                  </div>
+                </button>
+              )}
+
+              {dashboardCardVisibility.suppliers && (
+                <button
+                  type="button"
+                  className="dashboard-operating-card dashboard-operating-card--metrics"
+                  onClick={() => {
+                    setActiveSupplierWorkspace('overview');
+                    navigateToSection('suppliers');
+                  }}
+                >
+                  <span>Suppliers and PO</span>
+                  <div className="dashboard-card-metrics">
+                    {dashboardCardFieldVisibility.suppliers.pages && <span><b>7</b><small>Supplier pages</small></span>}
+                    {dashboardCardFieldVisibility.suppliers.po && <span><b>PO</b><small>Open orders</small></span>}
+                    {dashboardCardFieldVisibility.suppliers.permission && <span><b>{profile.permissions.includes('pharmaco.suppliers.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
+                  </div>
+                </button>
+              )}
+
+              {dashboardCardVisibility.communications && (
+                <button
+                  type="button"
+                  className="dashboard-operating-card dashboard-operating-card--metrics mail"
+                  onClick={() => navigateToSection('corporate-email')}
+                >
+                  <span>Communication Center</span>
+                  <div className="dashboard-card-metrics">
+                    {dashboardCardFieldVisibility.communications.unread && <span><b>{unreadMailCount}</b><small>Unread</small></span>}
+                    {dashboardCardFieldVisibility.communications.channel && <span><b>Email</b><small>Official</small></span>}
+                    {dashboardCardFieldVisibility.communications.alerts && <span><b>Ready</b><small>Alerts</small></span>}
+                  </div>
+                </button>
+              )}
+
+              {dashboardCardVisibility['ai-reports'] && (
+                <button
+                  type="button"
+                  className="dashboard-operating-card dashboard-operating-card--metrics"
+                  onClick={() => {
+                    setActiveAdhocReportWorkspace('overview');
+                    navigateToSection('reports');
+                  }}
+                >
+                  <span>AI and Reports</span>
+                  <div className="dashboard-card-metrics">
+                    {dashboardCardFieldVisibility['ai-reports']['ai-tools'] && <span><b>18</b><small>AI tools</small></span>}
+                    {dashboardCardFieldVisibility['ai-reports']['report-pages'] && <span><b>7</b><small>Report pages</small></span>}
+                    {dashboardCardFieldVisibility['ai-reports'].permission && <span><b>{profile.permissions.includes('ai.use') ? 'On' : 'Off'}</b><small>AI access</small></span>}
+                  </div>
+                </button>
+              )}
+
+              {dashboardCardVisibility.profile && (
+                <button
+                  type="button"
+                  className="dashboard-operating-card dashboard-operating-card--metrics"
+                  onClick={() => {
+                    setActiveAdminPanelWorkspace('user-profiles');
+                    navigateToSection('admin-panel');
+                  }}
+                >
+                  <span>Profile and Access</span>
+                  <div className="dashboard-card-metrics">
+                    {dashboardCardFieldVisibility.profile.permissions && <span><b>{profile.permissions.length}</b><small>Permissions</small></span>}
+                    {dashboardCardFieldVisibility.profile.scope && <span><b>{profile.scope.type}</b><small>Scope</small></span>}
+                    {dashboardCardFieldVisibility.profile.edit && <span><b>Edit</b><small>Profile</small></span>}
+                  </div>
+                </button>
+              )}
+            </section>
+
+            {(profile.scope.is_tenant || profile.scope.is_branch) && (
+              <section className="dashboard-operating-tenant-summary operation-helicopter-view">
+                <div className="section-heading">
+                  <div>
+                    <span>Tenant operations</span>
+                    <h2>Operation Helicopter View</h2>
+                  </div>
+                </div>
+
+                <section className="helicopter-quick-table-card">
+                  <div className="section-heading">
+                    <div>
+                      <span>Branches</span>
+                      <h3>{profileInstitution} Branches</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigateToSection('tenant-setup')}
+                    >
+                      Add Branch
+                    </button>
+                  </div>
+
+                  <div className="helicopter-table-wrap">
+                    <table className="helicopter-table">
+                      <thead>
+                        <tr>
+                          <th>Branch</th>
+                          <th>Code</th>
+                          <th>Status</th>
+                          <th>Role</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(profile.tenant_assignments ?? []).map((assignment, index) => (
+                          <tr key={`${assignment.tenant?.id ?? 'tenant'}-${assignment.branch?.id ?? index}`}>
+                            <td>{assignment.branch?.name || assignment.tenant?.name || profileInstitution}</td>
+                            <td>{assignment.branch?.code || assignment.tenant?.slug || 'Main'}</td>
+                            <td>{assignment.branch?.status || assignment.tenant?.status || assignment.status}</td>
+                            <td>{assignment.job_title || 'Staff'}</td>
+                            <td>
+                              <button type="button" onClick={() => navigateToSection('tenant-setup')}>
+                                Detail / Edit
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section className="helicopter-quick-table-card">
+                  <div className="section-heading">
+                    <div>
+                      <span>Users</span>
+                      <h3>User Access Table</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAdminPanelWorkspace('user-profiles');
+                        navigateToSection('admin-panel');
+                      }}
+                    >
+                      Add User
+                    </button>
+                  </div>
+
+                  <div className="helicopter-table-wrap">
+                    <table className="helicopter-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Phone</th>
+                          <th>Scope</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>{profile.user.name || 'Current user'}</td>
+                          <td>{profile.user.email}</td>
+                          <td>{profile.user.phone || 'Not provided'}</td>
+                          <td>{profile.scope.type}</td>
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveAdminPanelWorkspace('user-profiles');
+                                navigateToSection('admin-panel');
+                              }}
+                            >
+                              Detail / Edit
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                {tenantOperationsPanel}
+              </section>
+            )}
+          </section>
+        );
       case 'erp':
         return renderErpWorkspace();
       case 'solution-portfolio':
@@ -2965,13 +3601,7 @@ function App() {
       case 'inventory':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Inventory module"
-              title="Batch, expiry, FEFO, receiving, and shelf control"
-              description="Inventory is now isolated as its own workspace so staff can work without the previous long dashboard flood."
-              status="Live APIs plus framework"
-            />
-            <ModuleReadinessGrid items={inventoryReadiness} />
+<ModuleReadinessGrid items={inventoryReadiness} />
             <ProductInventoryPreview token={session.token} profile={profile} />
             <ProductInventoryActions token={session.token} profile={profile} />
           </section>
@@ -2987,26 +3617,14 @@ function App() {
       case 'tenant-setup':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Tenant setup"
-              title="Business profile, branch, and department configuration"
-              description="Tenant setup has its own workspace for profile verification, branch structure, departments, and operating capabilities."
-              status="Live tenant APIs"
-            />
-            {tenantOperationsPanel}
+{tenantOperationsPanel}
             <PharmaCoreEditor token={session.token} profile={profile} />
           </section>
         );
       case 'security':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Security module"
-              title="Role, permission, tenant, and access control"
-              description="Security keeps access scope visible and provides protected endpoint checks without mixing them into daily operator pages."
-              status="Protected backend checks"
-            />
-            <section className="content-grid security-content-grid">
+<section className="content-grid security-content-grid">
               <article className="panel">
                 <h2>Resolved access profile</h2>
                 <div className="scope-list">
@@ -3047,74 +3665,38 @@ function App() {
       case 'corporate-email':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Corporate Email"
-              title="Outlook-style company mailbox"
-              description="Staff can work from an in-app mailbox while external Microsoft Graph or IMAP/SMTP integration is configured."
-              status="Active"
-            />
-            <CorporateEmailPanel token={session.token} />
+<CorporateEmailPanel token={session.token} />
           </section>
         );
       case 'pharmacist-chat':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Pharmacist Chat"
-              title="Mobile customer conversations"
-              description="Customer mobile app conversations are available to authorized pharmacists and tenant staff."
-              status="Active"
-            />
-            <PharmacistChatPanel token={session.token} />
+<PharmacistChatPanel token={session.token} />
           </section>
         );
       case 'notifications':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Notification Center"
-              title="In-app communication and SMS-ready notices"
-              description="Publish messages to staff by platform, market, and tenant while keeping the same model ready for SMS integration."
-              status="Active"
-            />
-            <NotificationCenterPanel token={session.token} profile={profile} />
+<NotificationCenterPanel token={session.token} profile={profile} />
           </section>
         );
       case 'market-management':
       case 'localization':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow={activeSection === 'market-management' ? 'Market Management' : 'Localization'}
-              title={activeSection === 'market-management' ? 'Tenant market onboarding' : 'Language and regional access context'}
-              description="Manage tenant market assignment, default languages, service radius, and regional context for expansion."
-              status="Active"
-            />
-            <MarketLocalizationPanel token={session.token} profile={profile} />
+<MarketLocalizationPanel token={session.token} profile={profile} />
           </section>
         );
       case 'nearby-providers':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Nearby Providers"
-              title="Customer service-provider discovery"
-              description="Preview how the customer mobile app recommends nearby pharmacies and other service providers."
-              status="Active"
-            />
-            <NearbyProvidersPanel />
+<NearbyProvidersPanel />
           </section>
         );
       case 'vitapharma-website':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Tenant Website"
-              title="VitaPharma public website"
-              description="The first tenant website is served from the public web app and can run at vitapharmaafrica.com or the local /vitapharma path."
-              status="Active"
-            />
-            <article className="panel wide tenant-website-panel">
+<article className="panel wide tenant-website-panel">
               <img src={vitaPharmaLogoSrc} alt="VitaPharma" />
               <div>
                 <h2>VitaPharma Africa</h2>
@@ -3137,13 +3719,7 @@ function App() {
       case 'settings':
         return (
           <section className="section-page">
-            <ModulePageIntro
-              eyebrow="Settings blueprint"
-              title="Offline, integration, notification, numbering, and channel policy"
-              description="This page gives the deployable UI direction for settings that still need backend activation and administrator approval."
-              status="Configuration framework"
-            />
-            <ModuleReadinessGrid items={settingsBlueprint} />
+<ModuleReadinessGrid items={settingsBlueprint} />
             <section className="commercial-framework-section">
               <div className="framework-heading">
                 <div>
@@ -3158,7 +3734,7 @@ function App() {
                 <div className="framework-scope-card">
                   <span>Current pilot</span>
                   <strong>VitaPharma</strong>
-                  <small>PharmaCo360 tenant scope</small>
+                  <small>Operations 360 tenant scope</small>
                 </div>
               </div>
 
@@ -3178,26 +3754,15 @@ function App() {
             </section>
           </section>
         );
-      case 'overview':
       default:
         return (
           <section className="section-page">
-            <section className="signed-in-banner">
-              <div>
-                <span className="status-dot" />
-                <strong>{loginStatusText}</strong>
-              </div>
-              <small>
-                Scope: {profile.scope.type} · Tenants: {profile.tenant_assignments.length || 'none'} · 2FA:{' '}
-                {profile.user.two_factor?.enabled ? 'enabled' : 'setup needed'}
-              </small>
-            </section>
-            <section className="home-control-panel">
+<section className="home-control-panel">
               <div>
                 <p className="eyebrow">Home display controls</p>
-                <h2>Keep only the home sections this user needs.</h2>
+                <h2>Choose what stays visible on this Home page.</h2>
                 <p className="muted">
-                  The home page stays compact. Users can leave a section visible or hide it and continue working in the selected module.
+                  Keep the Home page focused. Hide sections that are not needed today and continue working from the left menu.
                 </p>
               </div>
               <div className="home-widget-toggle-grid">
@@ -3311,7 +3876,7 @@ function App() {
   }
 
   return (
-    <main className="dashboard-shell">
+    <main className="dashboard-shell" style={leftMenuStyle}>
       <aside className="sidebar">
         <div className="sidebar-inner">
           <div className="sidebar-brand">
@@ -3322,78 +3887,62 @@ function App() {
             </div>
           </div>
 
-          <nav
-            className={`tree-nav ${shouldShowTenantOperationsDashboard ? 'tree-nav--flat' : ''}`}
-            aria-label="Admin workspace navigation"
-          >
+          <nav className="tree-nav tree-nav--principal" aria-label="Admin workspace navigation">
             <button
               type="button"
-              className={`tree-root-button ${activeSection === 'overview' ? 'active' : ''}`}
+              className={`tree-root-button principal-menu-button ${activeSection === 'overview' ? 'active' : ''}`}
               data-section="overview"
               onClick={() => navigateToSection('overview')}
             >
               <span className="nav-icon">DB</span>
-              <span>
-                <strong>Dashboard</strong>
-                <small>Workspace overview</small>
-              </span>
+              <span className="principal-menu-title">Dashboard</span>
             </button>
 
-            {shouldShowTenantOperationsDashboard ? (
-              tenantFlatMenuItems.map(({ group, item }) => (
-                <button
+            {principalMenuItems.map(({ group, item }) => {
+              const childSubmenus = leftMenuSubmenus[item.key] ?? [];
+              const itemActive = isActiveMenuItem(item);
+
+              return (
+                <div
                   key={`${group.key}-${item.label}`}
-                  type="button"
-                  className={`flat-menu-button ${isActiveMenuItem(item) ? 'active' : ''}`}
-                  data-section={item.key}
-                  onClick={() => handleMenuItemClick(item)}
+                  className={`principal-menu-section ${itemActive ? 'active' : ''}`}
+                  data-principal-menu={item.key}
                 >
-                  <span className="nav-icon">{item.icon}</span>
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>{item.description}</small>
-                  </span>
-                  {item.status && <em>{item.status}</em>}
-                </button>
-              ))
-            ) : (
-              visibleMenuGroups.map((group) => (
-                <div key={group.key} className="tree-group">
                   <button
                     type="button"
-                    className="tree-group-button"
-                    data-group={group.key}
-                    aria-expanded={Boolean(openMenuGroups[group.key])}
-                    onClick={() => toggleMenuGroup(group.key)}
+                    className={`principal-menu-button ${itemActive ? 'active' : ''}`}
+                    data-section={item.key}
+                    aria-expanded={Boolean(openPrincipalMenus[item.key])}
+                    onClick={() => togglePrincipalMenu(item)}
                   >
-                    <span className="nav-icon">{group.icon}</span>
-                    <span>{group.label}</span>
-                    <small>{openMenuGroups[group.key] ? '-' : '+'}</small>
+                    <span className="nav-icon">{item.icon}</span>
+                    <span className="principal-menu-title">{item.label}</span>
+                    {childSubmenus.length > 0 && (
+                      <span className="principal-menu-toggle-sign" aria-hidden="true">
+                        {openPrincipalMenus[item.key] ? '-' : '+'}
+                      </span>
+                    )}
                   </button>
 
-                  {openMenuGroups[group.key] && (
-                    <div className="tree-submenu">
-                      {group.items.map((item) => (
+                  {childSubmenus.length > 0 && openPrincipalMenus[item.key] && (
+                    <div className="tree-child-submenu" aria-label={`${item.label} pages`}>
+                      {childSubmenus.map((submenu) => (
                         <button
-                          key={`${group.key}-${item.label}`}
+                          key={submenu.key}
                           type="button"
-                          className={isActiveMenuItem(item) ? 'active' : ''}
+                          className={isActiveLeftSubmenu(item, submenu) ? 'active' : ''}
                           data-section={item.key}
-                          onClick={() => handleMenuItemClick(item)}
+                          data-submenu={submenu.key}
+                          onClick={() => handleLeftSubmenuClick(item, submenu)}
                         >
-                          <span className="nav-icon">{item.icon}</span>
-                          <span>
-                            <strong>{item.label}</strong>
-                            <small>{item.description}</small>
-                          </span>
-                          {item.status && <em>{item.status}</em>}
+                          <span>{submenu.label}</span>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
-              ))
-            )}
+              );
+            })}
           </nav>
 
           <button className="logout-button" type="button" onClick={handleLogout}>
@@ -3403,21 +3952,17 @@ function App() {
       </aside>
 
       <section className="dashboard-main">
-        <header className="dashboard-header dashboard-header--fixed">
-          <div>
+        <header className="dashboard-header dashboard-header--fixed dashboard-header--refined">
+          <div className="dashboard-title-card">
             <p className="eyebrow">{currentSection.eyebrow}</p>
-            <h1>{currentSection.title}</h1>
-            <p>{currentSection.description}</p>
+            <h1>{activeLeftSubmenuLabel ?? currentSection.title}</h1>
           </div>
 
-          <div className="dashboard-header-actions">
+          <div className="dashboard-header-center-actions">
             <button type="button" onClick={goBack} disabled={navigationStack.length === 0}>
               Back
             </button>
             <a href={publicWebsiteUrl} target="_blank" rel="noreferrer">{publicWebsiteLabel}</a>
-            <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
-              {staffLoginLanguage}
-            </button>
             <button
               type="button"
               className="header-mail-button"
@@ -3425,18 +3970,100 @@ function App() {
                 navigateToSection('corporate-email');
               }}
             >
-              Email Corporate
-              {unreadMailCount > 0 && <span className="action-badge">{unreadMailCount}</span>}
+              Corporate Email
+              {unreadMailCount > 0 && <span className="action-badge" aria-label={`${unreadMailCount} unread emails`}>{unreadMailCount}</span>}
             </button>
           </div>
 
-          <div className="user-card">
-            <strong>{profile.user.email}</strong>
-            <span>{loginStatusText}</span>
-            <small>{profile.scope.type} scope</small>
-            {profile.user.must_change_password && <small>Password change required</small>}
+          <div className="dashboard-header-corner">
+            <button
+              type="button"
+              className="language-corner-button"
+              onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}
+            >
+              {staffLoginLanguage}
+            </button>
+
+            <div className="profile-avatar-shell">
+              <button
+                type="button"
+                className="profile-avatar-button"
+                onClick={() => setIsProfileMenuOpen((current) => !current)}
+                aria-expanded={isProfileMenuOpen}
+                aria-label="Open staff profile"
+              >
+                {profileAvatarUrl ? (
+                  <img src={profileAvatarUrl} alt={profileDisplayName} />
+                ) : (
+                  <span>{profileInitials}</span>
+                )}
+              </button>
+
+              {isProfileMenuOpen && (
+                <section className="profile-popover" aria-label="Staff profile summary">
+                  <div className="profile-popover-heading">
+                    <div className="profile-popover-avatar">
+                      {profileAvatarUrl ? (
+                        <img src={profileAvatarUrl} alt={profileDisplayName} />
+                      ) : (
+                        <span>{profileInitials}</span>
+                      )}
+                    </div>
+                    <div>
+                      <strong>{profileDisplayName}</strong>
+                      <small>{profileInstitution}</small>
+                    </div>
+                  </div>
+
+                  <dl>
+                    <div>
+                      <dt>Name</dt>
+                      <dd>{profile.user.name || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt>Email</dt>
+                      <dd>{profile.user.email}</dd>
+                    </div>
+                    <div>
+                      <dt>Phone</dt>
+                      <dd>{profile.user.phone || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt>Institution</dt>
+                      <dd>{profileInstitution}</dd>
+                    </div>
+                  </dl>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setActiveAdminPanelWorkspace('user-profiles');
+                      navigateToSection('admin-panel');
+                    }}
+                  >
+                    Edit Profile
+                  </button>
+                </section>
+              )}
+            </div>
           </div>
         </header>
+
+        {unreadMailCount > 0 && (
+          <button
+            type="button"
+            className="mail-notification-banner"
+            onClick={() => navigateToSection('corporate-email')}
+            aria-label={`${unreadMailCount} unread corporate emails`}
+          >
+            <span className="mail-notification-dot" />
+            <strong>
+              {unreadMailCount} unread corporate email{unreadMailCount === 1 ? '' : 's'}
+            </strong>
+            <small>Open Corporate Email</small>
+          </button>
+        )}
 
         <section className="dashboard-scroll-panel">
           {renderActiveSection()}
