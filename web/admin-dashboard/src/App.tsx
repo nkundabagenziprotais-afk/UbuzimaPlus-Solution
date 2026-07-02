@@ -156,12 +156,6 @@ type AdhocReportWorkspaceKey =
   | 'decision-note'
   | 'operation-checklist'
   | 'priority-follow-up';
-type HomeWidgetKey =
-  | 'summary'
-  | 'tenant-dashboard'
-  | 'quick-actions'
-  | 'system-experience'
-  | 'role-workspaces';
 type MenuContextKey = ErpWorkspaceKey | SolutionKey | AiWorkspaceKey | AdminPanelWorkspaceKey;
 type LoginMethod = 'email' | 'phone';
 
@@ -1199,14 +1193,6 @@ const adhocReportWorkspaceItems: Array<{ key: AdhocReportWorkspaceKey; label: st
   { key: 'priority-follow-up', label: 'Priority Follow-up', description: 'Manager review notes and follow-up list' },
 ];
 
-const homeWidgetOptions: Array<{ key: HomeWidgetKey; label: string; description: string }> = [
-  { key: 'summary', label: 'Access summary', description: 'Roles, permissions, assignments, scopes' },
-  { key: 'tenant-dashboard', label: 'Tenant dashboard', description: 'Daily pharmacy control for tenant users' },
-  { key: 'quick-actions', label: 'Quick actions', description: 'Open the most-used operating pages' },
-  { key: 'system-experience', label: 'System experience', description: 'Commercial framework and module direction' },
-  { key: 'role-workspaces', label: 'Role workspaces', description: 'Recommended dashboard by user type' },
-];
-
 const adminUserActions = [
   ['Create User', 'Add staff with phone/email identity, role, tenant, branch, language, and 2FA requirement.'],
   ['Edit User', 'Update profile, job title, branch, role, market, contact details, and notification preferences.'],
@@ -1432,22 +1418,6 @@ function App() {
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
   const [chatMePrompt, setChatMePrompt] = useState('');
-  const [homeWidgets, setHomeWidgets] = useState<Record<HomeWidgetKey, boolean>>({
-    summary: true,
-    'tenant-dashboard': true,
-    'quick-actions': true,
-    'system-experience': true,
-    'role-workspaces': true,
-  });
-  const [openMenuGroups, setOpenMenuGroups] = useState<Record<MenuGroupKey, boolean>>({
-    erp: false,
-    solutions: false,
-    ai: false,
-    admin: false,
-    'tenant-ops': false,
-    'tenant-admin': false,
-    market: false,
-  });
 
   const profile = session?.profile;
   const visibleMenuGroups = useMemo(() => buildVisibleMenuGroups(profile), [profile]);
@@ -1718,82 +1688,6 @@ function App() {
 
     setNavigationStack(rest);
     setActiveSection(previous);
-  }
-
-  function toggleMenuGroup(group: MenuGroupKey) {
-    setOpenMenuGroups((current) => ({
-      ...current,
-      [group]: !current[group],
-    }));
-  }
-
-  function renderSidebarSubmenu(item: MenuItem) {
-    if (activeSection !== item.key) return null;
-
-    const renderButtons = <K extends string,>(
-      items: Array<{ key: K; label: string; description: string }>,
-      activeKey: K,
-      onSelect: (key: K) => void,
-    ) => (
-      <div className="sidebar-module-submenu">
-        {items.map((entry) => (
-          <button
-            key={entry.key}
-            type="button"
-            className={activeKey === entry.key ? 'active' : ''}
-            onClick={() => {
-              onSelect(entry.key);
-              if (activeSection !== item.key) {
-                navigateToSection(item.key);
-              }
-            }}
-          >
-            <strong>{entry.label}</strong>
-            <small>{entry.description}</small>
-          </button>
-        ))}
-      </div>
-    );
-
-    if (item.key === 'inventory') {
-      return renderButtons(inventoryWorkspaceItems, activeInventoryWorkspace, setActiveInventoryWorkspace);
-    }
-
-    if (item.key === 'pos') {
-      return renderButtons(posWorkspaceItems, activePosWorkspace, setActivePosWorkspace);
-    }
-
-    if (item.key === 'suppliers') {
-      return renderButtons(supplierWorkspaceItems, activeSupplierWorkspace, setActiveSupplierWorkspace);
-    }
-
-    if (item.key === 'finance') {
-      return renderButtons(financeWorkspaceItems, activeFinanceWorkspace, setActiveFinanceWorkspace);
-    }
-
-    if (item.key === 'reports') {
-      return renderButtons(adhocReportWorkspaceItems, activeAdhocReportWorkspace, setActiveAdhocReportWorkspace);
-    }
-
-    if (item.key === 'ai-center') {
-      return (
-        <div className="sidebar-module-submenu sidebar-module-submenu--dense">
-          {aiCenterModules.map((module) => (
-            <button
-              key={module.key}
-              type="button"
-              className={activeAiWorkspace === module.key ? 'active' : ''}
-              onClick={() => setActiveAiWorkspace(module.key)}
-            >
-              <strong>{module.title}</strong>
-              <small>{module.status}</small>
-            </button>
-          ))}
-        </div>
-      );
-    }
-
-    return null;
   }
 
   function persistSession(nextSession: StoredSession, trustedDeviceToken?: string) {
@@ -2184,27 +2078,6 @@ function App() {
       </main>
     );
   }
-
-  const summaryGrid = (
-    <section className="summary-grid compact-summary-grid">
-      <article>
-        <span>Active roles</span>
-        <strong>{profile.roles.length}</strong>
-      </article>
-      <article>
-        <span>Permissions</span>
-        <strong>{profile.permissions.length}</strong>
-      </article>
-      <article>
-        <span>Tenant assignments</span>
-        <strong>{profile.tenant_assignments.length}</strong>
-      </article>
-      <article>
-        <span>Admin scopes</span>
-        <strong>{profile.admin_scopes.length}</strong>
-      </article>
-    </section>
-  );
 
   const tenantOperationsPanel = (
     <article className="panel wide pharmaco-panel">
@@ -3359,258 +3232,369 @@ function App() {
       case 'overview':
       default:
         return (
-          <section className="section-page">
-            <section className="home-control-panel">
+          <section className="staff-home-page">
+            <section className="staff-home-hero">
               <div>
-                <p className="eyebrow">Home display controls</p>
-                <h2>Keep only the home sections this user needs.</h2>
-                <p className="muted">
-                  The home page stays compact. Users can leave a section visible or hide it and continue working in the selected module.
+                <span>Commercial staff dashboard</span>
+                <h2>Run today’s pharmacy work from one clear operating board.</h2>
+                <p>
+                  This workspace is designed for daily business use: quick action, visible responsibility,
+                  tenant-safe data, and focused modules that scale from one pharmacy to many markets.
                 </p>
               </div>
-              <div className="home-widget-toggle-grid">
-                {homeWidgetOptions.map((option) => (
-                  <label key={option.key}>
-                    <input
-                      type="checkbox"
-                      checked={homeWidgets[option.key]}
-                      onChange={(event) =>
-                        setHomeWidgets((current) => ({
-                          ...current,
-                          [option.key]: event.target.checked,
-                        }))
-                      }
-                    />
-                    <span>
-                      <strong>{option.label}</strong>
-                      <small>{option.description}</small>
-                    </span>
-                  </label>
+              <div className="staff-home-action-stack">
+                {[
+                  ['Start POS', 'Counter sale, payment, receipt', 'pos' as AdminSectionKey],
+                  ['Review Stock', 'Products, batches, expiry risk', 'inventory' as AdminSectionKey],
+                  ['Receive Order', 'Suppliers, PO, receiving', 'suppliers' as AdminSectionKey],
+                  ['Open Reports', 'Alerts and management review', 'reports' as AdminSectionKey],
+                ].map(([title, text, section]) => (
+                  <button key={title} type="button" onClick={() => navigateToSection(section)}>
+                    <strong>{title}</strong>
+                    <small>{text}</small>
+                  </button>
                 ))}
               </div>
             </section>
 
-            {homeWidgets.summary && summaryGrid}
+            <section className="staff-principle-grid">
+              {[
+                ['Simplicity', 'One task, one workspace. Overview cards stay out of operational pages.'],
+                ['Security', 'Every view stays tenant-aware and permission-gated by the existing backend.'],
+                ['Adaptability', 'Tenant, branch, market, and solution context can scale without redesigning the shell.'],
+                ['Convenience', 'Website, corporate email, language, back navigation, and modules stay one click away.'],
+              ].map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </section>
 
-            {homeWidgets['quick-actions'] && (
-              <section className="home-quick-action-grid">
-                {[
-                  ['Open POS', 'Start or review counter sales', 'pos' as AdminSectionKey],
-                  ['Review Inventory', 'Products, stock, batches, expiry', 'inventory' as AdminSectionKey],
-                  ['Suppliers', 'Supplier setup, PO, receiving', 'suppliers' as AdminSectionKey],
-                  ['Ad-hoc Report', 'Operating alerts and reports', 'reports' as AdminSectionKey],
-                ].map(([title, text, section]) => (
-                  <button key={title} type="button" onClick={() => navigateToSection(section)}>
-                    <strong>{title}</strong>
-                    <span>{text}</span>
+            <section className="staff-launchpad-panel">
+              <div className="staff-section-heading">
+                <div>
+                  <span>Available workspaces</span>
+                  <h3>Open the exact module needed for the job.</h3>
+                </div>
+                <strong>{visibleMenuGroups.reduce((total, group) => total + group.items.length, 0)} modules</strong>
+              </div>
+
+              <div className="staff-launchpad-grid">
+                {visibleMenuGroups.flatMap((group) =>
+                  group.items.map((item) => ({ group, item })),
+                ).slice(0, 12).map(({ group, item }) => (
+                  <button
+                    key={`${group.key}-${item.label}-${item.context ?? item.key}`}
+                    type="button"
+                    onClick={() => handleMenuItemClick(item)}
+                  >
+                    <span>{item.icon}</span>
+                    <strong>{item.label}</strong>
+                    <small>{item.description}</small>
+                    <em>{item.status ?? group.label}</em>
                   </button>
                 ))}
-              </section>
-            )}
+              </div>
+            </section>
 
-            {shouldShowTenantOperationsDashboard && homeWidgets['tenant-dashboard'] ? (
-              <TenantPharmacyDashboard
-                token={session.token}
-                profile={profile}
-                onOpenSection={(section) => navigateToSection(section)}
-              />
-            ) : (
-              <>
-                {homeWidgets['system-experience'] && (
-                <section className="system-experience-section">
-                  <div className="framework-heading">
-                    <div>
-                      <p className="eyebrow">System experience blueprint</p>
-                      <h2>Choose a module from the left menu and work in that section.</h2>
-                      <p className="muted">
-                        The dashboard is no longer one long page. AI, Inventory, POS, Suppliers, Finance,
-                        Ad-hoc Report, Setup, Security, and Settings each have their own focused workspace.
-                      </p>
-                    </div>
-
-                    <div className="framework-scope-card design-system-card">
-                      <span>Design infrastructure</span>
-                      <strong>Section based</strong>
-                      <small>Independent sidebar, sticky header, persisted active section</small>
-                    </div>
+            <section className="staff-workbench-grid">
+              <article className="staff-operating-table-card">
+                <div className="staff-section-heading">
+                  <div>
+                    <span>Operating priorities</span>
+                    <h3>Daily business flow</h3>
                   </div>
-
-                  <div className="experience-lane-grid">
-                    {experienceBlueprint.map((lane) => (
-                      <article key={lane.lane} className="experience-lane-card">
-                        <span>{lane.signal}</span>
-                        <h3>{lane.lane}</h3>
-                        <p>{lane.outcome}</p>
-                        <div>
-                          {lane.modules.map((module) => (
-                            <small key={module}>{module}</small>
-                          ))}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-                )}
-
-                {homeWidgets['role-workspaces'] && (
-                  <div className="workspace-model-panel">
-                    <div>
-                      <h2>Role-based workspaces</h2>
-                      <p className="muted">
-                        Existing modules keep their current APIs while each user lands in the workspace that fits their job.
-                      </p>
-                    </div>
-
-                    <div className="workspace-model-grid">
-                      {workspaceModel.map(([role, text]) => (
-                        <div key={role}>
-                          <strong>{role}</strong>
-                          <span>{text}</span>
-                        </div>
+                </div>
+                <div className="data-table-scroll">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Workflow</th>
+                        <th>Owner</th>
+                        <th>Decision</th>
+                        <th>Open</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ['Counter sales', 'Cashier / Pharmacist', 'Dispense, pay, receipt', 'pos'],
+                        ['Stock control', 'Inventory manager', 'Low stock, batch, expiry', 'inventory'],
+                        ['Supplier receiving', 'Procurement', 'PO approval and stock receipt', 'suppliers'],
+                        ['Finance close', 'Finance', 'Payables, receivables, reconciliation', 'finance'],
+                      ].map(([workflow, owner, decision, section]) => (
+                        <tr key={workflow}>
+                          <td><strong>{workflow}</strong></td>
+                          <td>{owner}</td>
+                          <td>{decision}</td>
+                          <td>
+                            <button type="button" onClick={() => navigateToSection(section as AdminSectionKey)}>
+                              Open
+                            </button>
+                          </td>
+                        </tr>
                       ))}
-                    </div>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+
+              <article className="staff-assurance-card">
+                <span>Data protection posture</span>
+                <h3>Built for tenant-safe commercial operation.</h3>
+                <div>
+                  {[
+                    ['Identity', 'Staff login, 2FA, trusted-device policy, recovery codes.'],
+                    ['Scope', 'Platform, solution, tenant, branch, and role permission boundaries.'],
+                    ['Auditability', 'Module actions are designed to remain permission controlled and traceable.'],
+                    ['Expansion', 'Market, language, notification, and tenant modules are ready to scale.'],
+                  ].map(([title, text]) => (
+                    <section key={title}>
+                      <strong>{title}</strong>
+                      <small>{text}</small>
+                    </section>
+                  ))}
+                </div>
+              </article>
+            </section>
+
+            {shouldShowTenantOperationsDashboard && (
+              <section className="staff-live-tenant-panel">
+                <div className="staff-section-heading">
+                  <div>
+                    <span>Live tenant operations</span>
+                    <h3>{tenantDisplayName(profile)} operating snapshot</h3>
                   </div>
-                )}
-              </>
+                </div>
+                <TenantPharmacyDashboard
+                  token={session.token}
+                  profile={profile}
+                  onOpenSection={(section) => navigateToSection(section)}
+                />
+              </section>
             )}
           </section>
         );
     }
   }
 
-  return (
-    <main className="dashboard-shell">
-      <aside className="sidebar">
-        <div className="sidebar-inner">
-          <div className="sidebar-brand">
-            <img className="sidebar-logo" src={brandLogoSrc} alt="Ubuzima+" />
-            <div>
-              <strong>Ubuzima+</strong>
-              <span>Admin Center</span>
-            </div>
-          </div>
-
-          <nav
-            className={`tree-nav ${shouldShowTenantOperationsDashboard ? 'tree-nav--flat' : ''}`}
-            aria-label="Admin workspace navigation"
-          >
-            <button
-              type="button"
-              className={`tree-root-button ${activeSection === 'overview' ? 'active' : ''}`}
-              data-section="overview"
-              onClick={() => navigateToSection('overview')}
-            >
-              <span className="nav-icon">DB</span>
-              <span>
-                <strong>Dashboard</strong>
-                <small>Workspace overview</small>
-              </span>
-            </button>
-
-            {shouldShowTenantOperationsDashboard ? (
-              tenantFlatMenuItems.map(({ group, item }) => (
-                <div key={`${group.key}-${item.label}`} className="flat-menu-entry">
-                  <button
-                    type="button"
-                    className={`flat-menu-button ${isActiveMenuItem(item) ? 'active' : ''}`}
-                    data-section={item.key}
-                    onClick={() => handleMenuItemClick(item)}
-                  >
-                    <span className="nav-icon">{item.icon}</span>
-                    <span>
-                      <strong>{item.label}</strong>
-                      <small>{item.description}</small>
-                    </span>
-                    {item.status && <em>{item.status}</em>}
-                  </button>
-                  {renderSidebarSubmenu(item)}
-                </div>
-              ))
-            ) : (
-              visibleMenuGroups.map((group) => (
-                <div key={group.key} className="tree-group">
-                  <button
-                    type="button"
-                    className="tree-group-button"
-                    data-group={group.key}
-                    aria-expanded={Boolean(openMenuGroups[group.key])}
-                    onClick={() => toggleMenuGroup(group.key)}
-                  >
-                    <span className="nav-icon">{group.icon}</span>
-                    <span>{group.label}</span>
-                    <small>{openMenuGroups[group.key] ? '-' : '+'}</small>
-                  </button>
-
-                  {openMenuGroups[group.key] && (
-                    <div className="tree-submenu">
-                      {group.items.map((item) => (
-                        <div key={`${group.key}-${item.label}`} className="tree-submenu-entry">
-                          <button
-                            type="button"
-                            className={isActiveMenuItem(item) ? 'active' : ''}
-                            data-section={item.key}
-                            onClick={() => handleMenuItemClick(item)}
-                          >
-                            <span className="nav-icon">{item.icon}</span>
-                            <span>
-                              <strong>{item.label}</strong>
-                              <small>{item.description}</small>
-                            </span>
-                            {item.status && <em>{item.status}</em>}
-                          </button>
-                          {renderSidebarSubmenu(item)}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </nav>
-
-          <button className="logout-button" type="button" onClick={handleLogout}>
-            Sign out
-          </button>
+  function renderWorkspaceTabs() {
+    const renderTabSet = <K extends string,>(
+      label: string,
+      items: Array<{ key: K; label: string; description: string }>,
+      activeKey: K,
+      onSelect: (key: K) => void,
+    ) => (
+      <section className="staff-workspace-tabs" aria-label={`${label} sections`}>
+        <div>
+          <span>{label}</span>
+          <strong>{items.length} workspaces</strong>
         </div>
+        <nav>
+          {items.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={activeKey === item.key ? 'active' : ''}
+              onClick={() => onSelect(item.key)}
+            >
+              <strong>{item.label}</strong>
+              <small>{item.description}</small>
+            </button>
+          ))}
+        </nav>
+      </section>
+    );
+
+    if (activeSection === 'inventory') {
+      return renderTabSet('Inventory', inventoryWorkspaceItems, activeInventoryWorkspace, setActiveInventoryWorkspace);
+    }
+
+    if (activeSection === 'pos') {
+      return renderTabSet('POS', posWorkspaceItems, activePosWorkspace, setActivePosWorkspace);
+    }
+
+    if (activeSection === 'suppliers') {
+      return renderTabSet('Suppliers', supplierWorkspaceItems, activeSupplierWorkspace, setActiveSupplierWorkspace);
+    }
+
+    if (activeSection === 'finance') {
+      return renderTabSet('Finance', financeWorkspaceItems, activeFinanceWorkspace, setActiveFinanceWorkspace);
+    }
+
+    if (activeSection === 'reports') {
+      return renderTabSet('Ad-hoc Report', adhocReportWorkspaceItems, activeAdhocReportWorkspace, setActiveAdhocReportWorkspace);
+    }
+
+    if (activeSection === 'ai-center') {
+      return (
+        <section className="staff-workspace-tabs staff-workspace-tabs--ai" aria-label="AI Center sections">
+          <div>
+            <span>AI Center</span>
+            <strong>{aiCenterModules.length} models and controls</strong>
+          </div>
+          <nav>
+            {aiCenterModules.map((module) => (
+              <button
+                key={module.key}
+                type="button"
+                className={activeAiWorkspace === module.key ? 'active' : ''}
+                onClick={() => setActiveAiWorkspace(module.key)}
+              >
+                <strong>{module.title}</strong>
+                <small>{module.status}</small>
+              </button>
+            ))}
+          </nav>
+        </section>
+      );
+    }
+
+    const contextualItems = visibleMenuGroups
+      .flatMap((group) => group.items)
+      .filter((item) => item.key === activeSection && item.context);
+
+    if (contextualItems.length > 1) {
+      return (
+        <section className="staff-workspace-tabs" aria-label={`${currentSection.title} sections`}>
+          <div>
+            <span>{currentSection.eyebrow}</span>
+            <strong>{contextualItems.length} options</strong>
+          </div>
+          <nav>
+            {contextualItems.map((item) => (
+              <button
+                key={`${item.key}-${item.context}`}
+                type="button"
+                className={isActiveMenuItem(item) ? 'active' : ''}
+                onClick={() => handleMenuItemClick(item)}
+              >
+                <strong>{item.label}</strong>
+                <small>{item.description}</small>
+              </button>
+            ))}
+          </nav>
+        </section>
+      );
+    }
+
+    return null;
+  }
+
+  return (
+    <main className="staff-os-shell">
+      <aside className="staff-os-rail" aria-label="Staff dashboard navigation">
+        <div className="staff-brand-card">
+          <img className="staff-brand-logo" src={brandLogoSrc} alt="Ubuzima+" />
+          <div>
+            <strong>Ubuzima+</strong>
+            <span>Staff Operating System</span>
+          </div>
+        </div>
+
+        <section className="staff-tenant-card">
+          <span>{profile.scope.type} workspace</span>
+          <strong>{tenantDisplayName(profile)}</strong>
+          <small>{profile.user.name || profile.user.email}</small>
+        </section>
+
+        <nav className="staff-primary-nav" aria-label="Primary modules">
+          <button
+            type="button"
+            className={activeSection === 'overview' ? 'active' : ''}
+            data-section="overview"
+            onClick={() => navigateToSection('overview')}
+          >
+            <span className="staff-nav-icon">DB</span>
+            <span>
+              <strong>Dashboard</strong>
+              <small>Today and priority work</small>
+            </span>
+          </button>
+
+          {visibleMenuGroups.map((group) => (
+            <section key={group.key} className="staff-nav-group">
+              <h3>{group.label}</h3>
+              {group.items.map((item) => (
+                <button
+                  key={`${group.key}-${item.label}-${item.context ?? item.key}`}
+                  type="button"
+                  className={isActiveMenuItem(item) ? 'active' : ''}
+                  data-section={item.key}
+                  onClick={() => handleMenuItemClick(item)}
+                >
+                  <span className="staff-nav-icon">{item.icon}</span>
+                  <span>
+                    <strong>{item.label}</strong>
+                    <small>{item.description}</small>
+                  </span>
+                  {item.status && <em>{item.status}</em>}
+                </button>
+              ))}
+            </section>
+          ))}
+        </nav>
+
+        <button className="staff-signout-button" type="button" onClick={handleLogout}>
+          Sign out
+        </button>
       </aside>
 
-      <section className="dashboard-main">
-        <header className="dashboard-header dashboard-header--fixed">
-          <div>
-            <p className="eyebrow">{currentSection.eyebrow}</p>
+      <section className="staff-os-main">
+        <header className="staff-command-bar">
+          <div className="staff-command-title">
+            <span>{currentSection.eyebrow}</span>
             <h1>{activeWorkspaceTitle ?? currentSection.title}</h1>
             <p>{currentSection.description}</p>
           </div>
 
-          <div className="dashboard-header-actions">
+          <div className="staff-command-actions">
             <button type="button" onClick={goBack} disabled={navigationStack.length === 0}>
               Back
             </button>
-            <a href={publicWebsiteUrl} target="_blank" rel="noreferrer">{publicWebsiteLabel}</a>
+            <a href={publicWebsiteUrl} target="_blank" rel="noreferrer">
+              Website
+            </a>
             <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
               {staffLoginLanguage}
             </button>
             <button
               type="button"
-              className="header-mail-button"
-              onClick={() => {
-                navigateToSection('corporate-email');
-              }}
+              className="staff-mail-button"
+              onClick={() => navigateToSection('corporate-email')}
             >
-              Email Corporate
+              Email
               {unreadMailCount > 0 && <span className="action-badge">{unreadMailCount}</span>}
             </button>
           </div>
-
-          <div className="user-card">
-            <strong>{profile.user.email}</strong>
-            <span>{loginStatusText}</span>
-            <small>{profile.scope.type} scope</small>
-            {profile.user.must_change_password && <small>Password change required</small>}
-          </div>
         </header>
 
-        <section className="dashboard-scroll-panel">
+        <section className="staff-status-strip" aria-label="Session and governance status">
+          <article>
+            <span>Logged in</span>
+            <strong>{profile.user.email}</strong>
+            <small>{loginStatusText}</small>
+          </article>
+          <article>
+            <span>Access scope</span>
+            <strong>{profile.scope.type}</strong>
+            <small>{profile.permissions.length} permissions resolved</small>
+          </article>
+          <article>
+            <span>Data protection</span>
+            <strong>Tenant aware</strong>
+            <small>Role, branch, market, and module boundaries enforced by API permissions</small>
+          </article>
+          <article>
+            <span>Working mode</span>
+            <strong>{staffLoginLanguage}</strong>
+            <small>{profile.user.must_change_password ? 'Password change required' : 'Secure session active'}</small>
+          </article>
+        </section>
+
+        {renderWorkspaceTabs()}
+
+        <section className="staff-module-canvas">
           {renderActiveSection()}
         </section>
 
