@@ -192,25 +192,34 @@ class AuthRbacSeeder extends Seeder
             ->where('code', 'HQ')
             ->firstOrFail();
 
-        $defaultPassword = env('UBUZIMA_SEED_ADMIN_PASSWORD', 'ChangeThisPassword123!');
+        $defaultPassword = app()->environment('testing')
+            ? env('UBUZIMA_SEED_ADMIN_PASSWORD', 'ChangeThisPassword123!')
+            : env('UBUZIMA_SEED_ADMIN_PASSWORD');
+
+        if (! $defaultPassword) {
+            throw new \RuntimeException('UBUZIMA_SEED_ADMIN_PASSWORD must be configured before seeding admin users outside testing.');
+        }
+        $defaultPin = env('UBUZIMA_SEED_ADMIN_PIN', '1234');
 
         $platformAdmin = User::query()->updateOrCreate(
-            ['email' => 'admin@ubuzimaplus.local'],
+            ['email' => app()->environment('testing') ? 'admin@ubuzimaplus.local' : env('UBUZIMA_PLATFORM_ADMIN_EMAIL', 'admin@ubuzimaplus.com')],
             [
                 'name' => 'Ubuzima+ Super Admin',
-                'phone' => null,
+                'phone' => '+250780000001',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]
         );
 
         $solutionAdmin = User::query()->updateOrCreate(
-            ['email' => 'pharmaco.admin@ubuzimaplus.local'],
+            ['email' => app()->environment('testing') ? 'pharmaco.admin@ubuzimaplus.local' : env('UBUZIMA_PHARMACO_ADMIN_EMAIL', 'pharmaco.admin@ubuzimaplus.com')],
             [
                 'name' => 'PharmaCo360 Solution Admin',
-                'phone' => null,
+                'phone' => '+250780000002',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]
@@ -220,8 +229,9 @@ class AuthRbacSeeder extends Seeder
             ['email' => 'admin@vitapharmaafrica.com'],
             [
                 'name' => 'VitaPharma Tenant Admin',
-                'phone' => null,
+                'phone' => '+250780000003',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]
