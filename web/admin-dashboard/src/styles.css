@@ -11683,3 +11683,131 @@ body .dashboard-main table button {
     max-height: 280px;
   }
 }
+
+/* Inventory UX spacing refinement */
+.inventory-module,
+.inventory-preview,
+.inventory-workspace,
+.inventory-section,
+.inventory-register-section {
+  gap: 1.25rem;
+}
+
+.inventory-section,
+.inventory-panel,
+.inventory-card,
+.inventory-register-card,
+.inventory-form-card {
+  margin-bottom: 1.25rem;
+}
+
+.inventory-section-header,
+.inventory-register-header,
+.inventory-table-header,
+.inventory-form-header {
+  margin-bottom: 1rem;
+}
+
+.inventory-section-header h2,
+.inventory-register-header h2,
+.inventory-table-header h2,
+.inventory-form-header h2 {
+  margin-bottom: 0.35rem;
+}
+
+.inventory-section-header p,
+.inventory-register-header p,
+.inventory-table-header p,
+.inventory-form-header p {
+  line-height: 1.55;
+}
+
+.inventory-summary-grid,
+.inventory-card-grid,
+.inventory-kpi-grid,
+.inventory-action-grid {
+  gap: 1rem;
+}
+
+.inventory-form-grid,
+.inventory-filter-grid,
+.inventory-toolbar,
+.inventory-table-toolbar {
+  gap: 0.9rem;
+}
+
+.inventory-form-grid label,
+.inventory-filter-grid label {
+  gap: 0.4rem;
+}
+
+.inventory-form-grid input,
+.inventory-form-grid select,
+.inventory-form-grid textarea,
+.inventory-filter-grid input,
+.inventory-filter-grid select,
+.inventory-filter-grid textarea {
+  min-height: 42px;
+}
+
+.inventory-master-table,
+.inventory-register-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.inventory-master-table th,
+.inventory-master-table td,
+.inventory-register-table th,
+.inventory-register-table td {
+  padding: 0.8rem 0.9rem;
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.inventory-master-table td,
+.inventory-register-table td {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.inventory-table-scroll,
+.inventory-master-table-shell,
+.inventory-register-table-shell {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.inventory-table-actions,
+.inventory-row-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.inventory-row-actions button,
+.inventory-table-actions button {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .inventory-section,
+  .inventory-panel,
+  .inventory-card,
+  .inventory-register-card,
+  .inventory-form-card {
+    margin-bottom: 1rem;
+  }
+
+  .inventory-master-table th,
+  .inventory-master-table td,
+  .inventory-register-table th,
+  .inventory-register-table td {
+    padding: 0.7rem 0.75rem;
+  }
+}
