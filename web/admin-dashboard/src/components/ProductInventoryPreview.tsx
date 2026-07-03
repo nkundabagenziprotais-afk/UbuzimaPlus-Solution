@@ -420,6 +420,24 @@ export function ProductInventoryPreview({
   showInternalNavigation = true,
 }: ProductInventoryPreviewProps) {
   const [summary, setSummary] = useState<PharmaInventorySummaryResponse | null>(null);
+
+  const summaryPayload = (summary?.summary ?? {}) as Record<string, unknown>;
+  const inventorySummary = {
+    products_count: Number(summaryPayload.products_count ?? 0),
+    product_categories_count: Number(summaryPayload.product_categories_count ?? 0),
+    active_products_count: Number(summaryPayload.active_products_count ?? 0),
+    stock_locations_count: Number(summaryPayload.stock_locations_count ?? 0),
+    stock_batches_count: Number(summaryPayload.stock_batches_count ?? 0),
+    total_quantity_on_hand: Number(summaryPayload.total_quantity_on_hand ?? 0),
+    estimated_stock_value: Number(summaryPayload.estimated_stock_value ?? 0),
+    low_stock_products_count: Number(summaryPayload.low_stock_products_count ?? 0),
+    near_expiry_batches_180_days_count: Number(summaryPayload.near_expiry_batches_180_days_count ?? 0),
+    low_stock_count: Number(summaryPayload.low_stock_count ?? 0),
+    near_expiry_count: Number(summaryPayload.near_expiry_count ?? 0),
+    total_stock_value: Number(summaryPayload.total_stock_value ?? 0),
+    inventory_value: Number(summaryPayload.inventory_value ?? 0),
+    batches_count: Number(summaryPayload.batches_count ?? 0),
+  };
   const [products, setProducts] = useState<PharmaProductsResponse | null>(null);
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
   const [batches, setBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
@@ -978,52 +996,52 @@ export function ProductInventoryPreview({
   const inventorySmartCardData = summary
     ? {
         products: {
-          value: formatNumber(summary?.summary?.products_count),
+          value: formatNumber(inventorySummary.products_count),
           status: 'Product Master',
           target: 'product-master' as InventoryView,
-          trendSeed: summary?.summary?.products_count,
+          trendSeed: inventorySummary.products_count,
         },
         categories: {
-          value: formatNumber(summary?.summary?.product_categories_count),
+          value: formatNumber(inventorySummary.product_categories_count),
           status: 'Product setup',
           target: 'product-master' as InventoryView,
-          trendSeed: summary?.summary?.product_categories_count,
+          trendSeed: inventorySummary.product_categories_count,
         },
         locations: {
-          value: formatNumber(summary?.summary?.stock_locations_count),
+          value: formatNumber(inventorySummary.stock_locations_count),
           status: 'Storage points',
           target: 'locations' as InventoryView,
-          trendSeed: summary?.summary?.stock_locations_count,
+          trendSeed: inventorySummary.stock_locations_count,
         },
         batches: {
-          value: formatNumber(summary?.summary?.stock_batches_count),
+          value: formatNumber(inventorySummary.stock_batches_count),
           status: 'FEFO register',
           target: 'batches' as InventoryView,
-          trendSeed: summary?.summary?.stock_batches_count,
+          trendSeed: inventorySummary.stock_batches_count,
         },
         'stock-units': {
-          value: formatNumber(summary?.summary?.total_quantity_on_hand),
+          value: formatNumber(inventorySummary.total_quantity_on_hand),
           status: 'Product Inventory',
           target: 'product-inventory' as InventoryView,
-          trendSeed: summary?.summary?.total_quantity_on_hand,
+          trendSeed: inventorySummary.total_quantity_on_hand,
         },
         'stock-value': {
-          value: formatRwf(summary?.summary?.estimated_stock_value),
+          value: formatRwf(inventorySummary.estimated_stock_value),
           status: 'Estimated value',
           target: 'product-inventory' as InventoryView,
-          trendSeed: summary?.summary?.estimated_stock_value,
+          trendSeed: inventorySummary.estimated_stock_value,
         },
         'low-stock': {
-          value: formatNumber(summary?.summary?.low_stock_products_count),
+          value: formatNumber(inventorySummary.low_stock_products_count),
           status: 'Needs reorder',
           target: 'low-stock' as InventoryView,
-          trendSeed: summary?.summary?.low_stock_products_count,
+          trendSeed: inventorySummary.low_stock_products_count,
         },
         'near-expiry': {
-          value: formatNumber(summary?.summary?.near_expiry_batches_180_days_count),
+          value: formatNumber(inventorySummary.near_expiry_batches_180_days_count),
           status: 'Expiry risk',
           target: 'near-expiry' as InventoryView,
-          trendSeed: summary?.summary?.near_expiry_batches_180_days_count,
+          trendSeed: inventorySummary.near_expiry_batches_180_days_count,
         },
       }
     : null;
@@ -2144,9 +2162,9 @@ export function ProductInventoryPreview({
 
                 <div className="analytics-bar-grid">
                   {[
-                    ['Low stock risk', summary?.summary?.low_stock_products_count, Math.max(summary?.summary?.products_count, 1)],
-                    ['Expiry risk', summary?.summary?.near_expiry_batches_180_days_count, Math.max(summary?.summary?.stock_batches_count, 1)],
-                    ['Batch coverage', summary?.summary?.stock_batches_count, Math.max(summary?.summary?.products_count, 1)],
+                    ['Low stock risk', inventorySummary.low_stock_products_count, Math.max(inventorySummary.products_count, 1)],
+                    ['Expiry risk', inventorySummary.near_expiry_batches_180_days_count, Math.max(inventorySummary.stock_batches_count, 1)],
+                    ['Batch coverage', inventorySummary.stock_batches_count, Math.max(inventorySummary.products_count, 1)],
                   ].map(([label, value, max]) => (
                     <article key={label}>
                       <span>{label}</span>
