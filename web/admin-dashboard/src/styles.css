@@ -8998,3 +8998,50 @@ body .dashboard-main table button {
   color: #1f2937;
   font-size: 0.82rem;
 }
+
+/* POS insurance contribution logic */
+.pos-transaction-setup-card--two-column .pos-field-grid--two label:has(select[value='insurance']) {
+  border-color: rgba(75, 83, 32, 0.22);
+}
+
+.pos-summary-list dt {
+  max-width: 62%;
+}
+
+.pos-summary-list dd {
+  min-width: 38%;
+}
+
+.pos-summary-list div:has(dt + dd) {
+  transition: background 160ms ease;
+}
+
+/* POS overview analytics and fallback summary refresh */
+.pos-overview-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.pos-overview-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.pos-refresh-summary-button {
+  width: 100%;
+  margin-bottom: 0.55rem;
+  background: rgba(75, 83, 32, 0.1) !important;
+  color: var(--left-menu-accent, #4B5320) !important;
+  border: 1px solid rgba(75, 83, 32, 0.18) !important;
+}
+
+@media (max-width: 1180px) {
+  .pos-overview-analytics-grid,
+  .pos-overview-split {
+    grid-template-columns: 1fr;
+  }
+}
