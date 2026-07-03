@@ -9232,3 +9232,2124 @@ body .dashboard-main table button {
     align-items: flex-start;
   }
 }
+
+/* Inventory live tables and Product Master-driven inventory creation */
+.inventory-create-from-master-panel,
+.inventory-ai-opportunity-panel {
+  border: 1px solid rgba(45, 80, 52, 0.14);
+  border-radius: 18px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  margin-bottom: 1rem;
+}
+
+.inventory-creation-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.inventory-creation-grid label,
+.inventory-inline-form label,
+.inventory-row-limit-control {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.inventory-creation-grid input,
+.inventory-creation-grid select,
+.inventory-inline-form input,
+.inventory-row-limit-control select {
+  min-height: 38px;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  font: inherit;
+  background: #fff;
+}
+
+.inventory-create-summary {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: rgba(45, 80, 52, 0.06);
+  border: 1px dashed rgba(45, 80, 52, 0.2);
+}
+
+.inventory-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inventory-opportunity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.inventory-opportunity-grid article {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid rgba(45, 80, 52, 0.12);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: rgba(247, 250, 246, 0.86);
+}
+
+.inventory-master-table--wide {
+  overflow-x: auto;
+  font-size: inherit;
+}
+
+.inventory-master-table--wide > div {
+  min-width: 1080px;
+}
+
+.inventory-master-table--wide span,
+.inventory-master-table--wide strong,
+.inventory-master-table--wide small {
+  line-height: 1.25;
+}
+
+.table-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.table-action-row button {
+  min-height: 30px;
+  padding: 0.28rem 0.5rem;
+  font-size: 0.78em;
+}
+
+@media (max-width: 1280px) {
+  .inventory-creation-grid {
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+  }
+
+  .inventory-opportunity-grid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .inventory-creation-grid,
+  .inventory-opportunity-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inventory table fitting, action toolbar, and military-green cards */
+.inventory-section {
+  overflow-x: hidden;
+}
+
+.inventory-section > .section-heading {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inventory-section > .section-heading .bulk-action-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  white-space: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 0.15rem;
+}
+
+.inventory-row-limit-control {
+  min-width: 92px;
+}
+
+.inventory-row-limit-control select {
+  min-width: 86px;
+}
+
+.inventory-master-table,
+.inventory-master-table--wide {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: block;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inventory-master-table > div,
+.inventory-master-table--wide > div {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(128px, max-content);
+  align-items: center;
+  gap: 0.75rem;
+  min-width: max-content;
+  white-space: nowrap;
+}
+
+.inventory-master-table__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.inventory-master-table span,
+.inventory-master-table strong,
+.inventory-master-table small {
+  white-space: nowrap;
+}
+
+.inventory-master-table span:first-child,
+.inventory-master-table__header strong:first-child {
+  min-width: 38px;
+}
+
+.inventory-master-table span:nth-child(2),
+.inventory-master-table__header strong:nth-child(2) {
+  min-width: 280px;
+}
+
+.inventory-master-table span:last-child,
+.inventory-master-table__header strong:last-child {
+  min-width: 210px;
+}
+
+.table-action-row {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.inventory-action-card-grid button,
+.inventory-opportunity-grid article {
+  background: #34483a;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.inventory-action-card-grid button strong,
+.inventory-opportunity-grid article strong {
+  color: #ffffff;
+}
+
+.inventory-action-card-grid--title-only button {
+  min-height: 74px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.inventory-action-card-grid--title-only button span,
+.inventory-opportunity-grid article span {
+  display: none;
+}
+
+.inventory-opportunity-grid article {
+  min-height: 76px;
+  place-items: center;
+  text-align: center;
+}
+
+.inventory-smart-card {
+  background: #34483a;
+  color: #ffffff;
+}
+
+.inventory-smart-card span,
+.inventory-smart-card strong,
+.inventory-smart-card small {
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .inventory-section > .section-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-section > .section-heading .bulk-action-row {
+    justify-content: flex-start;
+  }
+}
+
+/* RHIA Product Master register formatting */
+.inventory-master-table--rhia-format {
+  border: 1px solid rgba(45, 80, 52, 0.22);
+  border-radius: 14px;
+  background: #ffffff;
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-shadow: 0 10px 24px rgba(16, 24, 20, 0.05);
+}
+
+.inventory-master-table--rhia-format .rhia-product-master-row {
+  display: grid;
+  grid-template-columns:
+    46px
+    72px
+    140px
+    minmax(300px, 1.4fr)
+    minmax(300px, 1.4fr)
+    130px
+    120px
+    150px
+    minmax(260px, 1.1fr)
+    minmax(320px, 1.4fr)
+    minmax(260px, 1.1fr)
+    130px
+    220px;
+  min-width: 2520px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.12);
+  white-space: nowrap;
+}
+
+.inventory-master-table--rhia-format .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.08);
+  color: #263d2d;
+  font-weight: 800;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.inventory-master-table--rhia-format .rhia-product-master-row > span,
+.inventory-master-table--rhia-format .rhia-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.14);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inventory-master-table--rhia-format .rhia-product-master-row > span:last-child,
+.inventory-master-table--rhia-format .rhia-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+.inventory-master-table--rhia-format .rhia-number-cell {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.inventory-master-table--rhia-format .rhia-select-cell {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.inventory-master-table--rhia-format span strong {
+  font-weight: 800;
+  color: inherit;
+}
+
+.inventory-master-table--rhia-format .table-action-row {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+
+.inventory-master-table--rhia-format .table-action-row button {
+  white-space: nowrap;
+}
+
+/* Final Product Master RHIA table register */
+.inventory-master-table--rhia-format {
+  border: 1px solid rgba(45, 80, 52, 0.26);
+  border-radius: 14px;
+  background: #ffffff;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+  box-shadow: 0 8px 20px rgba(15, 30, 20, 0.05);
+}
+
+.inventory-master-table--rhia-format .rhia-product-master-row {
+  display: grid;
+  grid-template-columns:
+    64px
+    145px
+    minmax(340px, 1.1fr)
+    minmax(340px, 1.1fr)
+    minmax(130px, 0.55fr)
+    130px
+    150px
+    minmax(230px, 0.8fr)
+    minmax(300px, 1fr)
+    minmax(320px, 1.1fr)
+    minmax(300px, 1fr)
+    140px
+    120px
+    230px;
+  min-width: 3220px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--rhia-format .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.11);
+  color: #243b2b;
+  font-weight: 800;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.inventory-master-table--rhia-format .rhia-product-master-row > span,
+.inventory-master-table--rhia-format .rhia-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--rhia-format .rhia-product-master-row > span:last-child,
+.inventory-master-table--rhia-format .rhia-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+.inventory-master-table--rhia-format .rhia-number-cell {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap !important;
+}
+
+.inventory-master-table--rhia-format .table-action-row {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+
+.inventory-master-table--rhia-format .table-action-row button {
+  white-space: nowrap;
+}
+
+/* Product Master action cards: smaller and normal system-green style */
+.product-master-action-cards {
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.product-master-action-cards button {
+  min-height: 48px;
+  padding: 0.65rem 0.75rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(45, 80, 52, 0.14), rgba(45, 80, 52, 0.07));
+  color: #243b2b;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.product-master-action-cards button.active,
+.product-master-action-cards button:hover {
+  background: linear-gradient(135deg, rgba(45, 80, 52, 0.22), rgba(45, 80, 52, 0.1));
+  border-color: rgba(45, 80, 52, 0.32);
+}
+
+.product-master-action-cards button strong {
+  color: #243b2b;
+  font-size: 0.92rem;
+}
+
+.product-master-action-panel {
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 16px;
+  padding: 1rem;
+  background: rgba(247, 250, 246, 0.9);
+  margin: 0.8rem 0 1rem;
+}
+
+.product-master-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.product-master-form-grid label,
+.product-master-search-select {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.product-master-form-grid input,
+.product-master-form-grid select,
+.product-master-search-select select {
+  min-height: 38px;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 10px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  background: #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .product-master-action-cards {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+
+  .product-master-form-grid {
+    grid-template-columns: repeat(2, minmax(170px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .product-master-action-cards,
+  .product-master-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Product Master: added Product Margin Rate and fixed edit search row */
+.inventory-master-table--rhia-format .rhia-product-master-row {
+  grid-template-columns:
+    64px
+    145px
+    minmax(340px, 1.1fr)
+    minmax(340px, 1.1fr)
+    minmax(130px, 0.55fr)
+    130px
+    150px
+    160px
+    minmax(230px, 0.8fr)
+    minmax(300px, 1fr)
+    minmax(320px, 1.1fr)
+    minmax(300px, 1fr)
+    140px
+    120px
+    230px;
+  min-width: 3380px;
+}
+
+.product-master-edit-search-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(260px, 1.1fr);
+  gap: 0.6rem;
+  align-items: end;
+  margin-bottom: 0.85rem;
+  max-width: 100%;
+}
+
+.product-master-edit-search-row input,
+.product-master-edit-search-row select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.product-master-edit-search-row button {
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+.product-master-action-panel {
+  overflow: hidden;
+}
+
+@media (max-width: 980px) {
+  .product-master-edit-search-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Product Master view panel, delete confirmation and embedded dropdown search */
+.product-master-combo-select {
+  max-width: 100%;
+}
+
+.product-master-combo-field {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.product-master-combo-field input {
+  border: 0 !important;
+  border-radius: 0 !important;
+  min-width: 0;
+  width: 100%;
+}
+
+.product-master-combo-field button {
+  border: 0;
+  border-left: 1px solid rgba(45, 80, 52, 0.16);
+  border-radius: 0;
+  min-height: 38px;
+  padding: 0 0.85rem;
+  background: rgba(45, 80, 52, 0.12);
+  color: #243b2b;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.product-master-view-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+.product-master-view-grid article {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid rgba(45, 80, 52, 0.14);
+  border-radius: 12px;
+  padding: 0.7rem;
+  background: #ffffff;
+}
+
+.product-master-view-grid article span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgba(36, 59, 43, 0.72);
+  font-weight: 800;
+}
+
+.product-master-view-grid article strong {
+  color: #243b2b;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.product-master-delete-confirmation-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border-color: rgba(160, 37, 37, 0.26);
+  background: rgba(255, 248, 248, 0.96);
+}
+
+.product-master-delete-confirmation-card h3 {
+  margin: 0 0 0.25rem;
+  color: #7d1e1e;
+}
+
+.product-master-delete-confirmation-card p {
+  margin: 0;
+  color: #422;
+}
+
+.product-master-delete-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.55rem;
+}
+
+.product-master-delete-actions button {
+  min-height: 38px;
+  border-radius: 10px;
+  font-weight: 800;
+  padding: 0.45rem 0.9rem;
+}
+
+.product-master-delete-actions .cancel-delete {
+  background: #2d5034;
+  color: #ffffff;
+  border: 1px solid rgba(45, 80, 52, 0.28);
+}
+
+.product-master-delete-actions .confirm-delete {
+  background: #b42318;
+  color: #ffffff;
+  border: 1px solid rgba(180, 35, 24, 0.28);
+}
+
+@media (max-width: 980px) {
+  .product-master-view-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .product-master-delete-confirmation-card {
+    grid-template-columns: 1fr;
+  }
+
+  .product-master-delete-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .product-master-view-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-master-combo-field {
+    grid-template-columns: 1fr;
+  }
+
+  .product-master-combo-field button {
+    border-left: 0;
+    border-top: 1px solid rgba(45, 80, 52, 0.16);
+  }
+}
+
+/* Hide legacy ProductInventoryActions section without deleting it */
+.product-inventory-actions-legacy-hidden {
+  display: none !important;
+}
+
+/* Reusable register-table principles across admin system */
+.inventory-master-table,
+.inventory-master-table--wide,
+.admin-register-table,
+.system-register-table,
+.module-register-table,
+.data-register-table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.inventory-master-table > div,
+.inventory-master-table--wide > div,
+.admin-register-table > div,
+.system-register-table > div,
+.module-register-table > div,
+.data-register-table > div {
+  border-bottom: 1px solid rgba(45, 80, 52, 0.12);
+}
+
+.inventory-master-table__header,
+.admin-register-table__header,
+.system-register-table__header,
+.module-register-table__header,
+.data-register-table__header {
+  background: rgba(45, 80, 52, 0.1);
+  color: #243b2b;
+  font-weight: 800;
+}
+
+.inventory-master-table span,
+.inventory-master-table strong,
+.inventory-master-table small,
+.admin-register-table span,
+.admin-register-table strong,
+.system-register-table span,
+.system-register-table strong,
+.module-register-table span,
+.module-register-table strong,
+.data-register-table span,
+.data-register-table strong {
+  line-height: 1.28;
+}
+
+/* Product Master AI assistant */
+.product-master-ai-assistant {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid rgba(45, 80, 52, 0.16);
+  border-radius: 14px;
+  padding: 0.85rem;
+  margin-bottom: 0.9rem;
+  background: rgba(247, 250, 246, 0.94);
+}
+
+.product-master-ai-assistant > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.product-master-ai-assistant > div:first-child strong {
+  color: #243b2b;
+  font-size: 0.95rem;
+}
+
+.product-master-ai-assistant > div:first-child span {
+  color: rgba(36, 59, 43, 0.75);
+  font-size: 0.82rem;
+}
+
+.product-master-ai-suggestion-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+  gap: 0.5rem;
+}
+
+.product-master-ai-suggestion-grid article {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid rgba(45, 80, 52, 0.14);
+  border-radius: 12px;
+  padding: 0.65rem;
+  background: #ffffff;
+}
+
+.product-master-ai-suggestion-grid article span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: rgba(36, 59, 43, 0.68);
+}
+
+.product-master-ai-suggestion-grid article strong {
+  color: #243b2b;
+  font-size: 0.83rem;
+  line-height: 1.2;
+}
+
+.product-master-ai-suggestion-grid article button {
+  min-height: 30px;
+  padding: 0.25rem 0.45rem;
+  border-radius: 9px;
+}
+
+.product-master-ai-assistant--delete {
+  background: rgba(255, 251, 246, 0.96);
+  border-color: rgba(180, 97, 20, 0.2);
+}
+
+/* Extended combo dropdown/search field */
+.product-master-combo-select {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.product-master-combo-field {
+  display: grid;
+  grid-template-columns: minmax(560px, 1fr) 96px;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid rgba(45, 80, 52, 0.2);
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.product-master-combo-field input {
+  min-width: 0;
+  width: 100%;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding-right: 0.75rem;
+}
+
+.product-master-combo-field button {
+  border: 0;
+  border-left: 1px solid rgba(45, 80, 52, 0.16);
+  border-radius: 0;
+  background: rgba(45, 80, 52, 0.12);
+  color: #243b2b;
+  font-weight: 800;
+  min-height: 38px;
+}
+
+/* Keep Product Master cards compact */
+.product-master-action-cards button {
+  min-height: 44px !important;
+  padding: 0.55rem 0.7rem !important;
+}
+
+/* Responsive AI and combo controls */
+@media (max-width: 1280px) {
+  .product-master-ai-suggestion-grid {
+    grid-template-columns: repeat(3, minmax(130px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .product-master-combo-field {
+    grid-template-columns: 1fr;
+  }
+
+  .product-master-combo-field button {
+    border-left: 0;
+    border-top: 1px solid rgba(45, 80, 52, 0.16);
+  }
+}
+
+@media (max-width: 720px) {
+  .product-master-ai-suggestion-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Low Stock Watch List approved register format */
+.inventory-master-table--low-stock-register,
+.inventory-master-table--ai-import {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  border: 1px solid rgba(45, 80, 52, 0.22);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 30, 20, 0.04);
+}
+
+.low-stock-register-row {
+  display: grid;
+  grid-template-columns:
+    74px
+    64px
+    145px
+    minmax(320px, 1.1fr)
+    minmax(340px, 1.1fr)
+    minmax(240px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    160px
+    170px
+    170px
+    230px;
+  min-width: 2860px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.low-stock-register-row > span,
+.low-stock-register-row > strong,
+.ai-import-row > span,
+.ai-import-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.low-stock-register-row > span:last-child,
+.low-stock-register-row > strong:last-child,
+.ai-import-row > span:last-child,
+.ai-import-row > strong:last-child {
+  border-right: 0;
+}
+
+.inventory-master-table--low-stock-register .inventory-master-table__header,
+.inventory-master-table--ai-import .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.1);
+  color: #243b2b;
+  font-weight: 800;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.register-action-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: end;
+  gap: 0.45rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  max-width: 100%;
+  padding-bottom: 0.15rem;
+}
+
+/* AI Import working panel */
+.product-master-ai-import-panel {
+  overflow: hidden;
+}
+
+.ai-import-input-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(320px, 1.3fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 0.9rem;
+}
+
+.ai-import-input-grid label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.ai-import-input-grid input,
+.ai-import-input-grid textarea {
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  background: #ffffff;
+}
+
+.ai-import-actions {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ai-import-actions button {
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.ai-import-row {
+  display: grid;
+  grid-template-columns:
+    82px
+    145px
+    minmax(320px, 1fr)
+    minmax(340px, 1.1fr)
+    130px
+    130px
+    170px
+    150px
+    minmax(260px, 0.9fr)
+    minmax(300px, 1fr)
+    minmax(280px, 1fr)
+    minmax(260px, 0.8fr);
+  min-width: 2860px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+@media (max-width: 1100px) {
+  .ai-import-input-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-import-actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+/* Low Stock Watch List approved register format */
+.inventory-master-table--low-stock-register,
+.inventory-master-table--ai-import {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  border: 1px solid rgba(45, 80, 52, 0.22);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 30, 20, 0.04);
+}
+
+.low-stock-register-row {
+  display: grid;
+  grid-template-columns:
+    74px
+    64px
+    145px
+    minmax(320px, 1.1fr)
+    minmax(340px, 1.1fr)
+    minmax(240px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    160px
+    170px
+    170px
+    230px;
+  min-width: 2860px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.low-stock-register-row > span,
+.low-stock-register-row > strong,
+.ai-import-row > span,
+.ai-import-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.low-stock-register-row > span:last-child,
+.low-stock-register-row > strong:last-child,
+.ai-import-row > span:last-child,
+.ai-import-row > strong:last-child {
+  border-right: 0;
+}
+
+.inventory-master-table--low-stock-register .inventory-master-table__header,
+.inventory-master-table--ai-import .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.1);
+  color: #243b2b;
+  font-weight: 800;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.register-action-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: end;
+  gap: 0.45rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  max-width: 100%;
+  padding-bottom: 0.15rem;
+}
+
+/* AI Import working panel */
+.product-master-ai-import-panel {
+  overflow: hidden;
+}
+
+.ai-import-input-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(320px, 1.3fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 0.9rem;
+}
+
+.ai-import-input-grid label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.ai-import-input-grid input,
+.ai-import-input-grid textarea {
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  background: #ffffff;
+}
+
+.ai-import-actions {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ai-import-actions button {
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.ai-import-row {
+  display: grid;
+  grid-template-columns:
+    82px
+    145px
+    minmax(320px, 1fr)
+    minmax(340px, 1.1fr)
+    130px
+    130px
+    170px
+    150px
+    minmax(260px, 0.9fr)
+    minmax(300px, 1fr)
+    minmax(280px, 1fr)
+    minmax(260px, 0.8fr);
+  min-width: 2860px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+@media (max-width: 1100px) {
+  .ai-import-input-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-import-actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+/* Hide legacy section without deleting its code */
+.legacy-product-master-actions-title,
+.product-inventory-actions-legacy-hidden,
+.product-inventory-actions-legacy-hidden * {
+  display: none !important;
+}
+
+/* Low Stock uses same register principle as Product Master */
+.inventory-master-table--low-stock-standard .low-stock-product-master-row {
+  display: grid;
+  grid-template-columns:
+    64px
+    145px
+    minmax(340px, 1.1fr)
+    minmax(340px, 1.1fr)
+    minmax(130px, 0.55fr)
+    130px
+    150px
+    160px
+    minmax(230px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    160px
+    230px;
+  min-width: 3180px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > span,
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > span:last-child,
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+/* Batch, Expiry and Near Expiry also use Product Master identity/pricing standard */
+.inventory-master-table--batch-standard .batch-product-master-row {
+  display: grid;
+  grid-template-columns:
+    74px
+    64px
+    145px
+    minmax(320px, 1.05fr)
+    minmax(340px, 1.1fr)
+    150px
+    160px
+    170px
+    minmax(260px, 0.9fr)
+    150px
+    150px
+    150px
+    minmax(260px, 0.9fr)
+    minmax(240px, 0.8fr)
+    230px;
+  min-width: 3090px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--batch-standard .batch-product-master-row > span,
+.inventory-master-table--batch-standard .batch-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--batch-standard .batch-product-master-row > span:last-child,
+.inventory-master-table--batch-standard .batch-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+/* Global admin register order: applies across system tables where table layout is used */
+.admin-shell table,
+.admin-dashboard table,
+.module-section-stage table,
+.dashboard-panel table,
+.workspace-panel table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-shell th,
+.admin-dashboard th,
+.module-section-stage th,
+.dashboard-panel th,
+.workspace-panel th {
+  background: rgba(45, 80, 52, 0.1);
+  color: #243b2b;
+  font-weight: 800;
+  text-align: left;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  border-bottom: 1px solid rgba(45, 80, 52, 0.16);
+  padding: 0.6rem 0.72rem;
+  white-space: normal;
+}
+
+.admin-shell td,
+.admin-dashboard td,
+.module-section-stage td,
+.dashboard-panel td,
+.workspace-panel td {
+  text-align: left;
+  border-right: 1px solid rgba(45, 80, 52, 0.12);
+  border-bottom: 1px solid rgba(45, 80, 52, 0.1);
+  padding: 0.58rem 0.72rem;
+  line-height: 1.28;
+  vertical-align: middle;
+}
+
+.admin-shell td.numeric,
+.admin-shell th.numeric,
+.admin-dashboard td.numeric,
+.admin-dashboard th.numeric,
+.module-section-stage td.numeric,
+.module-section-stage th.numeric,
+.dashboard-panel td.numeric,
+.dashboard-panel th.numeric,
+.workspace-panel td.numeric,
+.workspace-panel th.numeric,
+.rhia-number-cell {
+  text-align: right !important;
+  justify-content: flex-end !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap !important;
+}
+
+/* Action cards across operational pages should follow Product Master compact card principle */
+.inventory-action-card-grid button,
+.product-master-action-cards button,
+.module-action-card-grid button,
+.workspace-action-card-grid button,
+.admin-action-card-grid button {
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(45, 80, 52, 0.14), rgba(45, 80, 52, 0.07));
+  color: #243b2b;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.inventory-action-card-grid button strong,
+.product-master-action-cards button strong,
+.module-action-card-grid button strong,
+.workspace-action-card-grid button strong,
+.admin-action-card-grid button strong {
+  color: #243b2b;
+  font-size: 0.92rem;
+}
+
+/* Hide legacy section without deleting its code */
+.legacy-product-master-actions-title,
+.product-inventory-actions-legacy-hidden,
+.product-inventory-actions-legacy-hidden * {
+  display: none !important;
+}
+
+/* Low Stock uses same register principle as Product Master */
+.inventory-master-table--low-stock-standard .low-stock-product-master-row {
+  display: grid;
+  grid-template-columns:
+    64px
+    145px
+    minmax(340px, 1.1fr)
+    minmax(340px, 1.1fr)
+    minmax(130px, 0.55fr)
+    130px
+    150px
+    160px
+    minmax(230px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    160px
+    230px;
+  min-width: 3180px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > span,
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > span:last-child,
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+/* Batch, Expiry and Near Expiry also use Product Master identity/pricing standard */
+.inventory-master-table--batch-standard .batch-product-master-row {
+  display: grid;
+  grid-template-columns:
+    74px
+    64px
+    145px
+    minmax(320px, 1.05fr)
+    minmax(340px, 1.1fr)
+    150px
+    160px
+    170px
+    minmax(260px, 0.9fr)
+    150px
+    150px
+    150px
+    minmax(260px, 0.9fr)
+    minmax(240px, 0.8fr)
+    230px;
+  min-width: 3090px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--batch-standard .batch-product-master-row > span,
+.inventory-master-table--batch-standard .batch-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--batch-standard .batch-product-master-row > span:last-child,
+.inventory-master-table--batch-standard .batch-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+/* Global admin register order: applies across system tables where table layout is used */
+.admin-shell table,
+.admin-dashboard table,
+.module-section-stage table,
+.dashboard-panel table,
+.workspace-panel table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-shell th,
+.admin-dashboard th,
+.module-section-stage th,
+.dashboard-panel th,
+.workspace-panel th {
+  background: rgba(45, 80, 52, 0.1);
+  color: #243b2b;
+  font-weight: 800;
+  text-align: left;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  border-bottom: 1px solid rgba(45, 80, 52, 0.16);
+  padding: 0.6rem 0.72rem;
+  white-space: normal;
+}
+
+.admin-shell td,
+.admin-dashboard td,
+.module-section-stage td,
+.dashboard-panel td,
+.workspace-panel td {
+  text-align: left;
+  border-right: 1px solid rgba(45, 80, 52, 0.12);
+  border-bottom: 1px solid rgba(45, 80, 52, 0.1);
+  padding: 0.58rem 0.72rem;
+  line-height: 1.28;
+  vertical-align: middle;
+}
+
+.admin-shell td.numeric,
+.admin-shell th.numeric,
+.admin-dashboard td.numeric,
+.admin-dashboard th.numeric,
+.module-section-stage td.numeric,
+.module-section-stage th.numeric,
+.dashboard-panel td.numeric,
+.dashboard-panel th.numeric,
+.workspace-panel td.numeric,
+.workspace-panel th.numeric,
+.rhia-number-cell {
+  text-align: right !important;
+  justify-content: flex-end !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap !important;
+}
+
+/* Action cards across operational pages should follow Product Master compact card principle */
+.inventory-action-card-grid button,
+.product-master-action-cards button,
+.module-action-card-grid button,
+.workspace-action-card-grid button,
+.admin-action-card-grid button {
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(45, 80, 52, 0.14), rgba(45, 80, 52, 0.07));
+  color: #243b2b;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.inventory-action-card-grid button strong,
+.product-master-action-cards button strong,
+.module-action-card-grid button strong,
+.workspace-action-card-grid button strong,
+.admin-action-card-grid button strong {
+  color: #243b2b;
+  font-size: 0.92rem;
+}
+
+/* Hide legacy section without deleting its code */
+.legacy-product-master-actions-title,
+.product-inventory-actions-legacy-hidden,
+.product-inventory-actions-legacy-hidden * {
+  display: none !important;
+}
+
+/* Low Stock uses same register principle as Product Master */
+.inventory-master-table--low-stock-standard .low-stock-product-master-row {
+  display: grid;
+  grid-template-columns:
+    64px
+    145px
+    minmax(340px, 1.1fr)
+    minmax(340px, 1.1fr)
+    minmax(130px, 0.55fr)
+    130px
+    150px
+    160px
+    minmax(230px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    160px
+    230px;
+  min-width: 3180px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > span,
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > span:last-child,
+.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+/* Batch, Expiry and Near Expiry also use Product Master identity/pricing standard */
+.inventory-master-table--batch-standard .batch-product-master-row {
+  display: grid;
+  grid-template-columns:
+    74px
+    64px
+    145px
+    minmax(320px, 1.05fr)
+    minmax(340px, 1.1fr)
+    150px
+    160px
+    170px
+    minmax(260px, 0.9fr)
+    150px
+    150px
+    150px
+    minmax(260px, 0.9fr)
+    minmax(240px, 0.8fr)
+    230px;
+  min-width: 3090px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--batch-standard .batch-product-master-row > span,
+.inventory-master-table--batch-standard .batch-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--batch-standard .batch-product-master-row > span:last-child,
+.inventory-master-table--batch-standard .batch-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+/* Global admin register order: applies across system tables where table layout is used */
+.admin-shell table,
+.admin-dashboard table,
+.module-section-stage table,
+.dashboard-panel table,
+.workspace-panel table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-shell th,
+.admin-dashboard th,
+.module-section-stage th,
+.dashboard-panel th,
+.workspace-panel th {
+  background: rgba(45, 80, 52, 0.1);
+  color: #243b2b;
+  font-weight: 800;
+  text-align: left;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  border-bottom: 1px solid rgba(45, 80, 52, 0.16);
+  padding: 0.6rem 0.72rem;
+  white-space: normal;
+}
+
+.admin-shell td,
+.admin-dashboard td,
+.module-section-stage td,
+.dashboard-panel td,
+.workspace-panel td {
+  text-align: left;
+  border-right: 1px solid rgba(45, 80, 52, 0.12);
+  border-bottom: 1px solid rgba(45, 80, 52, 0.1);
+  padding: 0.58rem 0.72rem;
+  line-height: 1.28;
+  vertical-align: middle;
+}
+
+.admin-shell td.numeric,
+.admin-shell th.numeric,
+.admin-dashboard td.numeric,
+.admin-dashboard th.numeric,
+.module-section-stage td.numeric,
+.module-section-stage th.numeric,
+.dashboard-panel td.numeric,
+.dashboard-panel th.numeric,
+.workspace-panel td.numeric,
+.workspace-panel th.numeric,
+.rhia-number-cell {
+  text-align: right !important;
+  justify-content: flex-end !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap !important;
+}
+
+/* Action cards across operational pages should follow Product Master compact card principle */
+.inventory-action-card-grid button,
+.product-master-action-cards button,
+.module-action-card-grid button,
+.workspace-action-card-grid button,
+.admin-action-card-grid button {
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(45, 80, 52, 0.14), rgba(45, 80, 52, 0.07));
+  color: #243b2b;
+  border: 1px solid rgba(45, 80, 52, 0.18);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.inventory-action-card-grid button strong,
+.product-master-action-cards button strong,
+.module-action-card-grid button strong,
+.workspace-action-card-grid button strong,
+.admin-action-card-grid button strong {
+  color: #243b2b;
+  font-size: 0.92rem;
+}
+
+/* Low Stock Watch List: Product Master-style replacement table */
+.inventory-section--low-stock-product-master {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.low-stock-trigger-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  border: 1px solid rgba(45, 80, 52, 0.16);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  background: rgba(45, 80, 52, 0.06);
+  color: #243b2b;
+}
+
+.low-stock-trigger-note strong {
+  font-weight: 900;
+}
+
+.inventory-master-table--low-stock-product-master {
+  border: 1px solid rgba(45, 80, 52, 0.24);
+  border-radius: 14px;
+  background: #ffffff;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+}
+
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row {
+  display: grid;
+  grid-template-columns:
+    64px
+    145px
+    minmax(340px, 1.1fr)
+    minmax(340px, 1.1fr)
+    130px
+    150px
+    160px
+    minmax(240px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    150px
+    minmax(360px, 1.2fr)
+    230px;
+  min-width: 3210px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--low-stock-product-master .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.11);
+  color: #243b2b;
+  font-weight: 800;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row > span,
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row > span:last-child,
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+.inventory-master-table--low-stock-product-master .rhia-number-cell {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap !important;
+}
+
+.inventory-master-table--low-stock-product-master .table-action-row {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+
+/* HARD REPLACEMENT: Low Stock Watch List V2 Product Master trigger register */
+.low-stock-v2-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.low-stock-v2-rule-card {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid rgba(45, 80, 52, 0.16);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(45, 80, 52, 0.06);
+  color: #243b2b;
+}
+
+.low-stock-v2-rule-card strong {
+  font-weight: 900;
+}
+
+.low-stock-v2-table {
+  border: 1px solid rgba(45, 80, 52, 0.24) !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  max-width: 100% !important;
+}
+
+.low-stock-v2-table .low-stock-v2-row {
+  display: grid !important;
+  grid-template-columns:
+    64px
+    145px
+    minmax(340px, 1.1fr)
+    minmax(340px, 1.1fr)
+    130px
+    150px
+    160px
+    minmax(240px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    150px
+    minmax(380px, 1.2fr)
+    230px !important;
+  min-width: 3230px !important;
+  gap: 0 !important;
+  align-items: stretch !important;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13) !important;
+  white-space: normal !important;
+}
+
+.low-stock-v2-table .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.11) !important;
+  color: #243b2b !important;
+  font-weight: 800 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+}
+
+.low-stock-v2-table .low-stock-v2-row > span,
+.low-stock-v2-table .low-stock-v2-row > strong {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+  padding: 0.58rem 0.72rem !important;
+  border-right: 1px solid rgba(45, 80, 52, 0.16) !important;
+  text-align: left !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.28 !important;
+}
+
+.low-stock-v2-table .low-stock-v2-row > span:last-child,
+.low-stock-v2-table .low-stock-v2-row > strong:last-child {
+  border-right: 0 !important;
+}
+
+.low-stock-v2-table .rhia-number-cell {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+
+.low-stock-v2-empty-row {
+  grid-template-columns: minmax(520px, 1fr) !important;
+  min-width: 520px !important;
+}
+
+/* FINAL ACTIVE Low Stock Watch List register */
+.low-stock-final-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.low-stock-final-rule-card {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid rgba(45, 80, 52, 0.16);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(45, 80, 52, 0.06);
+  color: #243b2b;
+}
+
+.low-stock-final-rule-card strong {
+  font-weight: 900;
+}
+
+.low-stock-final-table {
+  border: 1px solid rgba(45, 80, 52, 0.24) !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  max-width: 100% !important;
+}
+
+.low-stock-final-table .low-stock-final-row {
+  display: grid !important;
+  grid-template-columns:
+    64px
+    145px
+    minmax(340px, 1.1fr)
+    minmax(340px, 1.1fr)
+    130px
+    150px
+    160px
+    minmax(240px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    150px
+    minmax(380px, 1.2fr)
+    230px !important;
+  min-width: 3230px !important;
+  gap: 0 !important;
+  align-items: stretch !important;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13) !important;
+  white-space: normal !important;
+}
+
+.low-stock-final-table .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.11) !important;
+  color: #243b2b !important;
+  font-weight: 800 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+}
+
+.low-stock-final-table .low-stock-final-row > span,
+.low-stock-final-table .low-stock-final-row > strong {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+  padding: 0.58rem 0.72rem !important;
+  border-right: 1px solid rgba(45, 80, 52, 0.16) !important;
+  text-align: left !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.28 !important;
+}
+
+.low-stock-final-table .low-stock-final-row > span:last-child,
+.low-stock-final-table .low-stock-final-row > strong:last-child {
+  border-right: 0 !important;
+}
+
+.low-stock-final-table .rhia-number-cell {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+
+.low-stock-final-empty-row {
+  grid-template-columns: minmax(620px, 1fr) !important;
+  min-width: 620px !important;
+}
+
+/* Stable Low Stock Watch List replacement */
+.inventory-section--low-stock-product-master {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.low-stock-trigger-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  border: 1px solid rgba(45, 80, 52, 0.16);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  background: rgba(45, 80, 52, 0.06);
+  color: #243b2b;
+}
+
+.inventory-master-table--low-stock-product-master {
+  border: 1px solid rgba(45, 80, 52, 0.24);
+  border-radius: 14px;
+  background: #ffffff;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+}
+
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row {
+  display: grid;
+  grid-template-columns:
+    64px
+    145px
+    minmax(330px, 1.1fr)
+    minmax(330px, 1.1fr)
+    130px
+    150px
+    160px
+    minmax(220px, 0.8fr)
+    150px
+    150px
+    150px
+    150px
+    minmax(360px, 1.2fr)
+    230px;
+  min-width: 3000px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row--empty {
+  grid-template-columns: 1fr;
+  min-width: 100%;
+}
+
+.inventory-master-table--low-stock-product-master .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.11);
+  color: #243b2b;
+  font-weight: 800;
+}
+
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row > span,
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row > span:last-child,
+.inventory-master-table--low-stock-product-master .low-stock-product-master-row > strong:last-child {
+  border-right: 0;
+}
+
+.inventory-master-table--low-stock-product-master .rhia-number-cell {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap !important;
+}

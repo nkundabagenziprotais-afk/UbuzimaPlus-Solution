@@ -354,6 +354,11 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'permission:pharmaco.inventory.manage',
             'tenant.module:pharmaco.inventory',
         ]);
+    Route::delete('/products/{product}', [ProductInventoryController::class, 'deleteProduct'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
 
     Route::post('/inventory/receive', [ProductInventoryController::class, 'receiveStock'])
         ->middleware([
