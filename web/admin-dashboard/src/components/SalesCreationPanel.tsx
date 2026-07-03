@@ -6,9 +6,11 @@ import {
   PharmaProduct,
   PharmaSale,
   PharmaStockBatch,
+  PharmaTaxComplianceRule,
   createPharmaCustomer,
   createPharmaPrescription,
   createPharmaSale,
+  getPharmaTaxComplianceRules,
 } from '../lib/api';
 
 type Props = {
@@ -120,6 +122,65 @@ function toNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function roundCurrency(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function isTaxRuleEffective(rule: PharmaTaxComplianceRule): boolean {
+  if (rule.status !== 'active') return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (rule.effective_from && new Date(rule.effective_from) > today) return false;
+  if (rule.effective_until && new Date(rule.effective_until) < today) return false;
+
+  return true;
+}
+
+function taxRulePriority(rule: PharmaTaxComplianceRule): number {
+  if (rule.applies_to === 'product_category') return 1;
+  if (rule.applies_to === 'product_type') return 2;
+
+  return 3;
+}
+
+function taxRuleAppliesToProduct(rule: PharmaTaxComplianceRule, product: PharmaProduct): boolean {
+  if (rule.applies_to === 'all_products') return true;
+
+  if (rule.applies_to === 'product_category') {
+    return Boolean(rule.product_category?.id && product.category?.id === rule.product_category.id);
+  }
+
+  if (rule.applies_to === 'product_type') {
+    return Boolean(rule.product_type && product.product_type === rule.product_type);
+  }
+
+  return false;
+}
+
+function selectTaxRule(
+  product: PharmaProduct | undefined,
+  rules: PharmaTaxComplianceRule[],
+): PharmaTaxComplianceRule | null {
+  if (!product) return null;
+
+  return rules
+    .filter(isTaxRuleEffective)
+    .filter((rule) => taxRuleAppliesToProduct(rule, product))
+    .sort((left, right) => taxRulePriority(left) - taxRulePriority(right) || left.name.localeCompare(right.name))[0] ?? null;
+}
+
+function ruleTaxRate(rule: PharmaTaxComplianceRule | null): number {
+  if (!rule) return 0;
+
+  return clamp(Number(rule.tax_rate), 0, 100) / 100;
+}
+
 function money(value: number): string {
   return new Intl.NumberFormat('en-RW', {
     style: 'currency',
@@ -154,6 +215,8 @@ export function SalesCreationPanel({
   const [invoiceRequested, setInvoiceRequested] = useState(false);
   const [insuranceCustomerPercent, setInsuranceCustomerPercent] = useState('20');
   const [insurancePartnerPercent, setInsurancePartnerPercent] = useState('80');
+  const [taxComplianceRules, setTaxComplianceRules] = useState<PharmaTaxComplianceRule[]>([]);
+  const [taxComplianceStatus, setTaxComplianceStatus] = useState('Loading tax compliance rules...');
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const [isSavingPrescription, setIsSavingPrescription] = useState(false);
   const [isSavingSale, setIsSavingSale] = useState(false);
@@ -169,35 +232,89 @@ export function SalesCreationPanel({
     }
   }, [activeBranches, saleForm.branch_id]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    setTaxComplianceStatus('Loading tax compliance rules...');
+
+    getPharmaTaxComplianceRules(token, tenantSlug)
+      .then((response) => {
+        if (!isMounted) return;
+
+        setTaxComplianceRules(response.rules);
+        setTaxComplianceStatus(
+          response.rules.length
+            ? `${response.rules.length} active tax rule${response.rules.length === 1 ? '' : 's'} loaded.`
+            : 'No active tax rule is configured; tax stays at 0 until Admin syncs Tax Compliance.',
+        );
+      })
+      .catch(() => {
+        if (!isMounted) return;
+
+        setTaxComplianceRules([]);
+        setTaxComplianceStatus('Tax rules are unavailable; POS is using 0 tax until Tax Compliance is restored.');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [tenantSlug, token]);
+
   const salePreview = useMemo(() => {
-    const lineSubtotal = saleForm.items.reduce((sum, item) => {
-      const quantity = toNumber(item.quantity);
-      const unitPrice = toNumber(item.unit_price);
-      const discount = toNumber(item.discount_amount);
-      const tax = toNumber(item.tax_amount);
+    const lines = saleForm.items.map((item, index) => {
+      const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
+      const taxRule = selectTaxRule(product, taxComplianceRules);
+      const quantity = Math.max(toNumber(item.quantity), 0);
+      const unitPrice = Math.max(toNumber(item.unit_price), 0);
+      const lineSubtotal = roundCurrency(quantity * unitPrice);
+      const lineDiscount = clamp(toNumber(item.discount_amount), 0, lineSubtotal);
+      const taxableAmount = roundCurrency(Math.max(lineSubtotal - lineDiscount, 0));
+      const taxAmount = roundCurrency(taxableAmount * ruleTaxRate(taxRule));
 
-      return sum + Math.max(quantity * unitPrice - discount + tax, 0);
-    }, 0);
+      return {
+        index,
+        productId: item.product_id,
+        quantity,
+        unitPrice,
+        lineSubtotal,
+        lineDiscount,
+        taxableAmount,
+        taxAmount,
+        lineTotal: roundCurrency(taxableAmount + taxAmount),
+        taxRule,
+      };
+    });
 
-    const saleDiscount = toNumber(saleForm.discount_amount);
-    const saleTax = toNumber(saleForm.tax_amount);
-    const total = Math.max(lineSubtotal - saleDiscount + saleTax, 0);
+    const activeLines = lines.filter((line) => line.productId);
+    const lineSubtotal = roundCurrency(activeLines.reduce((sum, line) => sum + line.lineSubtotal, 0));
+    const itemDiscountTotal = roundCurrency(activeLines.reduce((sum, line) => sum + line.lineDiscount, 0));
+    const taxableSubtotal = roundCurrency(activeLines.reduce((sum, line) => sum + line.taxableAmount, 0));
+    const saleDiscount = clamp(toNumber(saleForm.discount_amount), 0, taxableSubtotal);
+    const saleTax = roundCurrency(activeLines.reduce((sum, line) => sum + line.taxAmount, 0));
+    const total = roundCurrency(Math.max(taxableSubtotal - saleDiscount + saleTax, 0));
     const customerPercent = saleForm.sale_type === 'insurance_sale'
-      ? Math.max(Math.min(toNumber(insuranceCustomerPercent), 100), 0)
+      ? clamp(toNumber(insuranceCustomerPercent), 0, 100)
       : 100;
     const partnerPercent = saleForm.sale_type === 'insurance_sale'
-      ? Math.max(Math.min(toNumber(insurancePartnerPercent), 100), 0)
+      ? clamp(toNumber(insurancePartnerPercent), 0, 100)
       : 0;
 
     return {
+      lines,
       lineSubtotal,
+      itemDiscountTotal,
+      taxableSubtotal,
       saleDiscount,
       saleTax,
       total,
-      customerContribution: total * (customerPercent / 100),
-      partnerContribution: total * (partnerPercent / 100),
+      customerPercent,
+      partnerPercent,
+      customerContribution: roundCurrency(total * (customerPercent / 100)),
+      partnerContribution: roundCurrency(total * (partnerPercent / 100)),
+      unassignedContribution: roundCurrency(Math.max(total - (total * ((customerPercent + partnerPercent) / 100)), 0)),
+      units: roundCurrency(activeLines.reduce((sum, line) => sum + line.quantity, 0)),
     };
-  }, [insuranceCustomerPercent, insurancePartnerPercent, saleForm]);
+  }, [activeProducts, insuranceCustomerPercent, insurancePartnerPercent, saleForm, taxComplianceRules]);
 
   const prescriptionRequiredWithoutPrescription = saleForm.items.some((item) => {
     const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
@@ -383,7 +500,7 @@ export function SalesCreationPanel({
         quantity: toNumber(item.quantity),
         unit_price: toNumber(item.unit_price),
         discount_amount: toNumber(item.discount_amount),
-        tax_amount: toNumber(item.tax_amount),
+        tax_amount: 0,
       }));
 
     if (validItems.length === 0) {
@@ -411,7 +528,7 @@ export function SalesCreationPanel({
           : null,
         sale_type: saleForm.sale_type,
         discount_amount: toNumber(saleForm.discount_amount),
-        tax_amount: toNumber(saleForm.tax_amount),
+        tax_amount: salePreview.saleTax,
         notes: saleForm.notes.trim() || null,
         items: validItems,
       });
@@ -661,6 +778,12 @@ export function SalesCreationPanel({
               />
               Customer wants invoice
             </label>
+
+            <div className="tax-compliance-chip">
+              <span>Tax Compliance</span>
+              <strong>{money(salePreview.saleTax)}</strong>
+              <small>{taxComplianceStatus}</small>
+            </div>
           </div>
 
           <div className="pos-cart-lines">
@@ -669,6 +792,7 @@ export function SalesCreationPanel({
                 if (!item.product_id) return null;
 
                 const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
+                const linePreview = salePreview.lines.find((line) => line.index === index);
 
                 return (
                   <div key={`${item.product_id}-${index}`} className="pos-cart-line">
@@ -706,6 +830,11 @@ export function SalesCreationPanel({
                         onChange={(event) => updateSaleLine(index, { discount_amount: event.target.value })}
                       />
                     </label>
+                    <div className="pos-line-calculated">
+                      <span>Tax</span>
+                      <strong>{money(linePreview?.taxAmount ?? 0)}</strong>
+                      <small>{linePreview?.taxRule?.name ?? 'No active rule'}</small>
+                    </div>
                     <button type="button" onClick={() => removeSaleLine(index)}>
                       Remove
                     </button>
@@ -750,16 +879,6 @@ export function SalesCreationPanel({
               />
             </label>
             <label>
-              Sale tax
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={saleForm.tax_amount}
-                onChange={(event) => setSaleForm((current) => ({ ...current, tax_amount: event.target.value }))}
-              />
-            </label>
-            <label>
               Note
               <input
                 value={saleForm.notes}
@@ -772,11 +891,18 @@ export function SalesCreationPanel({
           <div className="transaction-summary-panel">
             <strong>Transaction summary</strong>
             <div><span>Subtotal</span><small>{money(salePreview.lineSubtotal)}</small></div>
-            <div><span>Discount</span><small>{money(salePreview.saleDiscount)}</small></div>
+            <div><span>Line discounts</span><small>{money(salePreview.itemDiscountTotal)}</small></div>
+            <div><span>Sale discount</span><small>{money(salePreview.saleDiscount)}</small></div>
             <div><span>Tax</span><small>{money(salePreview.saleTax)}</small></div>
+            <div><span>Items / units</span><small>{cartLineCount} / {salePreview.units}</small></div>
             <div><span>Customer contribution</span><small>{money(salePreview.customerContribution)}</small></div>
             {saleForm.sale_type === 'insurance_sale' && (
-              <div><span>Insurance / partner contribution</span><small>{money(salePreview.partnerContribution)}</small></div>
+              <>
+                <div><span>Insurance / partner contribution</span><small>{money(salePreview.partnerContribution)}</small></div>
+                {salePreview.unassignedContribution > 0 && (
+                  <div><span>Unassigned balance</span><small>{money(salePreview.unassignedContribution)}</small></div>
+                )}
+              </>
             )}
             <div className="transaction-summary-total"><span>Total due</span><small>{money(salePreview.total)}</small></div>
           </div>

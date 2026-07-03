@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\PharmacoCustomer;
 use App\Models\PharmacoPrescription;
 use App\Models\PharmacoSale;
+use App\Models\PharmacoTaxComplianceRule;
 use App\Models\Product;
 use App\Models\Solution;
 use App\Models\Tenant;
@@ -194,6 +195,51 @@ class PharmacoSalesCreationApiTest extends TestCase
             'auditable_type' => PharmacoSale::class,
             'auditable_id' => $saleId,
         ]);
+    }
+
+    public function test_tenant_admin_can_sync_and_read_tax_compliance_rules_without_vat_source_column(): void
+    {
+        $this->seed();
+
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $syncResponse = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/tax-compliance/rules/sync', [
+                'rules' => [
+                    [
+                        'code' => 'STANDARD_TAX',
+                        'name' => 'Standard taxable retail sale',
+                        'applies_to' => 'all_products',
+                        'tax_rate' => 18,
+                        'status' => 'active',
+                    ],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Tax compliance rules synced successfully.')
+            ->assertJsonPath('rules.0.code', 'STANDARD_TAX')
+            ->assertJsonPath('rules.0.applies_to', 'all_products');
+
+        $this->assertDatabaseHas('pharmaco_tax_compliance_rules', [
+            'tenant_id' => $this->tenant()->id,
+            'code' => 'STANDARD_TAX',
+            'status' => 'active',
+        ]);
+
+        $readResponse = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->getJson('/api/v1/pharmaco/tax-compliance/rules')
+            ->assertOk()
+            ->assertJsonPath('api_sync.status', 'ready_for_rra_integration')
+            ->assertJsonPath('rules.0.name', 'Standard taxable retail sale');
+
+        $rule = $readResponse->json('rules.0');
+
+        $this->assertArrayNotHasKey('source', $rule);
+        $this->assertArrayNotHasKey('vat_source', $rule);
+        $this->assertSame($syncResponse->json('rules.0.uuid'), $rule['uuid']);
+        $this->assertSame(1, PharmacoTaxComplianceRule::where('tenant_id', $this->tenant()->id)->count());
     }
 
     public function test_prescription_required_product_requires_prescription_on_sale_creation(): void

@@ -1717,7 +1717,7 @@ p {
 
 .pos-cart-line {
   display: grid;
-  grid-template-columns: minmax(160px, 1.4fr) 84px 110px 110px auto;
+  grid-template-columns: minmax(160px, 1.4fr) 84px 110px 110px 110px auto;
   gap: 0.65rem;
   align-items: end;
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -1734,6 +1734,47 @@ p {
 .pos-cart-line small {
   color: #64748b;
   font-weight: 750;
+}
+
+.pos-line-calculated,
+.tax-compliance-chip {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  padding: 0.62rem 0.72rem;
+  background: #ffffff;
+  color: #123d30;
+  display: grid;
+  gap: 0.16rem;
+  align-content: center;
+  min-height: 42px;
+}
+
+.tax-compliance-chip {
+  grid-column: span 2;
+  background: #f2f8ff;
+}
+
+.pos-line-calculated span,
+.tax-compliance-chip span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pos-line-calculated strong,
+.tax-compliance-chip strong {
+  color: #123d30;
+  font-size: 0.92rem;
+  font-weight: 950;
+}
+
+.pos-line-calculated small,
+.tax-compliance-chip small {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.25;
 }
 
 .pos-cart-line button,
@@ -6170,7 +6211,7 @@ h3,
 }
 
 .pos-cart-line {
-  grid-template-columns: minmax(180px, 1.35fr) minmax(72px, 0.45fr) minmax(96px, 0.55fr) minmax(96px, 0.55fr) auto;
+  grid-template-columns: minmax(180px, 1.35fr) minmax(72px, 0.45fr) minmax(96px, 0.55fr) minmax(96px, 0.55fr) minmax(96px, 0.55fr) auto;
 }
 
 .transaction-contribution-grid {
@@ -6231,6 +6272,10 @@ h3,
   .pos-cart-line,
   .transaction-contribution-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .tax-compliance-chip {
+    grid-column: auto;
   }
 }
 

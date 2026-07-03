@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReceivablesController;
 use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
+use App\Http\Controllers\Api\V1\PharmaCo360\TaxComplianceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -450,6 +451,18 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ]);
 
     Route::get('/sales/{sale}', [SalesDispensingController::class, 'sale'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::get('/tax-compliance/rules', [TaxComplianceController::class, 'rules'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::post('/tax-compliance/rules/sync', [TaxComplianceController::class, 'syncRules'])
         ->middleware([
             'permission:pharmaco.sales.manage',
             'tenant.module:pharmaco.sales',

@@ -622,6 +622,21 @@ export type PharmaProduct = {
   stock_summary?: PharmaProductStockSummary;
 };
 
+export type PharmaTaxComplianceRule = {
+  id: number;
+  uuid: string;
+  code: string;
+  name: string;
+  applies_to: 'all_products' | 'product_category' | 'product_type';
+  product_type: string | null;
+  tax_rate: number;
+  effective_from: string | null;
+  effective_until: string | null;
+  status: string;
+  product_category: PharmaProductCategory | null;
+  metadata: Record<string, unknown>;
+};
+
 export type PharmaStockLocation = {
   id: number;
   uuid: string;
@@ -720,11 +735,35 @@ export type PharmaInventorySummaryResponse = {
   low_stock_products: PharmaProduct[];
 };
 
+export type PharmaTaxComplianceRulesResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  rules: PharmaTaxComplianceRule[];
+  api_sync: {
+    endpoint: string;
+    status: string;
+  };
+};
+
 export async function getPharmaProducts(
   token: string,
   tenantSlug: string,
 ): Promise<PharmaProductsResponse> {
   return getJsonWithTenant<PharmaProductsResponse>(token, '/pharmaco/products', tenantSlug);
+}
+
+export async function getPharmaTaxComplianceRules(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaTaxComplianceRulesResponse> {
+  return getJsonWithTenant<PharmaTaxComplianceRulesResponse>(
+    token,
+    '/pharmaco/tax-compliance/rules',
+    tenantSlug,
+  );
 }
 
 export async function getPharmaInventoryLocations(
