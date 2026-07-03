@@ -1128,11 +1128,19 @@ export async function deletePharmaStockBatch(
   tenantSlug: string,
   batchId: number,
 ) {
-  return apiRequest<{
-    message: string;
-  }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}`, {
-    method: 'DELETE',
-  });
+  try {
+    return await apiRequest<{
+      message: string;
+    }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}`, {
+      method: 'DELETE',
+    });
+  } catch (err) {
+    return apiRequest<{
+      message: string;
+    }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}/delete`, {
+      method: 'POST',
+    });
+  }
 }
 
 export async function bulkImportPharmaProducts(

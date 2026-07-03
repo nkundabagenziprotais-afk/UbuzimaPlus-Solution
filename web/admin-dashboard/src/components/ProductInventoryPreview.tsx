@@ -2064,7 +2064,7 @@ export function ProductInventoryPreview({
     setInventoryProductSearchTerm('');
     setInventoryProductOptions([]);
     setIsInventoryProductSearchOpen(false);
-    setInventoryNotice(`Editing batch ${batch.batch_number}. Update the same inventory form and save.`);
+    setInventoryNotice(`Update mode active for batch ${batch.batch_number}. Review the form fields, then click Update inventory.`);
     selectInventoryView('product-inventory');
   }
 
@@ -3084,8 +3084,8 @@ export function ProductInventoryPreview({
               <section className="inventory-create-from-master-panel">
                 <div className="section-heading">
                   <div>
-                    <h3>{editingInventoryBatch ? 'Edit inventory batch' : 'Create inventory from Product Master'}</h3>
-                    <span>{editingInventoryBatch ? 'Update the selected Product Inventory record using the same controlled inventory fields.' : 'Product identity comes from Product Master. Inventory adds batch, location, quantity, cost, margin and selling price.'}</span>
+                    <h3>{editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Product Master'}</h3>
+                    <span>{editingInventoryBatch ? `Update mode active for batch ${editingInventoryBatch.batch_number}. Save changes using the Update Inventory button.` : 'Product identity comes from Product Master. Inventory adds batch, location, quantity, cost, margin and selling price.'}</span>
                   </div>
                 </div>
 
@@ -3304,7 +3304,7 @@ export function ProductInventoryPreview({
                       }
                       aria-busy={isCreatingInventory}
                     >
-                      {isCreatingInventory ? (editingInventoryBatch ? 'Updating inventory, please wait…' : 'Creating inventory, please wait…') : (editingInventoryBatch ? 'Update inventory' : 'Create inventory')}
+                      {editingInventoryBatch ? (isCreatingInventory ? 'Updating inventory, please wait…' : 'Update inventory') : (isCreatingInventory ? 'Creating inventory, please wait…' : 'Create inventory')}
                     </button>
                     <button
                       type="button"
