@@ -2219,46 +2219,239 @@ export function ProductInventoryPreview({
             </section>
           )}
 
-          {activeInventoryView === 'batches' && batches && (
-            <section className="inventory-section">
-              {renderTableToolbar({
-                title: 'Batch and expiry review',
-                subtitle: 'Live FEFO table with expiry, remaining days, edit, delete, details, bulk actions and export.',
-                selectedCount: selectedBatchIds.length,
-                onExport: () =>
-                  exportCsv(
-                    'batch-and-expiry-review.csv',
-                    ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Expiry', 'Remaining days', 'Supplier', 'Cost', 'Price', 'Status'],
-                    visibleBatches.map((batch) => {
-                      const days = remainingDays(batch.expiry_date);
-                      return [
-                        batch.product.name,
-                        batch.product.sku,
-                        batch.batch_number,
-                        batch.stock_location.code,
-                        batch.available_quantity,
-                        formatDate(batch.expiry_date),
-                        days ?? '',
-                        batch.supplier_name ?? '',
-                        batch.unit_cost ?? '',
-                        batch.selling_price ?? '',
-                        batch.status,
-                      ];
-                    }),
-                  ),
-                onBulkEdit: () => markAction('Batch bulk edit'),
-                onBulkDelete: () => markAction('Batch bulk delete'),
-              })}
+          {activeInventoryView === 'batches' && (() => {
+            const batchSource = Array.isArray(allBatches) ? allBatches : [];
 
-              <BatchTable
-                rows={pagedBatches}
-                selectedBatchIds={selectedBatchIds}
-                onToggleBatch={toggleBatchSelection}
-                onSelectAll={() => selectAllBatches(pagedBatches)}
-                onAction={renderBatchActions}
-              />
-            </section>
-          )}
+            const toNumber = (value: unknown) => {
+              const parsed = Number(value);
+              return Number.isFinite(parsed) ? parsed : 0;
+            };
+
+            const formatBatchNumber = (value: unknown) =>
+              new Intl.NumberFormat('en-US', {
+                maximumFractionDigits: 2,
+              }).format(toNumber(value));
+
+            const formatBatchCurrency = (value: unknown) =>
+              new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'RWF',
+                maximumFractionDigits: 0,
+              }).format(toNumber(value));
+
+            const batchProductMeta = (product: any, key: string) => {
+              if (!product || !product.metadata || typeof product.metadata !== 'object') {
+                return undefined;
+              }
+
+              return product.metadata[key];
+            };
+
+            const batchProduct = (batch: any) => batch?.product ?? {};
+
+            const batchProductGeneric = (batch: any) =>
+              String(batchProduct(batch)?.generic_name ?? batchProductMeta(batchProduct(batch), 'generic_description') ?? 'Not set');
+
+            const batchProductDesignation = (batch: any) =>
+              String(batchProduct(batch)?.name ?? batchProduct(batch)?.designation ?? 'Not set');
+
+            const batchSellingUnit = (batch: any) =>
+              String(batchProductMeta(batchProduct(batch), 'rhia_selling_unit') ?? batchProduct(batch)?.unit ?? 'Not set');
+
+            const batchRegulatoryPrice = (batch: any) =>
+              toNumber(
+                batchProductMeta(batchProduct(batch), 'rhia_reimbursement_price') ??
+                  batchProductMeta(batchProduct(batch), 'regulatory_price') ??
+                  batchProduct(batch)?.regulatory_price ??
+                  batchProduct(batch)?.selling_price ??
+                  batchProduct(batch)?.unit_price ??
+                  0,
+              );
+
+            const batchProductMargin = (batch: any) =>
+              toNumber(
+                batchProductMeta(batchProduct(batch), 'product_margin_rate') ??
+                  batchProductMeta(batchProduct(batch), 'product_margin_percent') ??
+                  batchProductMeta(batchProduct(batch), 'default_margin_percent') ??
+                  batchProduct(batch)?.margin_rate ??
+                  batchProduct(batch)?.margin_percent ??
+                  0,
+              );
+
+            const batchLocation = (batch: any) =>
+              String(
+                batch?.stock_location?.name ??
+                  batch?.location?.name ??
+                  batch?.stock_location_name ??
+                  'No location',
+              );
+
+            const batchExpiryDate = (batch: any) => String(batch?.expiry_date ?? '');
+
+            const batchRemainingDays = (batch: any) => {
+              if (!batch?.expiry_date) {
+                return null;
+              }
+
+              const today = new Date();
+              const expiry = new Date(batch.expiry_date);
+              today.setHours(0, 0, 0, 0);
+              expiry.setHours(0, 0, 0, 0);
+
+              return Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
+            };
+
+            const batchStatusText = (batch: any) => {
+              const days = batchRemainingDays(batch);
+
+              if (days === null) {
+                return 'No expiry date';
+              }
+
+              if (days < 0) {
+                return 'Expired';
+              }
+
+              if (days <= 90) {
+                return 'Near expiry';
+              }
+
+              return 'Valid';
+            };
+
+            const batchRows = batchSource
+              .filter((batch: any) => batch && batch.product)
+              .sort((a: any, b: any) => {
+                const left = a?.expiry_date ? new Date(a.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+                const right = b?.expiry_date ? new Date(b.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+                return left - right;
+              });
+
+            const visibleBatchRows = batchRows.slice(0, 15);
+
+            return (
+              <section className="inventory-section inventory-section--batch-expiry-register">
+                <div className="section-heading">
+                  <div>
+                    <h3>Batch and Expiry Preview</h3>
+                    <span>
+                      Stock batch register from Product Inventory, linked back to Product Master identity and pricing.
+                    </span>
+                  </div>
+
+                  <div className="bulk-action-row register-action-toolbar">
+                    <button type="button" onClick={() => markAction('Bulk edit stock batches')}>
+                      Bulk edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportCsv(
+                          'batch-and-expiry-register.csv',
+                          [
+                            'SN',
+                            'Drug Code',
+                            'Generic Description',
+                            'Designation',
+                            'Selling Unit',
+                            'Regulatory Price',
+                            'Product Margin Rate',
+                            'Batch Number',
+                            'Location',
+                            'Available Qty',
+                            'Expiry Date',
+                            'Remaining Days',
+                            'Batch Status',
+                            'Supplier',
+                          ],
+                          visibleBatchRows.map((batch: any, index: number) => [
+                            index + 1,
+                            batchProduct(batch)?.sku ?? '',
+                            batchProductGeneric(batch),
+                            batchProductDesignation(batch),
+                            batchSellingUnit(batch),
+                            batchRegulatoryPrice(batch),
+                            batchProductMargin(batch),
+                            batch?.batch_number ?? '',
+                            batchLocation(batch),
+                            toNumber(batch?.available_quantity ?? batch?.quantity ?? 0),
+                            batchExpiryDate(batch),
+                            batchRemainingDays(batch) ?? '',
+                            batchStatusText(batch),
+                            batch?.supplier_name ?? 'Not set',
+                          ]),
+                        );
+                      }}
+                    >
+                      Export
+                    </button>
+                  </div>
+                </div>
+
+                <div className="low-stock-trigger-note">
+                  <strong>Listing rule:</strong>
+                  <span>
+                    This page lists stock batch records only. Product Master information is shown here only to identify and price the batch.
+                  </span>
+                </div>
+
+                <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--batch-expiry-register">
+                  <div className="inventory-master-table__header batch-expiry-register-row">
+                    <strong>SN</strong>
+                    <strong>Drug Code</strong>
+                    <strong>Generic Description</strong>
+                    <strong>Designation</strong>
+                    <strong>Selling Unit</strong>
+                    <strong className="rhia-number-cell">Regulatory Price</strong>
+                    <strong className="rhia-number-cell">Product Margin Rate</strong>
+                    <strong>Batch Number</strong>
+                    <strong>Location</strong>
+                    <strong className="rhia-number-cell">Available Qty</strong>
+                    <strong>Expiry Date</strong>
+                    <strong className="rhia-number-cell">Remaining Days</strong>
+                    <strong>Batch Status</strong>
+                    <strong>Supplier</strong>
+                    <strong>Actions</strong>
+                  </div>
+
+                  {visibleBatchRows.length === 0 ? (
+                    <div className="batch-expiry-register-row batch-expiry-register-row--empty">
+                      <span>
+                        No stock batch records found. This page will populate after stock is received into Product Inventory.
+                      </span>
+                    </div>
+                  ) : (
+                    visibleBatchRows.map((batch: any, index: number) => {
+                      const days = batchRemainingDays(batch);
+
+                      return (
+                        <div key={batch?.id ?? `${batch?.batch_number}-${index}`} className="batch-expiry-register-row">
+                          <span>{index + 1}</span>
+                          <span>{batchProduct(batch)?.sku ?? 'Not set'}</span>
+                          <span>{batchProductGeneric(batch)}</span>
+                          <span><strong>{batchProductDesignation(batch)}</strong></span>
+                          <span>{batchSellingUnit(batch)}</span>
+                          <span className="rhia-number-cell">{formatBatchCurrency(batchRegulatoryPrice(batch))}</span>
+                          <span className="rhia-number-cell">{formatBatchNumber(batchProductMargin(batch))}%</span>
+                          <span>{batch?.batch_number ?? 'Not set'}</span>
+                          <span>{batchLocation(batch)}</span>
+                          <span className="rhia-number-cell">{formatBatchNumber(batch?.available_quantity ?? batch?.quantity ?? 0)}</span>
+                          <span>{batchExpiryDate(batch) || 'No expiry'}</span>
+                          <span className="rhia-number-cell">{days === null ? 'N/A' : days}</span>
+                          <span>{batchStatusText(batch)}</span>
+                          <span>{batch?.supplier_name ?? 'Not set'}</span>
+                          <span className="table-action-row">
+                            <button type="button" onClick={() => markAction(`View batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>View</button>
+                            <button type="button" onClick={() => markAction(`Review batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>Review</button>
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+            );
+          })()}
 
           {activeInventoryView === 'near-expiry' && nearExpiryBatches && (
             <section className="inventory-section">
