@@ -11353,3 +11353,122 @@ body .dashboard-main table button {
   font-variant-numeric: tabular-nums;
   white-space: nowrap !important;
 }
+
+/* Batch and Expiry: Stock batch register, not Product Master table */
+.inventory-section--batch-expiry-register {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.inventory-master-table--batch-expiry-register {
+  border: 1px solid rgba(45, 80, 52, 0.24);
+  border-radius: 14px;
+  background: #ffffff;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+}
+
+.inventory-master-table--batch-expiry-register .batch-expiry-register-row {
+  display: grid;
+  grid-template-columns:
+    64px
+    145px
+    minmax(320px, 1.05fr)
+    minmax(340px, 1.1fr)
+    130px
+    150px
+    160px
+    170px
+    minmax(230px, 0.85fr)
+    150px
+    150px
+    150px
+    150px
+    minmax(210px, 0.75fr)
+    210px;
+  min-width: 2920px;
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
+  white-space: normal;
+}
+
+.inventory-master-table--batch-expiry-register .batch-expiry-register-row--empty {
+  grid-template-columns: 1fr;
+  min-width: 100%;
+}
+
+.inventory-master-table--batch-expiry-register .inventory-master-table__header {
+  background: rgba(45, 80, 52, 0.11);
+  color: #243b2b;
+  font-weight: 800;
+}
+
+.inventory-master-table--batch-expiry-register .batch-expiry-register-row > span,
+.inventory-master-table--batch-expiry-register .batch-expiry-register-row > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 0.58rem 0.72rem;
+  border-right: 1px solid rgba(45, 80, 52, 0.16);
+  text-align: left;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.28;
+}
+
+.inventory-master-table--batch-expiry-register .batch-expiry-register-row > span:last-child,
+.inventory-master-table--batch-expiry-register .batch-expiry-register-row > strong:last-child {
+  border-right: 0;
+}
+
+.inventory-master-table--batch-expiry-register .rhia-number-cell {
+  justify-content: flex-end !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap !important;
+}
+
+/* Global delete confirmation for inventory tables */
+.inventory-delete-confirmation-panel {
+  border: 1px solid rgba(150, 40, 40, 0.2);
+  background: rgba(150, 40, 40, 0.04);
+}
+
+.delete-confirmation-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid rgba(150, 40, 40, 0.18);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 0.85rem;
+}
+
+.delete-confirmation-card > div:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.delete-confirmation-card small {
+  color: rgba(36, 59, 43, 0.72);
+}
+
+.delete-confirmation-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .delete-confirmation-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
