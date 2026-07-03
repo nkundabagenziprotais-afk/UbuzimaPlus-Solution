@@ -482,6 +482,7 @@ class ProductInventoryController extends Controller
             'minimum_stock_level' => ['sometimes', 'numeric', 'min:0'],
             'maximum_stock_level' => ['nullable', 'numeric', 'min:0'],
             'status' => ['sometimes', Rule::in(['active', 'inactive', 'discontinued'])],
+            'metadata' => ['sometimes', 'array'],
         ]);
 
         $product = Product::query()->create([
@@ -494,9 +495,13 @@ class ProductInventoryController extends Controller
             'minimum_stock_level' => $validated['minimum_stock_level'] ?? 0,
             'maximum_stock_level' => $validated['maximum_stock_level'] ?? null,
             'status' => $validated['status'] ?? 'active',
-            'metadata' => [
-                'created_from' => 'pharmaco_product_inventory_api',
-            ],
+            'metadata' => array_merge(
+                [
+                    'created_from' => 'pharmaco_product_inventory_api',
+                    'manual_product_master_entry' => true,
+                ],
+                $validated['metadata'] ?? []
+            ),
         ]);
 
         $scope = $scopeResolver->resolveForUser($request->user());
@@ -563,7 +568,12 @@ class ProductInventoryController extends Controller
             'minimum_stock_level' => ['sometimes', 'numeric', 'min:0'],
             'maximum_stock_level' => ['nullable', 'numeric', 'min:0'],
             'status' => ['sometimes', Rule::in(['active', 'inactive', 'discontinued'])],
+            'metadata' => ['sometimes', 'array'],
         ]);
+
+        if (array_key_exists('metadata', $validated)) {
+            $validated['metadata'] = array_merge($product->metadata ?? [], $validated['metadata']);
+        }
 
         $before = $product->only(array_keys($validated));
 
@@ -589,6 +599,62 @@ class ProductInventoryController extends Controller
         return response()->json([
             'message' => 'Product updated successfully.',
             'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
+        ]);
+    }
+
+    public function deleteProduct(
+        Request $request,
+        Product $product,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $stockBatchCount = StockBatch::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('product_id', $product->id)
+            ->count();
+
+        $purchaseOrderItemCount = PharmacoPurchaseOrderItem::query()
+            ->where('product_id', $product->id)
+            ->count();
+
+        if ($stockBatchCount > 0 || $purchaseOrderItemCount > 0) {
+            throw ValidationException::withMessages([
+                'product' => [
+                    'This product has stock or purchase order history. Deactivate/discontinue it instead of deleting it.',
+                ],
+            ]);
+        }
+
+        $snapshot = [
+            'id' => $product->id,
+            'sku' => $product->sku,
+            'name' => $product->name,
+            'generic_name' => $product->generic_name,
+            'metadata' => $product->metadata ?? [],
+        ];
+
+        $product->delete();
+
+        $auditLogService->record(
+            action: 'pharmaco.product.deleted',
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'deleted_product' => $snapshot,
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $snapshot['id']
+        );
+
+        return response()->json([
+            'message' => 'Product deleted successfully.',
         ]);
     }
 

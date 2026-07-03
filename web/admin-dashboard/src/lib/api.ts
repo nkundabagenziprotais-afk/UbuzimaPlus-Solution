@@ -972,6 +972,33 @@ export async function updatePharmaProduct(
   );
 }
 
+export async function deletePharmaProduct(
+  token: string,
+  tenantSlug: string,
+  productId: number,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/pharmaco/products/${productId}`, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-Slug': tenantSlug,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors).flat().join(' ')
+      : null;
+
+    throw new Error(validationMessage || data?.message || 'Unable to delete product.');
+  }
+
+  return data as { message: string };
+}
+
 export async function createPharmaProductCategory(
   token: string,
   tenantSlug: string,

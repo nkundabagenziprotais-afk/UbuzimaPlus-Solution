@@ -451,6 +451,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'inventory-batches', label: 'Batch and Expiry Preview', target: 'batches' },
     { key: 'inventory-near-expiry', label: 'Near Expiry Watch List', target: 'near-expiry' },
     { key: 'inventory-product-master', label: 'Product Master', target: 'product-master' },
+    { key: 'inventory-product-inventory', label: 'Product Inventory', target: 'product-inventory' },
     { key: 'inventory-locations', label: 'Stock Locations', target: 'locations' },
   ],
   pos: [
@@ -2855,7 +2856,11 @@ function App() {
               showInternalNavigation={false}
             />
             {activeInventoryView === 'product-master' && (
-              <ProductInventoryActions token={session.token} profile={profile} />
+              <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
+
+                <ProductInventoryActions token={session.token} profile={profile} />
+
+              </div>
             )}
           </>
         )}
@@ -2882,7 +2887,11 @@ function App() {
         {selectedFeature.key === 'product-master' && (
           <>
             <ProductInventoryPreview token={session.token} profile={profile} />
-            <ProductInventoryActions token={session.token} profile={profile} />
+            <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
+
+              <ProductInventoryActions token={session.token} profile={profile} />
+
+            </div>
           </>
         )}
 
@@ -4544,7 +4553,11 @@ function App() {
             />
 
             {activeInventoryView === 'product-master' && (
-              <ProductInventoryActions token={session.token} profile={profile} />
+              <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
+
+                <ProductInventoryActions token={session.token} profile={profile} />
+
+              </div>
             )}
           </section>
         );
