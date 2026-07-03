@@ -632,6 +632,82 @@ export function ProductInventoryPreview({
     setInternalInventoryView(view);
   }
 
+  const inventoryCacheNamespace = `ubuzima.inventory.${tenantSlug || 'tenant'}`;
+  const inventoryCacheTtlMs = 5 * 60 * 1000;
+
+  function inventoryCacheKey(resource: string) {
+    return `${inventoryCacheNamespace}.${resource}`;
+  }
+
+  function readInventoryCache<T>(resource: string): T | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    try {
+      const raw = window.sessionStorage.getItem(inventoryCacheKey(resource));
+
+      if (!raw) {
+        return null;
+      }
+
+      const parsed = JSON.parse(raw) as { savedAt?: number; payload?: T };
+
+      if (!parsed.savedAt || Date.now() - parsed.savedAt > inventoryCacheTtlMs) {
+        window.sessionStorage.removeItem(inventoryCacheKey(resource));
+        return null;
+      }
+
+      return parsed.payload ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeInventoryCache<T>(resource: string, payload: T) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(
+        inventoryCacheKey(resource),
+        JSON.stringify({
+          savedAt: Date.now(),
+          payload,
+        }),
+      );
+    } catch {
+      // Browser storage can be full or blocked. Inventory must still work without cache.
+    }
+  }
+
+  async function loadInventoryResource<T>(
+    resource: string,
+    setter: (payload: T) => void,
+    loader: () => Promise<T>,
+    force = false,
+  ) {
+    const cached = force ? null : readInventoryCache<T>(resource);
+
+    if (cached) {
+      setter(cached);
+
+      void loader()
+        .then((fresh) => {
+          setter(fresh);
+          writeInventoryCache(resource, fresh);
+        })
+        .catch(() => undefined);
+
+      return;
+    }
+
+    const fresh = await loader();
+    setter(fresh);
+    writeInventoryCache(resource, fresh);
+  }
+
   async function loadInventoryPreview(viewOverride: InventoryView = activeInventoryView, force = true) {
     if (!tenantSlug) {
       setError('No tenant assignment is available for this account.');
@@ -650,9 +726,12 @@ export function ProductInventoryPreview({
 
       if (viewToLoad === 'low-stock' && products) {
         if (!batches) {
-          void getPharmaInventoryBatches(token, tenantSlug)
-            .then(setBatches)
-            .catch(() => undefined);
+          void loadInventoryResource(
+            'batches',
+            setBatches,
+            () => getPharmaInventoryBatches(token, tenantSlug),
+            false,
+          );
         }
 
         return;
@@ -665,61 +744,113 @@ export function ProductInventoryPreview({
 
     try {
       if (viewToLoad === 'overview') {
-        const summaryResponse = await getPharmaInventorySummary(token, tenantSlug);
-        setSummary(summaryResponse);
+        await loadInventoryResource(
+          'summary',
+          setSummary,
+          () => getPharmaInventorySummary(token, tenantSlug),
+          force,
+        );
+
+        void loadInventoryResource(
+          'products',
+          setProducts,
+          () => getPharmaProducts(token, tenantSlug),
+          false,
+        );
+
         return;
       }
 
       if (viewToLoad === 'product-master' || viewToLoad === 'shelf') {
-        const productsResponse = await getPharmaProducts(token, tenantSlug);
-        setProducts(productsResponse);
+        await loadInventoryResource(
+          'products',
+          setProducts,
+          () => getPharmaProducts(token, tenantSlug),
+          force,
+        );
         return;
       }
 
       if (viewToLoad === 'low-stock') {
-        const productsResponse = await getPharmaProducts(token, tenantSlug);
-        setProducts(productsResponse);
+        await loadInventoryResource(
+          'products',
+          setProducts,
+          () => getPharmaProducts(token, tenantSlug),
+          force,
+        );
 
-        void getPharmaInventoryBatches(token, tenantSlug)
-          .then(setBatches)
-          .catch(() => undefined);
+        void loadInventoryResource(
+          'batches',
+          setBatches,
+          () => getPharmaInventoryBatches(token, tenantSlug),
+          false,
+        );
 
         return;
       }
 
       if (viewToLoad === 'batches') {
-        const batchesResponse = await getPharmaInventoryBatches(token, tenantSlug);
-        setBatches(batchesResponse);
+        await loadInventoryResource(
+          'batches',
+          setBatches,
+          () => getPharmaInventoryBatches(token, tenantSlug),
+          force,
+        );
         return;
       }
 
       if (viewToLoad === 'near-expiry') {
-        const nearExpiryResponse = await getPharmaInventoryBatches(token, tenantSlug, 180);
-        setNearExpiryBatches(nearExpiryResponse);
+        await loadInventoryResource(
+          'near-expiry-batches',
+          setNearExpiryBatches,
+          () => getPharmaInventoryBatches(token, tenantSlug, 180),
+          force,
+        );
         return;
       }
 
       if (viewToLoad === 'locations') {
-        const locationsResponse = await getPharmaInventoryLocations(token, tenantSlug);
-        setLocations(locationsResponse);
+        await loadInventoryResource(
+          'locations',
+          setLocations,
+          () => getPharmaInventoryLocations(token, tenantSlug),
+          force,
+        );
         return;
       }
 
       if (viewToLoad === 'product-inventory') {
-        const [productsResponse, locationsResponse, batchesResponse] = await Promise.all([
-          getPharmaProducts(token, tenantSlug),
-          getPharmaInventoryLocations(token, tenantSlug),
-          getPharmaInventoryBatches(token, tenantSlug),
-        ]);
+        const productsPromise = loadInventoryResource(
+          'products',
+          setProducts,
+          () => getPharmaProducts(token, tenantSlug),
+          force,
+        );
 
-        setProducts(productsResponse);
-        setLocations(locationsResponse);
-        setBatches(batchesResponse);
+        const locationsPromise = loadInventoryResource(
+          'locations',
+          setLocations,
+          () => getPharmaInventoryLocations(token, tenantSlug),
+          force,
+        );
+
+        const batchesPromise = loadInventoryResource(
+          'batches',
+          setBatches,
+          () => getPharmaInventoryBatches(token, tenantSlug),
+          force,
+        );
+
+        await Promise.all([productsPromise, locationsPromise, batchesPromise]);
         return;
       }
 
-      const summaryResponse = await getPharmaInventorySummary(token, tenantSlug);
-      setSummary(summaryResponse);
+      await loadInventoryResource(
+        'summary',
+        setSummary,
+        () => getPharmaInventorySummary(token, tenantSlug),
+        force,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load the selected inventory page.');
     } finally {
