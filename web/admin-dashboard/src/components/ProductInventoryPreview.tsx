@@ -1100,12 +1100,18 @@ export function ProductInventoryPreview({
   }
 
   async function handleCreateInventoryFromProductMaster(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isCreatingInventory) {
+      return;
+    }
+
     if (!inventoryCreateForm.product_id) {
       setInventoryNotice('Select a Product Master item before receiving inventory.');
       return;
     }
 
-    if (inventoryReceiveSource === 'purchase-code' && !inventoryCreateForm.reference.trim()) {
+    if (inventoryReceiveSource === 'purchase-code' && !(inventoryCreateForm.reference_number ?? '').trim()) {
       setInventoryNotice('Enter the purchase code or purchase order reference before receiving stock.');
       return;
     }
@@ -2949,6 +2955,37 @@ export function ProductInventoryPreview({
                 onBulkDelete: () => markAction('Product Inventory bulk delete'),
               })}
 
+              <div className="inventory-product-inventory-card-grid">
+                {[
+                  {
+                    label: 'Inventory batches',
+                    value: formatNumber(productInventoryRows.length),
+                    helper: 'Commercial stock rows linked to Product Master',
+                  },
+                  {
+                    label: 'Available quantity',
+                    value: formatNumber(productInventoryRows.reduce((total, { batch }) => total + Number(batch.available_quantity || 0), 0)),
+                    helper: 'Available units across inventory batches',
+                  },
+                  {
+                    label: 'Estimated stock value',
+                    value: formatRwf(productInventoryRows.reduce((total, { batch, computedSellingPrice }) => total + (Number(batch.available_quantity || 0) * Number(computedSellingPrice || batch.unit_cost || 0)), 0)),
+                    helper: 'Quantity multiplied by selling price or cost',
+                  },
+                  {
+                    label: 'Near-expiry risk',
+                    value: formatNumber(productInventoryRows.filter(({ days }) => days !== null && days <= 180).length),
+                    helper: 'Batches within 180 days of expiry',
+                  },
+                ].map((card) => (
+                  <article key={card.label} className="inventory-product-inventory-card">
+                    <span>{card.label}</span>
+                    <strong>{card.value}</strong>
+                    <small>{card.helper}</small>
+                  </article>
+                ))}
+              </div>
+
               <section className="inventory-create-from-master-panel">
                 <div className="section-heading">
                   <div>
@@ -3159,8 +3196,20 @@ export function ProductInventoryPreview({
                   </div>
 
                   <div className="inventory-form-actions">
-                    <button type="submit" disabled={isCreatingInventory || allProducts.length === 0 || (locations?.locations ?? []).length === 0}>
-                      {isCreatingInventory ? 'Creating inventory…' : 'Create inventory'}
+                    <button
+                      type="submit"
+                      className="inventory-create-submit-button"
+                      disabled={
+                        isCreatingInventory ||
+                        !inventoryCreateForm.product_id ||
+                        !inventoryCreateForm.stock_location_id ||
+                        !inventoryCreateForm.batch_number.trim() ||
+                        Number(inventoryCreateForm.quantity || 0) <= 0 ||
+                        (inventoryReceiveSource === 'purchase-code' && !(inventoryCreateForm.reference_number ?? '').trim())
+                      }
+                      aria-busy={isCreatingInventory}
+                    >
+                      {isCreatingInventory ? 'Creating inventory, please wait…' : 'Create inventory'}
                     </button>
                     <button type="button" onClick={() => setInventoryCreateForm(emptyInventoryCreateForm)}>
                       Cancel
@@ -3193,41 +3242,63 @@ export function ProductInventoryPreview({
                 </div>
               </section>
 
-              <div className="inventory-master-table inventory-master-table--wide">
-                <div className="inventory-master-table__header">
-                  <strong><input type="checkbox" onChange={() => selectAllBatches(pagedProductInventory.map((row) => row.batch))} /></strong>
-                  <strong>Product</strong>
-                  <strong>Batch</strong>
-                  <strong>Location</strong>
-                  <strong>Available</strong>
-                  <strong>Cost</strong>
-                  <strong>Margin</strong>
-                  <strong>Selling price</strong>
-                  <strong>Expiry</strong>
-                  <strong>Actions</strong>
-                </div>
+              <div className="inventory-table-scroll inventory-product-inventory-table-shell">
+                <div className="inventory-master-table inventory-master-table--wide inventory-master-table--rhia-format inventory-master-table--product-inventory-register">
+                  <div className="inventory-master-table__header product-inventory-register-row">
+                    <strong>SN</strong>
+                    <strong>Product / Drug Code</strong>
+                    <strong>Generic Description</strong>
+                    <strong>Batch / Expiry</strong>
+                    <strong>Location</strong>
+                    <strong>Available Qty</strong>
+                    <strong>Unit Cost</strong>
+                    <strong>Margin</strong>
+                    <strong>Selling Price</strong>
+                    <strong>Status</strong>
+                    <strong>Actions</strong>
+                  </div>
 
-                {pagedProductInventory.length === 0 ? (
-                  <div><span>No commercial inventory batches found.</span></div>
-                ) : (
-                  pagedProductInventory.map(({ batch, defaultMargin, computedSellingPrice, days }) => (
-                    <div key={batch.id}>
-                      <span><input type="checkbox" checked={selectedBatchIds.includes(batch.id)} onChange={() => toggleBatchSelection(batch.id)} /></span>
-                      <span>
-                        <strong>{batch.product.name}</strong>
-                        <small>{batch.product.sku} · Regulatory Price {formatRwf(regulatoryPrice(batch.product))}</small>
-                      </span>
-                      <span>{batch.batch_number}</span>
-                      <span>{batch.stock_location.name}</span>
-                      <span>{formatNumber(batch.available_quantity)}</span>
-                      <span>{formatRwf(batch.unit_cost)}</span>
-                      <span>{formatNumber(defaultMargin)}%</span>
-                      <span>{formatRwf(computedSellingPrice)}</span>
-                      <span>{formatDate(batch.expiry_date)} · {days === null ? 'N/A' : `${days} days`}</span>
-                      <span>{renderBatchActions(batch)}</span>
+                  {pagedProductInventory.length === 0 ? (
+                    <div className="product-inventory-register-row product-inventory-register-row--empty">
+                      <span>No commercial inventory batches found.</span>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    pagedProductInventory.map(({ batch, defaultMargin, computedSellingPrice, days }, index) => (
+                      <div key={batch.id} className="product-inventory-register-row">
+                        <span className="rhia-number-cell">{index + 1}</span>
+                        <span>
+                          <strong>{batch.product.name}</strong>
+                          <small>Drug code: {batch.product.sku}</small>
+                          <small>Regulatory Price: {formatRwf(regulatoryPrice(batch.product))}</small>
+                        </span>
+                        <span>
+                          <strong>{batch.product.generic_name ?? 'Generic name not set'}</strong>
+                          <small>{metadataText(batch.product, ['designation', 'rhia_designation'], 'Designation not set')}</small>
+                        </span>
+                        <span>
+                          <strong>{batch.batch_number}</strong>
+                          <small>{formatDate(batch.expiry_date)}</small>
+                          <small>{days === null ? 'Remaining days: N/A' : `Remaining days: ${days}`}</small>
+                        </span>
+                        <span>
+                          <strong>{batch.stock_location.name}</strong>
+                          <small>{batch.stock_location.code}</small>
+                        </span>
+                        <span className="rhia-number-cell">{formatNumber(batch.available_quantity)}</span>
+                        <span className="rhia-number-cell">{formatRwf(batch.unit_cost)}</span>
+                        <span className="rhia-number-cell">{formatNumber(defaultMargin)}%</span>
+                        <span className="rhia-number-cell">{formatRwf(computedSellingPrice)}</span>
+                        <span>
+                          <strong>{batch.status}</strong>
+                          <small>{expiryStatus(days)}</small>
+                        </span>
+                        <span className="table-action-row product-inventory-row-actions">
+                          {renderBatchActions(batch)}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </section>
           )}
