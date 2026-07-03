@@ -632,10 +632,31 @@ export function ProductInventoryPreview({
     setInternalInventoryView(view);
   }
 
-  async function loadInventoryPreview() {
+  async function loadInventoryPreview(viewOverride: InventoryView = activeInventoryView, force = true) {
     if (!tenantSlug) {
       setError('No tenant assignment is available for this account.');
       return;
+    }
+
+    const viewToLoad = viewOverride;
+
+    if (!force) {
+      if (viewToLoad === 'overview' && summary) return;
+      if (['product-master', 'shelf'].includes(viewToLoad) && products) return;
+      if (viewToLoad === 'locations' && locations) return;
+      if (viewToLoad === 'batches' && batches) return;
+      if (viewToLoad === 'near-expiry' && nearExpiryBatches) return;
+      if (viewToLoad === 'product-inventory' && products && locations && batches) return;
+
+      if (viewToLoad === 'low-stock' && products) {
+        if (!batches) {
+          void getPharmaInventoryBatches(token, tenantSlug)
+            .then(setBatches)
+            .catch(() => undefined);
+        }
+
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -643,30 +664,72 @@ export function ProductInventoryPreview({
     setInventoryNotice('');
 
     try {
-      const [summaryResponse, productsResponse, locationsResponse, batchesResponse, nearExpiryResponse] =
-        await Promise.all([
-          getPharmaInventorySummary(token, tenantSlug),
+      if (viewToLoad === 'overview') {
+        const summaryResponse = await getPharmaInventorySummary(token, tenantSlug);
+        setSummary(summaryResponse);
+        return;
+      }
+
+      if (viewToLoad === 'product-master' || viewToLoad === 'shelf') {
+        const productsResponse = await getPharmaProducts(token, tenantSlug);
+        setProducts(productsResponse);
+        return;
+      }
+
+      if (viewToLoad === 'low-stock') {
+        const productsResponse = await getPharmaProducts(token, tenantSlug);
+        setProducts(productsResponse);
+
+        void getPharmaInventoryBatches(token, tenantSlug)
+          .then(setBatches)
+          .catch(() => undefined);
+
+        return;
+      }
+
+      if (viewToLoad === 'batches') {
+        const batchesResponse = await getPharmaInventoryBatches(token, tenantSlug);
+        setBatches(batchesResponse);
+        return;
+      }
+
+      if (viewToLoad === 'near-expiry') {
+        const nearExpiryResponse = await getPharmaInventoryBatches(token, tenantSlug, 180);
+        setNearExpiryBatches(nearExpiryResponse);
+        return;
+      }
+
+      if (viewToLoad === 'locations') {
+        const locationsResponse = await getPharmaInventoryLocations(token, tenantSlug);
+        setLocations(locationsResponse);
+        return;
+      }
+
+      if (viewToLoad === 'product-inventory') {
+        const [productsResponse, locationsResponse, batchesResponse] = await Promise.all([
           getPharmaProducts(token, tenantSlug),
           getPharmaInventoryLocations(token, tenantSlug),
           getPharmaInventoryBatches(token, tenantSlug),
-          getPharmaInventoryBatches(token, tenantSlug, 180),
         ]);
 
+        setProducts(productsResponse);
+        setLocations(locationsResponse);
+        setBatches(batchesResponse);
+        return;
+      }
+
+      const summaryResponse = await getPharmaInventorySummary(token, tenantSlug);
       setSummary(summaryResponse);
-      setProducts(productsResponse);
-      setLocations(locationsResponse);
-      setBatches(batchesResponse);
-      setNearExpiryBatches(nearExpiryResponse);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load product and inventory preview.');
+      setError(err instanceof Error ? err.message : 'Unable to load the selected inventory page.');
     } finally {
       setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    void loadInventoryPreview();
-  }, [tenantSlug, token]);
+    void loadInventoryPreview(activeInventoryView, false);
+  }, [tenantSlug, token, activeInventoryView]);
 
   useEffect(() => {
     localStorage.setItem(inventorySmartCardStorageKey, JSON.stringify(inventorySmartCardVisibility));
@@ -1684,7 +1747,7 @@ export function ProductInventoryPreview({
           <p className="muted">{inventoryPageDescriptions[activeInventoryView]}</p>
         </div>
 
-        <button type="button" onClick={loadInventoryPreview} disabled={isLoading}>
+        <button type="button" onClick={() => loadInventoryPreview(activeInventoryView, true)} disabled={isLoading}>
           {isLoading ? 'Loading...' : summary ? 'Refresh inventory' : 'Load inventory'}
         </button>
       </div>
