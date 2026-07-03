@@ -1613,6 +1613,21 @@ function App() {
   const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
   const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
+  const [isPosDayOpen, setIsPosDayOpen] = useState(false);
+  const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
+  const [posStartingCashBalance, setPosStartingCashBalance] = useState('0');
+  const [posCustomerType, setPosCustomerType] = useState<'walk-in' | 'existing-customer' | 'insurance-customer' | 'corporate-customer'>('walk-in');
+  const [posPrescriptionStatus, setPosPrescriptionStatus] = useState<'not-required' | 'required' | 'captured' | 'manual-review'>('not-required');
+  const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'momo' | 'card' | 'insurance' | 'credit'>('cash');
+  const [posCustomerInvoice, setPosCustomerInvoice] = useState<'no' | 'yes'>('no');
+  const [posInvoiceDelivery, setPosInvoiceDelivery] = useState<'printer' | 'whatsapp' | 'email'>('printer');
+  const [posInvoiceContact, setPosInvoiceContact] = useState('');
+  const [posDiscountAmount, setPosDiscountAmount] = useState('0');
+  const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
+  const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
+  const [posTillZeroized, setPosTillZeroized] = useState(false);
+  const [posDepositProof, setPosDepositProof] = useState('');
+  const [posNotice, setPosNotice] = useState('');
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
@@ -2872,13 +2887,59 @@ function App() {
   }
 
   function renderPosWorkspace() {
-    const selected = posWorkspaceItems.find((item) => item.key === activePosWorkspace) ?? posWorkspaceItems[0];
     const previewRows: Array<[string, string, string, string]> = [
       ['Walk-in customer', 'Counter sale draft', 'Needs payment', 'RWF 18,500'],
       ['Insurance customer', 'Co-pay plus insurer split', 'Receipt pending', 'RWF 64,200'],
       ['Chronic refill', 'Prescription review required', 'Pharmacist review', 'RWF 32,800'],
       ['Corporate client', 'Institution balance', 'Credit follow-up', 'RWF 118,400'],
     ];
+
+    const subtotalAmount = 64500;
+    const discountValue = Number(posDiscountAmount || 0);
+    const taxAmount = Math.max(0, Math.round((subtotalAmount - discountValue) * 0.18));
+    const partnerContribution = posCustomerType === 'insurance-customer' || posPaymentMethod === 'insurance'
+      ? Math.round((subtotalAmount - discountValue) * 0.7)
+      : 0;
+    const customerContribution = Math.max(0, subtotalAmount - discountValue + taxAmount - partnerContribution);
+    const totalAmount = Math.max(0, subtotalAmount - discountValue + taxAmount);
+
+    function openPosDay() {
+      setIsPosDayOpen(true);
+      setPosTransactionConfirmed(false);
+      setPosNotice(
+        posOpeningMode === 'fresh-start'
+          ? 'POS day opened. Starting cash balance requires manager confirmation for a fresh start day.'
+          : 'POS day opened from handover. Incoming staff acknowledgement becomes the next starting position.',
+      );
+    }
+
+    function closePosDay() {
+      if (posCloseMode === 'handover' && !posTillZeroized) {
+        setPosNotice('Before handover close, the teller must zeroize the till account and incoming staff must acknowledge the cash.');
+        return;
+      }
+
+      if (posCloseMode === 'final-close' && !posDepositProof.trim()) {
+        setPosNotice('Final close requires proof of deposit for manager confirmation.');
+        return;
+      }
+
+      setIsPosDayOpen(false);
+      setPosNotice(
+        posCloseMode === 'handover'
+          ? 'POS day closed through handover. Incoming staff acknowledgement is recorded as the next starting balance.'
+          : 'POS day closed for final deposit review. Manager confirmation is required.',
+      );
+    }
+
+    function confirmTransaction() {
+      setPosTransactionConfirmed(true);
+      setPosNotice(
+        posCustomerInvoice === 'yes'
+          ? 'Transaction confirmed. Invoice journey is now available inside POS.'
+          : 'Transaction confirmed without customer invoice.',
+      );
+    }
 
     return (
       <section className="section-page">
@@ -2892,7 +2953,299 @@ function App() {
           )}
 
           {activePosWorkspace === 'pos' && (
-            <SalesDispensingReview token={session.token} profile={profile} />
+            <section className="pos-journey-page">
+              <section className="pos-journey-header">
+                <div>
+                  <p className="eyebrow">POS</p>
+                  <h2>Pharmacy sales counter</h2>
+                  <p className="muted">
+                    Branch is not captured here because the user operates under one assigned pharmacy context.
+                  </p>
+                </div>
+
+                <div className={`pos-day-status ${isPosDayOpen ? 'open' : 'closed'}`}>
+                  <span>{isPosDayOpen ? 'POS day open' : 'POS day closed'}</span>
+                  <strong>Starting cash: RWF {Number(posStartingCashBalance || 0).toLocaleString('en-RW')}</strong>
+                </div>
+              </section>
+
+              {posNotice && <div className="form-success">{posNotice}</div>}
+
+              <section className="pos-journey-grid">
+                <aside className="pos-sale-summary-card">
+                  <div className="section-heading">
+                    <div>
+                      <span>Sale Summary</span>
+                      <h3>Current transaction</h3>
+                    </div>
+                  </div>
+
+                  <dl className="pos-summary-list">
+                    <div>
+                      <dt>Customer contribution</dt>
+                      <dd>RWF {customerContribution.toLocaleString('en-RW')}</dd>
+                    </div>
+                    <div>
+                      <dt>Partner & insurance contribution</dt>
+                      <dd>RWF {partnerContribution.toLocaleString('en-RW')}</dd>
+                    </div>
+                    <div>
+                      <dt>Tax</dt>
+                      <dd>RWF {taxAmount.toLocaleString('en-RW')}</dd>
+                    </div>
+                    <div className="total">
+                      <dt>Total</dt>
+                      <dd>RWF {totalAmount.toLocaleString('en-RW')}</dd>
+                    </div>
+                  </dl>
+
+                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen}>
+                    Confirm Transaction
+                  </button>
+                </aside>
+
+                <main className="pos-transaction-card">
+                  <div className="section-heading">
+                    <div>
+                      <span>Transaction setup</span>
+                      <h3>Customer, prescription, payment and invoice</h3>
+                    </div>
+                  </div>
+
+                  <div className="pos-field-grid">
+                    <label>
+                      <span>Customer type</span>
+                      <select value={posCustomerType} onChange={(event) => setPosCustomerType(event.target.value as typeof posCustomerType)}>
+                        <option value="walk-in">Walk-In Customer</option>
+                        <option value="existing-customer">Existing Customer</option>
+                        <option value="insurance-customer">Insurance Customer</option>
+                        <option value="corporate-customer">Corporate Customer</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Prescription</span>
+                      <select value={posPrescriptionStatus} onChange={(event) => setPosPrescriptionStatus(event.target.value as typeof posPrescriptionStatus)}>
+                        <option value="not-required">Not Required</option>
+                        <option value="required">Required</option>
+                        <option value="captured">Captured</option>
+                        <option value="manual-review">Manual Review</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Payment method</span>
+                      <select value={posPaymentMethod} onChange={(event) => setPosPaymentMethod(event.target.value as typeof posPaymentMethod)}>
+                        <option value="cash">Cash</option>
+                        <option value="momo">Mobile Money</option>
+                        <option value="card">Card</option>
+                        <option value="insurance">Insurance / Partner</option>
+                        <option value="credit">Customer Credit</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Customer invoice</span>
+                      <select
+                        value={posCustomerInvoice}
+                        onChange={(event) => {
+                          setPosCustomerInvoice(event.target.value as 'yes' | 'no');
+                          setPosTransactionConfirmed(false);
+                        }}
+                      >
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Discount amount</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={posDiscountAmount}
+                        onChange={(event) => setPosDiscountAmount(event.target.value)}
+                      />
+                    </label>
+
+                    <label>
+                      <span>Customer contact / lookup</span>
+                      <input
+                        value={posInvoiceContact}
+                        onChange={(event) => setPosInvoiceContact(event.target.value)}
+                        placeholder="Phone, WhatsApp, or email"
+                      />
+                    </label>
+                  </div>
+
+                  <section className="pos-product-browser-card">
+                    <div className="section-heading">
+                      <div>
+                        <span>Product browser</span>
+                        <h3>Search, select, and add to cart</h3>
+                      </div>
+                      <button type="button">Scan barcode</button>
+                    </div>
+
+                    <table className="system-table">
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Stock</th>
+                          <th>Price</th>
+                          <th>RX</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          ['Paracetamol 500mg', '128 units', 'RWF 1,200', 'No'],
+                          ['Amoxicillin 250mg', '42 units', 'RWF 3,500', 'Yes'],
+                          ['ORS Sachet', '90 units', 'RWF 800', 'No'],
+                          ['Cough Syrup', '18 units', 'RWF 4,200', 'Review'],
+                        ].map(([product, stock, price, rx]) => (
+                          <tr key={product}>
+                            <td>{product}</td>
+                            <td>{stock}</td>
+                            <td>{price}</td>
+                            <td>{rx}</td>
+                            <td><button type="button">Add</button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </section>
+                </main>
+
+                <aside className="pos-till-card">
+                  <section>
+                    <div className="section-heading">
+                      <div>
+                        <span>Till day</span>
+                        <h3>Open POS Day</h3>
+                      </div>
+                    </div>
+
+                    <div className="pos-field-grid single">
+                      <label>
+                        <span>Opening mode</span>
+                        <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
+                          <option value="fresh-start">Fresh start day</option>
+                          <option value="handover">Handover from previous teller</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Starting cash balance</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={posStartingCashBalance}
+                          onChange={(event) => setPosStartingCashBalance(event.target.value)}
+                        />
+                      </label>
+
+                      <button type="button" onClick={openPosDay}>
+                        Open POS Day
+                      </button>
+                    </div>
+                  </section>
+
+                  <section>
+                    <div className="section-heading">
+                      <div>
+                        <span>Till closure</span>
+                        <h3>Close POS Day</h3>
+                      </div>
+                    </div>
+
+                    <div className="pos-field-grid single">
+                      <label>
+                        <span>Closing mode</span>
+                        <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
+                          <option value="handover">Handover to incoming staff</option>
+                          <option value="final-close">Final close with manager deposit proof</option>
+                        </select>
+                      </label>
+
+                      {posCloseMode === 'handover' && (
+                        <label className="pos-checkbox-row">
+                          <input
+                            type="checkbox"
+                            checked={posTillZeroized}
+                            onChange={(event) => setPosTillZeroized(event.target.checked)}
+                          />
+                          <span>Till account zeroized and incoming staff acknowledges cash</span>
+                        </label>
+                      )}
+
+                      {posCloseMode === 'final-close' && (
+                        <label>
+                          <span>Deposit proof reference</span>
+                          <input
+                            value={posDepositProof}
+                            onChange={(event) => setPosDepositProof(event.target.value)}
+                            placeholder="Deposit slip, bank ref, MoMo ref"
+                          />
+                        </label>
+                      )}
+
+                      <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>
+                        Close POS Day
+                      </button>
+                    </div>
+                  </section>
+
+                  {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
+                    <section className="pos-invoice-journey">
+                      <div className="section-heading">
+                        <div>
+                          <span>Invoice journey</span>
+                          <h3>Generate and deliver invoice</h3>
+                        </div>
+                      </div>
+
+                      <label>
+                        <span>Delivery channel</span>
+                        <select value={posInvoiceDelivery} onChange={(event) => setPosInvoiceDelivery(event.target.value as typeof posInvoiceDelivery)}>
+                          <option value="printer">Printer</option>
+                          <option value="whatsapp">WhatsApp</option>
+                          <option value="email">Corporate Email</option>
+                        </select>
+                      </label>
+
+                      <button type="button" onClick={() => setPosNotice('Invoice PDF generated for the confirmed transaction.')}>
+                        Generate invoice PDF
+                      </button>
+
+                      {posInvoiceDelivery === 'printer' && (
+                        <button type="button" onClick={() => window.print()}>
+                          Print invoice
+                        </button>
+                      )}
+
+                      {posInvoiceDelivery === 'whatsapp' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const phone = posInvoiceContact.replace(/[^\d+]/g, '');
+                            window.open(`https://wa.me/${phone.replace('+', '')}`, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          Open WhatsApp
+                        </button>
+                      )}
+
+                      {posInvoiceDelivery === 'email' && (
+                        <button type="button" onClick={() => navigateToSection('corporate-email')}>
+                          Open Corporate Email with invoice
+                        </button>
+                      )}
+                    </section>
+                  )}
+                </aside>
+              </section>
+            </section>
           )}
 
           {activePosWorkspace === 'dispensing-review' && (
@@ -2934,6 +3287,7 @@ function App() {
       </section>
     );
   }
+
 
   function renderSupplierWorkspace() {
     const selected = supplierWorkspaceItems.find((item) => item.key === activeSupplierWorkspace) ?? supplierWorkspaceItems[0];
