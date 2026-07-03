@@ -7979,3 +7979,292 @@ h3,
     overflow-x: auto;
   }
 }
+
+/* Global table rule: applies across the admin system */
+.dashboard-main table,
+.system-table,
+.helicopter-table,
+.linked-submenu-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.82rem;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.dashboard-main table th,
+.dashboard-main table td,
+.system-table th,
+.system-table td,
+.helicopter-table th,
+.helicopter-table td,
+.linked-submenu-table th,
+.linked-submenu-table td {
+  padding: 0.62rem 0.7rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.13);
+  text-align: left;
+  vertical-align: middle;
+  line-height: 1.28;
+}
+
+.dashboard-main table th,
+.system-table th,
+.helicopter-table th,
+.linked-submenu-table th {
+  background: rgba(248, 250, 252, 0.92);
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard-main table td,
+.system-table td,
+.helicopter-table td,
+.linked-submenu-table td {
+  color: #1f2937;
+}
+
+.dashboard-main table tr:last-child td,
+.system-table tr:last-child td,
+.helicopter-table tr:last-child td,
+.linked-submenu-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.dashboard-main table button,
+.system-table button,
+.helicopter-table button,
+.linked-submenu-table button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--left-menu-accent, #4B5320);
+  color: var(--left-menu-title-color, #ffffff);
+  padding: 0.38rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+/* POS journey */
+.pos-journey-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.pos-journey-header {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 22px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.94);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.055);
+}
+
+.pos-journey-header h2 {
+  margin: 0.12rem 0 0.24rem;
+  font-size: clamp(1.05rem, 1.45vw, 1.3rem);
+}
+
+.pos-day-status {
+  border-radius: 18px;
+  padding: 0.8rem;
+  min-width: 220px;
+  display: grid;
+  gap: 0.18rem;
+  background: rgba(148, 163, 184, 0.12);
+  color: #334155;
+}
+
+.pos-day-status.open {
+  background: rgba(75, 83, 32, 0.12);
+  color: #1f2937;
+}
+
+.pos-day-status.closed {
+  background: rgba(180, 33, 41, 0.08);
+}
+
+.pos-day-status span {
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pos-day-status strong {
+  font-size: 0.86rem;
+}
+
+.pos-journey-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.72fr) minmax(420px, 1.45fr) minmax(280px, 0.88fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.pos-sale-summary-card,
+.pos-transaction-card,
+.pos-till-card,
+.pos-product-browser-card,
+.pos-invoice-journey {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 0.9rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+}
+
+.pos-sale-summary-card,
+.pos-till-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.pos-summary-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.pos-summary-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  padding-bottom: 0.42rem;
+}
+
+.pos-summary-list dt {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.pos-summary-list dd {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.pos-summary-list .total dd {
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 1rem;
+}
+
+.pos-sale-summary-card > button,
+.pos-till-card button,
+.pos-invoice-journey button,
+.pos-product-browser-card .section-heading button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--left-menu-accent, #4B5320);
+  color: var(--left-menu-title-color, #ffffff);
+  padding: 0.55rem 0.78rem;
+  font-weight: 850;
+  font-size: 0.76rem;
+}
+
+.pos-sale-summary-card > button:disabled,
+.pos-till-card button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.pos-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.pos-field-grid.single {
+  grid-template-columns: 1fr;
+}
+
+.pos-field-grid label,
+.pos-invoice-journey label {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.pos-field-grid label span,
+.pos-invoice-journey label span,
+.pos-checkbox-row span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.pos-field-grid input,
+.pos-field-grid select,
+.pos-invoice-journey select {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  padding: 0.62rem;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.pos-checkbox-row {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pos-checkbox-row input {
+  width: auto;
+  margin-top: 0.18rem;
+}
+
+.pos-product-browser-card {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pos-invoice-journey {
+  display: grid;
+  gap: 0.65rem;
+}
+
+@media (max-width: 1380px) {
+  .pos-journey-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-sale-summary-card {
+    order: -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .pos-journey-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pos-day-status {
+    width: 100%;
+  }
+
+  .pos-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .system-table {
+    min-width: 620px;
+  }
+
+  .pos-product-browser-card {
+    overflow-x: auto;
+  }
+}
