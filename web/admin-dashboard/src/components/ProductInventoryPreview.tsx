@@ -1820,8 +1820,6 @@ export function ProductInventoryPreview({
               Select Product
               <div className="product-master-combo-field">
                 <input
-                      t
-                      t
                   list="product-master-edit-options"
                   value={productMasterSearchTerm}
                   onChange={(event) => {
@@ -2168,8 +2166,6 @@ export function ProductInventoryPreview({
               <label>
                 Search
                 <input
-                      t
-                      t
                   value={searchTerm}
                   placeholder="Search product, SKU, batch, location or supplier"
                   onChange={(event) => setSearchTerm(event.target.value)}/>
@@ -2968,15 +2964,13 @@ export function ProductInventoryPreview({
                     <div className="inventory-product-master-combobox">
                       <div className="inventory-product-master-search-row">
                         <input
-                          type="search"
-                          inputMode="text"
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          autoComplete="off"
-                          enterKeyHint="search"
-                          spellCheck={false}
-                      t
-                      t
+  type="text"
+  inputMode="text"
+  autoCapitalize="none"
+  autoCorrect="off"
+  autoComplete="off"
+  enterKeyHint="search"
+  spellCheck={false}
                           value={inventoryProductSearchTerm}
                           placeholder="Search Product Master by product name, generic name, or drug code"
                           onFocus={() => {
