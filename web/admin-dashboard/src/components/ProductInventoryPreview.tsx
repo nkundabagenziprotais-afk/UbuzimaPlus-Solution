@@ -466,7 +466,7 @@ export function ProductInventoryPreview({
   const productCategories = useMemo(() => {
     const categories = new Map<string, string>();
 
-    products?.products.forEach((product) => {
+    (Array.isArray(products?.products) ? products.products : []).forEach((product) => {
       if (product.category?.code && product.category.name) {
         categories.set(product.category.code, product.category.name);
       }
@@ -978,52 +978,52 @@ export function ProductInventoryPreview({
   const inventorySmartCardData = summary
     ? {
         products: {
-          value: formatNumber(summary.summary?.products_count),
+          value: formatNumber(summary?.summary?.products_count),
           status: 'Product Master',
           target: 'product-master' as InventoryView,
-          trendSeed: summary.summary?.products_count,
+          trendSeed: summary?.summary?.products_count,
         },
         categories: {
-          value: formatNumber(summary.summary.product_categories_count),
+          value: formatNumber(summary?.summary?.product_categories_count),
           status: 'Product setup',
           target: 'product-master' as InventoryView,
-          trendSeed: summary.summary.product_categories_count,
+          trendSeed: summary?.summary?.product_categories_count,
         },
         locations: {
-          value: formatNumber(summary.summary?.stock_locations_count),
+          value: formatNumber(summary?.summary?.stock_locations_count),
           status: 'Storage points',
           target: 'locations' as InventoryView,
-          trendSeed: summary.summary?.stock_locations_count,
+          trendSeed: summary?.summary?.stock_locations_count,
         },
         batches: {
-          value: formatNumber(summary.summary?.stock_batches_count),
+          value: formatNumber(summary?.summary?.stock_batches_count),
           status: 'FEFO register',
           target: 'batches' as InventoryView,
-          trendSeed: summary.summary?.stock_batches_count,
+          trendSeed: summary?.summary?.stock_batches_count,
         },
         'stock-units': {
-          value: formatNumber(summary.summary.total_quantity_on_hand),
+          value: formatNumber(summary?.summary?.total_quantity_on_hand),
           status: 'Product Inventory',
           target: 'product-inventory' as InventoryView,
-          trendSeed: summary.summary.total_quantity_on_hand,
+          trendSeed: summary?.summary?.total_quantity_on_hand,
         },
         'stock-value': {
-          value: formatRwf(summary.summary.estimated_stock_value),
+          value: formatRwf(summary?.summary?.estimated_stock_value),
           status: 'Estimated value',
           target: 'product-inventory' as InventoryView,
-          trendSeed: summary.summary.estimated_stock_value,
+          trendSeed: summary?.summary?.estimated_stock_value,
         },
         'low-stock': {
-          value: formatNumber(summary.summary.low_stock_products_count),
+          value: formatNumber(summary?.summary?.low_stock_products_count),
           status: 'Needs reorder',
           target: 'low-stock' as InventoryView,
-          trendSeed: summary.summary.low_stock_products_count,
+          trendSeed: summary?.summary?.low_stock_products_count,
         },
         'near-expiry': {
-          value: formatNumber(summary.summary.near_expiry_batches_180_days_count),
+          value: formatNumber(summary?.summary?.near_expiry_batches_180_days_count),
           status: 'Expiry risk',
           target: 'near-expiry' as InventoryView,
-          trendSeed: summary.summary.near_expiry_batches_180_days_count,
+          trendSeed: summary?.summary?.near_expiry_batches_180_days_count,
         },
       }
     : null;
@@ -1820,13 +1820,7 @@ export function ProductInventoryPreview({
               Select Product
               <div className="product-master-combo-field">
                 <input
-                      type="text"
-                      inputMode="text"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      autoComplete="off"
-                      enterKeyHint="search"
-                      spellCheck={false}
+                      t
                       t
                   list="product-master-edit-options"
                   value={productMasterSearchTerm}
@@ -2152,9 +2146,9 @@ export function ProductInventoryPreview({
 
                 <div className="analytics-bar-grid">
                   {[
-                    ['Low stock risk', summary.summary.low_stock_products_count, Math.max(summary.summary?.products_count, 1)],
-                    ['Expiry risk', summary.summary.near_expiry_batches_180_days_count, Math.max(summary.summary?.stock_batches_count, 1)],
-                    ['Batch coverage', summary.summary?.stock_batches_count, Math.max(summary.summary?.products_count, 1)],
+                    ['Low stock risk', summary?.summary?.low_stock_products_count, Math.max(summary?.summary?.products_count, 1)],
+                    ['Expiry risk', summary?.summary?.near_expiry_batches_180_days_count, Math.max(summary?.summary?.stock_batches_count, 1)],
+                    ['Batch coverage', summary?.summary?.stock_batches_count, Math.max(summary?.summary?.products_count, 1)],
                   ].map(([label, value, max]) => (
                     <article key={label}>
                       <span>{label}</span>
@@ -2174,13 +2168,7 @@ export function ProductInventoryPreview({
               <label>
                 Search
                 <input
-                      type="text"
-                      inputMode="text"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      autoComplete="off"
-                      enterKeyHint="search"
-                      spellCheck={false}
+                      t
                       t
                   value={searchTerm}
                   placeholder="Search product, SKU, batch, location or supplier"
@@ -2980,13 +2968,14 @@ export function ProductInventoryPreview({
                     <div className="inventory-product-master-combobox">
                       <div className="inventory-product-master-search-row">
                         <input
-                      type="text"
-                      inputMode="text"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      autoComplete="off"
-                      enterKeyHint="search"
-                      spellCheck={false}
+                          type="search"
+                          inputMode="text"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          autoComplete="off"
+                          enterKeyHint="search"
+                          spellCheck={false}
+                      t
                       t
                           value={inventoryProductSearchTerm}
                           placeholder="Search Product Master by product name, generic name, or drug code"
