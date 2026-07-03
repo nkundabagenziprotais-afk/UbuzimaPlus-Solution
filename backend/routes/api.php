@@ -390,6 +390,24 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.inventory',
         ]);
 
+    Route::put('/inventory/batches/{batch}', [ProductInventoryController::class, 'updateBatch'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::delete('/inventory/batches/{batch}', [ProductInventoryController::class, 'deleteBatch'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::post('/inventory/batches/{batch}/delete', [ProductInventoryController::class, 'deleteBatch'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
     Route::get('/inventory/summary', [ProductInventoryController::class, 'summary'])
         ->middleware([
             'permission:pharmaco.inventory.manage',

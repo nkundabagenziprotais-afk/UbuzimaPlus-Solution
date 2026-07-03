@@ -1097,6 +1097,52 @@ export type ProductBulkImportRow = Partial<CreatePharmaProductPayload> & {
   category_code?: string | null;
 };
 
+
+export async function updatePharmaStockBatch(
+  token: string,
+  tenantSlug: string,
+  batchId: number,
+  payload: {
+    product_id: number;
+    stock_location_id: number;
+    batch_number: string;
+    quantity: number;
+    expiry_date?: string | null;
+    unit_cost?: number | null;
+    selling_price?: number | null;
+    supplier_name?: string | null;
+    reference_number?: string | null;
+  },
+) {
+  return apiRequest<{
+    message: string;
+    batch: PharmaStockBatch;
+  }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deletePharmaStockBatch(
+  token: string,
+  tenantSlug: string,
+  batchId: number,
+) {
+  try {
+    return await apiRequest<{
+      message: string;
+    }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}`, {
+      method: 'DELETE',
+    });
+  } catch (err) {
+    return apiRequest<{
+      message: string;
+    }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}/delete`, {
+      method: 'POST',
+    });
+  }
+}
+
 export async function bulkImportPharmaProducts(
   token: string,
   tenantSlug: string,
