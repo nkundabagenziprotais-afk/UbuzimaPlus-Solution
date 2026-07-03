@@ -26,27 +26,73 @@ class ProductInventoryController extends Controller
     {
         $tenant = $request->attributes->get('tenant');
 
-        $products = Product::query()
+        $perPage = (int) $request->query('per_page', 15);
+        $perPage = max(1, min($perPage, 240));
+
+        $page = (int) $request->query('page', 1);
+        $page = max(1, $page);
+
+        $search = trim((string) $request->query('search', ''));
+
+        $query = Product::query()
             ->with('category')
             ->where('tenant_id', $tenant->id)
-            ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
+            ->when(
+                $request->query('status', 'active'),
+                fn ($query, $status) => $status === 'all' ? $query : $query->where('status', $status)
+            )
             ->when($request->query('product_type'), fn ($query, $type) => $query->where('product_type', $type))
             ->when($request->query('category_code'), function ($query, $categoryCode) use ($tenant) {
+                if ($categoryCode === 'all') {
+                    return;
+                }
+
                 $query->whereHas('category', fn ($categoryQuery) => $categoryQuery
                     ->where('tenant_id', $tenant->id)
                     ->where('code', $categoryCode)
                 );
             })
+            ->when($search !== '', function ($query) use ($search) {
+                $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
+
+                $query->where(function ($searchQuery) use ($like) {
+                    $searchQuery
+                        ->where('sku', 'like', $like)
+                        ->orWhere('name', 'like', $like)
+                        ->orWhere('generic_name', 'like', $like)
+                        ->orWhere('brand_name', 'like', $like)
+                        ->orWhere('barcode', 'like', $like)
+                        ->orWhere('regulatory_status', 'like', $like);
+                });
+            })
             ->withSum('stockBatches as total_quantity_on_hand', 'quantity_on_hand')
             ->withSum('stockBatches as total_quantity_reserved', 'quantity_reserved')
-            ->orderBy('name')
-            ->get()
+            ->orderBy('sku')
+            ->orderBy('name');
+
+        $paginator = $query->paginate(
+            perPage: $perPage,
+            columns: ['*'],
+            pageName: 'page',
+            page: $page
+        );
+
+        $products = $paginator
+            ->getCollection()
             ->map(fn (Product $product) => $this->serializeProduct($product, includeStockSummary: true))
             ->values();
 
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
             'products' => $products,
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+            ],
         ]);
     }
 
