@@ -978,10 +978,10 @@ export function ProductInventoryPreview({
   const inventorySmartCardData = summary
     ? {
         products: {
-          value: formatNumber(summary.summary.products_count),
+          value: formatNumber(summary.summary?.products_count),
           status: 'Product Master',
           target: 'product-master' as InventoryView,
-          trendSeed: summary.summary.products_count,
+          trendSeed: summary.summary?.products_count,
         },
         categories: {
           value: formatNumber(summary.summary.product_categories_count),
@@ -990,16 +990,16 @@ export function ProductInventoryPreview({
           trendSeed: summary.summary.product_categories_count,
         },
         locations: {
-          value: formatNumber(summary.summary.stock_locations_count),
+          value: formatNumber(summary.summary?.stock_locations_count),
           status: 'Storage points',
           target: 'locations' as InventoryView,
-          trendSeed: summary.summary.stock_locations_count,
+          trendSeed: summary.summary?.stock_locations_count,
         },
         batches: {
-          value: formatNumber(summary.summary.stock_batches_count),
+          value: formatNumber(summary.summary?.stock_batches_count),
           status: 'FEFO register',
           target: 'batches' as InventoryView,
-          trendSeed: summary.summary.stock_batches_count,
+          trendSeed: summary.summary?.stock_batches_count,
         },
         'stock-units': {
           value: formatNumber(summary.summary.total_quantity_on_hand),
@@ -1820,6 +1820,14 @@ export function ProductInventoryPreview({
               Select Product
               <div className="product-master-combo-field">
                 <input
+                      type="text"
+                      inputMode="text"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      enterKeyHint="search"
+                      spellCheck={false}
+                      t
                   list="product-master-edit-options"
                   value={productMasterSearchTerm}
                   onChange={(event) => {
@@ -1840,14 +1848,7 @@ export function ProductInventoryPreview({
                     }
                   }}
                   placeholder="Search by drug code, designation, or generic description"
-                  required
-                
-                      type="search"
-                      inputMode="search"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      enterKeyHint="search"
-                      spellCheck={false}/>
+                  required/>
                 <button type="button" aria-label="Search Product Master" onClick={searchProductMasterForEdit}>Search</button>
               </div>
 
@@ -2151,9 +2152,9 @@ export function ProductInventoryPreview({
 
                 <div className="analytics-bar-grid">
                   {[
-                    ['Low stock risk', summary.summary.low_stock_products_count, Math.max(summary.summary.products_count, 1)],
-                    ['Expiry risk', summary.summary.near_expiry_batches_180_days_count, Math.max(summary.summary.stock_batches_count, 1)],
-                    ['Batch coverage', summary.summary.stock_batches_count, Math.max(summary.summary.products_count, 1)],
+                    ['Low stock risk', summary.summary.low_stock_products_count, Math.max(summary.summary?.products_count, 1)],
+                    ['Expiry risk', summary.summary.near_expiry_batches_180_days_count, Math.max(summary.summary?.stock_batches_count, 1)],
+                    ['Batch coverage', summary.summary?.stock_batches_count, Math.max(summary.summary?.products_count, 1)],
                   ].map(([label, value, max]) => (
                     <article key={label}>
                       <span>{label}</span>
@@ -2173,16 +2174,17 @@ export function ProductInventoryPreview({
               <label>
                 Search
                 <input
+                      type="text"
+                      inputMode="text"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      enterKeyHint="search"
+                      spellCheck={false}
+                      t
                   value={searchTerm}
                   placeholder="Search product, SKU, batch, location or supplier"
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                
-                  type="search"
-                  inputMode="search"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                      enterKeyHint="search"
-                      spellCheck={false}/>
+                  onChange={(event) => setSearchTerm(event.target.value)}/>
               </label>
 
               {['shelf', 'product-master', 'product-inventory'].includes(activeInventoryView) && (
@@ -2978,6 +2980,14 @@ export function ProductInventoryPreview({
                     <div className="inventory-product-master-combobox">
                       <div className="inventory-product-master-search-row">
                         <input
+                      type="text"
+                      inputMode="text"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      enterKeyHint="search"
+                      spellCheck={false}
+                      t
                           value={inventoryProductSearchTerm}
                           placeholder="Search Product Master by product name, generic name, or drug code"
                           onFocus={() => {
@@ -2995,14 +3005,7 @@ export function ProductInventoryPreview({
                             if (value.trim().length === 0 || value.trim().length >= 2) {
                               void loadInventoryProductMasterOptions(value);
                             }
-                          }}
-                        
-                      type="search"
-                      inputMode="search"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      enterKeyHint="search"
-                      spellCheck={false}/>
+                          }}/>
                         <button
                           type="button"
                           onClick={() => {
