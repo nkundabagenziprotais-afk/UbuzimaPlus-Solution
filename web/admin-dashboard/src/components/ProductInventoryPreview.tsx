@@ -440,6 +440,12 @@ export function ProductInventoryPreview({
   const [pendingDeleteProduct, setPendingDeleteProduct] = useState<PharmaProduct | null>(null);
   const [isDeletingProductMaster, setIsDeletingProductMaster] = useState(false);
   const [isCreatingInventory, setIsCreatingInventory] = useState(false);
+  const [inventoryReceiveSource, setInventoryReceiveSource] = useState<'purchase-code' | 'manual'>('manual');
+  const [inventoryProductSearchTerm, setInventoryProductSearchTerm] = useState('');
+  const [inventoryProductOptions, setInventoryProductOptions] = useState<PharmaProduct[]>([]);
+  const [isInventoryProductSearchOpen, setIsInventoryProductSearchOpen] = useState(false);
+  const [isSearchingInventoryProducts, setIsSearchingInventoryProducts] = useState(false);
+
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [selectedBatchIds, setSelectedBatchIds] = useState<number[]>([]);
   const [inventoryNotice, setInventoryNotice] = useState('');
@@ -523,7 +529,44 @@ export function ProductInventoryPreview({
   }, [allProducts]);
 
   const allBatches = batches?.batches ?? [];
-  const selectedInventoryProduct = allProducts.find((product) => String(product.id) === inventoryCreateForm.product_id) ?? null;
+  const inventoryProductLookupOptions = useMemo(() => {
+    const merged = new Map<number, PharmaProduct>();
+
+    [...allProducts, ...inventoryProductOptions].forEach((product) => {
+      merged.set(product.id, product);
+    });
+
+    return Array.from(merged.values()).sort((left, right) =>
+      `${left.name} ${left.sku}`.localeCompare(`${right.name} ${right.sku}`),
+    );
+  }, [allProducts, inventoryProductOptions]);
+
+  const selectedInventoryProduct =
+    inventoryProductLookupOptions.find((product) => String(product.id) === inventoryCreateForm.product_id) ?? null;
+  const filteredInventoryProductOptions = useMemo(() => {
+    const keyword = inventoryProductSearchTerm.trim().toLowerCase();
+
+    if (!keyword) {
+      return inventoryProductLookupOptions.slice(0, 30);
+    }
+
+    return inventoryProductLookupOptions
+      .filter((product) =>
+        [
+          product.name,
+          product.generic_name,
+          product.brand_name,
+          product.sku,
+          product.barcode,
+          product.category?.name,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(keyword)),
+      )
+      .slice(0, 30);
+  }, [inventoryProductLookupOptions, inventoryProductSearchTerm]);
+
+
   const selectedInventoryDefaultMargin = metadataNumber(
     selectedInventoryProduct?.metadata,
     ['default_margin_percent', 'margin_percent', 'allowed_margin'],
@@ -628,6 +671,63 @@ export function ProductInventoryPreview({
     status: 'active',
   };
 
+
+  function productInventoryProductLabel(product: PharmaProduct) {
+    return `${product.name} • ${product.generic_name ?? 'Generic not set'} • ${product.sku}`;
+  }
+
+  async function loadInventoryProductMasterOptions(searchValue = inventoryProductSearchTerm) {
+    if (!tenantSlug) {
+      return;
+    }
+
+    setIsSearchingInventoryProducts(true);
+
+    try {
+      const response = await getPharmaProducts(token, tenantSlug, {
+        page: 1,
+        perPage: 30,
+        search: searchValue,
+        status: 'active',
+      });
+
+      setInventoryProductOptions(response.products);
+
+      if (!searchValue.trim() && response.products.length > 0) {
+        setIsInventoryProductSearchOpen(true);
+      }
+    } catch (err) {
+      setInventoryNotice(err instanceof Error ? err.message : 'Unable to search Product Master products.');
+    } finally {
+      setIsSearchingInventoryProducts(false);
+    }
+  }
+
+  function selectInventoryProductFromMaster(product: PharmaProduct) {
+    setInventoryCreateForm((current) => ({
+      ...current,
+      product_id: String(product.id),
+    }));
+    setInventoryProductSearchTerm(productInventoryProductLabel(product));
+    setIsInventoryProductSearchOpen(false);
+  }
+
+  function handleInventoryProductSearchChange(value: string) {
+    setInventoryProductSearchTerm(value);
+    setIsInventoryProductSearchOpen(true);
+
+    const matchedProduct = inventoryProductLookupOptions.find((product) => productInventoryProductLabel(product) === value);
+
+    if (matchedProduct) {
+      selectInventoryProductFromMaster(matchedProduct);
+      return;
+    }
+
+    setInventoryCreateForm((current) => ({
+      ...current,
+      product_id: '',
+    }));
+  }
 
   function selectInventoryView(view: InventoryView) {
     setSelectedProductIds([]);
@@ -1007,6 +1107,16 @@ export function ProductInventoryPreview({
   }
 
   async function handleCreateInventoryFromProductMaster(event: FormEvent<HTMLFormElement>) {
+    if (!inventoryCreateForm.product_id) {
+      setInventoryNotice('Select a Product Master item before receiving inventory.');
+      return;
+    }
+
+    if (inventoryReceiveSource === 'purchase-code' && !inventoryCreateForm.reference.trim()) {
+      setInventoryNotice('Enter the purchase code or purchase order reference before receiving stock.');
+      return;
+    }
+
     event.preventDefault();
 
     if (!tenantSlug) {
@@ -2857,32 +2967,92 @@ export function ProductInventoryPreview({
                 </div>
 
                 <form className="inventory-creation-grid" onSubmit={handleCreateInventoryFromProductMaster}>
-                  <label>
-                    Product Master item
-                    <input
-                      list="product-master-inventory-options"
-                      value={inventoryCreateForm.product_id}
-                      onChange={(event) => {
-                        const productId = event.target.value;
-                        const product = allProducts.find((item) => String(item.id) === productId);
-                        const defaultMargin = metadataNumber(product?.metadata, ['default_margin_percent', 'margin_percent', 'allowed_margin'], 0);
+                  <div className="inventory-receive-source-selector">
+                    <button
+                      type="button"
+                      className={inventoryReceiveSource === 'purchase-code' ? 'active' : ''}
+                      onClick={() => setInventoryReceiveSource('purchase-code')}
+                    >
+                      <strong>Receive from Purchase Code</strong>
+                      <span>Use the purchase order/reference code and receive stock against Product Master items.</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={inventoryReceiveSource === 'manual' ? 'active' : ''}
+                      onClick={() => setInventoryReceiveSource('manual')}
+                    >
+                      <strong>Manual Product Master Entry</strong>
+                      <span>Select an approved Product Master item before quantity, batch and expiry are recorded.</span>
+                    </button>
+                  </div>
 
-                        setInventoryCreateForm((current) => ({
-                          ...current,
-                          product_id: productId,
-                          margin_percent: String(defaultMargin),
-                        }));
-                      }}
-                      placeholder="Type or select product ID"
-                      required
-                    />
-                    <datalist id="product-master-inventory-options">
-                      {allProducts.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name} · {product.sku} · {product.generic_name ?? product.category?.name ?? 'RHIA Product Master'}
-                        </option>
-                      ))}
-                    </datalist>
+                  <label className="inventory-product-master-combobox-label">
+                    Product from Product Master
+                    <div className="inventory-product-master-combobox">
+                      <div className="inventory-product-master-search-row">
+                        <input
+                          value={inventoryProductSearchTerm}
+                          placeholder="Search Product Master by product name, generic name, or drug code"
+                          onFocus={() => {
+                            setIsInventoryProductSearchOpen(true);
+                            if (inventoryProductOptions.length === 0) {
+                              void loadInventoryProductMasterOptions('');
+                            }
+                          }}
+                          onChange={(event) => {
+                            const value = event.target.value;
+
+                            handleInventoryProductSearchChange(value);
+                            setIsInventoryProductSearchOpen(true);
+
+                            if (value.trim().length === 0 || value.trim().length >= 2) {
+                              void loadInventoryProductMasterOptions(value);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsInventoryProductSearchOpen(true);
+                            void loadInventoryProductMasterOptions(inventoryProductSearchTerm);
+                          }}
+                        >
+                          {isSearchingInventoryProducts ? 'Searching…' : 'Search'}
+                        </button>
+                      </div>
+
+                      {selectedInventoryProduct && (
+                        <div className="inventory-product-master-selected">
+                          <strong>{selectedInventoryProduct.name}</strong>
+                          <span>{selectedInventoryProduct.generic_name ?? 'Generic name not set'}</span>
+                          <small>Drug code: {selectedInventoryProduct.sku}</small>
+                        </div>
+                      )}
+
+                      {isInventoryProductSearchOpen && (
+                        <div className="inventory-product-master-options">
+                          {filteredInventoryProductOptions.length === 0 ? (
+                            <button type="button" disabled>
+                              No Product Master products found for the typed keyword.
+                            </button>
+                          ) : (
+                            filteredInventoryProductOptions.map((product) => (
+                              <button
+                                key={product.id}
+                                type="button"
+                                onClick={() => selectInventoryProductFromMaster(product)}
+                              >
+                                <strong>{product.name}</strong>
+                                <span>{product.generic_name ?? 'Generic name not set'}</span>
+                                <small>Drug code: {product.sku}</small>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      <input type="hidden" value={inventoryCreateForm.product_id} readOnly />
+                    </div>
                   </label>
 
                   <label>
