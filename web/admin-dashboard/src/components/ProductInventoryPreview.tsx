@@ -591,17 +591,6 @@ export function ProductInventoryPreview({
       });
   }, [allBatches, searchTerm]);
 
-  const lowStockRows = useMemo(
-    () =>
-      (summary?.low_stock_products ?? []).map((product) => {
-        const nearestBatch = nearestBatchForProduct(product.id, allBatches);
-        const days = nearestBatch ? remainingDays(nearestBatch.expiry_date) : null;
-
-        return { product, nearestBatch, days };
-      }),
-    [allBatches, summary],
-  );
-
   const productInventoryRows = useMemo(
     () =>
       visibleBatches.map((batch) => {
@@ -628,7 +617,6 @@ export function ProductInventoryPreview({
   const pagedProducts = visibleProducts.slice(0, rowLimitValue(rowLimit, visibleProducts.length));
   const pagedBatches = visibleBatches.slice(0, rowLimitValue(rowLimit, visibleBatches.length));
   const pagedNearExpiry = nearExpiryRows.slice(0, rowLimitValue(rowLimit, nearExpiryRows.length));
-  const pagedLowStock = lowStockRows.slice(0, rowLimitValue(rowLimit, lowStockRows.length));
   const pagedProductInventory = productInventoryRows.slice(0, rowLimitValue(rowLimit, productInventoryRows.length));
 
   function selectInventoryView(view: InventoryView) {
