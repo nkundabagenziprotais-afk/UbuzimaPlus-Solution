@@ -12069,3 +12069,132 @@ body .dashboard-main table button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Product Inventory action workflow and AI opportunity activation */
+.inventory-opportunity-grid button {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1rem;
+  text-align: left;
+  display: grid;
+  gap: 0.35rem;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.inventory-opportunity-grid button.active {
+  border-color: rgba(37, 99, 235, 0.45);
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.12);
+}
+
+.inventory-opportunity-grid button span {
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.inventory-ai-opportunity-detail,
+.inventory-batch-detail-panel,
+.inventory-delete-confirmation-panel {
+  margin-top: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-ai-opportunity-detail {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.inventory-ai-opportunity-detail > span {
+  color: #475569;
+  line-height: 1.55;
+}
+
+.inventory-ai-opportunity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.inventory-batch-detail-grid,
+.inventory-batch-detail-panel,
+.inventory-delete-confirmation-panel {
+  margin-top: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-ai-opportunity-detail {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.inventory-ai-opportunity-detail > span {
+  color: #475569;
+  line-height: 1.55;
+}
+
+.inventory-ai-opportunity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.inventory-batch-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.inventory-batch-detail-grid article {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.inventory-batch-detail-grid span {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.inventory-batch-detail-grid strong {
+  overflow-wrap: anywhere;
+}
+
+.inventory-delete-confirmation-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.inventory-delete-confirmation-panel > div:first-child {
+  display: grid;
+  gap: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .inventory-batch-detail-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+
+  .inventory-delete-confirmation-panel {
+    display: grid;
+  }
+}
+
+@media (max-width: 560px) {
+  .inventory-batch-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

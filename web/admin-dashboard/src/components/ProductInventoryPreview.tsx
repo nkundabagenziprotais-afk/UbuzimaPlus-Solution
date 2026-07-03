@@ -15,6 +15,8 @@ import {
   getPharmaProducts,
   updatePharmaProduct,
   receivePharmaStock,
+  updatePharmaStockBatch,
+  deletePharmaStockBatch,
 } from '../lib/api';
 
 type ProductInventoryPreviewProps = {
@@ -466,6 +468,10 @@ export function ProductInventoryPreview({
 
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [selectedBatchIds, setSelectedBatchIds] = useState<number[]>([]);
+  const [editingInventoryBatch, setEditingInventoryBatch] = useState<PharmaStockBatch | null>(null);
+  const [viewingInventoryBatch, setViewingInventoryBatch] = useState<PharmaStockBatch | null>(null);
+  const [pendingDeleteInventoryBatch, setPendingDeleteInventoryBatch] = useState<PharmaStockBatch | null>(null);
+  const [activeInventoryOpportunity, setActiveInventoryOpportunity] = useState<string>('Stock-out opportunity');
   const [inventoryNotice, setInventoryNotice] = useState('');
   const [detailPanel, setDetailPanel] = useState<{ title: string; fields: Array<[string, string]> } | null>(null);
   const [newShelfName, setNewShelfName] = useState('');
@@ -713,16 +719,35 @@ export function ProductInventoryPreview({
   }
 
   function selectInventoryProductFromMaster(product: PharmaProduct) {
+    const defaultMargin = metadataNumber(product, ['margin_percent', 'product_margin_rate', 'margin'], 0);
+    const regulatorySellingPrice = regulatoryPrice(product);
+
     setInventoryCreateForm((current) => ({
       ...current,
       product_id: String(product.id),
+      margin_percent: current.margin_percent || (defaultMargin > 0 ? String(defaultMargin) : ''),
+      selling_price: current.selling_price || (regulatorySellingPrice > 0 ? String(regulatorySellingPrice) : ''),
     }));
-    setInventoryProductSearchTerm(productInventoryProductLabel(product));
+
+    setInventoryProductSearchTerm('');
+    setInventoryProductOptions([]);
     setIsInventoryProductSearchOpen(false);
+    setInventoryNotice(`${product.name} selected from Product Master. Complete inventory quantity, batch, location and pricing.`);
   }
 
   function handleInventoryProductSearchChange(value: string) {
     setInventoryProductSearchTerm(value);
+
+    if (!value.trim()) {
+      setInventoryProductOptions([]);
+      setIsInventoryProductSearchOpen(false);
+      setInventoryCreateForm((current) => ({
+        ...current,
+        product_id: '',
+      }));
+      return;
+    }
+
     setIsInventoryProductSearchOpen(true);
 
     const matchedProduct = inventoryProductLookupOptions.find((product) => productInventoryProductLabel(product) === value);
@@ -1116,8 +1141,6 @@ export function ProductInventoryPreview({
       return;
     }
 
-    event.preventDefault();
-
     if (!tenantSlug) {
       setError('No tenant assignment is available for this account.');
       return;
@@ -1135,23 +1158,44 @@ export function ProductInventoryPreview({
     try {
       const sellingPrice = Number(inventoryCreateForm.selling_price || inventoryCalculatedSellingPrice || 0);
 
-      const response = await receivePharmaStock(token, tenantSlug, {
-        product_id: Number(inventoryCreateForm.product_id),
-        stock_location_id: Number(inventoryCreateForm.stock_location_id),
-        batch_number: inventoryCreateForm.batch_number,
-        quantity: Number(inventoryCreateForm.quantity || 0),
-        expiry_date: inventoryCreateForm.expiry_date || null,
-        unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
-        selling_price: sellingPrice > 0 ? sellingPrice : null,
-        supplier_name: inventoryCreateForm.supplier_name || null,
-        reference_number: inventoryCreateForm.reference_number || null,
-        reason: 'Product Inventory created from Product Master',
-      });
+      if (editingInventoryBatch) {
+        const response = await updatePharmaStockBatch(token, tenantSlug, editingInventoryBatch.id, {
+          product_id: Number(inventoryCreateForm.product_id),
+          stock_location_id: Number(inventoryCreateForm.stock_location_id),
+          batch_number: inventoryCreateForm.batch_number,
+          quantity: Number(inventoryCreateForm.quantity || 0),
+          expiry_date: inventoryCreateForm.expiry_date || null,
+          unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
+          selling_price: sellingPrice > 0 ? sellingPrice : null,
+          supplier_name: inventoryCreateForm.supplier_name || null,
+          reference_number: inventoryCreateForm.reference_number || null,
+        });
 
-      setInventoryNotice(
-        `${response.message} ${selectedInventoryProduct?.name ?? 'Product'} is now available in Product Inventory. Batch ${response.batch.batch_number} received.`,
-      );
+        setInventoryNotice(`${response.message} Batch ${response.batch.batch_number} updated successfully.`);
+        setEditingInventoryBatch(null);
+      } else {
+        const response = await receivePharmaStock(token, tenantSlug, {
+          product_id: Number(inventoryCreateForm.product_id),
+          stock_location_id: Number(inventoryCreateForm.stock_location_id),
+          batch_number: inventoryCreateForm.batch_number,
+          quantity: Number(inventoryCreateForm.quantity || 0),
+          expiry_date: inventoryCreateForm.expiry_date || null,
+          unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
+          selling_price: sellingPrice > 0 ? sellingPrice : null,
+          supplier_name: inventoryCreateForm.supplier_name || null,
+          reference_number: inventoryCreateForm.reference_number || null,
+          reason: 'Product Inventory created from Product Master',
+        });
+
+        setInventoryNotice(
+          `${response.message} ${selectedInventoryProduct?.name ?? 'Product'} is now available in Product Inventory. Batch ${response.batch.batch_number} received.`,
+        );
+      }
+
       setInventoryCreateForm(emptyInventoryCreateForm);
+      setInventoryProductSearchTerm('');
+      setInventoryProductOptions([]);
+      setIsInventoryProductSearchOpen(false);
       await loadInventoryPreview();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create inventory from Product Master.');
@@ -1994,12 +2038,63 @@ export function ProductInventoryPreview({
     );
   }
 
+  function openInventoryBatchView(batch: PharmaStockBatch) {
+    setViewingInventoryBatch(batch);
+    setInventoryNotice(`Viewing inventory batch ${batch.batch_number}.`);
+  }
+
+  function openInventoryBatchEdit(batch: PharmaStockBatch) {
+    setEditingInventoryBatch(batch);
+    setViewingInventoryBatch(null);
+    setPendingDeleteInventoryBatch(null);
+
+    setInventoryCreateForm({
+      product_id: String(batch.product.id),
+      stock_location_id: String(batch.stock_location.id),
+      batch_number: batch.batch_number ?? '',
+      quantity: String(batch.available_quantity ?? 0),
+      expiry_date: batch.expiry_date ?? '',
+      unit_cost: batch.unit_cost === null || batch.unit_cost === undefined ? '' : String(batch.unit_cost),
+      margin_percent: '',
+      selling_price: batch.selling_price === null || batch.selling_price === undefined ? '' : String(batch.selling_price),
+      supplier_name: batch.supplier_name ?? '',
+      reference_number: '',
+    });
+
+    setInventoryProductSearchTerm('');
+    setInventoryProductOptions([]);
+    setIsInventoryProductSearchOpen(false);
+    setInventoryNotice(`Editing batch ${batch.batch_number}. Update the same inventory form and save.`);
+    selectInventoryView('product-inventory');
+  }
+
+  async function confirmDeleteInventoryBatch() {
+    if (!tenantSlug || !pendingDeleteInventoryBatch) {
+      return;
+    }
+
+    setIsCreatingInventory(true);
+    setError('');
+    setInventoryNotice('');
+
+    try {
+      const response = await deletePharmaStockBatch(token, tenantSlug, pendingDeleteInventoryBatch.id);
+      setInventoryNotice(response.message);
+      setPendingDeleteInventoryBatch(null);
+      await loadInventoryPreview();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete inventory batch.');
+    } finally {
+      setIsCreatingInventory(false);
+    }
+  }
+
   function renderBatchActions(batch: PharmaStockBatch) {
     return (
       <div className="table-action-row">
-        <button type="button" onClick={() => showBatchDetails(batch)}>Details</button>
-        <button type="button" onClick={() => markAction(`Edit batch ${batch.batch_number}`)}>Edit</button>
-        <button type="button" className="danger" onClick={() => markAction(`Delete batch ${batch.batch_number}`)}>Delete</button>
+        <button type="button" onClick={() => openInventoryBatchView(batch)}>View</button>
+        <button type="button" onClick={() => openInventoryBatchEdit(batch)}>Edit</button>
+        <button type="button" className="danger" onClick={() => setPendingDeleteInventoryBatch(batch)}>Delete</button>
       </div>
     );
   }
@@ -2989,8 +3084,8 @@ export function ProductInventoryPreview({
               <section className="inventory-create-from-master-panel">
                 <div className="section-heading">
                   <div>
-                    <h3>Create inventory from Product Master</h3>
-                    <span>Product identity comes from Product Master. Inventory adds batch, location, quantity, cost, margin and selling price.</span>
+                    <h3>{editingInventoryBatch ? 'Edit inventory batch' : 'Create inventory from Product Master'}</h3>
+                    <span>{editingInventoryBatch ? 'Update the selected Product Inventory record using the same controlled inventory fields.' : 'Product identity comes from Product Master. Inventory adds batch, location, quantity, cost, margin and selling price.'}</span>
                   </div>
                 </div>
 
@@ -3065,7 +3160,7 @@ export function ProductInventoryPreview({
                         </div>
                       )}
 
-                      {isInventoryProductSearchOpen && (
+                      {isInventoryProductSearchOpen && inventoryProductSearchTerm.trim().length > 0 && (
                         <div className="inventory-product-master-options">
                           {filteredInventoryProductOptions.length === 0 ? (
                             <button type="button" disabled>
@@ -3209,14 +3304,75 @@ export function ProductInventoryPreview({
                       }
                       aria-busy={isCreatingInventory}
                     >
-                      {isCreatingInventory ? 'Creating inventory, please wait…' : 'Create inventory'}
+                      {isCreatingInventory ? (editingInventoryBatch ? 'Updating inventory, please wait…' : 'Creating inventory, please wait…') : (editingInventoryBatch ? 'Update inventory' : 'Create inventory')}
                     </button>
-                    <button type="button" onClick={() => setInventoryCreateForm(emptyInventoryCreateForm)}>
-                      Cancel
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInventoryCreateForm(emptyInventoryCreateForm);
+                        setEditingInventoryBatch(null);
+                        setInventoryProductSearchTerm('');
+                        setInventoryProductOptions([]);
+                        setIsInventoryProductSearchOpen(false);
+                      }}
+                    >
+                      {editingInventoryBatch ? 'Cancel edit' : 'Cancel'}
                     </button>
                   </div>
                 </form>
               </section>
+
+              {viewingInventoryBatch && (
+                <section className="inventory-batch-detail-panel">
+                  <div className="section-heading">
+                    <div>
+                      <h3>Inventory batch details</h3>
+                      <span>Review the selected Product Inventory record before editing or deleting.</span>
+                    </div>
+                    <button type="button" onClick={() => setViewingInventoryBatch(null)}>Close</button>
+                  </div>
+                  <div className="inventory-batch-detail-grid">
+                    {[
+                      ['Product', viewingInventoryBatch.product.name],
+                      ['Drug code', viewingInventoryBatch.product.sku],
+                      ['Generic name', viewingInventoryBatch.product.generic_name ?? 'Generic name not set'],
+                      ['Batch number', viewingInventoryBatch.batch_number],
+                      ['Location', `${viewingInventoryBatch.stock_location.name} (${viewingInventoryBatch.stock_location.code})`],
+                      ['Available quantity', formatNumber(viewingInventoryBatch.available_quantity)],
+                      ['Unit cost', formatRwf(viewingInventoryBatch.unit_cost)],
+                      ['Selling price', formatRwf(viewingInventoryBatch.selling_price)],
+                      ['Expiry date', formatDate(viewingInventoryBatch.expiry_date)],
+                      ['Status', viewingInventoryBatch.status],
+                    ].map(([label, value]) => (
+                      <article key={label}>
+                        <span>{label}</span>
+                        <strong>{value}</strong>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="inventory-form-actions">
+                    <button type="button" onClick={() => openInventoryBatchEdit(viewingInventoryBatch)}>Edit this batch</button>
+                    <button type="button" className="danger" onClick={() => setPendingDeleteInventoryBatch(viewingInventoryBatch)}>Delete this batch</button>
+                  </div>
+                </section>
+              )}
+
+              {pendingDeleteInventoryBatch && (
+                <section className="inventory-delete-confirmation-panel">
+                  <div>
+                    <strong>Delete inventory batch?</strong>
+                    <span>
+                      This will remove batch {pendingDeleteInventoryBatch.batch_number} for {pendingDeleteInventoryBatch.product.name}.
+                    </span>
+                  </div>
+                  <div className="inventory-form-actions">
+                    <button type="button" className="danger" disabled={isCreatingInventory} onClick={confirmDeleteInventoryBatch}>
+                      {isCreatingInventory ? 'Deleting…' : 'Yes, delete'}
+                    </button>
+                    <button type="button" onClick={() => setPendingDeleteInventoryBatch(null)}>Cancel</button>
+                  </div>
+                </section>
+              )}
 
               <section className="inventory-ai-opportunity-panel">
                 <div className="section-heading">
@@ -3228,17 +3384,66 @@ export function ProductInventoryPreview({
 
                 <div className="inventory-opportunity-grid">
                   {[
-                    'Missing reimbursable products',
-                    'Stock-out opportunity',
-                    'Market dynamics',
-                    'Margin and pricing opportunity',
-                    'Near-expiry pressure',
-                    'Purchase planning',
-                  ].map((title) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                    </article>
+                    {
+                      title: 'Missing reimbursable products',
+                      helper: `${formatNumber(Math.max(0, allProducts.length - productInventoryRows.length))} Product Master items may not yet have inventory stock.`,
+                    },
+                    {
+                      title: 'Stock-out opportunity',
+                      helper: `${formatNumber(productInventoryRows.filter(({ batch }) => Number(batch.available_quantity || 0) <= 0).length)} stock rows need attention.`,
+                    },
+                    {
+                      title: 'Market dynamics',
+                      helper: 'Review fast-moving items, supplier availability and patient demand before purchasing.',
+                    },
+                    {
+                      title: 'Margin and pricing opportunity',
+                      helper: `${formatNumber(productInventoryRows.filter(({ computedSellingPrice, batch }) => Number(computedSellingPrice || 0) <= Number(batch.unit_cost || 0)).length)} rows may need pricing review.`,
+                    },
+                    {
+                      title: 'Near-expiry pressure',
+                      helper: `${formatNumber(productInventoryRows.filter(({ days }) => days !== null && days <= 180).length)} batches are within 180 days.`,
+                    },
+                    {
+                      title: 'Purchase planning',
+                      helper: 'Use Product Master, current stock and expiry risk to guide replenishment.',
+                    },
+                  ].map((item) => (
+                    <button
+                      key={item.title}
+                      type="button"
+                      className={activeInventoryOpportunity === item.title ? 'active' : ''}
+                      onClick={() => {
+                        setActiveInventoryOpportunity(item.title);
+                        setInventoryNotice(`${item.title} opened in the AI inventory opportunity model.`);
+                      }}
+                    >
+                      <strong>{item.title}</strong>
+                      <span>{item.helper}</span>
+                    </button>
                   ))}
+                </div>
+
+                <div className="inventory-ai-opportunity-detail">
+                  <strong>{activeInventoryOpportunity}</strong>
+                  <span>
+                    {activeInventoryOpportunity === 'Missing reimbursable products'
+                      ? 'Compare Product Master against Product Inventory and prioritize approved reimbursable items without stock.'
+                      : activeInventoryOpportunity === 'Stock-out opportunity'
+                        ? 'Identify zero-stock or low-availability products and prepare restocking actions before sales are lost.'
+                        : activeInventoryOpportunity === 'Market dynamics'
+                          ? 'Use supplier availability, patient demand, reimbursement trends and seasonal patterns before purchase decisions.'
+                          : activeInventoryOpportunity === 'Margin and pricing opportunity'
+                            ? 'Review items where selling price is missing, below cost, or below the configured Product Master margin.'
+                            : activeInventoryOpportunity === 'Near-expiry pressure'
+                              ? 'Prioritize FEFO selling, transfer, supplier return or promotion for batches nearing expiry.'
+                              : 'Build a purchase plan from Product Master demand, available quantity, expiry risk and supplier lead time.'}
+                  </span>
+                  <div className="inventory-ai-opportunity-actions">
+                    <button type="button" onClick={() => selectInventoryView('product-master')}>Review Product Master</button>
+                    <button type="button" onClick={() => selectInventoryView('product-inventory')}>Review Product Inventory</button>
+                    <button type="button" onClick={() => selectInventoryView('batches')}>Review Batch & Expiry</button>
+                  </div>
                 </div>
               </section>
 

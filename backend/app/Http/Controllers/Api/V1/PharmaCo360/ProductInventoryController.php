@@ -1390,6 +1390,80 @@ class ProductInventoryController extends Controller
         ];
     }
 
+
+    public function updateBatch(Request $request, StockBatch $batch)
+    {
+        $tenant = $this->resolveTenant($request);
+
+        if ((int) $batch->tenant_id !== (int) $tenant->id) {
+            abort(404, 'Inventory batch not found.');
+        }
+
+        $validated = $request->validate([
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'stock_location_id' => ['required', 'integer', 'exists:stock_locations,id'],
+            'batch_number' => ['required', 'string', 'max:100'],
+            'quantity' => ['required', 'numeric', 'min:0'],
+            'expiry_date' => ['nullable', 'date'],
+            'unit_cost' => ['nullable', 'numeric', 'min:0'],
+            'selling_price' => ['nullable', 'numeric', 'min:0'],
+            'supplier_name' => ['nullable', 'string', 'max:191'],
+            'reference_number' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $product = Product::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $validated['product_id'])
+            ->firstOrFail();
+
+        $location = StockLocation::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $validated['stock_location_id'])
+            ->firstOrFail();
+
+        $batch->product_id = $product->id;
+        $batch->stock_location_id = $location->id;
+        $batch->batch_number = $validated['batch_number'];
+        $batch->quantity_on_hand = (float) $validated['quantity'];
+        $batch->expiry_date = $validated['expiry_date'] ?? null;
+        $batch->unit_cost = $validated['unit_cost'] ?? null;
+        $batch->selling_price = $validated['selling_price'] ?? null;
+        $batch->supplier_name = $validated['supplier_name'] ?? null;
+        $batch->status = ((float) $validated['quantity'] > 0) ? 'available' : 'depleted';
+        $batch->save();
+
+        $batch->load(['product', 'stockLocation', 'branch']);
+
+        return response()->json([
+            'message' => 'Inventory batch updated.',
+            'batch' => $this->serializeBatch($batch),
+        ]);
+    }
+
+    public function deleteBatch(Request $request, StockBatch $batch)
+    {
+        $tenant = $this->resolveTenant($request);
+
+        if ((int) $batch->tenant_id !== (int) $tenant->id) {
+            abort(404, 'Inventory batch not found.');
+        }
+
+        if ((float) ($batch->quantity_reserved ?? 0) > 0) {
+            abort(422, 'This batch has reserved quantity and cannot be deleted.');
+        }
+
+        \Illuminate\Support\Facades\DB::table('stock_movements')
+            ->where('stock_batch_id', $batch->id)
+            ->delete();
+
+        $batchNumber = $batch->batch_number;
+        $batch->delete();
+
+        return response()->json([
+            'message' => "Inventory batch {$batchNumber} deleted.",
+        ]);
+    }
+
     private function serializeBatch(StockBatch $batch): array
     {
         return [
