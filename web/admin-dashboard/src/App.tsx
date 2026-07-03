@@ -2894,6 +2894,25 @@ function App() {
       ['Corporate client', 'Institution balance', 'Credit follow-up', 'RWF 118,400'],
     ];
 
+    const posProducts = [
+      ['Lisinopril', '20 mg', 'Rx-784213', 'Ready', 'RWF 14,800', 'Insurance'],
+      ['Amoxicillin', '500 mg', 'Rx-784198', 'Prescription', 'RWF 8,500', 'Cash'],
+      ['Paracetamol', '500 mg', 'OTC-001', 'OTC', 'RWF 1,200', 'Cash'],
+      ['Metformin', '850 mg', 'Rx-784240', 'Ready', 'RWF 6,200', 'Insurance'],
+      ['ORS Sachet', 'Unit', 'OTC-019', 'OTC', 'RWF 800', 'Cash'],
+      ['Cough Syrup', '100 ml', 'OTC-044', 'Review', 'RWF 4,200', 'Cash'],
+    ];
+
+    const salesSummaryRows = Array.from({ length: 15 }).map((_, index) => {
+      const saleNumber = `SAL-${String(2400 + index).padStart(5, '0')}`;
+      const customer = index % 3 === 0 ? 'Walk-in' : index % 3 === 1 ? 'Insurance customer' : 'Existing customer';
+      const method = index % 4 === 0 ? 'Cash' : index % 4 === 1 ? 'MoMo' : index % 4 === 2 ? 'Insurance' : 'Card';
+      const status = index % 5 === 0 ? 'Review' : 'Completed';
+      const amount = `RWF ${(12500 + index * 3750).toLocaleString('en-RW')}`;
+
+      return [saleNumber, customer, method, status, amount] as const;
+    });
+
     const subtotalAmount = 64500;
     const discountValue = Number(posDiscountAmount || 0);
     const taxAmount = Math.max(0, Math.round((subtotalAmount - discountValue) * 0.18));
@@ -2936,7 +2955,7 @@ function App() {
       setPosTransactionConfirmed(true);
       setPosNotice(
         posCustomerInvoice === 'yes'
-          ? 'Transaction confirmed. Invoice journey is now available inside POS.'
+          ? 'Transaction confirmed. Invoice generation and delivery are now available inside POS.'
           : 'Transaction confirmed without customer invoice.',
       );
     }
@@ -2953,31 +2972,214 @@ function App() {
           )}
 
           {activePosWorkspace === 'pos' && (
-            <section className="pos-journey-page">
-              <section className="pos-journey-header">
+            <section className="pos-counter-page">
+              <section className="pos-counter-heading">
                 <div>
                   <p className="eyebrow">POS</p>
                   <h2>Pharmacy sales counter</h2>
-                  <p className="muted">
-                    Branch is not captured here because the user operates under one assigned pharmacy context.
-                  </p>
+                  <p className="muted">Select medicines, build cart, confirm payment, then generate receipt or invoice when required.</p>
                 </div>
 
-                <div className={`pos-day-status ${isPosDayOpen ? 'open' : 'closed'}`}>
-                  <span>{isPosDayOpen ? 'POS day open' : 'POS day closed'}</span>
-                  <strong>Starting cash: RWF {Number(posStartingCashBalance || 0).toLocaleString('en-RW')}</strong>
+                <div className={`pos-session-pill ${isPosDayOpen ? 'open' : 'closed'}`}>
+                  <span>{isPosDayOpen ? 'Session open' : 'Session closed'}</span>
+                  <strong>RWF {Number(posStartingCashBalance || 0).toLocaleString('en-RW')}</strong>
                 </div>
               </section>
 
               {posNotice && <div className="form-success">{posNotice}</div>}
 
-              <section className="pos-journey-grid">
-                <aside className="pos-sale-summary-card">
+              <section className="pos-day-control-strip">
+                <div>
+                  <span>Open POS Day</span>
+                  <label>
+                    <small>Opening mode</small>
+                    <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
+                      <option value="fresh-start">Fresh start day</option>
+                      <option value="handover">Handover from previous teller</option>
+                    </select>
+                  </label>
+                  <label>
+                    <small>Starting cash balance</small>
+                    <input
+                      type="number"
+                      min="0"
+                      value={posStartingCashBalance}
+                      onChange={(event) => setPosStartingCashBalance(event.target.value)}
+                    />
+                  </label>
+                  <button type="button" onClick={openPosDay}>Open POS Day</button>
+                </div>
+
+                <div>
+                  <span>Close POS Day</span>
+                  <label>
+                    <small>Closing mode</small>
+                    <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
+                      <option value="handover">Handover to incoming staff</option>
+                      <option value="final-close">Final close with manager deposit proof</option>
+                    </select>
+                  </label>
+
+                  {posCloseMode === 'handover' ? (
+                    <label className="pos-inline-check">
+                      <input
+                        type="checkbox"
+                        checked={posTillZeroized}
+                        onChange={(event) => setPosTillZeroized(event.target.checked)}
+                      />
+                      <small>Till zeroized and incoming staff acknowledged</small>
+                    </label>
+                  ) : (
+                    <label>
+                      <small>Deposit proof reference</small>
+                      <input
+                        value={posDepositProof}
+                        onChange={(event) => setPosDepositProof(event.target.value)}
+                        placeholder="Deposit slip, bank ref, MoMo ref"
+                      />
+                    </label>
+                  )}
+
+                  <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close POS Day</button>
+                </div>
+              </section>
+
+              <section className="pos-counter-workbench">
+                <aside className="pos-rx-queue">
                   <div className="section-heading">
                     <div>
-                      <span>Sale Summary</span>
-                      <h3>Current transaction</h3>
+                      <span>Step 1</span>
+                      <h3>Select drugs</h3>
                     </div>
+                  </div>
+
+                  <input className="pos-search-input" placeholder="Search patient, drug, Rx#, barcode..." />
+
+                  <div className="pos-drug-list">
+                    {posProducts.map(([name, strength, code, status, price]) => (
+                      <button key={code} type="button">
+                        <strong>{name}</strong>
+                        <small>{strength}</small>
+                        <em>{code}</em>
+                        <span>{status}</span>
+                      </button>
+                    ))}
+                  </div>
+                </aside>
+
+                <main className="pos-main-flow">
+                  <section className="pos-selected-drug-card">
+                    <div>
+                      <span>Selected item</span>
+                      <h3>Lisinopril <small>20 mg</small></h3>
+                      <p className="muted">30 tablets · 30-day supply · Refills 5 · Insurance-ready split.</p>
+                    </div>
+
+                    <div className="pos-price-strip">
+                      <article>
+                        <span>Drug price</span>
+                        <strong>RWF 14,800</strong>
+                      </article>
+                      <article>
+                        <span>Patient pays</span>
+                        <strong>RWF 2,220</strong>
+                      </article>
+                      <article>
+                        <span>Insurance</span>
+                        <strong>RWF 12,580</strong>
+                      </article>
+                    </div>
+
+                    <button type="button" disabled={!isPosDayOpen}>Add to cart</button>
+                  </section>
+
+                  <section className="pos-transaction-setup-card">
+                    <div className="section-heading">
+                      <div>
+                        <span>Step 3</span>
+                        <h3>Transaction setup</h3>
+                      </div>
+                    </div>
+
+                    <div className="pos-field-grid">
+                      <label>
+                        <span>Customer type</span>
+                        <select value={posCustomerType} onChange={(event) => setPosCustomerType(event.target.value as typeof posCustomerType)}>
+                          <option value="walk-in">Walk-In Customer</option>
+                          <option value="existing-customer">Existing Customer</option>
+                          <option value="insurance-customer">Insurance Customer</option>
+                          <option value="corporate-customer">Corporate Customer</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Prescription</span>
+                        <select value={posPrescriptionStatus} onChange={(event) => setPosPrescriptionStatus(event.target.value as typeof posPrescriptionStatus)}>
+                          <option value="not-required">Not Required</option>
+                          <option value="required">Required</option>
+                          <option value="captured">Captured</option>
+                          <option value="manual-review">Manual Review</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Payment method</span>
+                        <select value={posPaymentMethod} onChange={(event) => setPosPaymentMethod(event.target.value as typeof posPaymentMethod)}>
+                          <option value="cash">Cash</option>
+                          <option value="momo">Mobile Money</option>
+                          <option value="card">Card</option>
+                          <option value="insurance">Insurance / Partner</option>
+                          <option value="credit">Customer Credit</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Customer invoice</span>
+                        <select
+                          value={posCustomerInvoice}
+                          onChange={(event) => {
+                            setPosCustomerInvoice(event.target.value as 'yes' | 'no');
+                            setPosTransactionConfirmed(false);
+                          }}
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Discount amount</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={posDiscountAmount}
+                          onChange={(event) => setPosDiscountAmount(event.target.value)}
+                        />
+                      </label>
+
+                      <label>
+                        <span>Customer contact / lookup</span>
+                        <input
+                          value={posInvoiceContact}
+                          onChange={(event) => setPosInvoiceContact(event.target.value)}
+                          placeholder="Phone, WhatsApp, or email"
+                        />
+                      </label>
+                    </div>
+                  </section>
+                </main>
+
+                <aside className="pos-cart-rail">
+                  <div className="section-heading">
+                    <div>
+                      <span>Step 2</span>
+                      <h3>Dispense cart</h3>
+                    </div>
+                  </div>
+
+                  <div className="pos-cart-item">
+                    <strong>Lisinopril 20 mg</strong>
+                    <span>1 pack · RWF 14,800</span>
                   </div>
 
                   <dl className="pos-summary-list">
@@ -3000,210 +3202,12 @@ function App() {
                   </dl>
 
                   <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen}>
-                    Confirm Transaction
+                    Take payment
                   </button>
-                </aside>
-
-                <main className="pos-transaction-card">
-                  <div className="section-heading">
-                    <div>
-                      <span>Transaction setup</span>
-                      <h3>Customer, prescription, payment and invoice</h3>
-                    </div>
-                  </div>
-
-                  <div className="pos-field-grid">
-                    <label>
-                      <span>Customer type</span>
-                      <select value={posCustomerType} onChange={(event) => setPosCustomerType(event.target.value as typeof posCustomerType)}>
-                        <option value="walk-in">Walk-In Customer</option>
-                        <option value="existing-customer">Existing Customer</option>
-                        <option value="insurance-customer">Insurance Customer</option>
-                        <option value="corporate-customer">Corporate Customer</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      <span>Prescription</span>
-                      <select value={posPrescriptionStatus} onChange={(event) => setPosPrescriptionStatus(event.target.value as typeof posPrescriptionStatus)}>
-                        <option value="not-required">Not Required</option>
-                        <option value="required">Required</option>
-                        <option value="captured">Captured</option>
-                        <option value="manual-review">Manual Review</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      <span>Payment method</span>
-                      <select value={posPaymentMethod} onChange={(event) => setPosPaymentMethod(event.target.value as typeof posPaymentMethod)}>
-                        <option value="cash">Cash</option>
-                        <option value="momo">Mobile Money</option>
-                        <option value="card">Card</option>
-                        <option value="insurance">Insurance / Partner</option>
-                        <option value="credit">Customer Credit</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      <span>Customer invoice</span>
-                      <select
-                        value={posCustomerInvoice}
-                        onChange={(event) => {
-                          setPosCustomerInvoice(event.target.value as 'yes' | 'no');
-                          setPosTransactionConfirmed(false);
-                        }}
-                      >
-                        <option value="no">No</option>
-                        <option value="yes">Yes</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      <span>Discount amount</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={posDiscountAmount}
-                        onChange={(event) => setPosDiscountAmount(event.target.value)}
-                      />
-                    </label>
-
-                    <label>
-                      <span>Customer contact / lookup</span>
-                      <input
-                        value={posInvoiceContact}
-                        onChange={(event) => setPosInvoiceContact(event.target.value)}
-                        placeholder="Phone, WhatsApp, or email"
-                      />
-                    </label>
-                  </div>
-
-                  <section className="pos-product-browser-card">
-                    <div className="section-heading">
-                      <div>
-                        <span>Product browser</span>
-                        <h3>Search, select, and add to cart</h3>
-                      </div>
-                      <button type="button">Scan barcode</button>
-                    </div>
-
-                    <table className="system-table">
-                      <thead>
-                        <tr>
-                          <th>Product</th>
-                          <th>Stock</th>
-                          <th>Price</th>
-                          <th>RX</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          ['Paracetamol 500mg', '128 units', 'RWF 1,200', 'No'],
-                          ['Amoxicillin 250mg', '42 units', 'RWF 3,500', 'Yes'],
-                          ['ORS Sachet', '90 units', 'RWF 800', 'No'],
-                          ['Cough Syrup', '18 units', 'RWF 4,200', 'Review'],
-                        ].map(([product, stock, price, rx]) => (
-                          <tr key={product}>
-                            <td>{product}</td>
-                            <td>{stock}</td>
-                            <td>{price}</td>
-                            <td>{rx}</td>
-                            <td><button type="button">Add</button></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </section>
-                </main>
-
-                <aside className="pos-till-card">
-                  <section>
-                    <div className="section-heading">
-                      <div>
-                        <span>Till day</span>
-                        <h3>Open POS Day</h3>
-                      </div>
-                    </div>
-
-                    <div className="pos-field-grid single">
-                      <label>
-                        <span>Opening mode</span>
-                        <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
-                          <option value="fresh-start">Fresh start day</option>
-                          <option value="handover">Handover from previous teller</option>
-                        </select>
-                      </label>
-
-                      <label>
-                        <span>Starting cash balance</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={posStartingCashBalance}
-                          onChange={(event) => setPosStartingCashBalance(event.target.value)}
-                        />
-                      </label>
-
-                      <button type="button" onClick={openPosDay}>
-                        Open POS Day
-                      </button>
-                    </div>
-                  </section>
-
-                  <section>
-                    <div className="section-heading">
-                      <div>
-                        <span>Till closure</span>
-                        <h3>Close POS Day</h3>
-                      </div>
-                    </div>
-
-                    <div className="pos-field-grid single">
-                      <label>
-                        <span>Closing mode</span>
-                        <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
-                          <option value="handover">Handover to incoming staff</option>
-                          <option value="final-close">Final close with manager deposit proof</option>
-                        </select>
-                      </label>
-
-                      {posCloseMode === 'handover' && (
-                        <label className="pos-checkbox-row">
-                          <input
-                            type="checkbox"
-                            checked={posTillZeroized}
-                            onChange={(event) => setPosTillZeroized(event.target.checked)}
-                          />
-                          <span>Till account zeroized and incoming staff acknowledges cash</span>
-                        </label>
-                      )}
-
-                      {posCloseMode === 'final-close' && (
-                        <label>
-                          <span>Deposit proof reference</span>
-                          <input
-                            value={posDepositProof}
-                            onChange={(event) => setPosDepositProof(event.target.value)}
-                            placeholder="Deposit slip, bank ref, MoMo ref"
-                          />
-                        </label>
-                      )}
-
-                      <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>
-                        Close POS Day
-                      </button>
-                    </div>
-                  </section>
 
                   {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
                     <section className="pos-invoice-journey">
-                      <div className="section-heading">
-                        <div>
-                          <span>Invoice journey</span>
-                          <h3>Generate and deliver invoice</h3>
-                        </div>
-                      </div>
+                      <h3>Invoice delivery</h3>
 
                       <label>
                         <span>Delivery channel</span>
@@ -3238,12 +3242,49 @@ function App() {
 
                       {posInvoiceDelivery === 'email' && (
                         <button type="button" onClick={() => navigateToSection('corporate-email')}>
-                          Open Corporate Email with invoice
+                          Open Corporate Email with invoice attached
                         </button>
                       )}
                     </section>
                   )}
                 </aside>
+              </section>
+
+              <section className="pos-sales-summary-table-card">
+                <div className="section-heading">
+                  <div>
+                    <span>Recent sales</span>
+                    <h3>15-row transaction summary</h3>
+                  </div>
+                  <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
+                    Open Sales Performance
+                  </button>
+                </div>
+
+                <div className="system-table-wrap">
+                  <table className="system-table">
+                    <thead>
+                      <tr>
+                        <th>Sale No.</th>
+                        <th>Customer</th>
+                        <th>Method</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {salesSummaryRows.map(([saleNumber, customer, method, status, amount]) => (
+                        <tr key={saleNumber}>
+                          <td>{saleNumber}</td>
+                          <td>{customer}</td>
+                          <td>{method}</td>
+                          <td>{status}</td>
+                          <td>{amount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </section>
             </section>
           )}

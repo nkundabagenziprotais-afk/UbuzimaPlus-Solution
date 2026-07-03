@@ -8268,3 +8268,425 @@ h3,
     overflow-x: auto;
   }
 }
+
+/* Strong global table rule: compact, readable, same standard as dashboard user tables */
+.dashboard-shell table,
+.dashboard-shell .system-table,
+.dashboard-shell .helicopter-table,
+.dashboard-shell .linked-submenu-table,
+.dashboard-shell .focus-register-table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 0.76rem !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  border-radius: 15px !important;
+  overflow: hidden !important;
+}
+
+.dashboard-shell table th,
+.dashboard-shell table td {
+  padding: 0.5rem 0.58rem !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.13) !important;
+  line-height: 1.24 !important;
+  vertical-align: middle !important;
+  text-align: left !important;
+}
+
+.dashboard-shell table th {
+  background: rgba(248, 250, 252, 0.96) !important;
+  color: #64748b !important;
+  font-size: 0.66rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.045em !important;
+}
+
+.dashboard-shell table td {
+  color: #1f2937 !important;
+  font-size: 0.75rem !important;
+}
+
+.dashboard-shell table tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.system-table-wrap {
+  overflow-x: auto;
+  border-radius: 15px;
+}
+
+/* POS counter layout inspired by modern pharmacy POS, adapted to Ubuzima+ data */
+.pos-counter-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.pos-counter-heading {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 22px;
+  background: #ffffff;
+  padding: 0.9rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
+}
+
+.pos-counter-heading h2 {
+  margin: 0.12rem 0 0.22rem;
+  font-size: clamp(1.05rem, 1.4vw, 1.28rem);
+}
+
+.pos-session-pill {
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  background: rgba(180, 33, 41, 0.08);
+  color: #991b1b;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.pos-session-pill.open {
+  background: rgba(75, 83, 32, 0.12);
+  color: #2f3b15;
+}
+
+.pos-session-pill span {
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+}
+
+.pos-day-control-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.pos-day-control-strip > div {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 0.82rem;
+  display: grid;
+  grid-template-columns: auto repeat(2, minmax(0, 1fr)) auto;
+  gap: 0.65rem;
+  align-items: end;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+}
+
+.pos-day-control-strip > div > span {
+  align-self: center;
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pos-day-control-strip label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pos-day-control-strip small,
+.pos-field-grid span,
+.pos-invoice-journey span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.pos-day-control-strip input,
+.pos-day-control-strip select,
+.pos-field-grid input,
+.pos-field-grid select,
+.pos-invoice-journey select {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 11px;
+  padding: 0.52rem 0.58rem;
+  font-size: 0.78rem;
+  background: #ffffff;
+}
+
+.pos-day-control-strip button,
+.pos-counter-page button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--left-menu-accent, #4B5320);
+  color: var(--left-menu-title-color, #ffffff);
+  padding: 0.48rem 0.72rem;
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+
+.pos-counter-page button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.pos-inline-check {
+  display: flex !important;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.pos-inline-check input {
+  width: auto;
+}
+
+.pos-counter-workbench {
+  display: grid;
+  grid-template-columns: 300px minmax(420px, 1fr) 320px;
+  min-height: 620px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 24px;
+  overflow: hidden;
+  background: #f8fafc;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.065);
+}
+
+.pos-rx-queue,
+.pos-main-flow,
+.pos-cart-rail {
+  padding: 0.9rem;
+}
+
+.pos-rx-queue {
+  background: #ffffff;
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.pos-cart-rail {
+  background: #ffffff;
+  border-left: 1px solid rgba(148, 163, 184, 0.16);
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.pos-search-input {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  padding: 0.65rem 0.72rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.pos-drug-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pos-drug-list button {
+  width: 100%;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 15px;
+  padding: 0.65rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.18rem 0.5rem;
+  text-align: left;
+}
+
+.pos-drug-list button strong {
+  font-size: 0.84rem;
+}
+
+.pos-drug-list button small,
+.pos-drug-list button em {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-style: normal;
+}
+
+.pos-drug-list button span {
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 0.68rem;
+  font-weight: 900;
+  justify-self: end;
+}
+
+.pos-main-flow {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.pos-selected-drug-card,
+.pos-transaction-setup-card,
+.pos-sales-summary-table-card {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 0.9rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+}
+
+.pos-selected-drug-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.pos-selected-drug-card h3 {
+  margin: 0.12rem 0 0.2rem;
+  font-size: 1.25rem;
+}
+
+.pos-selected-drug-card h3 small {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.pos-price-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.pos-price-strip article {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 15px;
+  padding: 0.7rem;
+}
+
+.pos-price-strip span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pos-price-strip strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+}
+
+.pos-field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.pos-field-grid label,
+.pos-invoice-journey label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pos-cart-item {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 15px;
+  padding: 0.7rem;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.pos-cart-item strong {
+  color: #1f2937;
+  font-size: 0.84rem;
+}
+
+.pos-cart-item span {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.pos-summary-list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.pos-summary-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  padding-bottom: 0.4rem;
+}
+
+.pos-summary-list dt {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.pos-summary-list dd {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.pos-summary-list .total dd {
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 1.05rem;
+}
+
+.pos-invoice-journey {
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  padding-top: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pos-invoice-journey h3 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.pos-sales-summary-table-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pos-sales-summary-table-card .section-heading button {
+  background: var(--left-menu-accent, #4B5320);
+  color: var(--left-menu-title-color, #ffffff);
+}
+
+@media (max-width: 1480px) {
+  .pos-counter-workbench {
+    grid-template-columns: 280px minmax(380px, 1fr);
+  }
+
+  .pos-cart-rail {
+    grid-column: 1 / -1;
+    border-left: 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+  }
+}
+
+@media (max-width: 1100px) {
+  .pos-day-control-strip,
+  .pos-counter-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-day-control-strip > div {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-rx-queue,
+  .pos-cart-rail {
+    border: 0;
+  }
+
+  .pos-field-grid,
+  .pos-price-strip {
+    grid-template-columns: 1fr;
+  }
+}
