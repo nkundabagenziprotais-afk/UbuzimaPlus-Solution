@@ -200,6 +200,73 @@ const posInsuranceRates: PosInsuranceRate[] = [
   },
 ];
 
+type PosSaleSummary = {
+  lineCount: number;
+  totalQuantity: number;
+  subtotal: number;
+  discount: number;
+  taxableBase: number;
+  tax: number;
+  customerContributionPercent: number;
+  insuranceContributionPercent: number;
+  insuranceContribution: number;
+  customerContribution: number;
+  total: number;
+  calculatedAt: string;
+};
+
+function calculatePosSaleSummary(input: {
+  cartItems: Array<{ quantity: number; unitPrice: number }>;
+  discountAmount: string;
+  paymentMethod: 'cash' | 'momo' | 'card' | 'insurance' | 'credit';
+  insuranceProviderId: string;
+  insuranceInstitutionId: string;
+}): PosSaleSummary {
+  const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === input.insuranceProviderId) ?? posInsuranceRates[0];
+  const selectedInstitution = selectedInsurance.institutions.find((institution) => institution.id === input.insuranceInstitutionId) ?? null;
+
+  const lineCount = input.cartItems.length;
+  const totalQuantity = input.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = input.cartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const discount = Math.min(Number(input.discountAmount || 0), subtotal);
+  const taxableBase = Math.max(0, subtotal - discount);
+  const tax = Math.round(taxableBase * 0.18);
+
+  const customerContributionPercent =
+    input.paymentMethod === 'insurance'
+      ? selectedInstitution?.customerContributionPercent ?? selectedInsurance.masterCustomerContributionPercent
+      : 100;
+
+  const insuranceContributionPercent =
+    input.paymentMethod === 'insurance' ? Math.max(0, 100 - customerContributionPercent) : 0;
+
+  const insuranceContribution =
+    input.paymentMethod === 'insurance'
+      ? Math.round((taxableBase * insuranceContributionPercent) / 100)
+      : 0;
+
+  const customerContribution =
+    input.paymentMethod === 'insurance'
+      ? Math.max(0, taxableBase + tax - insuranceContribution)
+      : Math.max(0, taxableBase + tax);
+
+  return {
+    lineCount,
+    totalQuantity,
+    subtotal,
+    discount,
+    taxableBase,
+    tax,
+    customerContributionPercent,
+    insuranceContributionPercent,
+    insuranceContribution,
+    customerContribution,
+    total: Math.max(0, taxableBase + tax),
+    calculatedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+  };
+}
+
+
 
 type HomeWidgetKey =
   | 'summary'
@@ -1680,6 +1747,15 @@ function App() {
     quantity: number;
     unitPrice: number;
   }>>([]);
+  const [posSaleSummary, setPosSaleSummary] = useState<PosSaleSummary>(() =>
+    calculatePosSaleSummary({
+      cartItems: [],
+      discountAmount: '0',
+      paymentMethod: 'cash',
+      insuranceProviderId: 'rssb',
+      insuranceInstitutionId: '',
+    }),
+  );
   const [posSummaryRefreshKey, setPosSummaryRefreshKey] = useState(0);
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
@@ -2972,31 +3048,19 @@ function App() {
     });
 
     const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
-    const selectedInsuranceInstitution = selectedInsurance.institutions.find((institution) => institution.id === posInsuranceInstitution) ?? null;
 
-    const custPercent =
-      posPaymentMethod === 'insurance'
-        ? selectedInsuranceInstitution?.customerContributionPercent ?? selectedInsurance.masterCustomerContributionPercent
-        : 100;
-    const insurPercent = posPaymentMethod === 'insurance' ? Math.max(0, 100 - custPercent) : 0;
-
-    // Single source of truth: every Sale Summary number is derived directly from the cart array on every render.
-    // posSummaryRefreshKey is only used to force a rerender if the browser keeps an old render during testing.
-    void posSummaryRefreshKey;
-    const summary = {
-      lineCount: posCartItems.length,
-      totalQuantity: posCartItems.reduce((sum, item) => sum + item.quantity, 0),
-      subtotal: posCartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
-    };
-    const discount = Math.min(Number(posDiscountAmount || 0), summary.subtotal);
-    const taxableBase = Math.max(0, summary.subtotal - discount);
-    const tax = Math.round(taxableBase * 0.18);
-    const insuranceContribution = posPaymentMethod === 'insurance' ? Math.round((taxableBase * insurPercent) / 100) : 0;
-    const customerContribution =
-      posPaymentMethod === 'insurance'
-        ? Math.max(0, taxableBase + tax - insuranceContribution)
-        : Math.max(0, taxableBase + tax);
-    const total = Math.max(0, taxableBase + tax);
+    function forceRefreshSaleSummary() {
+      setPosSaleSummary(
+        calculatePosSaleSummary({
+          cartItems: posCartItems,
+          discountAmount: posDiscountAmount,
+          paymentMethod: posPaymentMethod,
+          insuranceProviderId: posInsuranceProvider,
+          insuranceInstitutionId: posInsuranceInstitution,
+        }),
+      );
+      setPosNotice('Sale Summary refreshed from current cart.');
+    }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
       setPosCartItems((current) => {
@@ -3021,16 +3085,14 @@ function App() {
       });
 
       setPosTransactionConfirmed(false);
-      setPosSummaryRefreshKey((current) => current + 1);
-      setPosNotice(`${product.name} added to cart. Sale Summary updated.`);
+      setPosNotice(`${product.name} added to cart.`);
     }
 
     function updateCartQuantity(code: string, quantity: number) {
       if (quantity <= 0) {
         setPosCartItems((current) => current.filter((item) => item.code !== code));
         setPosTransactionConfirmed(false);
-        setPosSummaryRefreshKey((current) => current + 1);
-        setPosNotice('Item removed. Sale Summary updated.');
+        setPosNotice('Item removed from cart.');
         return;
       }
 
@@ -3038,22 +3100,18 @@ function App() {
         current.map((item) => (item.code === code ? { ...item, quantity: Math.min(99, quantity) } : item)),
       );
       setPosTransactionConfirmed(false);
-      setPosSummaryRefreshKey((current) => current + 1);
-      setPosNotice('Sale Summary updated from cart quantity change.');
     }
 
     function removeCartItem(code: string) {
       setPosCartItems((current) => current.filter((item) => item.code !== code));
       setPosTransactionConfirmed(false);
-      setPosSummaryRefreshKey((current) => current + 1);
-      setPosNotice('Item removed from cart. Sale Summary updated.');
+      setPosNotice('Item removed from cart.');
     }
 
     function clearPosCart() {
       setPosCartItems([]);
       setPosTransactionConfirmed(false);
-      setPosSummaryRefreshKey((current) => current + 1);
-      setPosNotice('Cart cleared. Sale Summary reset.');
+      setPosNotice('Cart cleared.');
     }
 
     function openPosDay() {
@@ -3106,38 +3164,53 @@ function App() {
 
     if (activePosWorkspace === 'overview') {
       return (
-        <section className="section-page">
-          <section className="pos-overview-analytics-grid">
+        <section className="section-page pos-executive-overview">
+          <section className="pos-executive-hero">
+            <div>
+              <span>POS executive view</span>
+              <h2>Sales performance and cashier control</h2>
+              <p>Live sales, payment mix, insurance exposure, exceptions and till readiness in one manager view.</p>
+            </div>
+            <button type="button" onClick={() => setActivePosWorkspace('pos')}>
+              Open POS Counter
+            </button>
+          </section>
+
+          <section className="pos-overview-analytics-grid executive">
             {[
-              ['Today sales', 'RWF 1.84M', 'Cash, MoMo, card and insurance payments'],
-              ['Transactions', '126', 'Completed 118 · Review 8'],
-              ['Insurance value', 'RWF 540K', 'RSSB, MMI and corporate schemes'],
-              ['Open cart risk', '6', 'Draft or unconfirmed transactions'],
-            ].map(([title, value, detail]) => (
-              <article key={title} className="analytics-card">
+              ['Today gross sales', 'RWF 1.84M', '+12% vs yesterday', 'All confirmed sales'],
+              ['Transactions', '126', '118 completed', '8 require review'],
+              ['Insurance claims', 'RWF 540K', '29% of sales value', 'RSSB, MMI, Radiant'],
+              ['Cashier variance', 'RWF 8.5K', 'Needs review', 'Cash close exception'],
+              ['Average basket', 'RWF 14.6K', '36% chronic refill', 'High-value transactions'],
+              ['Open cart risk', '6 carts', 'Unconfirmed drafts', 'Follow before close'],
+            ].map(([title, value, signal, detail]) => (
+              <article key={title} className="pos-executive-card">
                 <span>{title}</span>
                 <strong>{value}</strong>
+                <em>{signal}</em>
                 <small>{detail}</small>
               </article>
             ))}
           </section>
 
-          <section className="pos-overview-split">
+          <section className="pos-overview-command-grid">
             <article className="panel wide">
               <div className="section-heading">
                 <div>
-                  <span>POS analytics</span>
+                  <span>Payment mix</span>
                   <h2>Sales movement by channel</h2>
                 </div>
               </div>
-              <div className="inventory-analytics-bars">
+
+              <div className="pos-channel-bars">
                 {[
                   ['Cash', '38%', 'RWF 699K'],
                   ['MoMo', '27%', 'RWF 497K'],
                   ['Insurance', '29%', 'RWF 534K'],
                   ['Card/Credit', '6%', 'RWF 110K'],
                 ].map(([label, width, value]) => (
-                  <div key={label} className="analytics-bar-row">
+                  <div key={label} className="pos-channel-row">
                     <span>{label}</span>
                     <div><i style={{ width }} /></div>
                     <strong>{value}</strong>
@@ -3146,12 +3219,36 @@ function App() {
               </div>
             </article>
 
-            <FocusRegisterPreview
-              title="Recent POS exceptions"
-              description="Transactions needing attention before close of day."
-              rows={previewRows}
-            />
+            <article className="panel wide">
+              <div className="section-heading">
+                <div>
+                  <span>Operational alerts</span>
+                  <h2>What needs attention</h2>
+                </div>
+              </div>
+
+              <div className="pos-alert-stack">
+                {[
+                  ['High', 'Cash variance above tolerance', 'Review till close before manager approval'],
+                  ['Medium', '8 sales awaiting receipt confirmation', 'Follow receipt delivery queue'],
+                  ['Medium', '3 insurance transactions missing institution', 'Confirm scheme rate before claim'],
+                  ['Low', '6 open carts still unconfirmed', 'Close or cancel before end of day'],
+                ].map(([level, title, detail]) => (
+                  <div key={title}>
+                    <strong>{level}</strong>
+                    <span>{title}</span>
+                    <small>{detail}</small>
+                  </div>
+                ))}
+              </div>
+            </article>
           </section>
+
+          <FocusRegisterPreview
+            title="Recent POS exceptions"
+            description="Transactions needing attention before close of day."
+            rows={previewRows}
+          />
         </section>
       );
     }
@@ -3347,7 +3444,6 @@ function App() {
                         onChange={(event) => {
                           setPosCustomerType(event.target.value as typeof posCustomerType);
                           setPosTransactionConfirmed(false);
-                          setPosSummaryRefreshKey((current) => current + 1);
                         }}
                       >
                         <option value="walk-in">Walk-In Customer</option>
@@ -3374,7 +3470,6 @@ function App() {
                         onChange={(event) => {
                           setPosPaymentMethod(event.target.value as typeof posPaymentMethod);
                           setPosTransactionConfirmed(false);
-                          setPosSummaryRefreshKey((current) => current + 1);
                         }}
                       >
                         <option value="cash">Cash</option>
@@ -3395,7 +3490,6 @@ function App() {
                               setPosInsuranceProvider(event.target.value);
                               setPosInsuranceInstitution('');
                               setPosTransactionConfirmed(false);
-                              setPosSummaryRefreshKey((current) => current + 1);
                             }}
                           >
                             {posInsuranceRates.map((insurance) => (
@@ -3413,7 +3507,6 @@ function App() {
                             onChange={(event) => {
                               setPosInsuranceInstitution(event.target.value);
                               setPosTransactionConfirmed(false);
-                              setPosSummaryRefreshKey((current) => current + 1);
                             }}
                           >
                             <option value="">Use insurance master rate</option>
@@ -3450,7 +3543,6 @@ function App() {
                         onChange={(event) => {
                           setPosDiscountAmount(event.target.value);
                           setPosTransactionConfirmed(false);
-                          setPosSummaryRefreshKey((current) => current + 1);
                         }}
                       />
                     </label>
@@ -3476,17 +3568,14 @@ function App() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="pos-refresh-summary-button"
-                    onClick={() => setPosSummaryRefreshKey((current) => current + 1)}
-                  >
+                  <button type="button" className="pos-refresh-summary-button" onClick={forceRefreshSaleSummary}>
                     Refresh Summary
                   </button>
 
-                  <div className="pos-summary-sync-note" data-cart-lines={summary.lineCount} data-cart-quantity={summary.totalQuantity}>
+                  <div className="pos-summary-sync-note" data-cart-lines={posSaleSummary.lineCount} data-cart-quantity={posSaleSummary.totalQuantity}>
                     <span>Live cart sync</span>
-                    <strong>{summary.lineCount} item line{summary.lineCount === 1 ? '' : 's'} · {summary.totalQuantity} unit{summary.totalQuantity === 1 ? '' : 's'}</strong>
+                    <strong>{posSaleSummary.lineCount} item line{posSaleSummary.lineCount === 1 ? '' : 's'} · {posSaleSummary.totalQuantity} unit{posSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
+                    <small>Updated {posSaleSummary.calculatedAt}</small>
                   </div>
 
                   <dl className="pos-summary-list">
@@ -3496,43 +3585,43 @@ function App() {
                     </div>
                     <div>
                       <dt>Cart lines</dt>
-                      <dd>{summary.lineCount}</dd>
+                      <dd>{posSaleSummary.lineCount}</dd>
                     </div>
                     <div>
                       <dt>Total quantity</dt>
-                      <dd>{summary.totalQuantity}</dd>
+                      <dd>{posSaleSummary.totalQuantity}</dd>
                     </div>
                     <div>
                       <dt>Subtotal</dt>
-                      <dd>RWF {summary.subtotal.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {posSaleSummary.subtotal.toLocaleString('en-RW')}</dd>
                     </div>
                     {posPaymentMethod === 'insurance' && (
                       <>
                         <div>
                           <dt>Cust %</dt>
-                          <dd>{custPercent}%</dd>
+                          <dd>{posSaleSummary.customerContributionPercent}%</dd>
                         </div>
                         <div>
                           <dt>Insur %</dt>
-                          <dd>{insurPercent}%</dd>
+                          <dd>{posSaleSummary.insuranceContributionPercent}%</dd>
                         </div>
                       </>
                     )}
                     <div>
                       <dt>Customer contribution</dt>
-                      <dd>RWF {customerContribution.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {posSaleSummary.customerContribution.toLocaleString('en-RW')}</dd>
                     </div>
                     <div>
                       <dt>Insurance contribution</dt>
-                      <dd>RWF {insuranceContribution.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {posSaleSummary.insuranceContribution.toLocaleString('en-RW')}</dd>
                     </div>
                     <div>
                       <dt>Tax</dt>
-                      <dd>RWF {tax.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {posSaleSummary.tax.toLocaleString('en-RW')}</dd>
                     </div>
                     <div className="total">
                       <dt>Total</dt>
-                      <dd>RWF {total.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {posSaleSummary.total.toLocaleString('en-RW')}</dd>
                     </div>
                   </dl>
 
