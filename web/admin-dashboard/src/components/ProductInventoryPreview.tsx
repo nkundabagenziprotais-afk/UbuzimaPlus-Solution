@@ -1841,13 +1841,14 @@ export function ProductInventoryPreview({
                   }}
                   placeholder="Search by drug code, designation, or generic description"
                   required
-                
-                      type="search"
-                      inputMode="search"
+                      type="text"
+                      inputMode="text"
                       autoCapitalize="none"
                       autoCorrect="off"
+                      autoComplete="off"
                       enterKeyHint="search"
-                      spellCheck={false}/>
+                      spellCheck={false}
+                    />
                 <button type="button" aria-label="Search Product Master" onClick={searchProductMasterForEdit}>Search</button>
               </div>
 
@@ -2176,13 +2177,14 @@ export function ProductInventoryPreview({
                   value={searchTerm}
                   placeholder="Search product, SKU, batch, location or supplier"
                   onChange={(event) => setSearchTerm(event.target.value)}
-                
-                  type="search"
-                  inputMode="search"
-                  autoCapitalize="none"
-                  autoCorrect="off"
+                      type="text"
+                      inputMode="text"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      autoComplete="off"
                       enterKeyHint="search"
-                      spellCheck={false}/>
+                      spellCheck={false}
+                    />
               </label>
 
               {['shelf', 'product-master', 'product-inventory'].includes(activeInventoryView) && (
@@ -2996,13 +2998,14 @@ export function ProductInventoryPreview({
                               void loadInventoryProductMasterOptions(value);
                             }
                           }}
-                        
-                      type="search"
-                      inputMode="search"
+                      type="text"
+                      inputMode="text"
                       autoCapitalize="none"
                       autoCorrect="off"
+                      autoComplete="off"
                       enterKeyHint="search"
-                      spellCheck={false}/>
+                      spellCheck={false}
+                    />
                         <button
                           type="button"
                           onClick={() => {
