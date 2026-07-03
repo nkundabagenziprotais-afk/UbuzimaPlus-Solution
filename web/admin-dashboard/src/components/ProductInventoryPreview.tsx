@@ -1841,7 +1841,13 @@ export function ProductInventoryPreview({
                   }}
                   placeholder="Search by drug code, designation, or generic description"
                   required
-                />
+                
+                      type="search"
+                      inputMode="search"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      enterKeyHint="search"
+                      spellCheck={false}/>
                 <button type="button" aria-label="Search Product Master" onClick={searchProductMasterForEdit}>Search</button>
               </div>
 
@@ -2174,7 +2180,9 @@ export function ProductInventoryPreview({
                   type="search"
                   inputMode="search"
                   autoCapitalize="none"
-                  autoCorrect="off"/>
+                  autoCorrect="off"
+                      enterKeyHint="search"
+                      spellCheck={false}/>
               </label>
 
               {['shelf', 'product-master', 'product-inventory'].includes(activeInventoryView) && (
@@ -2988,7 +2996,13 @@ export function ProductInventoryPreview({
                               void loadInventoryProductMasterOptions(value);
                             }
                           }}
-                        />
+                        
+                      type="search"
+                      inputMode="search"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      enterKeyHint="search"
+                      spellCheck={false}/>
                         <button
                           type="button"
                           onClick={() => {
