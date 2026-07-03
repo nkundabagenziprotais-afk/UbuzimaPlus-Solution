@@ -543,6 +543,30 @@ export function ProductInventoryPreview({
 
   const selectedInventoryProduct =
     inventoryProductLookupOptions.find((product) => String(product.id) === inventoryCreateForm.product_id) ?? null;
+  const filteredInventoryProductOptions = useMemo(() => {
+    const keyword = inventoryProductSearchTerm.trim().toLowerCase();
+
+    if (!keyword) {
+      return inventoryProductLookupOptions.slice(0, 30);
+    }
+
+    return inventoryProductLookupOptions
+      .filter((product) =>
+        [
+          product.name,
+          product.generic_name,
+          product.brand_name,
+          product.sku,
+          product.barcode,
+          product.category?.name,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(keyword)),
+      )
+      .slice(0, 30);
+  }, [inventoryProductLookupOptions, inventoryProductSearchTerm]);
+
+
   const selectedInventoryDefaultMargin = metadataNumber(
     selectedInventoryProduct?.metadata,
     ['default_margin_percent', 'margin_percent', 'allowed_margin'],
@@ -2976,11 +3000,12 @@ export function ProductInventoryPreview({
                             }
                           }}
                           onChange={(event) => {
-                            handleInventoryProductSearchChange(event.target.value);
+                            const value = event.target.value;
 
-                            const value = event.target.value.trim();
+                            handleInventoryProductSearchChange(value);
+                            setIsInventoryProductSearchOpen(true);
 
-                            if (value.length === 0 || value.length >= 2) {
+                            if (value.trim().length === 0 || value.trim().length >= 2) {
                               void loadInventoryProductMasterOptions(value);
                             }
                           }}
@@ -3006,12 +3031,12 @@ export function ProductInventoryPreview({
 
                       {isInventoryProductSearchOpen && (
                         <div className="inventory-product-master-options">
-                          {inventoryProductLookupOptions.length === 0 ? (
+                          {filteredInventoryProductOptions.length === 0 ? (
                             <button type="button" disabled>
-                              No Product Master products found.
+                              No Product Master products found for the typed keyword.
                             </button>
                           ) : (
-                            inventoryProductLookupOptions.slice(0, 30).map((product) => (
+                            filteredInventoryProductOptions.map((product) => (
                               <button
                                 key={product.id}
                                 type="button"
