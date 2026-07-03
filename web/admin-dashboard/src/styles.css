@@ -11432,3 +11432,43 @@ body .dashboard-main table button {
   font-variant-numeric: tabular-nums;
   white-space: nowrap !important;
 }
+
+/* Global delete confirmation for inventory tables */
+.inventory-delete-confirmation-panel {
+  border: 1px solid rgba(150, 40, 40, 0.2);
+  background: rgba(150, 40, 40, 0.04);
+}
+
+.delete-confirmation-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid rgba(150, 40, 40, 0.18);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 0.85rem;
+}
+
+.delete-confirmation-card > div:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.delete-confirmation-card small {
+  color: rgba(36, 59, 43, 0.72);
+}
+
+.delete-confirmation-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .delete-confirmation-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

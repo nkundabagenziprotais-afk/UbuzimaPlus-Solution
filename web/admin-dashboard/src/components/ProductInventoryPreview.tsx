@@ -1719,6 +1719,42 @@ export function ProductInventoryPreview({
         )}
 
         <div className="module-section-stage" style={{ fontSize: tableFontPixels[tableFontSizes[activeInventoryView] ?? 'normal'] }}>
+        {pendingDeleteProduct && activeInventoryView !== 'product-master' && (
+          <section className="inventory-section inventory-delete-confirmation-panel">
+            <div className="section-heading">
+              <div>
+                <h3>Confirm Product Deletion</h3>
+                <span>
+                  This deletion request came from the current table. The system will block deletion if the product has stock, purchase, sales, or audit history.
+                </span>
+              </div>
+            </div>
+
+            <div className="delete-confirmation-card">
+              <div>
+                <strong>{pendingDeleteProduct.sku}</strong>
+                <span>{pendingDeleteProduct.name}</span>
+                <small>{pendingDeleteProduct.generic_name ?? 'Generic name not set'}</small>
+              </div>
+
+              <div className="delete-confirmation-actions">
+                <button type="button" onClick={() => setPendingDeleteProduct(null)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={isDeletingProductMaster}
+                  onClick={confirmDeleteProductMaster}
+                >
+                  {isDeletingProductMaster ? 'Deleting…' : 'Delete Product'}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+
           {activeInventoryView === 'overview' && summary && (
             <>
               <section className="inventory-card-control-row">
