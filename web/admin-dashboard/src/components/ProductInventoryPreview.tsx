@@ -661,15 +661,6 @@ export function ProductInventoryPreview({
   const pagedBatches = visibleBatches.slice(0, rowLimitValue(rowLimit, visibleBatches.length));
   const pagedNearExpiry = nearExpiryRows.slice(0, rowLimitValue(rowLimit, nearExpiryRows.length));
   const pagedProductInventory = productInventoryRows.slice(0, rowLimitValue(rowLimit, productInventoryRows.length));
-  const productMasterPerPage = rowLimit === 'all' ? 240 : rowLimitValue(rowLimit, 15);
-
-  const productMasterQuery = {
-    page: 1,
-    perPage: productMasterPerPage,
-    search: searchTerm,
-    categoryCode: activeCategory,
-    status: 'active',
-  };
 
 
   function productInventoryProductLabel(product: PharmaProduct) {
@@ -864,7 +855,7 @@ export function ProductInventoryPreview({
         void loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug, productMasterQuery),
+          () => getPharmaProducts(token, tenantSlug),
           false,
         );
 
@@ -875,7 +866,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug, productMasterQuery),
+          () => getPharmaProducts(token, tenantSlug),
           force,
         );
         return;
@@ -885,7 +876,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug, productMasterQuery),
+          () => getPharmaProducts(token, tenantSlug),
           force,
         );
 
@@ -933,7 +924,7 @@ export function ProductInventoryPreview({
         const productsPromise = loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug, productMasterQuery),
+          () => getPharmaProducts(token, tenantSlug),
           force,
         );
 
@@ -971,22 +962,6 @@ export function ProductInventoryPreview({
   useEffect(() => {
     void loadInventoryPreview(activeInventoryView, false);
   }, [tenantSlug, token, activeInventoryView]);
-
-  useEffect(() => {
-    if (!tenantSlug || !token) {
-      return;
-    }
-
-    if (!['product-master', 'shelf', 'low-stock'].includes(activeInventoryView)) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      void loadInventoryPreview(activeInventoryView, true);
-    }, 250);
-
-    return () => window.clearTimeout(timeout);
-  }, [activeInventoryView, activeCategory, rowLimit, searchTerm, tenantSlug, token]);
 
   useEffect(() => {
     localStorage.setItem(inventorySmartCardStorageKey, JSON.stringify(inventorySmartCardVisibility));
@@ -2195,7 +2170,11 @@ export function ProductInventoryPreview({
                   value={searchTerm}
                   placeholder="Search product, SKU, batch, location or supplier"
                   onChange={(event) => setSearchTerm(event.target.value)}
-                />
+                
+                  type="search"
+                  inputMode="search"
+                  autoCapitalize="none"
+                  autoCorrect="off"/>
               </label>
 
               {['shelf', 'product-master', 'product-inventory'].includes(activeInventoryView) && (

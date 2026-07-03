@@ -727,13 +727,6 @@ export type PharmaProductsResponse = {
   };
 };
 
-export type PharmaProductsQuery = {
-  page?: number;
-  perPage?: number;
-  search?: string;
-  categoryCode?: string;
-  status?: string;
-};
 
 export type PharmaProductCategoriesResponse = {
   tenant: {
@@ -788,19 +781,8 @@ export type PharmaInventorySummaryResponse = {
 export async function getPharmaProducts(
   token: string,
   tenantSlug: string,
-  query: PharmaProductsQuery = {},
 ): Promise<PharmaProductsResponse> {
-  const params = new URLSearchParams();
-
-  if (query.page) params.set('page', String(query.page));
-  if (query.perPage) params.set('per_page', String(query.perPage));
-  if (query.search?.trim()) params.set('search', query.search.trim());
-  if (query.categoryCode && query.categoryCode !== 'all') params.set('category_code', query.categoryCode);
-  if (query.status) params.set('status', query.status);
-
-  const suffix = params.toString() ? `?${params.toString()}` : '';
-
-  return getJsonWithTenant<PharmaProductsResponse>(token, `/pharmaco/products${suffix}`, tenantSlug);
+  return getJsonWithTenant<PharmaProductsResponse>(token, '/pharmaco/products', tenantSlug);
 }
 
 export async function getPharmaProductCategories(
