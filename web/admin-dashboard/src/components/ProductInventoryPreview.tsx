@@ -2963,14 +2963,7 @@ export function ProductInventoryPreview({
                     Product from Product Master
                     <div className="inventory-product-master-combobox">
                       <div className="inventory-product-master-search-row">
-                        <input
-  type="text"
-  inputMode="text"
-  autoCapitalize="none"
-  autoCorrect="off"
-  autoComplete="off"
-  enterKeyHint="search"
-  spellCheck={false}
+                        <textarea
                           value={inventoryProductSearchTerm}
                           placeholder="Search Product Master by product name, generic name, or drug code"
                           onFocus={() => {
@@ -2988,7 +2981,16 @@ export function ProductInventoryPreview({
                             if (value.trim().length === 0 || value.trim().length >= 2) {
                               void loadInventoryProductMasterOptions(value);
                             }
-                          }}/>
+                          }}
+                          rows={1}
+                          inputMode="text"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          autoComplete="off"
+                          enterKeyHint="search"
+                          spellCheck={false}
+                          aria-label="Product from Product Master search"
+                        ></textarea>
                         <button
                           type="button"
                           onClick={() => {
