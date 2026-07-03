@@ -3124,17 +3124,8 @@ function App() {
     const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
 
     function forceRefreshSaleSummary() {
-      setPosSaleSummary(
-        calculatePosSaleSummary({
-          cartItems: posCartItems,
-          discountAmount: posDiscountAmount,
-          paymentMethod: posPaymentMethod,
-          insuranceProviderId: posInsuranceProvider,
-          insuranceInstitutionId: posInsuranceInstitution,
-        taxRatePercent: getActivePosTaxRatePercent(),
-        }),
-      );
-      setPosNotice('Sale Summary refreshed from current cart.');
+      setPosSaleSummary(livePosSaleSummary);
+      setPosNotice('Sale Summary refreshed from current cart, tax rate, and insurance contribution.');
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
@@ -3236,6 +3227,15 @@ function App() {
           : 'Payment confirmed without customer invoice.',
       );
     }
+
+    const livePosSaleSummary = calculatePosSaleSummary({
+      cartItems: posCartItems,
+      discountAmount: posDiscountAmount,
+      paymentMethod: posPaymentMethod,
+      insuranceProviderId: posInsuranceProvider,
+      insuranceInstitutionId: posInsuranceInstitution,
+      taxRatePercent: getActivePosTaxRatePercent(),
+    });
 
     if (activePosWorkspace === 'overview') {
       return (
@@ -3647,10 +3647,10 @@ function App() {
                     Refresh Summary
                   </button>
 
-                  <div className="pos-summary-sync-note" data-cart-lines={posSaleSummary.lineCount} data-cart-quantity={posSaleSummary.totalQuantity}>
+                  <div className="pos-summary-sync-note" data-cart-lines={livePosSaleSummary.lineCount} data-cart-quantity={livePosSaleSummary.totalQuantity}>
                     <span>Live cart sync</span>
-                    <strong>{posSaleSummary.lineCount} item line{posSaleSummary.lineCount === 1 ? '' : 's'} · {posSaleSummary.totalQuantity} unit{posSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
-                    <small>Updated {posSaleSummary.calculatedAt}</small>
+                    <strong>{livePosSaleSummary.lineCount} item line{livePosSaleSummary.lineCount === 1 ? '' : 's'} · {livePosSaleSummary.totalQuantity} unit{livePosSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
+                    <small>Updated {livePosSaleSummary.calculatedAt}</small>
                   </div>
 
                   <dl className="pos-summary-list">
@@ -3660,43 +3660,43 @@ function App() {
                     </div>
                     <div>
                       <dt>Cart lines</dt>
-                      <dd>{posSaleSummary.lineCount}</dd>
+                      <dd>{livePosSaleSummary.lineCount}</dd>
                     </div>
                     <div>
                       <dt>Total quantity</dt>
-                      <dd>{posSaleSummary.totalQuantity}</dd>
+                      <dd>{livePosSaleSummary.totalQuantity}</dd>
                     </div>
                     <div>
                       <dt>Subtotal</dt>
-                      <dd>RWF {posSaleSummary.subtotal.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {livePosSaleSummary.subtotal.toLocaleString('en-RW')}</dd>
                     </div>
                     {posPaymentMethod === 'insurance' && (
                       <>
                         <div>
                           <dt>Cust %</dt>
-                          <dd>{posSaleSummary.customerContributionPercent}%</dd>
+                          <dd>{livePosSaleSummary.customerContributionPercent}%</dd>
                         </div>
                         <div>
                           <dt>Insur %</dt>
-                          <dd>{posSaleSummary.insuranceContributionPercent}%</dd>
+                          <dd>{livePosSaleSummary.insuranceContributionPercent}%</dd>
                         </div>
                       </>
                     )}
                     <div>
                       <dt>Customer contribution</dt>
-                      <dd>RWF {posSaleSummary.customerContribution.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {livePosSaleSummary.customerContribution.toLocaleString('en-RW')}</dd>
                     </div>
                     <div>
                       <dt>Insurance contribution</dt>
-                      <dd>RWF {posSaleSummary.insuranceContribution.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {livePosSaleSummary.insuranceContribution.toLocaleString('en-RW')}</dd>
                     </div>
                     <div>
-                      <dt>Tax ({posSaleSummary.taxRatePercent}%)</dt>
-                      <dd>RWF {posSaleSummary.tax.toLocaleString('en-RW')}</dd>
+                      <dt>Tax ({livePosSaleSummary.taxRatePercent}%)</dt>
+                      <dd>RWF {livePosSaleSummary.tax.toLocaleString('en-RW')}</dd>
                     </div>
                     <div className="total">
                       <dt>Total</dt>
-                      <dd>RWF {posSaleSummary.total.toLocaleString('en-RW')}</dd>
+                      <dd>RWF {livePosSaleSummary.total.toLocaleString('en-RW')}</dd>
                     </div>
                   </dl>
 
