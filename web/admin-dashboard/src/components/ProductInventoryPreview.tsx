@@ -729,8 +729,9 @@ export function ProductInventoryPreview({
       selling_price: current.selling_price || (regulatorySellingPrice > 0 ? String(regulatorySellingPrice) : ''),
     }));
 
+    // Clear the search box, close dropdown, but keep selected product available for the selected card.
     setInventoryProductSearchTerm('');
-    setInventoryProductOptions([]);
+    setInventoryProductOptions([product]);
     setIsInventoryProductSearchOpen(false);
     setInventoryNotice(`${product.name} selected from Product Master. Complete inventory quantity, batch, location and pricing.`);
   }
@@ -2091,10 +2092,41 @@ export function ProductInventoryPreview({
 
   function renderBatchActions(batch: PharmaStockBatch) {
     return (
-      <div className="table-action-row">
-        <button type="button" onClick={() => openInventoryBatchView(batch)}>View</button>
-        <button type="button" onClick={() => openInventoryBatchEdit(batch)}>Edit</button>
-        <button type="button" className="danger" onClick={() => setPendingDeleteInventoryBatch(batch)}>Delete</button>
+      <div className="table-action-row product-inventory-action-button-row">
+        <button
+          type="button"
+          className="inventory-action-button"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            openInventoryBatchView(batch);
+          }}
+        >
+          View
+        </button>
+        <button
+          type="button"
+          className="inventory-action-button"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            openInventoryBatchEdit(batch);
+          }}
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          className="inventory-action-button danger"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            setPendingDeleteInventoryBatch(batch);
+            setViewingInventoryBatch(null);
+          }}
+        >
+          Delete
+        </button>
       </div>
     );
   }
@@ -3115,7 +3147,7 @@ export function ProductInventoryPreview({
                       <div className="inventory-product-master-search-row">
                         <textarea
                           value={inventoryProductSearchTerm}
-                          placeholder="Search Product Master by product name, generic name, or drug code"
+                          placeholder={selectedInventoryProduct ? 'Product selected. Use Change product to search another item.' : 'Search Product Master by product name, generic name, or drug code'}
                           onFocus={() => {
                             setIsInventoryProductSearchOpen(true);
                             if (inventoryProductOptions.length === 0) {
@@ -3153,10 +3185,30 @@ export function ProductInventoryPreview({
                       </div>
 
                       {selectedInventoryProduct && (
-                        <div className="inventory-product-master-selected">
-                          <strong>{selectedInventoryProduct.name}</strong>
-                          <span>{selectedInventoryProduct.generic_name ?? 'Generic name not set'}</span>
-                          <small>Drug code: {selectedInventoryProduct.sku}</small>
+                        <div className="inventory-product-master-selected inventory-product-master-selected--active">
+                          <div>
+                            <strong>{selectedInventoryProduct.name}</strong>
+                            <span>{selectedInventoryProduct.generic_name ?? 'Generic name not set'}</span>
+                            <small>Drug code: {selectedInventoryProduct.sku}</small>
+                          </div>
+                          <button
+                            type="button"
+                            className="inventory-product-master-change-button"
+                            onClick={() => {
+                              setInventoryCreateForm((current) => ({
+                                ...current,
+                                product_id: '',
+                                margin_percent: '',
+                                selling_price: '',
+                              }));
+                              setInventoryProductSearchTerm('');
+                              setInventoryProductOptions([]);
+                              setIsInventoryProductSearchOpen(false);
+                              setEditingInventoryBatch(null);
+                            }}
+                          >
+                            Change product
+                          </button>
                         </div>
                       )}
 
@@ -3412,7 +3464,8 @@ export function ProductInventoryPreview({
                     <button
                       key={item.title}
                       type="button"
-                      className={activeInventoryOpportunity === item.title ? 'active' : ''}
+                      className={`inventory-ai-opportunity-card ${activeInventoryOpportunity === item.title ? 'active' : ''}`}
+                      aria-pressed={activeInventoryOpportunity === item.title}
                       onClick={() => {
                         setActiveInventoryOpportunity(item.title);
                         setInventoryNotice(`${item.title} opened in the AI inventory opportunity model.`);
@@ -3420,6 +3473,7 @@ export function ProductInventoryPreview({
                     >
                       <strong>{item.title}</strong>
                       <span>{item.helper}</span>
+                      <small>Open opportunity</small>
                     </button>
                   ))}
                 </div>
