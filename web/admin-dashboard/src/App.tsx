@@ -83,6 +83,7 @@ type PharmaFeatureKey =
   | 'customers'
   | 'reports';
 type AiWorkspaceKey =
+  | 'operational-ai-center'
   | 'business-chat'
   | 'customer-retention'
   | 'demand-forecast'
@@ -109,6 +110,7 @@ type AiWorkspaceKey =
   | 'usage-cost'
   | 'risk-compliance'
   | 'audit-logs'
+  | 'recommendation-approval-queue'
   | 'insights-dashboard'
   | 'chat-me-ai';
 type AdminPanelWorkspaceKey =
@@ -127,6 +129,7 @@ type AdminPanelWorkspaceKey =
 type PosWorkspaceKey =
   | 'overview'
   | 'pos'
+  | 'dispensing-review'
   | 'customers'
   | 'prescriptions'
   | 'sales-performance'
@@ -155,6 +158,116 @@ type AdhocReportWorkspaceKey =
   | 'decision-note'
   | 'operation-checklist'
   | 'priority-follow-up';
+type PosInsuranceInstitutionRate = {
+  id: string;
+  name: string;
+  customerContributionPercent: number;
+};
+
+type PosInsuranceRate = {
+  id: string;
+  name: string;
+  masterCustomerContributionPercent: number;
+  institutions: PosInsuranceInstitutionRate[];
+};
+
+const posInsuranceRates: PosInsuranceRate[] = [
+  {
+    id: 'rssb',
+    name: 'RSSB',
+    masterCustomerContributionPercent: 15,
+    institutions: [
+      { id: 'rssb-public', name: 'Public Institution', customerContributionPercent: 10 },
+      { id: 'rssb-private', name: 'Private Employer Group', customerContributionPercent: 20 },
+    ],
+  },
+  {
+    id: 'mmi',
+    name: 'MMI',
+    masterCustomerContributionPercent: 20,
+    institutions: [
+      { id: 'mmi-defense', name: 'Defence Institution', customerContributionPercent: 10 },
+      { id: 'mmi-affiliate', name: 'Affiliate Employer', customerContributionPercent: 25 },
+    ],
+  },
+  {
+    id: 'radiant',
+    name: 'Radiant Insurance',
+    masterCustomerContributionPercent: 30,
+    institutions: [
+      { id: 'radiant-corporate', name: 'Corporate Scheme', customerContributionPercent: 15 },
+    ],
+  },
+];
+
+type PosSaleSummary = {
+  lineCount: number;
+  totalQuantity: number;
+  subtotal: number;
+  discount: number;
+  taxableBase: number;
+  tax: number;
+  customerContributionPercent: number;
+  insuranceContributionPercent: number;
+  insuranceContribution: number;
+  customerContribution: number;
+  total: number;
+  calculatedAt: string;
+};
+
+function calculatePosSaleSummary(input: {
+  cartItems: Array<{ quantity: number; unitPrice: number }>;
+  discountAmount: string;
+  paymentMethod: 'cash' | 'momo' | 'card' | 'insurance' | 'credit';
+  insuranceProviderId: string;
+  insuranceInstitutionId: string;
+}): PosSaleSummary {
+  const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === input.insuranceProviderId) ?? posInsuranceRates[0];
+  const selectedInstitution = selectedInsurance.institutions.find((institution) => institution.id === input.insuranceInstitutionId) ?? null;
+
+  const lineCount = input.cartItems.length;
+  const totalQuantity = input.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = input.cartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const discount = Math.min(Number(input.discountAmount || 0), subtotal);
+  const taxableBase = Math.max(0, subtotal - discount);
+  const tax = Math.round(taxableBase * 0.18);
+
+  const customerContributionPercent =
+    input.paymentMethod === 'insurance'
+      ? selectedInstitution?.customerContributionPercent ?? selectedInsurance.masterCustomerContributionPercent
+      : 100;
+
+  const insuranceContributionPercent =
+    input.paymentMethod === 'insurance' ? Math.max(0, 100 - customerContributionPercent) : 0;
+
+  const insuranceContribution =
+    input.paymentMethod === 'insurance'
+      ? Math.round((taxableBase * insuranceContributionPercent) / 100)
+      : 0;
+
+  const customerContribution =
+    input.paymentMethod === 'insurance'
+      ? Math.max(0, taxableBase + tax - insuranceContribution)
+      : Math.max(0, taxableBase + tax);
+
+  return {
+    lineCount,
+    totalQuantity,
+    subtotal,
+    discount,
+    taxableBase,
+    tax,
+    customerContributionPercent,
+    insuranceContributionPercent,
+    insuranceContribution,
+    customerContribution,
+    total: Math.max(0, taxableBase + tax),
+    calculatedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+  };
+}
+
+
+
 type HomeWidgetKey =
   | 'summary'
   | 'tenant-dashboard'
@@ -344,7 +457,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'pos-overview', label: 'POS and Sales Overview', target: 'overview' },
     { key: 'pos-counter', label: 'POS', target: 'pos' },
     { key: 'pos-dispensing', label: 'Dispensing Review', target: 'dispensing-review' },
-    { key: 'pos-customers', label: 'Customers and Patients', target: 'customers-patients' },
+    { key: 'pos-customers', label: 'Customers and Patients', target: 'customers' },
     { key: 'pos-prescriptions', label: 'Prescriptions', target: 'prescriptions' },
     { key: 'pos-performance', label: 'Sales Performance', target: 'sales-performance' },
     { key: 'pos-payment-receipt', label: 'Payment and Receipt', target: 'payment-receipt' },
@@ -362,10 +475,10 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'finance-overview', label: 'Finance Overview', target: 'overview' },
     { key: 'finance-flow', label: 'Finance Flow', target: 'finance-flow' },
     { key: 'finance-exception', label: 'Exception Focus', target: 'exception-focus' },
-    { key: 'finance-credits-receivables', label: 'Customer Credits and Receivables', target: 'customer-credits-receivables' },
+    { key: 'finance-credits-receivables', label: 'Customer Credits and Receivables', target: 'credits-receivables' },
     { key: 'finance-receivable-register', label: 'Receivable Register', target: 'receivable-register' },
     { key: 'finance-collection', label: 'Collection', target: 'collection' },
-    { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statement' },
+    { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statements' },
   ],
   reports: [
     { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
@@ -374,7 +487,46 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'adhoc-executive-summary', label: 'Executive Operating Summary', target: 'executive-summary' },
     { key: 'adhoc-decision-note', label: 'Decision Note', target: 'decision-note' },
     { key: 'adhoc-checklist', label: 'Operation Checklist', target: 'operation-checklist' },
-    { key: 'adhoc-manager-notes', label: 'Priority Follow-up and Manager Review Notes', target: 'manager-review-notes' },
+    { key: 'adhoc-priority-follow-up', label: 'Priority Follow-up and Manager Review Notes', target: 'priority-follow-up' },
+  ],
+  'ai-center': [
+    { key: 'ai-governance', label: 'AI Governance', target: 'governance' },
+    { key: 'ai-operational-center', label: 'Operational AI Center', target: 'operational-ai-center' },
+    { key: 'ai-provider-management', label: 'AI Provider Management', target: 'provider-management' },
+    { key: 'ai-model-registry', label: 'AI Model Registry', target: 'model-registry' },
+    { key: 'ai-agent-management', label: 'AI Agent Management', target: 'agent-management' },
+    { key: 'ai-prompt-library', label: 'AI Prompt Library', target: 'prompt-library' },
+    { key: 'ai-knowledge-base', label: 'AI Knowledge Base', target: 'knowledge-base' },
+    { key: 'ai-data-connectors', label: 'AI Data Connectors', target: 'data-connectors' },
+    { key: 'ai-recommendations', label: 'AI Recommendations', target: 'recommendations' },
+    { key: 'ai-workflow-automations', label: 'AI Workflow Automations', target: 'workflow-automation' },
+    { key: 'ai-human-approval-center', label: 'AI Human Approval Center', target: 'approval-center' },
+    { key: 'ai-feedback-learning', label: 'AI Feedback and Learning', target: 'feedback-learning' },
+    { key: 'ai-usage-cost-quota', label: 'AI Usage, Cost and Quota Control', target: 'usage-cost' },
+    { key: 'ai-risk-compliance', label: 'AI Risk and Compliance', target: 'risk-compliance' },
+    { key: 'ai-audit-logs', label: 'AI Audit Logs', target: 'audit-logs' },
+    { key: 'ai-recommendation-approval-queue', label: 'Recommendation Approval Queue', target: 'recommendation-approval-queue' },
+    { key: 'ai-insight-dashboard', label: 'AI Insight Dashboard', target: 'insights-dashboard' },
+    { key: 'ai-chat-me', label: 'Chat Me AI', target: 'chat-me-ai' },
+  ],
+  notifications: [
+    { key: 'notification-overview', label: 'Notification Overview', target: 'overview' },
+    { key: 'notification-create', label: 'Create New Notification', target: 'create-notification' },
+    { key: 'notification-recurring', label: 'Manage Recurring Notifications', target: 'recurring-notifications' },
+    { key: 'notification-center', label: 'Platform Notification Management Center', target: 'platform-notification-center' },
+  ],
+  'pharmacist-chat': [
+    { key: 'chat-in-app', label: 'In-app Chat', target: 'in-app-chat' },
+    { key: 'chat-whatsapp', label: 'WhatsApp Message Chats', target: 'whatsapp-chat' },
+  ],
+  'admin-panel': [
+    { key: 'admin-users', label: 'User Profiles', target: 'user-profiles' },
+    { key: 'admin-2fa', label: '2FA Management', target: 'two-factor-auth' },
+    { key: 'admin-platform', label: 'Platform Management', target: 'platform-management' },
+    { key: 'admin-notifications', label: 'Notification Management', target: 'notification-management' },
+    { key: 'admin-email', label: 'Corporate Email', target: 'corporate-email' },
+    { key: 'admin-chat', label: 'Pharmacist Chat', target: 'pharmacist-chat' },
+    { key: 'admin-data', label: 'Data Layer', target: 'data-layer' },
   ],
 };
 
@@ -1571,9 +1723,45 @@ function App() {
   const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
   const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
+  const [isPosDayOpen, setIsPosDayOpen] = useState(false);
+  const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
+  const [posStartingCashBalance, setPosStartingCashBalance] = useState('0');
+  const [posCustomerType, setPosCustomerType] = useState<'walk-in' | 'existing-customer' | 'insurance-customer' | 'corporate-customer'>('walk-in');
+  const [posPrescriptionStatus, setPosPrescriptionStatus] = useState<'not-required' | 'required' | 'captured' | 'manual-review'>('not-required');
+  const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'momo' | 'card' | 'insurance' | 'credit'>('cash');
+  const [posInsuranceProvider, setPosInsuranceProvider] = useState('rssb');
+  const [posInsuranceInstitution, setPosInsuranceInstitution] = useState('');
+  const [posCustomerInvoice, setPosCustomerInvoice] = useState<'no' | 'yes'>('no');
+  const [posInvoiceDelivery, setPosInvoiceDelivery] = useState<'printer' | 'whatsapp' | 'email'>('printer');
+  const [posInvoiceContact, setPosInvoiceContact] = useState('');
+  const [posDiscountAmount, setPosDiscountAmount] = useState('0');
+  const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
+  const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
+  const [posTillZeroized, setPosTillZeroized] = useState(false);
+  const [posDepositProof, setPosDepositProof] = useState('');
+  const [posNotice, setPosNotice] = useState('');
+  const [posCartItems, setPosCartItems] = useState<Array<{
+    code: string;
+    name: string;
+    strength: string;
+    quantity: number;
+    unitPrice: number;
+  }>>([]);
+  const [posSaleSummary, setPosSaleSummary] = useState<PosSaleSummary>(() =>
+    calculatePosSaleSummary({
+      cartItems: [],
+      discountAmount: '0',
+      paymentMethod: 'cash',
+      insuranceProviderId: 'rssb',
+      insuranceInstitutionId: '',
+    }),
+  );
+  const [posSummaryRefreshKey, setPosSummaryRefreshKey] = useState(0);
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
+  const [activeNotificationWorkspace, setActiveNotificationWorkspace] = useState<'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center'>('overview');
+  const [activePharmacistChatWorkspace, setActivePharmacistChatWorkspace] = useState<'in-app-chat' | 'whatsapp-chat'>('in-app-chat');
   const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [openPrincipalMenus, setOpenPrincipalMenus] = useState<Partial<Record<AdminSectionKey, boolean>>>({});
@@ -1616,6 +1804,10 @@ function App() {
       if (activeSection === 'suppliers') return submenu.target === activeSupplierWorkspace;
       if (activeSection === 'finance') return submenu.target === activeFinanceWorkspace;
       if (activeSection === 'reports') return submenu.target === activeAdhocReportWorkspace;
+      if (activeSection === 'ai-center') return submenu.target === activeAiWorkspace;
+      if (activeSection === 'admin-panel') return submenu.target === activeAdminPanelWorkspace;
+      if (activeSection === 'notifications') return submenu.target === activeNotificationWorkspace;
+      if (activeSection === 'pharmacist-chat') return submenu.target === activePharmacistChatWorkspace;
       return false;
     })?.label ?? null;
   const loginStatusText = profile
@@ -1823,25 +2015,15 @@ function App() {
   function activateModuleDefaultPage(item: MenuItem) {
     const firstSubmenu = leftMenuSubmenus[item.key]?.[0];
 
-    if (item.key === 'inventory' && firstSubmenu?.target) {
-      setActiveInventoryView(firstSubmenu.target as InventoryView);
-    }
-
-    if (item.key === 'pos' && firstSubmenu?.target) {
-      setActivePosWorkspace(firstSubmenu.target as PosWorkspaceKey);
-    }
-
-    if (item.key === 'suppliers' && firstSubmenu?.target) {
-      setActiveSupplierWorkspace(firstSubmenu.target as SupplierWorkspaceKey);
-    }
-
-    if (item.key === 'finance' && firstSubmenu?.target) {
-      setActiveFinanceWorkspace(firstSubmenu.target as FinanceWorkspaceKey);
-    }
-
-    if (item.key === 'reports' && firstSubmenu?.target) {
-      setActiveAdhocReportWorkspace(firstSubmenu.target as AdhocReportWorkspaceKey);
-    }
+    if (item.key === 'inventory' && firstSubmenu?.target) setActiveInventoryView(firstSubmenu.target as InventoryView);
+    if (item.key === 'pos' && firstSubmenu?.target) setActivePosWorkspace(firstSubmenu.target as PosWorkspaceKey);
+    if (item.key === 'suppliers' && firstSubmenu?.target) setActiveSupplierWorkspace(firstSubmenu.target as SupplierWorkspaceKey);
+    if (item.key === 'finance' && firstSubmenu?.target) setActiveFinanceWorkspace(firstSubmenu.target as FinanceWorkspaceKey);
+    if (item.key === 'reports' && firstSubmenu?.target) setActiveAdhocReportWorkspace(firstSubmenu.target as AdhocReportWorkspaceKey);
+    if (item.key === 'ai-center' && firstSubmenu?.target) setActiveAiWorkspace(firstSubmenu.target as AiWorkspaceKey);
+    if (item.key === 'admin-panel' && firstSubmenu?.target) setActiveAdminPanelWorkspace(firstSubmenu.target as AdminPanelWorkspaceKey);
+    if (item.key === 'notifications' && firstSubmenu?.target) setActiveNotificationWorkspace(firstSubmenu.target as 'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center');
+    if (item.key === 'pharmacist-chat' && firstSubmenu?.target) setActivePharmacistChatWorkspace(firstSubmenu.target as 'in-app-chat' | 'whatsapp-chat');
   }
 
   function togglePrincipalMenu(item: MenuItem) {
@@ -1886,25 +2068,21 @@ function App() {
 
   function handleLeftSubmenuClick(item: MenuItem, submenu: LeftMenuSubmenu) {
     openPrincipalMenu(item);
+
     if (item.key === 'inventory' && submenu.target) {
       setActiveInventoryView(submenu.target as InventoryView);
+      navigateToSection('inventory');
+      return;
     }
 
-    if (item.key === 'pos' && submenu.target) {
-      setActivePosWorkspace(submenu.target as PosWorkspaceKey);
-    }
-
-    if (item.key === 'suppliers' && submenu.target) {
-      setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
-    }
-
-    if (item.key === 'finance' && submenu.target) {
-      setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
-    }
-
-    if (item.key === 'reports' && submenu.target) {
-      setActiveAdhocReportWorkspace(submenu.target as AdhocReportWorkspaceKey);
-    }
+    if (item.key === 'pos' && submenu.target) setActivePosWorkspace(submenu.target as PosWorkspaceKey);
+    if (item.key === 'suppliers' && submenu.target) setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
+    if (item.key === 'finance' && submenu.target) setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
+    if (item.key === 'reports' && submenu.target) setActiveAdhocReportWorkspace(submenu.target as AdhocReportWorkspaceKey);
+    if (item.key === 'ai-center' && submenu.target) setActiveAiWorkspace(submenu.target as AiWorkspaceKey);
+    if (item.key === 'admin-panel' && submenu.target) setActiveAdminPanelWorkspace(submenu.target as AdminPanelWorkspaceKey);
+    if (item.key === 'notifications' && submenu.target) setActiveNotificationWorkspace(submenu.target as 'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center');
+    if (item.key === 'pharmacist-chat' && submenu.target) setActivePharmacistChatWorkspace(submenu.target as 'in-app-chat' | 'whatsapp-chat');
 
     navigateToSection(item.key);
   }
@@ -1917,6 +2095,10 @@ function App() {
     if (item.key === 'suppliers') return submenu.target === activeSupplierWorkspace;
     if (item.key === 'finance') return submenu.target === activeFinanceWorkspace;
     if (item.key === 'reports') return submenu.target === activeAdhocReportWorkspace;
+    if (item.key === 'ai-center') return submenu.target === activeAiWorkspace;
+    if (item.key === 'admin-panel') return submenu.target === activeAdminPanelWorkspace;
+    if (item.key === 'notifications') return submenu.target === activeNotificationWorkspace;
+    if (item.key === 'pharmacist-chat') return submenu.target === activePharmacistChatWorkspace;
 
     return false;
   }
@@ -2650,8 +2832,7 @@ function App() {
 
         {selectedFeature.key === 'ai-model' && (
           <>
-            <ModuleReadinessGrid items={aiWorkflows} />
-            <AiOperationsPanel token={session.token} profile={profile} />
+<AiOperationsPanel token={session.token} profile={profile} />
             <section className="ai-model-grid">
               {pharmaAiModels.map(([model, description]) => (
                 <article key={model}>
@@ -2666,8 +2847,7 @@ function App() {
 
         {selectedFeature.key === 'inventory' && (
           <>
-            <ModuleReadinessGrid items={inventoryReadiness} />
-            <ProductInventoryPreview
+<ProductInventoryPreview
               token={session.token}
               profile={profile}
               activeView={activeInventoryView}
@@ -2682,15 +2862,13 @@ function App() {
 
         {selectedFeature.key === 'pos' && (
           <>
-            <ModuleReadinessGrid items={posReadiness} />
-            <SalesDispensingReview token={session.token} profile={profile} />
+<SalesDispensingReview token={session.token} profile={profile} />
           </>
         )}
 
         {selectedFeature.key === 'procurement' && (
           <>
-            <ModuleReadinessGrid items={supplierReadiness} />
-            <ProcurementWorkflow token={session.token} profile={profile} />
+<ProcurementWorkflow token={session.token} profile={profile} />
           </>
         )}
 
@@ -2838,7 +3016,6 @@ function App() {
   }
 
   function renderPosWorkspace() {
-    const selected = posWorkspaceItems.find((item) => item.key === activePosWorkspace) ?? posWorkspaceItems[0];
     const previewRows: Array<[string, string, string, string]> = [
       ['Walk-in customer', 'Counter sale draft', 'Needs payment', 'RWF 18,500'],
       ['Insurance customer', 'Co-pay plus insurer split', 'Receipt pending', 'RWF 64,200'],
@@ -2846,74 +3023,756 @@ function App() {
       ['Corporate client', 'Institution balance', 'Credit follow-up', 'RWF 118,400'],
     ];
 
+    const posProducts = [
+      { name: 'Lisinopril', strength: '20 mg', code: 'Rx-784213', status: 'Ready', unitPrice: 14800, category: 'Insurance' },
+      { name: 'Amoxicillin', strength: '500 mg', code: 'Rx-784198', status: 'Prescription', unitPrice: 8500, category: 'Cash' },
+      { name: 'Paracetamol', strength: '500 mg', code: 'OTC-001', status: 'OTC', unitPrice: 1200, category: 'Cash' },
+      { name: 'Metformin', strength: '850 mg', code: 'Rx-784240', status: 'Ready', unitPrice: 6200, category: 'Insurance' },
+      { name: 'ORS Sachet', strength: 'Unit', code: 'OTC-019', status: 'OTC', unitPrice: 800, category: 'Cash' },
+      { name: 'Cough Syrup', strength: '100 ml', code: 'OTC-044', status: 'Review', unitPrice: 4200, category: 'Cash' },
+      { name: 'Atorvastatin', strength: '40 mg', code: 'Rx-784270', status: 'Ready', unitPrice: 9800, category: 'Insurance' },
+      { name: 'Alprazolam', strength: '0.5 mg', code: 'Rx-784281', status: 'Controlled', unitPrice: 11200, category: 'Review' },
+      { name: 'Ibuprofen', strength: '400 mg', code: 'OTC-031', status: 'OTC', unitPrice: 1500, category: 'Cash' },
+      { name: 'Cetirizine', strength: '10 mg', code: 'OTC-055', status: 'OTC', unitPrice: 1800, category: 'Cash' },
+    ];
+
+    const salesSummaryRows = Array.from({ length: 15 }).map((_, index) => {
+      const saleNumber = `SAL-${String(2400 + index).padStart(5, '0')}`;
+      const customer = index % 3 === 0 ? 'Walk-in' : index % 3 === 1 ? 'Insurance customer' : 'Existing customer';
+      const method = index % 4 === 0 ? 'Cash' : index % 4 === 1 ? 'MoMo' : index % 4 === 2 ? 'Insurance' : 'Card';
+      const status = index % 5 === 0 ? 'Review' : 'Completed';
+      const amount = `RWF ${(12500 + index * 3750).toLocaleString('en-RW')}`;
+      const dateTime = `Jul 03, ${String(8 + (index % 10)).padStart(2, '0')}:${index % 2 === 0 ? '15' : '45'}`;
+
+      return [dateTime, saleNumber, customer, method, status, amount] as const;
+    });
+
+    const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
+
+    function forceRefreshSaleSummary() {
+      setPosSaleSummary(
+        calculatePosSaleSummary({
+          cartItems: posCartItems,
+          discountAmount: posDiscountAmount,
+          paymentMethod: posPaymentMethod,
+          insuranceProviderId: posInsuranceProvider,
+          insuranceInstitutionId: posInsuranceInstitution,
+        }),
+      );
+      setPosNotice('Sale Summary refreshed from current cart.');
+    }
+
+    function addPosProductToCart(product: typeof posProducts[number]) {
+      setPosCartItems((current) => {
+        const existing = current.find((item) => item.code === product.code);
+
+        if (existing) {
+          return current.map((item) =>
+            item.code === product.code ? { ...item, quantity: Math.min(99, item.quantity + 1) } : item,
+          );
+        }
+
+        return [
+          ...current,
+          {
+            code: product.code,
+            name: product.name,
+            strength: product.strength,
+            quantity: 1,
+            unitPrice: product.unitPrice,
+          },
+        ].slice(0, 10);
+      });
+
+      setPosTransactionConfirmed(false);
+      setPosNotice(`${product.name} added to cart.`);
+    }
+
+    function updateCartQuantity(code: string, quantity: number) {
+      if (quantity <= 0) {
+        setPosCartItems((current) => current.filter((item) => item.code !== code));
+        setPosTransactionConfirmed(false);
+        setPosNotice('Item removed from cart.');
+        return;
+      }
+
+      setPosCartItems((current) =>
+        current.map((item) => (item.code === code ? { ...item, quantity: Math.min(99, quantity) } : item)),
+      );
+      setPosTransactionConfirmed(false);
+    }
+
+    function removeCartItem(code: string) {
+      setPosCartItems((current) => current.filter((item) => item.code !== code));
+      setPosTransactionConfirmed(false);
+      setPosNotice('Item removed from cart.');
+    }
+
+    function clearPosCart() {
+      setPosCartItems([]);
+      setPosTransactionConfirmed(false);
+      setPosNotice('Cart cleared.');
+    }
+
+    function openPosDay() {
+      setIsPosDayOpen(true);
+      setPosTransactionConfirmed(false);
+      setPosNotice(
+        posOpeningMode === 'fresh-start'
+          ? 'POS day opened. Starting cash balance requires manager confirmation for a fresh start day.'
+          : 'POS day opened from handover. Incoming staff acknowledgement becomes the next starting position.',
+      );
+    }
+
+    function closePosDay() {
+      if (posCloseMode === 'handover' && !posTillZeroized) {
+        setPosNotice('Before handover close, the teller must zeroize the till account and incoming staff must acknowledge the cash.');
+        return;
+      }
+
+      if (posCloseMode === 'final-close' && !posDepositProof.trim()) {
+        setPosNotice('Final close requires proof of deposit for manager confirmation.');
+        return;
+      }
+
+      setIsPosDayOpen(false);
+      setPosNotice(
+        posCloseMode === 'handover'
+          ? 'POS day closed through handover. Incoming staff acknowledgement is recorded as the next starting balance.'
+          : 'POS day closed for final deposit review. Manager confirmation is required.',
+      );
+    }
+
+    function confirmTransaction() {
+      if (posCartItems.length === 0) {
+        setPosNotice('Add at least one drug to cart before confirming payment.');
+        return;
+      }
+
+      if (posCustomerInvoice === 'yes' && posInvoiceDelivery !== 'printer' && !posInvoiceContact.trim()) {
+        setPosNotice('Provide customer WhatsApp number or email before invoice delivery.');
+        return;
+      }
+
+      setPosTransactionConfirmed(true);
+      setPosNotice(
+        posCustomerInvoice === 'yes'
+          ? 'Payment confirmed. Invoice generation and delivery are now available inside POS.'
+          : 'Payment confirmed without customer invoice.',
+      );
+    }
+
+    if (activePosWorkspace === 'overview') {
+      return (
+        <section className="section-page pos-executive-overview">
+          <section className="pos-executive-hero">
+            <div>
+              <span>POS executive view</span>
+              <h2>Sales performance and cashier control</h2>
+              <p>Live sales, payment mix, insurance exposure, exceptions and till readiness in one manager view.</p>
+            </div>
+            <button type="button" onClick={() => setActivePosWorkspace('pos')}>
+              Open POS Counter
+            </button>
+          </section>
+
+          <section className="pos-overview-analytics-grid executive">
+            {[
+              ['Today gross sales', 'RWF 1.84M', '+12% vs yesterday', 'All confirmed sales'],
+              ['Transactions', '126', '118 completed', '8 require review'],
+              ['Insurance claims', 'RWF 540K', '29% of sales value', 'RSSB, MMI, Radiant'],
+              ['Cashier variance', 'RWF 8.5K', 'Needs review', 'Cash close exception'],
+              ['Average basket', 'RWF 14.6K', '36% chronic refill', 'High-value transactions'],
+              ['Open cart risk', '6 carts', 'Unconfirmed drafts', 'Follow before close'],
+            ].map(([title, value, signal, detail]) => (
+              <article key={title} className="pos-executive-card">
+                <span>{title}</span>
+                <strong>{value}</strong>
+                <em>{signal}</em>
+                <small>{detail}</small>
+              </article>
+            ))}
+          </section>
+
+          <section className="pos-overview-command-grid">
+            <article className="panel wide">
+              <div className="section-heading">
+                <div>
+                  <span>Payment mix</span>
+                  <h2>Sales movement by channel</h2>
+                </div>
+              </div>
+
+              <div className="pos-channel-bars">
+                {[
+                  ['Cash', '38%', 'RWF 699K'],
+                  ['MoMo', '27%', 'RWF 497K'],
+                  ['Insurance', '29%', 'RWF 534K'],
+                  ['Card/Credit', '6%', 'RWF 110K'],
+                ].map(([label, width, value]) => (
+                  <div key={label} className="pos-channel-row">
+                    <span>{label}</span>
+                    <div><i style={{ width }} /></div>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="panel wide">
+              <div className="section-heading">
+                <div>
+                  <span>Operational alerts</span>
+                  <h2>What needs attention</h2>
+                </div>
+              </div>
+
+              <div className="pos-alert-stack">
+                {[
+                  ['High', 'Cash variance above tolerance', 'Review till close before manager approval'],
+                  ['Medium', '8 sales awaiting receipt confirmation', 'Follow receipt delivery queue'],
+                  ['Medium', '3 insurance transactions missing institution', 'Confirm scheme rate before claim'],
+                  ['Low', '6 open carts still unconfirmed', 'Close or cancel before end of day'],
+                ].map(([level, title, detail]) => (
+                  <div key={title}>
+                    <strong>{level}</strong>
+                    <span>{title}</span>
+                    <small>{detail}</small>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <FocusRegisterPreview
+            title="Recent POS exceptions"
+            description="Transactions needing attention before close of day."
+            rows={previewRows}
+          />
+        </section>
+      );
+    }
+
+    if (activePosWorkspace === 'pos') {
+      return (
+        <section className="section-page">
+          <section className="pos-counter-page">
+            <section className="pos-counter-heading">
+              <div>
+                <p className="eyebrow">POS</p>
+                <h2>Pharmacy sales counter</h2>
+                <p className="muted">Select drugs, build cart, complete transaction setup, confirm payment, then generate invoice when required.</p>
+              </div>
+
+              <div className={`pos-session-pill ${isPosDayOpen ? 'open' : 'closed'}`}>
+                <span>{isPosDayOpen ? 'Session open' : 'Session closed'}</span>
+                <strong>RWF {Number(posStartingCashBalance || 0).toLocaleString('en-RW')}</strong>
+              </div>
+            </section>
+
+            {posNotice && <div className="form-success">{posNotice}</div>}
+
+            <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
+              <article>
+                <span>Open POS Day</span>
+                <label>
+                  <small>Opening mode</small>
+                  <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
+                    <option value="fresh-start">Fresh start day</option>
+                    <option value="handover">Handover from previous teller</option>
+                  </select>
+                </label>
+                <label>
+                  <small>Starting cash balance</small>
+                  <input
+                    type="number"
+                    min="0"
+                    value={posStartingCashBalance}
+                    onChange={(event) => setPosStartingCashBalance(event.target.value)}
+                  />
+                </label>
+                <button type="button" onClick={openPosDay}>Open POS Day</button>
+              </article>
+
+              <article>
+                <span>Close POS Day</span>
+                <label>
+                  <small>Closing mode</small>
+                  <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
+                    <option value="handover">Handover to incoming staff</option>
+                    <option value="final-close">Final close with manager deposit proof</option>
+                  </select>
+                </label>
+
+                {posCloseMode === 'handover' ? (
+                  <label className="pos-inline-check">
+                    <input
+                      type="checkbox"
+                      checked={posTillZeroized}
+                      onChange={(event) => setPosTillZeroized(event.target.checked)}
+                    />
+                    <small>Till zeroized and incoming staff acknowledged</small>
+                  </label>
+                ) : (
+                  <label>
+                    <small>Deposit proof reference</small>
+                    <input
+                      value={posDepositProof}
+                      onChange={(event) => setPosDepositProof(event.target.value)}
+                      placeholder="Deposit slip, bank ref, MoMo ref"
+                    />
+                  </label>
+                )}
+
+                <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close POS Day</button>
+              </article>
+            </section>
+
+            <section className="pos-counter-workbench pos-counter-workbench--cart-middle">
+              <aside className="pos-rx-queue">
+                <div className="section-heading">
+                  <div>
+                    <span>Step 1</span>
+                    <h3>Select drugs</h3>
+                  </div>
+                </div>
+
+                <input className="pos-search-input" placeholder="Search patient, drug, Rx#, barcode..." />
+
+                <div className="pos-drug-list pos-drug-list--ten">
+                  {posProducts.map((product) => (
+                    <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
+                      <strong>{product.name}</strong>
+                      <small>{product.strength}</small>
+                      <em>{product.code}</em>
+                      <span>{product.status}</span>
+                      <i>Add to cart</i>
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="pos-view-products-link"
+                  onClick={() => {
+                    setActiveInventoryView('product-master');
+                    navigateToSection('inventory');
+                  }}
+                >
+                  View full product list
+                </button>
+              </aside>
+
+              <main className="pos-cart-center">
+                <section className="pos-cart-card">
+                  <div className="section-heading">
+                    <div>
+                      <span>Step 2</span>
+                      <h3>Cart</h3>
+                    </div>
+                    <div className="pos-cart-header-actions">
+                      <small>{posCartItems.length}/10 rows</small>
+                      <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
+                        Clear cart
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="system-table-wrap">
+                    <table className="system-table pos-cart-table">
+                      <thead>
+                        <tr>
+                          <th>Drug</th>
+                          <th>Qty</th>
+                          <th>Unit price</th>
+                          <th>Total</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {posCartItems.length === 0 ? (
+                          <tr>
+                            <td colSpan={5}>No drugs added yet. Select drugs from the left list.</td>
+                          </tr>
+                        ) : (
+                          posCartItems.slice(0, 10).map((item) => (
+                            <tr key={item.code}>
+                              <td>
+                                <strong>{item.name}</strong>
+                                <small>{item.strength}</small>
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={item.quantity}
+                                  onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
+                                />
+                              </td>
+                              <td>RWF {item.unitPrice.toLocaleString('en-RW')}</td>
+                              <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="pos-cart-remove-button"
+                                  onClick={() => removeCartItem(item.code)}
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section className="pos-transaction-setup-card pos-transaction-setup-card--two-column">
+                  <div className="section-heading">
+                    <div>
+                      <span>Step 3</span>
+                      <h3>Transaction setup</h3>
+                    </div>
+                  </div>
+
+                  <div className="pos-field-grid pos-field-grid--two">
+                    <label>
+                      <span>Customer type</span>
+                      <select
+                        value={posCustomerType}
+                        onChange={(event) => {
+                          setPosCustomerType(event.target.value as typeof posCustomerType);
+                          setPosTransactionConfirmed(false);
+                        }}
+                      >
+                        <option value="walk-in">Walk-In Customer</option>
+                        <option value="existing-customer">Existing Customer</option>
+                        <option value="insurance-customer">Insurance Customer</option>
+                        <option value="corporate-customer">Corporate Customer</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Prescription</span>
+                      <select value={posPrescriptionStatus} onChange={(event) => setPosPrescriptionStatus(event.target.value as typeof posPrescriptionStatus)}>
+                        <option value="not-required">Not Required</option>
+                        <option value="required">Required</option>
+                        <option value="captured">Captured</option>
+                        <option value="manual-review">Manual Review</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Payment method</span>
+                      <select
+                        value={posPaymentMethod}
+                        onChange={(event) => {
+                          setPosPaymentMethod(event.target.value as typeof posPaymentMethod);
+                          setPosTransactionConfirmed(false);
+                        }}
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="momo">Mobile Money</option>
+                        <option value="card">Card</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="credit">Customer Credit</option>
+                      </select>
+                    </label>
+
+                    {posPaymentMethod === 'insurance' && (
+                      <>
+                        <label>
+                          <span>Insurance provider</span>
+                          <select
+                            value={posInsuranceProvider}
+                            onChange={(event) => {
+                              setPosInsuranceProvider(event.target.value);
+                              setPosInsuranceInstitution('');
+                              setPosTransactionConfirmed(false);
+                            }}
+                          >
+                            {posInsuranceRates.map((insurance) => (
+                              <option key={insurance.id} value={insurance.id}>
+                                {insurance.name} · master Cust {insurance.masterCustomerContributionPercent}%
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label>
+                          <span>Institution / company</span>
+                          <select
+                            value={posInsuranceInstitution}
+                            onChange={(event) => {
+                              setPosInsuranceInstitution(event.target.value);
+                              setPosTransactionConfirmed(false);
+                            }}
+                          >
+                            <option value="">Use insurance master rate</option>
+                            {selectedInsurance.institutions.map((institution) => (
+                              <option key={institution.id} value={institution.id}>
+                                {institution.name} · Cust {institution.customerContributionPercent}%
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </>
+                    )}
+
+                    <label>
+                      <span>Customer invoice</span>
+                      <select
+                        value={posCustomerInvoice}
+                        onChange={(event) => {
+                          setPosCustomerInvoice(event.target.value as 'yes' | 'no');
+                          setPosTransactionConfirmed(false);
+                        }}
+                      >
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Discount amount</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={posDiscountAmount}
+                        onChange={(event) => {
+                          setPosDiscountAmount(event.target.value);
+                          setPosTransactionConfirmed(false);
+                        }}
+                      />
+                    </label>
+
+                    <label>
+                      <span>Customer contact / lookup</span>
+                      <input
+                        value={posInvoiceContact}
+                        onChange={(event) => setPosInvoiceContact(event.target.value)}
+                        placeholder="Phone, WhatsApp, or email"
+                      />
+                    </label>
+                  </div>
+                </section>
+              </main>
+
+              <aside className="pos-confirmation-rail">
+                <section className="pos-summary-confirmation-card">
+                  <div className="section-heading">
+                    <div>
+                      <span>Step 4</span>
+                      <h3>Sale Summary</h3>
+                    </div>
+                  </div>
+
+                  <button type="button" className="pos-refresh-summary-button" onClick={forceRefreshSaleSummary}>
+                    Refresh Summary
+                  </button>
+
+                  <div className="pos-summary-sync-note" data-cart-lines={posSaleSummary.lineCount} data-cart-quantity={posSaleSummary.totalQuantity}>
+                    <span>Live cart sync</span>
+                    <strong>{posSaleSummary.lineCount} item line{posSaleSummary.lineCount === 1 ? '' : 's'} · {posSaleSummary.totalQuantity} unit{posSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
+                    <small>Updated {posSaleSummary.calculatedAt}</small>
+                  </div>
+
+                  <dl className="pos-summary-list">
+                    <div>
+                      <dt>Date and time</dt>
+                      <dd>{new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd>
+                    </div>
+                    <div>
+                      <dt>Cart lines</dt>
+                      <dd>{posSaleSummary.lineCount}</dd>
+                    </div>
+                    <div>
+                      <dt>Total quantity</dt>
+                      <dd>{posSaleSummary.totalQuantity}</dd>
+                    </div>
+                    <div>
+                      <dt>Subtotal</dt>
+                      <dd>RWF {posSaleSummary.subtotal.toLocaleString('en-RW')}</dd>
+                    </div>
+                    {posPaymentMethod === 'insurance' && (
+                      <>
+                        <div>
+                          <dt>Cust %</dt>
+                          <dd>{posSaleSummary.customerContributionPercent}%</dd>
+                        </div>
+                        <div>
+                          <dt>Insur %</dt>
+                          <dd>{posSaleSummary.insuranceContributionPercent}%</dd>
+                        </div>
+                      </>
+                    )}
+                    <div>
+                      <dt>Customer contribution</dt>
+                      <dd>RWF {posSaleSummary.customerContribution.toLocaleString('en-RW')}</dd>
+                    </div>
+                    <div>
+                      <dt>Insurance contribution</dt>
+                      <dd>RWF {posSaleSummary.insuranceContribution.toLocaleString('en-RW')}</dd>
+                    </div>
+                    <div>
+                      <dt>Tax</dt>
+                      <dd>RWF {posSaleSummary.tax.toLocaleString('en-RW')}</dd>
+                    </div>
+                    <div className="total">
+                      <dt>Total</dt>
+                      <dd>RWF {posSaleSummary.total.toLocaleString('en-RW')}</dd>
+                    </div>
+                  </dl>
+
+                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartItems.length === 0}>
+                    {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
+                  </button>
+                </section>
+
+                {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
+                  <section className="pos-invoice-journey">
+                    <h3>Invoice delivery</h3>
+
+                    <label>
+                      <span>Delivery channel</span>
+                      <select value={posInvoiceDelivery} onChange={(event) => setPosInvoiceDelivery(event.target.value as typeof posInvoiceDelivery)}>
+                        <option value="printer">Printer</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="email">Corporate Email</option>
+                      </select>
+                    </label>
+
+                    <button type="button" onClick={() => setPosNotice('Invoice PDF generated for the confirmed transaction.')}>
+                      Generate invoice PDF
+                    </button>
+
+                    {posInvoiceDelivery === 'printer' && (
+                      <button type="button" onClick={() => window.print()}>
+                        Print invoice
+                      </button>
+                    )}
+
+                    {posInvoiceDelivery === 'whatsapp' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const phone = posInvoiceContact.replace(/[^\d+]/g, '');
+                          window.open(`https://wa.me/${phone.replace('+', '')}`, '_blank', 'noopener,noreferrer');
+                        }}
+                      >
+                        Open WhatsApp
+                      </button>
+                    )}
+
+                    {posInvoiceDelivery === 'email' && (
+                      <button type="button" onClick={() => navigateToSection('corporate-email')}>
+                        Open Corporate Email with invoice attached
+                      </button>
+                    )}
+                  </section>
+                )}
+              </aside>
+            </section>
+
+            <section className="pos-sales-summary-table-card">
+              <div className="section-heading">
+                <div>
+                  <span>Recent sales</span>
+                  <h3>Recent sales</h3>
+                </div>
+                <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
+                  Open Sales Performance
+                </button>
+              </div>
+
+              <div className="system-table-wrap">
+                <table className="system-table">
+                  <thead>
+                    <tr>
+                      <th>Date / Time</th>
+                      <th>Sale No.</th>
+                      <th>Customer</th>
+                      <th>Method</th>
+                      <th>Status</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salesSummaryRows.map(([dateTime, saleNumber, customer, method, status, amount]) => (
+                      <tr key={saleNumber}>
+                        <td>{dateTime}</td>
+                        <td>{saleNumber}</td>
+                        <td>{customer}</td>
+                        <td>{method}</td>
+                        <td>{status}</td>
+                        <td>{amount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+        </section>
+      );
+    }
+
+    if (activePosWorkspace === 'dispensing-review') {
+      return (
+        <section className="section-page">
+          <SalesDispensingReview token={session.token} profile={profile} />
+        </section>
+      );
+    }
+
+    if (activePosWorkspace === 'customers') {
+      return (
+        <section className="section-page">
+          <FocusRegisterPreview
+            title="Customers and Patients"
+            description="Customer and patient register with default 15-row view, export, bulk edit, and controlled delete."
+            rows={previewRows}
+          />
+        </section>
+      );
+    }
+
+    if (activePosWorkspace === 'prescriptions') {
+      return (
+        <section className="section-page">
+          <FocusRegisterPreview
+            title="Prescriptions"
+            description="Prescription capture, camera readiness, AI text extraction, manual correction, and returning customer lookup."
+            rows={previewRows.map(([primary, secondary, status, amount]) => [primary, secondary.replace('sale', 'prescription'), status, amount])}
+          />
+        </section>
+      );
+    }
+
+    if (activePosWorkspace === 'sales-performance') {
+      return (
+        <section className="section-page">
+          <FocusRegisterPreview
+            title="Sales Performance"
+            description="Sales list with selected sale detail, export, review, and manager follow-up."
+            rows={previewRows}
+          />
+        </section>
+      );
+    }
+
     return (
       <section className="section-page">
-<section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="POS and Sales"
-            items={posWorkspaceItems}
-            activeKey={activePosWorkspace}
-            onSelect={setActivePosWorkspace}
-          />
-
-          <div className="module-section-stage">
-            {activePosWorkspace === 'overview' && (
-              <>
-                <ModuleReadinessGrid items={posReadiness} />
-                <section className="document-action-grid">
-                  {[
-                    ['POS transaction summary', 'Customer contribution, insurer or partner contribution, tax, and balance are shown before commit.'],
-                    ['Prescription capture', 'RX products trigger prescription image/manual capture before the item proceeds to cart.'],
-                    ['Receipt channels', 'Physical/Bluetooth print, WhatsApp handoff, email, and corporate email delivery are prepared.'],
-                    ['Customer capture', 'Customer details are only requested when invoice, insurance, credit, or follow-up is needed.'],
-                  ].map(([title, text]) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </article>
-                  ))}
-                </section>
-              </>
-            )}
-
-            {activePosWorkspace === 'customers' && (
-              <FocusRegisterPreview
-                title="Customers / patients register"
-                description="The module starts with summary cards, then a 15-row working register with bulk edit, export, approval, and controlled delete actions."
-                rows={previewRows}
-              />
-            )}
-
-            {activePosWorkspace === 'prescriptions' && (
-              <FocusRegisterPreview
-                title="Prescription register"
-                description="Prescription-required products prompt camera capture, AI text extraction where possible, previous-customer lookup, and manual completion when extraction is unclear."
-                rows={previewRows.map(([primary, secondary, status, amount]) => [primary, secondary.replace('sale', 'prescription'), status, amount])}
-              />
-            )}
-
-            {activePosWorkspace === 'sales-performance' && (
-              <FocusRegisterPreview
-                title="Sales performance register"
-                description="Performance review uses a compact 15-row list beside selected-sale detail, with export and bulk tools available from the header."
-                rows={previewRows}
-              />
-            )}
-
-            {activePosWorkspace === 'payment-receipt' && (
-              <FocusRegisterPreview
-                title="Payment and receipt register"
-                description="Payments and receipts follow the same two-section pattern: 15-row list, selected detail, printer, WhatsApp, email, and corporate email actions."
-                rows={previewRows}
-              />
-            )}
-
-            {activePosWorkspace !== 'overview' && <SalesDispensingReview token={session.token} profile={profile} />}
-          </div>
-        </section>
+        <FocusRegisterPreview
+          title="Payment and Receipt"
+          description="Payment register with receipt print, Bluetooth readiness, WhatsApp, email, and corporate email delivery."
+          rows={previewRows}
+        />
       </section>
     );
   }
+
 
   function renderSupplierWorkspace() {
     const selected = supplierWorkspaceItems.find((item) => item.key === activeSupplierWorkspace) ?? supplierWorkspaceItems[0];
@@ -2926,44 +3785,31 @@ function App() {
 
     return (
       <section className="section-page">
-<section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Suppliers"
-            items={supplierWorkspaceItems}
-            activeKey={activeSupplierWorkspace}
-            onSelect={setActiveSupplierWorkspace}
-          />
+        <div className="module-section-stage">
+          {activeSupplierWorkspace === 'overview' && (
+            <FocusRegisterPreview
+              title="Supplier Overview"
+              description="Supplier performance, open PO status, receiving readiness, and procurement attention."
+              rows={supplierRows}
+            />
+          )}
 
-          <div className="module-section-stage">
-            {activeSupplierWorkspace === 'overview' && (
-              <>
-                <ModuleReadinessGrid items={supplierReadiness} />
-                <section className="document-action-grid">
-                  {[
-                    ['Supplier overview charts', 'Supplier count, open PO value, approved receiving queue, overdue commitments, and active supplier types.'],
-                    ['Create supplier', 'Wholesaler, manufacturer, distributor, importer, local supplier, service provider, delivery supplier, technology/API supplier, or other.'],
-                    ['Purchase order flow', 'Create PO, approve, track outstanding orders, receive against PO, and update inventory with batch details.'],
-                  ].map(([title, text]) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </article>
-                  ))}
-                </section>
-              </>
-            )}
+          {activeSupplierWorkspace === 'create-supplier' && (
+            <ProcurementWorkflow token={session.token} profile={profile} />
+          )}
 
-            {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
-              <FocusRegisterPreview
-                title={selected.label}
-                description="Registers show 15 rows by default, then open the full page with bulk edit, export, approval, and controlled delete actions."
-                rows={supplierRows}
-              />
-            )}
+          {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
+            <FocusRegisterPreview
+              title={selected.label}
+              description="This page keeps its own focused register with 15-row default view, export, bulk edit, and controlled delete where allowed."
+              rows={supplierRows}
+            />
+          )}
 
-            {activeSupplierWorkspace !== 'overview' && <ProcurementWorkflow token={session.token} profile={profile} />}
-          </div>
-        </section>
+          {['create-purchase-order', 'receive-purchase-order'].includes(activeSupplierWorkspace) && (
+            <ProcurementWorkflow token={session.token} profile={profile} />
+          )}
+        </div>
       </section>
     );
   }
@@ -2979,157 +3825,244 @@ function App() {
 
     return (
       <section className="section-page">
-<section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Finance"
-            items={financeWorkspaceItems}
-            activeKey={activeFinanceWorkspace}
-            onSelect={setActiveFinanceWorkspace}
-          />
+        <div className="module-section-stage">
+          {activeFinanceWorkspace === 'overview' && (
+            <FocusRegisterPreview
+              title="Finance Overview"
+              description="Cash, MoMo, card, credit, receivables, payables, and exception status."
+              rows={financeRows}
+            />
+          )}
 
-          <div className="module-section-stage">
-            {activeFinanceWorkspace === 'overview' && (
-              <>
-                <section className="document-action-grid">
-                  {[
-                    ['Finance overview', 'Cash, MoMo, card, credit, supplier balance, receivables, and exception count.'],
-                    ['Finance flow', 'Supplier invoice creation, approval, payment, and selected invoice detail.'],
-                    ['Exception focus', 'Overdue receivables, overdue payables, payment variance, and approval risks.'],
-                  ].map(([title, text]) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </article>
-                  ))}
-                </section>
-                <PayablesWorkflow token={session.token} profile={profile} />
-                <ReceivablesWorkflow token={session.token} profile={profile} />
-              </>
-            )}
+          {activeFinanceWorkspace === 'finance-flow' && (
+            <PayablesWorkflow token={session.token} profile={profile} />
+          )}
 
-            {activeFinanceWorkspace === 'financial-statements' && (
-              <article className="panel wide">
-                <div className="panel-heading-row">
-                  <div>
-                    <h2>AI-generated financial statements</h2>
-                    <p className="muted">
-                      Statements are generated only after a manual refresh, then reviewed by finance before export or posting.
-                    </p>
-                  </div>
-                  <button type="button">Manual refresh</button>
-                </div>
-                <div className="document-action-grid">
-                  {financialStatementItems.map(([title, text]) => (
-                    <article key={title}>
-                      <strong>{title}</strong>
-                      <span>{text}</span>
-                    </article>
-                  ))}
-                </div>
-              </article>
-            )}
-
-            {['receivable-register', 'collection', 'exception-focus'].includes(activeFinanceWorkspace) && (
+          {activeFinanceWorkspace === 'exception-focus' && (
+            <>
               <FocusRegisterPreview
-                title={selected.label}
-                description="Finance tables use a compact default register with bulk edit, export, approval, and selected-detail controls."
+                title="Exception Focus"
+                description="Overdue receivables, overdue payables, payment variance, cash variance, and approval risks."
                 rows={financeRows}
               />
-            )}
-
-            {['finance-flow', 'exception-focus'].includes(activeFinanceWorkspace) && (
               <PayablesWorkflow token={session.token} profile={profile} />
-            )}
+            </>
+          )}
 
-            {['credits-receivables', 'receivable-register', 'collection', 'exception-focus'].includes(activeFinanceWorkspace) && (
-              <ReceivablesWorkflow token={session.token} profile={profile} />
-            )}
-          </div>
-        </section>
+          {activeFinanceWorkspace === 'credits-receivables' && (
+            <ReceivablesWorkflow token={session.token} profile={profile} />
+          )}
+
+          {['receivable-register', 'collection'].includes(activeFinanceWorkspace) && (
+            <FocusRegisterPreview
+              title={selected.label}
+              description="Receivables and collections use a focused table with export, bulk edit, and selected-detail review."
+              rows={financeRows}
+            />
+          )}
+
+          {activeFinanceWorkspace === 'financial-statements' && (
+            <article className="panel wide">
+              <div className="panel-heading-row">
+                <div>
+                  <h2>Financial Statement</h2>
+                  <p className="muted">
+                    AI-assisted Trial Balance, General Ledger, Cash Flow Statement, Income Statement, Balance Sheet, Bank, MoMo, and Cash Reconciliation.
+                  </p>
+                </div>
+                <button type="button">Manual refresh</button>
+              </div>
+              <div className="document-action-grid document-action-grid--tablelike">
+                {financialStatementItems.map(([title, text]) => (
+                  <article key={title}>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </article>
+                ))}
+              </div>
+            </article>
+          )}
+        </div>
       </section>
     );
   }
 
   function renderAdhocReportWorkspace() {
     const selected = adhocReportWorkspaceItems.find((item) => item.key === activeAdhocReportWorkspace) ?? adhocReportWorkspaceItems[0];
+    const reportRows: Array<[string, string, string, string]> = [
+      ['Low stock attention', 'Inventory signal', 'Open', 'Manager review'],
+      ['Expiry watch', 'Batch register', 'Priority', 'Pharmacist action'],
+      ['Sales exception', 'POS signal', 'Review', 'Finance follow-up'],
+      ['Supplier delay', 'Purchase order', 'Pending', 'Procurement follow-up'],
+    ];
 
     return (
       <section className="section-page">
-<section className="module-workspace-shell">
-          <ModuleWorkspaceRail
-            label="Ad-hoc Report"
-            items={adhocReportWorkspaceItems}
-            activeKey={activeAdhocReportWorkspace}
-            onSelect={setActiveAdhocReportWorkspace}
-          />
+        <div className="module-section-stage">
+          {activeAdhocReportWorkspace === 'overview' && (
+            <ReportingDashboard token={session.token} profile={profile} />
+          )}
 
-          <div className="module-section-stage">
-            <article className="panel wide report-focus-note">
-              <strong>{selected.label}</strong>
-              <span>
-                This view uses the live command center and reporting endpoints, while keeping reports read-only and separate from operational forms.
-              </span>
-            </article>
-
-            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
-
-            {activeAdhocReportWorkspace === 'overview' && (
-              <ReportingDashboard token={session.token} profile={profile} />
-            )}
-          </div>
-        </section>
+          {activeAdhocReportWorkspace !== 'overview' && (
+            <FocusRegisterPreview
+              title={selected.label}
+              description="This ad-hoc report page keeps its own focused operating data without repeating unrelated dashboard content."
+              rows={reportRows}
+            />
+          )}
+        </div>
       </section>
     );
   }
 
   function renderAiCenter() {
-    const selectedAiModule = aiCenterModules.find((module) => module.key === activeAiWorkspace) ?? aiCenterModules[0];
+    const operationalAiCards: Array<{ key: AiWorkspaceKey; title: string; summary: string }> = [
+      { key: 'business-chat', title: 'Business Chat', summary: 'Ask operational questions and get business guidance.' },
+      { key: 'customer-retention', title: 'Customer Retention', summary: 'Identify customers needing follow-up.' },
+      { key: 'demand-forecast', title: 'Demand Forecast', summary: 'Forecast product demand by period.' },
+      { key: 'expiry-risk', title: 'Expiry Risk', summary: 'Detect expiry exposure and FEFO actions.' },
+      { key: 'finance-forecast', title: 'Finance Forecast', summary: 'Forecast cash, receivables, and payables.' },
+      { key: 'fraud-anomaly', title: 'Fraud and Anomaly', summary: 'Flag unusual sales, stock, or finance patterns.' },
+      { key: 'pricing-margin', title: 'Pricing and Margin', summary: 'Review pricing, margin, and discount impact.' },
+      { key: 'reorder-recommendation', title: 'Reorder Recommendation', summary: 'Recommend reorder timing and quantities.' },
+      { key: 'stock-out', title: 'Stock-out', summary: 'Predict and prevent stock-out risks.' },
+      { key: 'supplier-performance', title: 'Supplier Performance', summary: 'Evaluate supplier reliability and delays.' },
+      { key: 'inventory-assistance', title: 'Inventory Assistance', summary: 'Support product, batch, and location decisions.' },
+      { key: 'operations-copilot', title: 'Operations Copilot', summary: 'Guide daily pharmacy operations.' },
+    ];
+
+    const aiPageDetails: Record<AiWorkspaceKey, { title: string; summary: string; controls: string[] }> = {
+      'operational-ai-center': {
+        title: 'Operational AI Center',
+        summary: 'Run pharmacy AI models from clear operational cards. Each model opens its own workspace.',
+        controls: ['Model cards', 'Human approval', 'Audit trail'],
+      },
+      'business-chat': { title: 'Business Chat', summary: 'Business guidance and operating questions.', controls: ['Ask question', 'Review answer', 'Save decision'] },
+      'customer-retention': { title: 'Customer Retention', summary: 'Customer follow-up and retention signals.', controls: ['Retention score', 'Follow-up task', 'Approval'] },
+      'demand-forecast': { title: 'Demand Forecast', summary: 'Demand prediction for products and categories.', controls: ['Forecast period', 'Data source', 'Confidence'] },
+      'expiry-risk': { title: 'Expiry Risk', summary: 'Expiry exposure and FEFO actions.', controls: ['Risk list', 'Action proposal', 'Approval'] },
+      'finance-forecast': { title: 'Finance Forecast', summary: 'Cash, receivables, payables, and statement forecast.', controls: ['Forecast', 'Variance', 'Refresh'] },
+      'fraud-anomaly': { title: 'Fraud and Anomaly', summary: 'Sales, stock, and finance anomaly detection.', controls: ['Anomaly list', 'Risk level', 'Escalation'] },
+      'pricing-margin': { title: 'Pricing and Margin', summary: 'Pricing and margin recommendations.', controls: ['Margin signal', 'Price proposal', 'Approval'] },
+      'reorder-recommendation': { title: 'Reorder Recommendation', summary: 'AI reorder recommendations and purchase draft support.', controls: ['Reorder list', 'Supplier link', 'Human approval'] },
+      'stock-out': { title: 'Stock-out', summary: 'Stock-out risk prediction and prevention.', controls: ['Risk items', 'Transfer option', 'Purchase option'] },
+      'supplier-performance': { title: 'Supplier Performance', summary: 'Supplier reliability and procurement risk.', controls: ['Delay score', 'Fill rate', 'Action note'] },
+      'inventory-assistance': { title: 'Inventory Assistance', summary: 'Inventory assistant for product, batch, and shelf control.', controls: ['Product help', 'Batch help', 'Shelf proposal'] },
+      'operations-copilot': { title: 'Operations Copilot', summary: 'Daily operational copilot for managers and staff.', controls: ['Task guidance', 'Checklist', 'Decision note'] },
+      governance: { title: 'AI Governance', summary: 'Policies, consent, human approval, and AI safety rules.', controls: ['Policy', 'Approval', 'Audit'] },
+      'provider-management': { title: 'AI Provider Management', summary: 'Provider configuration, mode, status, and secure keys.', controls: ['Provider', 'Mode', 'Key reference'] },
+      'model-registry': { title: 'AI Model Registry', summary: 'Models, versions, use cases, status, and risk level.', controls: ['Model', 'Version', 'Risk'] },
+      'agent-management': { title: 'AI Agent Management', summary: 'AI agents, tools, scopes, and permissions.', controls: ['Agent', 'Tools', 'Scope'] },
+      'prompt-library': { title: 'AI Prompt Library', summary: 'Approved prompts, versions, tenant overrides, and reuse.', controls: ['Prompt', 'Version', 'Approval'] },
+      'knowledge-base': { title: 'AI Knowledge Base', summary: 'Trusted SOPs, FAQs, policies, and pharmacy knowledge.', controls: ['Source', 'Status', 'Review'] },
+      'data-connectors': { title: 'AI Data Connectors', summary: 'Controlled AI access to inventory, sales, finance, supplier, and support data.', controls: ['Connector', 'Scope', 'Permission'] },
+      recommendations: { title: 'AI Recommendations', summary: 'Structured recommendations with confidence and explanation.', controls: ['Recommendation', 'Confidence', 'Action'] },
+      'workflow-automation': { title: 'AI Workflow Automations', summary: 'Draft reminders, reorder proposals, alerts, and report generation.', controls: ['Workflow', 'Trigger', 'Approval'] },
+      'approval-center': { title: 'AI Human Approval Center', summary: 'Human review for sensitive AI actions.', controls: ['Queue', 'Risk', 'Decision'] },
+      'feedback-learning': { title: 'AI Feedback and Learning', summary: 'Accepted, rejected, corrected, and improved AI feedback.', controls: ['Feedback', 'Learning', 'Review'] },
+      'usage-cost': { title: 'AI Usage, Cost and Quota Control', summary: 'Usage by model, feature, tenant, user, quota, and estimated cost.', controls: ['Usage', 'Quota', 'Cost'] },
+      'risk-compliance': { title: 'AI Risk and Compliance', summary: 'Sensitive data checks, policy exceptions, and compliance monitoring.', controls: ['Risk', 'Policy', 'Exception'] },
+      'audit-logs': { title: 'AI Audit Logs', summary: 'Complete AI input, output, provider, model, user, and decision trail.', controls: ['Input', 'Output', 'Decision'] },
+      'recommendation-approval-queue': { title: 'Recommendation Approval Queue', summary: 'Pending AI recommendations waiting for human approval.', controls: ['Pending', 'Reviewer', 'Decision'] },
+      'insights-dashboard': { title: 'AI Insight Dashboard', summary: 'AI adoption, accuracy, cost, risk, and operational impact.', controls: ['Insight', 'Trend', 'Impact'] },
+      'chat-me-ai': { title: 'Chat Me AI', summary: 'Ask for platform guidance, tutorials, navigation help, and safe operating support.', controls: ['Ask', 'Guide', 'Tutorial'] },
+    };
+
+    const selectedAiPage = aiPageDetails[activeAiWorkspace] ?? aiPageDetails['operational-ai-center'];
 
     return (
       <section className="section-page">
-<section className="ai-center-layout">
-          <div className="ai-center-module-grid">
-            {aiCenterModules.map((module) => (
-              <button
-                key={module.key}
-                type="button"
-                className={activeAiWorkspace === module.key ? 'active' : ''}
-                onClick={() => setActiveAiWorkspace(module.key)}
-              >
-                <strong>{module.title}</strong>
-                <span>{module.status}</span>
-              </button>
-            ))}
-          </div>
+        {activeAiWorkspace === 'operational-ai-center' ? (
+          <section className="operational-ai-workspace">
+            <div className="section-heading">
+              <div>
+                <span>AI Center</span>
+                <h2>Operational AI Center</h2>
+                <p className="muted">Choose an operational AI model to open its working area.</p>
+              </div>
+            </div>
 
-          <article className="panel ai-detail-panel">
-            <h2>{selectedAiModule.title}</h2>
-            <p className="muted">{selectedAiModule.purpose}</p>
+            <div className="operational-ai-card-grid">
+              {operationalAiCards.map((card) => (
+                <button key={card.key} type="button" onClick={() => setActiveAiWorkspace(card.key)}>
+                  <strong>{card.title}</strong>
+                  <span>{card.summary}</span>
+                  <small>Open model workspace</small>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : (
+          <article className="panel wide ai-detail-panel">
+            <div className="panel-heading-row">
+              <div>
+                <h2>{selectedAiPage.title}</h2>
+                <p className="muted">{selectedAiPage.summary}</p>
+              </div>
+              <button type="button">Run / Open</button>
+            </div>
+
             <div className="workflow-list">
-              {selectedAiModule.controls.map((control) => (
+              {selectedAiPage.controls.map((control) => (
                 <div key={control}>
                   <strong>{control}</strong>
-                  <span>Configured per platform, solution, tenant, role, branch, and data classification.</span>
+                  <span>Controlled by permissions, audit logs, and human approval where required.</span>
                 </div>
               ))}
             </div>
           </article>
-        </section>
+        )}
+
+        {activeAiWorkspace === 'chat-me-ai' && (
+          <article className="panel wide chat-me-ai-panel">
+            <h2>Chat Me AI</h2>
+            <p className="muted">Ask for platform guidance, tutorials, navigation help, or how to complete a task safely.</p>
+            <textarea placeholder="Ask Chat Me AI how to use this platform..." rows={4} />
+            <button type="button">Ask Chat Me AI</button>
+          </article>
+        )}
 
         <AiOperationsPanel token={session.token} profile={profile} />
+      </section>
+    );
+  }
 
-        <ModuleReadinessGrid items={aiWorkflows} />
 
-        <section className="ai-model-grid">
-          {pharmaAiModels.map(([model, description]) => (
-            <article key={model}>
-              <strong>{model}</strong>
-              <span>{description}</span>
-            </article>
-          ))}
-        </section>
+  function renderNotificationWorkspace() {
+    return (
+      <section className="section-page">
+        <article className="panel wide">
+          <div className="panel-heading-row">
+            <div>
+              <h2>
+                {activeNotificationWorkspace === 'overview' && 'Notification Overview'}
+                {activeNotificationWorkspace === 'create-notification' && 'Create New Notification'}
+                {activeNotificationWorkspace === 'recurring-notifications' && 'Manage Recurring Notifications'}
+                {activeNotificationWorkspace === 'platform-notification-center' && 'Platform Notification Management Center'}
+              </h2>
+              <p className="muted">Notification work is separated by page so creation, recurring rules, and platform management do not repeat the same information.</p>
+            </div>
+          </div>
+        </article>
 
-        {accessControlPanel}
+        <NotificationCenterPanel token={session.token} profile={profile} />
+      </section>
+    );
+  }
+
+  function renderPharmacistChatWorkspace() {
+    return (
+      <section className="section-page">
+        <article className="panel wide">
+          <h2>{activePharmacistChatWorkspace === 'in-app-chat' ? 'In-app Chat' : 'WhatsApp Message Chats'}</h2>
+          <p className="muted">
+            {activePharmacistChatWorkspace === 'in-app-chat'
+              ? 'Internal and customer in-app conversations.'
+              : 'Company WhatsApp conversations and customer-linked messages.'}
+          </p>
+        </article>
+
+        <PharmacistChatPanel token={session.token} />
       </section>
     );
   }
@@ -3292,10 +4225,7 @@ function App() {
             </div>
           </article>
         )}
-
-        {!['user-profiles', 'two-factor-auth', 'notification-management', 'corporate-email', 'pharmacist-chat', 'data-layer'].includes(selectedWorkspace) && <ModuleReadinessGrid items={settingsBlueprint} />}
-
-        {selectedWorkspace === 'backend-api' && accessControlPanel}
+{selectedWorkspace === 'backend-api' && accessControlPanel}
       </section>
     );
   }
@@ -3600,10 +4530,22 @@ function App() {
         return renderAdminPanel();
       case 'inventory':
         return (
-          <section className="section-page">
-<ModuleReadinessGrid items={inventoryReadiness} />
-            <ProductInventoryPreview token={session.token} profile={profile} />
-            <ProductInventoryActions token={session.token} profile={profile} />
+          <section
+            className="section-page inventory-route-page"
+            data-inventory-page={activeInventoryView}
+          >
+            <ProductInventoryPreview
+              key={activeInventoryView}
+              token={session.token}
+              profile={profile}
+              activeView={activeInventoryView}
+              onActiveViewChange={setActiveInventoryView}
+              showInternalNavigation={false}
+            />
+
+            {activeInventoryView === 'product-master' && (
+              <ProductInventoryActions token={session.token} profile={profile} />
+            )}
           </section>
         );
       case 'pos':
@@ -3719,8 +4661,7 @@ function App() {
       case 'settings':
         return (
           <section className="section-page">
-<ModuleReadinessGrid items={settingsBlueprint} />
-            <section className="commercial-framework-section">
+<section className="commercial-framework-section">
               <div className="framework-heading">
                 <div>
                   <p className="eyebrow">Commercial platform framework</p>
