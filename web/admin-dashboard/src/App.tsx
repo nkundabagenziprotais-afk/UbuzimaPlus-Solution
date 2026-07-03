@@ -2926,8 +2926,10 @@ function App() {
     });
 
     const cartSubtotal = posCartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const cartLineCount = posCartItems.length;
+    const cartTotalQuantity = posCartItems.reduce((sum, item) => sum + item.quantity, 0);
     const subtotalAmount = cartSubtotal;
-    const discountValue = Number(posDiscountAmount || 0);
+    const discountValue = Math.min(Number(posDiscountAmount || 0), subtotalAmount);
     const taxableBase = Math.max(0, subtotalAmount - discountValue);
     const taxAmount = Math.max(0, Math.round(taxableBase * 0.18));
     const partnerContribution = posCustomerType === 'insurance-customer' || posPaymentMethod === 'insurance'
@@ -2958,18 +2960,35 @@ function App() {
         ].slice(0, 10);
       });
 
+      setPosTransactionConfirmed(false);
       setPosNotice(`${product.name} added to cart.`);
     }
 
     function updateCartQuantity(code: string, quantity: number) {
       if (quantity <= 0) {
         setPosCartItems((current) => current.filter((item) => item.code !== code));
+        setPosTransactionConfirmed(false);
+        setPosNotice('Item removed. Sale summary updated.');
         return;
       }
 
       setPosCartItems((current) =>
         current.map((item) => (item.code === code ? { ...item, quantity: Math.min(99, quantity) } : item)),
       );
+      setPosTransactionConfirmed(false);
+      setPosNotice('Sale summary updated from cart changes.');
+    }
+
+    function removeCartItem(code: string) {
+      setPosCartItems((current) => current.filter((item) => item.code !== code));
+      setPosTransactionConfirmed(false);
+      setPosNotice('Item removed from cart.');
+    }
+
+    function clearPosCart() {
+      setPosCartItems([]);
+      setPosTransactionConfirmed(false);
+      setPosNotice('Cart cleared.');
     }
 
     function openPosDay() {
@@ -3004,6 +3023,11 @@ function App() {
     function confirmTransaction() {
       if (posCartItems.length === 0) {
         setPosNotice('Add at least one drug to cart before confirming payment.');
+        return;
+      }
+
+      if (posCustomerInvoice === 'yes' && posInvoiceDelivery !== 'printer' && !posInvoiceContact.trim()) {
+        setPosNotice('Provide customer WhatsApp number or email before invoice delivery.');
         return;
       }
 
@@ -3141,7 +3165,12 @@ function App() {
                         <span>Step 2</span>
                         <h3>Cart</h3>
                       </div>
-                      <small>{posCartItems.length}/10 rows</small>
+                      <div className="pos-cart-header-actions">
+                        <small>{posCartItems.length}/10 rows</small>
+                        <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
+                          Clear cart
+                        </button>
+                      </div>
                     </div>
 
                     <div className="system-table-wrap">
@@ -3152,6 +3181,7 @@ function App() {
                             <th>Qty</th>
                             <th>Unit price</th>
                             <th>Total</th>
+                            <th>Action</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -3176,6 +3206,15 @@ function App() {
                                 </td>
                                 <td>RWF {item.unitPrice.toLocaleString('en-RW')}</td>
                                 <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    className="pos-cart-remove-button"
+                                    onClick={() => removeCartItem(item.code)}
+                                  >
+                                    Remove
+                                  </button>
+                                </td>
                               </tr>
                             ))
                           )}
@@ -3195,7 +3234,13 @@ function App() {
                     <div className="pos-field-grid pos-field-grid--two">
                       <label>
                         <span>Customer type</span>
-                        <select value={posCustomerType} onChange={(event) => setPosCustomerType(event.target.value as typeof posCustomerType)}>
+                        <select
+                          value={posCustomerType}
+                          onChange={(event) => {
+                            setPosCustomerType(event.target.value as typeof posCustomerType);
+                            setPosTransactionConfirmed(false);
+                          }}
+                        >
                           <option value="walk-in">Walk-In Customer</option>
                           <option value="existing-customer">Existing Customer</option>
                           <option value="insurance-customer">Insurance Customer</option>
@@ -3215,7 +3260,13 @@ function App() {
 
                       <label>
                         <span>Payment method</span>
-                        <select value={posPaymentMethod} onChange={(event) => setPosPaymentMethod(event.target.value as typeof posPaymentMethod)}>
+                        <select
+                          value={posPaymentMethod}
+                          onChange={(event) => {
+                            setPosPaymentMethod(event.target.value as typeof posPaymentMethod);
+                            setPosTransactionConfirmed(false);
+                          }}
+                        >
                           <option value="cash">Cash</option>
                           <option value="momo">Mobile Money</option>
                           <option value="card">Card</option>
@@ -3244,7 +3295,10 @@ function App() {
                           type="number"
                           min="0"
                           value={posDiscountAmount}
-                          onChange={(event) => setPosDiscountAmount(event.target.value)}
+                          onChange={(event) => {
+                            setPosDiscountAmount(event.target.value);
+                            setPosTransactionConfirmed(false);
+                          }}
                         />
                       </label>
 
@@ -3269,10 +3323,27 @@ function App() {
                       </div>
                     </div>
 
+                    <div className="pos-summary-sync-note">
+                      <span>Live cart sync</span>
+                      <strong>{cartLineCount} item line{cartLineCount === 1 ? '' : 's'} · {cartTotalQuantity} unit{cartTotalQuantity === 1 ? '' : 's'}</strong>
+                    </div>
+
                     <dl className="pos-summary-list">
                       <div>
                         <dt>Date and time</dt>
                         <dd>{new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd>
+                      </div>
+                      <div>
+                        <dt>Cart lines</dt>
+                        <dd>{cartLineCount}</dd>
+                      </div>
+                      <div>
+                        <dt>Total quantity</dt>
+                        <dd>{cartTotalQuantity}</dd>
+                      </div>
+                      <div>
+                        <dt>Subtotal</dt>
+                        <dd>RWF {subtotalAmount.toLocaleString('en-RW')}</dd>
                       </div>
                       <div>
                         <dt>Customer contribution</dt>
@@ -3292,8 +3363,8 @@ function App() {
                       </div>
                     </dl>
 
-                    <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen}>
-                      Confirm payment
+                    <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartItems.length === 0}>
+                      {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                     </button>
                   </section>
 

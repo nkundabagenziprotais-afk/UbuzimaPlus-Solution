@@ -8836,3 +8836,165 @@ h3,
     grid-template-columns: 1fr;
   }
 }
+
+/* Final system-wide table rule: compact, consistent, readable across all admin tables */
+body .dashboard-shell table,
+body .dashboard-main table,
+body .dashboard-shell .system-table,
+body .dashboard-shell .helicopter-table,
+body .dashboard-shell .linked-submenu-table,
+body .dashboard-shell .focus-register-table,
+body .dashboard-shell .panel table,
+body .dashboard-shell article table,
+body .dashboard-shell section table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 0.74rem !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+body .dashboard-shell table thead,
+body .dashboard-main table thead {
+  background: rgba(248, 250, 252, 0.96) !important;
+}
+
+body .dashboard-shell table th,
+body .dashboard-main table th,
+body .dashboard-shell table td,
+body .dashboard-main table td {
+  padding: 0.46rem 0.56rem !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.13) !important;
+  line-height: 1.22 !important;
+  vertical-align: middle !important;
+  text-align: left !important;
+}
+
+body .dashboard-shell table th,
+body .dashboard-main table th {
+  background: rgba(248, 250, 252, 0.98) !important;
+  color: #64748b !important;
+  font-size: 0.64rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.045em !important;
+}
+
+body .dashboard-shell table td,
+body .dashboard-main table td {
+  color: #1f2937 !important;
+  font-size: 0.73rem !important;
+}
+
+body .dashboard-shell table tr:last-child td,
+body .dashboard-main table tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+body .dashboard-shell table button,
+body .dashboard-main table button {
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: var(--left-menu-accent, #4B5320) !important;
+  color: var(--left-menu-title-color, #ffffff) !important;
+  padding: 0.32rem 0.54rem !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+}
+
+.pos-cart-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.pos-cart-header-actions small {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.pos-cart-header-actions button,
+.pos-cart-remove-button {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(180, 33, 41, 0.1) !important;
+  color: #991b1b !important;
+  padding: 0.32rem 0.55rem;
+  font-size: 0.66rem;
+  font-weight: 850;
+}
+
+.pos-cart-header-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pos-cart-table td:nth-child(2) {
+  width: 5rem;
+}
+
+.pos-cart-table td:nth-child(5) {
+  width: 5.8rem;
+}
+
+.pos-summary-list div:nth-child(2),
+.pos-summary-list div:nth-child(3),
+.pos-summary-list div:nth-child(4) {
+  background: rgba(248, 250, 252, 0.72);
+  border-radius: 10px;
+  padding: 0.38rem 0.45rem;
+  border-bottom: 0;
+}
+
+/* POS Sale Summary live cart synchronization */
+.pos-summary-sync-note {
+  border: 1px solid rgba(75, 83, 32, 0.18);
+  background: rgba(75, 83, 32, 0.08);
+  border-radius: 14px;
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  gap: 0.16rem;
+  margin-bottom: 0.65rem;
+}
+
+.pos-summary-sync-note span {
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pos-summary-sync-note strong {
+  color: #1f2937;
+  font-size: 0.82rem;
+}
+
+/* POS Sale Summary live cart synchronization */
+.pos-summary-sync-note {
+  border: 1px solid rgba(75, 83, 32, 0.18);
+  background: rgba(75, 83, 32, 0.08);
+  border-radius: 14px;
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  gap: 0.16rem;
+  margin-bottom: 0.65rem;
+}
+
+.pos-summary-sync-note span {
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pos-summary-sync-note strong {
+  color: #1f2937;
+  font-size: 0.82rem;
+}
