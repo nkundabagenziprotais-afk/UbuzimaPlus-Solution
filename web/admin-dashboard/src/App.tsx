@@ -149,7 +149,8 @@ type FinanceWorkspaceKey =
   | 'credits-receivables'
   | 'receivable-register'
   | 'collection'
-  | 'financial-statements';
+  | 'financial-statements'
+  | 'tax-compliance';
 type AdhocReportWorkspaceKey =
   | 'overview'
   | 'operation-alerts'
@@ -200,6 +201,67 @@ const posInsuranceRates: PosInsuranceRate[] = [
   },
 ];
 
+type TaxComplianceRate = {
+  code: string;
+  name: string;
+  taxType: 'VAT' | 'WITHHOLDING' | 'SERVICE' | 'OTHER';
+  ratePercent: number;
+  appliesTo: string;
+  status: 'Active' | 'Draft' | 'Expired';
+  effectiveFrom: string;
+  effectiveTo?: string;
+  isDefaultForPos: boolean;
+  notes: string;
+};
+
+const financeTaxComplianceRates: TaxComplianceRate[] = [
+  {
+    code: 'VAT_STANDARD_RW',
+    name: 'Standard VAT',
+    taxType: 'VAT',
+    ratePercent: 18,
+    appliesTo: 'POS taxable pharmacy sales',
+    status: 'Active',
+    effectiveFrom: '2026-01-01',
+    isDefaultForPos: true,
+    notes: 'Default POS tax rate used for taxable retail sales.',
+  },
+  {
+    code: 'VAT_ZERO_MEDICAL',
+    name: 'Zero-rated medical supply',
+    taxType: 'VAT',
+    ratePercent: 0,
+    appliesTo: 'Approved zero-rated medical items',
+    status: 'Active',
+    effectiveFrom: '2026-01-01',
+    isDefaultForPos: false,
+    notes: 'Used only when product tax category is configured as zero-rated.',
+  },
+  {
+    code: 'WHT_SUPPLIER_SERVICE',
+    name: 'Supplier service withholding',
+    taxType: 'WITHHOLDING',
+    ratePercent: 15,
+    appliesTo: 'Eligible supplier service invoices',
+    status: 'Active',
+    effectiveFrom: '2026-01-01',
+    isDefaultForPos: false,
+    notes: 'Maintained by finance for supplier compliance review.',
+  },
+];
+
+function getActivePosTaxComplianceRate(): TaxComplianceRate {
+  return (
+    financeTaxComplianceRates.find((rate) => rate.isDefaultForPos && rate.status === 'Active') ??
+    financeTaxComplianceRates.find((rate) => rate.taxType === 'VAT' && rate.status === 'Active') ??
+    financeTaxComplianceRates[0]
+  );
+}
+
+function getActivePosTaxRatePercent(): number {
+  return getActivePosTaxComplianceRate().ratePercent;
+}
+
 type PosSaleSummary = {
   lineCount: number;
   totalQuantity: number;
@@ -207,6 +269,7 @@ type PosSaleSummary = {
   discount: number;
   taxableBase: number;
   tax: number;
+  taxRatePercent: number;
   customerContributionPercent: number;
   insuranceContributionPercent: number;
   insuranceContribution: number;
@@ -221,16 +284,22 @@ function calculatePosSaleSummary(input: {
   paymentMethod: 'cash' | 'momo' | 'card' | 'insurance' | 'credit';
   insuranceProviderId: string;
   insuranceInstitutionId: string;
+  taxRatePercent?: number;
 }): PosSaleSummary {
-  const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === input.insuranceProviderId) ?? posInsuranceRates[0];
-  const selectedInstitution = selectedInsurance.institutions.find((institution) => institution.id === input.insuranceInstitutionId) ?? null;
+  const selectedInsurance =
+    posInsuranceRates.find((insurance) => insurance.id === input.insuranceProviderId) ?? posInsuranceRates[0];
+
+  const selectedInstitution =
+    selectedInsurance.institutions.find((institution) => institution.id === input.insuranceInstitutionId) ?? null;
 
   const lineCount = input.cartItems.length;
   const totalQuantity = input.cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = input.cartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const discount = Math.min(Number(input.discountAmount || 0), subtotal);
+  const discount = Math.min(Math.max(Number(input.discountAmount || 0), 0), subtotal);
   const taxableBase = Math.max(0, subtotal - discount);
-  const tax = Math.round(taxableBase * 0.18);
+  const taxRatePercent = Math.max(0, input.taxRatePercent ?? getActivePosTaxRatePercent());
+  const tax = Math.round((taxableBase * taxRatePercent) / 100);
+  const total = Math.max(0, taxableBase + tax);
 
   const customerContributionPercent =
     input.paymentMethod === 'insurance'
@@ -242,13 +311,13 @@ function calculatePosSaleSummary(input: {
 
   const insuranceContribution =
     input.paymentMethod === 'insurance'
-      ? Math.round((taxableBase * insuranceContributionPercent) / 100)
+      ? Math.round((total * insuranceContributionPercent) / 100)
       : 0;
 
   const customerContribution =
     input.paymentMethod === 'insurance'
-      ? Math.max(0, taxableBase + tax - insuranceContribution)
-      : Math.max(0, taxableBase + tax);
+      ? Math.max(0, total - insuranceContribution)
+      : total;
 
   return {
     lineCount,
@@ -257,16 +326,19 @@ function calculatePosSaleSummary(input: {
     discount,
     taxableBase,
     tax,
+    taxRatePercent,
     customerContributionPercent,
     insuranceContributionPercent,
     insuranceContribution,
     customerContribution,
-    total: Math.max(0, taxableBase + tax),
-    calculatedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    total,
+    calculatedAt: new Date().toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }),
   };
 }
-
-
 
 type HomeWidgetKey =
   | 'summary'
@@ -479,6 +551,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'finance-receivable-register', label: 'Receivable Register', target: 'receivable-register' },
     { key: 'finance-collection', label: 'Collection', target: 'collection' },
     { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statements' },
+    { key: 'finance-tax-compliance', label: 'Tax Compliance Management', target: 'tax-compliance' },
   ],
   reports: [
     { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
@@ -1754,6 +1827,7 @@ function App() {
       paymentMethod: 'cash',
       insuranceProviderId: 'rssb',
       insuranceInstitutionId: '',
+        taxRatePercent: getActivePosTaxRatePercent(),
     }),
   );
   const [posSummaryRefreshKey, setPosSummaryRefreshKey] = useState(0);
@@ -3057,6 +3131,7 @@ function App() {
           paymentMethod: posPaymentMethod,
           insuranceProviderId: posInsuranceProvider,
           insuranceInstitutionId: posInsuranceInstitution,
+        taxRatePercent: getActivePosTaxRatePercent(),
         }),
       );
       setPosNotice('Sale Summary refreshed from current cart.');
@@ -3616,7 +3691,7 @@ function App() {
                       <dd>RWF {posSaleSummary.insuranceContribution.toLocaleString('en-RW')}</dd>
                     </div>
                     <div>
-                      <dt>Tax</dt>
+                      <dt>Tax ({posSaleSummary.taxRatePercent}%)</dt>
                       <dd>RWF {posSaleSummary.tax.toLocaleString('en-RW')}</dd>
                     </div>
                     <div className="total">
@@ -3829,7 +3904,7 @@ function App() {
           {activeFinanceWorkspace === 'overview' && (
             <FocusRegisterPreview
               title="Finance Overview"
-              description="Cash, MoMo, card, credit, receivables, payables, and exception status."
+              description="Cash, MoMo, card, credit, receivables, payables, tax compliance, and exception status."
               rows={financeRows}
             />
           )}
@@ -3879,6 +3954,57 @@ function App() {
                     <span>{text}</span>
                   </article>
                 ))}
+              </div>
+            </article>
+          )}
+
+          {activeFinanceWorkspace === 'tax-compliance' && (
+            <article className="panel wide tax-compliance-management-panel">
+              <div className="panel-heading-row">
+                <div>
+                  <h2>Tax Compliance Management</h2>
+                  <p className="muted">
+                    Maintain tax rates used by POS, procurement, receivables, invoices, and finance reporting. POS reads the active default POS VAT rate from this table source.
+                  </p>
+                </div>
+                <div className="table-action-row">
+                  <button type="button">Add Tax Rate</button>
+                  <button type="button">Export</button>
+                </div>
+              </div>
+
+              <div className="system-table-wrap">
+                <table className="system-table tax-compliance-table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Tax name</th>
+                      <th>Type</th>
+                      <th>Rate</th>
+                      <th>Applies to</th>
+                      <th>Status</th>
+                      <th>Effective from</th>
+                      <th>POS default</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {financeTaxComplianceRates.map((rate) => (
+                      <tr key={rate.code}>
+                        <td>{rate.code}</td>
+                        <td>
+                          <strong>{rate.name}</strong>
+                          <small>{rate.notes}</small>
+                        </td>
+                        <td>{rate.taxType}</td>
+                        <td>{rate.ratePercent}%</td>
+                        <td>{rate.appliesTo}</td>
+                        <td>{rate.status}</td>
+                        <td>{rate.effectiveFrom}</td>
+                        <td>{rate.isDefaultForPos ? 'Yes' : 'No'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </article>
           )}

@@ -9232,3 +9232,40 @@ body .dashboard-main table button {
     align-items: flex-start;
   }
 }
+
+/* Finance Tax Compliance Management */
+.tax-compliance-management-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.table-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.table-action-row button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--left-menu-accent, #4B5320);
+  color: var(--left-menu-title-color, #ffffff);
+  padding: 0.48rem 0.72rem;
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+
+.tax-compliance-table td strong {
+  display: block;
+  font-size: 0.74rem;
+  color: #1f2937;
+}
+
+.tax-compliance-table td small {
+  display: block;
+  margin-top: 0.16rem;
+  color: #64748b;
+  font-size: 0.66rem;
+  line-height: 1.25;
+}
