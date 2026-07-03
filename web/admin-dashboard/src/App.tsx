@@ -1628,6 +1628,13 @@ function App() {
   const [posTillZeroized, setPosTillZeroized] = useState(false);
   const [posDepositProof, setPosDepositProof] = useState('');
   const [posNotice, setPosNotice] = useState('');
+  const [posCartItems, setPosCartItems] = useState<Array<{
+    code: string;
+    name: string;
+    strength: string;
+    quantity: number;
+    unitPrice: number;
+  }>>([]);
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
@@ -2895,12 +2902,16 @@ function App() {
     ];
 
     const posProducts = [
-      ['Lisinopril', '20 mg', 'Rx-784213', 'Ready', 'RWF 14,800', 'Insurance'],
-      ['Amoxicillin', '500 mg', 'Rx-784198', 'Prescription', 'RWF 8,500', 'Cash'],
-      ['Paracetamol', '500 mg', 'OTC-001', 'OTC', 'RWF 1,200', 'Cash'],
-      ['Metformin', '850 mg', 'Rx-784240', 'Ready', 'RWF 6,200', 'Insurance'],
-      ['ORS Sachet', 'Unit', 'OTC-019', 'OTC', 'RWF 800', 'Cash'],
-      ['Cough Syrup', '100 ml', 'OTC-044', 'Review', 'RWF 4,200', 'Cash'],
+      { name: 'Lisinopril', strength: '20 mg', code: 'Rx-784213', status: 'Ready', unitPrice: 14800, category: 'Insurance' },
+      { name: 'Amoxicillin', strength: '500 mg', code: 'Rx-784198', status: 'Prescription', unitPrice: 8500, category: 'Cash' },
+      { name: 'Paracetamol', strength: '500 mg', code: 'OTC-001', status: 'OTC', unitPrice: 1200, category: 'Cash' },
+      { name: 'Metformin', strength: '850 mg', code: 'Rx-784240', status: 'Ready', unitPrice: 6200, category: 'Insurance' },
+      { name: 'ORS Sachet', strength: 'Unit', code: 'OTC-019', status: 'OTC', unitPrice: 800, category: 'Cash' },
+      { name: 'Cough Syrup', strength: '100 ml', code: 'OTC-044', status: 'Review', unitPrice: 4200, category: 'Cash' },
+      { name: 'Atorvastatin', strength: '40 mg', code: 'Rx-784270', status: 'Ready', unitPrice: 9800, category: 'Insurance' },
+      { name: 'Alprazolam', strength: '0.5 mg', code: 'Rx-784281', status: 'Controlled', unitPrice: 11200, category: 'Review' },
+      { name: 'Ibuprofen', strength: '400 mg', code: 'OTC-031', status: 'OTC', unitPrice: 1500, category: 'Cash' },
+      { name: 'Cetirizine', strength: '10 mg', code: 'OTC-055', status: 'OTC', unitPrice: 1800, category: 'Cash' },
     ];
 
     const salesSummaryRows = Array.from({ length: 15 }).map((_, index) => {
@@ -2909,18 +2920,57 @@ function App() {
       const method = index % 4 === 0 ? 'Cash' : index % 4 === 1 ? 'MoMo' : index % 4 === 2 ? 'Insurance' : 'Card';
       const status = index % 5 === 0 ? 'Review' : 'Completed';
       const amount = `RWF ${(12500 + index * 3750).toLocaleString('en-RW')}`;
+      const dateTime = `Jul 03, ${String(8 + (index % 10)).padStart(2, '0')}:${index % 2 === 0 ? '15' : '45'}`;
 
-      return [saleNumber, customer, method, status, amount] as const;
+      return [dateTime, saleNumber, customer, method, status, amount] as const;
     });
 
-    const subtotalAmount = 64500;
+    const cartSubtotal = posCartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const subtotalAmount = cartSubtotal;
     const discountValue = Number(posDiscountAmount || 0);
-    const taxAmount = Math.max(0, Math.round((subtotalAmount - discountValue) * 0.18));
+    const taxableBase = Math.max(0, subtotalAmount - discountValue);
+    const taxAmount = Math.max(0, Math.round(taxableBase * 0.18));
     const partnerContribution = posCustomerType === 'insurance-customer' || posPaymentMethod === 'insurance'
-      ? Math.round((subtotalAmount - discountValue) * 0.7)
+      ? Math.round(taxableBase * 0.7)
       : 0;
-    const customerContribution = Math.max(0, subtotalAmount - discountValue + taxAmount - partnerContribution);
-    const totalAmount = Math.max(0, subtotalAmount - discountValue + taxAmount);
+    const customerContribution = Math.max(0, taxableBase + taxAmount - partnerContribution);
+    const totalAmount = Math.max(0, taxableBase + taxAmount);
+
+    function addPosProductToCart(product: typeof posProducts[number]) {
+      setPosCartItems((current) => {
+        const existing = current.find((item) => item.code === product.code);
+
+        if (existing) {
+          return current.map((item) =>
+            item.code === product.code ? { ...item, quantity: Math.min(99, item.quantity + 1) } : item,
+          );
+        }
+
+        return [
+          ...current,
+          {
+            code: product.code,
+            name: product.name,
+            strength: product.strength,
+            quantity: 1,
+            unitPrice: product.unitPrice,
+          },
+        ].slice(0, 10);
+      });
+
+      setPosNotice(`${product.name} added to cart.`);
+    }
+
+    function updateCartQuantity(code: string, quantity: number) {
+      if (quantity <= 0) {
+        setPosCartItems((current) => current.filter((item) => item.code !== code));
+        return;
+      }
+
+      setPosCartItems((current) =>
+        current.map((item) => (item.code === code ? { ...item, quantity: Math.min(99, quantity) } : item)),
+      );
+    }
 
     function openPosDay() {
       setIsPosDayOpen(true);
@@ -2952,11 +3002,16 @@ function App() {
     }
 
     function confirmTransaction() {
+      if (posCartItems.length === 0) {
+        setPosNotice('Add at least one drug to cart before confirming payment.');
+        return;
+      }
+
       setPosTransactionConfirmed(true);
       setPosNotice(
         posCustomerInvoice === 'yes'
-          ? 'Transaction confirmed. Invoice generation and delivery are now available inside POS.'
-          : 'Transaction confirmed without customer invoice.',
+          ? 'Payment confirmed. Invoice generation and delivery are now available inside POS.'
+          : 'Payment confirmed without customer invoice.',
       );
     }
 
@@ -2977,7 +3032,7 @@ function App() {
                 <div>
                   <p className="eyebrow">POS</p>
                   <h2>Pharmacy sales counter</h2>
-                  <p className="muted">Select medicines, build cart, confirm payment, then generate receipt or invoice when required.</p>
+                  <p className="muted">Select drugs, build cart, complete transaction setup, confirm payment, then generate invoice when required.</p>
                 </div>
 
                 <div className={`pos-session-pill ${isPosDayOpen ? 'open' : 'closed'}`}>
@@ -2988,8 +3043,8 @@ function App() {
 
               {posNotice && <div className="form-success">{posNotice}</div>}
 
-              <section className="pos-day-control-strip">
-                <div>
+              <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
+                <article>
                   <span>Open POS Day</span>
                   <label>
                     <small>Opening mode</small>
@@ -3008,9 +3063,9 @@ function App() {
                     />
                   </label>
                   <button type="button" onClick={openPosDay}>Open POS Day</button>
-                </div>
+                </article>
 
-                <div>
+                <article>
                   <span>Close POS Day</span>
                   <label>
                     <small>Closing mode</small>
@@ -3041,10 +3096,10 @@ function App() {
                   )}
 
                   <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close POS Day</button>
-                </div>
+                </article>
               </section>
 
-              <section className="pos-counter-workbench">
+              <section className="pos-counter-workbench pos-counter-workbench--cart-middle">
                 <aside className="pos-rx-queue">
                   <div className="section-heading">
                     <div>
@@ -3055,45 +3110,81 @@ function App() {
 
                   <input className="pos-search-input" placeholder="Search patient, drug, Rx#, barcode..." />
 
-                  <div className="pos-drug-list">
-                    {posProducts.map(([name, strength, code, status, price]) => (
-                      <button key={code} type="button">
-                        <strong>{name}</strong>
-                        <small>{strength}</small>
-                        <em>{code}</em>
-                        <span>{status}</span>
+                  <div className="pos-drug-list pos-drug-list--ten">
+                    {posProducts.map((product) => (
+                      <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
+                        <strong>{product.name}</strong>
+                        <small>{product.strength}</small>
+                        <em>{product.code}</em>
+                        <span>{product.status}</span>
+                        <i>Add to cart</i>
                       </button>
                     ))}
                   </div>
+
+                  <button
+                    type="button"
+                    className="pos-view-products-link"
+                    onClick={() => {
+                      setActiveInventoryView('product-master');
+                      navigateToSection('inventory');
+                    }}
+                  >
+                    View full product list
+                  </button>
                 </aside>
 
-                <main className="pos-main-flow">
-                  <section className="pos-selected-drug-card">
-                    <div>
-                      <span>Selected item</span>
-                      <h3>Lisinopril <small>20 mg</small></h3>
-                      <p className="muted">30 tablets · 30-day supply · Refills 5 · Insurance-ready split.</p>
+                <main className="pos-cart-center">
+                  <section className="pos-cart-card">
+                    <div className="section-heading">
+                      <div>
+                        <span>Step 2</span>
+                        <h3>Cart</h3>
+                      </div>
+                      <small>{posCartItems.length}/10 rows</small>
                     </div>
 
-                    <div className="pos-price-strip">
-                      <article>
-                        <span>Drug price</span>
-                        <strong>RWF 14,800</strong>
-                      </article>
-                      <article>
-                        <span>Patient pays</span>
-                        <strong>RWF 2,220</strong>
-                      </article>
-                      <article>
-                        <span>Insurance</span>
-                        <strong>RWF 12,580</strong>
-                      </article>
+                    <div className="system-table-wrap">
+                      <table className="system-table pos-cart-table">
+                        <thead>
+                          <tr>
+                            <th>Drug</th>
+                            <th>Qty</th>
+                            <th>Unit price</th>
+                            <th>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {posCartItems.length === 0 ? (
+                            <tr>
+                              <td colSpan={4}>No drugs added yet. Select drugs from the left list.</td>
+                            </tr>
+                          ) : (
+                            posCartItems.slice(0, 10).map((item) => (
+                              <tr key={item.code}>
+                                <td>
+                                  <strong>{item.name}</strong>
+                                  <small>{item.strength}</small>
+                                </td>
+                                <td>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={item.quantity}
+                                    onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
+                                  />
+                                </td>
+                                <td>RWF {item.unitPrice.toLocaleString('en-RW')}</td>
+                                <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
                     </div>
-
-                    <button type="button" disabled={!isPosDayOpen}>Add to cart</button>
                   </section>
 
-                  <section className="pos-transaction-setup-card">
+                  <section className="pos-transaction-setup-card pos-transaction-setup-card--two-column">
                     <div className="section-heading">
                       <div>
                         <span>Step 3</span>
@@ -3101,7 +3192,7 @@ function App() {
                       </div>
                     </div>
 
-                    <div className="pos-field-grid">
+                    <div className="pos-field-grid pos-field-grid--two">
                       <label>
                         <span>Customer type</span>
                         <select value={posCustomerType} onChange={(event) => setPosCustomerType(event.target.value as typeof posCustomerType)}>
@@ -3169,41 +3260,42 @@ function App() {
                   </section>
                 </main>
 
-                <aside className="pos-cart-rail">
-                  <div className="section-heading">
-                    <div>
-                      <span>Step 2</span>
-                      <h3>Dispense cart</h3>
+                <aside className="pos-confirmation-rail">
+                  <section className="pos-summary-confirmation-card">
+                    <div className="section-heading">
+                      <div>
+                        <span>Step 4</span>
+                        <h3>Sale Summary</h3>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="pos-cart-item">
-                    <strong>Lisinopril 20 mg</strong>
-                    <span>1 pack · RWF 14,800</span>
-                  </div>
+                    <dl className="pos-summary-list">
+                      <div>
+                        <dt>Date and time</dt>
+                        <dd>{new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd>
+                      </div>
+                      <div>
+                        <dt>Customer contribution</dt>
+                        <dd>RWF {customerContribution.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Partner & insurance contribution</dt>
+                        <dd>RWF {partnerContribution.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Tax</dt>
+                        <dd>RWF {taxAmount.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div className="total">
+                        <dt>Total</dt>
+                        <dd>RWF {totalAmount.toLocaleString('en-RW')}</dd>
+                      </div>
+                    </dl>
 
-                  <dl className="pos-summary-list">
-                    <div>
-                      <dt>Customer contribution</dt>
-                      <dd>RWF {customerContribution.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div>
-                      <dt>Partner & insurance contribution</dt>
-                      <dd>RWF {partnerContribution.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div>
-                      <dt>Tax</dt>
-                      <dd>RWF {taxAmount.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div className="total">
-                      <dt>Total</dt>
-                      <dd>RWF {totalAmount.toLocaleString('en-RW')}</dd>
-                    </div>
-                  </dl>
-
-                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen}>
-                    Take payment
-                  </button>
+                    <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen}>
+                      Confirm payment
+                    </button>
+                  </section>
 
                   {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
                     <section className="pos-invoice-journey">
@@ -3254,7 +3346,7 @@ function App() {
                 <div className="section-heading">
                   <div>
                     <span>Recent sales</span>
-                    <h3>15-row transaction summary</h3>
+                    <h3>Recent sales</h3>
                   </div>
                   <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
                     Open Sales Performance
@@ -3265,6 +3357,7 @@ function App() {
                   <table className="system-table">
                     <thead>
                       <tr>
+                        <th>Date / Time</th>
                         <th>Sale No.</th>
                         <th>Customer</th>
                         <th>Method</th>
@@ -3273,8 +3366,9 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {salesSummaryRows.map(([saleNumber, customer, method, status, amount]) => (
+                      {salesSummaryRows.map(([dateTime, saleNumber, customer, method, status, amount]) => (
                         <tr key={saleNumber}>
+                          <td>{dateTime}</td>
                           <td>{saleNumber}</td>
                           <td>{customer}</td>
                           <td>{method}</td>

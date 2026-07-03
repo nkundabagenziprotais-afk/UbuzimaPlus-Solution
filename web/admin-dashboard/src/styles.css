@@ -8690,3 +8690,149 @@ h3,
     grid-template-columns: 1fr;
   }
 }
+
+/* POS correction: operational drug-to-cart flow and cleaner information fit */
+.pos-day-control-strip--two-by-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.pos-day-control-strip--two-by-two article {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 0.8rem;
+  display: grid;
+  grid-template-columns: 0.75fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.62rem;
+  align-items: end;
+}
+
+.pos-day-control-strip--two-by-two article > span {
+  grid-column: 1 / -1;
+  color: var(--left-menu-accent, #4B5320);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pos-day-control-strip--two-by-two article > button {
+  grid-column: 2;
+}
+
+.pos-counter-workbench--cart-middle {
+  grid-template-columns: 300px minmax(480px, 1fr) 320px;
+}
+
+.pos-cart-center {
+  padding: 0.9rem;
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.pos-confirmation-rail {
+  background: #ffffff;
+  border-left: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+}
+
+.pos-summary-confirmation-card,
+.pos-cart-card {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 0.9rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+}
+
+.pos-drug-list--ten {
+  max-height: 590px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.pos-drug-list--ten button {
+  grid-template-columns: 1fr auto;
+}
+
+.pos-drug-list--ten button i {
+  grid-column: 1 / -1;
+  color: var(--left-menu-accent, #4B5320);
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pos-view-products-link {
+  margin-top: 0.7rem;
+  width: 100%;
+}
+
+.pos-cart-table td strong {
+  display: block;
+  font-size: 0.76rem;
+}
+
+.pos-cart-table td small {
+  display: block;
+  color: #64748b;
+  font-size: 0.66rem;
+}
+
+.pos-cart-table input {
+  width: 4rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  padding: 0.34rem;
+  font-size: 0.74rem;
+}
+
+.pos-transaction-setup-card--two-column .pos-field-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pos-summary-confirmation-card > button {
+  width: 100%;
+}
+
+@media (max-width: 1480px) {
+  .pos-counter-workbench--cart-middle {
+    grid-template-columns: 280px minmax(420px, 1fr);
+  }
+
+  .pos-confirmation-rail {
+    grid-column: 1 / -1;
+    border-left: 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+  }
+}
+
+@media (max-width: 1100px) {
+  .pos-day-control-strip--two-by-two,
+  .pos-counter-workbench--cart-middle {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-day-control-strip--two-by-two article {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-day-control-strip--two-by-two article > button {
+    grid-column: auto;
+  }
+
+  .pos-confirmation-rail {
+    border: 0;
+  }
+
+  .pos-transaction-setup-card--two-column .pos-field-grid--two {
+    grid-template-columns: 1fr;
+  }
+}
