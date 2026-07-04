@@ -14062,3 +14062,194 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* System-wide two-column table actions */
+.module-section-stage :where(
+  .table-action-row,
+  .product-master-action-button-row,
+  .product-inventory-action-button-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+),
+.tenant-user-list :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+),
+.data-grid-table :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+),
+.inventory-table :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.42rem !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+.module-section-stage :where(
+  .table-action-row,
+  .product-master-action-button-row,
+  .product-inventory-action-button-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) button,
+.tenant-user-list :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) button,
+.data-grid-table :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) button,
+.inventory-table :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Inventory summary card identity refinement */
+.inventory-home-summary-card {
+  isolation: isolate;
+}
+
+.inventory-home-summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  border-radius: 22px 0 0 22px;
+  background: rgba(37, 99, 235, 0.42);
+}
+
+.inventory-home-summary-card-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inventory-home-summary-card-top i {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.inventory-home-summary-card strong,
+.inventory-home-summary-card small {
+  position: relative;
+  z-index: 1;
+}
+
+.inventory-home-summary-card--value::before {
+  background: linear-gradient(180deg, #2563eb, #60a5fa);
+}
+
+.inventory-home-summary-card--catalog::before {
+  background: linear-gradient(180deg, #7c3aed, #a78bfa);
+}
+
+.inventory-home-summary-card--batch::before {
+  background: linear-gradient(180deg, #0f766e, #5eead4);
+}
+
+.inventory-home-summary-card--warning::before {
+  background: linear-gradient(180deg, #d97706, #fbbf24);
+}
+
+.inventory-home-summary-card--good::before {
+  background: linear-gradient(180deg, #16a34a, #86efac);
+}
+
+.inventory-home-summary-card--catalog {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(124, 58, 237, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.94);
+}
+
+.inventory-home-summary-card--batch {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(15, 118, 110, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.94);
+}
+
+/* Cleaner action cards without detail text */
+.inventory-simple-command-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.inventory-simple-command-card {
+  min-height: 96px;
+  align-content: space-between;
+}
+
+.inventory-simple-command-card span {
+  display: none;
+}
+
+.inventory-simple-command-card em {
+  justify-self: start;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+/* Premium inventory page surfaces */
+.inventory-active-page-marker {
+  border-radius: 18px !important;
+  background:
+    linear-gradient(135deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.96)) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+.module-section-rail button {
+  border-radius: 16px !important;
+}
+
+.module-section-rail button.active {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
+}
+
+.module-section-stage {
+  border-radius: 22px;
+}
+
+@media (max-width: 720px) {
+  .module-section-stage :where(
+    .table-action-row,
+    .product-master-action-button-row,
+    .product-inventory-action-button-row,
+    [class*="table-action-row"],
+    [class*="action-button-row"]
+  ) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

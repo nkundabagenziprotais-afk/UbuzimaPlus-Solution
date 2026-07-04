@@ -2086,24 +2086,28 @@ export function ProductInventoryPreview({
         value: formatRwf(totalRetailValue),
         helper: 'Estimated retail value',
         tone: 'value',
+        mark: 'RWF',
       },
       {
-        label: 'Products',
+        label: 'Product master',
         value: formatNumber(summary.products_count),
         helper: `${formatNumber(summary.product_categories_count)} categories`,
-        tone: 'neutral',
+        tone: 'catalog',
+        mark: 'SKU',
       },
       {
-        label: 'Batches',
+        label: 'Stock batches',
         value: formatNumber(summary.stock_batches_count),
         helper: `${formatNumber(summary.total_quantity_on_hand)} units on hand`,
-        tone: 'neutral',
+        tone: 'batch',
+        mark: 'LOT',
       },
       {
-        label: 'Attention',
+        label: 'Action queue',
         value: formatNumber(urgentActions),
         helper: 'Low stock, expiry, or expired',
         tone: urgentActions > 0 ? 'warning' : 'good',
+        mark: urgentActions > 0 ? '!' : 'OK',
       },
     ] as const;
 
@@ -2124,7 +2128,10 @@ export function ProductInventoryPreview({
         <div className="inventory-home-summary-grid">
           {executiveCards.map((card) => (
             <article key={card.label} className={`inventory-home-summary-card inventory-home-summary-card--${card.tone}`}>
-              <span>{card.label}</span>
+              <div className="inventory-home-summary-card-top">
+                <span>{card.label}</span>
+                <i aria-hidden="true">{card.mark}</i>
+              </div>
               <strong>{card.value}</strong>
               <small>{card.helper}</small>
             </article>
@@ -2140,7 +2147,6 @@ export function ProductInventoryPreview({
         key: 'receive-stock',
         eyebrow: 'Flow',
         title: 'Receive stock',
-        description: 'Record batch, quantity, cost, and price.',
         action: 'Start',
         tone: 'primary',
       },
@@ -2148,7 +2154,6 @@ export function ProductInventoryPreview({
         key: 'product-master-create',
         eyebrow: 'Master',
         title: 'Add product',
-        description: 'Create a clean product record.',
         action: 'Add',
         tone: 'quiet',
       },
@@ -2156,7 +2161,6 @@ export function ProductInventoryPreview({
         key: 'product-master-review',
         eyebrow: 'Register',
         title: 'Product list',
-        description: 'Search, edit, replicate, or delete.',
         action: 'Open',
         tone: 'quiet',
       },
@@ -2164,7 +2168,6 @@ export function ProductInventoryPreview({
         key: 'product-master-replicate',
         eyebrow: 'Fast',
         title: 'Replicate',
-        description: 'Copy a similar product safely.',
         action: 'Choose',
         tone: 'quiet',
       },
@@ -2172,7 +2175,6 @@ export function ProductInventoryPreview({
         key: 'low-stock',
         eyebrow: 'Queue',
         title: 'Low stock',
-        description: 'Prioritize replenishment.',
         action: 'Review',
         tone: 'alert',
       },
@@ -2180,7 +2182,6 @@ export function ProductInventoryPreview({
         key: 'near-expiry',
         eyebrow: 'Risk',
         title: 'Expiry',
-        description: 'Protect stock before loss.',
         action: 'Review',
         tone: 'alert',
       },
@@ -2211,7 +2212,6 @@ export function ProductInventoryPreview({
             >
               <small>{card.eyebrow}</small>
               <strong>{card.title}</strong>
-              <span>{card.description}</span>
               <em>{card.action}</em>
             </button>
           ))}
