@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmacyProfile, login, logout, requestPasswordReset, runAccessCheck, verifyTwoFactor } from './lib/api';
+import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
@@ -18,6 +18,7 @@ import { NotificationCenterPanel } from './components/NotificationCenterPanel';
 import { MarketLocalizationPanel } from './components/MarketLocalizationPanel';
 import { NearbyProvidersPanel } from './components/NearbyProvidersPanel';
 import { TenantPharmacyDashboard } from './components/TenantPharmacyDashboard';
+import { UserSecurityManagement } from './components/UserSecurityManagement';
 import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import './styles.css';
@@ -305,7 +306,7 @@ const dashboardCardOptions: Array<{ key: DashboardCardKey; label: string }> = [
   { key: 'inventory', label: 'Inventory Control' },
   { key: 'pos', label: 'POS and Sales' },
   { key: 'finance', label: 'Finance Watch' },
-  { key: 'suppliers', label: 'Supplier and Purchase Orders' },
+  { key: 'suppliers', label: 'Procurement and Purchase Orders' },
   { key: 'communications', label: 'Communication Center' },
   { key: 'ai-reports', label: 'AI and Reports' },
   { key: 'profile', label: 'Profile and Access' },
@@ -464,7 +465,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'pos-payment-receipt', label: 'Payment and Receipt', target: 'payment-receipt' },
   ],
   suppliers: [
-    { key: 'supplier-overview', label: 'Supplier Overview', target: 'overview' },
+    { key: 'supplier-overview', label: 'Procurement Overview', target: 'overview' },
     { key: 'supplier-create', label: 'Create Supplier', target: 'create-supplier' },
     { key: 'supplier-list', label: 'Supplier List', target: 'supplier-list' },
     { key: 'supplier-create-po', label: 'Create Purchase Order', target: 'create-purchase-order' },
@@ -704,14 +705,14 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     description: 'Teller sessions, fast sales, prescription checks, payments, supervisor controls, and till closure.',
   },
   suppliers: {
-    eyebrow: 'Suppliers and procurement',
-    title: 'Supplier and wholesale operations',
+    eyebrow: 'Procurement',
+    title: 'Procurement and wholesale operations',
     description: 'Supplier setup, wholesale pharmacy readiness, purchase orders, receiving, and dispatch preparation.',
   },
   finance: {
     eyebrow: 'Finance operations',
     title: 'Payables and receivables',
-    description: 'Supplier invoices, payments, customer credit, collections, and finance visibility.',
+    description: 'Procurement invoices, payments, customer credit, collections, and finance visibility.',
   },
   reports: {
     eyebrow: 'Ad-hoc Report and command view',
@@ -906,7 +907,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
         items: [
           { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
           { key: 'pos', label: 'POS', description: 'Sales and dispensing', icon: 'PS', status: 'Live' },
-          { key: 'suppliers', label: 'Suppliers', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
+          { key: 'suppliers', label: 'Procurement', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
           { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
           { key: 'reports', label: 'Ad-hoc Report', description: 'Executive and daily reports', icon: 'AR', status: 'Live' },
           { key: 'pharmacist-chat', label: 'Pharmacist Chats', description: 'In-app and WhatsApp customer conversations', icon: 'CH', status: 'Live' },
@@ -942,9 +943,9 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       label: `${tenantName} Pharmacy`,
       icon: 'PH',
       items: [
-        { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
         { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
-        { key: 'suppliers', label: 'Suppliers', description: 'Purchasing and receiving', icon: 'SP', status: 'Live' },
+        { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
+        { key: 'suppliers', label: 'Procurement', description: 'Purchasing and receiving', icon: 'PR', status: 'Live' },
         { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN', status: 'Live' },
         { key: 'reports', label: 'Ad-hoc Report', description: 'Daily and monthly review', icon: 'AR', status: 'Live' },
         { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer questions', icon: 'CH', status: 'Live' },
@@ -987,7 +988,7 @@ const erpModules: Array<{
     title: 'Finance',
     status: 'Live APIs',
     summary: 'Payables, receivables, collections, customer credit, supplier aging, and management review.',
-    workspace: ['Supplier invoices', 'Payment records', 'Customer collections', 'Cash and credit visibility'],
+    workspace: ['Procurement invoices', 'Payment records', 'Customer collections', 'Cash and credit visibility'],
   },
   {
     key: 'hr',
@@ -1506,7 +1507,7 @@ const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; 
 
 const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; description: string }> = [
   { key: 'overview', label: 'Finance Overview', description: 'Cards, charts, and finance position' },
-  { key: 'finance-flow', label: 'Finance Flow', description: 'Supplier invoices, approval, and payment' },
+  { key: 'finance-flow', label: 'Finance Flow', description: 'Procurement invoices, approval, and payment' },
   { key: 'exception-focus', label: 'Exception Focus', description: 'Overdue, partial, variance, and approval risks' },
   { key: 'credits-receivables', label: 'Customer Credits / Receivables', description: 'Credit setup and receivable creation' },
   { key: 'receivable-register', label: 'Receivable Register', description: '15-row register with bulk and export tools' },
@@ -1747,7 +1748,17 @@ function App() {
     strength: string;
     quantity: number;
     unitPrice: number;
+    batchId: number;
+    productId: number;
+    batchNumber: string;
+    availableQuantity: number;
+    expiryDate: string | null;
+    locationName: string;
   }>>([]);
+  const [posInventoryBatches, setPosInventoryBatches] = useState<PharmaStockBatch[]>([]);
+  const [isLoadingPosInventory, setIsLoadingPosInventory] = useState(false);
+  const [posInventoryError, setPosInventoryError] = useState('');
+  const [posInventoryLoadedAt, setPosInventoryLoadedAt] = useState('');
   const [posSaleSummary, setPosSaleSummary] = useState<PosSaleSummary>(() =>
     calculatePosSaleSummary({
       cartItems: [],
@@ -1765,6 +1776,11 @@ function App() {
   const [activePharmacistChatWorkspace, setActivePharmacistChatWorkspace] = useState<'in-app-chat' | 'whatsapp-chat'>('in-app-chat');
   const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({ current_password: '', password: '', password_confirmation: '' });
+  const [changePasswordNotice, setChangePasswordNotice] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [openPrincipalMenus, setOpenPrincipalMenus] = useState<Partial<Record<AdminSectionKey, boolean>>>({});
   const [homeWidgets, setHomeWidgets] = useState<Record<HomeWidgetKey, boolean>>({
     summary: true,
@@ -2268,6 +2284,36 @@ function App() {
       departments: null,
     });
     setPharmaCoreError('');
+    setPosCartItems([]);
+    setPosInventoryBatches([]);
+    setPosInventoryError('');
+    setPosInventoryLoadedAt('');
+  }
+
+  async function handleChangePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!session?.token) return;
+
+    if (changePasswordForm.password !== changePasswordForm.password_confirmation) {
+      setChangePasswordError('New password and confirmation do not match.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setChangePasswordError('');
+    setChangePasswordNotice('');
+
+    try {
+      const response = await changePassword(session.token, changePasswordForm);
+      persistSession({ token: session.token, profile: response.profile });
+      setChangePasswordNotice(response.message);
+      setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
+    } catch (err) {
+      setChangePasswordError(err instanceof Error ? err.message : 'Unable to change password.');
+    } finally {
+      setIsChangingPassword(false);
+    }
   }
 
   async function handleAccessCheck(
@@ -3032,18 +3078,60 @@ function App() {
       ['Corporate client', 'Institution balance', 'Credit follow-up', 'RWF 118,400'],
     ];
 
-    const posProducts = [
-      { name: 'Lisinopril', strength: '20 mg', code: 'Rx-784213', status: 'Ready', unitPrice: 14800, category: 'Insurance' },
-      { name: 'Amoxicillin', strength: '500 mg', code: 'Rx-784198', status: 'Prescription', unitPrice: 8500, category: 'Cash' },
-      { name: 'Paracetamol', strength: '500 mg', code: 'OTC-001', status: 'OTC', unitPrice: 1200, category: 'Cash' },
-      { name: 'Metformin', strength: '850 mg', code: 'Rx-784240', status: 'Ready', unitPrice: 6200, category: 'Insurance' },
-      { name: 'ORS Sachet', strength: 'Unit', code: 'OTC-019', status: 'OTC', unitPrice: 800, category: 'Cash' },
-      { name: 'Cough Syrup', strength: '100 ml', code: 'OTC-044', status: 'Review', unitPrice: 4200, category: 'Cash' },
-      { name: 'Atorvastatin', strength: '40 mg', code: 'Rx-784270', status: 'Ready', unitPrice: 9800, category: 'Insurance' },
-      { name: 'Alprazolam', strength: '0.5 mg', code: 'Rx-784281', status: 'Controlled', unitPrice: 11200, category: 'Review' },
-      { name: 'Ibuprofen', strength: '400 mg', code: 'OTC-031', status: 'OTC', unitPrice: 1500, category: 'Cash' },
-      { name: 'Cetirizine', strength: '10 mg', code: 'OTC-055', status: 'OTC', unitPrice: 1800, category: 'Cash' },
-    ];
+    const posTenantSlug =
+      profile?.tenant_assignments?.[0]?.tenant?.slug ||
+      (profile?.scope?.is_tenant ? 'vitapharma' : 'vitapharma');
+
+    const todayDate = new Date().toISOString().slice(0, 10);
+
+    function resolveBatchAvailableQuantity(batch: PharmaStockBatch) {
+      const quantityOnHand = Number(batch.quantity_on_hand ?? 0);
+      const quantityReserved = Number((batch as PharmaStockBatch & { quantity_reserved?: number | string }).quantity_reserved ?? 0);
+      const availableQuantity = Number(batch.available_quantity ?? quantityOnHand - quantityReserved);
+
+      return Number.isFinite(availableQuantity) ? Math.max(0, availableQuantity) : 0;
+    }
+
+    const posProducts = posInventoryBatches
+      .filter((batch) => {
+        const availableQuantity = resolveBatchAvailableQuantity(batch);
+        const batchIsActive = !batch.status || batch.status === 'active';
+        const productIsActive = !batch.product || true;
+        const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
+
+        return availableQuantity > 0 && batchIsActive && productIsActive && expiryIsValid;
+      })
+      .sort((left, right) => {
+        const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+
+        if (leftExpiry !== rightExpiry) return leftExpiry - rightExpiry;
+
+        return String(left.product?.name || '').localeCompare(String(right.product?.name || ''));
+      })
+      .slice(0, 10)
+      .map((batch) => {
+        const availableQuantity = resolveBatchAvailableQuantity(batch);
+        const sellingPrice = Number(batch.selling_price ?? 0);
+        const productName = batch.product?.name || 'Unnamed product';
+        const sku = batch.product?.sku || `BATCH-${batch.id}`;
+        const locationName = batch.stock_location?.name || 'Current stock';
+
+        return {
+          code: `${sku}-B${batch.id}`,
+          name: productName,
+          strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
+          quantity: 1,
+          unitPrice: sellingPrice,
+          status: `${availableQuantity.toLocaleString('en-RW')} available`,
+          batchId: batch.id,
+          productId: batch.product?.id || 0,
+          batchNumber: batch.batch_number,
+          availableQuantity,
+          expiryDate: batch.expiry_date,
+          locationName,
+        };
+      });
 
     const salesSummaryRows = Array.from({ length: 15 }).map((_, index) => {
       const saleNumber = `SAL-${String(2400 + index).padStart(5, '0')}`;
@@ -3057,6 +3145,37 @@ function App() {
     });
 
     const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
+
+    async function loadCurrentPosInventory() {
+      if (!session?.token) return;
+
+      setIsLoadingPosInventory(true);
+      setPosInventoryError('');
+      setPosNotice('');
+
+      try {
+        const response = await getPharmaInventoryBatches(session.token, posTenantSlug, undefined, { perPage: 150, sellableOnly: true });
+        const batches = response.batches || [];
+
+        setPosInventoryBatches(batches);
+        setPosInventoryLoadedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        setPosCartItems([]);
+        setPosTransactionConfirmed(false);
+
+        const sellableCount = batches.filter((batch) => {
+          const availableQuantity = resolveBatchAvailableQuantity(batch);
+          const expiryIsValid = !batch.expiry_date || batch.expiry_date >= new Date().toISOString().slice(0, 10);
+
+          return availableQuantity > 0 && (!batch.status || batch.status === 'active') && expiryIsValid;
+        }).length;
+
+        setPosNotice(`Current inventory loaded. ${sellableCount} sellable batch${sellableCount === 1 ? '' : 'es'} available for POS picking.`);
+      } catch (err) {
+        setPosInventoryError(err instanceof Error ? err.message : 'Unable to load current inventory for POS.');
+      } finally {
+        setIsLoadingPosInventory(false);
+      }
+    }
 
     function forceRefreshSaleSummary() {
       setPosSaleSummary(
@@ -3072,12 +3191,30 @@ function App() {
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
+      if (!product.batchId || product.availableQuantity <= 0) {
+        setPosNotice('This product is not available in current inventory and cannot be sold.');
+        return;
+      }
+
       setPosCartItems((current) => {
         const existing = current.find((item) => item.code === product.code);
 
         if (existing) {
+          const nextQuantity = Math.min(existing.quantity + 1, product.availableQuantity);
+
+          if (nextQuantity === existing.quantity) {
+            setPosNotice(`${product.name} cannot exceed available inventory of ${product.availableQuantity}.`);
+          }
+
           return current.map((item) =>
-            item.code === product.code ? { ...item, quantity: Math.min(99, item.quantity + 1) } : item,
+            item.code === product.code
+              ? {
+                  ...item,
+                  quantity: nextQuantity,
+                  availableQuantity: product.availableQuantity,
+                  unitPrice: product.unitPrice,
+                }
+              : item,
           );
         }
 
@@ -3089,25 +3226,40 @@ function App() {
             strength: product.strength,
             quantity: 1,
             unitPrice: product.unitPrice,
+            batchId: product.batchId,
+            productId: product.productId,
+            batchNumber: product.batchNumber,
+            availableQuantity: product.availableQuantity,
+            expiryDate: product.expiryDate,
+            locationName: product.locationName,
           },
         ].slice(0, 10);
       });
 
       setPosTransactionConfirmed(false);
-      setPosNotice(`${product.name} added to cart.`);
     }
 
     function updateCartQuantity(code: string, quantity: number) {
-      if (quantity <= 0) {
-        setPosCartItems((current) => current.filter((item) => item.code !== code));
-        setPosTransactionConfirmed(false);
-        setPosNotice('Item removed from cart.');
-        return;
-      }
-
       setPosCartItems((current) =>
-        current.map((item) => (item.code === code ? { ...item, quantity: Math.min(99, quantity) } : item)),
+        current.map((item) => {
+          if (item.code !== code) return item;
+
+          const safeQuantity = Math.min(
+            Math.max(1, Number.isFinite(quantity) ? quantity : 1),
+            item.availableQuantity,
+          );
+
+          if (safeQuantity !== quantity) {
+            setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
+          }
+
+          return {
+            ...item,
+            quantity: safeQuantity,
+          };
+        }),
       );
+
       setPosTransactionConfirmed(false);
     }
 
@@ -3153,6 +3305,14 @@ function App() {
     }
 
     function confirmTransaction() {
+      const unavailableItem = posCartItems.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
+
+      if (unavailableItem) {
+        setPosNotice(`${unavailableItem.name} is no longer available in the selected quantity. Refresh current inventory before confirming.`);
+        setPosTransactionConfirmed(false);
+        return;
+      }
+
       if (posCartItems.length === 0) {
         setPosNotice('Add at least one drug to cart before confirming payment.');
         return;
@@ -3346,18 +3506,38 @@ function App() {
                   </div>
                 </div>
 
-                <input className="pos-search-input" placeholder="Search patient, drug, Rx#, barcode..." />
+                <input className="pos-search-input" placeholder="Search current inventory, batch, barcode..." />
+
+                <div className="pos-inventory-load-panel">
+                  <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
+                    {isLoadingPosInventory ? 'Loading current inventory…' : 'Load current inventory'}
+                  </button>
+                  <span>
+                    {posInventoryLoadedAt
+                      ? `Current inventory loaded at ${posInventoryLoadedAt}`
+                      : 'Load stock batches before adding products to cart.'}
+                  </span>
+                </div>
+
+                {posInventoryError && <div className="form-error">{posInventoryError}</div>}
 
                 <div className="pos-drug-list pos-drug-list--ten">
-                  {posProducts.map((product) => (
-                    <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
-                      <strong>{product.name}</strong>
-                      <small>{product.strength}</small>
-                      <em>{product.code}</em>
-                      <span>{product.status}</span>
-                      <i>Add to cart</i>
-                    </button>
-                  ))}
+                  {posProducts.length === 0 ? (
+                    <div className="pos-inventory-empty-state">
+                      <strong>No current inventory loaded</strong>
+                      <small>Load current inventory to pick only sellable batches with available stock.</small>
+                    </div>
+                  ) : (
+                    posProducts.map((product) => (
+                      <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
+                        <strong>{product.name}</strong>
+                        <small>{product.strength}</small>
+                        <em>{product.code}</em>
+                        <span>{product.status}</span>
+                        <i>Add to cart</i>
+                      </button>
+                    ))
+                  )}
                 </div>
 
                 <button
@@ -3409,11 +3589,13 @@ function App() {
                               <td>
                                 <strong>{item.name}</strong>
                                 <small>{item.strength}</small>
+                                <small>Batch {item.batchNumber} · Available {item.availableQuantity.toLocaleString('en-RW')} · {item.locationName}</small>
                               </td>
                               <td>
                                 <input
                                   type="number"
-                                  min="0"
+                                  min="1"
+                                  max={item.availableQuantity}
                                   value={item.quantity}
                                   onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
                                 />
@@ -4580,6 +4762,7 @@ function App() {
         return (
           <section className="section-page">
 <section className="content-grid security-content-grid">
+            <UserSecurityManagement token={session.token} tenantSlug="vitapharma" />
               <article className="panel">
                 <h2>Resolved access profile</h2>
                 <div className="scope-list">
@@ -4998,6 +5181,19 @@ function App() {
                   >
                     Edit Profile
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setChangePasswordError('');
+                      setChangePasswordNotice('');
+                      setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
+                      setIsChangePasswordOpen(true);
+                    }}
+                  >
+                    Change Password
+                  </button>
                 </section>
               )}
             </div>
@@ -5022,6 +5218,72 @@ function App() {
         <section className="dashboard-scroll-panel">
           {renderActiveSection()}
         </section>
+
+        {isChangePasswordOpen && (
+          <div className="recovery-overlay" role="dialog" aria-modal="true" aria-label="Change password">
+            <section className="recovery-overlay-card password-change-card">
+              <p className="eyebrow">Profile security</p>
+              <h2>Change password</h2>
+              <p className="muted">Use your current password, then set a new secure password for this account.</p>
+
+              <form className="password-change-form" onSubmit={handleChangePassword}>
+                <label>
+                  Current password
+                  <input
+                    type="password"
+                    value={changePasswordForm.current_password}
+                    onChange={(event) => setChangePasswordForm((current) => ({ ...current, current_password: event.target.value }))}
+                    autoComplete="current-password"
+                    required
+                  />
+                </label>
+
+                <label>
+                  New password
+                  <input
+                    type="password"
+                    value={changePasswordForm.password}
+                    onChange={(event) => setChangePasswordForm((current) => ({ ...current, password: event.target.value }))}
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Confirm new password
+                  <input
+                    type="password"
+                    value={changePasswordForm.password_confirmation}
+                    onChange={(event) => setChangePasswordForm((current) => ({ ...current, password_confirmation: event.target.value }))}
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                </label>
+
+                {changePasswordError && <div className="form-error">{changePasswordError}</div>}
+                {changePasswordNotice && <div className="form-success">{changePasswordNotice}</div>}
+
+                <div className="password-change-actions">
+                  <button type="submit" disabled={isChangingPassword}>
+                    {isChangingPassword ? 'Changing…' : 'Change password'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsChangePasswordOpen(false);
+                      setChangePasswordError('');
+                      setChangePasswordNotice('');
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>
+        )}
 
         {newRecoveryCodes && (
           <div className="recovery-overlay" role="dialog" aria-modal="true" aria-label="Recovery codes">

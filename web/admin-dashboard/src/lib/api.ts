@@ -184,6 +184,43 @@ export async function requestPasswordReset(payload: { email: string }): Promise<
   return data as PasswordResetRequestResponse;
 }
 
+
+export type ChangePasswordResponse = {
+  message: string;
+  profile: AccessProfile;
+};
+
+export async function changePassword(
+  token: string,
+  payload: {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+  },
+): Promise<ChangePasswordResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors).flat().filter(Boolean).join(' ')
+      : '';
+
+    throw new Error(validationMessage || data?.message || 'Unable to change password.');
+  }
+
+  return data as ChangePasswordResponse;
+}
+
 export async function verifyTwoFactor(payload: {
   challenge_token: string;
   code: string;
@@ -781,8 +818,25 @@ export type PharmaInventorySummaryResponse = {
 export async function getPharmaProducts(
   token: string,
   tenantSlug: string,
+  options?: {
+    search?: string;
+    perPage?: number;
+    status?: string;
+  },
 ): Promise<PharmaProductsResponse> {
-  return getJsonWithTenant<PharmaProductsResponse>(token, '/pharmaco/products', tenantSlug);
+  const params = new URLSearchParams();
+
+  if (options?.search) params.set('search', options.search);
+  if (options?.perPage) params.set('per_page', String(options.perPage));
+  if (options?.status) params.set('status', options.status);
+
+  const query = params.toString();
+
+  return getJsonWithTenant<PharmaProductsResponse>(
+    token,
+    `/pharmaco/products${query ? `?${query}` : ''}`,
+    tenantSlug,
+  );
 }
 
 export async function getPharmaProductCategories(
@@ -811,12 +865,24 @@ export async function getPharmaInventoryBatches(
   token: string,
   tenantSlug: string,
   expiringWithinDays?: number,
+  options?: {
+    search?: string;
+    perPage?: number;
+    sellableOnly?: boolean;
+  },
 ): Promise<PharmaInventoryBatchesResponse> {
-  const query = expiringWithinDays ? `?expiring_within_days=${expiringWithinDays}` : '';
+  const params = new URLSearchParams();
+
+  if (expiringWithinDays) params.set('expiring_within_days', String(expiringWithinDays));
+  if (options?.search) params.set('search', options.search);
+  if (options?.perPage) params.set('per_page', String(options.perPage));
+  if (options?.sellableOnly) params.set('sellable_only', '1');
+
+  const query = params.toString();
 
   return getJsonWithTenant<PharmaInventoryBatchesResponse>(
     token,
-    `/pharmaco/inventory/batches${query}`,
+    `/pharmaco/inventory/batches${query ? `?${query}` : ''}`,
     tenantSlug,
   );
 }
@@ -3210,4 +3276,133 @@ export async function markNotificationRead(token: string, notificationId: number
   }
 
   return data as { message: string; read_at: string };
+}
+
+
+async function apiRequest<T>(
+  token: string,
+  tenantSlug: string,
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const headers = new Headers(options.headers);
+
+  headers.set('Accept', 'application/json');
+  headers.set('Authorization', `Bearer ${token}`);
+  headers.set('X-Tenant-Slug', tenantSlug);
+
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const validationMessage = payload?.errors
+      ? Object.values(payload.errors).flat().filter(Boolean).join(' ')
+      : '';
+
+    throw new Error(validationMessage || payload?.message || 'Request failed.');
+  }
+
+  return payload as T;
+}
+
+export type TenantUserRoleTemplate = {
+  code: string;
+  name: string;
+  description: string;
+  permissions: string[];
+};
+
+export type TenantSecurityUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  job_title?: string | null;
+  status?: string | null;
+  roles: Array<{
+    id: number;
+    name: string;
+    code: string;
+    permissions: string[];
+  }>;
+};
+
+export async function getTenantSecurityRoleTemplates(token: string, tenantSlug: string) {
+  return apiRequest<{
+    roles: TenantUserRoleTemplate[];
+  }>(token, tenantSlug, '/access-check/security/role-templates');
+}
+
+export async function getTenantSecurityUsers(token: string, tenantSlug: string) {
+  return apiRequest<{
+    tenant: { id: number; name: string; slug: string };
+    users: TenantSecurityUser[];
+  }>(token, tenantSlug, '/access-check/security/users');
+}
+
+export async function createTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  payload: {
+    tenant_slug: string;
+    name: string;
+    email: string;
+    phone?: string;
+    job_title?: string;
+    role_code: string;
+    permissions: string[];
+    password?: string;
+    status?: string;
+  },
+) {
+  return apiRequest<{
+    message: string;
+    temporary_password: string;
+    user: { id: number; name: string; email: string; phone?: string | null };
+  }>(token, tenantSlug, '/access-check/security/users', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+  payload: {
+    tenant_slug: string;
+    name: string;
+    phone?: string;
+    job_title?: string;
+    role_code: string;
+    permissions: string[];
+    status?: string;
+  },
+) {
+  return apiRequest<{
+    message: string;
+  }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+) {
+  return apiRequest<{
+    message: string;
+  }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
+    method: 'DELETE',
+  });
 }

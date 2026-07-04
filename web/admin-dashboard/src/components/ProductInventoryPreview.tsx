@@ -42,7 +42,7 @@ type ShelfViewMode = 'grid' | 'list';
 
 type InventoryTableFontSize = 'compact' | 'normal' | 'large';
 
-type ProductMasterAction = 'view' | 'create' | 'edit' | 'receive' | 'ai-import' | null;
+type ProductMasterAction = 'view' | 'create' | 'edit' | 'replicate' | 'receive' | 'ai-import' | null;
 type ProductMasterAiMode = 'create' | 'edit' | 'view' | 'delete';
 
 type ProductMasterFormState = {
@@ -402,6 +402,7 @@ function exportCsv(filename: string, headers: string[], rows: Array<Array<string
 }
 
 function nearestBatchForProduct(productId: number, batches: PharmaStockBatch[]): PharmaStockBatch | null {
+
   return (
     batches
       .filter((batch) => batch.product.id === productId)
@@ -784,6 +785,11 @@ export function ProductInventoryPreview({
     return `${inventoryCacheNamespace}.${resource}`;
   }
 
+  const productMasterInitialLoadLimit = 150;
+  const inventoryBatchInitialLoadLimit = 150;
+
+  const inventoryCacheVersion = 'inventory-active-page-v3';
+
   function readInventoryCache<T>(resource: string): T | null {
     if (typeof window === 'undefined') {
       return null;
@@ -803,6 +809,10 @@ export function ProductInventoryPreview({
         return null;
       }
 
+      if (parsed.version !== inventoryCacheVersion) {
+        return null;
+      }
+
       return parsed.payload ?? null;
     } catch {
       return null;
@@ -819,6 +829,7 @@ export function ProductInventoryPreview({
         inventoryCacheKey(resource),
         JSON.stringify({
           savedAt: Date.now(),
+          version: inventoryCacheVersion,
           payload,
         }),
       );
@@ -874,7 +885,7 @@ export function ProductInventoryPreview({
           void loadInventoryResource(
             'batches',
             setBatches,
-            () => getPharmaInventoryBatches(token, tenantSlug),
+            () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
             false,
           );
         }
@@ -899,7 +910,7 @@ export function ProductInventoryPreview({
         void loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug),
+          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
           false,
         );
 
@@ -910,7 +921,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug),
+          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
           force,
         );
         return;
@@ -920,14 +931,14 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug),
+          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
           force,
         );
 
         void loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug),
+          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
           false,
         );
 
@@ -938,7 +949,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug),
+          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
           force,
         );
         return;
@@ -948,7 +959,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'near-expiry-batches',
           setNearExpiryBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug, 180),
+          () => getPharmaInventoryBatches(token, tenantSlug, 180, { perPage: inventoryBatchInitialLoadLimit }),
           force,
         );
         return;
@@ -968,7 +979,7 @@ export function ProductInventoryPreview({
         const productsPromise = loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug),
+          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
           force,
         );
 
@@ -982,7 +993,7 @@ export function ProductInventoryPreview({
         const batchesPromise = loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug),
+          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
           force,
         );
 
@@ -1004,8 +1015,16 @@ export function ProductInventoryPreview({
   }
 
   useEffect(() => {
-    void loadInventoryPreview(activeInventoryView, false);
-  }, [tenantSlug, token, activeInventoryView]);
+    if (!tenantSlug) {
+      return;
+    }
+
+    // Controlled active inventory page loading contract:
+    // load only the active page resources, not the whole inventory module at once.
+    // This keeps Product Master/Product Inventory from looking broken while avoiding
+    // the previous heavy auto-load that affected performance.
+    void loadInventoryPreview(activeInventoryView, true);
+  }, [activeInventoryView, tenantSlug]);
 
   useEffect(() => {
     localStorage.setItem(inventorySmartCardStorageKey, JSON.stringify(inventorySmartCardVisibility));
@@ -1410,6 +1429,33 @@ export function ProductInventoryPreview({
       ],
     });
     setInventoryNotice(`${product.sku} opened in Edit Product form.`);
+  }
+
+  function openProductMasterReplicateFromProduct(product: PharmaProduct) {
+    const baseSku = product.sku || `PRODUCT-${product.id}`;
+    let candidateSku = `${baseSku}-COPY`;
+    let copyIndex = 2;
+
+    while (allProducts.some((item) => item.sku.toLowerCase() === candidateSku.toLowerCase())) {
+      candidateSku = `${baseSku}-COPY-${copyIndex}`;
+      copyIndex += 1;
+    }
+
+    setPendingDeleteProduct(null);
+    setViewingProductMasterProduct(null);
+    setSelectedProductMasterEditId(null);
+    setActiveProductMasterAction('replicate');
+    setProductMasterSearchTerm('');
+
+    setProductMasterForm({
+      ...productToMasterForm(product),
+      drug_code: candidateSku,
+      designation: `${product.name} Copy`,
+      source: 'Replicated from Product Master',
+      status: 'active',
+    });
+
+    setInventoryNotice(`${product.sku} copied into a new Product Master form. Review the copied fields, then save as a new product.`);
   }
 
   function requestDeleteProductMaster(product: PharmaProduct) {
@@ -1833,6 +1879,7 @@ export function ProductInventoryPreview({
 
           <div className="inventory-form-actions">
             <button type="button" onClick={() => openProductMasterEditFromProduct(viewingProductMasterProduct)}>Edit Product</button>
+            <button type="button" onClick={() => openProductMasterReplicateFromProduct(viewingProductMasterProduct)}>Replicate Product</button>
             <button type="button" className="danger" onClick={() => requestDeleteProductMaster(viewingProductMasterProduct)}>Delete Product</button>
           </div>
         </section>
@@ -1841,13 +1888,13 @@ export function ProductInventoryPreview({
 
     if (!activeProductMasterAction) return null;
 
-    if (activeProductMasterAction === 'create') {
+    if (activeProductMasterAction === 'create' || activeProductMasterAction === 'replicate') {
       return (
         <section className="product-master-action-panel">
           <div className="section-heading">
             <div>
-              <h3>Create New Product</h3>
-              <span>Fields start from the Product Master table structure.</span>
+              <h3>{activeProductMasterAction === 'replicate' ? 'Replicate Product' : 'Create New Product'}</h3>
+              <span>{activeProductMasterAction === 'replicate' ? 'Copied Product Master fields. Review unique fields before saving.' : 'Fields start from the Product Master table structure.'}</span>
             </div>
             <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
           </div>
@@ -2031,9 +2078,10 @@ export function ProductInventoryPreview({
 
   function renderProductActions(product: PharmaProduct, nearestBatch?: PharmaStockBatch | null) {
     return (
-      <div className="table-action-row">
+      <div className="table-action-row product-master-action-button-row">
         <button type="button" onClick={() => openProductMasterViewFromProduct(product)}>View</button>
         <button type="button" onClick={() => openProductMasterEditFromProduct(product)}>Edit</button>
+        <button type="button" onClick={() => openProductMasterReplicateFromProduct(product)}>Replicate</button>
         <button type="button" className="danger" onClick={() => requestDeleteProductMaster(product)}>Delete</button>
       </div>
     );
@@ -2090,6 +2138,30 @@ export function ProductInventoryPreview({
     }
   }
 
+  function replicateInventoryBatch(batch: PharmaStockBatch) {
+    setEditingInventoryBatch(null);
+    setViewingInventoryBatch(null);
+    setPendingDeleteInventoryBatch(null);
+
+    setInventoryCreateForm({
+      product_id: String(batch.product.id),
+      stock_location_id: String(batch.stock_location.id),
+      batch_number: '',
+      quantity: '',
+      expiry_date: batch.expiry_date ?? '',
+      unit_cost: batch.unit_cost === null || batch.unit_cost === undefined ? '' : String(batch.unit_cost),
+      margin_percent: '',
+      selling_price: batch.selling_price === null || batch.selling_price === undefined ? '' : String(batch.selling_price),
+      supplier_name: batch.supplier_name ?? '',
+      reference_number: '',
+    });
+
+    setInventoryProductSearchTerm('');
+    setInventoryProductOptions([batch.product]);
+    setIsInventoryProductSearchOpen(false);
+    setInventoryNotice(`Replicating ${batch.product.name}. Enter a new batch number and quantity, then click Create inventory.`);
+  }
+
   function renderBatchActions(batch: PharmaStockBatch) {
     return (
       <div className="table-action-row product-inventory-action-button-row">
@@ -2117,6 +2189,17 @@ export function ProductInventoryPreview({
         </button>
         <button
           type="button"
+          className="inventory-action-button"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            replicateInventoryBatch(batch);
+          }}
+        >
+          Replicate
+        </button>
+        <button
+          type="button"
           className="inventory-action-button danger"
           onMouseDown={(event) => event.stopPropagation()}
           onClick={(event) => {
@@ -2140,7 +2223,7 @@ export function ProductInventoryPreview({
         </div>
 
         <button type="button" onClick={() => loadInventoryPreview(activeInventoryView, true)} disabled={isLoading}>
-          {isLoading ? 'Loading...' : summary ? 'Refresh inventory' : 'Load inventory'}
+          {isLoading ? 'Loading...' : 'Load Inventory'}
         </button>
       </div>
 
@@ -3122,10 +3205,10 @@ export function ProductInventoryPreview({
                 </div>
 
                 <form className="inventory-creation-grid" onSubmit={handleCreateInventoryFromProductMaster}>
-                  <div className="inventory-receive-source-selector">
+                  <div className={`inventory-receive-source-selector inventory-receive-source-selector--${inventoryReceiveSource}`}>
                     <button
                       type="button"
-                      className={inventoryReceiveSource === 'purchase-code' ? 'active' : ''}
+                      className={inventoryReceiveSource === 'purchase-code' ? 'active inventory-source-option inventory-source-option--purchase' : 'inventory-source-option inventory-source-option--purchase'}
                       onClick={() => setInventoryReceiveSource('purchase-code')}
                     >
                       <strong>Receive from Purchase Code</strong>
@@ -3133,12 +3216,21 @@ export function ProductInventoryPreview({
                     </button>
                     <button
                       type="button"
-                      className={inventoryReceiveSource === 'manual' ? 'active' : ''}
+                      className={inventoryReceiveSource === 'manual' ? 'active inventory-source-option inventory-source-option--manual' : 'inventory-source-option inventory-source-option--manual'}
                       onClick={() => setInventoryReceiveSource('manual')}
                     >
                       <strong>Manual Product Master Entry</strong>
                       <span>Select an approved Product Master item before quantity, batch and expiry are recorded.</span>
                     </button>
+                  </div>
+
+                  <div className={`inventory-receive-mode-banner inventory-receive-mode-banner--${inventoryReceiveSource}`}>
+                    <strong>{inventoryReceiveSource === 'purchase-code' ? 'Purchase Code Receiving Mode' : 'Manual Inventory Entry Mode'}</strong>
+                    <span>
+                      {inventoryReceiveSource === 'purchase-code'
+                        ? 'Use this when stock is received from a purchase order, delivery note, or procurement reference.'
+                        : 'Use this when recording inventory directly from Product Master without a purchase order reference.'}
+                    </span>
                   </div>
 
                   <label className="inventory-product-master-combobox-label">
@@ -3551,7 +3643,7 @@ export function ProductInventoryPreview({
                           <strong>{batch.status}</strong>
                           <small>{expiryStatus(days)}</small>
                         </span>
-                        <span className="table-action-row product-inventory-row-actions">
+                        <span className="product-inventory-row-actions product-inventory-actions-cell">
                           {renderBatchActions(batch)}
                         </span>
                       </div>
