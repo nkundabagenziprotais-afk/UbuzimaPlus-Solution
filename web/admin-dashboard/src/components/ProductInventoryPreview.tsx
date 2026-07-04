@@ -470,6 +470,7 @@ export function ProductInventoryPreview({
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [selectedBatchIds, setSelectedBatchIds] = useState<number[]>([]);
   const [editingInventoryBatch, setEditingInventoryBatch] = useState<PharmaStockBatch | null>(null);
+  const [isInventoryReceiveFlowOpen, setIsInventoryReceiveFlowOpen] = useState(false);
   const [viewingInventoryBatch, setViewingInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [pendingDeleteInventoryBatch, setPendingDeleteInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [activeInventoryOpportunity, setActiveInventoryOpportunity] = useState<string>('Stock-out opportunity');
@@ -2010,6 +2011,159 @@ export function ProductInventoryPreview({
     );
   }
 
+  function startSimpleMightyInventoryFlow(
+    flow:
+      | 'product-master-create'
+      | 'product-master-review'
+      | 'product-master-replicate'
+      | 'receive-stock'
+      | 'low-stock'
+      | 'near-expiry'
+      | 'ai-import',
+  ) {
+    setError('');
+    setInventoryNotice('');
+
+    if (flow === 'product-master-create') {
+      selectInventoryView('product-master');
+      setPendingDeleteProduct(null);
+      setViewingProductMasterProduct(null);
+      setActiveProductMasterAction('create');
+      setInventoryNotice('Create Product Master flow opened. Complete only the required fields, then review before saving.');
+      return;
+    }
+
+    if (flow === 'product-master-review') {
+      selectInventoryView('product-master');
+      setActiveProductMasterAction(null);
+      setInventoryNotice('Product Master opened. Use the table actions when you need to view, edit, replicate, or delete a product.');
+      return;
+    }
+
+    if (flow === 'product-master-replicate') {
+      selectInventoryView('product-master');
+      setActiveProductMasterAction(null);
+      setInventoryNotice('Choose a Product Master row, then click Replicate. The copied form will open only after selecting the product.');
+      return;
+    }
+
+    if (flow === 'receive-stock') {
+      selectInventoryView('product-inventory');
+      setIsInventoryReceiveFlowOpen(true);
+      setActiveProductMasterAction(null);
+      setInventoryNotice('Receive Stock flow opened. Select a Product Master item, then complete batch, location, quantity, cost, and selling price.');
+      return;
+    }
+
+    if (flow === 'low-stock') {
+      selectInventoryView('low-stock');
+      setInventoryNotice('Low Stock review opened. Use this page to decide what should be replenished first.');
+      return;
+    }
+
+    if (flow === 'near-expiry') {
+      selectInventoryView('near-expiry');
+      setInventoryNotice('Near Expiry review opened. Prioritize batches that require action before expiry.');
+      return;
+    }
+
+    selectInventoryView('product-master');
+    setActiveProductMasterAction('ai-import');
+    setInventoryNotice('AI Import flow opened. Use this for structured product list review and approval.');
+  }
+
+  function renderSimpleMightyInventoryCommandCenter() {
+    const commandCards = [
+      {
+        key: 'receive-stock',
+        eyebrow: 'Guided flow',
+        title: 'Receive stock',
+        description: 'Create inventory from Product Master through a focused receiving flow.',
+        action: 'Start receiving',
+        tone: 'primary',
+      },
+      {
+        key: 'product-master-create',
+        eyebrow: 'Product Master',
+        title: 'Add product',
+        description: 'Open a clean Product Master form only when a new product is needed.',
+        action: 'Add product',
+        tone: 'quiet',
+      },
+      {
+        key: 'product-master-review',
+        eyebrow: 'Register',
+        title: 'Review products',
+        description: 'Search, view, edit, delete, or replicate products from the table.',
+        action: 'Open register',
+        tone: 'quiet',
+      },
+      {
+        key: 'product-master-replicate',
+        eyebrow: 'Speed action',
+        title: 'Replicate product',
+        description: 'Copy an existing Product Master item and save it as a new product.',
+        action: 'Choose product',
+        tone: 'quiet',
+      },
+      {
+        key: 'low-stock',
+        eyebrow: 'Decision queue',
+        title: 'Review low stock',
+        description: 'Focus only on products that need replenishment decisions.',
+        action: 'Review low stock',
+        tone: 'alert',
+      },
+      {
+        key: 'near-expiry',
+        eyebrow: 'Risk queue',
+        title: 'Review expiry',
+        description: 'Open the expiry watchlist without loading unrelated forms.',
+        action: 'Review expiry',
+        tone: 'alert',
+      },
+    ] as const;
+
+    return (
+      <section className="inventory-simple-command-center">
+        <div className="inventory-simple-command-heading">
+          <div>
+            <p className="eyebrow">Simple but Mighty</p>
+            <h3>Inventory command center</h3>
+            <span>
+              Start with the decision. Forms and advanced tools open only after you choose the activity.
+            </span>
+          </div>
+          <button type="button" onClick={() => loadInventoryPreview(activeInventoryView, true)} disabled={isLoading}>
+            {isLoading ? 'Refreshing…' : 'Refresh active page'}
+          </button>
+        </div>
+
+        <div className="inventory-simple-command-grid">
+          {commandCards.map((card) => (
+            <button
+              key={card.key}
+              type="button"
+              className={`inventory-simple-command-card inventory-simple-command-card--${card.tone}`}
+              onClick={() => startSimpleMightyInventoryFlow(card.key)}
+            >
+              <small>{card.eyebrow}</small>
+              <strong>{card.title}</strong>
+              <span>{card.description}</span>
+              <em>{card.action}</em>
+            </button>
+          ))}
+        </div>
+
+        <div className="inventory-simple-command-note">
+          <strong>Current page:</strong>
+          <span>{activeInventoryMeta.label}</span>
+          <small>{activeInventoryMeta.description}</small>
+        </div>
+      </section>
+    );
+  }
+
   function renderRowLimitControl() {
     return (
       <label className="inventory-row-limit-control">
@@ -2231,6 +2385,8 @@ export function ProductInventoryPreview({
 
       {error && <div className="form-error">{error}</div>}
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
+
+      {renderSimpleMightyInventoryCommandCenter()}
 
       <section className="inventory-active-page-marker" data-active-inventory-view={activeInventoryView}>
         <span>Inventory page</span>
@@ -3196,7 +3352,22 @@ export function ProductInventoryPreview({
                 ))}
               </div>
 
-              <section className="inventory-create-from-master-panel">
+              {!isInventoryReceiveFlowOpen && !editingInventoryBatch && (
+                <section className="inventory-guided-flow-launch-panel">
+                  <div>
+                    <p className="eyebrow">Guided receiving</p>
+                    <h3>Receive stock only when you are ready</h3>
+                    <span>
+                      The receiving form is hidden to keep this page calm. Start the flow when you need to record stock against Product Master.
+                    </span>
+                  </div>
+                  <button type="button" onClick={() => startSimpleMightyInventoryFlow('receive-stock')}>
+                    Start Receive Stock
+                  </button>
+                </section>
+              )}
+
+              <section className={`inventory-create-from-master-panel inventory-guided-flow-panel ${(isInventoryReceiveFlowOpen || editingInventoryBatch) ? 'is-open' : 'is-hidden'}`}>
                 <div className="section-heading">
                   <div>
                     <h3>{editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Product Master'}</h3>
