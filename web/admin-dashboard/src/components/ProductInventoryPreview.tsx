@@ -3551,7 +3551,7 @@ export function ProductInventoryPreview({
                           <strong>{batch.status}</strong>
                           <small>{expiryStatus(days)}</small>
                         </span>
-                        <span className="table-action-row product-inventory-row-actions">
+                        <span className="product-inventory-row-actions product-inventory-actions-cell">
                           {renderBatchActions(batch)}
                         </span>
                       </div>
