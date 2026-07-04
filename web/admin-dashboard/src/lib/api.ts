@@ -3237,14 +3237,14 @@ export type TenantSecurityUser = {
 export async function getTenantSecurityRoleTemplates(token: string, tenantSlug: string) {
   return apiRequest<{
     roles: TenantUserRoleTemplate[];
-  }>(token, tenantSlug, '/security/role-templates');
+  }>(token, tenantSlug, '/access-check/security/role-templates');
 }
 
 export async function getTenantSecurityUsers(token: string, tenantSlug: string) {
   return apiRequest<{
     tenant: { id: number; name: string; slug: string };
     users: TenantSecurityUser[];
-  }>(token, tenantSlug, '/security/users');
+  }>(token, tenantSlug, '/access-check/security/users');
 }
 
 export async function createTenantSecurityUser(
@@ -3266,7 +3266,7 @@ export async function createTenantSecurityUser(
     message: string;
     temporary_password: string;
     user: { id: number; name: string; email: string; phone?: string | null };
-  }>(token, tenantSlug, '/security/users', {
+  }>(token, tenantSlug, '/access-check/security/users', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -3288,7 +3288,7 @@ export async function updateTenantSecurityUser(
 ) {
   return apiRequest<{
     message: string;
-  }>(token, tenantSlug, `/security/users/${userId}`, {
+  }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
