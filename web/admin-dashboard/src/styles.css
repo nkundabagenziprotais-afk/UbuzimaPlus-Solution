@@ -13596,3 +13596,40 @@ table td:not(:first-child):not(.numeric) {
 .tenant-user-permission-groups {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
 }
+
+/* Final User/Security permission checkbox visibility */
+.tenant-user-permission-group input[type="checkbox"],
+.tenant-user-permissions input[type="checkbox"],
+.tenant-user-permission-groups input[type="checkbox"] {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  display: inline-block !important;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  max-width: 16px !important;
+  min-height: 16px !important;
+  max-height: 16px !important;
+  margin-top: 0.15rem !important;
+  padding: 0 !important;
+  border-radius: 3px !important;
+  accent-color: #2563eb;
+  flex: 0 0 16px !important;
+}
+
+.tenant-user-permission-group label {
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  align-items: start !important;
+}
+
+.tenant-user-permission-group label span {
+  min-width: 0 !important;
+}
+
+.tenant-user-permission-group label b {
+  font-size: 0.8rem !important;
+}
+
+.tenant-user-permission-group label small {
+  font-size: 0.67rem !important;
+}

@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { APP_DATA_REFRESH_EVENT, requestAppDataRefresh } from '../lib/appRefresh';
 import {
   createTenantSecurityUser,
   getTenantSecurityRoleTemplates,
@@ -133,6 +134,30 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
     });
   }, [token, tenantSlug]);
 
+  useEffect(() => {
+    function handleSecurityRefresh(event: Event) {
+      const area = (event as CustomEvent<{ area?: string }>).detail?.area ?? 'all';
+
+      if (area === 'all' || area === 'security') {
+        void loadSecurityUsers();
+      }
+    }
+
+    function handleVisibleRefresh() {
+      if (document.visibilityState === 'visible') {
+        void loadSecurityUsers();
+      }
+    }
+
+    window.addEventListener(APP_DATA_REFRESH_EVENT, handleSecurityRefresh);
+    document.addEventListener('visibilitychange', handleVisibleRefresh);
+
+    return () => {
+      window.removeEventListener(APP_DATA_REFRESH_EVENT, handleSecurityRefresh);
+      document.removeEventListener('visibilitychange', handleVisibleRefresh);
+    };
+  }, [token, tenantSlug]);
+
   function selectRole(code: string) {
     const role = roles.find((item) => item.code === code);
     setForm((current) => ({
@@ -214,6 +239,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
 
       setForm(emptyForm);
       setEditingUserId(null);
+      requestAppDataRefresh('security');
       await loadSecurityUsers();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save user.');
