@@ -13491,3 +13491,108 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
+
+/* Final Product Inventory Actions containment */
+.inventory-master-table--product-inventory-register {
+  min-width: 1680px !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row,
+.inventory-master-table--product-inventory-register > .product-inventory-register-row {
+  display: grid !important;
+  grid-template-columns:
+    46px
+    minmax(220px, 1.15fr)
+    minmax(220px, 1.05fr)
+    minmax(150px, 0.75fr)
+    minmax(140px, 0.68fr)
+    minmax(100px, 0.46fr)
+    minmax(112px, 0.52fr)
+    minmax(86px, 0.4fr)
+    minmax(120px, 0.52fr)
+    minmax(130px, 0.55fr)
+    minmax(380px, 1.32fr) !important;
+  align-items: stretch !important;
+}
+
+.inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row > strong:last-child,
+.inventory-master-table--product-inventory-register > .product-inventory-register-row > span:last-child,
+.inventory-master-table--product-inventory-register .product-inventory-actions-cell {
+  display: grid !important;
+  align-content: start !important;
+  justify-items: stretch !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  padding: 0.8rem 0.85rem !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  text-align: left !important;
+}
+
+.inventory-master-table--product-inventory-register .product-inventory-actions-cell .product-inventory-action-button-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.45rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.inventory-master-table--product-inventory-register .product-inventory-actions-cell .inventory-action-button,
+.inventory-master-table--product-inventory-register .product-inventory-actions-cell button {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 34px !important;
+  padding: 0.42rem 0.45rem !important;
+  font-size: 0.74rem !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  box-sizing: border-box !important;
+}
+
+/* Permission section final readability */
+.tenant-user-permission-group {
+  gap: 0.55rem !important;
+}
+
+.tenant-user-permission-group header strong {
+  font-size: 0.9rem !important;
+  line-height: 1.2 !important;
+}
+
+.tenant-user-permission-group header small {
+  font-size: 0.72rem !important;
+}
+
+.tenant-user-permission-group label {
+  padding: 0.48rem 0.52rem !important;
+  gap: 0.45rem !important;
+}
+
+.tenant-user-permission-group label b {
+  font-size: 0.78rem !important;
+  line-height: 1.22 !important;
+  font-weight: 750 !important;
+}
+
+.tenant-user-permission-group label small {
+  font-size: 0.66rem !important;
+  line-height: 1.2 !important;
+}
+
+.tenant-user-permission-groups {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+}

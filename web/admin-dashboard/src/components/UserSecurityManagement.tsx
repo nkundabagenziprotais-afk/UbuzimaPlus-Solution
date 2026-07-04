@@ -154,9 +154,10 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
 
   function editUser(user: TenantSecurityUser) {
     const role = user.roles[0];
-    const cleanRoleCode = role?.code?.startsWith(`${tenantSlug}-`)
-      ? role.code.replace(`${tenantSlug}-`, '')
-      : role?.code || 'cashier';
+    const cleanRoleCode =
+      roles.find((template) => role?.code === template.code || role?.code?.endsWith(`-${template.code}`))?.code
+      || role?.code?.replace(`${tenantSlug}-`, '')
+      || 'cashier';
 
     setEditingUserId(user.id);
     setTemporaryPassword('');

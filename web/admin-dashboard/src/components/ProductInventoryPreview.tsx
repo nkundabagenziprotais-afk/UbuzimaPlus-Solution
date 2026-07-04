@@ -2090,6 +2090,30 @@ export function ProductInventoryPreview({
     }
   }
 
+  function replicateInventoryBatch(batch: PharmaStockBatch) {
+    setEditingInventoryBatch(null);
+    setViewingInventoryBatch(null);
+    setPendingDeleteInventoryBatch(null);
+
+    setInventoryCreateForm({
+      product_id: String(batch.product.id),
+      stock_location_id: String(batch.stock_location.id),
+      batch_number: '',
+      quantity: '',
+      expiry_date: batch.expiry_date ?? '',
+      unit_cost: batch.unit_cost === null || batch.unit_cost === undefined ? '' : String(batch.unit_cost),
+      margin_percent: '',
+      selling_price: batch.selling_price === null || batch.selling_price === undefined ? '' : String(batch.selling_price),
+      supplier_name: batch.supplier_name ?? '',
+      reference_number: '',
+    });
+
+    setInventoryProductSearchTerm('');
+    setInventoryProductOptions([batch.product]);
+    setIsInventoryProductSearchOpen(false);
+    setInventoryNotice(`Replicating ${batch.product.name}. Enter a new batch number and quantity, then click Create inventory.`);
+  }
+
   function renderBatchActions(batch: PharmaStockBatch) {
     return (
       <div className="table-action-row product-inventory-action-button-row">
@@ -2114,6 +2138,17 @@ export function ProductInventoryPreview({
           }}
         >
           Edit
+        </button>
+        <button
+          type="button"
+          className="inventory-action-button"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            replicateInventoryBatch(batch);
+          }}
+        >
+          Replicate
         </button>
         <button
           type="button"
@@ -3560,7 +3595,7 @@ export function ProductInventoryPreview({
                           <strong>{batch.status}</strong>
                           <small>{expiryStatus(days)}</small>
                         </span>
-                        <span className="table-action-row product-inventory-row-actions">
+                        <span className="product-inventory-row-actions product-inventory-actions-cell">
                           {renderBatchActions(batch)}
                         </span>
                       </div>
