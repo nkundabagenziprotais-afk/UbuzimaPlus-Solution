@@ -389,7 +389,9 @@ class TenantUserManagementController extends Controller
         $temporaryPassword = $validated['password'] ?? (Str::random(10) . '1!');
 
         $user = DB::transaction(function () use ($tenant, $validated, $temporaryPassword, $request) {
-            $user = User::query()->firstOrNew(['email' => strtolower($validated['email'])]);
+            $email = strtolower($validated['email']);
+            $user = User::query()->where('email', $email)->first() ?? new User();
+            $user->email = $email;
             $user->name = $validated['name'];
             $user->phone = $validated['phone'] ?? $user->phone;
             $user->password = Hash::make($temporaryPassword);
