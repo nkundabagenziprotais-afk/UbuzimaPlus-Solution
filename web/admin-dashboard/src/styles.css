@@ -13633,3 +13633,63 @@ table td:not(:first-child):not(.numeric) {
 .tenant-user-permission-group label small {
   font-size: 0.67rem !important;
 }
+
+/* Cross-role table consistency: same table/card structure for Admin, Manager, Cashier and tenant users */
+.table-action-row,
+.product-master-action-button-row,
+.product-inventory-action-button-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)) !important;
+  gap: 0.45rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  align-items: stretch !important;
+}
+
+.table-action-row button,
+.product-master-action-button-row button,
+.product-inventory-action-button-row button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.panel,
+.inventory-preview-panel,
+.tenant-user-security-panel,
+.tenant-user-form-grid,
+.tenant-user-list,
+.product-master-action-panel {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.tenant-user-list,
+.product-inventory-table,
+.product-master-table,
+.inventory-table,
+.data-grid-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.tenant-user-list > div,
+.inventory-table-row,
+.product-master-table-row,
+.product-inventory-table-row {
+  min-width: 0 !important;
+}
+
+.tenant-user-list span,
+.inventory-table-row span,
+.product-master-table-row span,
+.product-inventory-table-row span {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}

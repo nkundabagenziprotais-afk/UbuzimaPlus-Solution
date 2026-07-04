@@ -42,7 +42,7 @@ type ShelfViewMode = 'grid' | 'list';
 
 type InventoryTableFontSize = 'compact' | 'normal' | 'large';
 
-type ProductMasterAction = 'view' | 'create' | 'edit' | 'receive' | 'ai-import' | null;
+type ProductMasterAction = 'view' | 'create' | 'edit' | 'replicate' | 'receive' | 'ai-import' | null;
 type ProductMasterAiMode = 'create' | 'edit' | 'view' | 'delete';
 
 type ProductMasterFormState = {
@@ -1005,10 +1005,6 @@ export function ProductInventoryPreview({
   }
 
   useEffect(() => {
-    void loadInventoryPreview(activeInventoryView, false);
-  }, [tenantSlug, token, activeInventoryView]);
-
-  useEffect(() => {
     localStorage.setItem(inventorySmartCardStorageKey, JSON.stringify(inventorySmartCardVisibility));
   }, [inventorySmartCardVisibility]);
 
@@ -1411,6 +1407,33 @@ export function ProductInventoryPreview({
       ],
     });
     setInventoryNotice(`${product.sku} opened in Edit Product form.`);
+  }
+
+  function openProductMasterReplicateFromProduct(product: PharmaProduct) {
+    const baseSku = product.sku || `PRODUCT-${product.id}`;
+    let candidateSku = `${baseSku}-COPY`;
+    let copyIndex = 2;
+
+    while (allProducts.some((item) => item.sku.toLowerCase() === candidateSku.toLowerCase())) {
+      candidateSku = `${baseSku}-COPY-${copyIndex}`;
+      copyIndex += 1;
+    }
+
+    setPendingDeleteProduct(null);
+    setViewingProductMasterProduct(null);
+    setSelectedProductMasterEditId(null);
+    setActiveProductMasterAction('replicate');
+    setProductMasterSearchTerm('');
+
+    setProductMasterForm({
+      ...productToMasterForm(product),
+      drug_code: candidateSku,
+      designation: `${product.name} Copy`,
+      source: 'Replicated from Product Master',
+      status: 'active',
+    });
+
+    setInventoryNotice(`${product.sku} copied into a new Product Master form. Review the copied fields, then save as a new product.`);
   }
 
   function requestDeleteProductMaster(product: PharmaProduct) {
@@ -1834,6 +1857,7 @@ export function ProductInventoryPreview({
 
           <div className="inventory-form-actions">
             <button type="button" onClick={() => openProductMasterEditFromProduct(viewingProductMasterProduct)}>Edit Product</button>
+            <button type="button" onClick={() => openProductMasterReplicateFromProduct(viewingProductMasterProduct)}>Replicate Product</button>
             <button type="button" className="danger" onClick={() => requestDeleteProductMaster(viewingProductMasterProduct)}>Delete Product</button>
           </div>
         </section>
@@ -1842,13 +1866,13 @@ export function ProductInventoryPreview({
 
     if (!activeProductMasterAction) return null;
 
-    if (activeProductMasterAction === 'create') {
+    if (activeProductMasterAction === 'create' || activeProductMasterAction === 'replicate') {
       return (
         <section className="product-master-action-panel">
           <div className="section-heading">
             <div>
-              <h3>Create New Product</h3>
-              <span>Fields start from the Product Master table structure.</span>
+              <h3>{activeProductMasterAction === 'replicate' ? 'Replicate Product' : 'Create New Product'}</h3>
+              <span>{activeProductMasterAction === 'replicate' ? 'Copied Product Master fields. Review unique fields before saving.' : 'Fields start from the Product Master table structure.'}</span>
             </div>
             <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
           </div>
@@ -2032,9 +2056,10 @@ export function ProductInventoryPreview({
 
   function renderProductActions(product: PharmaProduct, nearestBatch?: PharmaStockBatch | null) {
     return (
-      <div className="table-action-row">
+      <div className="table-action-row product-master-action-button-row">
         <button type="button" onClick={() => openProductMasterViewFromProduct(product)}>View</button>
         <button type="button" onClick={() => openProductMasterEditFromProduct(product)}>Edit</button>
+        <button type="button" onClick={() => openProductMasterReplicateFromProduct(product)}>Replicate</button>
         <button type="button" className="danger" onClick={() => requestDeleteProductMaster(product)}>Delete</button>
       </div>
     );
