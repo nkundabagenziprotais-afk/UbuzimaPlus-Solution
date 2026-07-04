@@ -1,3 +1,4 @@
+import { APP_DATA_REFRESH_EVENT, requestAppDataRefresh } from '../lib/appRefresh';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   AccessProfile,
@@ -403,7 +404,33 @@ function exportCsv(filename: string, headers: string[], rows: Array<Array<string
 
 function nearestBatchForProduct(productId: number, batches: PharmaStockBatch[]): PharmaStockBatch | null {
 
-  return () => {
+  // Final automatic inventory loading contract:
+  // refresh inventory figures on login/module open, browser refresh, tab return, and global refresh events.
+  useEffect(() => {
+    if (!token) return;
+
+    void loadInventoryPreview();
+  }, [token, tenantSlug]);
+
+  useEffect(() => {
+    function handleInventoryRefresh(event: Event) {
+      const area = (event as CustomEvent<{ area?: string }>).detail?.area ?? 'all';
+
+      if (area === 'all' || area === 'inventory') {
+        void loadInventoryPreview();
+      }
+    }
+
+    function handleVisibleRefresh() {
+      if (document.visibilityState === 'visible') {
+        void loadInventoryPreview();
+      }
+    }
+
+    window.addEventListener(APP_DATA_REFRESH_EVENT, handleInventoryRefresh);
+    document.addEventListener('visibilitychange', handleVisibleRefresh);
+
+    return () => {
       window.removeEventListener(APP_DATA_REFRESH_EVENT, handleInventoryRefresh);
       document.removeEventListener('visibilitychange', handleVisibleRefresh);
     };
@@ -1204,6 +1231,7 @@ export function ProductInventoryPreview({
       setInventoryProductSearchTerm('');
       setInventoryProductOptions([]);
       setIsInventoryProductSearchOpen(false);
+      requestAppDataRefresh('inventory');
       await loadInventoryPreview();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create inventory from Product Master.');
