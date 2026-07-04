@@ -3212,6 +3212,41 @@ export async function markNotificationRead(token: string, notificationId: number
   return data as { message: string; read_at: string };
 }
 
+
+async function apiRequest<T>(
+  token: string,
+  tenantSlug: string,
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const headers = new Headers(options.headers);
+
+  headers.set('Accept', 'application/json');
+  headers.set('Authorization', `Bearer ${token}`);
+  headers.set('X-Tenant-Slug', tenantSlug);
+
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const validationMessage = payload?.errors
+      ? Object.values(payload.errors).flat().filter(Boolean).join(' ')
+      : '';
+
+    throw new Error(validationMessage || payload?.message || 'Request failed.');
+  }
+
+  return payload as T;
+}
+
 export type TenantUserRoleTemplate = {
   code: string;
   name: string;
