@@ -856,10 +856,49 @@ function tenantDisplayName(profile: AccessProfile | undefined): string {
 function itemIsVisibleForProfile(profile: AccessProfile | undefined, item: MenuItem): boolean {
   if (!profile) return false;
 
-  // UI consistency rule:
-  // Every user should see the same platform pages, cards and information structure.
-  // Permissions should control actions and backend access, not distort the navigation/table layout.
-  void item;
+  if (profile.scope.is_platform) {
+    return true;
+  }
+
+  const itemContext = item.context ? String(item.context) : '';
+
+  const superAdminOnlySections = new Set<AdminSectionKey>([
+    'market-management',
+    'localization',
+    'nearby-providers',
+    'vitapharma-website',
+  ]);
+
+  if (superAdminOnlySections.has(item.key)) {
+    return false;
+  }
+
+  if (item.key === 'admin-panel') {
+    const tenantAllowedAdminContexts = new Set<string>([
+      'user-profiles',
+      'two-factor-auth',
+      'notification-management',
+      'corporate-email',
+      'pharmacist-chat',
+    ]);
+
+    const solutionAllowedAdminContexts = new Set<string>([
+      'user-profiles',
+      'two-factor-auth',
+      'notification-management',
+      'corporate-email',
+      'pharmacist-chat',
+      'web-application',
+      'mobile-application',
+    ]);
+
+    const allowedContexts = profile.scope.is_solution
+      ? solutionAllowedAdminContexts
+      : tenantAllowedAdminContexts;
+
+    return itemContext !== '' && allowedContexts.has(itemContext);
+  }
+
   return true;
 }
 
@@ -875,9 +914,18 @@ function pruneMenuGroups(profile: AccessProfile | undefined, groups: MenuGroup[]
 function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[] {
   if (!profile) return [];
 
-  // Same pages, same cards, same information across Ubuzima Plus, PharmaCo and Tenant users.
-  // Permissions must control protected actions and backend access, not distort the navigation structure.
-  return menuGroups;
+  if (profile.scope.is_platform) {
+    return menuGroups;
+  }
+
+  const allowedGroupKeys = profile.scope.is_solution
+    ? new Set<MenuGroupKey>(['solutions', 'ai', 'admin', 'tenant-ops', 'tenant-admin'])
+    : new Set<MenuGroupKey>(['admin', 'tenant-ops', 'tenant-admin']);
+
+  return pruneMenuGroups(
+    profile,
+    menuGroups.filter((group) => allowedGroupKeys.has(group.key)),
+  );
 }
 
 const erpModules: Array<{
