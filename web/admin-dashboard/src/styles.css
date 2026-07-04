@@ -13894,3 +13894,171 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* International Inventory Homepage Polish */
+.inventory-home-summary-suite {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.07);
+}
+
+.inventory-home-summary-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.inventory-home-summary-heading h3 {
+  margin: 0.1rem 0;
+  letter-spacing: -0.02em;
+}
+
+.inventory-home-summary-heading span {
+  color: #64748b;
+}
+
+.inventory-home-summary-status {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: end;
+  padding: 0.65rem 0.8rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  white-space: nowrap;
+}
+
+.inventory-home-summary-status strong {
+  color: #0f172a;
+}
+
+.inventory-home-summary-status span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.inventory-home-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.inventory-home-summary-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 0.35rem;
+  min-height: 124px;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.inventory-home-summary-card::after {
+  content: "";
+  position: absolute;
+  right: -24px;
+  top: -24px;
+  width: 74px;
+  height: 74px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.inventory-home-summary-card span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.inventory-home-summary-card strong {
+  color: #0f172a;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.inventory-home-summary-card small {
+  color: #64748b;
+  font-weight: 650;
+}
+
+.inventory-home-summary-card--value {
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+.inventory-home-summary-card--warning {
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+.inventory-home-summary-card--good {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+/* Compact command center refinement */
+.inventory-simple-command-center {
+  padding: 0.9rem;
+  border-radius: 22px;
+}
+
+.inventory-simple-command-heading {
+  align-items: center;
+}
+
+.inventory-simple-command-heading span {
+  font-size: 0.9rem;
+}
+
+.inventory-simple-command-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.inventory-simple-command-card {
+  min-height: 112px;
+  padding: 0.78rem;
+  border-radius: 16px;
+}
+
+.inventory-simple-command-card strong {
+  font-size: 0.95rem;
+}
+
+.inventory-simple-command-card span {
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.inventory-simple-command-card em {
+  font-size: 0.78rem;
+}
+
+.inventory-simple-command-note {
+  padding: 0.65rem 0.75rem;
+}
+
+@media (max-width: 980px) {
+  .inventory-home-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .inventory-home-summary-heading,
+  .inventory-home-summary-status {
+    display: grid;
+    justify-items: start;
+  }
+
+  .inventory-home-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

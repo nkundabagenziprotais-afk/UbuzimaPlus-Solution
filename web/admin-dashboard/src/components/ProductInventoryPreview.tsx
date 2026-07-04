@@ -2072,54 +2072,116 @@ export function ProductInventoryPreview({
     setInventoryNotice('AI Import flow opened. Use this for structured product list review and approval.');
   }
 
+  function renderInventoryHomeSummaryCards() {
+    if (!summary) return null;
+
+    const totalRetailValue = summary.estimated_stock_retail_value ?? summary.estimated_stock_value ?? 0;
+    const urgentActions = Number(summary.low_stock_products_count || 0)
+      + Number(summary.near_expiry_batches_180_days_count || 0)
+      + Number(summary.expired_batches_count || 0);
+
+    const executiveCards = [
+      {
+        label: 'Stock value',
+        value: formatRwf(totalRetailValue),
+        helper: 'Estimated retail value',
+        tone: 'value',
+      },
+      {
+        label: 'Products',
+        value: formatNumber(summary.products_count),
+        helper: `${formatNumber(summary.product_categories_count)} categories`,
+        tone: 'neutral',
+      },
+      {
+        label: 'Batches',
+        value: formatNumber(summary.stock_batches_count),
+        helper: `${formatNumber(summary.total_quantity_on_hand)} units on hand`,
+        tone: 'neutral',
+      },
+      {
+        label: 'Attention',
+        value: formatNumber(urgentActions),
+        helper: 'Low stock, expiry, or expired',
+        tone: urgentActions > 0 ? 'warning' : 'good',
+      },
+    ] as const;
+
+    return (
+      <section className="inventory-home-summary-suite">
+        <div className="inventory-home-summary-heading">
+          <div>
+            <p className="eyebrow">Inventory health</p>
+            <h3>Today’s stock position</h3>
+            <span>Start with the business picture before opening operational workflows.</span>
+          </div>
+          <div className="inventory-home-summary-status">
+            <strong>{urgentActions > 0 ? 'Action needed' : 'Stable'}</strong>
+            <span>{formatNumber(summary.stock_locations_count)} location(s)</span>
+          </div>
+        </div>
+
+        <div className="inventory-home-summary-grid">
+          {executiveCards.map((card) => (
+            <article key={card.label} className={`inventory-home-summary-card inventory-home-summary-card--${card.tone}`}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <small>{card.helper}</small>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   function renderSimpleMightyInventoryCommandCenter() {
     const commandCards = [
       {
         key: 'receive-stock',
-        eyebrow: 'Guided flow',
+        eyebrow: 'Flow',
         title: 'Receive stock',
-        description: 'Create inventory from Product Master through a focused receiving flow.',
-        action: 'Start receiving',
+        description: 'Record batch, quantity, cost, and price.',
+        action: 'Start',
         tone: 'primary',
       },
       {
         key: 'product-master-create',
-        eyebrow: 'Product Master',
+        eyebrow: 'Master',
         title: 'Add product',
-        description: 'Open a clean Product Master form only when a new product is needed.',
-        action: 'Add product',
+        description: 'Create a clean product record.',
+        action: 'Add',
         tone: 'quiet',
       },
       {
         key: 'product-master-review',
         eyebrow: 'Register',
-        title: 'Review products',
-        description: 'Search, view, edit, delete, or replicate products from the table.',
-        action: 'Open register',
+        title: 'Product list',
+        description: 'Search, edit, replicate, or delete.',
+        action: 'Open',
         tone: 'quiet',
       },
       {
         key: 'product-master-replicate',
-        eyebrow: 'Speed action',
-        title: 'Replicate product',
-        description: 'Copy an existing Product Master item and save it as a new product.',
-        action: 'Choose product',
+        eyebrow: 'Fast',
+        title: 'Replicate',
+        description: 'Copy a similar product safely.',
+        action: 'Choose',
         tone: 'quiet',
       },
       {
         key: 'low-stock',
-        eyebrow: 'Decision queue',
-        title: 'Review low stock',
-        description: 'Focus only on products that need replenishment decisions.',
-        action: 'Review low stock',
+        eyebrow: 'Queue',
+        title: 'Low stock',
+        description: 'Prioritize replenishment.',
+        action: 'Review',
         tone: 'alert',
       },
       {
         key: 'near-expiry',
-        eyebrow: 'Risk queue',
-        title: 'Review expiry',
-        description: 'Open the expiry watchlist without loading unrelated forms.',
-        action: 'Review expiry',
+        eyebrow: 'Risk',
+        title: 'Expiry',
+        description: 'Protect stock before loss.',
+        action: 'Review',
         tone: 'alert',
       },
     ] as const;
@@ -2128,10 +2190,10 @@ export function ProductInventoryPreview({
       <section className="inventory-simple-command-center">
         <div className="inventory-simple-command-heading">
           <div>
-            <p className="eyebrow">Simple but Mighty</p>
-            <h3>Inventory command center</h3>
+            <p className="eyebrow">Workflow launcher</p>
+            <h3>Choose the next action</h3>
             <span>
-              Start with the decision. Forms and advanced tools open only after you choose the activity.
+              Compact actions. Guided forms. No crowded workspace.
             </span>
           </div>
           <button type="button" onClick={() => loadInventoryPreview(activeInventoryView, true)} disabled={isLoading}>
@@ -2386,7 +2448,12 @@ export function ProductInventoryPreview({
       {error && <div className="form-error">{error}</div>}
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
 
-      {renderSimpleMightyInventoryCommandCenter()}
+      {activeInventoryView === 'overview' && (
+        <>
+          {renderInventoryHomeSummaryCards()}
+          {renderSimpleMightyInventoryCommandCenter()}
+        </>
+      )}
 
       <section className="inventory-active-page-marker" data-active-inventory-view={activeInventoryView}>
         <span>Inventory page</span>
