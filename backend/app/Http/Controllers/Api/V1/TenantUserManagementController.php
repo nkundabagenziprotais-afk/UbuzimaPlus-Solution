@@ -467,90 +467,12 @@ class TenantUserManagementController extends Controller
         ]);
 
         DB::transaction(function () use ($tenant, $validated, $user) {
-            $user->fill([
-                'name' => $validated['name'] ?? $user->name,
-                'phone' => $validated['phone'] ?? $user->phone,
-            ]);
-            $user->save();
-
-            TenantUser::query()->updateOrCreate(
-                [
-                    'tenant_id' => $tenant->id,
-                    'user_id' => $user->id,
-                ],
-                [
-                    'branch_id' => $validated['branch_id'] ?? null,
-                    'job_title' => $validated['job_title'] ?? null,
-                    'status' => $validated['status'] ?? 'active',
-                ],
-            );
-
-            $role = $this->ensureTenantRole(
-                $tenant,
-                $validated['role_code'],
-                $validated['permissions'] ?? null,
-            );
-
-            $user->roles()
-                ->wherePivot('tenant_id', $tenant->id)
-                ->detach();
-
-            $user->roles()->attach($role->id, [
-                'tenant_id' => $tenant->id,
-                'solution_id' => null,
-                'branch_id' => $validated['branch_id'] ?? null,
-                'status' => 'active',
-            ]);
-        });
-
-        return response()->json([
-            'message' => 'User access updated.',
-        ]);
-    }
-
-
-    public function destroy(Request $request, User $user): JsonResponse
-    {
-        $tenant = $this->resolveTenant($request);
-
-        if ((int) $request->user()?->id === (int) $user->id) {
-            throw ValidationException::withMessages([
-                'user' => ['You cannot deactivate your own active session account.'],
-            ]);
-        }
-
-        $assignment = TenantUser::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
-
-        $targetHasSecurityControl = $user->roles()
-            ->wherePivot('tenant_id', $tenant->id)
-            ->whereHas('permissions', fn ($query) => $query->where('code', 'roles.manage'))
-            ->exists();
-
-        if ($targetHasSecurityControl) {
-            $activeSecurityUsers = TenantUser::query()
-                ->where('tenant_id', $tenant->id)
-                ->where('status', 'active')
-                ->whereHas('user.roles', function ($query) use ($tenant) {
-                    $query
-                        ->wherePivot('tenant_id', $tenant->id)
-                        ->whereHas('permissions', fn ($permissionQuery) => $permissionQuery->where('code', 'roles.manage'));
-                })
-                ->count();
-
-            if ($activeSecurityUsers <= 1) {
-                throw ValidationException::withMessages([
-                    'user' => ['At least one active administrator with role-management rights must remain.'],
-                ]);
+            $user->name = $validated['name'] ?? $user->name;
+            $user->phone = $validated['phone'] ?? $user->phone;
+            if (array_key_exists('job_title', $validated)) {
+                $user->job_title = $validated['job_title'];
             }
-        }
-
-        DB::transaction(function () use ($tenant, $assignment, $user) {
-            $assignment->forceFill([
-                'status' => 'suspended',
-            ])->save();
+            $user->save();
 
             $roleIds = $user->roles()
                 ->wherePivot('tenant_id', $tenant->id)

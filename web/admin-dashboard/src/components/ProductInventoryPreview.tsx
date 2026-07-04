@@ -1005,6 +1005,18 @@ export function ProductInventoryPreview({
   }
 
   useEffect(() => {
+    if (!tenantSlug) {
+      return;
+    }
+
+    // Controlled active inventory page loading contract:
+    // load only the active page resources, not the whole inventory module at once.
+    // This keeps Product Master/Product Inventory from looking broken while avoiding
+    // the previous heavy auto-load that affected performance.
+    void loadInventoryPreview(activeInventoryView, false);
+  }, [activeInventoryView, tenantSlug]);
+
+  useEffect(() => {
     localStorage.setItem(inventorySmartCardStorageKey, JSON.stringify(inventorySmartCardVisibility));
   }, [inventorySmartCardVisibility]);
 

@@ -205,7 +205,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
   function requestDeleteUser(user: TenantSecurityUser) {
     setPendingDeleteUser(user);
     setError('');
-    setNotice(`Confirm deactivation for ${user.name}. Audit history and past transactions will be retained.`);
+    setNotice(`Confirm delete/deactivate access for ${user.name}. Audit history and past transactions will be retained.`);
   }
 
   async function confirmDeleteUser() {
@@ -311,9 +311,9 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
       {pendingDeleteUser && (
         <div className="tenant-user-delete-confirmation">
           <div>
-            <strong>Deactivate user access</strong>
+            <strong>Delete / deactivate user access</strong>
             <span>
-              {pendingDeleteUser.name} will no longer access this tenant. Sales history, audit records and previous assignments remain available.
+              {pendingDeleteUser.name} will no longer access this tenant. Sales history, audit records and previous assignments remain retained.
             </span>
           </div>
           <div>
@@ -321,7 +321,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
               Cancel
             </button>
             <button type="button" className="danger" disabled={isDeletingUser} onClick={() => void confirmDeleteUser()}>
-              {isDeletingUser ? 'Deactivating…' : 'Deactivate user'}
+              {isDeletingUser ? 'Deleting access…' : 'Delete access'}
             </button>
           </div>
         </div>
