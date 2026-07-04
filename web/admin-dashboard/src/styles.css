@@ -13732,3 +13732,32 @@ table td:not(:first-child):not(.numeric) {
 .tenant-user-delete-confirmation span {
   display: block;
 }
+
+
+/* POS current inventory picking */
+.pos-inventory-load-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.92);
+}
+
+.pos-inventory-load-panel span,
+.pos-inventory-empty-state small {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.pos-inventory-empty-state {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem;
+  border: 1px dashed rgba(100, 116, 139, 0.45);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+}

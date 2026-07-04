@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
+import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
@@ -854,26 +854,13 @@ function tenantDisplayName(profile: AccessProfile | undefined): string {
 }
 
 function itemIsVisibleForProfile(profile: AccessProfile | undefined, item: MenuItem): boolean {
-  if (!profile || profile.scope.is_platform) return true;
+  if (!profile) return false;
 
-  if (item.key === 'inventory') return hasAnyPermission(profile, ['pharmaco.inventory.manage']);
-  if (item.key === 'pos') return hasAnyPermission(profile, ['pharmaco.pos.use', 'pharmaco.sales.manage']);
-  if (item.key === 'suppliers') return hasAnyPermission(profile, ['pharmaco.suppliers.manage']);
-  if (item.key === 'finance') return hasAnyPermission(profile, ['pharmaco.sales.manage', 'pharmaco.suppliers.manage']);
-  if (item.key === 'reports') return hasAnyPermission(profile, ['pharmaco.reports.view', 'pharmaco.sales.manage', 'pharmaco.inventory.manage']);
-  if (item.key === 'tenant-setup') return hasAnyPermission(profile, ['pharmaco.profile.manage', 'pharmaco.branches.manage']);
-  if (item.key === 'ai-center') return hasAnyPermission(profile, ['ai.use', 'ai.manage']);
-  if (item.key === 'corporate-email') return hasAnyPermission(profile, ['communications.email.use']);
-  if (item.key === 'pharmacist-chat') return hasAnyPermission(profile, ['pharmaco.chat.manage']);
-  if (item.key === 'notifications') return hasAnyPermission(profile, ['notifications.view', 'notifications.manage']);
-  if (item.key === 'market-management') return hasAnyPermission(profile, ['markets.manage']);
-  if (item.key === 'localization') return hasAnyPermission(profile, ['localization.use', 'localization.manage']);
-  if (item.key === 'nearby-providers') return hasAnyPermission(profile, ['markets.view', 'markets.manage', 'localization.use']);
-  if (item.key === 'security') return true;
-  if (item.key === 'admin-panel') return item.context === 'two-factor-auth';
-  if (item.key === 'solution-portfolio') return profile.scope.is_solution;
-
-  return false;
+  // UI consistency rule:
+  // Every user should see the same platform pages, cards and information structure.
+  // Permissions should control actions and backend access, not distort the navigation/table layout.
+  void item;
+  return true;
 }
 
 function pruneMenuGroups(profile: AccessProfile | undefined, groups: MenuGroup[]): MenuGroup[] {
@@ -1748,7 +1735,17 @@ function App() {
     strength: string;
     quantity: number;
     unitPrice: number;
+    batchId: number;
+    productId: number;
+    batchNumber: string;
+    availableQuantity: number;
+    expiryDate: string | null;
+    locationName: string;
   }>>([]);
+  const [posInventoryBatches, setPosInventoryBatches] = useState<PharmaStockBatch[]>([]);
+  const [isLoadingPosInventory, setIsLoadingPosInventory] = useState(false);
+  const [posInventoryError, setPosInventoryError] = useState('');
+  const [posInventoryLoadedAt, setPosInventoryLoadedAt] = useState('');
   const [posSaleSummary, setPosSaleSummary] = useState<PosSaleSummary>(() =>
     calculatePosSaleSummary({
       cartItems: [],
@@ -2274,6 +2271,10 @@ function App() {
       departments: null,
     });
     setPharmaCoreError('');
+    setPosCartItems([]);
+    setPosInventoryBatches([]);
+    setPosInventoryError('');
+    setPosInventoryLoadedAt('');
   }
 
   async function handleChangePassword(event: FormEvent<HTMLFormElement>) {
@@ -3064,18 +3065,52 @@ function App() {
       ['Corporate client', 'Institution balance', 'Credit follow-up', 'RWF 118,400'],
     ];
 
-    const posProducts = [
-      { name: 'Lisinopril', strength: '20 mg', code: 'Rx-784213', status: 'Ready', unitPrice: 14800, category: 'Insurance' },
-      { name: 'Amoxicillin', strength: '500 mg', code: 'Rx-784198', status: 'Prescription', unitPrice: 8500, category: 'Cash' },
-      { name: 'Paracetamol', strength: '500 mg', code: 'OTC-001', status: 'OTC', unitPrice: 1200, category: 'Cash' },
-      { name: 'Metformin', strength: '850 mg', code: 'Rx-784240', status: 'Ready', unitPrice: 6200, category: 'Insurance' },
-      { name: 'ORS Sachet', strength: 'Unit', code: 'OTC-019', status: 'OTC', unitPrice: 800, category: 'Cash' },
-      { name: 'Cough Syrup', strength: '100 ml', code: 'OTC-044', status: 'Review', unitPrice: 4200, category: 'Cash' },
-      { name: 'Atorvastatin', strength: '40 mg', code: 'Rx-784270', status: 'Ready', unitPrice: 9800, category: 'Insurance' },
-      { name: 'Alprazolam', strength: '0.5 mg', code: 'Rx-784281', status: 'Controlled', unitPrice: 11200, category: 'Review' },
-      { name: 'Ibuprofen', strength: '400 mg', code: 'OTC-031', status: 'OTC', unitPrice: 1500, category: 'Cash' },
-      { name: 'Cetirizine', strength: '10 mg', code: 'OTC-055', status: 'OTC', unitPrice: 1800, category: 'Cash' },
-    ];
+    const posTenantSlug =
+      profile?.tenant_assignments?.[0]?.tenant?.slug ||
+      (profile?.scope?.is_tenant ? 'vitapharma' : 'vitapharma');
+
+    const todayDate = new Date().toISOString().slice(0, 10);
+
+    const posProducts = posInventoryBatches
+      .filter((batch) => {
+        const availableQuantity = Number(batch.available_quantity ?? batch.quantity_on_hand ?? 0);
+        const batchIsActive = !batch.status || batch.status === 'active';
+        const productIsActive = !batch.product || true;
+        const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
+
+        return availableQuantity > 0 && batchIsActive && productIsActive && expiryIsValid;
+      })
+      .sort((left, right) => {
+        const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+
+        if (leftExpiry !== rightExpiry) return leftExpiry - rightExpiry;
+
+        return String(left.product?.name || '').localeCompare(String(right.product?.name || ''));
+      })
+      .slice(0, 10)
+      .map((batch) => {
+        const availableQuantity = Number(batch.available_quantity ?? batch.quantity_on_hand ?? 0);
+        const sellingPrice = Number(batch.selling_price ?? 0);
+        const productName = batch.product?.name || 'Unnamed product';
+        const sku = batch.product?.sku || `BATCH-${batch.id}`;
+        const locationName = batch.stock_location?.name || 'Current stock';
+
+        return {
+          code: `${sku}-B${batch.id}`,
+          name: productName,
+          strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
+          quantity: 1,
+          unitPrice: sellingPrice,
+          status: `${availableQuantity.toLocaleString('en-RW')} available`,
+          batchId: batch.id,
+          productId: batch.product?.id || 0,
+          batchNumber: batch.batch_number,
+          availableQuantity,
+          expiryDate: batch.expiry_date,
+          locationName,
+        };
+      });
 
     const salesSummaryRows = Array.from({ length: 15 }).map((_, index) => {
       const saleNumber = `SAL-${String(2400 + index).padStart(5, '0')}`;
@@ -3089,6 +3124,37 @@ function App() {
     });
 
     const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
+
+    async function loadCurrentPosInventory() {
+      if (!session?.token) return;
+
+      setIsLoadingPosInventory(true);
+      setPosInventoryError('');
+      setPosNotice('');
+
+      try {
+        const response = await getPharmaInventoryBatches(session.token, posTenantSlug);
+        const batches = response.batches || [];
+
+        setPosInventoryBatches(batches);
+        setPosInventoryLoadedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        setPosCartItems([]);
+        setPosTransactionConfirmed(false);
+
+        const sellableCount = batches.filter((batch) => {
+          const availableQuantity = Number(batch.available_quantity ?? batch.quantity_on_hand ?? 0);
+          const expiryIsValid = !batch.expiry_date || batch.expiry_date >= new Date().toISOString().slice(0, 10);
+
+          return availableQuantity > 0 && (!batch.status || batch.status === 'active') && expiryIsValid;
+        }).length;
+
+        setPosNotice(`Current inventory loaded. ${sellableCount} sellable batch${sellableCount === 1 ? '' : 'es'} available for POS picking.`);
+      } catch (err) {
+        setPosInventoryError(err instanceof Error ? err.message : 'Unable to load current inventory for POS.');
+      } finally {
+        setIsLoadingPosInventory(false);
+      }
+    }
 
     function forceRefreshSaleSummary() {
       setPosSaleSummary(
@@ -3104,12 +3170,30 @@ function App() {
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
+      if (!product.batchId || product.availableQuantity <= 0) {
+        setPosNotice('This product is not available in current inventory and cannot be sold.');
+        return;
+      }
+
       setPosCartItems((current) => {
         const existing = current.find((item) => item.code === product.code);
 
         if (existing) {
+          const nextQuantity = Math.min(existing.quantity + 1, product.availableQuantity);
+
+          if (nextQuantity === existing.quantity) {
+            setPosNotice(`${product.name} cannot exceed available inventory of ${product.availableQuantity}.`);
+          }
+
           return current.map((item) =>
-            item.code === product.code ? { ...item, quantity: Math.min(99, item.quantity + 1) } : item,
+            item.code === product.code
+              ? {
+                  ...item,
+                  quantity: nextQuantity,
+                  availableQuantity: product.availableQuantity,
+                  unitPrice: product.unitPrice,
+                }
+              : item,
           );
         }
 
@@ -3121,25 +3205,40 @@ function App() {
             strength: product.strength,
             quantity: 1,
             unitPrice: product.unitPrice,
+            batchId: product.batchId,
+            productId: product.productId,
+            batchNumber: product.batchNumber,
+            availableQuantity: product.availableQuantity,
+            expiryDate: product.expiryDate,
+            locationName: product.locationName,
           },
         ].slice(0, 10);
       });
 
       setPosTransactionConfirmed(false);
-      setPosNotice(`${product.name} added to cart.`);
     }
 
     function updateCartQuantity(code: string, quantity: number) {
-      if (quantity <= 0) {
-        setPosCartItems((current) => current.filter((item) => item.code !== code));
-        setPosTransactionConfirmed(false);
-        setPosNotice('Item removed from cart.');
-        return;
-      }
-
       setPosCartItems((current) =>
-        current.map((item) => (item.code === code ? { ...item, quantity: Math.min(99, quantity) } : item)),
+        current.map((item) => {
+          if (item.code !== code) return item;
+
+          const safeQuantity = Math.min(
+            Math.max(1, Number.isFinite(quantity) ? quantity : 1),
+            item.availableQuantity,
+          );
+
+          if (safeQuantity !== quantity) {
+            setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
+          }
+
+          return {
+            ...item,
+            quantity: safeQuantity,
+          };
+        }),
       );
+
       setPosTransactionConfirmed(false);
     }
 
@@ -3185,6 +3284,14 @@ function App() {
     }
 
     function confirmTransaction() {
+      const unavailableItem = posCartItems.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
+
+      if (unavailableItem) {
+        setPosNotice(`${unavailableItem.name} is no longer available in the selected quantity. Refresh current inventory before confirming.`);
+        setPosTransactionConfirmed(false);
+        return;
+      }
+
       if (posCartItems.length === 0) {
         setPosNotice('Add at least one drug to cart before confirming payment.');
         return;
@@ -3378,18 +3485,38 @@ function App() {
                   </div>
                 </div>
 
-                <input className="pos-search-input" placeholder="Search patient, drug, Rx#, barcode..." />
+                <input className="pos-search-input" placeholder="Search current inventory, batch, barcode..." />
+
+                <div className="pos-inventory-load-panel">
+                  <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
+                    {isLoadingPosInventory ? 'Loading current inventory…' : 'Load current inventory'}
+                  </button>
+                  <span>
+                    {posInventoryLoadedAt
+                      ? `Current inventory loaded at ${posInventoryLoadedAt}`
+                      : 'Load stock batches before adding products to cart.'}
+                  </span>
+                </div>
+
+                {posInventoryError && <div className="form-error">{posInventoryError}</div>}
 
                 <div className="pos-drug-list pos-drug-list--ten">
-                  {posProducts.map((product) => (
-                    <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
-                      <strong>{product.name}</strong>
-                      <small>{product.strength}</small>
-                      <em>{product.code}</em>
-                      <span>{product.status}</span>
-                      <i>Add to cart</i>
-                    </button>
-                  ))}
+                  {posProducts.length === 0 ? (
+                    <div className="pos-inventory-empty-state">
+                      <strong>No current inventory loaded</strong>
+                      <small>Load current inventory to pick only sellable batches with available stock.</small>
+                    </div>
+                  ) : (
+                    posProducts.map((product) => (
+                      <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
+                        <strong>{product.name}</strong>
+                        <small>{product.strength}</small>
+                        <em>{product.code}</em>
+                        <span>{product.status}</span>
+                        <i>Add to cart</i>
+                      </button>
+                    ))
+                  )}
                 </div>
 
                 <button
@@ -3441,11 +3568,13 @@ function App() {
                               <td>
                                 <strong>{item.name}</strong>
                                 <small>{item.strength}</small>
+                                <small>Batch {item.batchNumber} · Available {item.availableQuantity.toLocaleString('en-RW')} · {item.locationName}</small>
                               </td>
                               <td>
                                 <input
                                   type="number"
-                                  min="0"
+                                  min="1"
+                                  max={item.availableQuantity}
                                   value={item.quantity}
                                   onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
                                 />
