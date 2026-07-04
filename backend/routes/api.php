@@ -46,6 +46,7 @@ Route::prefix('v1/auth')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [\App\Http\Controllers\Api\V1\AuthController::class, 'me']);
         Route::post('/logout', [\App\Http\Controllers\Api\V1\AuthController::class, 'logout']);
+        Route::post('/change-password', [\App\Http\Controllers\Api\V1\AuthController::class, 'changePassword']);
         Route::get('/two-factor/status', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'status']);
         Route::post('/two-factor/setup', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'setup']);
         Route::post('/two-factor/recovery-codes', [\App\Http\Controllers\Api\V1\TwoFactorController::class, 'recoveryCodes']);
@@ -68,6 +69,9 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
         ->middleware('permission:roles.manage');
 
     Route::put('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'update'])
+        ->middleware('permission:roles.manage');
+
+    Route::delete('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'destroy'])
         ->middleware('permission:roles.manage');
 
     Route::get('/inventory', [\App\Http\Controllers\Api\V1\AccessCheckController::class, 'inventoryAccessCheck'])

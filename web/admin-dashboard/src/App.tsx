@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmacyProfile, login, logout, requestPasswordReset, runAccessCheck, verifyTwoFactor } from './lib/api';
+import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
@@ -1766,6 +1766,11 @@ function App() {
   const [activePharmacistChatWorkspace, setActivePharmacistChatWorkspace] = useState<'in-app-chat' | 'whatsapp-chat'>('in-app-chat');
   const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({ current_password: '', password: '', password_confirmation: '' });
+  const [changePasswordNotice, setChangePasswordNotice] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [openPrincipalMenus, setOpenPrincipalMenus] = useState<Partial<Record<AdminSectionKey, boolean>>>({});
   const [homeWidgets, setHomeWidgets] = useState<Record<HomeWidgetKey, boolean>>({
     summary: true,
@@ -2269,6 +2274,32 @@ function App() {
       departments: null,
     });
     setPharmaCoreError('');
+  }
+
+  async function handleChangePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!session?.token) return;
+
+    if (changePasswordForm.password !== changePasswordForm.password_confirmation) {
+      setChangePasswordError('New password and confirmation do not match.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setChangePasswordError('');
+    setChangePasswordNotice('');
+
+    try {
+      const response = await changePassword(session.token, changePasswordForm);
+      persistSession({ token: session.token, profile: response.profile });
+      setChangePasswordNotice(response.message);
+      setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
+    } catch (err) {
+      setChangePasswordError(err instanceof Error ? err.message : 'Unable to change password.');
+    } finally {
+      setIsChangingPassword(false);
+    }
   }
 
   async function handleAccessCheck(
@@ -5000,6 +5031,19 @@ function App() {
                   >
                     Edit Profile
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setChangePasswordError('');
+                      setChangePasswordNotice('');
+                      setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
+                      setIsChangePasswordOpen(true);
+                    }}
+                  >
+                    Change Password
+                  </button>
                 </section>
               )}
             </div>
@@ -5024,6 +5068,72 @@ function App() {
         <section className="dashboard-scroll-panel">
           {renderActiveSection()}
         </section>
+
+        {isChangePasswordOpen && (
+          <div className="recovery-overlay" role="dialog" aria-modal="true" aria-label="Change password">
+            <section className="recovery-overlay-card password-change-card">
+              <p className="eyebrow">Profile security</p>
+              <h2>Change password</h2>
+              <p className="muted">Use your current password, then set a new secure password for this account.</p>
+
+              <form className="password-change-form" onSubmit={handleChangePassword}>
+                <label>
+                  Current password
+                  <input
+                    type="password"
+                    value={changePasswordForm.current_password}
+                    onChange={(event) => setChangePasswordForm((current) => ({ ...current, current_password: event.target.value }))}
+                    autoComplete="current-password"
+                    required
+                  />
+                </label>
+
+                <label>
+                  New password
+                  <input
+                    type="password"
+                    value={changePasswordForm.password}
+                    onChange={(event) => setChangePasswordForm((current) => ({ ...current, password: event.target.value }))}
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Confirm new password
+                  <input
+                    type="password"
+                    value={changePasswordForm.password_confirmation}
+                    onChange={(event) => setChangePasswordForm((current) => ({ ...current, password_confirmation: event.target.value }))}
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                </label>
+
+                {changePasswordError && <div className="form-error">{changePasswordError}</div>}
+                {changePasswordNotice && <div className="form-success">{changePasswordNotice}</div>}
+
+                <div className="password-change-actions">
+                  <button type="submit" disabled={isChangingPassword}>
+                    {isChangingPassword ? 'Changing…' : 'Change password'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsChangePasswordOpen(false);
+                      setChangePasswordError('');
+                      setChangePasswordNotice('');
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>
+        )}
 
         {newRecoveryCodes && (
           <div className="recovery-overlay" role="dialog" aria-modal="true" aria-label="Recovery codes">

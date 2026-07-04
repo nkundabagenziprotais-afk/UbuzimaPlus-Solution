@@ -7,6 +7,7 @@ import {
   type TenantSecurityUser,
   type TenantUserRoleTemplate,
   updateTenantSecurityUser,
+  deleteTenantSecurityUser,
 } from '../lib/api';
 
 type Props = {
@@ -97,6 +98,8 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
   const [error, setError] = useState('');
   const [temporaryPassword, setTemporaryPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<TenantSecurityUser | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
 
   const allPermissions = useMemo(() => {
     return Array.from(new Set([...fallbackPermissions, ...roles.flatMap((role) => role.permissions)])).sort();
@@ -199,6 +202,32 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
     setNotice(`Editing ${user.name}. Update role or permissions, then save changes.`);
   }
 
+  function requestDeleteUser(user: TenantSecurityUser) {
+    setPendingDeleteUser(user);
+    setError('');
+    setNotice(`Confirm deactivation for ${user.name}. Audit history and past transactions will be retained.`);
+  }
+
+  async function confirmDeleteUser() {
+    if (!pendingDeleteUser) return;
+
+    setIsDeletingUser(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await deleteTenantSecurityUser(token, tenantSlug, pendingDeleteUser.id);
+      setNotice(response.message);
+      setPendingDeleteUser(null);
+      requestAppDataRefresh('security');
+      await loadSecurityUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to deactivate user.');
+    } finally {
+      setIsDeletingUser(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -276,6 +305,25 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
           <strong>Temporary password</strong>
           <span>{temporaryPassword}</span>
           <small>Copy it now. This value is shown only after creation.</small>
+        </div>
+      )}
+
+      {pendingDeleteUser && (
+        <div className="tenant-user-delete-confirmation">
+          <div>
+            <strong>Deactivate user access</strong>
+            <span>
+              {pendingDeleteUser.name} will no longer access this tenant. Sales history, audit records and previous assignments remain available.
+            </span>
+          </div>
+          <div>
+            <button type="button" disabled={isDeletingUser} onClick={() => setPendingDeleteUser(null)}>
+              Cancel
+            </button>
+            <button type="button" className="danger" disabled={isDeletingUser} onClick={() => void confirmDeleteUser()}>
+              {isDeletingUser ? 'Deactivating…' : 'Deactivate user'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -446,9 +494,12 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
               <span>{user.email}</span>
               <span>{user.roles[0]?.name ?? 'No role assigned'}</span>
               <span>{user.status ?? 'active'}</span>
-              <span className="table-action-row">
+              <span className="table-action-row tenant-user-list-actions">
                 <button type="button" onClick={() => editUser(user)}>
                   Edit access
+                </button>
+                <button type="button" className="danger" onClick={() => requestDeleteUser(user)}>
+                  Deactivate
                 </button>
               </span>
             </div>

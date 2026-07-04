@@ -138,6 +138,33 @@ class AuthController extends Controller
         ]);
     }
 
+
+    public function changePassword(Request $request, UserAccessProfileService $profileService): JsonResponse
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is not correct.'],
+            ]);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($data['password']),
+            'must_change_password' => false,
+        ])->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully.',
+            'profile' => $profileService->build($user->fresh()),
+        ]);
+    }
+
     public function me(Request $request, UserAccessProfileService $profileService): JsonResponse
     {
         return response()->json([

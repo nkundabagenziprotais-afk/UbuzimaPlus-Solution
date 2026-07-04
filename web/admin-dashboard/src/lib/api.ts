@@ -184,6 +184,43 @@ export async function requestPasswordReset(payload: { email: string }): Promise<
   return data as PasswordResetRequestResponse;
 }
 
+
+export type ChangePasswordResponse = {
+  message: string;
+  profile: AccessProfile;
+};
+
+export async function changePassword(
+  token: string,
+  payload: {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+  },
+): Promise<ChangePasswordResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors).flat().filter(Boolean).join(' ')
+      : '';
+
+    throw new Error(validationMessage || data?.message || 'Unable to change password.');
+  }
+
+  return data as ChangePasswordResponse;
+}
+
 export async function verifyTwoFactor(payload: {
   challenge_token: string;
   code: string;
@@ -3326,5 +3363,17 @@ export async function updateTenantSecurityUser(
   }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+) {
+  return apiRequest<{
+    message: string;
+  }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
+    method: 'DELETE',
   });
 }

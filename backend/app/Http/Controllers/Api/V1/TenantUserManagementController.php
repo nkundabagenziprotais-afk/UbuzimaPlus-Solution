@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TenantUserManagementController extends Controller
 {
@@ -504,6 +505,67 @@ class TenantUserManagementController extends Controller
 
         return response()->json([
             'message' => 'User access updated.',
+        ]);
+    }
+
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        $tenant = $this->resolveTenant($request);
+
+        if ((int) $request->user()?->id === (int) $user->id) {
+            throw ValidationException::withMessages([
+                'user' => ['You cannot deactivate your own active session account.'],
+            ]);
+        }
+
+        $assignment = TenantUser::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $targetHasSecurityControl = $user->roles()
+            ->wherePivot('tenant_id', $tenant->id)
+            ->whereHas('permissions', fn ($query) => $query->where('code', 'roles.manage'))
+            ->exists();
+
+        if ($targetHasSecurityControl) {
+            $activeSecurityUsers = TenantUser::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('status', 'active')
+                ->whereHas('user.roles', function ($query) use ($tenant) {
+                    $query
+                        ->wherePivot('tenant_id', $tenant->id)
+                        ->whereHas('permissions', fn ($permissionQuery) => $permissionQuery->where('code', 'roles.manage'));
+                })
+                ->count();
+
+            if ($activeSecurityUsers <= 1) {
+                throw ValidationException::withMessages([
+                    'user' => ['At least one active administrator with role-management rights must remain.'],
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($tenant, $assignment, $user) {
+            $assignment->forceFill([
+                'status' => 'suspended',
+            ])->save();
+
+            $roleIds = $user->roles()
+                ->wherePivot('tenant_id', $tenant->id)
+                ->get()
+                ->pluck('id');
+
+            foreach ($roleIds as $roleId) {
+                $user->roles()->updateExistingPivot($roleId, [
+                    'status' => 'inactive',
+                ]);
+            }
+        });
+
+        return response()->json([
+            'message' => 'User deactivated successfully. Audit history and previous records were retained.',
         ]);
     }
 
