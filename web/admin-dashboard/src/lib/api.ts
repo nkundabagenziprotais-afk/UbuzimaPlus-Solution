@@ -818,8 +818,25 @@ export type PharmaInventorySummaryResponse = {
 export async function getPharmaProducts(
   token: string,
   tenantSlug: string,
+  options?: {
+    search?: string;
+    perPage?: number;
+    status?: string;
+  },
 ): Promise<PharmaProductsResponse> {
-  return getJsonWithTenant<PharmaProductsResponse>(token, '/pharmaco/products', tenantSlug);
+  const params = new URLSearchParams();
+
+  if (options?.search) params.set('search', options.search);
+  if (options?.perPage) params.set('per_page', String(options.perPage));
+  if (options?.status) params.set('status', options.status);
+
+  const query = params.toString();
+
+  return getJsonWithTenant<PharmaProductsResponse>(
+    token,
+    `/pharmaco/products${query ? `?${query}` : ''}`,
+    tenantSlug,
+  );
 }
 
 export async function getPharmaProductCategories(
@@ -848,12 +865,24 @@ export async function getPharmaInventoryBatches(
   token: string,
   tenantSlug: string,
   expiringWithinDays?: number,
+  options?: {
+    search?: string;
+    perPage?: number;
+    sellableOnly?: boolean;
+  },
 ): Promise<PharmaInventoryBatchesResponse> {
-  const query = expiringWithinDays ? `?expiring_within_days=${expiringWithinDays}` : '';
+  const params = new URLSearchParams();
+
+  if (expiringWithinDays) params.set('expiring_within_days', String(expiringWithinDays));
+  if (options?.search) params.set('search', options.search);
+  if (options?.perPage) params.set('per_page', String(options.perPage));
+  if (options?.sellableOnly) params.set('sellable_only', '1');
+
+  const query = params.toString();
 
   return getJsonWithTenant<PharmaInventoryBatchesResponse>(
     token,
-    `/pharmaco/inventory/batches${query}`,
+    `/pharmaco/inventory/batches${query ? `?${query}` : ''}`,
     tenantSlug,
   );
 }

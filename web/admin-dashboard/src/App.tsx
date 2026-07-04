@@ -3154,7 +3154,7 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session.token, posTenantSlug);
+        const response = await getPharmaInventoryBatches(session.token, posTenantSlug, undefined, { perPage: 150, sellableOnly: true });
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);

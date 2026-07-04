@@ -785,6 +785,9 @@ export function ProductInventoryPreview({
     return `${inventoryCacheNamespace}.${resource}`;
   }
 
+  const productMasterInitialLoadLimit = 150;
+  const inventoryBatchInitialLoadLimit = 150;
+
   const inventoryCacheVersion = 'inventory-active-page-v3';
 
   function readInventoryCache<T>(resource: string): T | null {
@@ -882,7 +885,7 @@ export function ProductInventoryPreview({
           void loadInventoryResource(
             'batches',
             setBatches,
-            () => getPharmaInventoryBatches(token, tenantSlug),
+            () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
             false,
           );
         }
@@ -907,7 +910,7 @@ export function ProductInventoryPreview({
         void loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug),
+          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
           false,
         );
 
@@ -918,7 +921,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug),
+          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
           force,
         );
         return;
@@ -928,14 +931,14 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug),
+          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
           force,
         );
 
         void loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug),
+          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
           false,
         );
 
@@ -946,7 +949,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug),
+          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
           force,
         );
         return;
@@ -956,7 +959,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'near-expiry-batches',
           setNearExpiryBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug, 180),
+          () => getPharmaInventoryBatches(token, tenantSlug, 180, { perPage: inventoryBatchInitialLoadLimit }),
           force,
         );
         return;
@@ -976,7 +979,7 @@ export function ProductInventoryPreview({
         const productsPromise = loadInventoryResource(
           'products',
           setProducts,
-          () => getPharmaProducts(token, tenantSlug),
+          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
           force,
         );
 
@@ -990,7 +993,7 @@ export function ProductInventoryPreview({
         const batchesPromise = loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug),
+          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
           force,
         );
 

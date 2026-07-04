@@ -34,6 +34,19 @@ class ProductInventoryController extends Controller
                 fn ($query, $status) => $status === 'all' ? $query : $query->where('status', $status)
             )
             ->when($request->query('product_type'), fn ($query, $type) => $query->where('product_type', $type))
+            ->when($request->query('search'), function ($query, $search) {
+                $term = '%' . trim((string) $search) . '%';
+
+                $query->where(function ($searchQuery) use ($term) {
+                    $searchQuery
+                        ->where('name', 'like', $term)
+                        ->orWhere('generic_name', 'like', $term)
+                        ->orWhere('brand_name', 'like', $term)
+                        ->orWhere('sku', 'like', $term)
+                        ->orWhere('barcode', 'like', $term)
+                        ->orWhere('registration_number', 'like', $term);
+                });
+            })
             ->when($request->query('category_code'), function ($query, $categoryCode) use ($tenant) {
                 if ($categoryCode === 'all') {
                     return;
@@ -47,7 +60,16 @@ class ProductInventoryController extends Controller
             ->withSum('stockBatches as total_quantity_on_hand', 'quantity_on_hand')
             ->withSum('stockBatches as total_quantity_reserved', 'quantity_reserved')
             ->orderBy('sku')
-            ->orderBy('name')
+            ->orderBy('name');
+
+        $totalProducts = (clone $products)->count();
+        $perPage = min(max((int) $request->query('per_page', 0), 0), 500);
+
+        if ($perPage > 0) {
+            $products->limit($perPage);
+        }
+
+        $products = $products
             ->get()
             ->map(fn (Product $product) => $this->serializeProduct($product, includeStockSummary: true))
             ->values();
@@ -55,6 +77,12 @@ class ProductInventoryController extends Controller
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
             'products' => $products,
+            'meta' => [
+                'total' => $totalProducts,
+                'returned' => $products->count(),
+                'per_page' => $perPage > 0 ? $perPage : null,
+                'limited' => $perPage > 0 && $products->count() < $totalProducts,
+            ],
         ]);
     }
 
@@ -379,11 +407,46 @@ class ProductInventoryController extends Controller
             ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($request->query('product_id'), fn ($query, $productId) => $query->where('product_id', $productId))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
+            ->when($request->boolean('sellable_only'), function ($query) {
+                $query
+                    ->where('status', 'active')
+                    ->whereRaw('(quantity_on_hand - quantity_reserved) > 0')
+                    ->where(function ($expiryQuery) {
+                        $expiryQuery
+                            ->whereNull('expiry_date')
+                            ->orWhereDate('expiry_date', '>=', now()->toDateString());
+                    });
+            })
+            ->when($request->query('search'), function ($query, $search) {
+                $term = '%' . trim((string) $search) . '%';
+
+                $query->where(function ($searchQuery) use ($term) {
+                    $searchQuery
+                        ->where('batch_number', 'like', $term)
+                        ->orWhereHas('product', function ($productQuery) use ($term) {
+                            $productQuery
+                                ->where('name', 'like', $term)
+                                ->orWhere('generic_name', 'like', $term)
+                                ->orWhere('brand_name', 'like', $term)
+                                ->orWhere('sku', 'like', $term)
+                                ->orWhere('barcode', 'like', $term);
+                        });
+                });
+            })
             ->when($request->query('expiring_within_days'), function ($query, $days) {
                 $query->whereNotNull('expiry_date')
                     ->whereDate('expiry_date', '<=', now()->addDays((int) $days)->toDateString());
             })
-            ->orderBy('expiry_date')
+            ->orderBy('expiry_date');
+
+        $totalBatches = (clone $batches)->count();
+        $perPage = min(max((int) $request->query('per_page', 0), 0), 500);
+
+        if ($perPage > 0) {
+            $batches->limit($perPage);
+        }
+
+        $batches = $batches
             ->get()
             ->map(fn (StockBatch $batch) => $this->serializeBatch($batch))
             ->values();
@@ -391,6 +454,12 @@ class ProductInventoryController extends Controller
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
             'batches' => $batches,
+            'meta' => [
+                'total' => $totalBatches,
+                'returned' => $batches->count(),
+                'per_page' => $perPage > 0 ? $perPage : null,
+                'limited' => $perPage > 0 && $batches->count() < $totalBatches,
+            ],
         ]);
     }
 
