@@ -873,87 +873,11 @@ function pruneMenuGroups(profile: AccessProfile | undefined, groups: MenuGroup[]
 }
 
 function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[] {
-  if (!profile || profile.scope.is_platform) {
-    return menuGroups;
-  }
+  if (!profile) return [];
 
-  if (profile.scope.is_solution) {
-    return pruneMenuGroups(profile, [
-      {
-        key: 'solutions',
-        label: 'Solution Portfolio',
-        icon: 'SOL',
-        items: [
-          { key: 'solution-portfolio', context: 'pharmaco', label: 'PharmaCore 360', description: 'Assigned solution tenants', icon: 'PH', status: 'Active' },
-        ],
-      },
-      {
-        key: 'tenant-ops',
-        label: 'Operations 360 View',
-        icon: 'PH',
-        items: [
-          { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
-          { key: 'pos', label: 'POS', description: 'Sales and dispensing', icon: 'PS', status: 'Live' },
-          { key: 'suppliers', label: 'Procurement', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
-          { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
-          { key: 'reports', label: 'Ad-hoc Report', description: 'Executive and daily reports', icon: 'AR', status: 'Live' },
-          { key: 'pharmacist-chat', label: 'Pharmacist Chats', description: 'In-app and WhatsApp customer conversations', icon: 'CH', status: 'Live' },
-        ],
-      },
-      {
-        key: 'ai',
-        label: 'AI Center',
-        icon: 'AI',
-        items: [
-          { key: 'ai-center', context: 'recommendations', label: 'AI Operations', description: 'Recommendations and approvals', icon: 'AI', status: 'Active' },
-        ],
-      },
-      {
-        key: 'market',
-        label: 'Market & Communication',
-        icon: 'MK',
-        items: [
-          { key: 'market-management', label: 'Market Management', description: 'Assign tenants to markets', icon: 'MK', status: 'Active' },
-          { key: 'nearby-providers', label: 'Nearby Providers', description: 'Customer discovery', icon: 'NP', status: 'Active' },
-          { key: 'notifications', label: 'Notifications', description: 'In-app notices', icon: 'NT', status: 'Active' },
-          { key: 'corporate-email', label: 'Corporate Email', description: 'Company mail', icon: 'EM', status: 'Active' },
-        ],
-      },
-    ]);
-  }
-
-  const tenantName = tenantDisplayName(profile);
-
-  return pruneMenuGroups(profile, [
-    {
-      key: 'tenant-ops',
-      label: `${tenantName} Pharmacy`,
-      icon: 'PH',
-      items: [
-        { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
-        { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
-        { key: 'suppliers', label: 'Procurement', description: 'Purchasing and receiving', icon: 'PR', status: 'Live' },
-        { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN', status: 'Live' },
-        { key: 'reports', label: 'Ad-hoc Report', description: 'Daily and monthly review', icon: 'AR', status: 'Live' },
-        { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer questions', icon: 'CH', status: 'Live' },
-        { key: 'ai-center', context: 'recommendations', label: 'AI Center', description: 'Stock, expiry, and operating guidance', icon: 'AI', status: 'Active' },
-      ],
-    },
-    {
-      key: 'tenant-admin',
-      label: 'Tenant Administration',
-      icon: 'ADM',
-      items: [
-        { key: 'tenant-setup', label: 'Business Setup', description: 'Profile, branches, departments', icon: 'TS', status: 'Live' },
-        { key: 'security', label: 'Users and Security', description: 'Scope, roles, access', icon: 'SC', status: 'Protected' },
-        { key: 'admin-panel', context: 'two-factor-auth', label: 'Staff 2FA', description: 'Authenticator and trusted devices', icon: '2F', status: 'Mandatory' },
-        { key: 'corporate-email', label: 'Corporate Email', description: 'Company mail', icon: 'EM', status: 'Active' },
-        { key: 'notifications', label: 'Notifications', description: 'Staff communication', icon: 'NT', status: 'Active' },
-        { key: 'localization', label: 'Language and Market', description: 'EN, FR, PT preference', icon: 'LG', status: 'Active' },
-        { key: 'nearby-providers', label: 'Nearby Providers', description: 'Customer app discovery', icon: 'NP', status: 'Active' },
-      ],
-    },
-  ]);
+  // Same pages, same cards, same information across Ubuzima Plus, PharmaCo and Tenant users.
+  // Permissions must control protected actions and backend access, not distort the navigation structure.
+  return menuGroups;
 }
 
 const erpModules: Array<{
