@@ -3211,3 +3211,85 @@ export async function markNotificationRead(token: string, notificationId: number
 
   return data as { message: string; read_at: string };
 }
+
+export type TenantUserRoleTemplate = {
+  code: string;
+  name: string;
+  description: string;
+  permissions: string[];
+};
+
+export type TenantSecurityUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  job_title?: string | null;
+  status?: string | null;
+  roles: Array<{
+    id: number;
+    name: string;
+    code: string;
+    permissions: string[];
+  }>;
+};
+
+export async function getTenantSecurityRoleTemplates(token: string, tenantSlug: string) {
+  return apiRequest<{
+    roles: TenantUserRoleTemplate[];
+  }>(token, tenantSlug, '/security/role-templates');
+}
+
+export async function getTenantSecurityUsers(token: string, tenantSlug: string) {
+  return apiRequest<{
+    tenant: { id: number; name: string; slug: string };
+    users: TenantSecurityUser[];
+  }>(token, tenantSlug, '/security/users');
+}
+
+export async function createTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  payload: {
+    tenant_slug: string;
+    name: string;
+    email: string;
+    phone?: string;
+    job_title?: string;
+    role_code: string;
+    permissions: string[];
+    password?: string;
+    status?: string;
+  },
+) {
+  return apiRequest<{
+    message: string;
+    temporary_password: string;
+    user: { id: number; name: string; email: string; phone?: string | null };
+  }>(token, tenantSlug, '/security/users', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+  payload: {
+    tenant_slug: string;
+    name: string;
+    phone?: string;
+    job_title?: string;
+    role_code: string;
+    permissions: string[];
+    status?: string;
+  },
+) {
+  return apiRequest<{
+    message: string;
+  }>(token, tenantSlug, `/security/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}

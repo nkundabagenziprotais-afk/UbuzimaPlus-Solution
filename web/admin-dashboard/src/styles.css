@@ -12364,3 +12364,331 @@ body .dashboard-main table button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Smart table wrapping: contain every record inside its own field */
+.admin-table,
+.inventory-table,
+.inventory-master-table,
+.inventory-master-table--wide,
+.inventory-master-table--rhia-format,
+.inventory-master-table--product-inventory-register,
+.location-preview-table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+table th,
+table td,
+.admin-table th,
+.admin-table td,
+.inventory-table th,
+.inventory-table td {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  overflow: visible !important;
+  vertical-align: top;
+  line-height: 1.42;
+  box-sizing: border-box;
+}
+
+/* Div/grid table cells */
+.inventory-master-table > div > span,
+.inventory-master-table > div > strong,
+.inventory-master-table--wide > div > span,
+.inventory-master-table--wide > div > strong,
+.inventory-master-table--rhia-format > div > span,
+.inventory-master-table--rhia-format > div > strong,
+.inventory-master-table__header > span,
+.inventory-master-table__header > strong,
+.location-preview-table > div > span,
+.location-preview-table > div > strong {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  overflow: visible !important;
+  line-height: 1.42 !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep action buttons inside their table column */
+.inventory-master-table .table-action-row,
+.inventory-table .table-action-row,
+.admin-table .table-action-row,
+.location-preview-table .table-action-row {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.4rem !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.inventory-master-table .table-action-row button,
+.inventory-table .table-action-row button,
+.admin-table .table-action-row button,
+.location-preview-table .table-action-row button {
+  max-width: 100%;
+  white-space: nowrap !important;
+  line-height: 1.15;
+  box-sizing: border-box;
+}
+
+/* Product Inventory: action column must match the header/body grid */
+.inventory-master-table--product-inventory-register {
+  min-width: 1520px !important;
+}
+
+.inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row,
+.inventory-master-table--product-inventory-register > .product-inventory-register-row {
+  display: grid !important;
+  grid-template-columns:
+    44px
+    minmax(190px, 1.15fr)
+    minmax(190px, 1.05fr)
+    minmax(145px, 0.8fr)
+    minmax(135px, 0.75fr)
+    minmax(92px, 0.55fr)
+    minmax(105px, 0.6fr)
+    minmax(80px, 0.45fr)
+    minmax(115px, 0.6fr)
+    minmax(125px, 0.65fr)
+    minmax(300px, 1.2fr) !important;
+  align-items: stretch !important;
+}
+
+.inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row > strong,
+.inventory-master-table--product-inventory-register > .product-inventory-register-row > span {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding: 0.8rem 0.85rem !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  box-sizing: border-box !important;
+}
+
+.inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row > strong:last-child,
+.inventory-master-table--product-inventory-register > .product-inventory-register-row > span:last-child {
+  display: grid !important;
+  align-content: start !important;
+  justify-items: start !important;
+  text-align: left !important;
+}
+
+.inventory-master-table--product-inventory-register .product-inventory-actions-cell .product-inventory-action-button-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  gap: 0.45rem !important;
+  width: 100%;
+}
+
+.inventory-master-table--product-inventory-register .product-inventory-actions-cell button {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Manual vs Purchase Code visual separation */
+.inventory-receive-source-selector {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 0.85rem;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.inventory-receive-source-selector--purchase-code {
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(219, 234, 254, 0.65));
+}
+
+.inventory-receive-source-selector--manual {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.95), rgba(220, 252, 231, 0.65));
+}
+
+.inventory-source-option {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
+  padding: 1rem;
+  text-align: left;
+}
+
+.inventory-source-option--purchase.active {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.12);
+}
+
+.inventory-source-option--manual.active {
+  border-color: rgba(22, 163, 74, 0.55);
+  box-shadow: 0 16px 34px rgba(22, 163, 74, 0.12);
+}
+
+.inventory-receive-mode-banner {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.inventory-receive-mode-banner--purchase-code {
+  background: rgba(239, 246, 255, 0.95);
+}
+
+.inventory-receive-mode-banner--manual {
+  background: rgba(240, 253, 244, 0.95);
+}
+
+.inventory-receive-mode-banner span {
+  color: #475569;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .inventory-receive-source-selector {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tenant user creation and security management */
+.tenant-user-security-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 1rem;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+}
+
+.tenant-user-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.tenant-user-form-grid label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.tenant-user-form-grid input,
+.tenant-user-form-grid select {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.tenant-user-permissions {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.tenant-user-permissions > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.55rem;
+}
+
+.tenant-user-permissions label {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  line-height: 1.35;
+}
+
+.tenant-user-form-actions {
+  grid-column: 1 / -1;
+}
+
+.tenant-user-password-box {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  background: rgba(239, 246, 255, 0.95);
+  border-radius: 16px;
+  padding: 0.9rem;
+}
+
+.tenant-user-password-box span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.tenant-user-role-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+}
+
+.tenant-user-role-cards article {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.tenant-user-role-cards span,
+.tenant-user-role-cards small {
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.tenant-user-list {
+  display: grid;
+  overflow-x: auto;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+}
+
+.tenant-user-list__header,
+.tenant-user-list > div {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(190px, 1fr) minmax(160px, 0.8fr) minmax(100px, 0.5fr) minmax(140px, 0.6fr);
+  gap: 0;
+  min-width: 800px;
+}
+
+.tenant-user-list strong,
+.tenant-user-list span {
+  padding: 0.75rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.tenant-user-list__header {
+  background: rgba(15, 23, 42, 0.04);
+  font-weight: 800;
+}

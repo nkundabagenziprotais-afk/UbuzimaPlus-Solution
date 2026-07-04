@@ -58,6 +58,18 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
     Route::get('/security', [\App\Http\Controllers\Api\V1\AccessCheckController::class, 'securitySummary'])
         ->middleware('permission:roles.manage');
 
+    Route::get('/security/role-templates', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'roleTemplatesResponse'])
+        ->middleware('permission:roles.manage');
+
+    Route::get('/security/users', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'index'])
+        ->middleware('permission:roles.manage');
+
+    Route::post('/security/users', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'store'])
+        ->middleware('permission:roles.manage');
+
+    Route::put('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'update'])
+        ->middleware('permission:roles.manage');
+
     Route::get('/inventory', [\App\Http\Controllers\Api\V1\AccessCheckController::class, 'inventoryAccessCheck'])
         ->middleware([
             'permission:pharmaco.inventory.manage',

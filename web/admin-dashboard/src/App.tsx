@@ -18,6 +18,7 @@ import { NotificationCenterPanel } from './components/NotificationCenterPanel';
 import { MarketLocalizationPanel } from './components/MarketLocalizationPanel';
 import { NearbyProvidersPanel } from './components/NearbyProvidersPanel';
 import { TenantPharmacyDashboard } from './components/TenantPharmacyDashboard';
+import { UserSecurityManagement } from './components/UserSecurityManagement';
 import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import './styles.css';
@@ -305,7 +306,7 @@ const dashboardCardOptions: Array<{ key: DashboardCardKey; label: string }> = [
   { key: 'inventory', label: 'Inventory Control' },
   { key: 'pos', label: 'POS and Sales' },
   { key: 'finance', label: 'Finance Watch' },
-  { key: 'suppliers', label: 'Supplier and Purchase Orders' },
+  { key: 'suppliers', label: 'Procurement and Purchase Orders' },
   { key: 'communications', label: 'Communication Center' },
   { key: 'ai-reports', label: 'AI and Reports' },
   { key: 'profile', label: 'Profile and Access' },
@@ -464,7 +465,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'pos-payment-receipt', label: 'Payment and Receipt', target: 'payment-receipt' },
   ],
   suppliers: [
-    { key: 'supplier-overview', label: 'Supplier Overview', target: 'overview' },
+    { key: 'supplier-overview', label: 'Procurement Overview', target: 'overview' },
     { key: 'supplier-create', label: 'Create Supplier', target: 'create-supplier' },
     { key: 'supplier-list', label: 'Supplier List', target: 'supplier-list' },
     { key: 'supplier-create-po', label: 'Create Purchase Order', target: 'create-purchase-order' },
@@ -704,14 +705,14 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     description: 'Teller sessions, fast sales, prescription checks, payments, supervisor controls, and till closure.',
   },
   suppliers: {
-    eyebrow: 'Suppliers and procurement',
-    title: 'Supplier and wholesale operations',
+    eyebrow: 'Procurement',
+    title: 'Procurement and wholesale operations',
     description: 'Supplier setup, wholesale pharmacy readiness, purchase orders, receiving, and dispatch preparation.',
   },
   finance: {
     eyebrow: 'Finance operations',
     title: 'Payables and receivables',
-    description: 'Supplier invoices, payments, customer credit, collections, and finance visibility.',
+    description: 'Procurement invoices, payments, customer credit, collections, and finance visibility.',
   },
   reports: {
     eyebrow: 'Ad-hoc Report and command view',
@@ -906,7 +907,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
         items: [
           { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
           { key: 'pos', label: 'POS', description: 'Sales and dispensing', icon: 'PS', status: 'Live' },
-          { key: 'suppliers', label: 'Suppliers', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
+          { key: 'suppliers', label: 'Procurement', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
           { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
           { key: 'reports', label: 'Ad-hoc Report', description: 'Executive and daily reports', icon: 'AR', status: 'Live' },
           { key: 'pharmacist-chat', label: 'Pharmacist Chats', description: 'In-app and WhatsApp customer conversations', icon: 'CH', status: 'Live' },
@@ -942,9 +943,9 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       label: `${tenantName} Pharmacy`,
       icon: 'PH',
       items: [
-        { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
         { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
-        { key: 'suppliers', label: 'Suppliers', description: 'Purchasing and receiving', icon: 'SP', status: 'Live' },
+        { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
+        { key: 'suppliers', label: 'Procurement', description: 'Purchasing and receiving', icon: 'PR', status: 'Live' },
         { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN', status: 'Live' },
         { key: 'reports', label: 'Ad-hoc Report', description: 'Daily and monthly review', icon: 'AR', status: 'Live' },
         { key: 'pharmacist-chat', label: 'Pharmacist Chat', description: 'Customer questions', icon: 'CH', status: 'Live' },
@@ -987,7 +988,7 @@ const erpModules: Array<{
     title: 'Finance',
     status: 'Live APIs',
     summary: 'Payables, receivables, collections, customer credit, supplier aging, and management review.',
-    workspace: ['Supplier invoices', 'Payment records', 'Customer collections', 'Cash and credit visibility'],
+    workspace: ['Procurement invoices', 'Payment records', 'Customer collections', 'Cash and credit visibility'],
   },
   {
     key: 'hr',
@@ -1506,7 +1507,7 @@ const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; 
 
 const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; description: string }> = [
   { key: 'overview', label: 'Finance Overview', description: 'Cards, charts, and finance position' },
-  { key: 'finance-flow', label: 'Finance Flow', description: 'Supplier invoices, approval, and payment' },
+  { key: 'finance-flow', label: 'Finance Flow', description: 'Procurement invoices, approval, and payment' },
   { key: 'exception-focus', label: 'Exception Focus', description: 'Overdue, partial, variance, and approval risks' },
   { key: 'credits-receivables', label: 'Customer Credits / Receivables', description: 'Credit setup and receivable creation' },
   { key: 'receivable-register', label: 'Receivable Register', description: '15-row register with bulk and export tools' },
@@ -4580,6 +4581,7 @@ function App() {
         return (
           <section className="section-page">
 <section className="content-grid security-content-grid">
+            <UserSecurityManagement token={session.token} tenantSlug="vitapharma" />
               <article className="panel">
                 <h2>Resolved access profile</h2>
                 <div className="scope-list">

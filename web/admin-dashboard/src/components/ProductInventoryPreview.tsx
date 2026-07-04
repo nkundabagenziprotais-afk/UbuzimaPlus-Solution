@@ -3122,10 +3122,10 @@ export function ProductInventoryPreview({
                 </div>
 
                 <form className="inventory-creation-grid" onSubmit={handleCreateInventoryFromProductMaster}>
-                  <div className="inventory-receive-source-selector">
+                  <div className={`inventory-receive-source-selector inventory-receive-source-selector--${inventoryReceiveSource}`}>
                     <button
                       type="button"
-                      className={inventoryReceiveSource === 'purchase-code' ? 'active' : ''}
+                      className={inventoryReceiveSource === 'purchase-code' ? 'active inventory-source-option inventory-source-option--purchase' : 'inventory-source-option inventory-source-option--purchase'}
                       onClick={() => setInventoryReceiveSource('purchase-code')}
                     >
                       <strong>Receive from Purchase Code</strong>
@@ -3133,12 +3133,21 @@ export function ProductInventoryPreview({
                     </button>
                     <button
                       type="button"
-                      className={inventoryReceiveSource === 'manual' ? 'active' : ''}
+                      className={inventoryReceiveSource === 'manual' ? 'active inventory-source-option inventory-source-option--manual' : 'inventory-source-option inventory-source-option--manual'}
                       onClick={() => setInventoryReceiveSource('manual')}
                     >
                       <strong>Manual Product Master Entry</strong>
                       <span>Select an approved Product Master item before quantity, batch and expiry are recorded.</span>
                     </button>
+                  </div>
+
+                  <div className={`inventory-receive-mode-banner inventory-receive-mode-banner--${inventoryReceiveSource}`}>
+                    <strong>{inventoryReceiveSource === 'purchase-code' ? 'Purchase Code Receiving Mode' : 'Manual Inventory Entry Mode'}</strong>
+                    <span>
+                      {inventoryReceiveSource === 'purchase-code'
+                        ? 'Use this when stock is received from a purchase order, delivery note, or procurement reference.'
+                        : 'Use this when recording inventory directly from Product Master without a purchase order reference.'}
+                    </span>
                   </div>
 
                   <label className="inventory-product-master-combobox-label">
