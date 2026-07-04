@@ -3084,9 +3084,17 @@ function App() {
 
     const todayDate = new Date().toISOString().slice(0, 10);
 
+    function resolveBatchAvailableQuantity(batch: PharmaStockBatch) {
+      const quantityOnHand = Number(batch.quantity_on_hand ?? 0);
+      const quantityReserved = Number((batch as PharmaStockBatch & { quantity_reserved?: number | string }).quantity_reserved ?? 0);
+      const availableQuantity = Number(batch.available_quantity ?? quantityOnHand - quantityReserved);
+
+      return Number.isFinite(availableQuantity) ? Math.max(0, availableQuantity) : 0;
+    }
+
     const posProducts = posInventoryBatches
       .filter((batch) => {
-        const availableQuantity = Number(batch.available_quantity ?? batch.quantity_on_hand ?? 0);
+        const availableQuantity = resolveBatchAvailableQuantity(batch);
         const batchIsActive = !batch.status || batch.status === 'active';
         const productIsActive = !batch.product || true;
         const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
@@ -3103,7 +3111,7 @@ function App() {
       })
       .slice(0, 10)
       .map((batch) => {
-        const availableQuantity = Number(batch.available_quantity ?? batch.quantity_on_hand ?? 0);
+        const availableQuantity = resolveBatchAvailableQuantity(batch);
         const sellingPrice = Number(batch.selling_price ?? 0);
         const productName = batch.product?.name || 'Unnamed product';
         const sku = batch.product?.sku || `BATCH-${batch.id}`;
@@ -3155,7 +3163,7 @@ function App() {
         setPosTransactionConfirmed(false);
 
         const sellableCount = batches.filter((batch) => {
-          const availableQuantity = Number(batch.available_quantity ?? batch.quantity_on_hand ?? 0);
+          const availableQuantity = resolveBatchAvailableQuantity(batch);
           const expiryIsValid = !batch.expiry_date || batch.expiry_date >= new Date().toISOString().slice(0, 10);
 
           return availableQuantity > 0 && (!batch.status || batch.status === 'active') && expiryIsValid;

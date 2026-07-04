@@ -785,6 +785,8 @@ export function ProductInventoryPreview({
     return `${inventoryCacheNamespace}.${resource}`;
   }
 
+  const inventoryCacheVersion = 'inventory-active-page-v3';
+
   function readInventoryCache<T>(resource: string): T | null {
     if (typeof window === 'undefined') {
       return null;
@@ -804,6 +806,10 @@ export function ProductInventoryPreview({
         return null;
       }
 
+      if (parsed.version !== inventoryCacheVersion) {
+        return null;
+      }
+
       return parsed.payload ?? null;
     } catch {
       return null;
@@ -820,6 +826,7 @@ export function ProductInventoryPreview({
         inventoryCacheKey(resource),
         JSON.stringify({
           savedAt: Date.now(),
+          version: inventoryCacheVersion,
           payload,
         }),
       );
@@ -1013,7 +1020,7 @@ export function ProductInventoryPreview({
     // load only the active page resources, not the whole inventory module at once.
     // This keeps Product Master/Product Inventory from looking broken while avoiding
     // the previous heavy auto-load that affected performance.
-    void loadInventoryPreview(activeInventoryView, false);
+    void loadInventoryPreview(activeInventoryView, true);
   }, [activeInventoryView, tenantSlug]);
 
   useEffect(() => {
