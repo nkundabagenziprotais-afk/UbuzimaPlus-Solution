@@ -12458,3 +12458,201 @@ body .dashboard-main table button {
   max-width: 100% !important;
   overflow-wrap: anywhere !important;
 }
+
+/* Final global table alignment contract: every record stays inside its field */
+.admin-table,
+.inventory-table,
+.inventory-master-table,
+.inventory-master-table--wide,
+.inventory-master-table--rhia-format,
+.inventory-master-table--product-inventory-register,
+.location-preview-table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* Real HTML table containment */
+table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+}
+
+table th,
+table td {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  overflow: visible !important;
+  vertical-align: top;
+  line-height: 1.42;
+  box-sizing: border-box;
+}
+
+/* Custom div/grid table rows: keep header and body cells aligned */
+.inventory-master-table > div,
+.inventory-master-table--wide > div,
+.inventory-master-table--rhia-format > div,
+.inventory-master-table__header,
+.location-preview-table > div {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Direct table cells inside custom tables */
+.inventory-master-table > div > span,
+.inventory-master-table > div > strong,
+.inventory-master-table--wide > div > span,
+.inventory-master-table--wide > div > strong,
+.inventory-master-table--rhia-format > div > span,
+.inventory-master-table--rhia-format > div > strong,
+.inventory-master-table__header > span,
+.inventory-master-table__header > strong,
+.location-preview-table > div > span,
+.location-preview-table > div > strong {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  overflow: visible !important;
+  line-height: 1.42 !important;
+  box-sizing: border-box !important;
+  align-content: start;
+}
+
+/* Nested text must not escape from its cell */
+.inventory-master-table span *,
+.inventory-master-table strong *,
+.inventory-master-table small,
+.inventory-master-table p,
+.inventory-master-table em,
+.inventory-master-table b,
+.inventory-master-table a,
+.inventory-table span *,
+.inventory-table strong *,
+.inventory-table small,
+.admin-table span *,
+.admin-table strong *,
+.admin-table small {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+/* Numeric cells stay readable but never push neighboring columns */
+.rhia-number-cell,
+.inventory-master-table .rhia-number-cell,
+.inventory-table .rhia-number-cell {
+  min-width: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  text-align: right;
+}
+
+/* Action cells across all custom tables remain contained */
+.inventory-master-table .table-action-row,
+.inventory-table .table-action-row,
+.admin-table .table-action-row,
+.location-preview-table .table-action-row {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.4rem !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.inventory-master-table .table-action-row button,
+.inventory-table .table-action-row button,
+.admin-table .table-action-row button,
+.location-preview-table .table-action-row button {
+  max-width: 100%;
+  white-space: nowrap !important;
+  line-height: 1.15;
+  box-sizing: border-box;
+}
+
+/* Product Inventory final record containment */
+.inventory-product-inventory-table-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row,
+.inventory-master-table--product-inventory-register > .product-inventory-register-row {
+  align-items: stretch !important;
+}
+
+.inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row > strong,
+.inventory-master-table--product-inventory-register > .product-inventory-register-row > span {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding: 0.8rem 0.85rem !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  box-sizing: border-box !important;
+}
+
+/* Product Inventory Actions column must match the rest of the table */
+.inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row > strong:last-child,
+.inventory-master-table--product-inventory-register > .product-inventory-register-row > span:last-child {
+  display: grid !important;
+  align-content: start !important;
+  justify-items: start !important;
+  text-align: left !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.inventory-master-table--product-inventory-register .product-inventory-actions-cell .product-inventory-action-button-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  gap: 0.45rem !important;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.inventory-master-table--product-inventory-register .product-inventory-actions-cell button {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Mobile: scroll wide tables instead of squeezing and overlapping */
+@media (max-width: 900px) {
+  .admin-table,
+  .inventory-table,
+  .inventory-master-table,
+  .inventory-master-table--wide,
+  .inventory-master-table--rhia-format,
+  .inventory-master-table--product-inventory-register,
+  .location-preview-table {
+    overflow-x: auto !important;
+  }
+
+  table {
+    min-width: 760px;
+  }
+}
