@@ -3263,136 +3263,231 @@ export function ProductInventoryPreview({
   }
 
   function renderExpiryLabelTools() {
-    const filterOptions = [
-      ['all', 'All'],
-      ['expired', expiryLabelRules.expired.label],
-      ['critical', expiryLabelRules.critical.label],
-      ['warning', expiryLabelRules.warning.label],
-      ['watch', expiryLabelRules.watch.label],
-      ['valid', expiryLabelRules.valid.label],
-      ['noDate', expiryLabelRules.noDate.label],
-    ];
-
-    const mappingRows = [
-      ['expired', 'Less than 0 days'],
-      ['critical', `0-${expiryLabelRules.critical.maxDays} days`],
-      ['warning', `${Number(expiryLabelRules.critical.maxDays) + 1}-${expiryLabelRules.warning.maxDays} days`],
-      ['watch', `${Number(expiryLabelRules.warning.maxDays) + 1}-${expiryLabelRules.watch.maxDays} days`],
-      ['valid', `More than ${expiryLabelRules.watch.maxDays} days`],
-      ['noDate', 'Missing expiry date'],
+    const thresholdFields = [
+      {
+        key: 'criticalMaxDays',
+        label: 'Critical max days',
+        helper: 'Highest remaining days before an item becomes critical.',
+      },
+      {
+        key: 'warningMaxDays',
+        label: 'Warning max days',
+        helper: 'Upper limit for warning stock before it moves to watch.',
+      },
+      {
+        key: 'watchMaxDays',
+        label: 'Watch max days',
+        helper: 'Upper limit for early expiry monitoring.',
+      },
     ] as const;
 
+    const backgroundFields = [
+      { key: 'expiredBackground', label: 'Expired background', fallback: '#991b1b' },
+      { key: 'criticalBackground', label: 'Critical background', fallback: '#fee2e2' },
+      { key: 'warningBackground', label: 'Warning background', fallback: '#ffedd5' },
+      { key: 'watchBackground', label: 'Watch background', fallback: '#fef3c7' },
+      { key: 'healthyBackground', label: 'Healthy background', fallback: '#dcfce7' },
+      { key: 'noDateBackground', label: 'No date background', fallback: '#f1f5f9' },
+    ] as const;
+
+    const textFields = [
+      { key: 'expiredText', label: 'Expired text', fallback: '#ffffff' },
+      { key: 'criticalText', label: 'Critical text', fallback: '#991b1b' },
+      { key: 'warningText', label: 'Warning text', fallback: '#9a3412' },
+      { key: 'watchText', label: 'Watch text', fallback: '#92400e' },
+      { key: 'healthyText', label: 'Healthy text', fallback: '#047857' },
+      { key: 'noDateText', label: 'No date text', fallback: '#334155' },
+    ] as const;
+
+    const previewFields = [
+      {
+        label: 'Expired',
+        backgroundKey: 'expiredBackground',
+        textKey: 'expiredText',
+        fallbackBackground: '#991b1b',
+        fallbackText: '#ffffff',
+      },
+      {
+        label: 'Critical',
+        backgroundKey: 'criticalBackground',
+        textKey: 'criticalText',
+        fallbackBackground: '#fee2e2',
+        fallbackText: '#991b1b',
+      },
+      {
+        label: 'Warning',
+        backgroundKey: 'warningBackground',
+        textKey: 'warningText',
+        fallbackBackground: '#ffedd5',
+        fallbackText: '#9a3412',
+      },
+      {
+        label: 'Watch',
+        backgroundKey: 'watchBackground',
+        textKey: 'watchText',
+        fallbackBackground: '#fef3c7',
+        fallbackText: '#92400e',
+      },
+      {
+        label: 'Healthy',
+        backgroundKey: 'healthyBackground',
+        textKey: 'healthyText',
+        fallbackBackground: '#dcfce7',
+        fallbackText: '#047857',
+      },
+      {
+        label: 'No date',
+        backgroundKey: 'noDateBackground',
+        textKey: 'noDateText',
+        fallbackBackground: '#f1f5f9',
+        fallbackText: '#334155',
+      },
+    ] as const;
+
+    const updateExpiryNumberRule = (key: 'criticalMaxDays' | 'warningMaxDays' | 'watchMaxDays', value: string) => {
+      setExpiryLabelRules((current) => ({
+        ...current,
+        [key]: Number(value || 0),
+      }));
+    };
+
+    const updateExpiryColourRule = (key: keyof typeof expiryLabelRules, value: string) => {
+      setExpiryLabelRules((current) => ({
+        ...current,
+        [key]: value,
+      }));
+    };
+
     return (
-      <section className="inventory-expiry-control-suite">
-        <div className="inventory-expiry-filter-row" aria-label="Expiry filters">
-          {filterOptions.map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              className={expiryViewFilter === key ? 'active' : ''}
-              onClick={() => setExpiryViewFilter(key)}
-            >
-              {label}
-            </button>
-          ))}
-
-          <button
-            type="button"
-            className="inventory-expiry-map-button"
-            onClick={() => setIsExpiryLabelManagerOpen((current) => !current)}
-          >
-            Labelling & Mapping
-          </button>
+      <section className="inventory-settings-surface inventory-settings-surface--labelling">
+        <div className="inventory-settings-surface__header">
+          <div>
+            <p className="eyebrow">Admin configuration</p>
+            <h3>Labelling and mapping</h3>
+            <span>
+              Define expiry bands and colours used across inventory tables, alerts, labels, and row highlights.
+            </span>
+          </div>
         </div>
 
-        <div className="inventory-expiry-legend">
-          {mappingRows.map(([key, range]) => {
-            const rule = expiryLabelRules[key as keyof typeof expiryLabelRules];
-
-            return (
-              <span
-                key={key}
-                style={{ background: rule.background, color: rule.text }}
-              >
-                <strong>{rule.label}</strong>
-                <small>{range}</small>
-              </span>
-            );
-          })}
-        </div>
-
-        {isExpiryLabelManagerOpen && (
-          <section className="inventory-expiry-label-manager">
-            <div>
-              <h4>Labelling and mapping</h4>
-              <p>
-                Admins can adjust expiry bands and colours to match internal stock policy.
-              </p>
+        <div className="inventory-settings-group-grid">
+          <section className="inventory-settings-group inventory-settings-group--thresholds">
+            <div className="inventory-settings-group__heading">
+              <h4>Expiry thresholds</h4>
+              <p>Control when stock moves from healthy to watch, warning, and critical.</p>
             </div>
 
-            <div className="inventory-expiry-label-grid">
-              {(['critical', 'warning', 'watch'] as const).map((key) => (
-                <label key={key}>
-                  {expiryLabelRules[key].label} max days
+            <div className="inventory-settings-fields inventory-settings-fields--thresholds">
+              {thresholdFields.map((field) => (
+                <div key={field.key} className="inventory-settings-field">
+                  <label htmlFor={`expiry-rule-${field.key}`}>{field.label}</label>
                   <input
+                    id={`expiry-rule-${field.key}`}
                     type="number"
                     min="0"
-                    value={expiryLabelRules[key].maxDays}
-                    onChange={(event) =>
-                      setExpiryLabelRules((current) => ({
-                        ...current,
-                        [key]: {
-                          ...current[key],
-                          maxDays: Number(event.target.value || 0),
-                        },
-                      }))
-                    }
+                    value={expiryLabelRules[field.key] ?? 0}
+                    onChange={(event) => updateExpiryNumberRule(field.key, event.target.value)}
                   />
-                </label>
-              ))}
-
-              {(['expired', 'critical', 'warning', 'watch', 'valid', 'noDate'] as const).map((key) => (
-                <label key={`${key}-background`}>
-                  {expiryLabelRules[key].label} background
-                  <input
-                    type="color"
-                    value={expiryLabelRules[key].background}
-                    onChange={(event) =>
-                      setExpiryLabelRules((current) => ({
-                        ...current,
-                        [key]: {
-                          ...current[key],
-                          background: event.target.value,
-                        },
-                      }))
-                    }
-                  />
-                </label>
-              ))}
-
-              {(['expired', 'critical', 'warning', 'watch', 'valid', 'noDate'] as const).map((key) => (
-                <label key={`${key}-text`}>
-                  {expiryLabelRules[key].label} text
-                  <input
-                    type="color"
-                    value={expiryLabelRules[key].text}
-                    onChange={(event) =>
-                      setExpiryLabelRules((current) => ({
-                        ...current,
-                        [key]: {
-                          ...current[key],
-                          text: event.target.value,
-                        },
-                      }))
-                    }
-                  />
-                </label>
+                  <small>{field.helper}</small>
+                </div>
               ))}
             </div>
           </section>
-        )}
+
+          <section className="inventory-settings-group inventory-settings-group--backgrounds">
+            <div className="inventory-settings-group__heading">
+              <h4>Background colours</h4>
+              <p>Choose the background colours used for expiry rows and labels.</p>
+            </div>
+
+            <div className="inventory-settings-fields inventory-settings-fields--colours">
+              {backgroundFields.map((field) => (
+                <div key={field.key} className="inventory-settings-field inventory-settings-field--colour">
+                  <label htmlFor={`expiry-rule-${field.key}`}>{field.label}</label>
+                  <input
+                    id={`expiry-rule-${field.key}`}
+                    className="inventory-settings-color-input"
+                    type="color"
+                    value={String(expiryLabelRules[field.key] ?? field.fallback)}
+                    onChange={(event) => updateExpiryColourRule(field.key, event.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="inventory-settings-group inventory-settings-group--text">
+            <div className="inventory-settings-group__heading">
+              <h4>Text colours</h4>
+              <p>Choose readable text colours for each expiry state.</p>
+            </div>
+
+            <div className="inventory-settings-fields inventory-settings-fields--colours">
+              {textFields.map((field) => (
+                <div key={field.key} className="inventory-settings-field inventory-settings-field--colour">
+                  <label htmlFor={`expiry-rule-${field.key}`}>{field.label}</label>
+                  <input
+                    id={`expiry-rule-${field.key}`}
+                    className="inventory-settings-color-input"
+                    type="color"
+                    value={String(expiryLabelRules[field.key] ?? field.fallback)}
+                    onChange={(event) => updateExpiryColourRule(field.key, event.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <section className="inventory-settings-preview-panel">
+          <div>
+            <h4>Live label preview</h4>
+            <p>These colours will be reflected across expiry tables after saving.</p>
+          </div>
+
+          <div className="inventory-settings-preview-legend">
+            {previewFields.map((field) => {
+              const backgroundColor = String(expiryLabelRules[field.backgroundKey] ?? field.fallbackBackground);
+              const color = String(expiryLabelRules[field.textKey] ?? field.fallbackText);
+
+              return (
+                <span
+                  key={field.label}
+                  className="inventory-settings-preview-chip"
+                  style={{
+                    backgroundColor,
+                    color,
+                    borderColor: backgroundColor,
+                  }}
+                >
+                  <span className="inventory-settings-preview-swatch" style={{ backgroundColor }} />
+                  <strong>{field.label}</strong>
+                </span>
+              );
+            })}
+          </div>
+        </section>
+
+        <div className="inventory-settings-actions">
+          <button type="button" className="primary" onClick={handleSaveExpiryLabelRules}>
+            Save labelling changes
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const defaultRules = { ...defaultExpiryLabelRules };
+
+              runtimeExpiryLabelRules = defaultRules;
+              setExpiryLabelRules(defaultRules);
+              markAction('Expiry labelling rules restored. Save changes to keep these defaults.');
+            }}
+          >
+            Restore default labels
+          </button>
+        </div>
       </section>
     );
+
   }
 
   return (
