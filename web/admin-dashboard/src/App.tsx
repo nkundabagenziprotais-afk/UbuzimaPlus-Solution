@@ -4857,9 +4857,10 @@ function App() {
     }
 
     return (
-      <section className="section-page">
+      <section className="section-page pos-unified-module-page">
+        {renderPosWorkspaceTopMenu('payment-receipt')}
         <FocusRegisterPreview
-          title="Payment and Receipt"
+          title="Receipts & Payments"
           description="Payment register with receipt print, Bluetooth readiness, WhatsApp, email, and corporate email delivery."
           rows={previewRows}
         />
