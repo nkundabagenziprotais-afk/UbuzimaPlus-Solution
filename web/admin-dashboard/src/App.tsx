@@ -2559,6 +2559,7 @@ function App() {
     }),
   );
   const [posSummaryRefreshKey, setPosSummaryRefreshKey] = useState(0);
+  const [posTerminalSearch, setPosTerminalSearch] = useState('');
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
@@ -3934,6 +3935,28 @@ function App() {
 
     const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
 
+    const normalizedPosTerminalSearch = posTerminalSearch.trim().toLowerCase();
+    const posVisibleProducts = normalizedPosTerminalSearch
+      ? posProducts.filter((product) =>
+          [
+            product.name,
+            product.strength,
+            product.code,
+            product.batchNumber,
+            product.locationName,
+          ]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(normalizedPosTerminalSearch)),
+        )
+      : posProducts;
+
+    const posSearchHelperText = posInventoryBatches.length === 0
+      ? 'Load current inventory before searching products.'
+      : normalizedPosTerminalSearch
+        ? `${posVisibleProducts.length} matching product${posVisibleProducts.length === 1 ? '' : 's'}`
+        : `${posProducts.length} fast product tile${posProducts.length === 1 ? '' : 's'} ready`;
+
+
     async function loadCurrentPosInventory() {
       if (!session?.token) return;
 
@@ -4361,9 +4384,9 @@ function App() {
                 <div className="pos-builder-heading">
                   <div>
                     <p className="eyebrow">POS terminal mode</p>
-                    <h3>Sale ticket, product tiles, and Transaction Set-UP</h3>
+                    <h3>Working POS terminal</h3>
                     <span>
-                      Use the sale ticket on the left, product tiles in the center, then review Transaction Set-UP and update the payment summary before confirming.
+                      Serve customers from one screen: build the sale ticket, tap product tiles, review Transaction Set-UP, update the summary, then confirm payment and receipt.
                     </span>
                   </div>
                   <div className="pos-builder-status">
@@ -4381,7 +4404,19 @@ function App() {
                   </div>
                 </div>
 
-                <input className="pos-search-input" placeholder="Scan barcode or search product, batch, SKU..." />
+                <input
+                  className="pos-search-input"
+                  value={posTerminalSearch}
+                  placeholder="Scan barcode or search product, batch, SKU..."
+                  onChange={(event) => setPosTerminalSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && posVisibleProducts.length === 1) {
+                      addPosProductToCart(posVisibleProducts[0]);
+                      setPosTerminalSearch('');
+                    }
+                  }}
+                />
+                <small className="pos-terminal-search-helper">{posSearchHelperText}</small>
 
                 <div className="pos-inventory-load-panel">
                   <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
@@ -4403,7 +4438,13 @@ function App() {
                       <small>Load current inventory to pick only sellable batches with available stock.</small>
                     </div>
                   ) : (
-                    posProducts.map((product) => (
+                    posVisibleProducts.length === 0 ? (
+                      <div className="pos-inventory-empty-state">
+                        <strong>No matching product</strong>
+                        <small>Try another product name, SKU, batch, barcode, or clear the search.</small>
+                      </div>
+                    ) : (
+                      posVisibleProducts.map((product) => (
                       <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
                         <strong>{product.name}</strong>
                         <small>{product.strength}</small>
@@ -4411,7 +4452,8 @@ function App() {
                         <span>{product.status}</span>
                         <i>Add to cart</i>
                       </button>
-                    ))
+                      ))
+                    )
                   )}
                 </div>
 

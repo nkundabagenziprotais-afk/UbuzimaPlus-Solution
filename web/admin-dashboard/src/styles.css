@@ -18487,3 +18487,417 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
+
+/* Patch POS-C.1.4 - Working POS terminal cockpit */
+
+/* Terminal shell: no hidden dashboard feel, no scrolling behind header */
+.pos-dedicated-counter-shell {
+  background: #0b1120 !important;
+}
+
+.pos-counter-page--dedicated {
+  background: #0b1120 !important;
+  color: #0f172a !important;
+}
+
+/* Top terminal menu like a real POS control strip */
+.pos-dedicated-command-bar.pos-unified-terminal-menu,
+.pos-dedicated-command-bar {
+  background: #020617 !important;
+  border-radius: 12px !important;
+  padding: 6px !important;
+  gap: 6px !important;
+}
+
+.pos-dedicated-command-bar button {
+  min-height: 46px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, #1e293b, #0f172a) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+}
+
+.pos-dedicated-command-bar button.active,
+.pos-dedicated-command-bar button:hover {
+  background: linear-gradient(180deg, #0ea5e9, #0369a1) !important;
+}
+
+/* Compact POS header/status */
+.pos-counter-page--dedicated .pos-counter-heading {
+  min-height: 58px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(90deg, #ffffff, #e0f2fe) !important;
+  padding: 10px 14px !important;
+}
+
+.pos-counter-page--dedicated .pos-counter-heading h2 {
+  margin: 0 !important;
+  font-size: 1.25rem !important;
+}
+
+.pos-counter-page--dedicated .pos-counter-heading .muted {
+  font-size: 0.74rem !important;
+}
+
+/* Open / close day controls become a compact operational row */
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two {
+  gap: 6px !important;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two article {
+  min-height: 58px !important;
+  border-radius: 12px !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  padding: 8px !important;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two article label small,
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two article > span {
+  color: #cbd5e1 !important;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two input,
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two select {
+  min-height: 34px !important;
+  border-radius: 8px !important;
+}
+
+/* Main POS terminal proportions */
+.pos-counter-workbench--builder-left {
+  grid-template-columns: minmax(0, 1fr) 355px !important;
+  gap: 8px !important;
+}
+
+.pos-transaction-builder-card {
+  background: #111827 !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 14px !important;
+  padding: 8px !important;
+  gap: 8px !important;
+}
+
+.pos-builder-heading {
+  min-height: 48px !important;
+  border-radius: 10px !important;
+  background: #020617 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  padding: 8px 10px !important;
+}
+
+.pos-builder-heading .eyebrow {
+  color: #38bdf8 !important;
+}
+
+.pos-builder-heading h3,
+.pos-builder-heading span {
+  color: #ffffff !important;
+}
+
+.pos-builder-heading h3 {
+  font-size: 1rem !important;
+}
+
+.pos-builder-heading span {
+  color: #cbd5e1 !important;
+  font-size: 0.72rem !important;
+}
+
+.pos-builder-status {
+  background: #0ea5e9 !important;
+  border-radius: 10px !important;
+}
+
+/* Photo-inspired split: receipt/ticket left, products board center */
+.pos-builder-main-grid {
+  grid-template-columns: 390px minmax(0, 1fr) !important;
+  gap: 8px !important;
+}
+
+/* Sale ticket/cart */
+.pos-transaction-builder-card .pos-cart-card {
+  background: #ffffff !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+}
+
+.pos-transaction-builder-card .pos-cart-card .section-heading {
+  padding: 8px 10px 0 !important;
+}
+
+.pos-transaction-builder-card .pos-cart-card .section-heading h3 {
+  font-size: 0.98rem !important;
+}
+
+.pos-transaction-builder-card .pos-cart-card .system-table-wrap {
+  margin-top: 8px !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+.pos-transaction-builder-card .pos-cart-table {
+  min-width: 520px !important;
+}
+
+.pos-transaction-builder-card .pos-cart-table th {
+  background: #111827 !important;
+  color: #ffffff !important;
+  font-size: 0.65rem !important;
+}
+
+.pos-transaction-builder-card .pos-cart-table td {
+  padding: 7px !important;
+  font-size: 0.74rem !important;
+}
+
+.pos-transaction-builder-card .pos-cart-table input {
+  width: 62px !important;
+  min-height: 32px !important;
+}
+
+/* POS action keys under sale ticket */
+.pos-terminal-ticket-actions {
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 5px !important;
+  background: #020617 !important;
+  padding: 6px !important;
+}
+
+.pos-terminal-ticket-actions button {
+  min-height: 40px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, #db2777, #9d174d) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22) !important;
+}
+
+/* Product board */
+.pos-transaction-builder-card .pos-rx-queue {
+  background: #020617 !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+
+.pos-transaction-builder-card .pos-rx-queue .section-heading h3,
+.pos-transaction-builder-card .pos-rx-queue .section-heading span {
+  color: #ffffff !important;
+}
+
+.pos-transaction-builder-card .pos-rx-queue .section-heading span {
+  color: #94a3b8 !important;
+}
+
+.pos-transaction-builder-card .pos-rx-queue .pos-search-input {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-radius: 8px !important;
+  height: 42px !important;
+}
+
+.pos-terminal-search-helper {
+  display: block;
+  margin: 6px 12px 0;
+  color: #bae6fd;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pos-transaction-builder-card .pos-inventory-load-panel {
+  background: #111827 !important;
+  border: 1px dashed rgba(56, 189, 248, 0.35) !important;
+  color: #e0f2fe !important;
+}
+
+.pos-transaction-builder-card .pos-inventory-load-panel button {
+  min-height: 36px !important;
+  border-radius: 8px !important;
+}
+
+.pos-transaction-builder-card .pos-inventory-load-panel span {
+  color: #cbd5e1 !important;
+  font-size: 0.72rem !important;
+}
+
+/* Product tiles like a terminal touch board, but pharmacy professional */
+.pos-transaction-builder-card .pos-drug-list--ten {
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)) !important;
+  grid-auto-rows: minmax(86px, auto) !important;
+  gap: 6px !important;
+  padding: 8px !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button {
+  min-height: 86px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(160deg, #0f766e, #0284c7) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  padding: 8px !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button:nth-child(4n+1) {
+  background: linear-gradient(160deg, #0369a1, #0f766e) !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button:nth-child(4n+2) {
+  background: linear-gradient(160deg, #7c3aed, #2563eb) !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button:nth-child(4n+3) {
+  background: linear-gradient(160deg, #be123c, #ea580c) !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button strong {
+  font-size: 0.78rem !important;
+  line-height: 1.15 !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button small,
+.pos-transaction-builder-card .pos-drug-list--ten button em,
+.pos-transaction-builder-card .pos-drug-list--ten button i {
+  font-size: 0.62rem !important;
+  line-height: 1.2 !important;
+}
+
+/* Transaction setup as bottom control strip */
+.pos-builder-setup-panel {
+  max-height: 196px !important;
+  background: #ffffff !important;
+  border-radius: 10px !important;
+}
+
+.pos-builder-setup-panel .section-heading {
+  padding: 8px 10px 0 !important;
+}
+
+.pos-builder-setup-panel .section-heading h3 {
+  font-size: 0.96rem !important;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two {
+  grid-template-columns: repeat(4, minmax(120px, 1fr)) !important;
+  gap: 6px !important;
+  padding: 0 10px 10px !important;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two label {
+  border-radius: 8px !important;
+  padding: 7px !important;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two label span {
+  font-size: 0.58rem !important;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two input,
+.pos-builder-setup-panel .pos-field-grid--two select {
+  min-height: 32px !important;
+  border-radius: 7px !important;
+  font-size: 0.78rem !important;
+}
+
+/* Right payment/action side */
+.pos-counter-workbench--builder-left .pos-confirmation-rail {
+  gap: 8px !important;
+}
+
+.pos-counter-workbench--builder-left .pos-summary-confirmation-card,
+.pos-counter-workbench--builder-left .pos-invoice-journey {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+.pos-summary-confirmation-card .section-heading {
+  padding: 10px 10px 0 !important;
+}
+
+.pos-summary-confirmation-card .section-heading h3 {
+  font-size: 1rem !important;
+}
+
+.pos-refresh-summary-button {
+  margin: 8px 10px 0 !important;
+  width: calc(100% - 20px) !important;
+  min-height: 42px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, #2563eb, #1d4ed8) !important;
+}
+
+.pos-summary-journey-note {
+  margin: 6px 10px 0 !important;
+  border-radius: 8px !important;
+  font-size: 0.68rem !important;
+}
+
+.pos-summary-sync-note {
+  margin: 8px 10px !important;
+  border-radius: 8px !important;
+}
+
+.pos-summary-list {
+  padding: 0 10px 10px !important;
+}
+
+.pos-summary-list div {
+  padding: 6px 0 !important;
+}
+
+.pos-summary-list .total {
+  border-radius: 8px !important;
+  background: #020617 !important;
+}
+
+.pos-summary-confirmation-card > button:last-child {
+  width: calc(100% - 20px) !important;
+  margin: 0 10px 10px !important;
+  min-height: 48px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, #16a34a, #15803d) !important;
+  font-size: 0.92rem !important;
+}
+
+/* Hide recent sales card in terminal mode from occupying cashier space */
+.pos-counter-page--dedicated .pos-sales-summary-table-card {
+  display: none !important;
+}
+
+/* Responsive terminal */
+@media (max-width: 1440px) {
+  .pos-builder-main-grid {
+    grid-template-columns: 360px minmax(0, 1fr) !important;
+  }
+
+  .pos-counter-workbench--builder-left {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-counter-workbench--builder-left .pos-confirmation-rail {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.55fr) !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .pos-builder-main-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "ticket" !important;
+  }
+
+  .pos-counter-workbench--builder-left .pos-confirmation-rail {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-builder-setup-panel {
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .pos-transaction-builder-card .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pos-builder-setup-panel .pos-field-grid--two {
+    grid-template-columns: 1fr !important;
+  }
+}
+
