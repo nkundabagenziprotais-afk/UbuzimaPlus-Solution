@@ -4505,36 +4505,71 @@ export function ProductInventoryPreview({
                 onBulkDelete: () => markAction('Product Inventory bulk delete'),
               })}
 
-              <div className="inventory-product-inventory-card-grid">
-                {[
+              {(() => {
+                const metricRows = productInventoryRows.length > 0
+                  ? productInventoryRows
+                  : allBatches.map((batch) => ({
+                      batch,
+                      defaultMargin: productMarginRate(batch.product),
+                      computedSellingPrice: Number(batch.unit_cost || 0) * (1 + (productMarginRate(batch.product) / 100)),
+                      days: remainingDays(batch.expiry_date),
+                    }));
+
+                const inventoryBatchCount = metricRows.length;
+                const availableQuantity = metricRows.reduce(
+                  (total, { batch }) => total + Number(batch.available_quantity || 0),
+                  0,
+                );
+                const estimatedStockValue = metricRows.reduce(
+                  (total, { batch, computedSellingPrice }) =>
+                    total + (Number(batch.available_quantity || 0) * Number(computedSellingPrice || batch.unit_cost || 0)),
+                  0,
+                );
+                const nearExpiryRisk = metricRows.filter(({ days }) => days !== null && days >= 0 && days <= 180).length;
+
+                const cards = [
                   {
                     label: 'Inventory batches',
-                    value: formatNumber(productInventoryRows.length),
-                    helper: 'Commercial stock rows linked to Product Master',
+                    value: formatNumber(inventoryBatchCount),
+                    helper: inventoryBatchCount > 0
+                      ? 'Commercial stock rows linked to Product Master'
+                      : 'No stock batch has been loaded yet',
                   },
                   {
                     label: 'Available quantity',
-                    value: formatNumber(productInventoryRows.reduce((total, { batch }) => total + Number(batch.available_quantity || 0), 0)),
-                    helper: 'Available units across inventory batches',
+                    value: formatNumber(availableQuantity),
+                    helper: availableQuantity > 0
+                      ? 'Available units across inventory batches'
+                      : 'No available quantity has been recorded yet',
                   },
                   {
                     label: 'Estimated stock value',
-                    value: formatRwf(productInventoryRows.reduce((total, { batch, computedSellingPrice }) => total + (Number(batch.available_quantity || 0) * Number(computedSellingPrice || batch.unit_cost || 0)), 0)),
-                    helper: 'Quantity multiplied by selling price or cost',
+                    value: formatRwf(estimatedStockValue),
+                    helper: estimatedStockValue > 0
+                      ? 'Quantity multiplied by selling price or cost'
+                      : 'Stock value appears after quantity and cost are recorded',
                   },
                   {
                     label: 'Near-expiry risk',
-                    value: formatNumber(productInventoryRows.filter(({ days }) => days !== null && days <= 180).length),
-                    helper: 'Batches within 180 days of expiry',
+                    value: formatNumber(nearExpiryRisk),
+                    helper: nearExpiryRisk > 0
+                      ? 'Batches within 180 days of expiry'
+                      : 'No loaded batch is currently within 180 days of expiry',
                   },
-                ].map((card) => (
-                  <article key={card.label} className="inventory-product-inventory-card">
-                    <span>{card.label}</span>
-                    <strong>{card.value}</strong>
-                    <small>{card.helper}</small>
-                  </article>
-                ))}
-              </div>
+                ];
+
+                return (
+                  <div className="inventory-product-inventory-card-grid">
+                    {cards.map((card) => (
+                      <article key={card.label} className="inventory-product-inventory-card">
+                        <span>{card.label}</span>
+                        <strong>{card.value}</strong>
+                        <small>{card.helper}</small>
+                      </article>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {!isInventoryReceiveFlowOpen && !editingInventoryBatch && (
                 <section className="inventory-guided-flow-launch-panel">
