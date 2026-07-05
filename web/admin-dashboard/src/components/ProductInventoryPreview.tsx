@@ -471,6 +471,16 @@ export function ProductInventoryPreview({
   const [selectedBatchIds, setSelectedBatchIds] = useState<number[]>([]);
   const [editingInventoryBatch, setEditingInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [isInventoryReceiveFlowOpen, setIsInventoryReceiveFlowOpen] = useState(false);
+  const [expiryViewFilter, setExpiryViewFilter] = useState('all');
+  const [isExpiryLabelManagerOpen, setIsExpiryLabelManagerOpen] = useState(false);
+  const [expiryLabelRules, setExpiryLabelRules] = useState({
+    expired: { label: 'Expired', maxDays: -1, background: '#7f1d1d', text: '#ffffff' },
+    critical: { label: 'Critical', maxDays: 30, background: '#fee2e2', text: '#7f1d1d' },
+    warning: { label: 'Warning', maxDays: 90, background: '#ffedd5', text: '#9a3412' },
+    watch: { label: 'Watch', maxDays: 180, background: '#fef3c7', text: '#92400e' },
+    valid: { label: 'Healthy', maxDays: 181, background: '#ecfdf5', text: '#065f46' },
+    noDate: { label: 'No date', maxDays: 0, background: '#f1f5f9', text: '#334155' },
+  });
   const [viewingInventoryBatch, setViewingInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [pendingDeleteInventoryBatch, setPendingDeleteInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [activeInventoryOpportunity, setActiveInventoryOpportunity] = useState<string>('Stock-out opportunity');
@@ -2430,11 +2440,177 @@ export function ProductInventoryPreview({
     );
   }
 
+
+  function expiryRiskKeyFromDays(days: number | null) {
+    if (days === null) return 'noDate';
+    if (days < 0) return 'expired';
+    if (days <= Number(expiryLabelRules.critical.maxDays)) return 'critical';
+    if (days <= Number(expiryLabelRules.warning.maxDays)) return 'warning';
+    if (days <= Number(expiryLabelRules.watch.maxDays)) return 'watch';
+    return 'valid';
+  }
+
+  function expiryRiskLabel(days: number | null) {
+    const key = expiryRiskKeyFromDays(days);
+    return expiryLabelRules[key as keyof typeof expiryLabelRules]?.label ?? 'Review';
+  }
+
+  function expiryRiskClass(days: number | null) {
+    return `inventory-expiry-row inventory-expiry-row--${expiryRiskKeyFromDays(days)}`;
+  }
+
+  function shouldShowExpiryRow(days: number | null) {
+    if (expiryViewFilter === 'all') return true;
+    return expiryRiskKeyFromDays(days) === expiryViewFilter;
+  }
+
+  function expiryAiRecommendation(days: number | null) {
+    if (days === null) return 'Add expiry date before this batch is released for routine selling.';
+    if (days < 0) return 'Remove from sale, quarantine the batch, and document disposal or supplier return.';
+    if (days <= 30) return 'Escalate today: FEFO sale, transfer, supplier return, or controlled write-off.';
+    if (days <= 90) return 'Prioritize FEFO selling and avoid new purchasing until stock reduces.';
+    if (days <= 180) return 'Keep on watchlist and review weekly movement.';
+    return 'Healthy batch. Continue normal FEFO monitoring.';
+  }
+
+  function renderExpiryLabelTools() {
+    const filterOptions = [
+      ['all', 'All'],
+      ['expired', expiryLabelRules.expired.label],
+      ['critical', expiryLabelRules.critical.label],
+      ['warning', expiryLabelRules.warning.label],
+      ['watch', expiryLabelRules.watch.label],
+      ['valid', expiryLabelRules.valid.label],
+      ['noDate', expiryLabelRules.noDate.label],
+    ];
+
+    const mappingRows = [
+      ['expired', 'Less than 0 days'],
+      ['critical', `0-${expiryLabelRules.critical.maxDays} days`],
+      ['warning', `${Number(expiryLabelRules.critical.maxDays) + 1}-${expiryLabelRules.warning.maxDays} days`],
+      ['watch', `${Number(expiryLabelRules.warning.maxDays) + 1}-${expiryLabelRules.watch.maxDays} days`],
+      ['valid', `More than ${expiryLabelRules.watch.maxDays} days`],
+      ['noDate', 'Missing expiry date'],
+    ] as const;
+
+    return (
+      <section className="inventory-expiry-control-suite">
+        <div className="inventory-expiry-filter-row" aria-label="Expiry filters">
+          {filterOptions.map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={expiryViewFilter === key ? 'active' : ''}
+              onClick={() => setExpiryViewFilter(key)}
+            >
+              {label}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            className="inventory-expiry-map-button"
+            onClick={() => setIsExpiryLabelManagerOpen((current) => !current)}
+          >
+            Labelling & Mapping
+          </button>
+        </div>
+
+        <div className="inventory-expiry-legend">
+          {mappingRows.map(([key, range]) => {
+            const rule = expiryLabelRules[key as keyof typeof expiryLabelRules];
+
+            return (
+              <span
+                key={key}
+                style={{ background: rule.background, color: rule.text }}
+              >
+                <strong>{rule.label}</strong>
+                <small>{range}</small>
+              </span>
+            );
+          })}
+        </div>
+
+        {isExpiryLabelManagerOpen && (
+          <section className="inventory-expiry-label-manager">
+            <div>
+              <h4>Labelling and mapping</h4>
+              <p>
+                Admins can adjust expiry bands and colours to match internal stock policy.
+              </p>
+            </div>
+
+            <div className="inventory-expiry-label-grid">
+              {(['critical', 'warning', 'watch'] as const).map((key) => (
+                <label key={key}>
+                  {expiryLabelRules[key].label} max days
+                  <input
+                    type="number"
+                    min="0"
+                    value={expiryLabelRules[key].maxDays}
+                    onChange={(event) =>
+                      setExpiryLabelRules((current) => ({
+                        ...current,
+                        [key]: {
+                          ...current[key],
+                          maxDays: Number(event.target.value || 0),
+                        },
+                      }))
+                    }
+                  />
+                </label>
+              ))}
+
+              {(['expired', 'critical', 'warning', 'watch', 'valid', 'noDate'] as const).map((key) => (
+                <label key={`${key}-background`}>
+                  {expiryLabelRules[key].label} background
+                  <input
+                    type="color"
+                    value={expiryLabelRules[key].background}
+                    onChange={(event) =>
+                      setExpiryLabelRules((current) => ({
+                        ...current,
+                        [key]: {
+                          ...current[key],
+                          background: event.target.value,
+                        },
+                      }))
+                    }
+                  />
+                </label>
+              ))}
+
+              {(['expired', 'critical', 'warning', 'watch', 'valid', 'noDate'] as const).map((key) => (
+                <label key={`${key}-text`}>
+                  {expiryLabelRules[key].label} text
+                  <input
+                    type="color"
+                    value={expiryLabelRules[key].text}
+                    onChange={(event) =>
+                      setExpiryLabelRules((current) => ({
+                        ...current,
+                        [key]: {
+                          ...current[key],
+                          text: event.target.value,
+                        },
+                      }))
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+          </section>
+        )}
+      </section>
+    );
+  }
+
   return (
     <article className="panel wide inventory-preview-panel">
       <div className="panel-heading-row">
         <div>
-          <h2>{activeInventoryMeta.label}</h2>
+          <h2>{activeInventoryView === 'overview' ? 'Inventory' : activeInventoryMeta.label}</h2>
           <p className="muted">{inventoryPageDescriptions[activeInventoryView]}</p>
         </div>
 
@@ -2448,18 +2624,15 @@ export function ProductInventoryPreview({
       {error && <div className="form-error">{error}</div>}
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
 
-      {activeInventoryView === 'overview' && (
-        <>
-          {renderInventoryHomeSummaryCards()}
-          {renderSimpleMightyInventoryCommandCenter()}
-        </>
-      )}
+      {activeInventoryView === 'overview' && renderSimpleMightyInventoryCommandCenter()}
 
-      <section className="inventory-active-page-marker" data-active-inventory-view={activeInventoryView}>
-        <span>Inventory page</span>
-        <strong>{activeInventoryMeta.label}</strong>
-        <small>{activeInventoryMeta.description}</small>
-      </section>
+      {activeInventoryView !== 'overview' && (
+        <section className="inventory-active-page-marker" data-active-inventory-view={activeInventoryView}>
+          <span>Inventory page</span>
+          <strong>{activeInventoryMeta.label}</strong>
+          <small>{activeInventoryMeta.description}</small>
+        </section>
+      )}
 
       <section className="module-workspace-shell inventory-workspace-shell">
         {showInternalNavigation && (
@@ -2594,7 +2767,7 @@ export function ProductInventoryPreview({
                 <div className="section-heading">
                   <div>
                     <h3>AI inventory analytics</h3>
-                    <span>Operational signals prepared for demand, reorder, expiry, margin and stock-out models.</span>
+                    <span>Stock signals for reorder, expiry, margin, and availability decisions.</span>
                   </div>
                   <button type="button" onClick={() => selectInventoryView('product-inventory')}>Open Product Inventory</button>
                 </div>
@@ -2823,7 +2996,7 @@ export function ProductInventoryPreview({
                   <div>
                     <h3>Low Stock Watch List</h3>
                     <span>
-                      Product Master register filtered by available quantity against configured re-order level.
+                      Products where available stock is at or below the reorder level.
                     </span>
                   </div>
 
@@ -3123,7 +3296,7 @@ export function ProductInventoryPreview({
                 return left - right;
               });
 
-            const visibleBatchRows = batchRows.slice(0, 15);
+            const visibleBatchRows = batchRows.filter((batch: any) => shouldShowExpiryRow(batchRemainingDays(batch))).slice(0, 15);
 
             return (
               <section className="inventory-section inventory-section--batch-expiry-register">
@@ -3131,7 +3304,7 @@ export function ProductInventoryPreview({
                   <div>
                     <h3>Batch and Expiry Preview</h3>
                     <span>
-                      Stock batch register from Product Inventory, linked back to Product Master identity and pricing.
+                      Batch register with product identity, stock position, and expiry risk.
                     </span>
                   </div>
 
@@ -3157,8 +3330,9 @@ export function ProductInventoryPreview({
                             'Available Qty',
                             'Expiry Date',
                             'Remaining Days',
-                            'Batch Status',
+                            'Expiry Label',
                             'Supplier',
+                            'AI Action',
                           ],
                           visibleBatchRows.map((batch: any, index: number) => [
                             index + 1,
@@ -3173,8 +3347,9 @@ export function ProductInventoryPreview({
                             toNumber(batch?.available_quantity ?? batch?.quantity ?? 0),
                             batchExpiryDate(batch),
                             batchRemainingDays(batch) ?? '',
-                            batchStatusText(batch),
+                            expiryRiskLabel(batchRemainingDays(batch)),
                             batch?.supplier_name ?? 'Not set',
+                            expiryAiRecommendation(batchRemainingDays(batch)),
                           ]),
                         );
                       }}
@@ -3205,8 +3380,9 @@ export function ProductInventoryPreview({
                     <strong className="rhia-number-cell">Available Qty</strong>
                     <strong>Expiry Date</strong>
                     <strong className="rhia-number-cell">Remaining Days</strong>
-                    <strong>Batch Status</strong>
+                    <strong>Expiry Label</strong>
                     <strong>Supplier</strong>
+                    <strong>AI Action</strong>
                     <strong>Actions</strong>
                   </div>
 
@@ -3221,7 +3397,7 @@ export function ProductInventoryPreview({
                       const days = batchRemainingDays(batch);
 
                       return (
-                        <div key={batch?.id ?? `${batch?.batch_number}-${index}`} className="batch-expiry-register-row">
+                        <div key={batch?.id ?? `${batch?.batch_number}-${index}`} className={`batch-expiry-register-row ${expiryRiskClass(days)}`}>
                           <span>{index + 1}</span>
                           <span>{batchProduct(batch)?.sku ?? 'Not set'}</span>
                           <span>{batchProductGeneric(batch)}</span>
@@ -3234,8 +3410,9 @@ export function ProductInventoryPreview({
                           <span className="rhia-number-cell">{formatBatchNumber(batch?.available_quantity ?? batch?.quantity ?? 0)}</span>
                           <span>{batchExpiryDate(batch) || 'No expiry'}</span>
                           <span className="rhia-number-cell">{days === null ? 'N/A' : days}</span>
-                          <span>{batchStatusText(batch)}</span>
+                          <span><mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>{expiryRiskLabel(days)}</mark></span>
                           <span>{batch?.supplier_name ?? 'Not set'}</span>
+                          <span>{expiryAiRecommendation(days)}</span>
                           <span className="table-action-row">
                             <button type="button" onClick={() => markAction(`View batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>View</button>
                             <button type="button" onClick={() => markAction(`Review batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>Review</button>
@@ -3249,51 +3426,90 @@ export function ProductInventoryPreview({
             );
           })()}
 
-          {activeInventoryView === 'near-expiry' && nearExpiryBatches && (
-            <section className="inventory-section">
-              {renderTableToolbar({
-                title: 'Near-expiry watchlist',
-                subtitle: 'Batches expiring within 180 days, with remaining days and recommended action.',
-                selectedCount: selectedBatchIds.length,
-                onExport: () =>
-                  exportCsv(
-                    'near-expiry-watchlist.csv',
-                    ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Expiry', 'Remaining days', 'Status', 'Recommended action'],
-                    nearExpiryRows.map((batch) => {
-                      const days = remainingDays(batch.expiry_date);
-                      return [
-                        batch.product.name,
-                        batch.product.sku,
-                        batch.batch_number,
-                        batch.stock_location.code,
-                        batch.available_quantity,
-                        formatDate(batch.expiry_date),
-                        days ?? '',
-                        expiryStatus(days),
-                        expiryAction(days),
-                      ];
-                    }),
-                  ),
-                onBulkEdit: () => markAction('Near-expiry bulk edit'),
-                onBulkDelete: () => markAction('Near-expiry bulk delete'),
-              })}
+          {activeInventoryView === 'near-expiry' && nearExpiryBatches && (() => {
+            const nearRows = nearExpiryRows
+              .filter((batch) => shouldShowExpiryRow(remainingDays(batch.expiry_date)))
+              .slice(0, rowLimitValue(rowLimit, nearExpiryRows.length));
 
-              <BatchTable
-                rows={pagedNearExpiry}
-                selectedBatchIds={selectedBatchIds}
-                onToggleBatch={toggleBatchSelection}
-                onSelectAll={() => selectAllBatches(pagedNearExpiry)}
-                onAction={renderBatchActions}
-                showRecommendedAction
-              />
-            </section>
-          )}
+            return (
+              <section className="inventory-section inventory-section--near-expiry-review">
+                {renderTableToolbar({
+                  title: 'Near Expiry Watch List',
+                  subtitle: 'Expiry review with clear labels, days remaining, and practical next action.',
+                  selectedCount: selectedBatchIds.length,
+                  onExport: () =>
+                    exportCsv(
+                      'near-expiry-watchlist.csv',
+                      ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Expiry', 'Remaining days', 'Expiry label', 'AI action'],
+                      nearRows.map((batch) => {
+                        const days = remainingDays(batch.expiry_date);
+                        return [
+                          batch.product.name,
+                          batch.product.sku,
+                          batch.batch_number,
+                          batch.stock_location.code,
+                          batch.available_quantity,
+                          formatDate(batch.expiry_date),
+                          days ?? '',
+                          expiryRiskLabel(days),
+                          expiryAiRecommendation(days),
+                        ];
+                      }),
+                    ),
+                  onBulkEdit: () => markAction('Near-expiry bulk edit'),
+                  onBulkDelete: () => markAction('Near-expiry bulk delete'),
+                })}
+
+                {renderExpiryLabelTools()}
+
+                <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--near-expiry-watch-list">
+                  <div className="inventory-master-table__header near-expiry-watch-row">
+                    <strong>Product</strong>
+                    <strong>Drug Code</strong>
+                    <strong>Batch</strong>
+                    <strong>Location</strong>
+                    <strong className="rhia-number-cell">Available</strong>
+                    <strong>Expiry</strong>
+                    <strong className="rhia-number-cell">Days</strong>
+                    <strong>Label</strong>
+                    <strong>AI Action</strong>
+                    <strong>Actions</strong>
+                  </div>
+
+                  {nearRows.length === 0 ? (
+                    <div className="near-expiry-watch-row near-expiry-watch-row--empty">
+                      <span>No batches match the selected expiry filter.</span>
+                    </div>
+                  ) : (
+                    nearRows.map((batch) => {
+                      const days = remainingDays(batch.expiry_date);
+
+                      return (
+                        <div key={batch.id} className={`near-expiry-watch-row ${expiryRiskClass(days)}`}>
+                          <span><strong>{batch.product.name}</strong></span>
+                          <span>{batch.product.sku}</span>
+                          <span>{batch.batch_number}</span>
+                          <span>{batch.stock_location.code}</span>
+                          <span className="rhia-number-cell">{formatNumber(batch.available_quantity)}</span>
+                          <span>{formatDate(batch.expiry_date)}</span>
+                          <span className="rhia-number-cell">{days ?? 'N/A'}</span>
+                          <span><mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>{expiryRiskLabel(days)}</mark></span>
+                          <span>{expiryAiRecommendation(days)}</span>
+                          <span>{renderBatchActions(batch)}</span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+            );
+          })()}
 
           {activeInventoryView === 'product-master' && products && (
             <section className="inventory-section">
               {renderTableToolbar({
                 title: 'Product Master',
-                subtitle: 'Supreme source of product identity, margin, regulatory status and product rules.',
+                subtitle: 'Core product records for pricing, margin, category, and inventory rules.',
                 selectedCount: selectedProductIds.length,
                 onExport: () =>
                   exportCsv(
@@ -3364,7 +3580,7 @@ export function ProductInventoryPreview({
             <section className="inventory-section">
               {renderTableToolbar({
                 title: 'Product Inventory',
-                subtitle: 'Commercial stock source for POS, purchase order receiving, shelf availability and selling price.',
+                subtitle: 'Stock batches used for POS, receiving, availability, and pricing.',
                 selectedCount: selectedBatchIds.length,
                 onExport: () =>
                   exportCsv(
@@ -3760,7 +3976,7 @@ export function ProductInventoryPreview({
                 <div className="section-heading">
                   <div>
                     <h3>AI inventory opportunity model</h3>
-                    <span>Uses Product Master against Current Inventory, market dynamics, reimbursement opportunity and stock movement.</span>
+                    <span>Connects Product Master, stock movement, margin, and expiry pressure.</span>
                   </div>
                 </div>
 
