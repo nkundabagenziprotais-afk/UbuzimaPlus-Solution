@@ -4321,9 +4321,10 @@ function App() {
               </div>
             </section>
 
-            {posNotice && <div className="form-success">{posNotice}</div>}
+            <div className="pos-terminal-main-scroll">
+              {posNotice && <div className="form-success">{posNotice}</div>}
 
-            <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
+              <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
               <article>
                 <span>Open POS Day</span>
                 <label>
@@ -4447,10 +4448,9 @@ function App() {
                       posVisibleProducts.map((product) => (
                       <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
                         <strong>{product.name}</strong>
-                        <small>{product.strength}</small>
-                        <em>{product.code}</em>
-                        <span>{product.status}</span>
-                        <i>Add to cart</i>
+                        <small>{product.status}</small>
+                        <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
+                        <i>Add</i>
                       </button>
                       ))
                     )
@@ -4486,9 +4486,8 @@ function App() {
                     <table className="system-table pos-cart-table">
                       <thead>
                         <tr>
-                          <th>Drug</th>
+                          <th>Product</th>
                           <th>Qty</th>
-                          <th>Unit price</th>
                           <th>Total</th>
                           <th>Action</th>
                         </tr>
@@ -4496,15 +4495,14 @@ function App() {
                       <tbody>
                         {posCartItems.length === 0 ? (
                           <tr>
-                            <td colSpan={5}>No drugs added yet. Select drugs from the left list.</td>
+                            <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
                           posCartItems.slice(0, 10).map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
-                                <small>{item.strength}</small>
-                                <small>Batch {item.batchNumber} · Available {item.availableQuantity.toLocaleString('en-RW')} · {item.locationName}</small>
+                                <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')} · Available {item.availableQuantity.toLocaleString('en-RW')}</small>
                               </td>
                               <td>
                                 <input
@@ -4515,7 +4513,6 @@ function App() {
                                   onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
                                 />
                               </td>
-                              <td>RWF {item.unitPrice.toLocaleString('en-RW')}</td>
                               <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
                               <td>
                                 <button
@@ -4845,6 +4842,7 @@ function App() {
                 </table>
               </div>
             </section>
+            </div>
           </section>
         </section>
       );
