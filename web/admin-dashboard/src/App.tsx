@@ -4270,7 +4270,7 @@ function App() {
             <div className="section-heading">
               <div>
                 <span>Real sales register</span>
-                <h3>Recent POS transactions</h3>
+                <h3>Recent Session Transactions</h3>
                 <p className="muted">No dummy rows are shown here. Real sales will appear after they are created through the backend-connected POS and dispensing workflow.</p>
               </div>
               <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
@@ -4457,7 +4457,7 @@ function App() {
                   <div className="section-heading">
                     <div>
                       <span>Sale ticket</span>
-                      <h3>Current customer cart</h3>
+                      <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
                       <small>{posCartItems.length} item line{posCartItems.length === 1 ? '' : 's'}</small>
