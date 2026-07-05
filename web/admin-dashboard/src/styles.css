@@ -16268,3 +16268,249 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
+
+/* Patch H.3 - operational international user management console */
+
+.tenant-user-security-console {
+  display: grid;
+  gap: 20px;
+}
+
+.tenant-user-console-heading .eyebrow {
+  margin: 0 0 4px;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-user-permissions--matrix {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.tenant-permission-assignment-matrix {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.tenant-permission-assignment-group {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.tenant-permission-assignment-group__header h3 {
+  margin: 0;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.tenant-permission-assignment-group__header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.tenant-permission-table-shell,
+.tenant-user-directory-table-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.tenant-permission-table,
+.tenant-user-directory-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tenant-permission-table th,
+.tenant-user-directory-table th {
+  padding: 12px 14px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.tenant-permission-table th:first-child,
+.tenant-user-directory-table th:first-child {
+  text-align: left;
+  width: 38%;
+}
+
+.tenant-permission-table td,
+.tenant-user-directory-table td {
+  padding: 12px 14px;
+  color: #0f172a;
+  font-size: 0.84rem;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tenant-permission-table td:first-child,
+.tenant-user-directory-table td:first-child,
+.tenant-user-directory-table td:nth-child(2) {
+  text-align: left;
+}
+
+.tenant-permission-table tbody tr:hover,
+.tenant-user-directory-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.tenant-permission-table td:first-child strong,
+.tenant-user-directory-table td strong {
+  display: block;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.tenant-permission-table td:first-child span,
+.tenant-user-directory-table td span,
+.tenant-user-directory-table td small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.permission-checkbox {
+  display: inline-grid;
+  gap: 4px;
+  justify-items: center;
+  align-items: center;
+  min-width: 68px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.permission-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0f766e;
+}
+
+.permission-checkbox span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.permission-checkbox--all span {
+  color: #0f766e;
+}
+
+.permission-not-applicable {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  font-weight: 900;
+}
+
+.tenant-user-directory-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.tenant-user-directory-panel__header h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.tenant-user-directory-panel__header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.status-chip {
+  display: inline-flex !important;
+  width: fit-content;
+  min-width: 78px;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #334155 !important;
+  background: #f1f5f9;
+  font-size: 0.72rem !important;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.status-chip--active {
+  color: #047857 !important;
+  background: #dcfce7;
+}
+
+.status-chip--pending {
+  color: #92400e !important;
+  background: #fef3c7;
+}
+
+.status-chip--blocked {
+  color: #991b1b !important;
+  background: #fee2e2;
+}
+
+.tenant-user-list-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tenant-user-list-actions button {
+  min-width: 0;
+  white-space: normal;
+}
+
+@media (max-width: 768px) {
+  .tenant-user-permissions--matrix,
+  .tenant-user-directory-panel {
+    padding: 12px;
+  }
+
+  .tenant-permission-assignment-group {
+    padding: 12px;
+  }
+
+  .tenant-permission-table,
+  .tenant-user-directory-table {
+    min-width: 760px;
+  }
+}
+
