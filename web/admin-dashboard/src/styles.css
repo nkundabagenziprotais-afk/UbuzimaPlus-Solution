@@ -18053,3 +18053,437 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
+
+/* Patch POS-C.1.3 - Unified POS terminal flow across all POS pages */
+
+/* Every POS submenu can run as a full workspace with the same top terminal menu. */
+.section-page.pos-unified-module-page,
+.pos-dedicated-counter-shell {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 10px !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.08), transparent 28%),
+    linear-gradient(180deg, #e5e7eb 0%, #cbd5e1 100%) !important;
+  padding: 10px !important;
+}
+
+/* The top menu is now a real terminal menu, not a floating overlay. */
+.pos-dedicated-command-bar.pos-unified-terminal-menu,
+.pos-dedicated-command-bar {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  z-index: 30 !important;
+  width: 100% !important;
+  max-width: none !important;
+  display: grid !important;
+  grid-template-columns: repeat(8, minmax(118px, 1fr)) !important;
+  gap: 8px !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  border-radius: 18px !important;
+  background: #111827 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22) !important;
+  padding: 8px !important;
+}
+
+.pos-dedicated-command-bar button {
+  min-height: 54px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: #1f2937 !important;
+  color: #ffffff !important;
+  padding: 8px 10px !important;
+  text-align: left !important;
+}
+
+.pos-dedicated-command-bar button span {
+  color: #93c5fd !important;
+  font-size: 0.62rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+.pos-dedicated-command-bar button strong {
+  color: #ffffff !important;
+  font-size: 0.8rem !important;
+  font-weight: 900 !important;
+}
+
+.pos-dedicated-command-bar button.active,
+.pos-dedicated-command-bar button:hover {
+  background: linear-gradient(135deg, #0284c7, #0f766e) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+/* POS Dashboard correction. */
+.pos-executive-overview.pos-unified-module-page {
+  grid-template-rows: auto auto auto minmax(0, 1fr) !important;
+}
+
+.pos-executive-overview.pos-unified-module-page .pos-international-hero,
+.pos-executive-overview.pos-unified-module-page .pos-executive-hero {
+  border-radius: 20px !important;
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 32%),
+    linear-gradient(135deg, #ffffff 0%, #f8fafc 58%, #e0f2fe 100%) !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1) !important;
+  margin: 0 !important;
+}
+
+.pos-executive-overview.pos-unified-module-page .pos-overview-analytics-grid {
+  min-height: 0 !important;
+}
+
+.pos-executive-overview.pos-unified-module-page .pos-overview-command-grid,
+.pos-executive-overview.pos-unified-module-page .pos-real-register-card {
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+/* POS Counter terminal page must not scroll under header. */
+.pos-dedicated-counter-shell {
+  display: block !important;
+}
+
+.pos-counter-page--dedicated {
+  display: grid !important;
+  grid-template-rows: auto auto auto minmax(0, 1fr) !important;
+  gap: 10px !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  padding: 10px !important;
+}
+
+/* Compact terminal header and open/close controls. */
+.pos-counter-page--dedicated .pos-counter-heading {
+  min-height: 68px !important;
+  border-radius: 18px !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+}
+
+.pos-counter-page--dedicated .pos-counter-heading h2 {
+  font-size: clamp(1.12rem, 1.7vw, 1.65rem) !important;
+}
+
+.pos-counter-page--dedicated .pos-counter-heading .muted {
+  font-size: 0.8rem !important;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two article {
+  display: grid !important;
+  grid-template-columns: auto minmax(150px, 1fr) minmax(150px, 1fr) auto !important;
+  gap: 10px !important;
+  align-items: end !important;
+  min-height: 72px !important;
+  border-radius: 18px !important;
+  padding: 10px !important;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two article > span {
+  align-self: center !important;
+  margin: 0 !important;
+}
+
+/* Terminal body: left sale ticket, center products, right payment summary. */
+.pos-counter-workbench--builder-left {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 370px !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.pos-transaction-builder-card {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) minmax(150px, auto) !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border-radius: 20px !important;
+  background: #f8fafc !important;
+  padding: 10px !important;
+}
+
+.pos-builder-heading {
+  min-height: 58px !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  padding: 10px 12px !important;
+}
+
+.pos-builder-heading h3 {
+  font-size: 1.05rem !important;
+}
+
+.pos-builder-heading span {
+  font-size: 0.76rem !important;
+}
+
+/* Main terminal split based on the photo: ticket left, product touch-board center. */
+.pos-builder-main-grid {
+  display: grid !important;
+  grid-template-columns: 410px minmax(0, 1fr) !important;
+  grid-template-areas: "ticket products" !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.pos-builder-cart-panel {
+  grid-area: ticket !important;
+}
+
+.pos-builder-product-panel {
+  grid-area: products !important;
+}
+
+/* Sale ticket / cart panel. */
+.pos-transaction-builder-card .pos-cart-card {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  border-radius: 18px !important;
+}
+
+.pos-transaction-builder-card .pos-cart-card .system-table-wrap {
+  min-height: 0 !important;
+  overflow: auto !important;
+  margin-top: 10px !important;
+  background: #ffffff !important;
+}
+
+.pos-transaction-builder-card .pos-cart-table {
+  min-width: 560px !important;
+}
+
+.pos-transaction-builder-card .pos-cart-table th,
+.pos-transaction-builder-card .pos-cart-table td {
+  padding: 8px !important;
+  font-size: 0.78rem !important;
+}
+
+/* Product tile board. */
+.pos-transaction-builder-card .pos-rx-queue {
+  display: grid !important;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  border-radius: 18px !important;
+}
+
+.pos-transaction-builder-card .pos-rx-queue .pos-search-input {
+  margin: 10px 12px 0 !important;
+  width: calc(100% - 24px) !important;
+  height: 44px !important;
+  border-radius: 14px !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-weight: 900 !important;
+}
+
+.pos-transaction-builder-card .pos-rx-queue .pos-search-input::placeholder {
+  color: #cbd5e1 !important;
+}
+
+.pos-transaction-builder-card .pos-inventory-load-panel {
+  margin: 10px 12px 0 !important;
+  display: grid !important;
+  grid-template-columns: 170px 1fr !important;
+  gap: 8px !important;
+  align-items: center !important;
+  border-radius: 14px !important;
+  padding: 8px !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)) !important;
+  grid-auto-rows: minmax(96px, auto) !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  padding: 12px !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button {
+  display: grid !important;
+  align-content: start !important;
+  min-height: 96px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #0284c7, #0f766e) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  padding: 10px !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12) !important;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button strong,
+.pos-transaction-builder-card .pos-drug-list--ten button small,
+.pos-transaction-builder-card .pos-drug-list--ten button em {
+  color: #ffffff !important;
+}
+
+/* POS terminal quick action keys, like the reference but pharmacy-customized. */
+.pos-terminal-ticket-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 6px !important;
+  border-top: 1px solid rgba(15, 23, 42, 0.08) !important;
+  background: #f1f5f9 !important;
+  padding: 8px !important;
+}
+
+.pos-terminal-ticket-actions button {
+  min-height: 42px !important;
+  border-radius: 12px !important;
+  background: #be185d !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-size: 0.76rem !important;
+  font-weight: 900 !important;
+}
+
+.pos-terminal-ticket-actions button:disabled {
+  background: #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+/* Transaction Set-UP sits under the selling area. */
+.pos-builder-setup-panel {
+  min-height: 0 !important;
+  max-height: 220px !important;
+  overflow: auto !important;
+  background: #ffffff !important;
+  border-radius: 18px !important;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two {
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) !important;
+  gap: 8px !important;
+  padding: 0 12px 12px !important;
+}
+
+/* Payment summary right side. */
+.pos-counter-workbench--builder-left .pos-confirmation-rail {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+.pos-counter-workbench--builder-left .pos-summary-confirmation-card,
+.pos-counter-workbench--builder-left .pos-invoice-journey {
+  position: static !important;
+  border-radius: 20px !important;
+}
+
+/* Other POS subpages use same terminal shell but allow content scrolling. */
+.section-page.pos-unified-module-page > article,
+.section-page.pos-unified-module-page > section:not(.pos-dedicated-command-bar),
+.section-page.pos-unified-module-page > div {
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+/* Responsive handling. */
+@media (max-width: 1440px) {
+  .pos-dedicated-command-bar.pos-unified-terminal-menu,
+  .pos-dedicated-command-bar {
+    grid-template-columns: repeat(4, minmax(140px, 1fr)) !important;
+  }
+
+  .pos-counter-page--dedicated {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow: auto !important;
+  }
+
+  .pos-counter-workbench--builder-left {
+    grid-template-columns: 1fr !important;
+    overflow: visible !important;
+  }
+
+  .pos-builder-main-grid {
+    grid-template-columns: 400px minmax(0, 1fr) !important;
+    overflow: visible !important;
+  }
+
+  .pos-counter-workbench--builder-left .pos-confirmation-rail {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.55fr) !important;
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .section-page.pos-unified-module-page,
+  .pos-dedicated-counter-shell {
+    overflow: auto !important;
+  }
+
+  .pos-builder-main-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "ticket" !important;
+  }
+
+  .pos-builder-setup-panel {
+    max-height: none !important;
+  }
+
+  .pos-builder-setup-panel .pos-field-grid--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pos-counter-workbench--builder-left .pos-confirmation-rail {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .pos-dedicated-command-bar.pos-unified-terminal-menu,
+  .pos-dedicated-command-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pos-counter-page--dedicated .pos-day-control-strip--two-by-two,
+  .pos-counter-page--dedicated .pos-day-control-strip--two-by-two article {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-builder-setup-panel .pos-field-grid--two {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-transaction-builder-card .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+

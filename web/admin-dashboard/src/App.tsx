@@ -725,8 +725,8 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     description: 'Business profile, branches, departments, capabilities, operating hours, and local setup.',
   },
   security: {
-    eyebrow: 'Access and governance',
-    title: 'Security, roles, and tenant scope',
+    eyebrow: 'POS and Sales Operations',
+    title: 'Counter, dispensing, customers, prescriptions, receipts, and sales control',
     description: 'Resolved permissions, access checks, tenant assignments, audit posture, and protected modules.',
   },
   'corporate-email': {
@@ -4119,14 +4119,52 @@ function App() {
       );
     }
 
+
+    function renderPosWorkspaceTopMenu(activeKey: PosWorkspaceKey | 'main-dashboard' = activePosWorkspace) {
+      const posTerminalMenuItems = [
+        { key: 'main-dashboard', label: 'Main Dashboard', detail: 'Exit POS' },
+        { key: 'overview', label: 'POS Dashboard', detail: 'Control view' },
+        { key: 'pos', label: 'POS Counter', detail: 'Serve customer' },
+        { key: 'dispensing-review', label: 'Pharmacist Review', detail: 'Safety queue' },
+        { key: 'customers', label: 'Customers', detail: 'Patients' },
+        { key: 'prescriptions', label: 'Prescriptions', detail: 'Rx files' },
+        { key: 'sales-performance', label: 'Sales Register', detail: 'Real sales' },
+        { key: 'payment-receipt', label: 'Receipts & Payments', detail: 'Collection' },
+      ] as const;
+
+      return (
+        <nav className="pos-dedicated-command-bar pos-unified-terminal-menu" aria-label="POS workspace navigation">
+          {posTerminalMenuItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={activeKey === item.key ? 'active' : ''}
+              onClick={() => {
+                if (item.key === 'main-dashboard') {
+                  navigateToSection('overview');
+                  return;
+                }
+
+                setActivePosWorkspace(item.key);
+              }}
+            >
+              <span>{item.label}</span>
+              <strong>{item.detail}</strong>
+            </button>
+          ))}
+        </nav>
+      );
+    }
+
     if (activePosWorkspace === 'overview') {
       return (
-        <section className="section-page pos-executive-overview">
+        <section className="section-page pos-executive-overview pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('overview')}
           <section className="pos-executive-hero pos-international-hero">
             <div>
               <span>POS and sales operations</span>
-              <h2>International pharmacy POS command dashboard</h2>
-              <p>Real sales control, cashier readiness, pharmacist review, customer queues, receipts, and daily close signals without fake transaction data.</p>
+              <h2>Pharmacy POS Dashboard</h2>
+              <p>Counter readiness, sales flow, pharmacist review, customer queues, receipts, and daily close controls in one real-data POS workspace.</p>
             </div>
             <div className="pos-overview-hero-actions">
               <button type="button" onClick={() => setActivePosWorkspace('pos')}>
@@ -4245,40 +4283,7 @@ function App() {
       return (
         <section className="section-page pos-dedicated-counter-shell">
           <section className="pos-counter-page pos-counter-page--dedicated">
-            <nav className="pos-dedicated-command-bar" aria-label="POS workspace navigation">
-              <button type="button" onClick={() => navigateToSection('overview')}>
-                <span>Main Dashboard</span>
-                <strong>Exit POS</strong>
-              </button>
-              <button type="button" onClick={() => setActivePosWorkspace('overview')}>
-                <span>POS Dashboard</span>
-                <strong>Control view</strong>
-              </button>
-              <button type="button" className="active" onClick={() => setActivePosWorkspace('pos')}>
-                <span>POS Counter</span>
-                <strong>Serve customer</strong>
-              </button>
-              <button type="button" onClick={() => setActivePosWorkspace('dispensing-review')}>
-                <span>Pharmacist Review</span>
-                <strong>Safety queue</strong>
-              </button>
-              <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
-                <span>Sales Register</span>
-                <strong>Real sales</strong>
-              </button>
-              <button type="button" onClick={() => setActivePosWorkspace('payment-receipt')}>
-                <span>Receipts & Payments</span>
-                <strong>Collection</strong>
-              </button>
-              <button type="button" onClick={() => setActivePosWorkspace('customers')}>
-                <span>Customers</span>
-                <strong>Patients</strong>
-              </button>
-              <button type="button" onClick={() => setActivePosWorkspace('prescriptions')}>
-                <span>Prescriptions</span>
-                <strong>Rx files</strong>
-              </button>
-            </nav>
+            {renderPosWorkspaceTopMenu('pos')}
 
             <section className="pos-counter-heading">
               <div>
@@ -4486,6 +4491,15 @@ function App() {
                     </table>
                   </div>
                 </section>
+
+                <div className="pos-terminal-ticket-actions" aria-label="POS cashier quick actions">
+                  <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>Clear</button>
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartItems.length === 0}>Update</button>
+                  <button type="button" onClick={() => setPosNotice('Quantity can be changed directly inside the sale ticket table.')}>Qty</button>
+                  <button type="button" onClick={() => setPosNotice('Discount is controlled in Transaction Set-UP.')}>Discount</button>
+                  <button type="button" onClick={() => setPosCustomerInvoice('yes')}>Invoice</button>
+                  <button type="button" onClick={() => setPosNotice('Use Transaction Set-UP to confirm customer, prescription and payer before payment.')}>Set-UP</button>
+                </div>
                 </div>
 
               <section className="pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
@@ -4796,7 +4810,8 @@ function App() {
 
     if (activePosWorkspace === 'dispensing-review') {
       return (
-        <section className="section-page">
+        <section className="section-page pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('dispensing-review')}
           <SalesDispensingReview token={session.token} profile={profile} />
         </section>
       );
@@ -4804,7 +4819,8 @@ function App() {
 
     if (activePosWorkspace === 'customers') {
       return (
-        <section className="section-page">
+        <section className="section-page pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('customers')}
           <FocusRegisterPreview
             title="Customers and Patients"
             description="Customer and patient register with default 15-row view, export, bulk edit, and controlled delete."
@@ -4816,7 +4832,8 @@ function App() {
 
     if (activePosWorkspace === 'prescriptions') {
       return (
-        <section className="section-page">
+        <section className="section-page pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('prescriptions')}
           <FocusRegisterPreview
             title="Prescriptions"
             description="Prescription capture, camera readiness, AI text extraction, manual correction, and returning customer lookup."
@@ -4828,7 +4845,8 @@ function App() {
 
     if (activePosWorkspace === 'sales-performance') {
       return (
-        <section className="section-page">
+        <section className="section-page pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('sales-performance')}
           <FocusRegisterPreview
             title="Sales Performance"
             description="Sales list with selected sale detail, export, review, and manager follow-up."
