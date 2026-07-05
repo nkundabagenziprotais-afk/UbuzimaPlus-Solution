@@ -4379,7 +4379,7 @@ function App() {
               </article>
             </section>
 
-                        <section className="pos-counter-workbench pos-four-section-workspace" aria-label="POS four-section workspace">
+                        <section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
               <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
                 <div className="section-heading">
                   <div>
