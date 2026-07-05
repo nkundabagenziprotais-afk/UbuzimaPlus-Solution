@@ -4320,6 +4320,18 @@ function App() {
     }
 
     if (activePosWorkspace === 'pos') {
+      const posSummaryDiscountAmount = Number(posDiscountAmount || 0);
+      const posSummaryNetDiscount = Math.min(posSummaryDiscountAmount, posSaleSummary.subtotal);
+      const posSummaryTaxableBase = Math.max(posSaleSummary.subtotal - posSummaryNetDiscount, 0);
+      const posSummaryTaxAmount = 0;
+      const posSummaryTotalAmount = posSummaryTaxableBase + posSummaryTaxAmount;
+      const posSummaryCustomerPayment = posPaymentMethod === 'insurance'
+        ? Math.round((posSummaryTotalAmount * posSaleSummary.customerContributionPercent) / 100)
+        : posSummaryTotalAmount;
+      const posSummaryInsurerPayment = posPaymentMethod === 'insurance'
+        ? Math.max(posSummaryTotalAmount - posSummaryCustomerPayment, 0)
+        : 0;
+
       return (
         <section className="section-page pos-dedicated-counter-shell">
           <section className="pos-counter-page pos-counter-page--dedicated">
@@ -4348,7 +4360,7 @@ function App() {
 
               <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
               <article>
-                <span>Clock-in / Open POS Day</span>
+                <span>Clock-in</span>
                 <label>
                   <small>Opening mode</small>
                   <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
@@ -4365,11 +4377,11 @@ function App() {
                     onChange={(event) => setPosStartingCashBalance(event.target.value)}
                   />
                 </label>
-                <button type="button" onClick={openPosDay}>Clock-in / Open Day</button>
+                <button type="button" onClick={openPosDay}>Open Day</button>
               </article>
 
               <article>
-                <span>Clock-out / Close POS Day</span>
+                <span>Clock-out</span>
                 <label>
                   <small>Closing mode</small>
                   <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
@@ -4398,7 +4410,7 @@ function App() {
                   </label>
                 )}
 
-                <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Clock-out / Close Day</button>
+                <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
               </article>
             </section>
 
@@ -4706,53 +4718,65 @@ function App() {
                     <strong>{posSaleSummary.lineCount} item line{posSaleSummary.lineCount === 1 ? '' : 's'} · {posSaleSummary.totalQuantity} unit{posSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
                     <small>Updated {posSaleSummary.calculatedAt}</small>
                   </div>
+                  <div className="pos-payment-summary-grid">
+                    <dl className="pos-summary-list pos-summary-list--operational">
+                      <div>
+                        <dt>Date and time</dt>
+                        <dd>{new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd>
+                      </div>
+                      <div>
+                        <dt>Cart lines</dt>
+                        <dd>{posSaleSummary.lineCount}</dd>
+                      </div>
+                      <div>
+                        <dt>Quantity</dt>
+                        <dd>{posSaleSummary.totalQuantity}</dd>
+                      </div>
+                      <div>
+                        <dt>% Customer</dt>
+                        <dd>{posPaymentMethod === 'insurance' ? `${posSaleSummary.customerContributionPercent}%` : '100%'}</dd>
+                      </div>
+                      <div>
+                        <dt>% Insurer</dt>
+                        <dd>{posPaymentMethod === 'insurance' ? `${posSaleSummary.insuranceContributionPercent}%` : '0%'}</dd>
+                      </div>
+                    </dl>
 
-                  <dl className="pos-summary-list">
-                    <div>
-                      <dt>Date and time</dt>
-                      <dd>{new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd>
-                    </div>
-                    <div>
-                      <dt>Cart lines</dt>
-                      <dd>{posSaleSummary.lineCount}</dd>
-                    </div>
-                    <div>
-                      <dt>Total quantity</dt>
-                      <dd>{posSaleSummary.totalQuantity}</dd>
-                    </div>
-                    <div>
-                      <dt>Subtotal</dt>
-                      <dd>RWF {posSaleSummary.subtotal.toLocaleString('en-RW')}</dd>
-                    </div>
-                    {posPaymentMethod === 'insurance' && (
-                      <>
-                        <div>
-                          <dt>Cust %</dt>
-                          <dd>{posSaleSummary.customerContributionPercent}%</dd>
-                        </div>
-                        <div>
-                          <dt>Insur %</dt>
-                          <dd>{posSaleSummary.insuranceContributionPercent}%</dd>
-                        </div>
-                      </>
-                    )}
-                    <div>
-                      <dt>Customer contribution</dt>
-                      <dd>RWF {posSaleSummary.customerContribution.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div>
-                      <dt>Insurance contribution</dt>
-                      <dd>RWF {posSaleSummary.insuranceContribution.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div>
-                      <dt>Tax</dt>
-                      <dd>RWF {posSaleSummary.tax.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div className="total">
-                      <dt>Total</dt>
-                      <dd>RWF {posSaleSummary.total.toLocaleString('en-RW')}</dd>
-                    </div>
-                  </dl>
+                    <dl className="pos-summary-list pos-summary-list--financial">
+                      <div>
+                        <dt>Sub-Total</dt>
+                        <dd>RWF {posSaleSummary.subtotal.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Discount</dt>
+                        <dd>RWF {posSummaryDiscountAmount.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Net Discount</dt>
+                        <dd>RWF {posSummaryNetDiscount.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Taxable Base</dt>
+                        <dd>RWF {posSummaryTaxableBase.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Tax</dt>
+                        <dd>RWF {posSummaryTaxAmount.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Total Amount</dt>
+                        <dd>RWF {posSummaryTotalAmount.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Customer Payment</dt>
+                        <dd>RWF {posSummaryCustomerPayment.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Insurer Payment</dt>
+                        <dd>RWF {posSummaryInsurerPayment.toLocaleString('en-RW')}</dd>
+                      </div>
+                    </dl>
+                  </div>
 
                   <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartItems.length === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}

@@ -17580,9 +17580,8 @@ table td:not(:first-child):not(.numeric) {
 }
 
 
-/* Patch POS-C.1.8 - Professional pharmacy POS standard layout */
+/* Patch POS-C.1.9 - Professional pharmacy POS final fit */
 
-/* Overall POS page */
 .pos-dedicated-counter-shell {
   overflow-y: auto !important;
   overflow-x: hidden !important;
@@ -17598,24 +17597,22 @@ table td:not(:first-child):not(.numeric) {
   grid-template-rows: auto auto auto auto !important;
 }
 
-/* Top terminal menu: compact, readable, no overlap */
+/* Top menu and header */
 .pos-counter-page--dedicated .pos-dedicated-command-bar {
-  min-height: 52px !important;
-  display: grid !important;
+  min-height: 50px !important;
   grid-template-columns: repeat(8, minmax(104px, 1fr)) !important;
   gap: 6px !important;
   padding: 6px !important;
   border-radius: 14px !important;
   background: #0f172a !important;
-  overflow: visible !important;
 }
 
 .pos-counter-page--dedicated .pos-dedicated-command-bar button {
-  min-height: 44px !important;
+  min-height: 42px !important;
   padding: 6px 8px !important;
   border-radius: 11px !important;
-  overflow: hidden !important;
   text-align: left !important;
+  overflow: hidden !important;
 }
 
 .pos-counter-page--dedicated .pos-dedicated-command-bar button span,
@@ -17626,52 +17623,31 @@ table td:not(:first-child):not(.numeric) {
   text-overflow: ellipsis !important;
 }
 
-/* Clean pharmacy counter header */
-.pos-counter-page--dedicated .pos-counter-heading {
-  min-height: 48px !important;
+.pos-counter-heading {
+  min-height: 46px !important;
   padding: 7px 10px !important;
   border-radius: 14px !important;
-  display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto !important;
   gap: 10px !important;
-  align-items: center !important;
   background: #ffffff !important;
   border: 1px solid rgba(15, 23, 42, 0.08) !important;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06) !important;
   overflow: hidden !important;
 }
 
-.pos-counter-page--dedicated .pos-counter-heading .eyebrow {
-  font-size: 0.56rem !important;
-  margin: 0 !important;
-}
-
-.pos-counter-page--dedicated .pos-counter-heading h2 {
-  font-size: 1.05rem !important;
+.pos-counter-heading h2 {
+  font-size: 1.04rem !important;
   line-height: 1.1 !important;
   margin: 0 !important;
 }
 
-.pos-counter-page--dedicated .pos-counter-heading .muted {
-  font-size: 0.66rem !important;
-  line-height: 1.15 !important;
+.pos-counter-heading .muted {
+  font-size: 0.64rem !important;
+  line-height: 1.12 !important;
   margin: 2px 0 0 !important;
 }
 
-.pos-counter-page--dedicated .pos-session-pill {
-  min-width: 144px !important;
-  min-height: 38px !important;
-  padding: 6px 9px !important;
-  border-radius: 12px !important;
-}
-
-/* Clock-in / clock-out cleanup */
-.pos-terminal-main-scroll {
-  display: grid !important;
-  gap: 6px !important;
-  overflow: visible !important;
-}
-
+/* Clock-in / Clock-out section */
 .pos-day-control-strip--two-by-two {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -17679,133 +17655,139 @@ table td:not(:first-child):not(.numeric) {
 }
 
 .pos-day-control-strip--two-by-two article {
-  min-height: 52px !important;
   display: grid !important;
-  grid-template-columns: minmax(130px, 0.7fr) minmax(130px, 1fr) minmax(130px, 1fr) auto !important;
+  grid-template-columns: 92px minmax(120px, 1fr) minmax(120px, 1fr) minmax(92px, auto) !important;
   gap: 6px !important;
   align-items: end !important;
+  min-height: 48px !important;
   padding: 6px !important;
   border-radius: 14px !important;
   background: #ffffff !important;
   border: 1px solid rgba(15, 23, 42, 0.08) !important;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06) !important;
-  overflow: hidden !important;
 }
 
 .pos-day-control-strip--two-by-two article > span {
-  width: auto !important;
-  min-width: 0 !important;
-  height: auto !important;
-  align-self: center !important;
-  margin: 0 !important;
-  padding: 7px 8px !important;
-  border-radius: 11px !important;
+  padding: 8px !important;
+  border-radius: 10px !important;
   background: #f1f5f9 !important;
   color: #0f172a !important;
-  font-size: 0.68rem !important;
-  line-height: 1.08 !important;
+  font-size: 0.66rem !important;
+  line-height: 1.05 !important;
   font-weight: 900 !important;
-}
-
-.pos-day-control-strip--two-by-two label,
-.pos-day-control-strip--two-by-two .pos-inline-check {
-  display: grid !important;
-  gap: 3px !important;
-  min-width: 0 !important;
+  text-align: center !important;
 }
 
 .pos-day-control-strip--two-by-two small {
-  font-size: 0.56rem !important;
-  line-height: 1.08 !important;
+  font-size: 0.55rem !important;
+  line-height: 1.05 !important;
   color: #64748b !important;
 }
 
 .pos-day-control-strip--two-by-two input,
 .pos-day-control-strip--two-by-two select {
   width: 100% !important;
-  height: 29px !important;
-  min-height: 29px !important;
+  height: 28px !important;
+  min-height: 28px !important;
   border-radius: 8px !important;
-  font-size: 0.64rem !important;
-  padding: 3px 7px !important;
+  font-size: 0.62rem !important;
+  padding: 2px 6px !important;
 }
 
 .pos-day-control-strip--two-by-two button {
-  min-height: 31px !important;
-  border-radius: 9px !important;
-  padding: 5px 9px !important;
-  font-size: 0.64rem !important;
+  min-height: 30px !important;
+  border-radius: 8px !important;
+  font-size: 0.62rem !important;
   font-weight: 900 !important;
 }
 
-/* Main POS layout: 65% products / 35% vertical transaction stack */
+/* Main POS layout */
 .pos-operating-cockpit-v2 {
-  min-height: 860px !important;
   display: grid !important;
   grid-template-columns: minmax(0, 65fr) minmax(390px, 35fr) !important;
-  grid-template-rows:
-    232px
-    176px
-    40px
-    204px
-    76px
-    148px !important;
+  grid-template-rows: minmax(850px, auto) 150px !important;
   grid-template-areas:
-    "products cart"
-    "products setup"
-    "products update"
-    "products payment"
-    "products invoice"
+    "products transaction"
     "session session" !important;
   gap: 6px !important;
   overflow: visible !important;
 }
 
-/* Important: current JSX has wrapper sections, so flatten them */
-.pos-operating-cockpit-v2 > .pos-sale-transaction-section,
-.pos-operating-cockpit-v2 .pos-payment-summary-section {
+.pos-product-stock-section {
+  grid-area: products !important;
+}
+
+.pos-sale-transaction-section {
+  grid-area: transaction !important;
+  display: grid !important;
+  grid-template-rows: 225px 255px 38px 255px 72px !important;
+  grid-template-areas:
+    "cart"
+    "setup"
+    "update"
+    "payment"
+    "invoice" !important;
+  gap: 6px !important;
+  min-height: 0 !important;
+}
+
+.pos-payment-summary-section {
   display: contents !important;
 }
 
-/* Shared POS cards */
-.pos-operating-cockpit-v2 .pos-builder-product-panel,
-.pos-operating-cockpit-v2 .pos-builder-cart-panel,
-.pos-operating-cockpit-v2 .pos-builder-setup-panel,
-.pos-operating-cockpit-v2 .pos-summary-update-bridge,
-.pos-operating-cockpit-v2 .pos-summary-confirmation-card,
-.pos-operating-cockpit-v2 .pos-invoice-journey,
-.pos-operating-cockpit-v2 .pos-sales-summary-table-card {
+.pos-sales-summary-table-card {
+  grid-area: session !important;
+}
+
+/* Shared cards */
+.pos-product-stock-section,
+.pos-sale-cart-section,
+.pos-transaction-setup-section,
+.pos-summary-update-bridge,
+.pos-summary-confirmation-card,
+.pos-invoice-journey,
+.pos-sales-summary-table-card {
   border-radius: 14px !important;
   background: #ffffff !important;
   border: 1px solid rgba(15, 23, 42, 0.08) !important;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06) !important;
-}
-
-/* Product Search & Stock Pick */
-.pos-operating-cockpit-v2 .pos-builder-product-panel {
-  grid-area: products !important;
-  min-height: 0 !important;
-  display: grid !important;
-  grid-template-rows: auto 36px auto minmax(0, 1fr) 32px !important;
   overflow: hidden !important;
 }
 
-.pos-operating-cockpit-v2 .pos-builder-product-panel .section-heading {
+/* Product section */
+.pos-product-stock-section {
+  display: grid !important;
+  grid-template-rows: auto 36px 18px 42px minmax(0, 1fr) 32px !important;
+  min-height: 850px !important;
+}
+
+.pos-product-stock-section .section-heading,
+.pos-sale-cart-section .section-heading,
+.pos-transaction-setup-section .section-heading,
+.pos-summary-confirmation-card .section-heading,
+.pos-invoice-journey .section-heading,
+.pos-sales-summary-table-card .section-heading {
   padding: 7px 8px 0 !important;
 }
 
-.pos-operating-cockpit-v2 .pos-builder-product-panel .section-heading h3 {
-  font-size: 0.92rem !important;
+.pos-product-stock-section .section-heading h3,
+.pos-sale-cart-section .section-heading h3,
+.pos-transaction-setup-section .section-heading h3,
+.pos-summary-confirmation-card h3,
+.pos-sales-summary-table-card h3 {
+  font-size: 0.82rem !important;
   line-height: 1.08 !important;
   margin: 0 !important;
 }
 
-.pos-operating-cockpit-v2 .pos-builder-product-panel .section-heading span {
-  font-size: 0.58rem !important;
-  line-height: 1.08 !important;
+.pos-product-stock-section .section-heading span,
+.pos-sale-cart-section .section-heading span,
+.pos-transaction-setup-section .section-heading span {
+  font-size: 0.56rem !important;
+  line-height: 1.05 !important;
 }
 
-.pos-operating-cockpit-v2 .pos-search-input {
+.pos-search-input {
   height: 34px !important;
   min-height: 34px !important;
   margin: 5px 8px 0 !important;
@@ -17818,8 +17800,8 @@ table td:not(:first-child):not(.numeric) {
 }
 
 .pos-terminal-search-helper {
-  margin: 3px 8px 0 !important;
-  font-size: 0.56rem !important;
+  margin: 2px 8px 0 !important;
+  font-size: 0.55rem !important;
   line-height: 1.05 !important;
   color: #64748b !important;
 }
@@ -17828,7 +17810,7 @@ table td:not(:first-child):not(.numeric) {
   margin: 4px 8px 0 !important;
   padding: 5px !important;
   display: grid !important;
-  grid-template-columns: 116px minmax(0, 1fr) !important;
+  grid-template-columns: 110px minmax(0, 1fr) !important;
   gap: 6px !important;
   align-items: center !important;
   border-radius: 10px !important;
@@ -17843,12 +17825,11 @@ table td:not(:first-child):not(.numeric) {
 }
 
 .pos-inventory-load-panel span {
-  font-size: 0.56rem !important;
-  line-height: 1.08 !important;
+  font-size: 0.55rem !important;
+  line-height: 1.06 !important;
   color: #475569 !important;
 }
 
-/* 5 columns x 6 visible rows */
 .pos-drug-list--ten {
   display: grid !important;
   grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
@@ -17872,9 +17853,7 @@ table td:not(:first-child):not(.numeric) {
   padding: 7px !important;
   border-radius: 11px !important;
   text-align: left !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   color: #ffffff !important;
-  box-shadow: 0 7px 15px rgba(15, 23, 42, 0.1) !important;
 }
 
 .pos-product-colour-0 { background: #0f766e !important; }
@@ -17895,7 +17874,6 @@ table td:not(:first-child):not(.numeric) {
   height: 8px;
   border-radius: 999px;
   background: #facc15;
-  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.28);
 }
 
 .pos-product-tile.expiry-attention {
@@ -17906,7 +17884,6 @@ table td:not(:first-child):not(.numeric) {
   display: flex !important;
   gap: 4px !important;
   align-items: center !important;
-  min-width: 0 !important;
 }
 
 .pos-product-card-topline i,
@@ -17944,29 +17921,10 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Cart */
-.pos-operating-cockpit-v2 .pos-builder-cart-panel {
+.pos-sale-cart-section {
   grid-area: cart !important;
-  min-height: 0 !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr) !important;
-  overflow: hidden !important;
-}
-
-.pos-builder-cart-panel .section-heading,
-.pos-builder-setup-panel .section-heading,
-.pos-summary-confirmation-card .section-heading,
-.pos-invoice-journey .section-heading,
-.pos-sales-summary-table-card .section-heading {
-  padding: 7px 8px 0 !important;
-}
-
-.pos-builder-cart-panel .section-heading h3,
-.pos-builder-setup-panel .section-heading h3,
-.pos-summary-confirmation-card h3,
-.pos-sales-summary-table-card h3 {
-  font-size: 0.82rem !important;
-  line-height: 1.08 !important;
-  margin: 0 !important;
 }
 
 .pos-cart-header-actions {
@@ -17976,16 +17934,16 @@ table td:not(:first-child):not(.numeric) {
 }
 
 .pos-cart-header-actions small {
-  font-size: 0.56rem !important;
+  font-size: 0.55rem !important;
 }
 
 .pos-cart-header-actions button {
-  min-height: 26px !important;
-  font-size: 0.58rem !important;
+  min-height: 24px !important;
+  font-size: 0.56rem !important;
   border-radius: 7px !important;
 }
 
-.pos-builder-cart-panel .system-table-wrap {
+.pos-sale-cart-section .system-table-wrap {
   min-height: 0 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
@@ -18001,7 +17959,7 @@ table td:not(:first-child):not(.numeric) {
 .pos-cart-table th,
 .pos-cart-table td {
   padding: 4px 3px !important;
-  font-size: 0.58rem !important;
+  font-size: 0.57rem !important;
   line-height: 1.05 !important;
   white-space: normal !important;
   word-break: break-word !important;
@@ -18009,7 +17967,7 @@ table td:not(:first-child):not(.numeric) {
 
 .pos-cart-table th:nth-child(1),
 .pos-cart-table td:nth-child(1) {
-  width: 46% !important;
+  width: 45% !important;
 }
 
 .pos-cart-table th:nth-child(2),
@@ -18024,25 +17982,26 @@ table td:not(:first-child):not(.numeric) {
 
 .pos-cart-table th:nth-child(4),
 .pos-cart-table td:nth-child(4) {
-  width: 16% !important;
+  width: 17% !important;
 }
 
 .pos-cart-table input,
-.pos-cart-table button {
+.pos-cart-table button,
+.pos-cart-remove-button {
   width: 100% !important;
   min-width: 0 !important;
   min-height: 24px !important;
-  font-size: 0.56rem !important;
+  font-size: 0.52rem !important;
   padding: 2px !important;
   border-radius: 7px !important;
 }
 
 /* Transaction Set-UP */
-.pos-operating-cockpit-v2 .pos-builder-setup-panel {
+.pos-transaction-setup-section {
   grid-area: setup !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  overflow: hidden !important;
 }
 
 .pos-field-grid--two {
@@ -18050,6 +18009,7 @@ table td:not(:first-child):not(.numeric) {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 5px !important;
   padding: 0 7px 7px !important;
+  align-content: start !important;
 }
 
 .pos-field-grid--two label {
@@ -18063,7 +18023,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 .pos-field-grid--two label span {
-  font-size: 0.54rem !important;
+  font-size: 0.52rem !important;
   line-height: 1.05 !important;
   color: #475569 !important;
   font-weight: 900 !important;
@@ -18075,21 +18035,17 @@ table td:not(:first-child):not(.numeric) {
   width: 100% !important;
   height: 27px !important;
   min-height: 27px !important;
-  font-size: 0.6rem !important;
+  font-size: 0.59rem !important;
   border-radius: 7px !important;
   padding: 2px 6px !important;
 }
 
-/* Button-only Update Summary */
-.pos-operating-cockpit-v2 .pos-summary-update-bridge {
+/* Update Summary button only */
+.pos-summary-update-bridge {
   grid-area: update !important;
   display: grid !important;
   align-items: center !important;
-  justify-items: stretch !important;
   padding: 5px !important;
-  overflow: hidden !important;
-  transform: none !important;
-  margin: 0 !important;
   background: #e0f2fe !important;
 }
 
@@ -18097,73 +18053,90 @@ table td:not(:first-child):not(.numeric) {
   width: 100% !important;
   min-height: 30px !important;
   border-radius: 9px !important;
-  font-size: 0.68rem !important;
+  font-size: 0.66rem !important;
   font-weight: 900 !important;
 }
 
 /* Payment Summary */
-.pos-operating-cockpit-v2 .pos-summary-confirmation-card {
+.pos-summary-confirmation-card {
   grid-area: payment !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  transform: none !important;
-  margin: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+  overflow: hidden !important;
 }
 
 .pos-summary-sync-note {
-  margin: 6px 8px !important;
-  padding: 6px !important;
-  border-radius: 10px !important;
+  margin: 5px 7px !important;
+  padding: 5px !important;
+  border-radius: 9px !important;
+  font-size: 0.56rem !important;
+}
+
+.pos-payment-summary-grid {
+  display: grid !important;
+  grid-template-columns: 0.78fr 1.22fr !important;
+  gap: 6px !important;
+  padding: 0 7px 7px !important;
+  min-height: 0 !important;
 }
 
 .pos-summary-list {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 5px !important;
-  padding: 0 8px 8px !important;
-}
-
-.pos-summary-list div {
-  padding: 5px !important;
-  border-radius: 9px !important;
-  background: #f8fafc !important;
-  border: 1px solid rgba(15, 23, 42, 0.07) !important;
-}
-
-.pos-summary-list dt {
-  font-size: 0.52rem !important;
-  line-height: 1.05 !important;
-  color: #64748b !important;
-}
-
-.pos-summary-list dd {
-  font-size: 0.62rem !important;
-  line-height: 1.05 !important;
-  font-weight: 900 !important;
-  color: #0f172a !important;
-}
-
-.pos-summary-confirmation-card button {
-  min-height: 30px !important;
-  font-size: 0.64rem !important;
-}
-
-/* Invoice compact */
-.pos-operating-cockpit-v2 .pos-invoice-journey {
-  grid-area: invoice !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  transform: none !important;
+  gap: 4px !important;
   margin: 0 !important;
 }
 
-/* Current Session Recent Transactions */
-.pos-operating-cockpit-v2 .pos-sales-summary-table-card {
-  grid-area: session !important;
-  min-height: 0 !important;
+.pos-summary-list div {
+  display: grid !important;
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr) !important;
+  gap: 4px !important;
+  align-items: center !important;
+  padding: 4px 5px !important;
+  border-radius: 8px !important;
+  min-height: 24px !important;
+}
+
+.pos-summary-list--operational div {
+  background: #eff6ff !important;
+  border: 1px solid rgba(37, 99, 235, 0.12) !important;
+}
+
+.pos-summary-list--financial div {
+  background: #ecfdf5 !important;
+  border: 1px solid rgba(5, 150, 105, 0.12) !important;
+}
+
+.pos-summary-list dt {
+  font-size: 0.5rem !important;
+  line-height: 1.05 !important;
+  color: #64748b !important;
+  margin: 0 !important;
+}
+
+.pos-summary-list dd {
+  font-size: 0.56rem !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  text-align: right !important;
+}
+
+.pos-summary-confirmation-card button {
+  min-height: 28px !important;
+  font-size: 0.62rem !important;
+}
+
+/* Invoice support */
+.pos-invoice-journey {
+  grid-area: invoice !important;
   overflow: hidden !important;
+}
+
+/* Recent session transactions */
+.pos-sales-summary-table-card {
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
 }
 
 .pos-current-session-table-toolbar {
@@ -18171,7 +18144,6 @@ table td:not(:first-child):not(.numeric) {
   grid-template-columns: minmax(220px, 1fr) 160px auto auto !important;
   gap: 6px !important;
   padding: 6px 8px 0 !important;
-  align-items: center !important;
 }
 
 .pos-current-session-table-toolbar input,
@@ -18201,17 +18173,16 @@ table td:not(:first-child):not(.numeric) {
   }
 
   .pos-operating-cockpit-v2 {
-    min-height: 0 !important;
     grid-template-columns: 1fr !important;
     grid-template-rows: auto !important;
     grid-template-areas:
       "products"
-      "cart"
-      "setup"
-      "update"
-      "payment"
-      "invoice"
+      "transaction"
       "session" !important;
+  }
+
+  .pos-sale-transaction-section {
+    grid-template-rows: auto auto 40px auto 76px !important;
   }
 
   .pos-drug-list--ten {
@@ -18242,8 +18213,10 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .pos-counter-page--dedicated .pos-counter-heading,
-  .pos-day-control-strip--two-by-two article {
+  .pos-counter-heading,
+  .pos-day-control-strip--two-by-two article,
+  .pos-payment-summary-grid,
+  .pos-current-session-table-toolbar {
     grid-template-columns: 1fr !important;
   }
 
@@ -18251,9 +18224,7 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .pos-field-grid--two,
-  .pos-summary-list,
-  .pos-current-session-table-toolbar {
+  .pos-field-grid--two {
     grid-template-columns: 1fr !important;
   }
 }
