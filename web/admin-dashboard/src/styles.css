@@ -18192,3 +18192,458 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Patch POS-C.1.6 - Final 65/35 POS operating layout */
+
+/*
+  Final rule:
+  - Left: 65% Product Search & Stock Pick
+  - Right: 35% vertical stack
+      Cart
+      Transaction Set-UP
+      Update Summary
+      Payment Summary
+      Invoice / receipt support
+  - Product cards: 5 columns and 6 visible rows before scroll
+  - No text/card overlap at the top
+*/
+
+.pos-counter-page--dedicated {
+  grid-template-rows: auto auto auto minmax(0, 1fr) !important;
+  gap: 8px !important;
+  overflow: hidden !important;
+}
+
+.pos-counter-page--dedicated .pos-dedicated-command-bar {
+  min-height: 58px !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+
+.pos-counter-page--dedicated .pos-counter-heading {
+  min-height: 54px !important;
+  max-height: 64px !important;
+  overflow: hidden !important;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two article {
+  min-height: 54px !important;
+  max-height: 68px !important;
+  overflow: hidden !important;
+}
+
+/* Main layout: 65% left / 35% right */
+.pos-operating-cockpit-v2 {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 65fr) minmax(380px, 35fr) !important;
+  grid-template-rows:
+    minmax(190px, 0.34fr)
+    minmax(158px, 0.28fr)
+    46px
+    minmax(182px, 0.32fr)
+    minmax(78px, 0.12fr)
+    minmax(118px, 0.18fr) !important;
+  grid-template-areas:
+    "products cart"
+    "products setup"
+    "products update"
+    "products payment"
+    "products invoice"
+    "session session" !important;
+  gap: 8px !important;
+  overflow: hidden !important;
+}
+
+/* Flatten inherited wrappers, but only inside the active POS cockpit. */
+.pos-operating-cockpit-v2 > .pos-transaction-builder-card,
+.pos-operating-cockpit-v2 .pos-builder-main-grid,
+.pos-operating-cockpit-v2 > .pos-confirmation-rail {
+  display: contents !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-heading {
+  display: none !important;
+}
+
+/* Left section: Product Search & Stock Pick */
+.pos-operating-cockpit-v2 .pos-builder-product-panel {
+  grid-area: products !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-rx-queue {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto 42px auto minmax(0, 1fr) auto !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .section-heading {
+  padding: 9px 12px 0 !important;
+  overflow: hidden !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .section-heading h3 {
+  font-size: 0.98rem !important;
+  line-height: 1.15 !important;
+  margin: 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .section-heading p,
+.pos-operating-cockpit-v2 .pos-builder-product-panel .section-heading span {
+  font-size: 0.66rem !important;
+  line-height: 1.15 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-search-input {
+  height: 38px !important;
+  min-height: 38px !important;
+  margin: 6px 12px 0 !important;
+  width: calc(100% - 24px) !important;
+  border-radius: 11px !important;
+  font-size: 0.78rem !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-inventory-load-panel {
+  margin: 6px 12px 0 !important;
+  padding: 6px !important;
+  grid-template-columns: 150px minmax(0, 1fr) !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-inventory-load-panel button {
+  min-height: 32px !important;
+  font-size: 0.68rem !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-inventory-load-panel small {
+  font-size: 0.62rem !important;
+  line-height: 1.15 !important;
+}
+
+/* Product grid: exactly 5 columns; 6 rows visible by default before vertical scroll */
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-rows: 78px !important;
+  gap: 7px !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 10px 12px 12px !important;
+  align-content: start !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten button {
+  min-height: 78px !important;
+  max-height: 78px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: 2px !important;
+  padding: 8px !important;
+  border-radius: 12px !important;
+  text-align: left !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten button strong {
+  font-size: 0.72rem !important;
+  line-height: 1.1 !important;
+  max-height: 2.2em !important;
+  overflow: hidden !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten button small,
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten button em,
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten button i {
+  font-size: 0.58rem !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten button span {
+  font-size: 0.56rem !important;
+  padding: 2px 6px !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Right vertical stack: Cart top */
+.pos-operating-cockpit-v2 .pos-builder-cart-panel {
+  grid-area: cart !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-card {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .section-heading {
+  padding: 8px 10px 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .section-heading h3 {
+  font-size: 0.88rem !important;
+  line-height: 1.1 !important;
+  margin: 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .section-heading p,
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .section-heading span {
+  font-size: 0.6rem !important;
+  line-height: 1.1 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .system-table-wrap {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  margin: 6px 8px 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table th,
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table td {
+  padding: 4px 3px !important;
+  font-size: 0.6rem !important;
+  line-height: 1.1 !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  vertical-align: top !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table th:nth-child(1),
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table td:nth-child(1) {
+  width: 40% !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table th:nth-child(2),
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table td:nth-child(2) {
+  width: 14% !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table th:nth-child(3),
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table td:nth-child(3) {
+  width: 14% !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table th:nth-child(4),
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table td:nth-child(4) {
+  width: 18% !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table th:nth-child(5),
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table td:nth-child(5) {
+  width: 14% !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table input,
+.pos-operating-cockpit-v2 .pos-builder-cart-panel .pos-cart-table button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 24px !important;
+  border-radius: 7px !important;
+  padding: 2px 3px !important;
+  font-size: 0.58rem !important;
+}
+
+/* Right vertical stack: Transaction Set-UP middle */
+.pos-operating-cockpit-v2 .pos-builder-setup-panel {
+  grid-area: setup !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-setup-panel .section-heading {
+  padding: 8px 10px 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-setup-panel .section-heading h3 {
+  font-size: 0.84rem !important;
+  line-height: 1.1 !important;
+  margin: 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-setup-panel .pos-field-grid--two {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  padding: 0 9px 9px !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-setup-panel .pos-field-grid--two label {
+  padding: 5px !important;
+  border-radius: 8px !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-setup-panel .pos-field-grid--two label span {
+  font-size: 0.55rem !important;
+  line-height: 1.05 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-builder-setup-panel .pos-field-grid--two input,
+.pos-operating-cockpit-v2 .pos-builder-setup-panel .pos-field-grid--two select {
+  min-height: 28px !important;
+  height: 28px !important;
+  border-radius: 7px !important;
+  font-size: 0.62rem !important;
+}
+
+/* Update Summary button between setup and payment, real action */
+.pos-operating-cockpit-v2 .pos-summary-update-bridge {
+  grid-area: update !important;
+  display: grid !important;
+  grid-template-columns: 150px minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  padding: 6px 8px !important;
+  border-radius: 14px !important;
+  background: #ecfeff !important;
+  border: 1px solid rgba(14, 116, 144, 0.22) !important;
+  overflow: hidden !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-summary-update-bridge button {
+  min-height: 30px !important;
+  border-radius: 9px !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-summary-update-bridge span {
+  font-size: 0.58rem !important;
+  line-height: 1.1 !important;
+  color: #155e75 !important;
+}
+
+/* Right vertical stack: Payment Summary bottom */
+.pos-operating-cockpit-v2 .pos-summary-confirmation-card {
+  grid-area: payment !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-summary-confirmation-card .section-heading {
+  padding: 8px 10px 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-summary-confirmation-card h3 {
+  font-size: 0.86rem !important;
+  line-height: 1.1 !important;
+  margin: 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-summary-confirmation-card button {
+  min-height: 32px !important;
+  border-radius: 9px !important;
+  font-size: 0.66rem !important;
+}
+
+/* Keep invoice support compact under payment */
+.pos-operating-cockpit-v2 .pos-invoice-journey {
+  grid-area: invoice !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+.pos-operating-cockpit-v2 .pos-invoice-journey .section-heading {
+  padding: 7px 10px 0 !important;
+}
+
+/* Current session table at bottom */
+.pos-operating-cockpit-v2 .pos-sales-summary-table-card {
+  grid-area: session !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+}
+
+.pos-operating-cockpit-v2 .pos-sales-summary-table-card .system-table-wrap {
+  max-height: 82px !important;
+  overflow: auto !important;
+  margin: 6px 9px 9px !important;
+}
+
+/* Responsive fallbacks */
+@media (max-width: 1440px) {
+  .pos-counter-page--dedicated {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow: auto !important;
+  }
+
+  .pos-operating-cockpit-v2 {
+    height: auto !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+    grid-template-areas:
+      "products"
+      "cart"
+      "setup"
+      "update"
+      "payment"
+      "invoice"
+      "session" !important;
+    overflow: visible !important;
+  }
+
+  .pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    max-height: 540px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .pos-operating-cockpit-v2 .pos-builder-product-panel .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pos-operating-cockpit-v2 .pos-builder-setup-panel .pos-field-grid--two {
+    grid-template-columns: 1fr !important;
+  }
+}
+
