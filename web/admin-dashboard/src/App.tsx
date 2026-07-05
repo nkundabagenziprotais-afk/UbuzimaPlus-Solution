@@ -4456,7 +4456,7 @@ function App() {
                 <section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
                   <div className="section-heading">
                     <div>
-                      <span>Sale ticket</span>
+                      <span>Section 2 · Cart</span>
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
@@ -4519,7 +4519,7 @@ function App() {
                 <section className="pos-transaction-setup-section pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
                   <div className="section-heading">
                     <div>
-                      <span>Customer, prescription, payer</span>
+                      <span>Section 2 · Transaction Set-UP</span>
                       <h3>Transaction Set-UP</h3>
                     </div>
                   </div>
