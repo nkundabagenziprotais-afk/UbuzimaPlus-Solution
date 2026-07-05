@@ -3900,7 +3900,6 @@ function App() {
 
         return String(left.product?.name || '').localeCompare(String(right.product?.name || ''));
       })
-      .slice(0, 10)
       .map((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
         const sellingPrice = Number(batch.selling_price ?? 0);
@@ -3951,7 +3950,7 @@ function App() {
       : posProducts;
 
     const posSearchHelperText = posInventoryBatches.length === 0
-      ? 'Load current inventory before searching products.'
+      ? 'Load all sellable inventory before searching products.'
       : normalizedPosTerminalSearch
         ? `${posVisibleProducts.length} matching product${posVisibleProducts.length === 1 ? '' : 's'}`
         : `${posProducts.length} fast product tile${posProducts.length === 1 ? '' : 's'} ready`;
@@ -3965,7 +3964,7 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session.token, posTenantSlug, undefined, { perPage: 150, sellableOnly: true });
+        const response = await getPharmaInventoryBatches(session.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
@@ -3980,7 +3979,7 @@ function App() {
           return availableQuantity > 0 && (!batch.status || batch.status === 'active') && expiryIsValid;
         }).length;
 
-        setPosNotice(`Current inventory loaded. ${sellableCount} sellable batch${sellableCount === 1 ? '' : 'es'} available for POS picking.`);
+        setPosNotice(`Sellable inventory loaded for POS. ${sellableCount} sellable batch${sellableCount === 1 ? '' : 'es'} available for product search and stock picking.`);
       } catch (err) {
         setPosInventoryError(err instanceof Error ? err.message : 'Unable to load current inventory for POS.');
       } finally {
@@ -4044,7 +4043,7 @@ function App() {
             expiryDate: product.expiryDate,
             locationName: product.locationName,
           },
-        ].slice(0, 10);
+        ];
       });
 
       setPosTransactionConfirmed(false);
@@ -4204,7 +4203,7 @@ function App() {
               ['POS session', isPosDayOpen ? 'Open' : 'Closed', isPosDayOpen ? 'Ready for counter work' : 'Open day before serving', 'Controlled by cashier day opening'],
               ['Current cart lines', String(posCartItems.length), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
               ['Current cart total', `RWF ${posSaleSummary.total.toLocaleString('en-RW')}`, posPaymentMethod.replaceAll('_', ' '), 'Calculated from current cart only'],
-              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Load current inventory before selling'],
+              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Load all sellable inventory before selling'],
               ['Prescription state', posPrescriptionStatus.replaceAll('-', ' '), posPrescriptionStatus === 'manual-review' ? 'Needs review' : 'Counter selected', 'Used for pharmacist safety handoff'],
               ['Receipt readiness', posCustomerInvoice === 'yes' ? 'Invoice requested' : 'Receipt only', posInvoiceDelivery.replaceAll('_', ' '), 'No fake transactions displayed'],
             ].map(([title, value, signal, detail]) => (
@@ -4253,7 +4252,7 @@ function App() {
               <div className="pos-alert-stack">
                 {[
                   [isPosDayOpen ? 'Ready' : 'Start', isPosDayOpen ? 'POS day is open' : 'Open POS day', isPosDayOpen ? 'Counter can serve customers.' : 'Open the day before confirming payments.'],
-                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Load current inventory', posInventoryBatches.length ? 'Sellable batches are available for picking.' : 'Use current inventory to avoid selling unavailable stock.'],
+                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Load all sellable inventory', posInventoryBatches.length ? 'Sellable batches are available for picking.' : 'Use current inventory to avoid selling unavailable stock.'],
                   [posCartItems.length ? 'Active' : 'Idle', posCartItems.length ? 'Cart in progress' : 'No active cart', posCartItems.length ? 'Review quantity, payer, and receipt before payment.' : 'Search or scan a product to begin.'],
                   [posPrescriptionStatus === 'manual-review' ? 'Review' : 'Safe', posPrescriptionStatus === 'manual-review' ? 'Prescription needs manual review' : 'Prescription status selected', 'Pharmacist Review remains available for controlled dispensing.'],
                 ].map(([level, title, detail]) => (
@@ -4310,7 +4309,7 @@ function App() {
 
             <section className="pos-counter-heading">
               <div>
-                <p className="eyebrow">Simple but Mighty POS</p>
+                <p className="eyebrow">Pharmacy counter</p>
                 <h2>Pharmacy POS Counter</h2>
                 <p className="muted">Select drugs, build cart, complete transaction setup, confirm payment, then generate invoice when required.</p>
               </div>
@@ -4326,7 +4325,7 @@ function App() {
 
               <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
               <article>
-                <span>Open POS Day</span>
+                <span>Clock-in / Open POS Day</span>
                 <label>
                   <small>Opening mode</small>
                   <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
@@ -4343,11 +4342,11 @@ function App() {
                     onChange={(event) => setPosStartingCashBalance(event.target.value)}
                   />
                 </label>
-                <button type="button" onClick={openPosDay}>Open POS Day</button>
+                <button type="button" onClick={openPosDay}>Clock-in / Open Day</button>
               </article>
 
               <article>
-                <span>Close POS Day</span>
+                <span>Clock-out / Close POS Day</span>
                 <label>
                   <small>Closing mode</small>
                   <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
@@ -4376,28 +4375,12 @@ function App() {
                   </label>
                 )}
 
-                <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close POS Day</button>
+                <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Clock-out / Close Day</button>
               </article>
             </section>
 
-            <section className="pos-counter-workbench pos-counter-workbench--cart-middle pos-counter-workbench--builder-left">
-              <section className="pos-transaction-builder-card" aria-label="POS product selection, cart, and transaction setup">
-                <div className="pos-builder-heading">
-                  <div>
-                    <p className="eyebrow">POS terminal mode</p>
-                    <h3>Working POS terminal</h3>
-                    <span>
-                      Serve customers from one screen: build the sale ticket, tap product tiles, review Transaction Set-UP, update the summary, then confirm payment and receipt.
-                    </span>
-                  </div>
-                  <div className="pos-builder-status">
-                    <strong>{posCartItems.length}</strong>
-                    <small>cart line{posCartItems.length === 1 ? '' : 's'}</small>
-                  </div>
-                </div>
-
-                <div className="pos-builder-main-grid">
-                <section className="pos-builder-product-panel pos-rx-queue">
+                        <section className="pos-counter-workbench pos-four-section-workspace" aria-label="POS four-section workspace">
+              <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
                 <div className="section-heading">
                   <div>
                     <span>Step 1</span>
@@ -4421,12 +4404,12 @@ function App() {
 
                 <div className="pos-inventory-load-panel">
                   <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
-                    {isLoadingPosInventory ? 'Loading current inventory…' : 'Load current inventory'}
+                    {isLoadingPosInventory ? 'Loading sellable inventory…' : 'Load all sellable inventory'}
                   </button>
                   <span>
                     {posInventoryLoadedAt
                       ? `Current inventory loaded at ${posInventoryLoadedAt}`
-                      : 'Load stock batches before adding products to cart.'}
+                      : 'Load all sellable inventory before adding products to cart.'}
                   </span>
                 </div>
 
@@ -4436,7 +4419,7 @@ function App() {
                   {posProducts.length === 0 ? (
                     <div className="pos-inventory-empty-state">
                       <strong>No current inventory loaded</strong>
-                      <small>Load current inventory to pick only sellable batches with available stock.</small>
+                      <small>Load all sellable inventory to pick only sellable batches with available stock.</small>
                     </div>
                   ) : (
                     posVisibleProducts.length === 0 ? (
@@ -4468,14 +4451,16 @@ function App() {
                   View full product list
                 </button>
               </section>
-                <section className="pos-builder-cart-panel pos-cart-card">
+
+              <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
+                <section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
                   <div className="section-heading">
                     <div>
                       <span>Sale ticket</span>
                       <h3>Current customer cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posCartItems.length}/10 rows</small>
+                      <small>{posCartItems.length} item line{posCartItems.length === 1 ? '' : 's'}</small>
                       <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
                         Clear cart
                       </button>
@@ -4498,7 +4483,7 @@ function App() {
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posCartItems.slice(0, 10).map((item) => (
+                          posCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
@@ -4531,17 +4516,7 @@ function App() {
                   </div>
                 </section>
 
-                <div className="pos-terminal-ticket-actions" aria-label="POS cashier quick actions">
-                  <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>Clear</button>
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartItems.length === 0}>Update</button>
-                  <button type="button" onClick={() => setPosNotice('Quantity can be changed directly inside the sale ticket table.')}>Qty</button>
-                  <button type="button" onClick={() => setPosNotice('Discount is controlled in Transaction Set-UP.')}>Discount</button>
-                  <button type="button" onClick={() => setPosCustomerInvoice('yes')}>Invoice</button>
-                  <button type="button" onClick={() => setPosNotice('Use Transaction Set-UP to confirm customer, prescription and payer before payment.')}>Set-UP</button>
-                </div>
-                </div>
-
-              <section className="pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
+                <section className="pos-transaction-setup-section pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
                   <div className="section-heading">
                     <div>
                       <span>Customer, prescription, payer</span>
@@ -4670,9 +4645,18 @@ function App() {
                     </label>
                   </div>
                 </section>
-              </section>
 
-              <aside className="pos-confirmation-rail">
+                <div className="pos-summary-update-bridge">
+                  <div>
+                    <strong>Update payment summary</strong>
+                    <small>Synchronizes cart items with Transaction Set-UP settings before payment confirmation.</small>
+                  </div>
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartItems.length === 0}>
+                    Update Summary
+                  </button>
+                </div>
+
+                <section className="pos-payment-summary-section pos-confirmation-rail">
                 <section className="pos-summary-confirmation-card">
                   <div className="section-heading">
                     <div>
@@ -4680,13 +4664,6 @@ function App() {
                       <h3>Payment summary</h3>
                     </div>
                   </div>
-
-                  <button type="button" className="pos-refresh-summary-button" onClick={forceRefreshSaleSummary}>
-                    Update Summary
-                  </button>
-                  <p className="pos-summary-journey-note">
-                    Select products, review Transaction Set-UP, update the summary, confirm payment, then print or send the invoice when requested.
-                  </p>
 
                   <div className="pos-summary-sync-note" data-cart-lines={posSaleSummary.lineCount} data-cart-quantity={posSaleSummary.totalQuantity}>
                     <span>Live cart sync</span>
@@ -4788,14 +4765,15 @@ function App() {
                     )}
                   </section>
                 )}
-              </aside>
+              </section>
+              </section>
             </section>
 
-            <section className="pos-sales-summary-table-card">
+<section className="pos-sales-summary-table-card">
               <div className="section-heading">
                 <div>
-                  <span>Sales register</span>
-                  <h3>Recent counter transactions</h3>
+                  <span>Current POS session</span>
+                  <h3>Recent transactions in this session</h3>
                 </div>
                 <div className="pos-table-management-actions">
                   <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
@@ -4823,7 +4801,7 @@ function App() {
                     {salesSummaryRows.length === 0 ? (
                       <tr>
                         <td colSpan={6}>
-                          No real recent sales loaded here yet. Create or load backend POS sales to populate this register.
+                          No transactions have been recorded in this POS session yet. Current-session sales will appear here from POS opening to POS closure.
                         </td>
                       </tr>
                     ) : (
