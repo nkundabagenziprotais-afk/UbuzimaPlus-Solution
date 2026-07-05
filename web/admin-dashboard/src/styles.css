@@ -15292,3 +15292,412 @@ table td:not(:first-child):not(.numeric) {
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
+
+/* Patch E - Inventory layout cleanup and anti-overlap polish */
+
+/* General inventory section spacing */
+.inventory-section {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.inventory-section > * {
+  min-width: 0;
+}
+
+/* Section headings should not collide with actions */
+.inventory-section .section-heading,
+.inventory-table-toolbar,
+.inventory-toolbar,
+.inventory-master-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.inventory-section .section-heading > div,
+.inventory-table-toolbar > div,
+.inventory-toolbar > div,
+.inventory-master-toolbar > div {
+  min-width: 240px;
+  flex: 1 1 320px;
+}
+
+.inventory-section .section-heading h2,
+.inventory-section .section-heading h3,
+.inventory-table-toolbar h3,
+.inventory-toolbar h3,
+.inventory-master-toolbar h3 {
+  margin: 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.inventory-section .section-heading span,
+.inventory-section .section-heading p,
+.inventory-table-toolbar span,
+.inventory-toolbar span,
+.inventory-master-toolbar span {
+  display: block;
+  max-width: 980px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Product Inventory metric cards */
+.inventory-product-inventory-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.inventory-product-inventory-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  min-height: 118px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+.inventory-product-inventory-card span {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.inventory-product-inventory-card strong {
+  color: #0f172a;
+  font-size: clamp(1.25rem, 2vw, 1.85rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.inventory-product-inventory-card small {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Table Management panel: clean Excel-like control layout without overlap */
+.inventory-table-management-panel {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1.25fr) repeat(4, minmax(130px, 1fr));
+  gap: 12px;
+  align-items: end;
+  width: 100%;
+  min-width: 0;
+  margin: 14px 0 16px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.inventory-table-management-panel > * {
+  min-width: 0;
+}
+
+.inventory-table-management-panel > div:first-child {
+  align-self: center;
+}
+
+.inventory-table-management-panel > div:first-child strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.inventory-table-management-panel > div:first-child span {
+  display: block;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.inventory-table-management-panel label {
+  min-width: 0;
+}
+
+.inventory-table-management-panel select,
+.inventory-table-management-panel input[type='range'] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.inventory-table-management-panel small {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.inventory-table-toggle {
+  min-width: 120px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.inventory-table-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.inventory-table-management-actions button {
+  flex: 1 1 112px;
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+/* Expiry label manager controls */
+.expiry-label-manager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.expiry-label-manager-actions button {
+  min-width: 150px;
+  white-space: normal;
+}
+
+/* Action card grids should wrap cleanly */
+.inventory-action-card-grid,
+.stock-location-action-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.inventory-action-card-grid button,
+.stock-location-action-cards button {
+  min-width: 0;
+  min-height: 64px;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* Guided receiving and form panels */
+.inventory-guided-flow-launch-panel,
+.inventory-guided-flow-panel,
+.inventory-create-from-master-panel,
+.stock-location-action-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.inventory-guided-flow-launch-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.inventory-guided-flow-launch-panel > div {
+  min-width: 240px;
+  flex: 1 1 420px;
+}
+
+.inventory-guided-flow-launch-panel button {
+  flex: 0 1 220px;
+  white-space: normal;
+}
+
+/* Real table shell cleanup */
+.inventory-table-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  margin-top: 4px;
+}
+
+.inventory-data-table {
+  table-layout: fixed;
+}
+
+.inventory-data-table th,
+.inventory-data-table td {
+  min-width: 0;
+}
+
+.inventory-data-table .cell-wrap,
+.inventory-data-table .cell-muted,
+.inventory-data-table .cell-strong {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.inventory-data-table .cell-nowrap {
+  white-space: nowrap;
+}
+
+.inventory-data-table .cell-number,
+.inventory-data-table th.cell-number {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Prevent action buttons from overflowing cells */
+.inventory-data-table .table-cell-actions {
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.inventory-data-table .table-action-grid,
+.inventory-data-table .stock-location-action-button-row,
+.inventory-data-table .product-inventory-action-button-row,
+.inventory-data-table .product-master-action-button-row,
+.inventory-data-table .table-action-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.inventory-data-table .table-action-grid button,
+.inventory-data-table .stock-location-action-button-row button,
+.inventory-data-table .product-inventory-action-button-row button,
+.inventory-data-table .product-master-action-button-row button,
+.inventory-data-table .table-action-row button {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 6px 7px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.1;
+  text-align: center;
+}
+
+/* Sticky action column should not cover content badly */
+.inventory-table-sticky-actions .inventory-data-table th:last-child,
+.inventory-table-sticky-actions .inventory-data-table td:last-child {
+  background: #ffffff;
+  box-shadow: -8px 0 16px rgba(15, 23, 42, 0.08);
+}
+
+.inventory-table-sticky-actions .inventory-data-table thead th:last-child {
+  background: #f8fafc;
+}
+
+/* Label/chip cleanup */
+.inventory-expiry-label,
+.inventory-table-chip,
+.stock-location-status-chip {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+/* Keep dark expired rows readable even with custom labels */
+.inventory-data-table tr.expiry-row--expired td,
+.inventory-data-table tr.expiry-risk--expired td {
+  color: #ffffff;
+}
+
+.inventory-data-table tr.expiry-row--expired .cell-muted,
+.inventory-data-table tr.expiry-risk--expired .cell-muted,
+.inventory-data-table tr.expiry-row--expired .cell-strong,
+.inventory-data-table tr.expiry-risk--expired .cell-strong {
+  color: #ffffff;
+}
+
+/* Large tablet */
+@media (max-width: 1280px) {
+  .inventory-product-inventory-card-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .inventory-table-management-panel {
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+  }
+
+  .inventory-table-management-panel > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .inventory-section {
+    gap: 14px;
+  }
+
+  .inventory-table-management-panel {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    padding: 12px;
+  }
+
+  .inventory-product-inventory-card-grid {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+
+  .inventory-guided-flow-launch-panel button {
+    flex: 1 1 100%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .inventory-section .section-heading,
+  .inventory-table-toolbar,
+  .inventory-toolbar,
+  .inventory-master-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-product-inventory-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-table-management-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-action-card-grid,
+  .stock-location-action-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-table-management-actions button,
+  .expiry-label-manager-actions button {
+    flex: 1 1 100%;
+  }
+}
+
