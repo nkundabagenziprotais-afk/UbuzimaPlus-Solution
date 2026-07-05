@@ -7,8 +7,12 @@ import {
   PharmaProduct,
   PharmaProductsResponse,
   PharmaStockBatch,
+  PharmaStockLocation,
   getPharmaInventoryBatches,
   getPharmaInventoryLocations,
+  createPharmaStockLocation,
+  updatePharmaStockLocation,
+  deletePharmaStockLocation,
   createPharmaProduct,
   deletePharmaProduct,
   getPharmaInventorySummary,
@@ -44,6 +48,24 @@ type InventoryTableFontSize = 'compact' | 'normal' | 'large';
 
 type ProductMasterAction = 'view' | 'create' | 'edit' | 'replicate' | 'receive' | 'ai-import' | null;
 type ProductMasterAiMode = 'create' | 'edit' | 'view' | 'delete';
+
+type StockLocationAction = 'create' | 'edit' | 'replace' | null;
+
+type StockLocationFormState = {
+  branch_id: string;
+  name: string;
+  code: string;
+  location_type: string;
+  status: 'active' | 'inactive';
+};
+
+const emptyStockLocationForm: StockLocationFormState = {
+  branch_id: '',
+  name: '',
+  code: '',
+  location_type: 'store',
+  status: 'active',
+};
 
 type ProductMasterFormState = {
   product_category_id: string;
@@ -483,6 +505,12 @@ export function ProductInventoryPreview({
   });
   const [viewingInventoryBatch, setViewingInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [pendingDeleteInventoryBatch, setPendingDeleteInventoryBatch] = useState<PharmaStockBatch | null>(null);
+  const [activeStockLocationAction, setActiveStockLocationAction] = useState<StockLocationAction>(null);
+  const [stockLocationForm, setStockLocationForm] = useState<StockLocationFormState>(emptyStockLocationForm);
+  const [selectedStockLocationEditId, setSelectedStockLocationEditId] = useState('');
+  const [viewingStockLocation, setViewingStockLocation] = useState<PharmaStockLocation | null>(null);
+  const [pendingDeleteStockLocation, setPendingDeleteStockLocation] = useState<PharmaStockLocation | null>(null);
+  const [isSavingStockLocation, setIsSavingStockLocation] = useState(false);
   const [activeInventoryOpportunity, setActiveInventoryOpportunity] = useState<string>('Stock-out opportunity');
   const [inventoryNotice, setInventoryNotice] = useState('');
   const [detailPanel, setDetailPanel] = useState<{ title: string; fields: Array<[string, string]> } | null>(null);
@@ -563,6 +591,53 @@ export function ProductInventoryPreview({
       new Set(allProducts.map((product) => productMarginRate(product)).filter((rate) => rate >= 0)),
     ).sort((left, right) => left - right);
   }, [allProducts]);
+
+  const stockLocationBranchOptions = useMemo(() => {
+    const branchMap = new Map<number, { id: number; name: string; code: string }>();
+
+    profile.tenant_assignments?.forEach((assignment) => {
+      if (assignment.branch) {
+        branchMap.set(assignment.branch.id, {
+          id: assignment.branch.id,
+          name: assignment.branch.name,
+          code: assignment.branch.code,
+        });
+      }
+    });
+
+    (locations?.locations ?? []).forEach((location) => {
+      if (location.branch) {
+        branchMap.set(location.branch.id, {
+          id: location.branch.id,
+          name: location.branch.name,
+          code: location.branch.code,
+        });
+      }
+    });
+
+    return Array.from(branchMap.values()).sort((left, right) => left.name.localeCompare(right.name));
+  }, [locations, profile.tenant_assignments]);
+
+  const filteredStockLocations = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
+    return (locations?.locations ?? [])
+      .filter((location) => {
+        if (!keyword) return true;
+
+        return [
+          location.name,
+          location.code,
+          location.location_type,
+          location.status,
+          location.branch?.name,
+          location.branch?.code,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(keyword));
+      })
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, [locations, searchTerm]);
 
   const allBatches = batches?.batches ?? [];
   const inventoryProductLookupOptions = useMemo(() => {
@@ -697,6 +772,7 @@ export function ProductInventoryPreview({
   const pagedBatches = visibleBatches.slice(0, rowLimitValue(rowLimit, visibleBatches.length));
   const pagedNearExpiry = nearExpiryRows.slice(0, rowLimitValue(rowLimit, nearExpiryRows.length));
   const pagedProductInventory = productInventoryRows.slice(0, rowLimitValue(rowLimit, productInventoryRows.length));
+  const pagedStockLocations = filteredStockLocations.slice(0, rowLimitValue(rowLimit, filteredStockLocations.length));
 
 
   function productInventoryProductLabel(product: PharmaProduct) {
@@ -2082,75 +2158,6 @@ export function ProductInventoryPreview({
     setInventoryNotice('AI Import flow opened. Use this for structured product list review and approval.');
   }
 
-  function renderInventoryHomeSummaryCards() {
-    if (!summary) return null;
-
-    const totalRetailValue = summary.estimated_stock_retail_value ?? summary.estimated_stock_value ?? 0;
-    const urgentActions = Number(summary.low_stock_products_count || 0)
-      + Number(summary.near_expiry_batches_180_days_count || 0)
-      + Number(summary.expired_batches_count || 0);
-
-    const executiveCards = [
-      {
-        label: 'Stock value',
-        value: formatRwf(totalRetailValue),
-        helper: 'Estimated retail value',
-        tone: 'value',
-        mark: 'RWF',
-      },
-      {
-        label: 'Product master',
-        value: formatNumber(summary.products_count),
-        helper: `${formatNumber(summary.product_categories_count)} categories`,
-        tone: 'catalog',
-        mark: 'SKU',
-      },
-      {
-        label: 'Stock batches',
-        value: formatNumber(summary.stock_batches_count),
-        helper: `${formatNumber(summary.total_quantity_on_hand)} units on hand`,
-        tone: 'batch',
-        mark: 'LOT',
-      },
-      {
-        label: 'Action queue',
-        value: formatNumber(urgentActions),
-        helper: 'Low stock, expiry, or expired',
-        tone: urgentActions > 0 ? 'warning' : 'good',
-        mark: urgentActions > 0 ? '!' : 'OK',
-      },
-    ] as const;
-
-    return (
-      <section className="inventory-home-summary-suite">
-        <div className="inventory-home-summary-heading">
-          <div>
-            <p className="eyebrow">Inventory health</p>
-            <h3>Today’s stock position</h3>
-            <span>Start with the business picture before opening operational workflows.</span>
-          </div>
-          <div className="inventory-home-summary-status">
-            <strong>{urgentActions > 0 ? 'Action needed' : 'Stable'}</strong>
-            <span>{formatNumber(summary.stock_locations_count)} location(s)</span>
-          </div>
-        </div>
-
-        <div className="inventory-home-summary-grid">
-          {executiveCards.map((card) => (
-            <article key={card.label} className={`inventory-home-summary-card inventory-home-summary-card--${card.tone}`}>
-              <div className="inventory-home-summary-card-top">
-                <span>{card.label}</span>
-                <i aria-hidden="true">{card.mark}</i>
-              </div>
-              <strong>{card.value}</strong>
-              <small>{card.helper}</small>
-            </article>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
   function renderSimpleMightyInventoryCommandCenter() {
     const commandCards = [
       {
@@ -2204,7 +2211,7 @@ export function ProductInventoryPreview({
             <p className="eyebrow">Workflow launcher</p>
             <h3>Choose the next action</h3>
             <span>
-              Compact actions. Guided forms. No crowded workspace.
+              Start with the action you need today. Forms stay closed until you open them.
             </span>
           </div>
           <button type="button" onClick={() => loadInventoryPreview(activeInventoryView, true)} disabled={isLoading}>
@@ -2386,6 +2393,387 @@ export function ProductInventoryPreview({
     setInventoryProductOptions([batch.product]);
     setIsInventoryProductSearchOpen(false);
     setInventoryNotice(`Replicating ${batch.product.name}. Enter a new batch number and quantity, then click Create inventory.`);
+  }
+
+  function renderStockLocationActions(location: PharmaStockLocation) {
+    return (
+      <div className="table-action-row stock-location-action-button-row">
+        <button type="button" onClick={() => openStockLocationView(location)}>View</button>
+        <button type="button" onClick={() => openStockLocationEdit(location)}>Edit</button>
+        <button type="button" onClick={() => openStockLocationReplace(location)}>Replace</button>
+        <button type="button" className="danger" onClick={() => requestDeleteStockLocation(location)}>Delete</button>
+      </div>
+    );
+  }
+
+  function defaultStockLocationBranchId() {
+    return stockLocationBranchOptions[0]?.id
+      ? String(stockLocationBranchOptions[0].id)
+      : profile.scope.branch_id
+        ? String(profile.scope.branch_id)
+        : '';
+  }
+
+  function stockLocationToForm(location: PharmaStockLocation): StockLocationFormState {
+    return {
+      branch_id: String(location.branch?.id ?? location.branch_id ?? defaultStockLocationBranchId()),
+      name: location.name,
+      code: location.code,
+      location_type: location.location_type || 'store',
+      status: location.status === 'inactive' ? 'inactive' : 'active',
+    };
+  }
+
+  function suggestedReplacementLocationCode(location: PharmaStockLocation) {
+    const base = `${location.code}-R`;
+    let candidate = base;
+    let counter = 2;
+
+    while ((locations?.locations ?? []).some((item) => item.code.toLowerCase() === candidate.toLowerCase())) {
+      candidate = `${base}${counter}`;
+      counter += 1;
+    }
+
+    return candidate;
+  }
+
+  function openStockLocationCreate() {
+    setActiveStockLocationAction('create');
+    setViewingStockLocation(null);
+    setPendingDeleteStockLocation(null);
+    setSelectedStockLocationEditId('');
+    setStockLocationForm({
+      ...emptyStockLocationForm,
+      branch_id: defaultStockLocationBranchId(),
+    });
+    setInventoryNotice('Create a new stock location, shelf, store, counter or quarantine point.');
+  }
+
+  function openStockLocationEdit(location: PharmaStockLocation) {
+    setActiveStockLocationAction('edit');
+    setViewingStockLocation(null);
+    setPendingDeleteStockLocation(null);
+    setSelectedStockLocationEditId(String(location.id));
+    setStockLocationForm(stockLocationToForm(location));
+    setInventoryNotice(`${location.name} opened for editing.`);
+  }
+
+  function openStockLocationReplace(location: PharmaStockLocation) {
+    setActiveStockLocationAction('replace');
+    setViewingStockLocation(null);
+    setPendingDeleteStockLocation(null);
+    setSelectedStockLocationEditId('');
+    setStockLocationForm({
+      ...stockLocationToForm(location),
+      name: `${location.name} Replacement`,
+      code: suggestedReplacementLocationCode(location),
+      status: 'active',
+    });
+    setInventoryNotice(`Replacement draft prepared from ${location.name}. Save it, then move stock batches before deactivating the old location.`);
+  }
+
+  function openStockLocationView(location: PharmaStockLocation) {
+    setViewingStockLocation(location);
+    setActiveStockLocationAction(null);
+    setPendingDeleteStockLocation(null);
+    setInventoryNotice(`${location.name} opened for review.`);
+  }
+
+  function requestDeleteStockLocation(location: PharmaStockLocation) {
+    setPendingDeleteStockLocation(location);
+    setViewingStockLocation(null);
+    setActiveStockLocationAction(null);
+    setInventoryNotice('');
+    setError('');
+  }
+
+  function stockLocationAiRecommendation(location: PharmaStockLocation) {
+    if (Number(location.stock_batches_count || 0) > 0 && location.status === 'active') {
+      return 'Keep active. Move batches first before replacement or deletion.';
+    }
+
+    if (Number(location.stock_batches_count || 0) > 0 && location.status === 'inactive') {
+      return 'Review linked batches and complete stock movement cleanup.';
+    }
+
+    if (location.status === 'inactive') {
+      return 'Safe for archive or deletion after admin confirmation.';
+    }
+
+    return 'Available for receiving and stock organization.';
+  }
+
+  async function handleSaveStockLocation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!tenantSlug) {
+      setError('No tenant assignment is available for this account.');
+      return;
+    }
+
+    if (!stockLocationForm.name.trim() || !stockLocationForm.code.trim()) {
+      setError('Location name and code are required.');
+      return;
+    }
+
+    if (activeStockLocationAction !== 'edit' && !stockLocationForm.branch_id) {
+      setError('Select a branch before creating a stock location.');
+      return;
+    }
+
+    setIsSavingStockLocation(true);
+    setError('');
+    setInventoryNotice('');
+
+    try {
+      if (activeStockLocationAction === 'edit') {
+        if (!selectedStockLocationEditId) {
+          setError('Select a stock location before saving changes.');
+          return;
+        }
+
+        const response = await updatePharmaStockLocation(token, tenantSlug, Number(selectedStockLocationEditId), {
+          name: stockLocationForm.name.trim(),
+          code: stockLocationForm.code.trim(),
+          location_type: stockLocationForm.location_type,
+          status: stockLocationForm.status,
+        });
+
+        setInventoryNotice(`${response.message} ${response.location.name} updated.`);
+      } else {
+        const response = await createPharmaStockLocation(token, tenantSlug, {
+          branch_id: Number(stockLocationForm.branch_id),
+          name: stockLocationForm.name.trim(),
+          code: stockLocationForm.code.trim(),
+          location_type: stockLocationForm.location_type,
+          status: stockLocationForm.status,
+        });
+
+        setInventoryNotice(`${response.message} ${response.location.name} is ready for use.`);
+      }
+
+      setActiveStockLocationAction(null);
+      setSelectedStockLocationEditId('');
+      setStockLocationForm(emptyStockLocationForm);
+      await loadInventoryPreview('locations', true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save stock location.');
+    } finally {
+      setIsSavingStockLocation(false);
+    }
+  }
+
+  async function confirmDeleteStockLocation() {
+    if (!tenantSlug || !pendingDeleteStockLocation) {
+      setError('No stock location is selected for deletion.');
+      return;
+    }
+
+    if (Number(pendingDeleteStockLocation.stock_batches_count || 0) > 0) {
+      setError('This stock location still has linked stock batches. Create a replacement, move the batches, then delete or deactivate the old location.');
+      return;
+    }
+
+    setIsSavingStockLocation(true);
+    setError('');
+    setInventoryNotice('');
+
+    try {
+      const response = await deletePharmaStockLocation(token, tenantSlug, pendingDeleteStockLocation.id);
+      setInventoryNotice(response.message);
+      setPendingDeleteStockLocation(null);
+      await loadInventoryPreview('locations', true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete stock location.');
+    } finally {
+      setIsSavingStockLocation(false);
+    }
+  }
+
+  function renderStockLocationActionPanel() {
+    if (pendingDeleteStockLocation) {
+      return (
+        <section className="stock-location-action-panel stock-location-delete-panel">
+          <div className="section-heading">
+            <div>
+              <h3>Delete stock location</h3>
+              <span>
+                Delete only unused locations. If batches are linked, replace or move stock first.
+              </span>
+            </div>
+            <button type="button" onClick={() => setPendingDeleteStockLocation(null)}>Cancel</button>
+          </div>
+
+          <div className="delete-confirmation-card">
+            <div>
+              <strong>{pendingDeleteStockLocation.name}</strong>
+              <span>{pendingDeleteStockLocation.code} · {pendingDeleteStockLocation.location_type.replaceAll('_', ' ')}</span>
+              <small>{formatNumber(pendingDeleteStockLocation.stock_batches_count)} linked batch(es)</small>
+            </div>
+
+            <div className="delete-confirmation-actions">
+              <button type="button" onClick={() => setPendingDeleteStockLocation(null)}>Keep location</button>
+              <button
+                type="button"
+                className="danger"
+                disabled={isSavingStockLocation || Number(pendingDeleteStockLocation.stock_batches_count || 0) > 0}
+                onClick={() => void confirmDeleteStockLocation()}
+              >
+                {isSavingStockLocation ? 'Deleting…' : 'Delete location'}
+              </button>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    if (viewingStockLocation) {
+      return (
+        <section className="stock-location-action-panel stock-location-view-panel">
+          <div className="section-heading">
+            <div>
+              <h3>Location profile</h3>
+              <span>Storage point details and operational status.</span>
+            </div>
+            <button type="button" onClick={() => setViewingStockLocation(null)}>Close</button>
+          </div>
+
+          <div className="stock-location-profile-grid">
+            {[
+              ['Location', viewingStockLocation.name],
+              ['Code', viewingStockLocation.code],
+              ['Type', viewingStockLocation.location_type.replaceAll('_', ' ')],
+              ['Branch', viewingStockLocation.branch?.name ?? 'Branch not set'],
+              ['Linked batches', formatNumber(viewingStockLocation.stock_batches_count)],
+              ['Status', viewingStockLocation.status],
+              ['Recommended action', stockLocationAiRecommendation(viewingStockLocation)],
+            ].map(([label, value]) => (
+              <article key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </article>
+            ))}
+          </div>
+
+          <div className="inventory-form-actions">
+            <button type="button" onClick={() => openStockLocationEdit(viewingStockLocation)}>Edit location</button>
+            <button type="button" onClick={() => openStockLocationReplace(viewingStockLocation)}>Replace location</button>
+            <button type="button" className="danger" onClick={() => requestDeleteStockLocation(viewingStockLocation)}>Delete location</button>
+          </div>
+        </section>
+      );
+    }
+
+    if (!activeStockLocationAction) return null;
+
+    const isEdit = activeStockLocationAction === 'edit';
+
+    return (
+      <section className="stock-location-action-panel">
+        <div className="section-heading">
+          <div>
+            <h3>{isEdit ? 'Edit stock location' : activeStockLocationAction === 'replace' ? 'Replace stock location' : 'Create stock location'}</h3>
+            <span>
+              {isEdit
+                ? 'Update the location name, code, type or status.'
+                : activeStockLocationAction === 'replace'
+                  ? 'Create the replacement first. Then move stock batches before deleting or deactivating the old location.'
+                  : 'Add a branch store, shelf, counter, quarantine area or other storage point.'}
+            </span>
+          </div>
+          <button type="button" onClick={() => setActiveStockLocationAction(null)}>Cancel</button>
+        </div>
+
+        <form className="stock-location-form-grid" onSubmit={(event) => void handleSaveStockLocation(event)}>
+          <label>
+            Branch
+            {stockLocationBranchOptions.length > 0 ? (
+              <select
+                value={stockLocationForm.branch_id}
+                disabled={isEdit}
+                onChange={(event) => setStockLocationForm({ ...stockLocationForm, branch_id: event.target.value })}
+                required={!isEdit}
+              >
+                <option value="">Select branch</option>
+                {stockLocationBranchOptions.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name} ({branch.code})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="number"
+                value={stockLocationForm.branch_id}
+                disabled={isEdit}
+                onChange={(event) => setStockLocationForm({ ...stockLocationForm, branch_id: event.target.value })}
+                placeholder="Branch ID"
+                required={!isEdit}
+              />
+            )}
+          </label>
+
+          <label>
+            Location name
+            <input
+              value={stockLocationForm.name}
+              onChange={(event) => setStockLocationForm({ ...stockLocationForm, name: event.target.value })}
+              placeholder="e.g. Main store, Counter shelf A"
+              required
+            />
+          </label>
+
+          <label>
+            Location code
+            <input
+              value={stockLocationForm.code}
+              onChange={(event) => setStockLocationForm({ ...stockLocationForm, code: event.target.value })}
+              placeholder="e.g. MAIN-STORE"
+              required
+            />
+          </label>
+
+          <label>
+            Location type
+            <select
+              value={stockLocationForm.location_type}
+              onChange={(event) => setStockLocationForm({ ...stockLocationForm, location_type: event.target.value })}
+            >
+              <option value="store">Store</option>
+              <option value="shelf">Shelf</option>
+              <option value="counter">Counter</option>
+              <option value="warehouse">Warehouse</option>
+              <option value="quarantine">Quarantine</option>
+              <option value="cold_chain">Cold chain</option>
+            </select>
+          </label>
+
+          <label>
+            Status
+            <select
+              value={stockLocationForm.status}
+              onChange={(event) => setStockLocationForm({ ...stockLocationForm, status: event.target.value as StockLocationFormState['status'] })}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </label>
+
+          <div className="inventory-create-summary">
+            <strong>{activeStockLocationAction === 'replace' ? 'Replacement workflow' : 'Location setup'}</strong>
+            <span>Codes are kept unique within the branch.</span>
+            <small>Use inactive status when a location should remain visible for audit but not used for new receiving.</small>
+          </div>
+
+          <div className="inventory-form-actions">
+            <button type="submit" disabled={isSavingStockLocation}>
+              {isSavingStockLocation ? 'Saving…' : isEdit ? 'Save changes' : 'Save location'}
+            </button>
+            <button type="button" onClick={() => setActiveStockLocationAction(null)}>Cancel</button>
+          </div>
+        </form>
+      </section>
+    );
   }
 
   function renderBatchActions(batch: PharmaStockBatch) {
@@ -2615,7 +3003,7 @@ export function ProductInventoryPreview({
         </div>
 
         <button type="button" onClick={() => loadInventoryPreview(activeInventoryView, true)} disabled={isLoading}>
-          {isLoading ? 'Loading...' : 'Load Inventory'}
+          {isLoading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
 
@@ -2979,6 +3367,17 @@ export function ProductInventoryPreview({
               }
             };
 
+            const openLowStockReplicate = (product: any) => {
+              if (typeof openProductMasterReplicateFromProduct === 'function') {
+                openProductMasterReplicateFromProduct(product);
+                return;
+              }
+
+              if (typeof markAction === 'function') {
+                markAction(`Replicate low stock product ${product?.sku ?? product?.id ?? ''}`);
+              }
+            };
+
             const openLowStockDelete = (product: any) => {
               if (typeof requestDeleteProductMaster === 'function') {
                 requestDeleteProductMaster(product);
@@ -3001,6 +3400,8 @@ export function ProductInventoryPreview({
                   </div>
 
                   <div className="bulk-action-row register-action-toolbar">
+                    {renderRowLimitControl()}
+                    {renderTableFontControl()}
                     <button type="button" onClick={() => markAction('Bulk edit low stock products')}>
                       Bulk edit
                     </button>
@@ -3113,6 +3514,7 @@ export function ProductInventoryPreview({
                           <span className="table-action-row">
                             <button type="button" onClick={() => openLowStockView(product)}>View</button>
                             <button type="button" onClick={() => openLowStockEdit(product)}>Edit</button>
+                            <button type="button" onClick={() => openLowStockReplicate(product)}>Replicate</button>
                             <button type="button" className="danger" onClick={() => openLowStockDelete(product)}>Delete</button>
                           </span>
                         </div>
@@ -3296,19 +3698,23 @@ export function ProductInventoryPreview({
                 return left - right;
               });
 
-            const visibleBatchRows = batchRows.filter((batch: any) => shouldShowExpiryRow(batchRemainingDays(batch))).slice(0, 15);
+            const visibleBatchRows = batchRows
+              .filter((batch: any) => shouldShowExpiryRow(batchRemainingDays(batch)))
+              .slice(0, rowLimitValue(rowLimit, batchRows.length));
 
             return (
               <section className="inventory-section inventory-section--batch-expiry-register">
                 <div className="section-heading">
                   <div>
-                    <h3>Batch and Expiry Preview</h3>
+                    <h3>Batch and Expiry Review</h3>
                     <span>
                       Batch register with product identity, stock position, and expiry risk.
                     </span>
                   </div>
 
                   <div className="bulk-action-row register-action-toolbar">
+                    {renderRowLimitControl()}
+                    {renderTableFontControl()}
                     <button type="button" onClick={() => markAction('Bulk edit stock batches')}>
                       Bulk edit
                     </button>
@@ -3366,6 +3772,8 @@ export function ProductInventoryPreview({
                   </span>
                 </div>
 
+                {renderExpiryLabelTools()}
+
                 <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--batch-expiry-register">
                   <div className="inventory-master-table__header batch-expiry-register-row">
                     <strong>SN</strong>
@@ -3413,9 +3821,8 @@ export function ProductInventoryPreview({
                           <span><mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>{expiryRiskLabel(days)}</mark></span>
                           <span>{batch?.supplier_name ?? 'Not set'}</span>
                           <span>{expiryAiRecommendation(days)}</span>
-                          <span className="table-action-row">
-                            <button type="button" onClick={() => markAction(`View batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>View</button>
-                            <button type="button" onClick={() => markAction(`Review batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>Review</button>
+                          <span className="product-inventory-row-actions product-inventory-actions-cell">
+                            {renderBatchActions(batch)}
                           </span>
                         </div>
                       );
@@ -4109,37 +4516,109 @@ export function ProductInventoryPreview({
           )}
 
           {activeInventoryView === 'locations' && locations && (
-            <section className="inventory-section">
+            <section className="inventory-section inventory-section--stock-locations">
               {renderTableToolbar({
-                title: 'Stock locations',
-                subtitle: 'Branch-scoped stock storage points, shelves and stores.',
+                title: 'Stock Locations',
+                subtitle: 'Managed branch stores, shelves, counters, quarantine areas and storage points.',
                 selectedCount: 0,
                 onExport: () =>
                   exportCsv(
                     'stock-locations.csv',
-                    ['Location', 'Code', 'Type', 'Branch', 'Batches', 'Status'],
-                    locations.locations.map((location) => [
+                    ['SN', 'Location', 'Code', 'Type', 'Branch', 'Linked Batches', 'Status', 'Recommended Action'],
+                    filteredStockLocations.map((location, index) => [
+                      index + 1,
                       location.name,
                       location.code,
                       location.location_type,
                       location.branch?.name ?? '',
                       location.stock_batches_count,
                       location.status,
+                      stockLocationAiRecommendation(location),
                     ]),
                   ),
-                onBulkEdit: () => markAction('Stock location bulk edit'),
-                onBulkDelete: () => markAction('Stock location bulk delete'),
+                onBulkEdit: () => markAction('Select a stock location row, then use Edit. Bulk location editing will follow the same audit rule.'),
+                onBulkDelete: () => markAction('Delete is controlled per location to protect linked stock batches and audit history.'),
+                extra: <button type="button" onClick={openStockLocationCreate}>Create new</button>,
               })}
 
-              <div className="inventory-table location-preview-table">
-                {locations.locations.map((location) => (
-                  <div key={location.id}>
-                    <strong>{location.name}</strong>
-                    <span>{location.code}</span>
-                    <span>{location.location_type.replaceAll('_', ' ')}</span>
-                    <small>{location.stock_batches_count} batches</small>
-                  </div>
+              <div className="inventory-action-card-grid inventory-action-card-grid--title-only stock-location-action-cards">
+                {[
+                  ['create', 'Create New Location'],
+                  ['edit', 'Edit from Row'],
+                  ['replace', 'Replace from Row'],
+                  ['delete', 'Delete from Row'],
+                ].map(([action, label]) => (
+                  <button
+                    key={action}
+                    type="button"
+                    className={activeStockLocationAction === action ? 'active' : ''}
+                    onClick={() => {
+                      if (action === 'create') {
+                        openStockLocationCreate();
+                        return;
+                      }
+
+                      setInventoryNotice(`Choose a Stock Locations row, then click ${label.replace(' from Row', '')}.`);
+                    }}
+                  >
+                    <strong>{label}</strong>
+                  </button>
                 ))}
+              </div>
+
+              {renderStockLocationActionPanel()}
+
+              <div className="low-stock-trigger-note">
+                <strong>Management rule:</strong>
+                <span>
+                  Locations with linked batches remain protected. Create a replacement and move batches before deleting the old location.
+                </span>
+              </div>
+
+              <div className="inventory-table-scroll stock-location-table-shell">
+                <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--stock-locations">
+                  <div className="inventory-master-table__header stock-location-management-row">
+                    <strong>SN</strong>
+                    <strong>Location</strong>
+                    <strong>Code</strong>
+                    <strong>Type</strong>
+                    <strong>Branch</strong>
+                    <strong className="rhia-number-cell">Batches</strong>
+                    <strong>Status</strong>
+                    <strong>Recommended Action</strong>
+                    <strong>Actions</strong>
+                  </div>
+
+                  {pagedStockLocations.length === 0 ? (
+                    <div className="stock-location-management-row stock-location-management-row--empty">
+                      <span>No stock locations match the current search.</span>
+                    </div>
+                  ) : (
+                    pagedStockLocations.map((location, index) => (
+                      <div key={location.id} className={`stock-location-management-row stock-location-management-row--${location.status}`}>
+                        <span className="rhia-number-cell">{index + 1}</span>
+                        <span>
+                          <strong>{location.name}</strong>
+                          <small>{Number(location.stock_batches_count || 0) > 0 ? 'In use' : 'No linked batch'}</small>
+                        </span>
+                        <span>{location.code}</span>
+                        <span>{location.location_type.replaceAll('_', ' ')}</span>
+                        <span>
+                          <strong>{location.branch?.name ?? 'Branch not set'}</strong>
+                          <small>{location.branch?.code ?? 'No branch code'}</small>
+                        </span>
+                        <span className="rhia-number-cell">{formatNumber(location.stock_batches_count)}</span>
+                        <span>
+                          <mark className={`stock-location-status-chip stock-location-status-chip--${location.status}`}>
+                            {location.status}
+                          </mark>
+                        </span>
+                        <span>{stockLocationAiRecommendation(location)}</span>
+                        <span>{renderStockLocationActions(location)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </section>
           )}

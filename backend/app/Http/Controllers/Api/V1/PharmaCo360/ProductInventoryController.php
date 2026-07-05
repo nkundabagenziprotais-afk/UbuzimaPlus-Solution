@@ -397,6 +397,48 @@ class ProductInventoryController extends Controller
         ]);
     }
 
+    public function deleteStockLocation(
+        Request $request,
+        StockLocation $stockLocation,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless((int) $stockLocation->tenant_id === (int) $tenant->id, 404);
+
+        $stockLocation->loadCount('stockBatches');
+
+        if ((int) $stockLocation->stock_batches_count > 0) {
+            throw ValidationException::withMessages([
+                'stock_location' => 'This stock location is linked to stock batches. Move or replace the batches before deleting it.',
+            ]);
+        }
+
+        $before = $stockLocation->only(['name', 'code', 'location_type', 'status', 'branch_id']);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $stockLocation->delete();
+
+        $auditLogService->record(
+            action: 'pharmaco.stock_location.deleted',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'before' => $before,
+            ],
+            dataClassification: 'internal',
+            auditableType: StockLocation::class,
+            auditableId: $stockLocation->id
+        );
+
+        return response()->json([
+            'message' => 'Stock location deleted successfully.',
+        ]);
+    }
+
     public function batches(Request $request): JsonResponse
     {
         $tenant = $request->attributes->get('tenant');
