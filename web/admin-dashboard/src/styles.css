@@ -17351,3 +17351,231 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
+
+/* Patch POS-C.1.1 - POS Counter flow refinement */
+
+.pos-dedicated-counter-shell {
+  padding: 0 14px 14px;
+}
+
+.pos-counter-page--dedicated {
+  padding-top: 92px;
+}
+
+/* Fixed command header: compact, one-row, scrollable, not floating over the workflow */
+.pos-dedicated-command-bar {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  z-index: 1005;
+  width: calc(100% - 28px);
+  max-width: 1920px;
+  transform: translateX(-50%);
+  display: flex;
+  grid-template-columns: none;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0;
+  border-radius: 20px;
+  padding: 8px;
+  scrollbar-width: thin;
+}
+
+.pos-dedicated-command-bar button {
+  flex: 0 0 166px;
+  min-height: 56px;
+  padding: 10px 12px;
+}
+
+.pos-counter-workbench--builder-left {
+  grid-template-columns: minmax(720px, 1.65fr) minmax(340px, 0.88fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.pos-transaction-builder-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.08), transparent 34%),
+    #ffffff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  padding: 16px;
+  min-width: 0;
+}
+
+.pos-builder-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding-bottom: 12px;
+}
+
+.pos-builder-heading h3 {
+  margin: 3px 0 4px;
+  color: #0f172a;
+  font-size: clamp(1.1rem, 1.4vw, 1.45rem);
+}
+
+.pos-builder-heading span {
+  display: block;
+  color: #64748b;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.pos-builder-status {
+  min-width: 96px;
+  border-radius: 18px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px;
+  text-align: center;
+}
+
+.pos-builder-status strong,
+.pos-builder-status small {
+  display: block;
+}
+
+.pos-builder-status strong {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.pos-builder-status small {
+  margin-top: 3px;
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pos-builder-main-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(420px, 1.25fr);
+  gap: 14px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.pos-transaction-builder-card .pos-rx-queue,
+.pos-transaction-builder-card .pos-cart-card,
+.pos-transaction-builder-card .pos-transaction-setup-card {
+  position: static;
+  max-height: none;
+  border-radius: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.pos-transaction-builder-card .pos-rx-queue {
+  overflow: auto;
+  max-height: 650px;
+}
+
+.pos-transaction-builder-card .pos-cart-card {
+  min-width: 0;
+}
+
+.pos-transaction-builder-card .pos-cart-card .system-table-wrap {
+  background: #ffffff;
+}
+
+.pos-builder-setup-panel {
+  padding-bottom: 16px;
+}
+
+.pos-builder-setup-panel .section-heading {
+  padding-top: 16px;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two {
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+}
+
+.pos-summary-journey-note {
+  margin: 8px 16px 0;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid rgba(14, 165, 233, 0.14);
+  color: #475569;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  padding: 10px 12px;
+}
+
+@media (max-width: 1440px) {
+  .pos-counter-page--dedicated {
+    padding-top: 90px;
+  }
+
+  .pos-counter-workbench--builder-left {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-counter-workbench--builder-left .pos-confirmation-rail {
+    grid-column: auto;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.65fr);
+  }
+}
+
+@media (max-width: 1180px) {
+  .pos-builder-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-transaction-builder-card .pos-rx-queue {
+    max-height: none;
+  }
+
+  .pos-builder-setup-panel .pos-field-grid--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-counter-workbench--builder-left .pos-confirmation-rail {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .pos-dedicated-counter-shell {
+    padding: 0 10px 10px;
+  }
+
+  .pos-counter-page--dedicated {
+    padding-top: 86px;
+  }
+
+  .pos-dedicated-command-bar {
+    top: 10px;
+    width: calc(100% - 20px);
+  }
+
+  .pos-dedicated-command-bar button {
+    flex-basis: 145px;
+    min-height: 52px;
+  }
+
+  .pos-transaction-builder-card {
+    border-radius: 22px;
+    padding: 12px;
+  }
+
+  .pos-builder-heading {
+    flex-direction: column;
+  }
+
+  .pos-builder-status {
+    width: 100%;
+  }
+
+  .pos-builder-setup-panel .pos-field-grid--two {
+    grid-template-columns: 1fr;
+  }
+}
+

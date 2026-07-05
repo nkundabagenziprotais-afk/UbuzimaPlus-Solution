@@ -3975,7 +3975,7 @@ function App() {
           insuranceInstitutionId: posInsuranceInstitution,
         }),
       );
-      setPosNotice('Sale Summary refreshed from current cart.');
+      setPosNotice('Payment summary updated from the current cart and Transaction Set-UP settings.');
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
@@ -4351,8 +4351,24 @@ function App() {
               </article>
             </section>
 
-            <section className="pos-counter-workbench pos-counter-workbench--cart-middle">
-              <aside className="pos-rx-queue">
+            <section className="pos-counter-workbench pos-counter-workbench--cart-middle pos-counter-workbench--builder-left">
+              <section className="pos-transaction-builder-card" aria-label="POS product selection, cart, and transaction setup">
+                <div className="pos-builder-heading">
+                  <div>
+                    <p className="eyebrow">Counter workflow</p>
+                    <h3>Product selection, sale cart, and Transaction Set-UP</h3>
+                    <span>
+                      Select all products first, review the cart, then confirm whether the default customer, prescription, payer, discount, and invoice settings should stay unchanged.
+                    </span>
+                  </div>
+                  <div className="pos-builder-status">
+                    <strong>{posCartItems.length}</strong>
+                    <small>cart line{posCartItems.length === 1 ? '' : 's'}</small>
+                  </div>
+                </div>
+
+                <div className="pos-builder-main-grid">
+                <section className="pos-builder-product-panel pos-rx-queue">
                 <div className="section-heading">
                   <div>
                     <span>Step 1</span>
@@ -4404,10 +4420,8 @@ function App() {
                 >
                   View full product list
                 </button>
-              </aside>
-
-              <main className="pos-cart-center">
-                <section className="pos-cart-card">
+              </section>
+                <section className="pos-builder-cart-panel pos-cart-card">
                   <div className="section-heading">
                     <div>
                       <span>Step 2</span>
@@ -4472,12 +4486,13 @@ function App() {
                     </table>
                   </div>
                 </section>
+                </div>
 
-                <section className="pos-transaction-setup-card pos-transaction-setup-card--two-column">
+              <section className="pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
                   <div className="section-heading">
                     <div>
                       <span>Step 3</span>
-                      <h3>Customer, prescription & payer</h3>
+                      <h3>Transaction Set-UP</h3>
                     </div>
                   </div>
 
@@ -4602,7 +4617,7 @@ function App() {
                     </label>
                   </div>
                 </section>
-              </main>
+              </section>
 
               <aside className="pos-confirmation-rail">
                 <section className="pos-summary-confirmation-card">
@@ -4614,8 +4629,11 @@ function App() {
                   </div>
 
                   <button type="button" className="pos-refresh-summary-button" onClick={forceRefreshSaleSummary}>
-                    Refresh Summary
+                    Update Summary
                   </button>
+                  <p className="pos-summary-journey-note">
+                    Select products, review Transaction Set-UP, update the summary, confirm payment, then print or send the invoice when requested.
+                  </p>
 
                   <div className="pos-summary-sync-note" data-cart-lines={posSaleSummary.lineCount} data-cart-quantity={posSaleSummary.totalQuantity}>
                     <span>Live cart sync</span>
