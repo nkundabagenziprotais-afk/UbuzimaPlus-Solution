@@ -1160,6 +1160,505 @@ function tenantDisplayName(profile: AccessProfile | undefined): string {
   return profile?.tenant_assignments?.[0]?.tenant?.name ?? 'Tenant';
 }
 
+
+
+type PermissionMatrixAction = 'view' | 'add' | 'edit' | 'delete';
+
+type PermissionMatrixResource = {
+  label: string;
+  description: string;
+  permissions: Partial<Record<PermissionMatrixAction, string>>;
+};
+
+type PermissionMatrixGroup = {
+  title: string;
+  description: string;
+  resources: PermissionMatrixResource[];
+};
+
+const granularPermissionMatrix: PermissionMatrixGroup[] = [
+  {
+    title: 'Inventory',
+    description: 'Products, batches, receiving, stock locations, expiry review, and inventory customization.',
+    resources: [
+      {
+        label: 'Inventory Dashboard',
+        description: 'Summary cards, stock overview, and inventory health.',
+        permissions: { view: 'inventory.dashboard.view' },
+      },
+      {
+        label: 'Product Master',
+        description: 'Commercial product records used by stock and POS.',
+        permissions: {
+          view: 'inventory.products.view',
+          add: 'inventory.products.add',
+          edit: 'inventory.products.edit',
+          delete: 'inventory.products.delete',
+        },
+      },
+      {
+        label: 'Inventory Batches',
+        description: 'Batch-level quantity, cost, expiry, and pricing.',
+        permissions: {
+          view: 'inventory.batches.view',
+          add: 'inventory.batches.add',
+          edit: 'inventory.batches.edit',
+          delete: 'inventory.batches.delete',
+        },
+      },
+      {
+        label: 'Receiving',
+        description: 'Stock receiving workflow from Product Master.',
+        permissions: {
+          view: 'inventory.receiving.view',
+          add: 'inventory.receiving.add',
+          edit: 'inventory.receiving.edit',
+          delete: 'inventory.receiving.delete',
+        },
+      },
+      {
+        label: 'Stock Locations',
+        description: 'Shelves, stores, branches, and inventory holding points.',
+        permissions: {
+          view: 'inventory.locations.view',
+          add: 'inventory.locations.add',
+          edit: 'inventory.locations.edit',
+          delete: 'inventory.locations.delete',
+        },
+      },
+      {
+        label: 'Low Stock',
+        description: 'Low stock monitoring and replenishment attention.',
+        permissions: {
+          view: 'inventory.low_stock.view',
+          add: 'inventory.low_stock.add',
+          edit: 'inventory.low_stock.edit',
+          delete: 'inventory.low_stock.delete',
+        },
+      },
+      {
+        label: 'Expiry Review',
+        description: 'Near-expiry, expired, and expiry-risk review tables.',
+        permissions: {
+          view: 'inventory.expiry_review.view',
+          add: 'inventory.expiry_review.add',
+          edit: 'inventory.expiry_review.edit',
+          delete: 'inventory.expiry_review.delete',
+        },
+      },
+      {
+        label: 'Expiry Labels',
+        description: 'Expiry thresholds, row colours, and label mapping.',
+        permissions: {
+          view: 'inventory.expiry_labels.view',
+          edit: 'inventory.expiry_labels.edit',
+        },
+      },
+      {
+        label: 'Table Settings',
+        description: 'Table density, font size, wrapping, sticky columns, and table style.',
+        permissions: {
+          view: 'inventory.table_settings.view',
+          edit: 'inventory.table_settings.edit',
+        },
+      },
+    ],
+  },
+  {
+    title: 'POS and Sales',
+    description: 'Counter sales, receipts, returns, payments, insurance, and cashier close.',
+    resources: [
+      {
+        label: 'Sales Register',
+        description: 'Create and manage sales transactions.',
+        permissions: {
+          view: 'pos.sales.view',
+          add: 'pos.sales.add',
+          edit: 'pos.sales.edit',
+          delete: 'pos.sales.delete',
+        },
+      },
+      {
+        label: 'Receipts',
+        description: 'Receipt viewing, printing, and correction.',
+        permissions: {
+          view: 'pos.receipts.view',
+          add: 'pos.receipts.add',
+          edit: 'pos.receipts.edit',
+          delete: 'pos.receipts.delete',
+        },
+      },
+      {
+        label: 'Returns',
+        description: 'Returned items and refund handling.',
+        permissions: {
+          view: 'pos.returns.view',
+          add: 'pos.returns.add',
+          edit: 'pos.returns.edit',
+          delete: 'pos.returns.delete',
+        },
+      },
+      {
+        label: 'Payments',
+        description: 'Cash, mobile money, card, and insurance payment handling.',
+        permissions: {
+          view: 'pos.payments.view',
+          add: 'pos.payments.add',
+          edit: 'pos.payments.edit',
+          delete: 'pos.payments.delete',
+        },
+      },
+      {
+        label: 'Cashier Close',
+        description: 'Daily cashier close and shift reconciliation.',
+        permissions: {
+          view: 'pos.cashier_close.view',
+          add: 'pos.cashier_close.add',
+          edit: 'pos.cashier_close.edit',
+        },
+      },
+      {
+        label: 'Insurance',
+        description: 'Insurance-linked sales and claim preparation.',
+        permissions: {
+          view: 'pos.insurance.view',
+          add: 'pos.insurance.add',
+          edit: 'pos.insurance.edit',
+          delete: 'pos.insurance.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Procurement and Suppliers',
+    description: 'Supplier records, purchase orders, receiving, and dispatch coordination.',
+    resources: [
+      {
+        label: 'Suppliers',
+        description: 'Supplier registry and supplier profile management.',
+        permissions: {
+          view: 'procurement.suppliers.view',
+          add: 'procurement.suppliers.add',
+          edit: 'procurement.suppliers.edit',
+          delete: 'procurement.suppliers.delete',
+        },
+      },
+      {
+        label: 'Purchase Orders',
+        description: 'Purchase planning and order preparation.',
+        permissions: {
+          view: 'procurement.purchase_orders.view',
+          add: 'procurement.purchase_orders.add',
+          edit: 'procurement.purchase_orders.edit',
+          delete: 'procurement.purchase_orders.delete',
+        },
+      },
+      {
+        label: 'Receiving',
+        description: 'Supplier delivery and stock receipt confirmation.',
+        permissions: {
+          view: 'procurement.receiving.view',
+          add: 'procurement.receiving.add',
+          edit: 'procurement.receiving.edit',
+          delete: 'procurement.receiving.delete',
+        },
+      },
+      {
+        label: 'Dispatch',
+        description: 'Dispatch coordination and delivery movement.',
+        permissions: {
+          view: 'procurement.dispatch.view',
+          add: 'procurement.dispatch.add',
+          edit: 'procurement.dispatch.edit',
+          delete: 'procurement.dispatch.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Finance',
+    description: 'Payables, receivables, reconciliation, and finance operations.',
+    resources: [
+      {
+        label: 'Finance Dashboard',
+        description: 'Finance overview and operational indicators.',
+        permissions: { view: 'finance.dashboard.view' },
+      },
+      {
+        label: 'Payables',
+        description: 'Supplier bills and payable tracking.',
+        permissions: {
+          view: 'finance.payables.view',
+          add: 'finance.payables.add',
+          edit: 'finance.payables.edit',
+          delete: 'finance.payables.delete',
+        },
+      },
+      {
+        label: 'Receivables',
+        description: 'Customer, insurer, and partner receivables.',
+        permissions: {
+          view: 'finance.receivables.view',
+          add: 'finance.receivables.add',
+          edit: 'finance.receivables.edit',
+          delete: 'finance.receivables.delete',
+        },
+      },
+      {
+        label: 'Payments',
+        description: 'Payment records and settlement operations.',
+        permissions: {
+          view: 'finance.payments.view',
+          add: 'finance.payments.add',
+          edit: 'finance.payments.edit',
+          delete: 'finance.payments.delete',
+        },
+      },
+      {
+        label: 'Reconciliation',
+        description: 'Cash, bank, mobile money, and settlement reconciliation.',
+        permissions: {
+          view: 'finance.reconciliation.view',
+          add: 'finance.reconciliation.add',
+          edit: 'finance.reconciliation.edit',
+          delete: 'finance.reconciliation.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Users, Roles, and Security',
+    description: 'Staff users, roles, permission assignment, 2FA, and audit trails.',
+    resources: [
+      {
+        label: 'Staff Users',
+        description: 'User accounts and staff profile access.',
+        permissions: {
+          view: 'users.staff.view',
+          add: 'users.staff.add',
+          edit: 'users.staff.edit',
+          delete: 'users.staff.delete',
+        },
+      },
+      {
+        label: 'Roles',
+        description: 'Role creation and role assignment.',
+        permissions: {
+          view: 'security.roles.view',
+          add: 'security.roles.add',
+          edit: 'security.roles.edit',
+          delete: 'security.roles.delete',
+        },
+      },
+      {
+        label: 'Permissions',
+        description: 'Fine-grained permission assignment.',
+        permissions: {
+          view: 'security.permissions.view',
+          add: 'security.permissions.add',
+          edit: 'security.permissions.edit',
+          delete: 'security.permissions.delete',
+        },
+      },
+      {
+        label: 'Audit Trail',
+        description: 'Security and activity audit review.',
+        permissions: {
+          view: 'security.audit.view',
+          add: 'security.audit.add',
+          edit: 'security.audit.edit',
+          delete: 'security.audit.delete',
+        },
+      },
+      {
+        label: 'Two-Factor Authentication',
+        description: '2FA policy and trusted device control.',
+        permissions: {
+          view: 'security.two_factor.view',
+          add: 'security.two_factor.add',
+          edit: 'security.two_factor.edit',
+          delete: 'security.two_factor.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Reports',
+    description: 'Inventory, sales, finance, procurement, and audit reporting.',
+    resources: [
+      {
+        label: 'Inventory Reports',
+        description: 'Inventory reporting and exports.',
+        permissions: {
+          view: 'reports.inventory.view',
+          add: 'reports.inventory.add',
+          edit: 'reports.inventory.edit',
+          delete: 'reports.inventory.delete',
+        },
+      },
+      {
+        label: 'Sales Reports',
+        description: 'Sales reporting and exports.',
+        permissions: {
+          view: 'reports.sales.view',
+          add: 'reports.sales.add',
+          edit: 'reports.sales.edit',
+          delete: 'reports.sales.delete',
+        },
+      },
+      {
+        label: 'Finance Reports',
+        description: 'Finance reporting and exports.',
+        permissions: {
+          view: 'reports.finance.view',
+          add: 'reports.finance.add',
+          edit: 'reports.finance.edit',
+          delete: 'reports.finance.delete',
+        },
+      },
+      {
+        label: 'Procurement Reports',
+        description: 'Supplier and procurement reporting.',
+        permissions: {
+          view: 'reports.procurement.view',
+          add: 'reports.procurement.add',
+          edit: 'reports.procurement.edit',
+          delete: 'reports.procurement.delete',
+        },
+      },
+      {
+        label: 'Audit Reports',
+        description: 'Audit and compliance reporting.',
+        permissions: {
+          view: 'reports.audit.view',
+          add: 'reports.audit.add',
+          edit: 'reports.audit.edit',
+          delete: 'reports.audit.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Communications and Platform',
+    description: 'Notifications, email, chat, tenant profile, branches, and platform tools.',
+    resources: [
+      {
+        label: 'Notifications',
+        description: 'Notification center and message scheduling.',
+        permissions: {
+          view: 'communications.notifications.view',
+          add: 'communications.notifications.add',
+          edit: 'communications.notifications.edit',
+          delete: 'communications.notifications.delete',
+        },
+      },
+      {
+        label: 'Corporate Email',
+        description: 'Corporate email and message templates.',
+        permissions: {
+          view: 'communications.email.view',
+          add: 'communications.email.add',
+          edit: 'communications.email.edit',
+          delete: 'communications.email.delete',
+        },
+      },
+      {
+        label: 'Pharmacist Chat',
+        description: 'In-app and WhatsApp communication workspace.',
+        permissions: {
+          view: 'communications.chat.view',
+          add: 'communications.chat.add',
+          edit: 'communications.chat.edit',
+          delete: 'communications.chat.delete',
+        },
+      },
+      {
+        label: 'Tenant Profile',
+        description: 'Tenant profile and operational setup.',
+        permissions: {
+          view: 'tenant.profile.view',
+          add: 'tenant.profile.add',
+          edit: 'tenant.profile.edit',
+          delete: 'tenant.profile.delete',
+        },
+      },
+      {
+        label: 'Branches',
+        description: 'Branch and location setup.',
+        permissions: {
+          view: 'tenant.branches.view',
+          add: 'tenant.branches.add',
+          edit: 'tenant.branches.edit',
+          delete: 'tenant.branches.delete',
+        },
+      },
+    ],
+  },
+];
+
+function permissionMatrixCell(profile: AccessProfile, permission?: string) {
+  if (!permission) {
+    return <span className="permission-matrix-cell permission-matrix-cell--not-applicable">—</span>;
+  }
+
+  const allowed = profileHasGranularPermission(profile, [permission]);
+
+  return (
+    <span
+      className={`permission-matrix-cell ${allowed ? 'permission-matrix-cell--allowed' : 'permission-matrix-cell--blocked'}`}
+      title={permission}
+    >
+      {allowed ? '✓' : '—'}
+    </span>
+  );
+}
+
+function renderProfilePermissionMatrix(profile: AccessProfile) {
+  return (
+    <div className="security-permission-matrix">
+      {granularPermissionMatrix.map((group) => (
+        <section key={group.title} className="security-permission-matrix-group">
+          <div className="security-permission-matrix-group__header">
+            <div>
+              <h3>{group.title}</h3>
+              <p>{group.description}</p>
+            </div>
+          </div>
+
+          <div className="security-permission-table-shell">
+            <table className="security-permission-table">
+              <thead>
+                <tr>
+                  <th scope="col">Resource</th>
+                  <th scope="col">View</th>
+                  <th scope="col">Add</th>
+                  <th scope="col">Edit</th>
+                  <th scope="col">Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.resources.map((resource) => (
+                  <tr key={`${group.title}-${resource.label}`}>
+                    <td>
+                      <strong>{resource.label}</strong>
+                      <span>{resource.description}</span>
+                    </td>
+                    <td>{permissionMatrixCell(profile, resource.permissions.view)}</td>
+                    <td>{permissionMatrixCell(profile, resource.permissions.add)}</td>
+                    <td>{permissionMatrixCell(profile, resource.permissions.edit)}</td>
+                    <td>{permissionMatrixCell(profile, resource.permissions.delete)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+
 function itemIsVisibleForProfile(profile: AccessProfile | undefined, item: MenuItem): boolean {
   if (!profile) return false;
   if (profileHasAdminAuthority(profile)) return true;
@@ -5073,18 +5572,18 @@ function App() {
                 </div>
               </article>
 
-              <article className="panel wide">
-                <h2>Permissions by area</h2>
-                <div className="permission-grid">
-                  {permissionGroups.map((group) => (
-                    <div key={group.title}>
-                      <h3>{group.title}</h3>
-                      {group.items.map((item) => (
-                        <span key={item}>{item}</span>
-                      ))}
-                    </div>
-                  ))}
+              <article className="panel wide permission-matrix-panel">
+                <div className="permission-matrix-panel__header">
+                  <div>
+                    <p className="eyebrow">Granular access matrix</p>
+                    <h2>Permissions by module and action</h2>
+                    <span>
+                      Each resource is separated into View, Add, Edit, and Delete so roles do not receive more power than intended.
+                    </span>
+                  </div>
                 </div>
+
+                {renderProfilePermissionMatrix(profile)}
               </article>
               {accessControlPanel}
               {tenantAssignmentsPanel}
