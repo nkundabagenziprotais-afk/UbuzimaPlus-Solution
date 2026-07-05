@@ -1,4 +1,22 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+
+type PosInventoryAutoLoaderProps = {
+  shouldLoad: boolean;
+  onLoad: () => void | Promise<void>;
+};
+
+function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderProps) {
+  useEffect(() => {
+    if (!shouldLoad) {
+      return;
+    }
+
+    void onLoad();
+  }, [onLoad, shouldLoad]);
+
+  return null;
+}
+
 import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
@@ -4307,6 +4325,11 @@ function App() {
           <section className="pos-counter-page pos-counter-page--dedicated">
             {renderPosWorkspaceTopMenu('pos')}
 
+            <PosInventoryAutoLoader
+              shouldLoad={activePosWorkspace === 'pos' && !isLoadingPosInventory && !posInventoryLoadedAt && !posInventoryError}
+              onLoad={loadCurrentPosInventory}
+            />
+
             <section className="pos-counter-heading">
               <div>
                 <p className="eyebrow">Pharmacy counter</p>
@@ -4404,12 +4427,12 @@ function App() {
 
                 <div className="pos-inventory-load-panel">
                   <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
-                    {isLoadingPosInventory ? 'Loading sellable inventory…' : 'Load all sellable inventory'}
+                    {isLoadingPosInventory ? 'Loading inventory…' : 'Refresh stock'}
                   </button>
                   <span>
                     {posInventoryLoadedAt
-                      ? `Current inventory loaded at ${posInventoryLoadedAt}`
-                      : 'Load all sellable inventory before adding products to cart.'}
+                      ? `Inventory loaded at ${posInventoryLoadedAt}`
+                      : 'Inventory loads automatically when the POS Counter opens.'}
                   </span>
                 </div>
 
@@ -4418,8 +4441,8 @@ function App() {
                 <div className="pos-drug-list pos-drug-list--ten">
                   {posProducts.length === 0 ? (
                     <div className="pos-inventory-empty-state">
-                      <strong>No current inventory loaded</strong>
-                      <small>Load all sellable inventory to pick only sellable batches with available stock.</small>
+                      <strong>Loading sellable inventory</strong>
+                      <small>The POS loads available stock automatically. Use Refresh stock only when you need to reload.</small>
                     </div>
                   ) : (
                     posVisibleProducts.length === 0 ? (
@@ -4428,14 +4451,31 @@ function App() {
                         <small>Try another product name, SKU, batch, barcode, or clear the search.</small>
                       </div>
                     ) : (
-                      posVisibleProducts.map((product) => (
-                      <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
-                        <strong>{product.name}</strong>
-                        <small>{product.status}</small>
-                        <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
-                        <i>Add</i>
-                      </button>
-                      ))
+                      posVisibleProducts.map((product) => {
+                        const sameProductBatchCount = posProducts.filter((candidate) => candidate.name === product.name).length;
+                        const productColourIndex = product.name.split('').reduce((sum, character) => sum + character.charCodeAt(0), 0) % 8;
+                        const isMultiBatchProduct = sameProductBatchCount > 1;
+                        const isExpiryAttention = ['expiry', 'expire', 'near', 'soon', 'warning'].some((keyword) =>
+                          product.status.toLowerCase().includes(keyword),
+                        );
+
+                        return (
+                          <button
+                            key={product.code}
+                            type="button"
+                            className={`pos-product-tile pos-product-colour-${productColourIndex}${isMultiBatchProduct ? ' multi-batch' : ''}${isExpiryAttention ? ' expiry-attention' : ''}`}
+                            onClick={() => addPosProductToCart(product)}
+                          >
+                            <span className="pos-product-card-topline">
+                              <i>{isMultiBatchProduct ? 'Multi-batch' : 'Sellable'}</i>
+                              {isExpiryAttention && <em>⚠ Expiry</em>}
+                            </span>
+                            <strong>{product.name}</strong>
+                            <small>{product.status}</small>
+                            <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
+                          </button>
+                        );
+                      })
                     )
                   )}
                 </div>
@@ -4487,7 +4527,7 @@ function App() {
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
-                                <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')} · Available {item.availableQuantity.toLocaleString('en-RW')}</small>
+                                <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')}</small>
                               </td>
                               <td>
                                 <input
@@ -4647,10 +4687,6 @@ function App() {
                 </section>
 
                 <div className="pos-summary-update-bridge">
-                  <div>
-                    <strong>Update payment summary</strong>
-                    <small>Synchronizes cart items with Transaction Set-UP settings before payment confirmation.</small>
-                  </div>
                   <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartItems.length === 0}>
                     Update Summary
                   </button>
@@ -4785,7 +4821,19 @@ function App() {
                 </div>
               </div>
 
-              <div className="system-table-wrap">
+                              <div className="pos-current-session-table-toolbar" aria-label="Current session transaction table controls">
+                  <input aria-label="Search current session transactions" placeholder="Search receipt, customer, payment..." />
+                  <select aria-label="Filter current session transactions" defaultValue="current-session">
+                    <option value="current-session">Current session only</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="invoice">Invoice requested</option>
+                  </select>
+                  <button type="button" onClick={() => setPosNotice('Column manager is ready for the current session transaction table.')}>Columns</button>
+                  <button type="button" onClick={() => setPosNotice('Export will use current session transaction rows once backend session rows are connected.')}>Export</button>
+                </div>
+
+<div className="system-table-wrap">
                 <table className="system-table">
                   <thead>
                     <tr>
