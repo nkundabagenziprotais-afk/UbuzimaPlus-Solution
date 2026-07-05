@@ -14691,3 +14691,543 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
+
+/* Inventory Table Audit + Alignment Standard - Patch C */
+
+.inventory-table-shell {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.inventory-data-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.inventory-data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  text-align: left;
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.inventory-data-table tbody td {
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.inventory-data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.inventory-data-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.inventory-data-table .cell-wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.inventory-data-table .cell-nowrap {
+  white-space: nowrap;
+}
+
+.inventory-data-table .cell-muted {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.inventory-data-table .cell-strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.inventory-data-table .cell-number {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.inventory-data-table .cell-center {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.inventory-data-table .table-cell-actions {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.inventory-data-table .table-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  min-width: 168px;
+}
+
+.inventory-data-table .table-action-grid button {
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.inventory-data-table .col-sn { width: 64px; }
+.inventory-data-table .col-product { width: 250px; }
+.inventory-data-table .col-code { width: 135px; }
+.inventory-data-table .col-category { width: 150px; }
+.inventory-data-table .col-location { width: 180px; }
+.inventory-data-table .col-branch { width: 190px; }
+.inventory-data-table .col-type { width: 145px; }
+.inventory-data-table .col-number { width: 110px; }
+.inventory-data-table .col-date { width: 130px; }
+.inventory-data-table .col-days { width: 115px; }
+.inventory-data-table .col-status { width: 155px; }
+.inventory-data-table .col-label { width: 175px; }
+.inventory-data-table .col-recommendation { width: 290px; }
+.inventory-data-table .col-actions { width: 190px; }
+
+.inventory-data-table--low-stock {
+  min-width: 1320px;
+}
+
+.inventory-data-table--batch-expiry,
+.inventory-data-table--near-expiry {
+  min-width: 1480px;
+}
+
+.inventory-data-table--product-master {
+  min-width: 1460px;
+}
+
+.inventory-data-table--stock-locations {
+  min-width: 1380px;
+}
+
+.inventory-data-table tr.expiry-row--expired td,
+.inventory-data-table tr.expiry-row--expired:hover td {
+  background: #7f1d1d;
+  color: #ffffff;
+}
+
+.inventory-data-table tr.expiry-row--expired .cell-muted,
+.inventory-data-table tr.expiry-row--expired .cell-strong {
+  color: #ffffff;
+}
+
+.inventory-data-table tr.expiry-row--critical td {
+  background: #fef2f2;
+}
+
+.inventory-data-table tr.expiry-row--warning td {
+  background: #fffbeb;
+}
+
+.inventory-data-table tr.expiry-row--watch td {
+  background: #f8fafc;
+}
+
+.inventory-table-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: normal;
+  text-align: center;
+}
+
+.inventory-table-chip--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.inventory-table-chip--inactive {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.inventory-table-chip--expired {
+  background: #450a0a;
+  color: #ffffff;
+}
+
+.inventory-table-chip--critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.inventory-table-chip--warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.inventory-table-chip--safe {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+@media (max-width: 768px) {
+  .inventory-table-shell {
+    border-radius: 12px;
+  }
+
+  .inventory-data-table {
+    min-width: 1080px;
+    font-size: 0.82rem;
+  }
+
+  .inventory-data-table thead th,
+  .inventory-data-table tbody td {
+    padding: 11px 12px;
+  }
+
+  .inventory-data-table .col-recommendation {
+    width: 260px;
+  }
+
+  .inventory-data-table .col-actions {
+    width: 180px;
+  }
+}
+
+
+/* Patch C.2 - Product register table width */
+.inventory-data-table--product-register {
+  min-width: 1460px;
+}
+
+
+/* Patch C.2 - Admin Table Management */
+
+.inventory-table-management-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.inventory-table-management-panel > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.inventory-table-management-panel > div:first-child strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.inventory-table-management-panel > div:first-child span {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.inventory-table-management-panel label {
+  display: grid;
+  gap: 5px;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.inventory-table-management-panel select,
+.inventory-table-management-panel input[type='range'] {
+  width: 100%;
+}
+
+.inventory-table-toggle {
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px !important;
+  min-height: 36px;
+}
+
+.inventory-table-toggle input {
+  margin: 0;
+}
+
+.inventory-table-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inventory-table-management-actions button,
+.expiry-label-manager-actions button {
+  min-height: 36px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 800;
+}
+
+.inventory-table-management-actions button.primary,
+.expiry-label-manager-actions button.primary {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.expiry-label-manager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 14px;
+  padding: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+/* Table Management variables */
+
+.inventory-table-shell .inventory-data-table {
+  font-size: var(--inventory-table-font-size, 14px);
+}
+
+.inventory-table-shell .inventory-data-table thead th,
+.inventory-table-shell .inventory-data-table tbody td {
+  padding: var(--inventory-table-cell-padding-y, 13px) var(--inventory-table-cell-padding-x, 14px);
+}
+
+.inventory-table-no-sticky-header .inventory-data-table thead th {
+  position: static;
+}
+
+.inventory-table-style--striped .inventory-data-table tbody tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.inventory-table-style--bordered .inventory-data-table thead th,
+.inventory-table-style--bordered .inventory-data-table tbody td {
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.inventory-table-style--bordered .inventory-data-table thead th:last-child,
+.inventory-table-style--bordered .inventory-data-table tbody td:last-child {
+  border-right: 0;
+}
+
+.inventory-table-wrap--off .inventory-data-table .cell-wrap {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-table-wrap--on .inventory-data-table .cell-wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.inventory-table-sticky-actions .inventory-data-table th:last-child,
+.inventory-table-sticky-actions .inventory-data-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: inherit;
+  box-shadow: -8px 0 14px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-table-sticky-actions .inventory-data-table thead th:last-child {
+  z-index: 3;
+  background: #f8fafc;
+}
+
+/* Column width presets */
+
+.inventory-table-width--compact .inventory-data-table .col-product { width: 210px; }
+.inventory-table-width--compact .inventory-data-table .col-recommendation { width: 240px; }
+.inventory-table-width--compact .inventory-data-table .col-location { width: 150px; }
+.inventory-table-width--compact .inventory-data-table .col-branch { width: 160px; }
+.inventory-table-width--compact .inventory-data-table .col-actions { width: 170px; }
+
+.inventory-table-width--balanced .inventory-data-table .col-product { width: 250px; }
+.inventory-table-width--balanced .inventory-data-table .col-recommendation { width: 290px; }
+.inventory-table-width--balanced .inventory-data-table .col-location { width: 180px; }
+.inventory-table-width--balanced .inventory-data-table .col-branch { width: 190px; }
+.inventory-table-width--balanced .inventory-data-table .col-actions { width: 190px; }
+
+.inventory-table-width--wide .inventory-data-table .col-product { width: 320px; }
+.inventory-table-width--wide .inventory-data-table .col-recommendation { width: 360px; }
+.inventory-table-width--wide .inventory-data-table .col-location { width: 230px; }
+.inventory-table-width--wide .inventory-data-table .col-branch { width: 240px; }
+.inventory-table-width--wide .inventory-data-table .col-actions { width: 210px; }
+
+.inventory-data-table--low-stock {
+  min-width: 1780px;
+}
+
+.inventory-data-table--batch-expiry {
+  min-width: 1980px;
+}
+
+.inventory-data-table--near-expiry {
+  min-width: 1420px;
+}
+
+.inventory-data-table--product-register {
+  min-width: 1460px;
+}
+
+@media (max-width: 1280px) {
+  .inventory-table-management-panel {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .inventory-table-management-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Platform Table Foundation - applies the Ubuzima+ table standard beyond Inventory */
+
+.system-table,
+.helicopter-table,
+.payables-line-table,
+.payables-register-table,
+.receivables-table,
+.data-table-preview table,
+.data-layer-table,
+.data-table-list table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: var(--platform-table-font-size, 14px);
+  color: #0f172a;
+}
+
+.system-table th,
+.system-table td,
+.helicopter-table th,
+.helicopter-table td,
+.payables-line-table th,
+.payables-line-table td,
+.payables-register-table th,
+.payables-register-table td,
+.receivables-table th,
+.receivables-table td,
+.data-table-preview table th,
+.data-table-preview table td,
+.data-layer-table th,
+.data-layer-table td,
+.data-table-list table th,
+.data-table-list table td {
+  padding: 12px 14px;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  overflow-wrap: anywhere;
+}
+
+.system-table th,
+.helicopter-table th,
+.payables-line-table th,
+.payables-register-table th,
+.receivables-table th,
+.data-table-preview table th,
+.data-layer-table th,
+.data-table-list table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 800;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.system-table td,
+.helicopter-table td,
+.payables-line-table td,
+.payables-register-table td,
+.receivables-table td,
+.data-table-preview table td,
+.data-layer-table td,
+.data-table-list table td {
+  line-height: 1.45;
+}
+
+.system-table tbody tr:hover,
+.helicopter-table tbody tr:hover,
+.payables-line-table tbody tr:hover,
+.payables-register-table tbody tr:hover,
+.receivables-table tbody tr:hover,
+.data-table-preview table tbody tr:hover,
+.data-layer-table tbody tr:hover,
+.data-table-list table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Global managed table shell for future reusable Admin Table Management */
+
+.platform-managed-table-shell {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.platform-managed-table-shell table {
+  min-width: 1080px;
+}
+
+
+/* Patch C.3 - finish Inventory real-table conversion */
+
+.inventory-data-table--product-register {
+  min-width: 1540px;
+}
+
+.inventory-data-table--product-master {
+  min-width: 1980px;
+}
+
+.inventory-data-table--generic {
+  min-width: 1380px;
+}
+
+.inventory-data-table .table-cell-actions > span,
+.inventory-data-table .table-cell-actions > div {
+  width: 100%;
+}
+
+.inventory-data-table .table-cell-actions button {
+  max-width: 100%;
+}
+

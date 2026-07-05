@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useEffect, useMemo, useState } from 'react';
 import {
   AccessProfile,
   PharmaInventoryBatchesResponse,
@@ -437,6 +437,42 @@ function nearestBatchForProduct(productId: number, batches: PharmaStockBatch[]):
   );
 }
 
+export 
+type InventoryTableKey =
+  | 'low-stock'
+  | 'batch-expiry'
+  | 'near-expiry'
+  | 'product-register'
+  | 'product-master'
+  | 'stock-locations';
+
+type InventoryTableStyle = 'clean' | 'striped' | 'bordered';
+type InventoryTableDensity = 'compact' | 'comfortable' | 'tall';
+type InventoryColumnWidthPreset = 'compact' | 'balanced' | 'wide';
+
+type InventoryTableSettings = {
+  style: InventoryTableStyle;
+  density: InventoryTableDensity;
+  fontSize: number;
+  widthPreset: InventoryColumnWidthPreset;
+  wrapText: boolean;
+  stickyHeader: boolean;
+  stickyActions: boolean;
+};
+
+const INVENTORY_TABLE_SETTINGS_STORAGE_KEY = 'ubuzima.inventory.table-management.v1';
+const EXPIRY_LABEL_RULES_STORAGE_KEY = 'ubuzima.inventory.expiry-label-rules.v1';
+
+const defaultInventoryTableSettings: InventoryTableSettings = {
+  style: 'clean',
+  density: 'comfortable',
+  fontSize: 14,
+  widthPreset: 'balanced',
+  wrapText: true,
+  stickyHeader: true,
+  stickyActions: false,
+};
+
 export function ProductInventoryPreview({
   token,
   profile,
@@ -503,6 +539,44 @@ export function ProductInventoryPreview({
     valid: { label: 'Healthy', maxDays: 181, background: '#ecfdf5', text: '#065f46' },
     noDate: { label: 'No date', maxDays: 0, background: '#f1f5f9', text: '#334155' },
   });
+
+
+  const [tableSettingsByKey, setTableSettingsByKey] = useState<Record<string, InventoryTableSettings>>({});
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const savedTableSettings = window.localStorage.getItem(INVENTORY_TABLE_SETTINGS_STORAGE_KEY);
+
+    if (savedTableSettings) {
+      try {
+        const parsed = JSON.parse(savedTableSettings);
+
+        if (parsed && typeof parsed === 'object') {
+          setTableSettingsByKey(parsed);
+        }
+      } catch {
+        window.localStorage.removeItem(INVENTORY_TABLE_SETTINGS_STORAGE_KEY);
+      }
+    }
+
+    const savedExpiryLabelRules = window.localStorage.getItem(EXPIRY_LABEL_RULES_STORAGE_KEY);
+
+    if (savedExpiryLabelRules) {
+      try {
+        const parsedRules = JSON.parse(savedExpiryLabelRules);
+
+        if (Array.isArray(parsedRules) && parsedRules.length > 0) {
+          setExpiryLabelRules(parsedRules);
+        }
+      } catch {
+        window.localStorage.removeItem(EXPIRY_LABEL_RULES_STORAGE_KEY);
+      }
+    }
+  }, []);
+
   const [viewingInventoryBatch, setViewingInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [pendingDeleteInventoryBatch, setPendingDeleteInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [activeStockLocationAction, setActiveStockLocationAction] = useState<StockLocationAction>(null);
@@ -2861,6 +2935,197 @@ export function ProductInventoryPreview({
     return 'Healthy batch. Continue normal FEFO monitoring.';
   }
 
+
+  function resolveInventoryTableSettings(tableKey: InventoryTableKey): InventoryTableSettings {
+    return {
+      ...defaultInventoryTableSettings,
+      ...(tableSettingsByKey[tableKey] ?? {}),
+    };
+  }
+
+  function updateInventoryTableSetting<K extends keyof InventoryTableSettings>(
+    tableKey: InventoryTableKey,
+    field: K,
+    value: InventoryTableSettings[K],
+  ) {
+    setTableSettingsByKey((current) => ({
+      ...current,
+      [tableKey]: {
+        ...resolveInventoryTableSettings(tableKey),
+        [field]: value,
+      },
+    }));
+  }
+
+  function saveInventoryTableSettings() {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(INVENTORY_TABLE_SETTINGS_STORAGE_KEY, JSON.stringify(tableSettingsByKey));
+    }
+
+    markAction('Table management settings saved');
+  }
+
+  function resetInventoryTableSettings(tableKey: InventoryTableKey) {
+    setTableSettingsByKey((current) => {
+      const next = { ...current };
+      delete next[tableKey];
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(INVENTORY_TABLE_SETTINGS_STORAGE_KEY, JSON.stringify(next));
+      }
+
+      return next;
+    });
+
+    markAction('Table settings restored');
+  }
+
+  function inventoryTableShellClass(tableKey: InventoryTableKey) {
+    const settings = resolveInventoryTableSettings(tableKey);
+
+    return [
+      'inventory-table-shell',
+      `inventory-table-style--${settings.style}`,
+      `inventory-table-density--${settings.density}`,
+      `inventory-table-width--${settings.widthPreset}`,
+      settings.wrapText ? 'inventory-table-wrap--on' : 'inventory-table-wrap--off',
+      settings.stickyHeader ? 'inventory-table-sticky-header' : 'inventory-table-no-sticky-header',
+      settings.stickyActions ? 'inventory-table-sticky-actions' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  function inventoryTableShellStyle(tableKey: InventoryTableKey) {
+    const settings = resolveInventoryTableSettings(tableKey);
+
+    const densityPadding = {
+      compact: '8px',
+      comfortable: '13px',
+      tall: '17px',
+    }[settings.density];
+
+    return {
+      '--inventory-table-font-size': `${settings.fontSize}px`,
+      '--inventory-table-cell-padding-y': densityPadding,
+      '--inventory-table-cell-padding-x': settings.density === 'compact' ? '10px' : '14px',
+    };
+  }
+
+  function renderAdminTableManagement(tableKey: InventoryTableKey, title: string) {
+    const settings = resolveInventoryTableSettings(tableKey);
+
+    return (
+      <div className="inventory-table-management-panel">
+        <div>
+          <strong>Table Management</strong>
+          <span>{title} layout controls for Admin.</span>
+        </div>
+
+        <label>
+          Style
+          <select
+            value={settings.style}
+            onChange={(event) =>
+              updateInventoryTableSetting(tableKey, 'style', event.target.value as InventoryTableStyle)
+            }
+          >
+            <option value="clean">Clean</option>
+            <option value="striped">Striped</option>
+            <option value="bordered">Bordered</option>
+          </select>
+        </label>
+
+        <label>
+          Font
+          <input
+            type="range"
+            min="12"
+            max="16"
+            value={settings.fontSize}
+            onChange={(event) =>
+              updateInventoryTableSetting(tableKey, 'fontSize', Number(event.target.value))
+            }
+          />
+          <small>{settings.fontSize}px</small>
+        </label>
+
+        <label>
+          Density
+          <select
+            value={settings.density}
+            onChange={(event) =>
+              updateInventoryTableSetting(tableKey, 'density', event.target.value as InventoryTableDensity)
+            }
+          >
+            <option value="compact">Compact</option>
+            <option value="comfortable">Comfortable</option>
+            <option value="tall">Tall</option>
+          </select>
+        </label>
+
+        <label>
+          Column width
+          <select
+            value={settings.widthPreset}
+            onChange={(event) =>
+              updateInventoryTableSetting(tableKey, 'widthPreset', event.target.value as InventoryColumnWidthPreset)
+            }
+          >
+            <option value="compact">Compact</option>
+            <option value="balanced">Balanced</option>
+            <option value="wide">Wide</option>
+          </select>
+        </label>
+
+        <label className="inventory-table-toggle">
+          <input
+            type="checkbox"
+            checked={settings.wrapText}
+            onChange={(event) => updateInventoryTableSetting(tableKey, 'wrapText', event.target.checked)}
+          />
+          Wrap text
+        </label>
+
+        <label className="inventory-table-toggle">
+          <input
+            type="checkbox"
+            checked={settings.stickyHeader}
+            onChange={(event) => updateInventoryTableSetting(tableKey, 'stickyHeader', event.target.checked)}
+          />
+          Sticky header
+        </label>
+
+        <label className="inventory-table-toggle">
+          <input
+            type="checkbox"
+            checked={settings.stickyActions}
+            onChange={(event) => updateInventoryTableSetting(tableKey, 'stickyActions', event.target.checked)}
+          />
+          Sticky actions
+        </label>
+
+        <div className="inventory-table-management-actions">
+          <button type="button" className="primary" onClick={saveInventoryTableSettings}>
+            Save table settings
+          </button>
+          <button type="button" onClick={() => resetInventoryTableSettings(tableKey)}>
+            Reset
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function handleSaveExpiryLabelRules() {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(EXPIRY_LABEL_RULES_STORAGE_KEY, JSON.stringify(expiryLabelRules));
+    }
+
+    setIsExpiryLabelManagerOpen(false);
+    markAction('Expiry labelling rules saved');
+  }
+
   function renderExpiryLabelTools() {
     const filterOptions = [
       ['all', 'All'],
@@ -3465,62 +3730,91 @@ export function ProductInventoryPreview({
                   </span>
                 </div>
 
-                <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--low-stock-product-master">
-                  <div className="inventory-master-table__header low-stock-product-master-row">
-                    <strong>SN</strong>
-                    <strong>Drug Code</strong>
-                    <strong>Generic Description</strong>
-                    <strong>Designation</strong>
-                    <strong>Selling Unit</strong>
-                    <strong className="rhia-number-cell">Regulatory Price</strong>
-                    <strong className="rhia-number-cell">Product Margin Rate</strong>
-                    <strong>Category</strong>
-                    <strong className="rhia-number-cell">Available Qty</strong>
-                    <strong className="rhia-number-cell">Re-order Level</strong>
-                    <strong className="rhia-number-cell">Shortage Qty</strong>
-                    <strong>Nearest Expiry</strong>
-                    <strong>Trigger Logic</strong>
-                    <strong>Actions</strong>
-                  </div>
+                {renderAdminTableManagement('low-stock', 'Low Stock Watch List')}
 
-                  {lowStockRows.length === 0 ? (
-                    <div className="low-stock-product-master-row low-stock-product-master-row--empty">
-                      <span>
-                        No low-stock products found. Set a Product Master re-order level above zero, then compare it with available Product Inventory quantity.
-                      </span>
-                    </div>
-                  ) : (
-                    lowStockRows.map((product: any, index: number) => {
-                      const available = productAvailableQty(product);
-                      const reorderLevel = productReorderLevel(product);
-                      const shortage = Math.max(reorderLevel - available, 0);
-                      const nearestBatch = nearestLowStockBatch(product);
+                <div className={inventoryTableShellClass('low-stock')} style={inventoryTableShellStyle('low-stock') as any}>
+                  <table className="inventory-data-table inventory-data-table--low-stock">
+                    <colgroup>
+                      <col className="col-sn" />
+                      <col className="col-code" />
+                      <col className="col-product" />
+                      <col className="col-product" />
+                      <col className="col-type" />
+                      <col className="col-number" />
+                      <col className="col-number" />
+                      <col className="col-category" />
+                      <col className="col-number" />
+                      <col className="col-number" />
+                      <col className="col-number" />
+                      <col className="col-date" />
+                      <col className="col-recommendation" />
+                      <col className="col-actions" />
+                    </colgroup>
 
-                      return (
-                        <div key={product?.id ?? product?.sku ?? index} className="low-stock-product-master-row">
-                          <span>{index + 1}</span>
-                          <span>{product?.sku ?? 'Not set'}</span>
-                          <span>{productGenericName(product)}</span>
-                          <span><strong>{productDesignation(product)}</strong></span>
-                          <span>{productSellingUnit(product)}</span>
-                          <span className="rhia-number-cell">{formatLowStockCurrency(productRegulatoryPrice(product))}</span>
-                          <span className="rhia-number-cell">{formatLowStockNumber(productMargin(product))}%</span>
-                          <span>{productCategory(product)}</span>
-                          <span className="rhia-number-cell">{formatLowStockNumber(available)}</span>
-                          <span className="rhia-number-cell">{formatLowStockNumber(reorderLevel)}</span>
-                          <span className="rhia-number-cell">{formatLowStockNumber(shortage)}</span>
-                          <span>{nearestBatch?.expiry_date ?? 'No batch'}</span>
-                          <span>{`Available ${formatLowStockNumber(available)} is at or below re-order level ${formatLowStockNumber(reorderLevel)}.`}</span>
-                          <span className="table-action-row">
-                            <button type="button" onClick={() => openLowStockView(product)}>View</button>
-                            <button type="button" onClick={() => openLowStockEdit(product)}>Edit</button>
-                            <button type="button" onClick={() => openLowStockReplicate(product)}>Replicate</button>
-                            <button type="button" className="danger" onClick={() => openLowStockDelete(product)}>Delete</button>
-                          </span>
-                        </div>
-                      );
-                    })
-                  )}
+                    <thead>
+                      <tr>
+                        <th>SN</th>
+                        <th>Drug Code</th>
+                        <th>Generic Description</th>
+                        <th>Designation</th>
+                        <th>Selling Unit</th>
+                        <th className="cell-number">Regulatory Price</th>
+                        <th className="cell-number">Margin Rate</th>
+                        <th>Category</th>
+                        <th className="cell-number">Available</th>
+                        <th className="cell-number">Re-order</th>
+                        <th className="cell-number">Shortage</th>
+                        <th>Nearest Expiry</th>
+                        <th>Trigger Logic</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {lowStockRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={14} className="cell-center">
+                            No low-stock products found. Set a Product Master re-order level above zero, then compare it with available Product Inventory quantity.
+                          </td>
+                        </tr>
+                      ) : (
+                        lowStockRows.map((product: any, index: number) => {
+                          const available = productAvailableQty(product);
+                          const reorderLevel = productReorderLevel(product);
+                          const shortage = Math.max(reorderLevel - available, 0);
+                          const nearestBatch = nearestLowStockBatch(product);
+
+                          return (
+                            <tr key={product?.id ?? product?.sku ?? index}>
+                              <td className="cell-center">{index + 1}</td>
+                              <td className="cell-nowrap">{product?.sku ?? 'Not set'}</td>
+                              <td className="cell-wrap">{productGenericName(product)}</td>
+                              <td className="cell-wrap"><strong className="cell-strong">{productDesignation(product)}</strong></td>
+                              <td className="cell-wrap">{productSellingUnit(product)}</td>
+                              <td className="cell-number">{formatLowStockCurrency(productRegulatoryPrice(product))}</td>
+                              <td className="cell-number">{formatLowStockNumber(productMargin(product))}%</td>
+                              <td className="cell-wrap">{productCategory(product)}</td>
+                              <td className="cell-number">{formatLowStockNumber(available)}</td>
+                              <td className="cell-number">{formatLowStockNumber(reorderLevel)}</td>
+                              <td className="cell-number">{formatLowStockNumber(shortage)}</td>
+                              <td className="cell-nowrap">{nearestBatch?.expiry_date ?? 'No batch'}</td>
+                              <td className="cell-wrap">
+                                {`Available ${formatLowStockNumber(available)} is at or below re-order level ${formatLowStockNumber(reorderLevel)}.`}
+                              </td>
+                              <td className="table-cell-actions">
+                                <div className="table-action-grid">
+                                  <button type="button" onClick={() => openLowStockView(product)}>View</button>
+                                  <button type="button" onClick={() => openLowStockEdit(product)}>Edit</button>
+                                  <button type="button" onClick={() => openLowStockReplicate(product)}>Replicate</button>
+                                  <button type="button" className="danger" onClick={() => openLowStockDelete(product)}>Delete</button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </section>
             );
@@ -3774,60 +4068,97 @@ export function ProductInventoryPreview({
 
                 {renderExpiryLabelTools()}
 
-                <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--batch-expiry-register">
-                  <div className="inventory-master-table__header batch-expiry-register-row">
-                    <strong>SN</strong>
-                    <strong>Drug Code</strong>
-                    <strong>Generic Description</strong>
-                    <strong>Designation</strong>
-                    <strong>Selling Unit</strong>
-                    <strong className="rhia-number-cell">Regulatory Price</strong>
-                    <strong className="rhia-number-cell">Product Margin Rate</strong>
-                    <strong>Batch Number</strong>
-                    <strong>Location</strong>
-                    <strong className="rhia-number-cell">Available Qty</strong>
-                    <strong>Expiry Date</strong>
-                    <strong className="rhia-number-cell">Remaining Days</strong>
-                    <strong>Expiry Label</strong>
-                    <strong>Supplier</strong>
-                    <strong>AI Action</strong>
-                    <strong>Actions</strong>
+                {isExpiryLabelManagerOpen && (
+                  <div className="expiry-label-manager-actions">
+                    <button type="button" className="primary" onClick={handleSaveExpiryLabelRules}>
+                      Save labelling changes
+                    </button>
                   </div>
+                )}
 
-                  {visibleBatchRows.length === 0 ? (
-                    <div className="batch-expiry-register-row batch-expiry-register-row--empty">
-                      <span>
-                        No stock batch records found. This page will populate after stock is received into Product Inventory.
-                      </span>
-                    </div>
-                  ) : (
-                    visibleBatchRows.map((batch: any, index: number) => {
-                      const days = batchRemainingDays(batch);
+                {renderAdminTableManagement('batch-expiry', 'Batch and Expiry Review')}
 
-                      return (
-                        <div key={batch?.id ?? `${batch?.batch_number}-${index}`} className={`batch-expiry-register-row ${expiryRiskClass(days)}`}>
-                          <span>{index + 1}</span>
-                          <span>{batchProduct(batch)?.sku ?? 'Not set'}</span>
-                          <span>{batchProductGeneric(batch)}</span>
-                          <span><strong>{batchProductDesignation(batch)}</strong></span>
-                          <span>{batchSellingUnit(batch)}</span>
-                          <span className="rhia-number-cell">{formatBatchCurrency(batchRegulatoryPrice(batch))}</span>
-                          <span className="rhia-number-cell">{formatBatchNumber(batchProductMargin(batch))}%</span>
-                          <span>{batch?.batch_number ?? 'Not set'}</span>
-                          <span>{batchLocation(batch)}</span>
-                          <span className="rhia-number-cell">{formatBatchNumber(batch?.available_quantity ?? batch?.quantity ?? 0)}</span>
-                          <span>{batchExpiryDate(batch) || 'No expiry'}</span>
-                          <span className="rhia-number-cell">{days === null ? 'N/A' : days}</span>
-                          <span><mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>{expiryRiskLabel(days)}</mark></span>
-                          <span>{batch?.supplier_name ?? 'Not set'}</span>
-                          <span>{expiryAiRecommendation(days)}</span>
-                          <span className="product-inventory-row-actions product-inventory-actions-cell">
-                            {renderBatchActions(batch)}
-                          </span>
-                        </div>
-                      );
-                    })
-                  )}
+                <div className={inventoryTableShellClass('batch-expiry')} style={inventoryTableShellStyle('batch-expiry') as any}>
+                  <table className="inventory-data-table inventory-data-table--batch-expiry">
+                    <colgroup>
+                      <col className="col-sn" />
+                      <col className="col-code" />
+                      <col className="col-product" />
+                      <col className="col-product" />
+                      <col className="col-type" />
+                      <col className="col-number" />
+                      <col className="col-number" />
+                      <col className="col-code" />
+                      <col className="col-location" />
+                      <col className="col-number" />
+                      <col className="col-date" />
+                      <col className="col-days" />
+                      <col className="col-label" />
+                      <col className="col-product" />
+                      <col className="col-recommendation" />
+                      <col className="col-actions" />
+                    </colgroup>
+
+                    <thead>
+                      <tr>
+                        <th>SN</th>
+                        <th>Drug Code</th>
+                        <th>Generic Description</th>
+                        <th>Designation</th>
+                        <th>Selling Unit</th>
+                        <th className="cell-number">Regulatory Price</th>
+                        <th className="cell-number">Margin Rate</th>
+                        <th>Batch Number</th>
+                        <th>Location</th>
+                        <th className="cell-number">Available Qty</th>
+                        <th>Expiry Date</th>
+                        <th className="cell-number">Days</th>
+                        <th>Expiry Label</th>
+                        <th>Supplier</th>
+                        <th>AI Action</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {visibleBatchRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={16} className="cell-center">
+                            No stock batch records found. This page will populate after stock is received into Product Inventory.
+                          </td>
+                        </tr>
+                      ) : (
+                        visibleBatchRows.map((batch: any, index: number) => {
+                          const days = batchRemainingDays(batch);
+
+                          return (
+                            <tr key={batch?.id ?? `${batch?.batch_number}-${index}`} className={expiryRiskClass(days)}>
+                              <td className="cell-center">{index + 1}</td>
+                              <td className="cell-nowrap">{batchProduct(batch)?.sku ?? 'Not set'}</td>
+                              <td className="cell-wrap">{batchProductGeneric(batch)}</td>
+                              <td className="cell-wrap"><strong className="cell-strong">{batchProductDesignation(batch)}</strong></td>
+                              <td className="cell-wrap">{batchSellingUnit(batch)}</td>
+                              <td className="cell-number">{formatBatchCurrency(batchRegulatoryPrice(batch))}</td>
+                              <td className="cell-number">{formatBatchNumber(batchProductMargin(batch))}%</td>
+                              <td className="cell-nowrap">{batch?.batch_number ?? 'Not set'}</td>
+                              <td className="cell-wrap">{batchLocation(batch)}</td>
+                              <td className="cell-number">{formatBatchNumber(batch?.available_quantity ?? batch?.quantity ?? 0)}</td>
+                              <td className="cell-nowrap">{batchExpiryDate(batch) || 'No expiry'}</td>
+                              <td className="cell-number">{days === null ? 'N/A' : days}</td>
+                              <td className="cell-center">
+                                <mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>
+                                  {expiryRiskLabel(days)}
+                                </mark>
+                              </td>
+                              <td className="cell-wrap">{batch?.supplier_name ?? 'Not set'}</td>
+                              <td className="cell-wrap">{expiryAiRecommendation(days)}</td>
+                              <td className="table-cell-actions">{renderBatchActions(batch)}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </section>
             );
@@ -3869,44 +4200,79 @@ export function ProductInventoryPreview({
 
                 {renderExpiryLabelTools()}
 
-                <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--near-expiry-watch-list">
-                  <div className="inventory-master-table__header near-expiry-watch-row">
-                    <strong>Product</strong>
-                    <strong>Drug Code</strong>
-                    <strong>Batch</strong>
-                    <strong>Location</strong>
-                    <strong className="rhia-number-cell">Available</strong>
-                    <strong>Expiry</strong>
-                    <strong className="rhia-number-cell">Days</strong>
-                    <strong>Label</strong>
-                    <strong>AI Action</strong>
-                    <strong>Actions</strong>
+                {isExpiryLabelManagerOpen && (
+                  <div className="expiry-label-manager-actions">
+                    <button type="button" className="primary" onClick={handleSaveExpiryLabelRules}>
+                      Save labelling changes
+                    </button>
                   </div>
+                )}
 
-                  {nearRows.length === 0 ? (
-                    <div className="near-expiry-watch-row near-expiry-watch-row--empty">
-                      <span>No batches match the selected expiry filter.</span>
-                    </div>
-                  ) : (
-                    nearRows.map((batch) => {
-                      const days = remainingDays(batch.expiry_date);
+                {renderAdminTableManagement('near-expiry', 'Near Expiry Watch List')}
 
-                      return (
-                        <div key={batch.id} className={`near-expiry-watch-row ${expiryRiskClass(days)}`}>
-                          <span><strong>{batch.product.name}</strong></span>
-                          <span>{batch.product.sku}</span>
-                          <span>{batch.batch_number}</span>
-                          <span>{batch.stock_location.code}</span>
-                          <span className="rhia-number-cell">{formatNumber(batch.available_quantity)}</span>
-                          <span>{formatDate(batch.expiry_date)}</span>
-                          <span className="rhia-number-cell">{days ?? 'N/A'}</span>
-                          <span><mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>{expiryRiskLabel(days)}</mark></span>
-                          <span>{expiryAiRecommendation(days)}</span>
-                          <span>{renderBatchActions(batch)}</span>
-                        </div>
-                      );
-                    })
-                  )}
+                <div className={inventoryTableShellClass('near-expiry')} style={inventoryTableShellStyle('near-expiry') as any}>
+                  <table className="inventory-data-table inventory-data-table--near-expiry">
+                    <colgroup>
+                      <col className="col-product" />
+                      <col className="col-code" />
+                      <col className="col-code" />
+                      <col className="col-location" />
+                      <col className="col-number" />
+                      <col className="col-date" />
+                      <col className="col-days" />
+                      <col className="col-label" />
+                      <col className="col-recommendation" />
+                      <col className="col-actions" />
+                    </colgroup>
+
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Drug Code</th>
+                        <th>Batch</th>
+                        <th>Location</th>
+                        <th className="cell-number">Available</th>
+                        <th>Expiry</th>
+                        <th className="cell-number">Days</th>
+                        <th>Label</th>
+                        <th>AI Action</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {nearRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={10} className="cell-center">
+                            No batches match the selected expiry filter.
+                          </td>
+                        </tr>
+                      ) : (
+                        nearRows.map((batch) => {
+                          const days = remainingDays(batch.expiry_date);
+
+                          return (
+                            <tr key={batch.id} className={expiryRiskClass(days)}>
+                              <td className="cell-wrap"><strong className="cell-strong">{batch.product.name}</strong></td>
+                              <td className="cell-nowrap">{batch.product.sku}</td>
+                              <td className="cell-nowrap">{batch.batch_number}</td>
+                              <td className="cell-wrap">{batch.stock_location.code}</td>
+                              <td className="cell-number">{formatNumber(batch.available_quantity)}</td>
+                              <td className="cell-nowrap">{formatDate(batch.expiry_date)}</td>
+                              <td className="cell-number">{days ?? 'N/A'}</td>
+                              <td className="cell-center">
+                                <mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>
+                                  {expiryRiskLabel(days)}
+                                </mark>
+                              </td>
+                              <td className="cell-wrap">{expiryAiRecommendation(days)}</td>
+                              <td className="table-cell-actions">{renderBatchActions(batch)}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </section>
             );
@@ -4454,63 +4820,92 @@ export function ProductInventoryPreview({
                 </div>
               </section>
 
-              <div className="inventory-table-scroll inventory-product-inventory-table-shell">
-                <div className="inventory-master-table inventory-master-table--wide inventory-master-table--rhia-format inventory-master-table--product-inventory-register">
-                  <div className="inventory-master-table__header product-inventory-register-row">
-                    <strong>SN</strong>
-                    <strong>Product / Drug Code</strong>
-                    <strong>Generic Description</strong>
-                    <strong>Batch / Expiry</strong>
-                    <strong>Location</strong>
-                    <strong>Available Qty</strong>
-                    <strong>Unit Cost</strong>
-                    <strong>Margin</strong>
-                    <strong>Selling Price</strong>
-                    <strong>Status</strong>
-                    <strong>Actions</strong>
-                  </div>
+              {renderAdminTableManagement('product-register', 'Product Inventory Register')}
 
-                  {pagedProductInventory.length === 0 ? (
-                    <div className="product-inventory-register-row product-inventory-register-row--empty">
-                      <span>No commercial inventory batches found.</span>
-                    </div>
-                  ) : (
-                    pagedProductInventory.map(({ batch, defaultMargin, computedSellingPrice, days }, index) => (
-                      <div key={batch.id} className="product-inventory-register-row">
-                        <span className="rhia-number-cell">{index + 1}</span>
-                        <span>
-                          <strong>{batch.product.name}</strong>
-                          <small>Drug code: {batch.product.sku}</small>
-                          <small>Regulatory Price: {formatRwf(regulatoryPrice(batch.product))}</small>
-                        </span>
-                        <span>
-                          <strong>{batch.product.generic_name ?? 'Generic name not set'}</strong>
-                          <small>{metadataText(batch.product, ['designation', 'rhia_designation'], 'Designation not set')}</small>
-                        </span>
-                        <span>
-                          <strong>{batch.batch_number}</strong>
-                          <small>{formatDate(batch.expiry_date)}</small>
-                          <small>{days === null ? 'Remaining days: N/A' : `Remaining days: ${days}`}</small>
-                        </span>
-                        <span>
-                          <strong>{batch.stock_location.name}</strong>
-                          <small>{batch.stock_location.code}</small>
-                        </span>
-                        <span className="rhia-number-cell">{formatNumber(batch.available_quantity)}</span>
-                        <span className="rhia-number-cell">{formatRwf(batch.unit_cost)}</span>
-                        <span className="rhia-number-cell">{formatNumber(defaultMargin)}%</span>
-                        <span className="rhia-number-cell">{formatRwf(computedSellingPrice)}</span>
-                        <span>
-                          <strong>{batch.status}</strong>
-                          <small>{expiryStatus(days)}</small>
-                        </span>
-                        <span className="product-inventory-row-actions product-inventory-actions-cell">
-                          {renderBatchActions(batch)}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
+              <div className={inventoryTableShellClass('product-register')} style={inventoryTableShellStyle('product-register') as any}>
+                <table className="inventory-data-table inventory-data-table--product-register">
+                  <colgroup>
+                    <col className="col-sn" />
+                    <col className="col-product" />
+                    <col className="col-product" />
+                    <col className="col-code" />
+                    <col className="col-location" />
+                    <col className="col-number" />
+                    <col className="col-number" />
+                    <col className="col-number" />
+                    <col className="col-number" />
+                    <col className="col-status" />
+                    <col className="col-actions" />
+                  </colgroup>
+
+                  <thead>
+                    <tr>
+                      <th>SN</th>
+                      <th>Product / Drug Code</th>
+                      <th>Generic Description</th>
+                      <th>Batch / Expiry</th>
+                      <th>Location</th>
+                      <th className="cell-number">Available Qty</th>
+                      <th className="cell-number">Unit Cost</th>
+                      <th className="cell-number">Margin</th>
+                      <th className="cell-number">Selling Price</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {pagedProductInventory.length === 0 ? (
+                      <tr>
+                        <td colSpan={11} className="cell-center">
+                          No commercial inventory batches found.
+                        </td>
+                      </tr>
+                    ) : (
+                      pagedProductInventory.map(({ batch, defaultMargin, computedSellingPrice, days }, index) => (
+                        <tr key={batch.id} className={expiryRiskClass(days)}>
+                          <td className="cell-center">{index + 1}</td>
+                          <td className="cell-wrap">
+                            <strong className="cell-strong">{batch.product.name}</strong>
+                            <br />
+                            <span className="cell-muted">Drug code: {batch.product.sku}</span>
+                            <br />
+                            <span className="cell-muted">Regulatory Price: {formatRwf(regulatoryPrice(batch.product))}</span>
+                          </td>
+                          <td className="cell-wrap">
+                            <strong className="cell-strong">{batch.product.generic_name ?? 'Generic name not set'}</strong>
+                            <br />
+                            <span className="cell-muted">
+                              {metadataText(batch.product, ['designation', 'rhia_designation'], 'Designation not set')}
+                            </span>
+                          </td>
+                          <td className="cell-wrap">
+                            <strong className="cell-strong">{batch.batch_number}</strong>
+                            <br />
+                            <span className="cell-muted">{formatDate(batch.expiry_date)}</span>
+                            <br />
+                            <span className="cell-muted">{days === null ? 'Remaining days: N/A' : `Remaining days: ${days}`}</span>
+                          </td>
+                          <td className="cell-wrap">
+                            <strong className="cell-strong">{batch.stock_location.name}</strong>
+                            <br />
+                            <span className="cell-muted">{batch.stock_location.code}</span>
+                          </td>
+                          <td className="cell-number">{formatNumber(batch.available_quantity)}</td>
+                          <td className="cell-number">{formatRwf(batch.unit_cost)}</td>
+                          <td className="cell-number">{formatNumber(defaultMargin)}%</td>
+                          <td className="cell-number">{formatRwf(computedSellingPrice)}</td>
+                          <td className="cell-wrap">
+                            <strong className="cell-strong">{batch.status}</strong>
+                            <br />
+                            <span className="cell-muted">{expiryStatus(days)}</span>
+                          </td>
+                          <td className="table-cell-actions">{renderBatchActions(batch)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </section>
           )}
@@ -4575,50 +4970,75 @@ export function ProductInventoryPreview({
                 </span>
               </div>
 
-              <div className="inventory-table-scroll stock-location-table-shell">
-                <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--stock-locations">
-                  <div className="inventory-master-table__header stock-location-management-row">
-                    <strong>SN</strong>
-                    <strong>Location</strong>
-                    <strong>Code</strong>
-                    <strong>Type</strong>
-                    <strong>Branch</strong>
-                    <strong className="rhia-number-cell">Batches</strong>
-                    <strong>Status</strong>
-                    <strong>Recommended Action</strong>
-                    <strong>Actions</strong>
-                  </div>
+              <div className="inventory-table-shell stock-location-table-shell">
+                <table className="inventory-data-table inventory-data-table--stock-locations">
+                  <colgroup>
+                    <col className="col-sn" />
+                    <col className="col-location" />
+                    <col className="col-code" />
+                    <col className="col-type" />
+                    <col className="col-branch" />
+                    <col className="col-number" />
+                    <col className="col-status" />
+                    <col className="col-recommendation" />
+                    <col className="col-actions" />
+                  </colgroup>
 
-                  {pagedStockLocations.length === 0 ? (
-                    <div className="stock-location-management-row stock-location-management-row--empty">
-                      <span>No stock locations match the current search.</span>
-                    </div>
-                  ) : (
-                    pagedStockLocations.map((location, index) => (
-                      <div key={location.id} className={`stock-location-management-row stock-location-management-row--${location.status}`}>
-                        <span className="rhia-number-cell">{index + 1}</span>
-                        <span>
-                          <strong>{location.name}</strong>
-                          <small>{Number(location.stock_batches_count || 0) > 0 ? 'In use' : 'No linked batch'}</small>
-                        </span>
-                        <span>{location.code}</span>
-                        <span>{location.location_type.replaceAll('_', ' ')}</span>
-                        <span>
-                          <strong>{location.branch?.name ?? 'Branch not set'}</strong>
-                          <small>{location.branch?.code ?? 'No branch code'}</small>
-                        </span>
-                        <span className="rhia-number-cell">{formatNumber(location.stock_batches_count)}</span>
-                        <span>
-                          <mark className={`stock-location-status-chip stock-location-status-chip--${location.status}`}>
-                            {location.status}
-                          </mark>
-                        </span>
-                        <span>{stockLocationAiRecommendation(location)}</span>
-                        <span>{renderStockLocationActions(location)}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
+                  <thead>
+                    <tr>
+                      <th>SN</th>
+                      <th>Location</th>
+                      <th>Code</th>
+                      <th>Type</th>
+                      <th>Branch</th>
+                      <th className="cell-number">Batches</th>
+                      <th>Status</th>
+                      <th>Recommended Action</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {pagedStockLocations.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="cell-center">
+                          No stock locations match the current search.
+                        </td>
+                      </tr>
+                    ) : (
+                      pagedStockLocations.map((location, index) => (
+                        <tr
+                          key={location.id}
+                          className={location.status === 'inactive' ? 'stock-location-row--inactive' : undefined}
+                        >
+                          <td className="cell-center">{index + 1}</td>
+                          <td className="cell-wrap">
+                            <strong className="cell-strong">{location.name}</strong>
+                            <br />
+                            <span className="cell-muted">
+                              {Number(location.stock_batches_count || 0) > 0 ? 'In use' : 'No linked batch'}
+                            </span>
+                          </td>
+                          <td className="cell-nowrap">{location.code}</td>
+                          <td className="cell-wrap">{location.location_type.replaceAll('_', ' ')}</td>
+                          <td className="cell-wrap">
+                            <strong className="cell-strong">{location.branch?.name ?? 'Branch not set'}</strong>
+                            <br />
+                            <span className="cell-muted">{location.branch?.code ?? 'No branch code'}</span>
+                          </td>
+                          <td className="cell-number">{formatNumber(location.stock_batches_count)}</td>
+                          <td className="cell-center">
+                            <span className={`inventory-table-chip inventory-table-chip--${location.status === 'active' ? 'active' : 'inactive'}`}>
+                              {location.status === 'active' ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="cell-wrap">{stockLocationAiRecommendation(location)}</td>
+                          <td className="table-cell-actions">{renderStockLocationActions(location)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </section>
           )}
@@ -4665,54 +5085,86 @@ function ProductMasterTable({
   batches: PharmaStockBatch[];
 }) {
   return (
-    <div className="inventory-master-table inventory-master-table--wide inventory-master-table--rhia-format">
-      <div className="inventory-master-table__header rhia-product-master-row">
-        <strong>SN</strong>
-        <strong>Drug Code</strong>
-        <strong>Generic Description</strong>
-        <strong>Designation</strong>
-        <strong>Instructions</strong>
-        <strong>Selling Unit</strong>
-        <strong className="rhia-number-cell">Regulatory Price</strong>
-        <strong className="rhia-number-cell">Product Margin Rate</strong>
-        <strong>Category</strong>
-        <strong>Source</strong>
-        <strong>Section</strong>
-        <strong>Subsection</strong>
-        <strong className="rhia-number-cell">Re-order Level</strong>
-        <strong>Status</strong>
-        <strong>Actions</strong>
-      </div>
+    <div className="inventory-table-shell">
+      <table className="inventory-data-table inventory-data-table--product-master">
+        <colgroup>
+          <col className="col-sn" />
+          <col className="col-code" />
+          <col className="col-product" />
+          <col className="col-product" />
+          <col className="col-product" />
+          <col className="col-type" />
+          <col className="col-number" />
+          <col className="col-number" />
+          <col className="col-category" />
+          <col className="col-type" />
+          <col className="col-category" />
+          <col className="col-category" />
+          <col className="col-number" />
+          <col className="col-status" />
+          <col className="col-actions" />
+        </colgroup>
 
-      {rows.length === 0 ? (
-        <div className="rhia-product-master-row">
-          <span>No products found.</span>
-        </div>
-      ) : (
-        rows.map((product, index) => {
-          const nearestBatch = nearestBatchForProduct(product.id, batches);
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Drug Code</th>
+            <th>Generic Description</th>
+            <th>Designation</th>
+            <th>Instructions</th>
+            <th>Selling Unit</th>
+            <th className="cell-number">Regulatory Price</th>
+            <th className="cell-number">Product Margin Rate</th>
+            <th>Category</th>
+            <th>Source</th>
+            <th>Section</th>
+            <th>Subsection</th>
+            <th className="cell-number">Re-order Level</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-          return (
-            <div key={product.id} className="rhia-product-master-row">
-              <span>{index + 1}</span>
-              <span>{product.sku}</span>
-              <span>{product.generic_name ?? 'Not set'}</span>
-              <span><strong>{product.name}</strong></span>
-              <span>{metadataText(product, ['rhia_instructions'], 'Not set')}</span>
-              <span>{metadataText(product, ['rhia_selling_unit'], product.unit)}</span>
-              <span className="rhia-number-cell">{formatRwf(regulatoryPrice(product))}</span>
-              <span className="rhia-number-cell">{formatNumber(productMarginRate(product))}%</span>
-              <span>{product.category?.name ?? 'Uncategorised'}</span>
-              <span>{metadataText(product, ['source'], 'Product Master')}</span>
-              <span>{metadataText(product, ['rhia_section'], product.category?.name ?? 'Uncategorised')}</span>
-              <span>{metadataText(product, ['rhia_subsection'], 'Not set')}</span>
-              <span className="rhia-number-cell">{formatNumber(product.reorder_level)}</span>
-              <span>{product.status}</span>
-              <span>{onAction(product, nearestBatch)}</span>
-            </div>
-          );
-        })
-      )}
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={15} className="cell-center">
+                No products found.
+              </td>
+            </tr>
+          ) : (
+            rows.map((product, index) => {
+              const nearestBatch = nearestBatchForProduct(product.id, batches);
+
+              return (
+                <tr key={product.id}>
+                  <td className="cell-center">{index + 1}</td>
+                  <td className="cell-nowrap">{product.sku}</td>
+                  <td className="cell-wrap">{product.generic_name ?? 'Not set'}</td>
+                  <td className="cell-wrap">
+                    <strong className="cell-strong">{product.name}</strong>
+                  </td>
+                  <td className="cell-wrap">{metadataText(product, ['rhia_instructions'], 'Not set')}</td>
+                  <td className="cell-wrap">{metadataText(product, ['rhia_selling_unit'], product.unit)}</td>
+                  <td className="cell-number">{formatRwf(regulatoryPrice(product))}</td>
+                  <td className="cell-number">{formatNumber(productMarginRate(product))}%</td>
+                  <td className="cell-wrap">{product.category?.name ?? 'Uncategorised'}</td>
+                  <td className="cell-wrap">{metadataText(product, ['source'], 'Product Master')}</td>
+                  <td className="cell-wrap">{metadataText(product, ['rhia_section'], product.category?.name ?? 'Uncategorised')}</td>
+                  <td className="cell-wrap">{metadataText(product, ['rhia_subsection'], 'Not set')}</td>
+                  <td className="cell-number">{formatNumber(product.reorder_level)}</td>
+                  <td className="cell-center">
+                    <span className={`inventory-table-chip inventory-table-chip--${product.status === 'active' ? 'active' : 'inactive'}`}>
+                      {product.status}
+                    </span>
+                  </td>
+                  <td className="table-cell-actions">{onAction(product, nearestBatch)}</td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -4733,42 +5185,89 @@ function BatchTable({
   showRecommendedAction?: boolean;
 }) {
   return (
-    <div className="inventory-master-table inventory-master-table--wide">
-      <div className="inventory-master-table__header">
-        <strong><input type="checkbox" onChange={onSelectAll} /></strong>
-        <strong>Product</strong>
-        <strong>Batch</strong>
-        <strong>Location</strong>
-        <strong>Available</strong>
-        <strong>Expiry</strong>
-        <strong>Remaining days</strong>
-        <strong>Supplier</strong>
-        {showRecommendedAction && <strong>Recommended action</strong>}
-        <strong>Actions</strong>
-      </div>
+    <div className="inventory-table-shell">
+      <table className="inventory-data-table inventory-data-table--generic">
+        <colgroup>
+          <col className="col-sn" />
+          <col className="col-product" />
+          <col className="col-code" />
+          <col className="col-location" />
+          <col className="col-number" />
+          <col className="col-date" />
+          <col className="col-days" />
+          <col className="col-product" />
+          {showRecommendedAction && <col className="col-recommendation" />}
+          <col className="col-actions" />
+        </colgroup>
 
-      {rows.length === 0 ? (
-        <div><span>No batch records found.</span></div>
-      ) : (
-        rows.map((batch) => {
-          const days = remainingDays(batch.expiry_date);
+        <thead>
+          <tr>
+            <th className="cell-center">
+              <input
+                type="checkbox"
+                checked={rows.length > 0 && selectedBatchIds.length === rows.length}
+                onChange={onSelectAll}
+              />
+            </th>
+            <th>Product</th>
+            <th>Batch</th>
+            <th>Location</th>
+            <th className="cell-number">Available</th>
+            <th>Expiry</th>
+            <th className="cell-number">Remaining days</th>
+            <th>Supplier</th>
+            {showRecommendedAction && <th>Recommended action</th>}
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-          return (
-            <div key={batch.id}>
-              <span><input type="checkbox" checked={selectedBatchIds.includes(batch.id)} onChange={() => onToggleBatch(batch.id)} /></span>
-              <span><strong>{batch.product.name}</strong><small>{batch.product.sku}</small></span>
-              <span>{batch.batch_number}</span>
-              <span>{batch.stock_location.name} ({batch.stock_location.code})</span>
-              <span>{formatNumber(batch.available_quantity)}</span>
-              <span>{formatDate(batch.expiry_date)}</span>
-              <span>{days === null ? 'N/A' : days}</span>
-              <span>{batch.supplier_name ?? 'Not set'} · {expiryStatus(days)}</span>
-              {showRecommendedAction && <span>{expiryAction(days)}</span>}
-              <span>{onAction(batch)}</span>
-            </div>
-          );
-        })
-      )}
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={showRecommendedAction ? 10 : 9} className="cell-center">
+                No batch records found.
+              </td>
+            </tr>
+          ) : (
+            rows.map((batch) => {
+              const days = remainingDays(batch.expiry_date);
+
+              return (
+                <tr key={batch.id} className={expiryRiskClass(days)}>
+                  <td className="cell-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedBatchIds.includes(batch.id)}
+                      onChange={() => onToggleBatch(batch.id)}
+                    />
+                  </td>
+                  <td className="cell-wrap">
+                    <strong className="cell-strong">{batch.product.name}</strong>
+                    <br />
+                    <span className="cell-muted">{batch.product.sku}</span>
+                  </td>
+                  <td className="cell-nowrap">{batch.batch_number}</td>
+                  <td className="cell-wrap">
+                    {batch.stock_location.name}
+                    <br />
+                    <span className="cell-muted">{batch.stock_location.code}</span>
+                  </td>
+                  <td className="cell-number">{formatNumber(batch.available_quantity)}</td>
+                  <td className="cell-nowrap">{formatDate(batch.expiry_date)}</td>
+                  <td className="cell-number">{days === null ? 'N/A' : days}</td>
+                  <td className="cell-wrap">
+                    {batch.supplier_name ?? 'Not set'}
+                    <br />
+                    <span className="cell-muted">{expiryStatus(days)}</span>
+                  </td>
+                  {showRecommendedAction && <td className="cell-wrap">{expiryAction(days)}</td>}
+                  <td className="table-cell-actions">{onAction(batch)}</td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
