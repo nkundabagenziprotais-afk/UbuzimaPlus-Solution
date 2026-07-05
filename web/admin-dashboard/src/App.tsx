@@ -849,31 +849,322 @@ function hasAnyPermission(profile: AccessProfile | undefined, permissions: strin
   return permissions.some((permission) => profile.permissions.includes(permission));
 }
 
+const granularMenuPermissionMap: Record<string, string[]> = {
+  'erp:erp-overview': ['erp.dashboard.view'],
+  'erp:finance': ['finance.dashboard.view', 'finance.payables.view', 'finance.receivables.view'],
+  'erp:hr': ['hr.staff.view'],
+  'erp:procurement': ['procurement.purchases.view', 'procurement.suppliers.view'],
+  'erp:projects': ['projects.projects.view'],
+  'erp:customer-care': ['customer_care.tickets.view'],
+
+  'solution-portfolio:pharmaco': ['solutions.pharmaco.view'],
+  'solution-portfolio:vetcore': ['solutions.vetcore.view'],
+  'solution-portfolio:cliniccore': ['solutions.cliniccore.view'],
+  'solution-portfolio:insucore': ['solutions.insucore.view'],
+
+  'ai-center:governance': ['ai.governance.view'],
+  'ai-center:provider-management': ['ai.providers.view'],
+  'ai-center:model-registry': ['ai.models.view'],
+  'ai-center:agent-management': ['ai.agents.view'],
+  'ai-center:prompt-library': ['ai.prompts.view'],
+  'ai-center:knowledge-base': ['ai.knowledge_base.view'],
+  'ai-center:data-connectors': ['ai.data_connectors.view'],
+  'ai-center:recommendations': ['ai.recommendations.view'],
+  'ai-center:workflow-automation': ['ai.workflow_automation.view'],
+  'ai-center:approval-center': ['ai.approvals.view'],
+  'ai-center:feedback-learning': ['ai.feedback.view'],
+  'ai-center:usage-cost': ['ai.usage_cost.view'],
+  'ai-center:risk-compliance': ['ai.risk_compliance.view'],
+  'ai-center:audit-logs': ['ai.audit_logs.view'],
+  'ai-center:insights-dashboard': ['ai.insights.view'],
+
+  'admin-panel:user-profiles': ['users.staff.view'],
+  'admin-panel:backend-api': ['platform.backend.view'],
+  'admin-panel:two-factor-auth': ['security.two_factor.view'],
+  'admin-panel:platform-management': ['platform.management.view'],
+  'admin-panel:notification-management': ['communications.notifications.view'],
+  'admin-panel:corporate-email': ['communications.email.view'],
+  'admin-panel:pharmacist-chat': ['communications.chat.view'],
+  'admin-panel:web-application': ['platform.web_application.view'],
+  'admin-panel:mobile-application': ['platform.mobile_application.view'],
+  'admin-panel:desktop-application': ['platform.desktop_application.view'],
+  'admin-panel:data-layer': ['platform.data_layer.view'],
+  'admin-panel:infrastructure': ['platform.infrastructure.view'],
+
+  inventory: [
+    'inventory.dashboard.view',
+    'inventory.products.view',
+    'inventory.batches.view',
+    'inventory.receiving.view',
+    'inventory.locations.view',
+    'inventory.low_stock.view',
+    'inventory.expiry_review.view',
+    'inventory.table_settings.view',
+    'inventory.expiry_labels.view',
+  ],
+  pos: [
+    'pos.sales.view',
+    'pos.receipts.view',
+    'pos.returns.view',
+    'pos.cashier_close.view',
+    'pos.insurance.view',
+    'pos.payments.view',
+  ],
+  suppliers: [
+    'procurement.suppliers.view',
+    'procurement.purchase_orders.view',
+    'procurement.receiving.view',
+    'procurement.dispatch.view',
+  ],
+  finance: [
+    'finance.dashboard.view',
+    'finance.payables.view',
+    'finance.receivables.view',
+    'finance.payments.view',
+    'finance.reconciliation.view',
+  ],
+  reports: [
+    'reports.inventory.view',
+    'reports.sales.view',
+    'reports.finance.view',
+    'reports.procurement.view',
+    'reports.audit.view',
+  ],
+  'tenant-setup': [
+    'tenant.profile.view',
+    'tenant.branches.view',
+    'tenant.departments.view',
+    'tenant.capabilities.view',
+  ],
+  security: [
+    'security.users.view',
+    'security.roles.view',
+    'security.permissions.view',
+    'security.audit.view',
+    'security.two_factor.view',
+  ],
+  'corporate-email': ['communications.email.view'],
+  'pharmacist-chat': ['communications.chat.view'],
+  notifications: ['communications.notifications.view'],
+  'market-management': ['markets.management.view'],
+  localization: ['settings.localization.view'],
+  'nearby-providers': ['markets.providers.view'],
+  'vitapharma-website': ['tenant.website.view'],
+  settings: ['settings.platform.view'],
+};
+
+const granularLeftSubmenuPermissionMap: Record<string, Record<string, string[]>> = {
+  inventory: {
+    overview: ['inventory.dashboard.view'],
+    dashboard: ['inventory.dashboard.view'],
+    'inventory-dashboard': ['inventory.dashboard.view'],
+    'product-master': ['inventory.products.view'],
+    products: ['inventory.products.view'],
+    'product-inventory': ['inventory.batches.view'],
+    batches: ['inventory.batches.view'],
+    'receive-stock': ['inventory.receiving.view'],
+    receiving: ['inventory.receiving.view'],
+    'stock-locations': ['inventory.locations.view'],
+    locations: ['inventory.locations.view'],
+    'low-stock': ['inventory.low_stock.view'],
+    'batch-expiry': ['inventory.expiry_review.view'],
+    'expiry-review': ['inventory.expiry_review.view'],
+    'near-expiry': ['inventory.expiry_review.view'],
+    'table-settings': ['inventory.table_settings.view'],
+    'expiry-labels': ['inventory.expiry_labels.view'],
+  },
+  pos: {
+    overview: ['pos.sales.view'],
+    dashboard: ['pos.sales.view'],
+    sales: ['pos.sales.view'],
+    'sales-register': ['pos.sales.view'],
+    receipts: ['pos.receipts.view'],
+    returns: ['pos.returns.view'],
+    payments: ['pos.payments.view'],
+    insurance: ['pos.insurance.view'],
+    'cashier-close': ['pos.cashier_close.view'],
+    'daily-close': ['pos.cashier_close.view'],
+  },
+  suppliers: {
+    overview: ['procurement.suppliers.view'],
+    suppliers: ['procurement.suppliers.view'],
+    'purchase-orders': ['procurement.purchase_orders.view'],
+    receiving: ['procurement.receiving.view'],
+    dispatch: ['procurement.dispatch.view'],
+  },
+  finance: {
+    overview: ['finance.dashboard.view'],
+    dashboard: ['finance.dashboard.view'],
+    payables: ['finance.payables.view'],
+    receivables: ['finance.receivables.view'],
+    payments: ['finance.payments.view'],
+    reconciliation: ['finance.reconciliation.view'],
+  },
+  reports: {
+    overview: ['reports.inventory.view', 'reports.sales.view', 'reports.finance.view'],
+    inventory: ['reports.inventory.view'],
+    sales: ['reports.sales.view'],
+    finance: ['reports.finance.view'],
+    procurement: ['reports.procurement.view'],
+    audit: ['reports.audit.view'],
+  },
+  'ai-center': {
+    governance: ['ai.governance.view'],
+    'provider-management': ['ai.providers.view'],
+    'model-registry': ['ai.models.view'],
+    'agent-management': ['ai.agents.view'],
+    'prompt-library': ['ai.prompts.view'],
+    'knowledge-base': ['ai.knowledge_base.view'],
+    'data-connectors': ['ai.data_connectors.view'],
+    recommendations: ['ai.recommendations.view'],
+    'workflow-automation': ['ai.workflow_automation.view'],
+    'approval-center': ['ai.approvals.view'],
+    'feedback-learning': ['ai.feedback.view'],
+    'usage-cost': ['ai.usage_cost.view'],
+    'risk-compliance': ['ai.risk_compliance.view'],
+    'audit-logs': ['ai.audit_logs.view'],
+    'insights-dashboard': ['ai.insights.view'],
+  },
+  'admin-panel': {
+    'user-profiles': ['users.staff.view'],
+    'two-factor-auth': ['security.two_factor.view'],
+    'platform-management': ['platform.management.view'],
+    'notification-management': ['communications.notifications.view'],
+    'corporate-email': ['communications.email.view'],
+    'pharmacist-chat': ['communications.chat.view'],
+    'data-layer': ['platform.data_layer.view'],
+    'backend-api': ['platform.backend.view'],
+    'web-application': ['platform.web_application.view'],
+    'mobile-application': ['platform.mobile_application.view'],
+    'desktop-application': ['platform.desktop_application.view'],
+    infrastructure: ['platform.infrastructure.view'],
+  },
+  notifications: {
+    overview: ['communications.notifications.view'],
+    'create-notification': ['communications.notifications.add'],
+    'recurring-notifications': ['communications.notifications.edit'],
+    'platform-notification-center': ['communications.notifications.view'],
+  },
+  'pharmacist-chat': {
+    'in-app-chat': ['communications.chat.view'],
+    'whatsapp-chat': ['communications.chat.view'],
+  },
+};
+
+function normalizePermissionKey(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function profilePermissionSet(profile: AccessProfile | undefined): Set<string> {
+  return new Set((profile?.permissions ?? []).map((permission) => normalizePermissionKey(permission)));
+}
+
+function profileRoleTokens(profile: AccessProfile | undefined): string[] {
+  return (profile?.roles ?? [])
+    .flatMap((role) => [
+      role.code,
+      role.name,
+      (role as unknown as Record<string, unknown>).slug,
+      (role as unknown as Record<string, unknown>).key,
+    ])
+    .map((role) => normalizePermissionKey(role))
+    .filter(Boolean);
+}
+
+function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
+  if (!profile) return false;
+  if (profile.scope.is_platform) return true;
+
+  const adminRoles = new Set([
+    'admin',
+    'administrator',
+    'super_admin',
+    'system_admin',
+    'platform_admin',
+    'solution_admin',
+    'tenant_admin',
+    'owner',
+  ]);
+
+  return profileRoleTokens(profile).some((role) => adminRoles.has(role));
+}
+
+function profileHasGranularPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
+  if (!profile) return false;
+  if (profileHasAdminAuthority(profile)) return true;
+
+  const availablePermissions = profilePermissionSet(profile);
+
+  return permissions
+    .map((permission) => normalizePermissionKey(permission))
+    .some((permission) => availablePermissions.has(permission));
+}
+
+function menuPermissionLookupKey(item: MenuItem): string {
+  return item.context ? `${item.key}:${item.context}` : item.key;
+}
+
+function moduleKeyForMenuItem(item: MenuItem): string {
+  if (item.key === 'admin-panel') return 'platform';
+  if (item.key === 'ai-center') return 'ai';
+  if (item.key === 'solution-portfolio') return 'solutions';
+  if (item.key === 'tenant-setup') return 'tenant';
+  if (item.key === 'corporate-email') return 'communications';
+  if (item.key === 'pharmacist-chat') return 'communications';
+  if (item.key === 'market-management') return 'markets';
+  if (item.key === 'nearby-providers') return 'markets';
+
+  return normalizePermissionKey(item.key);
+}
+
+function viewPermissionsForMenuItem(item: MenuItem): string[] {
+  const direct = granularMenuPermissionMap[menuPermissionLookupKey(item)] ?? granularMenuPermissionMap[item.key];
+
+  if (direct) return direct;
+
+  const moduleKey = moduleKeyForMenuItem(item);
+  const resourceKey = normalizePermissionKey(item.context ?? item.key);
+
+  return [`${moduleKey}.${resourceKey}.view`];
+}
+
+function viewPermissionsForLeftSubmenu(item: MenuItem, submenu: LeftMenuSubmenu): string[] {
+  const submenuKey = normalizePermissionKey(submenu.target ?? submenu.key);
+  const direct = granularLeftSubmenuPermissionMap[item.key]?.[submenuKey];
+
+  if (direct) return direct;
+
+  const moduleKey = moduleKeyForMenuItem(item);
+
+  return [`${moduleKey}.${submenuKey}.view`];
+}
+
+function leftSubmenuIsVisibleForProfile(
+  profile: AccessProfile | undefined,
+  item: MenuItem,
+  submenu: LeftMenuSubmenu,
+): boolean {
+  if (!profile) return false;
+  if (profileHasAdminAuthority(profile)) return true;
+
+  return profileHasGranularPermission(profile, viewPermissionsForLeftSubmenu(item, submenu));
+}
+
+
+
 function tenantDisplayName(profile: AccessProfile | undefined): string {
   return profile?.tenant_assignments?.[0]?.tenant?.name ?? 'Tenant';
 }
 
 function itemIsVisibleForProfile(profile: AccessProfile | undefined, item: MenuItem): boolean {
-  if (!profile || profile.scope.is_platform) return true;
+  if (!profile) return false;
+  if (profileHasAdminAuthority(profile)) return true;
 
-  if (item.key === 'inventory') return hasAnyPermission(profile, ['pharmaco.inventory.manage']);
-  if (item.key === 'pos') return hasAnyPermission(profile, ['pharmaco.pos.use', 'pharmaco.sales.manage']);
-  if (item.key === 'suppliers') return hasAnyPermission(profile, ['pharmaco.suppliers.manage']);
-  if (item.key === 'finance') return hasAnyPermission(profile, ['pharmaco.sales.manage', 'pharmaco.suppliers.manage']);
-  if (item.key === 'reports') return hasAnyPermission(profile, ['pharmaco.reports.view', 'pharmaco.sales.manage', 'pharmaco.inventory.manage']);
-  if (item.key === 'tenant-setup') return hasAnyPermission(profile, ['pharmaco.profile.manage', 'pharmaco.branches.manage']);
-  if (item.key === 'ai-center') return hasAnyPermission(profile, ['ai.use', 'ai.manage']);
-  if (item.key === 'corporate-email') return hasAnyPermission(profile, ['communications.email.use']);
-  if (item.key === 'pharmacist-chat') return hasAnyPermission(profile, ['pharmaco.chat.manage']);
-  if (item.key === 'notifications') return hasAnyPermission(profile, ['notifications.view', 'notifications.manage']);
-  if (item.key === 'market-management') return hasAnyPermission(profile, ['markets.manage']);
-  if (item.key === 'localization') return hasAnyPermission(profile, ['localization.use', 'localization.manage']);
-  if (item.key === 'nearby-providers') return hasAnyPermission(profile, ['markets.view', 'markets.manage', 'localization.use']);
-  if (item.key === 'security') return true;
-  if (item.key === 'admin-panel') return item.context === 'two-factor-auth';
-  if (item.key === 'solution-portfolio') return profile.scope.is_solution;
-
-  return false;
+  return profileHasGranularPermission(profile, viewPermissionsForMenuItem(item));
 }
 
 function pruneMenuGroups(profile: AccessProfile | undefined, groups: MenuGroup[]): MenuGroup[] {
@@ -5063,7 +5354,7 @@ function App() {
 
                   {childSubmenus.length > 0 && openPrincipalMenus[item.key] && (
                     <div className="tree-child-submenu" aria-label={`${item.label} pages`}>
-                      {childSubmenus.map((submenu) => (
+                      {childSubmenus.filter((submenu) => leftSubmenuIsVisibleForProfile(profile, item, submenu)).map((submenu) => (
                         <button
                           key={submenu.key}
                           type="button"
