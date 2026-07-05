@@ -17579,3 +17579,477 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
+
+/* Patch POS-C.1.2 - POS terminal layout correction inspired by touch POS systems */
+
+/* The POS page becomes a locked terminal workspace. Content no longer scrolls under the header. */
+.pos-dedicated-counter-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: block;
+  overflow: hidden;
+  background: #e5e7eb;
+  padding: 0;
+}
+
+.pos-counter-page--dedicated {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 10px;
+  height: 100dvh;
+  max-width: none;
+  margin: 0;
+  padding: 10px;
+  overflow: hidden;
+}
+
+/* Header is no longer a floating overlay. It occupies its own row. */
+.pos-dedicated-command-bar {
+  position: relative;
+  top: auto;
+  left: auto;
+  z-index: 20;
+  width: 100%;
+  max-width: none;
+  transform: none;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(120px, 1fr));
+  gap: 8px;
+  overflow: visible;
+  margin: 0;
+  border-radius: 18px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+  padding: 8px;
+}
+
+.pos-dedicated-command-bar button {
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: #1f2937;
+  color: #ffffff;
+  padding: 8px 10px;
+}
+
+.pos-dedicated-command-bar button span {
+  color: #93c5fd;
+  font-size: 0.62rem;
+}
+
+.pos-dedicated-command-bar button strong {
+  color: #ffffff;
+  font-size: 0.8rem;
+}
+
+.pos-dedicated-command-bar button.active,
+.pos-dedicated-command-bar button:hover {
+  background: #0ea5e9;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.pos-dedicated-command-bar button.active span,
+.pos-dedicated-command-bar button:hover span {
+  color: #ecfeff;
+}
+
+/* Compact terminal heading and day controls. */
+.pos-counter-page--dedicated .pos-counter-heading {
+  min-height: 70px;
+  border-radius: 18px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.pos-counter-page--dedicated .pos-counter-heading h2 {
+  font-size: clamp(1.15rem, 1.8vw, 1.7rem);
+}
+
+.pos-counter-page--dedicated .pos-counter-heading .muted {
+  max-width: 980px;
+  font-size: 0.82rem;
+}
+
+.pos-counter-page--dedicated .pos-session-pill {
+  min-width: 190px;
+  border-radius: 16px;
+  padding: 10px 14px;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two article {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) minmax(160px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  min-height: 74px;
+  border-radius: 18px;
+  padding: 10px;
+}
+
+.pos-counter-page--dedicated .pos-day-control-strip--two-by-two article > span {
+  margin: 0;
+  align-self: center;
+}
+
+/* Main POS terminal: left sale ticket, center product tiles, right payment summary. */
+.pos-counter-workbench--builder-left {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pos-transaction-builder-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
+  padding: 10px;
+}
+
+.pos-builder-heading {
+  min-height: 58px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 10px 12px;
+}
+
+.pos-builder-heading h3 {
+  font-size: 1.05rem;
+}
+
+.pos-builder-heading span {
+  font-size: 0.76rem;
+}
+
+.pos-builder-status {
+  min-width: 82px;
+  border-radius: 14px;
+  padding: 9px;
+}
+
+/* Ticket left, products center. */
+.pos-builder-main-grid {
+  display: grid;
+  grid-template-columns: 390px minmax(0, 1fr);
+  grid-template-areas: "ticket products";
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pos-builder-cart-panel {
+  grid-area: ticket;
+}
+
+.pos-builder-product-panel {
+  grid-area: products;
+}
+
+/* Sale ticket behaves like the receipt panel on professional POS screens. */
+.pos-transaction-builder-card .pos-cart-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 18px;
+}
+
+.pos-transaction-builder-card .pos-cart-card .section-heading {
+  padding: 10px 12px 0;
+}
+
+.pos-transaction-builder-card .pos-cart-card .system-table-wrap {
+  min-height: 0;
+  overflow: auto;
+  margin-top: 10px;
+}
+
+.pos-transaction-builder-card .pos-cart-table {
+  min-width: 560px;
+}
+
+.pos-transaction-builder-card .pos-cart-table th,
+.pos-transaction-builder-card .pos-cart-table td {
+  padding: 8px;
+  font-size: 0.78rem;
+}
+
+.pos-transaction-builder-card .pos-cart-table td small {
+  font-size: 0.66rem;
+}
+
+/* Product side becomes a touch-friendly tile area. */
+.pos-transaction-builder-card .pos-rx-queue {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 18px;
+}
+
+.pos-transaction-builder-card .pos-rx-queue .section-heading {
+  padding: 10px 12px 0;
+}
+
+.pos-transaction-builder-card .pos-rx-queue .pos-search-input {
+  margin: 10px 12px 0;
+  width: calc(100% - 24px);
+  height: 44px;
+  border-radius: 14px;
+  background: #111827;
+  color: #ffffff;
+  border: 0;
+}
+
+.pos-transaction-builder-card .pos-rx-queue .pos-search-input::placeholder {
+  color: #cbd5e1;
+}
+
+.pos-transaction-builder-card .pos-inventory-load-panel {
+  margin: 10px 12px 0;
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 8px;
+  align-items: center;
+  border-radius: 14px;
+  padding: 8px;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-auto-rows: minmax(94px, auto);
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button {
+  display: grid;
+  align-content: start;
+  min-height: 94px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0284c7, #0f766e);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  padding: 10px;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button strong,
+.pos-transaction-builder-card .pos-drug-list--ten button small,
+.pos-transaction-builder-card .pos-drug-list--ten button em {
+  color: #ffffff;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button span {
+  justify-self: start;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.pos-transaction-builder-card .pos-drug-list--ten button i {
+  margin-top: 4px;
+  color: #ecfeff;
+}
+
+.pos-terminal-ticket-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f1f5f9;
+  padding: 8px;
+}
+
+.pos-terminal-ticket-actions button {
+  min-height: 42px;
+  border-radius: 12px;
+  background: #be185d;
+  color: #ffffff;
+  border: 0;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.pos-terminal-ticket-actions button:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+}
+
+/* Transaction Set-UP is below the ticket/product zone, like bottom control keys. */
+.pos-builder-setup-panel {
+  min-height: 0;
+  max-height: 220px;
+  overflow: auto;
+  background: #ffffff !important;
+  border-radius: 18px !important;
+}
+
+.pos-builder-setup-panel .section-heading {
+  padding: 10px 12px 0;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two {
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two label {
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two label span {
+  font-size: 0.62rem;
+}
+
+.pos-builder-setup-panel .pos-field-grid--two input,
+.pos-builder-setup-panel .pos-field-grid--two select {
+  min-height: 36px;
+}
+
+/* Payment summary right side, always visible and not competing with product tiles. */
+.pos-counter-workbench--builder-left .pos-confirmation-rail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.pos-counter-workbench--builder-left .pos-summary-confirmation-card {
+  position: static;
+  border-radius: 20px;
+}
+
+.pos-counter-workbench--builder-left .pos-invoice-journey {
+  border-radius: 20px;
+}
+
+.pos-summary-journey-note {
+  font-size: 0.72rem;
+}
+
+/* Recent table should not break the terminal screen. It can scroll inside. */
+.pos-counter-page--dedicated .pos-sales-summary-table-card {
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* Responsive terminal adjustments. */
+@media (max-width: 1440px) {
+  .pos-dedicated-command-bar {
+    grid-template-columns: repeat(4, minmax(140px, 1fr));
+  }
+
+  .pos-counter-page--dedicated {
+    overflow: auto;
+  }
+
+  .pos-counter-workbench--builder-left {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .pos-builder-main-grid {
+    grid-template-columns: 360px minmax(0, 1fr);
+  }
+
+  .pos-counter-workbench--builder-left .pos-confirmation-rail {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.55fr);
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1024px) {
+  .pos-counter-page--dedicated {
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+
+  .pos-counter-page--dedicated .pos-day-control-strip--two-by-two article {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pos-builder-main-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "products"
+      "ticket";
+    overflow: visible;
+  }
+
+  .pos-transaction-builder-card {
+    overflow: visible;
+  }
+
+  .pos-transaction-builder-card .pos-rx-queue,
+  .pos-transaction-builder-card .pos-cart-card {
+    overflow: visible;
+  }
+
+  .pos-transaction-builder-card .pos-drug-list--ten {
+    max-height: 420px;
+  }
+
+  .pos-builder-setup-panel {
+    max-height: none;
+  }
+
+  .pos-builder-setup-panel .pos-field-grid--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-counter-workbench--builder-left .pos-confirmation-rail {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .pos-counter-page--dedicated {
+    padding: 8px;
+  }
+
+  .pos-dedicated-command-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-counter-page--dedicated .pos-day-control-strip--two-by-two {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-counter-page--dedicated .pos-day-control-strip--two-by-two article {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-builder-setup-panel .pos-field-grid--two {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-transaction-builder-card .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+

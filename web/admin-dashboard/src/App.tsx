@@ -4355,10 +4355,10 @@ function App() {
               <section className="pos-transaction-builder-card" aria-label="POS product selection, cart, and transaction setup">
                 <div className="pos-builder-heading">
                   <div>
-                    <p className="eyebrow">Counter workflow</p>
-                    <h3>Product selection, sale cart, and Transaction Set-UP</h3>
+                    <p className="eyebrow">POS terminal mode</p>
+                    <h3>Sale ticket, product tiles, and Transaction Set-UP</h3>
                     <span>
-                      Select all products first, review the cart, then confirm whether the default customer, prescription, payer, discount, and invoice settings should stay unchanged.
+                      Use the sale ticket on the left, product tiles in the center, then review Transaction Set-UP and update the payment summary before confirming.
                     </span>
                   </div>
                   <div className="pos-builder-status">
@@ -4424,8 +4424,8 @@ function App() {
                 <section className="pos-builder-cart-panel pos-cart-card">
                   <div className="section-heading">
                     <div>
-                      <span>Step 2</span>
-                      <h3>Sale cart</h3>
+                      <span>Sale ticket</span>
+                      <h3>Current customer cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
                       <small>{posCartItems.length}/10 rows</small>
@@ -4491,7 +4491,7 @@ function App() {
               <section className="pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
                   <div className="section-heading">
                     <div>
-                      <span>Step 3</span>
+                      <span>Customer, prescription, payer</span>
                       <h3>Transaction Set-UP</h3>
                     </div>
                   </div>
