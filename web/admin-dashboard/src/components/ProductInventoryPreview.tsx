@@ -473,6 +473,126 @@ const defaultInventoryTableSettings: InventoryTableSettings = {
   stickyActions: false,
 };
 
+
+let runtimeExpiryLabelRules: any[] = [];
+
+function managedRuleValue(rule: any, keys: string[], fallback: any = undefined) {
+  for (const key of keys) {
+    if (rule && rule[key] !== undefined && rule[key] !== null && rule[key] !== '') {
+      return rule[key];
+    }
+  }
+
+  return fallback;
+}
+
+function managedExpiryRuleFromDays(days: number | null) {
+  const rules = Array.isArray(runtimeExpiryLabelRules) ? runtimeExpiryLabelRules : [];
+
+  if (days === null || Number.isNaN(Number(days))) {
+    return {
+      key: 'safe',
+      label: 'No expiry date',
+      backgroundColor: '#e0f2fe',
+      fontColor: '#075985',
+      action: 'Confirm expiry date before dispensing or transfer.',
+    };
+  }
+
+  if (Number(days) < 0) {
+    const expiredRule = rules.find((rule) => {
+      const key = String(managedRuleValue(rule, ['key', 'status', 'name'], '')).toLowerCase();
+      const label = String(managedRuleValue(rule, ['label', 'title'], '')).toLowerCase();
+      return key.includes('expired') || label.includes('expired');
+    });
+
+    return expiredRule ?? {
+      key: 'expired',
+      label: 'Expired',
+      backgroundColor: '#7f1d1d',
+      fontColor: '#ffffff',
+      action: 'Block sale, isolate stock, and start disposal or supplier-return workflow.',
+    };
+  }
+
+  const sortedRules = rules
+    .map((rule) => {
+      const threshold = Number(
+        managedRuleValue(rule, ['maxDays', 'daysToExpiry', 'days_to_expiry', 'toDays', 'to_days', 'threshold'], 999999),
+      );
+
+      return {
+        rule,
+        threshold: Number.isFinite(threshold) ? threshold : 999999,
+      };
+    })
+    .sort((a, b) => a.threshold - b.threshold);
+
+  const matched = sortedRules.find(({ threshold }) => Number(days) <= threshold)?.rule;
+
+  return matched ?? {
+    key: 'safe',
+    label: 'Good shelf life',
+    backgroundColor: '#dcfce7',
+    fontColor: '#166534',
+    action: 'Keep under normal FEFO monitoring.',
+  };
+}
+
+function managedExpiryRiskKeyFromDays(days: number | null) {
+  const rule = managedExpiryRuleFromDays(days);
+  return String(managedRuleValue(rule, ['key', 'status', 'name'], 'safe'))
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'safe';
+}
+
+function managedExpiryRiskLabel(days: number | null) {
+  const rule = managedExpiryRuleFromDays(days);
+  return String(managedRuleValue(rule, ['label', 'title', 'name'], 'Good shelf life'));
+}
+
+function managedExpiryAiRecommendation(days: number | null) {
+  const rule = managedExpiryRuleFromDays(days);
+
+  return String(
+    managedRuleValue(
+      rule,
+      ['action', 'recommendation', 'aiRecommendation', 'recommendedAction'],
+      Number(days) < 0
+        ? 'Block sale, isolate stock, and start disposal or supplier-return workflow.'
+        : 'Use FEFO and continue normal monitoring.',
+    ),
+  );
+}
+
+function managedExpiryRiskClass(days: number | null) {
+  const key = managedExpiryRiskKeyFromDays(days);
+
+  if (key.includes('expired')) {
+    return 'expiry-row--expired';
+  }
+
+  if (key.includes('critical') || key.includes('danger')) {
+    return 'expiry-row--critical';
+  }
+
+  if (key.includes('warning') || key.includes('soon')) {
+    return 'expiry-row--warning';
+  }
+
+  return 'expiry-row--watch';
+}
+
+function managedExpiryLabelStyle(days: number | null) {
+  const rule = managedExpiryRuleFromDays(days);
+
+  return {
+    backgroundColor: String(managedRuleValue(rule, ['backgroundColor', 'background_color', 'bgColor', 'bg_color'], '#e0f2fe')),
+    color: String(managedRuleValue(rule, ['fontColor', 'font_color', 'textColor', 'text_color', 'color'], '#075985')),
+  };
+}
+
 export function ProductInventoryPreview({
   token,
   profile,
@@ -539,6 +659,8 @@ export function ProductInventoryPreview({
     valid: { label: 'Healthy', maxDays: 181, background: '#ecfdf5', text: '#065f46' },
     noDate: { label: 'No date', maxDays: 0, background: '#f1f5f9', text: '#334155' },
   });
+
+  runtimeExpiryLabelRules = expiryLabelRules;
 
 
   const [tableSettingsByKey, setTableSettingsByKey] = useState<Record<string, InventoryTableSettings>>({});
@@ -2913,17 +3035,17 @@ export function ProductInventoryPreview({
   }
 
   function expiryRiskLabel(days: number | null) {
-    const key = expiryRiskKeyFromDays(days);
+    const key = managedExpiryRiskKeyFromDays(days);
     return expiryLabelRules[key as keyof typeof expiryLabelRules]?.label ?? 'Review';
   }
 
   function expiryRiskClass(days: number | null) {
-    return `inventory-expiry-row inventory-expiry-row--${expiryRiskKeyFromDays(days)}`;
+    return `inventory-expiry-row inventory-expiry-row--${managedExpiryRiskKeyFromDays(days)}`;
   }
 
   function shouldShowExpiryRow(days: number | null) {
     if (expiryViewFilter === 'all') return true;
-    return expiryRiskKeyFromDays(days) === expiryViewFilter;
+    return managedExpiryRiskKeyFromDays(days) === expiryViewFilter;
   }
 
   function expiryAiRecommendation(days: number | null) {
@@ -2951,7 +3073,8 @@ export function ProductInventoryPreview({
     setTableSettingsByKey((current) => ({
       ...current,
       [tableKey]: {
-        ...resolveInventoryTableSettings(tableKey),
+        ...defaultInventoryTableSettings,
+        ...(current[tableKey] ?? {}),
         [field]: value,
       },
     }));
@@ -3117,13 +3240,26 @@ export function ProductInventoryPreview({
     );
   }
 
+  function renderExpiryLabelBadge(days: number | null) {
+    return (
+      <mark
+        className={`inventory-expiry-label inventory-expiry-label--${managedExpiryRiskKeyFromDays(days)}`}
+        style={managedExpiryLabelStyle(days) as React.CSSProperties}
+      >
+        {managedExpiryRiskLabel(days)}
+      </mark>
+    );
+  }
+
   function handleSaveExpiryLabelRules() {
+    runtimeExpiryLabelRules = expiryLabelRules;
+
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(EXPIRY_LABEL_RULES_STORAGE_KEY, JSON.stringify(expiryLabelRules));
     }
 
     setIsExpiryLabelManagerOpen(false);
-    markAction('Expiry labelling rules saved');
+    markAction('Expiry labelling rules saved and applied');
   }
 
   function renderExpiryLabelTools() {
@@ -4047,9 +4183,9 @@ export function ProductInventoryPreview({
                             toNumber(batch?.available_quantity ?? batch?.quantity ?? 0),
                             batchExpiryDate(batch),
                             batchRemainingDays(batch) ?? '',
-                            expiryRiskLabel(batchRemainingDays(batch)),
+                            managedExpiryRiskLabel(batchRemainingDays(batch)),
                             batch?.supplier_name ?? 'Not set',
-                            expiryAiRecommendation(batchRemainingDays(batch)),
+                            managedExpiryAiRecommendation(batchRemainingDays(batch)),
                           ]),
                         );
                       }}
@@ -4132,7 +4268,7 @@ export function ProductInventoryPreview({
                           const days = batchRemainingDays(batch);
 
                           return (
-                            <tr key={batch?.id ?? `${batch?.batch_number}-${index}`} className={expiryRiskClass(days)}>
+                            <tr key={batch?.id ?? `${batch?.batch_number}-${index}`} className={managedExpiryRiskClass(days)}>
                               <td className="cell-center">{index + 1}</td>
                               <td className="cell-nowrap">{batchProduct(batch)?.sku ?? 'Not set'}</td>
                               <td className="cell-wrap">{batchProductGeneric(batch)}</td>
@@ -4145,13 +4281,9 @@ export function ProductInventoryPreview({
                               <td className="cell-number">{formatBatchNumber(batch?.available_quantity ?? batch?.quantity ?? 0)}</td>
                               <td className="cell-nowrap">{batchExpiryDate(batch) || 'No expiry'}</td>
                               <td className="cell-number">{days === null ? 'N/A' : days}</td>
-                              <td className="cell-center">
-                                <mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>
-                                  {expiryRiskLabel(days)}
-                                </mark>
-                              </td>
+                              <td className="cell-center">{renderExpiryLabelBadge(days)}</td>
                               <td className="cell-wrap">{batch?.supplier_name ?? 'Not set'}</td>
-                              <td className="cell-wrap">{expiryAiRecommendation(days)}</td>
+                              <td className="cell-wrap">{managedExpiryAiRecommendation(days)}</td>
                               <td className="table-cell-actions">{renderBatchActions(batch)}</td>
                             </tr>
                           );
@@ -4189,8 +4321,8 @@ export function ProductInventoryPreview({
                           batch.available_quantity,
                           formatDate(batch.expiry_date),
                           days ?? '',
-                          expiryRiskLabel(days),
-                          expiryAiRecommendation(days),
+                          managedExpiryRiskLabel(days),
+                          managedExpiryAiRecommendation(days),
                         ];
                       }),
                     ),
@@ -4252,7 +4384,7 @@ export function ProductInventoryPreview({
                           const days = remainingDays(batch.expiry_date);
 
                           return (
-                            <tr key={batch.id} className={expiryRiskClass(days)}>
+                            <tr key={batch.id} className={managedExpiryRiskClass(days)}>
                               <td className="cell-wrap"><strong className="cell-strong">{batch.product.name}</strong></td>
                               <td className="cell-nowrap">{batch.product.sku}</td>
                               <td className="cell-nowrap">{batch.batch_number}</td>
@@ -4260,12 +4392,8 @@ export function ProductInventoryPreview({
                               <td className="cell-number">{formatNumber(batch.available_quantity)}</td>
                               <td className="cell-nowrap">{formatDate(batch.expiry_date)}</td>
                               <td className="cell-number">{days ?? 'N/A'}</td>
-                              <td className="cell-center">
-                                <mark className={`inventory-expiry-label inventory-expiry-label--${expiryRiskKeyFromDays(days)}`}>
-                                  {expiryRiskLabel(days)}
-                                </mark>
-                              </td>
-                              <td className="cell-wrap">{expiryAiRecommendation(days)}</td>
+                              <td className="cell-center">{renderExpiryLabelBadge(days)}</td>
+                              <td className="cell-wrap">{managedExpiryAiRecommendation(days)}</td>
                               <td className="table-cell-actions">{renderBatchActions(batch)}</td>
                             </tr>
                           );
@@ -4863,7 +4991,7 @@ export function ProductInventoryPreview({
                       </tr>
                     ) : (
                       pagedProductInventory.map(({ batch, defaultMargin, computedSellingPrice, days }, index) => (
-                        <tr key={batch.id} className={expiryRiskClass(days)}>
+                        <tr key={batch.id} className={managedExpiryRiskClass(days)}>
                           <td className="cell-center">{index + 1}</td>
                           <td className="cell-wrap">
                             <strong className="cell-strong">{batch.product.name}</strong>
@@ -4970,7 +5098,9 @@ export function ProductInventoryPreview({
                 </span>
               </div>
 
-              <div className="inventory-table-shell stock-location-table-shell">
+              {renderAdminTableManagement('stock-locations', 'Stock Locations')}
+
+              <div className={`${inventoryTableShellClass('stock-locations')} stock-location-table-shell`} style={inventoryTableShellStyle('stock-locations') as any}>
                 <table className="inventory-data-table inventory-data-table--stock-locations">
                   <colgroup>
                     <col className="col-sn" />
@@ -5069,6 +5199,179 @@ export function ProductInventoryPreview({
   );
 }
 
+
+function ManagedInventoryTableBlock({
+  tableKey,
+  title,
+  children,
+  extraClassName = '',
+}: {
+  tableKey: InventoryTableKey;
+  title: string;
+  children: React.ReactNode;
+  extraClassName?: string;
+}) {
+  const [settingsByKey, setSettingsByKey] = useState<Record<string, InventoryTableSettings>>({});
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const saved = window.localStorage.getItem(INVENTORY_TABLE_SETTINGS_STORAGE_KEY);
+
+    if (!saved) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(saved);
+
+      if (parsed && typeof parsed === 'object') {
+        setSettingsByKey(parsed);
+      }
+    } catch {
+      window.localStorage.removeItem(INVENTORY_TABLE_SETTINGS_STORAGE_KEY);
+    }
+  }, []);
+
+  const settings: InventoryTableSettings = {
+    ...defaultInventoryTableSettings,
+    ...(settingsByKey[tableKey] ?? {}),
+  };
+
+  function updateSetting<K extends keyof InventoryTableSettings>(
+    field: K,
+    value: InventoryTableSettings[K],
+  ) {
+    setSettingsByKey((current) => ({
+      ...current,
+      [tableKey]: {
+        ...defaultInventoryTableSettings,
+        ...(current[tableKey] ?? {}),
+        [field]: value,
+      },
+    }));
+  }
+
+  function saveSettings() {
+    const next = {
+      ...settingsByKey,
+      [tableKey]: settings,
+    };
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(INVENTORY_TABLE_SETTINGS_STORAGE_KEY, JSON.stringify(next));
+    }
+
+    setSettingsByKey(next);
+  }
+
+  function resetSettings() {
+    setSettingsByKey((current) => {
+      const next = { ...current };
+      delete next[tableKey];
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(INVENTORY_TABLE_SETTINGS_STORAGE_KEY, JSON.stringify(next));
+      }
+
+      return next;
+    });
+  }
+
+  const shellClassName = [
+    'inventory-table-shell',
+    extraClassName,
+    `inventory-table-style--${settings.style}`,
+    `inventory-table-density--${settings.density}`,
+    `inventory-table-width--${settings.widthPreset}`,
+    settings.wrapText ? 'inventory-table-wrap--on' : 'inventory-table-wrap--off',
+    settings.stickyHeader ? 'inventory-table-sticky-header' : 'inventory-table-no-sticky-header',
+    settings.stickyActions ? 'inventory-table-sticky-actions' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const shellStyle = {
+    '--inventory-table-font-size': `${settings.fontSize}px`,
+    '--inventory-table-cell-padding-y': settings.density === 'compact' ? '8px' : settings.density === 'tall' ? '17px' : '13px',
+    '--inventory-table-cell-padding-x': settings.density === 'compact' ? '10px' : '14px',
+  } as React.CSSProperties;
+
+  return (
+    <>
+      <div className="inventory-table-management-panel">
+        <div>
+          <strong>Table Management</strong>
+          <span>{title} layout controls for Admin.</span>
+        </div>
+
+        <label>
+          Style
+          <select value={settings.style} onChange={(event) => updateSetting('style', event.target.value as InventoryTableStyle)}>
+            <option value="clean">Clean</option>
+            <option value="striped">Striped</option>
+            <option value="bordered">Bordered</option>
+          </select>
+        </label>
+
+        <label>
+          Font
+          <input type="range" min="12" max="16" value={settings.fontSize} onChange={(event) => updateSetting('fontSize', Number(event.target.value))} />
+          <small>{settings.fontSize}px</small>
+        </label>
+
+        <label>
+          Density
+          <select value={settings.density} onChange={(event) => updateSetting('density', event.target.value as InventoryTableDensity)}>
+            <option value="compact">Compact</option>
+            <option value="comfortable">Comfortable</option>
+            <option value="tall">Tall</option>
+          </select>
+        </label>
+
+        <label>
+          Column width
+          <select value={settings.widthPreset} onChange={(event) => updateSetting('widthPreset', event.target.value as InventoryColumnWidthPreset)}>
+            <option value="compact">Compact</option>
+            <option value="balanced">Balanced</option>
+            <option value="wide">Wide</option>
+          </select>
+        </label>
+
+        <label className="inventory-table-toggle">
+          <input type="checkbox" checked={settings.wrapText} onChange={(event) => updateSetting('wrapText', event.target.checked)} />
+          Wrap text
+        </label>
+
+        <label className="inventory-table-toggle">
+          <input type="checkbox" checked={settings.stickyHeader} onChange={(event) => updateSetting('stickyHeader', event.target.checked)} />
+          Sticky header
+        </label>
+
+        <label className="inventory-table-toggle">
+          <input type="checkbox" checked={settings.stickyActions} onChange={(event) => updateSetting('stickyActions', event.target.checked)} />
+          Sticky actions
+        </label>
+
+        <div className="inventory-table-management-actions">
+          <button type="button" className="primary" onClick={saveSettings}>
+            Save table settings
+          </button>
+          <button type="button" onClick={resetSettings}>
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <div className={shellClassName} style={shellStyle}>
+        {children}
+      </div>
+    </>
+  );
+}
+
 function ProductMasterTable({
   rows,
   selectedProductIds,
@@ -5085,7 +5388,7 @@ function ProductMasterTable({
   batches: PharmaStockBatch[];
 }) {
   return (
-    <div className="inventory-table-shell">
+    <ManagedInventoryTableBlock tableKey="product-master" title="Product Master">
       <table className="inventory-data-table inventory-data-table--product-master">
         <colgroup>
           <col className="col-sn" />
@@ -5165,7 +5468,7 @@ function ProductMasterTable({
           )}
         </tbody>
       </table>
-    </div>
+    </ManagedInventoryTableBlock>
   );
 }
 
@@ -5185,7 +5488,7 @@ function BatchTable({
   showRecommendedAction?: boolean;
 }) {
   return (
-    <div className="inventory-table-shell">
+    <ManagedInventoryTableBlock tableKey="batch-expiry" title="Batch Table">
       <table className="inventory-data-table inventory-data-table--generic">
         <colgroup>
           <col className="col-sn" />
@@ -5233,7 +5536,7 @@ function BatchTable({
               const days = remainingDays(batch.expiry_date);
 
               return (
-                <tr key={batch.id} className={expiryRiskClass(days)}>
+                <tr key={batch.id} className={managedExpiryRiskClass(days)}>
                   <td className="cell-center">
                     <input
                       type="checkbox"
@@ -5268,6 +5571,6 @@ function BatchTable({
           )}
         </tbody>
       </table>
-    </div>
+    </ManagedInventoryTableBlock>
   );
 }
