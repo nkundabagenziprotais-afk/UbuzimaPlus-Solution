@@ -457,12 +457,12 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
   ],
   pos: [
     { key: 'pos-overview', label: 'POS and Sales Overview', target: 'overview' },
-    { key: 'pos-counter', label: 'POS', target: 'pos' },
-    { key: 'pos-dispensing', label: 'Dispensing Review', target: 'dispensing-review' },
+    { key: 'pos-counter', label: 'POS Counter', target: 'pos' },
+    { key: 'pos-dispensing', label: 'Pharmacist Review', target: 'dispensing-review' },
     { key: 'pos-customers', label: 'Customers and Patients', target: 'customers' },
     { key: 'pos-prescriptions', label: 'Prescriptions', target: 'prescriptions' },
-    { key: 'pos-performance', label: 'Sales Performance', target: 'sales-performance' },
-    { key: 'pos-payment-receipt', label: 'Payment and Receipt', target: 'payment-receipt' },
+    { key: 'pos-performance', label: 'Sales Register', target: 'sales-performance' },
+    { key: 'pos-payment-receipt', label: 'Receipts & Payments', target: 'payment-receipt' },
   ],
   suppliers: [
     { key: 'supplier-overview', label: 'Procurement Overview', target: 'overview' },
@@ -2278,11 +2278,11 @@ const settingsBlueprint = [
 
 const posWorkspaceItems: Array<{ key: PosWorkspaceKey; label: string; description: string }> = [
   { key: 'overview', label: 'Overview Summary', description: 'Sales, customers, prescriptions, charts, and queues' },
-  { key: 'pos', label: 'POS', description: 'Counter sale, cart, insurance, payment, receipt' },
+  { key: 'pos', label: 'POS Counter', description: 'Fast sale, cart, customer, insurance, payment, receipt' },
   { key: 'customers', label: 'Customers / Patients', description: 'Customer records, invoice-ready capture, bulk tools' },
   { key: 'prescriptions', label: 'Prescriptions', description: 'Rx capture, AI extraction, previous records' },
-  { key: 'sales-performance', label: 'Sales Performance', description: '15-row register, review detail, export' },
-  { key: 'payment-receipt', label: 'Payment / Receipt', description: 'Payments, balances, printer, WhatsApp, email' },
+  { key: 'sales-performance', label: 'Sales Register', description: '15-row register, review detail, export' },
+  { key: 'payment-receipt', label: 'Receipts & Payments', description: 'Payments, balances, printer, WhatsApp, email' },
 ];
 
 const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; description: string }> = [
@@ -4296,7 +4296,7 @@ function App() {
                   </div>
                 </div>
 
-                <input className="pos-search-input" placeholder="Search current inventory, batch, barcode..." />
+                <input className="pos-search-input" placeholder="Scan barcode or search product, batch, SKU..." />
 
                 <div className="pos-inventory-load-panel">
                   <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
@@ -4347,7 +4347,7 @@ function App() {
                   <div className="section-heading">
                     <div>
                       <span>Step 2</span>
-                      <h3>Cart</h3>
+                      <h3>Sale cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
                       <small>{posCartItems.length}/10 rows</small>
@@ -4413,7 +4413,7 @@ function App() {
                   <div className="section-heading">
                     <div>
                       <span>Step 3</span>
-                      <h3>Transaction setup</h3>
+                      <h3>Customer, prescription & payer</h3>
                     </div>
                   </div>
 
@@ -4545,7 +4545,7 @@ function App() {
                   <div className="section-heading">
                     <div>
                       <span>Step 4</span>
-                      <h3>Sale Summary</h3>
+                      <h3>Payment summary</h3>
                     </div>
                   </div>
 
@@ -4659,11 +4659,11 @@ function App() {
             <section className="pos-sales-summary-table-card">
               <div className="section-heading">
                 <div>
-                  <span>Recent sales</span>
-                  <h3>Recent sales</h3>
+                  <span>Sales register</span>
+                  <h3>Recent counter transactions</h3>
                 </div>
                 <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
-                  Open Sales Performance
+                  Open Sales Register
                 </button>
               </div>
 
