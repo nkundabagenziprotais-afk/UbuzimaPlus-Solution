@@ -593,6 +593,143 @@ function managedExpiryLabelStyle(days: number | null) {
   };
 }
 
+
+function normalizeInventoryAccessValue(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function readInventoryAccessList(value: unknown): string[] {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => readInventoryAccessList(item));
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(/[,\s]+/)
+      .map((item) => normalizeInventoryAccessValue(item))
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'object') {
+    const item = value as Record<string, unknown>;
+
+    return [
+      item.key,
+      item.name,
+      item.slug,
+      item.code,
+      item.label,
+      item.role,
+      item.permission,
+    ]
+      .map((entry) => normalizeInventoryAccessValue(entry))
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function canCurrentSessionManageInventoryCustomization(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  try {
+    const rawSession = window.localStorage.getItem('ubuzima_admin_session');
+
+    if (!rawSession) {
+      return false;
+    }
+
+    const session = JSON.parse(rawSession) as Record<string, unknown>;
+    const user = (
+      (session.user as Record<string, unknown> | undefined) ??
+      (session.staff as Record<string, unknown> | undefined) ??
+      (session.profile as Record<string, unknown> | undefined) ??
+      (session.account as Record<string, unknown> | undefined) ??
+      session
+    );
+
+    const roleObject = user.role && typeof user.role === 'object'
+      ? (user.role as Record<string, unknown>)
+      : {};
+    const sessionRoleObject = session.role && typeof session.role === 'object'
+      ? (session.role as Record<string, unknown>)
+      : {};
+
+    const roleCandidates = [
+      session.role,
+      session.role_name,
+      session.user_role,
+      session.account_type,
+      session.type,
+      session.workspace,
+      session.scope,
+      sessionRoleObject.key,
+      sessionRoleObject.name,
+      sessionRoleObject.slug,
+      user.role,
+      user.role_name,
+      user.user_role,
+      user.account_type,
+      user.type,
+      roleObject.key,
+      roleObject.name,
+      roleObject.slug,
+    ].map((entry) => normalizeInventoryAccessValue(entry)).filter(Boolean);
+
+    const roles = [
+      ...roleCandidates,
+      ...readInventoryAccessList(session.roles),
+      ...readInventoryAccessList(user.roles),
+    ];
+
+    const permissions = [
+      ...readInventoryAccessList(session.permissions),
+      ...readInventoryAccessList(user.permissions),
+      ...readInventoryAccessList(session.scopes),
+      ...readInventoryAccessList(user.scopes),
+    ];
+
+    const adminRoles = new Set([
+      'admin',
+      'super_admin',
+      'system_admin',
+      'platform_admin',
+      'solution_admin',
+      'tenant_admin',
+      'owner',
+      'administrator',
+    ]);
+
+    const adminPermissions = new Set([
+      'admin',
+      'inventory.customize',
+      'inventory_customize',
+      'inventory.manage_settings',
+      'inventory_manage_settings',
+      'inventory.settings.manage',
+      'inventory_settings_manage',
+      'settings.manage',
+      'settings_manage',
+    ]);
+
+    return roles.some((role) => adminRoles.has(role)) ||
+      permissions.some((permission) => adminPermissions.has(permission));
+  } catch {
+    return false;
+  }
+}
+
+
 export function ProductInventoryPreview({
   token,
   profile,
@@ -3136,6 +3273,10 @@ export function ProductInventoryPreview({
   }
 
   function renderAdminTableManagement(tableKey: InventoryTableKey, title: string) {
+    if (!canCurrentSessionManageInventoryCustomization()) {
+      return null;
+    }
+
     const settings = resolveInventoryTableSettings(tableKey);
 
     return (
@@ -3263,6 +3404,10 @@ export function ProductInventoryPreview({
   }
 
   function renderExpiryLabelTools() {
+    if (!canCurrentSessionManageInventoryCustomization()) {
+      return null;
+    }
+
     const thresholdFields = [
       {
         key: 'criticalMaxDays',
@@ -5331,6 +5476,11 @@ export function ProductInventoryPreview({
 
 
 function ManagedInventoryTableBlock({
+  if (!canCurrentSessionManageInventoryCustomization()) {
+    return <>{children}</>;
+  }
+
+
   tableKey,
   title,
   children,
