@@ -5476,10 +5476,6 @@ export function ProductInventoryPreview({
 
 
 function ManagedInventoryTableBlock({
-  if (!canCurrentSessionManageInventoryCustomization()) {
-    return <>{children}</>;
-  }
-
 
   tableKey,
   title,
@@ -5491,6 +5487,10 @@ function ManagedInventoryTableBlock({
   children: React.ReactNode;
   extraClassName?: string;
 }) {
+  if (!canCurrentSessionManageInventoryCustomization()) {
+    return <>{children}</>;
+  }
+
   const [settingsByKey, setSettingsByKey] = useState<Record<string, InventoryTableSettings>>({});
 
   useEffect(() => {
