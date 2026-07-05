@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   AccessProfile,
   PharmaInventoryBatchesResponse,
@@ -143,7 +143,7 @@ const inventoryViews: Array<{
   label: string;
   description: string;
 }> = [
-  { key: 'overview', label: 'Overview Summary', description: 'Stock health and inventory analytics' },
+  { key: 'overview', label: 'Inventory Dashboard', description: 'Stock position, expiry risk and inventory workspaces' },
   { key: 'low-stock', label: 'Low Stock Watch List', description: 'Products below reorder level with expiry risk' },
   { key: 'shelf', label: 'Retail Product Shelf', description: 'Commercial shelf view with grid/list options' },
   { key: 'batches', label: 'Batch and Expiry Review', description: 'Editable batch, FEFO and expiry register' },
@@ -154,12 +154,12 @@ const inventoryViews: Array<{
 ];
 
 const inventoryPageDescriptions: Record<InventoryView, string> = {
-  overview: 'Summary of stock health only. Detailed lists stay in their own pages.',
+  overview: 'Review stock position, expiry pressure and the inventory workspaces that need action.',
   'low-stock': 'Products below reorder or minimum stock level, with nearest expiry and remaining days.',
   shelf: 'Retail shelf view for searchable products, price, stock, category, shelf creation and view switching.',
   batches: 'Live batch and expiry table with edit, delete, bulk actions, export, details and remaining days.',
   'near-expiry': 'Batches approaching expiry, remaining days, risk status and operational action.',
-  'product-master': 'Supreme product source for margins, compliance, product setup, approval and audit history.',
+  'product-master': 'Main product reference for drug codes, generic descriptions, margins, status and setup rules.',
   'product-inventory': 'Commercial inventory used by POS, PO receiving, pricing, shelf availability and stock movement.',
   locations: 'Stock locations, branches, shelves, stores and storage points.',
 };
@@ -306,22 +306,127 @@ function remainingDays(value: string | null): number | null {
   return Math.ceil((expiry.getTime() - today.getTime()) / 86_400_000);
 }
 
+type ExpiryRiskKey = 'no-expiry' | 'expired' | 'critical' | 'near' | 'watch' | 'safe';
+
+type ExpiryLabelMapping = {
+  key: ExpiryRiskKey;
+  label: string;
+  minDays: number | null;
+  maxDays: number | null;
+  backgroundColor: string;
+  fontColor: string;
+  action: string;
+};
+
+const expiryLabelMappingStorageKey = 'ubuzima_inventory_expiry_label_mapping';
+
+const defaultExpiryLabelMappings: ExpiryLabelMapping[] = [
+  {
+    key: 'expired',
+    label: 'Expired',
+    minDays: null,
+    maxDays: -1,
+    backgroundColor: '#7f1d1d',
+    fontColor: '#ffffff',
+    action: 'Stop sale, quarantine, and start disposal or supplier return approval.',
+  },
+  {
+    key: 'critical',
+    label: 'Critical expiry',
+    minDays: 0,
+    maxDays: 30,
+    backgroundColor: '#fee2e2',
+    fontColor: '#991b1b',
+    action: 'Prioritize FEFO sale, transfer, supplier return, or controlled promotion where allowed.',
+  },
+  {
+    key: 'near',
+    label: 'Near expiry',
+    minDays: 31,
+    maxDays: 90,
+    backgroundColor: '#ffedd5',
+    fontColor: '#9a3412',
+    action: 'Review movement rate, transfer to a faster branch, and adjust purchase planning.',
+  },
+  {
+    key: 'watch',
+    label: 'Watch',
+    minDays: 91,
+    maxDays: 180,
+    backgroundColor: '#fef9c3',
+    fontColor: '#854d0e',
+    action: 'Monitor FEFO movement and avoid over-ordering.',
+  },
+  {
+    key: 'safe',
+    label: 'Safe',
+    minDays: 181,
+    maxDays: null,
+    backgroundColor: '#dcfce7',
+    fontColor: '#166534',
+    action: 'Continue normal FEFO rotation.',
+  },
+  {
+    key: 'no-expiry',
+    label: 'No expiry date',
+    minDays: null,
+    maxDays: null,
+    backgroundColor: '#f1f5f9',
+    fontColor: '#334155',
+    action: 'Verify product type and confirm whether expiry tracking is required.',
+  },
+];
+
+function loadStoredExpiryLabelMappings(): ExpiryLabelMapping[] {
+  try {
+    const stored = localStorage.getItem(expiryLabelMappingStorageKey);
+    if (!stored) return defaultExpiryLabelMappings;
+
+    const parsed = JSON.parse(stored) as Partial<ExpiryLabelMapping>[];
+
+    return defaultExpiryLabelMappings.map((mapping) => ({
+      ...mapping,
+      ...(parsed.find((item) => item.key === mapping.key) ?? {}),
+    }));
+  } catch {
+    return defaultExpiryLabelMappings;
+  }
+}
+
+function expiryMappingForDays(days: number | null, mappings: ExpiryLabelMapping[] = defaultExpiryLabelMappings): ExpiryLabelMapping {
+  if (days === null) {
+    return mappings.find((mapping) => mapping.key === 'no-expiry') ?? defaultExpiryLabelMappings[5];
+  }
+
+  return (
+    mappings.find((mapping) => {
+      if (mapping.key === 'no-expiry') return false;
+      const minOk = mapping.minDays === null || days >= mapping.minDays;
+      const maxOk = mapping.maxDays === null || days <= mapping.maxDays;
+      return minOk && maxOk;
+    }) ?? mappings.find((mapping) => mapping.key === 'safe') ?? defaultExpiryLabelMappings[4]
+  );
+}
+
 function expiryStatus(days: number | null): string {
-  if (days === null) return 'No expiry';
-  if (days < 0) return 'Expired';
-  if (days <= 30) return 'Critical expiry';
-  if (days <= 90) return 'Near expiry';
-  if (days <= 180) return 'Watch';
-  return 'Safe';
+  return expiryMappingForDays(days).label;
 }
 
 function expiryAction(days: number | null): string {
-  if (days === null) return 'No action';
-  if (days < 0) return 'Quarantine/disposal approval';
-  if (days <= 30) return 'Prioritize sale or return';
-  if (days <= 90) return 'Discount/transfer review';
-  if (days <= 180) return 'Monitor FEFO movement';
-  return 'Normal FEFO';
+  return expiryMappingForDays(days).action;
+}
+
+function expiryRiskKey(days: number | null, mappings: ExpiryLabelMapping[] = defaultExpiryLabelMappings): ExpiryRiskKey {
+  return expiryMappingForDays(days, mappings).key;
+}
+
+function expiryRowStyle(days: number | null, mappings: ExpiryLabelMapping[] = defaultExpiryLabelMappings): CSSProperties {
+  const mapping = expiryMappingForDays(days, mappings);
+
+  return {
+    backgroundColor: mapping.backgroundColor,
+    color: mapping.fontColor,
+  };
 }
 
 function stockStatus(product: PharmaProduct): string {
@@ -481,6 +586,13 @@ export function ProductInventoryPreview({
   const [inventorySmartCardVisibility, setInventorySmartCardVisibility] = useState<Record<InventorySmartCardKey, boolean>>(loadStoredInventorySmartCardVisibility);
   const [inventorySmartCardFieldVisibility, setInventorySmartCardFieldVisibility] = useState<Record<InventorySmartCardKey, Record<InventorySmartCardField, boolean>>>(loadStoredInventorySmartCardFieldVisibility);
 
+  const [expiryLocationFilter, setExpiryLocationFilter] = useState('all');
+  const [expirySupplierFilter, setExpirySupplierFilter] = useState('all');
+  const [expiryRiskFilter, setExpiryRiskFilter] = useState('all');
+  const [expiryDaysFilter, setExpiryDaysFilter] = useState('all');
+  const [expiryBatchStatusFilter, setExpiryBatchStatusFilter] = useState('all');
+  const [expiryLabelMappings, setExpiryLabelMappings] = useState<ExpiryLabelMapping[]>(loadStoredExpiryLabelMappings);
+
   const activeInventoryView = activeView ?? internalInventoryView;
   const activeInventoryMeta = inventoryViews.find((view) => view.key === activeInventoryView) ?? inventoryViews[0];
 
@@ -604,6 +716,88 @@ export function ProductInventoryPreview({
     : 0;
   const nearExpiryRows = nearExpiryBatches?.batches ?? [];
 
+  const expiryFilterBatchSource = useMemo(() => [...allBatches, ...nearExpiryRows], [allBatches, nearExpiryRows]);
+
+  const expiryLocationOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          expiryFilterBatchSource.map((batch) => [
+            batch.stock_location.code,
+            `${batch.stock_location.name} (${batch.stock_location.code})`,
+          ]),
+        ).entries(),
+      ).sort((left, right) => left[1].localeCompare(right[1])),
+    [expiryFilterBatchSource],
+  );
+
+  const expirySupplierOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          expiryFilterBatchSource
+            .map((batch) => batch.supplier_name)
+            .filter((supplier): supplier is string => Boolean(supplier)),
+        ),
+      ).sort((left, right) => left.localeCompare(right)),
+    [expiryFilterBatchSource],
+  );
+
+  const expiryBatchStatusOptions = useMemo(
+    () =>
+      Array.from(new Set(expiryFilterBatchSource.map((batch) => batch.status))).sort((left, right) =>
+        left.localeCompare(right),
+      ),
+    [expiryFilterBatchSource],
+  );
+
+  function matchesExpiryDayRange(days: number | null): boolean {
+    if (expiryDaysFilter === 'all') return true;
+    if (expiryDaysFilter === 'no-expiry') return days === null;
+    if (days === null) return false;
+    if (expiryDaysFilter === 'expired') return days < 0;
+    if (expiryDaysFilter === '0-30') return days >= 0 && days <= 30;
+    if (expiryDaysFilter === '31-90') return days >= 31 && days <= 90;
+    if (expiryDaysFilter === '91-180') return days >= 91 && days <= 180;
+    if (expiryDaysFilter === '181+') return days >= 181;
+    return true;
+  }
+
+  function filterBatchesForExpiryControls(rows: PharmaStockBatch[]): PharmaStockBatch[] {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return rows.filter((batch) => {
+      const days = remainingDays(batch.expiry_date);
+      const riskKey = expiryRiskKey(days, expiryLabelMappings);
+
+      const matchesSearch =
+        !normalizedSearch ||
+        [
+          batch.product.name,
+          batch.product.generic_name,
+          batch.product.sku,
+          batch.batch_number,
+          batch.stock_location.name,
+          batch.stock_location.code,
+          batch.supplier_name,
+          batch.status,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+
+      const matchesLocation =
+        expiryLocationFilter === 'all' ||
+        batch.stock_location.code === expiryLocationFilter ||
+        batch.stock_location.name === expiryLocationFilter;
+
+      const matchesSupplier = expirySupplierFilter === 'all' || batch.supplier_name === expirySupplierFilter;
+      const matchesRisk = expiryRiskFilter === 'all' || riskKey === expiryRiskFilter;
+      const matchesStatus = expiryBatchStatusFilter === 'all' || batch.status === expiryBatchStatusFilter;
+
+      return matchesSearch && matchesLocation && matchesSupplier && matchesRisk && matchesExpiryDayRange(days) && matchesStatus;
+    });
+  }
+
   const visibleProducts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
@@ -633,31 +827,40 @@ export function ProductInventoryPreview({
   }, [activeCategory, allProducts, searchTerm]);
 
   const visibleBatches = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return filterBatchesForExpiryControls(allBatches).sort((left, right) => {
+      const leftDays = remainingDays(left.expiry_date);
+      const rightDays = remainingDays(right.expiry_date);
 
-    return allBatches
-      .filter((batch) => {
-        if (!normalizedSearch) return true;
+      return (leftDays ?? Number.MAX_SAFE_INTEGER) - (rightDays ?? Number.MAX_SAFE_INTEGER);
+    });
+  }, [
+    allBatches,
+    searchTerm,
+    expiryLocationFilter,
+    expirySupplierFilter,
+    expiryRiskFilter,
+    expiryDaysFilter,
+    expiryBatchStatusFilter,
+    expiryLabelMappings,
+  ]);
 
-        return [
-          batch.product.name,
-          batch.product.sku,
-          batch.batch_number,
-          batch.stock_location.name,
-          batch.stock_location.code,
-          batch.supplier_name,
-          batch.status,
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(normalizedSearch));
-      })
-      .sort((left, right) => {
-        const leftDays = remainingDays(left.expiry_date);
-        const rightDays = remainingDays(right.expiry_date);
+  const visibleNearExpiryRows = useMemo(() => {
+    return filterBatchesForExpiryControls(nearExpiryRows).sort((left, right) => {
+      const leftDays = remainingDays(left.expiry_date);
+      const rightDays = remainingDays(right.expiry_date);
 
-        return (leftDays ?? Number.MAX_SAFE_INTEGER) - (rightDays ?? Number.MAX_SAFE_INTEGER);
-      });
-  }, [allBatches, searchTerm]);
+      return (leftDays ?? Number.MAX_SAFE_INTEGER) - (rightDays ?? Number.MAX_SAFE_INTEGER);
+    });
+  }, [
+    nearExpiryRows,
+    searchTerm,
+    expiryLocationFilter,
+    expirySupplierFilter,
+    expiryRiskFilter,
+    expiryDaysFilter,
+    expiryBatchStatusFilter,
+    expiryLabelMappings,
+  ]);
 
   const productInventoryRows = useMemo(
     () =>
@@ -684,7 +887,7 @@ export function ProductInventoryPreview({
 
   const pagedProducts = visibleProducts.slice(0, rowLimitValue(rowLimit, visibleProducts.length));
   const pagedBatches = visibleBatches.slice(0, rowLimitValue(rowLimit, visibleBatches.length));
-  const pagedNearExpiry = nearExpiryRows.slice(0, rowLimitValue(rowLimit, nearExpiryRows.length));
+  const pagedNearExpiry = visibleNearExpiryRows.slice(0, rowLimitValue(rowLimit, visibleNearExpiryRows.length));
   const pagedProductInventory = productInventoryRows.slice(0, rowLimitValue(rowLimit, productInventoryRows.length));
 
 
@@ -1038,6 +1241,11 @@ export function ProductInventoryPreview({
     localStorage.setItem(inventoryTableFontSizeStorageKey, JSON.stringify(tableFontSizes));
   }, [tableFontSizes]);
 
+
+  useEffect(() => {
+    localStorage.setItem(expiryLabelMappingStorageKey, JSON.stringify(expiryLabelMappings));
+  }, [expiryLabelMappings]);
+
   const inventorySmartCardData = summary
     ? {
         products: {
@@ -1096,7 +1304,7 @@ export function ProductInventoryPreview({
 
     if (mode === 'bar') {
       return (
-        <div className="mini-ai-trend mini-ai-trend--bar" aria-label="AI weekly trend bar chart">
+        <div className="mini-ai-trend mini-ai-trend--bar" aria-label="Weekly trend bar chart">
           {values.map((value, index) => (
             <span key={`${inventoryWeekLabels[index]}-${index}`}>
               <i style={{ height: `${Math.max(18, (value / max) * 48)}px` }} />
@@ -1116,7 +1324,7 @@ export function ProductInventoryPreview({
       .join(' ');
 
     return (
-      <div className="mini-ai-trend mini-ai-trend--line" aria-label="AI weekly trend line chart">
+      <div className="mini-ai-trend mini-ai-trend--line" aria-label="Weekly trend line chart">
         <svg viewBox="0 0 116 64" role="img">
           <polyline points={points} />
           {values.map((value, index) => {
@@ -1141,7 +1349,208 @@ export function ProductInventoryPreview({
   }
 
   function markAction(action: string) {
-    setInventoryNotice(`${action} captured. Backend execution remains permission-controlled and will write an audit log when connected to the mutation endpoint.`);
+    setInventoryNotice(`${action}. Review the record, confirm permission, and complete the action through the connected approval workflow.`);
+  }
+
+
+  function updateExpiryMapping(index: number, field: keyof ExpiryLabelMapping, value: string | number | null) {
+    setExpiryLabelMappings((current) =>
+      current.map((mapping, itemIndex) => (itemIndex === index ? { ...mapping, [field]: value } : mapping)),
+    );
+  }
+
+  function renderExpiryChip(days: number | null) {
+    const mapping = expiryMappingForDays(days, expiryLabelMappings);
+
+    return (
+      <span
+        className={`expiry-risk-chip expiry-risk-chip--${mapping.key}`}
+        style={{ backgroundColor: mapping.backgroundColor, color: mapping.fontColor }}
+      >
+        {mapping.label}
+      </span>
+    );
+  }
+
+  function renderExpiryControls(helperText: string) {
+    return (
+      <section className="expiry-control-stack">
+        <div className="expiry-control-heading">
+          <div>
+            <strong>Expiry filters and labelling</strong>
+            <span>{helperText}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setExpiryLocationFilter('all');
+              setExpirySupplierFilter('all');
+              setExpiryRiskFilter('all');
+              setExpiryDaysFilter('all');
+              setExpiryBatchStatusFilter('all');
+            }}
+          >
+            Reset filters
+          </button>
+        </div>
+
+        <div className="inventory-expiry-filter-grid">
+          <label>
+            Location
+            <select value={expiryLocationFilter} onChange={(event) => setExpiryLocationFilter(event.target.value)}>
+              <option value="all">All locations</option>
+              {expiryLocationOptions.map(([code, label]) => (
+                <option key={code} value={code}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Supplier
+            <select value={expirySupplierFilter} onChange={(event) => setExpirySupplierFilter(event.target.value)}>
+              <option value="all">All suppliers</option>
+              {expirySupplierOptions.map((supplier) => (
+                <option key={supplier} value={supplier}>
+                  {supplier}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Expiry label
+            <select value={expiryRiskFilter} onChange={(event) => setExpiryRiskFilter(event.target.value)}>
+              <option value="all">All labels</option>
+              {expiryLabelMappings.map((mapping) => (
+                <option key={mapping.key} value={mapping.key}>
+                  {mapping.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Days to expiry
+            <select value={expiryDaysFilter} onChange={(event) => setExpiryDaysFilter(event.target.value)}>
+              <option value="all">All days</option>
+              <option value="expired">Expired</option>
+              <option value="0-30">0–30 days</option>
+              <option value="31-90">31–90 days</option>
+              <option value="91-180">91–180 days</option>
+              <option value="181+">181+ days</option>
+              <option value="no-expiry">No expiry date</option>
+            </select>
+          </label>
+
+          <label>
+            Batch status
+            <select value={expiryBatchStatusFilter} onChange={(event) => setExpiryBatchStatusFilter(event.target.value)}>
+              <option value="all">All statuses</option>
+              {expiryBatchStatusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="expiry-legend-grid">
+          {expiryLabelMappings.map((mapping) => (
+            <article
+              key={mapping.key}
+              className={`expiry-legend-card expiry-legend-card--${mapping.key}`}
+              style={{ backgroundColor: mapping.backgroundColor, color: mapping.fontColor }}
+            >
+              <strong>{mapping.label}</strong>
+              <span>
+                {mapping.key === 'no-expiry'
+                  ? 'No expiry date'
+                  : `${mapping.minDays ?? 'Below'} to ${mapping.maxDays ?? 'above'} days`}
+              </span>
+              <small>{mapping.action}</small>
+            </article>
+          ))}
+        </div>
+
+        <details className="expiry-mapping-management-card">
+          <summary>Expiry Label & Mapping Management</summary>
+          <div className="expiry-mapping-grid">
+            {expiryLabelMappings.map((mapping, index) => (
+              <section key={mapping.key}>
+                <label>
+                  Label
+                  <input
+                    value={mapping.label}
+                    onChange={(event) => updateExpiryMapping(index, 'label', event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Min days
+                  <input
+                    type="number"
+                    value={mapping.minDays ?? ''}
+                    disabled={mapping.key === 'no-expiry'}
+                    onChange={(event) =>
+                      updateExpiryMapping(index, 'minDays', event.target.value === '' ? null : Number(event.target.value))
+                    }
+                  />
+                </label>
+
+                <label>
+                  Max days
+                  <input
+                    type="number"
+                    value={mapping.maxDays ?? ''}
+                    disabled={mapping.key === 'no-expiry'}
+                    onChange={(event) =>
+                      updateExpiryMapping(index, 'maxDays', event.target.value === '' ? null : Number(event.target.value))
+                    }
+                  />
+                </label>
+
+                <label>
+                  Background
+                  <input
+                    type="color"
+                    value={mapping.backgroundColor}
+                    onChange={(event) => updateExpiryMapping(index, 'backgroundColor', event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Font
+                  <input
+                    type="color"
+                    value={mapping.fontColor}
+                    onChange={(event) => updateExpiryMapping(index, 'fontColor', event.target.value)}
+                  />
+                </label>
+
+                <label className="expiry-mapping-action-input">
+                  AI action
+                  <textarea
+                    value={mapping.action}
+                    rows={2}
+                    onChange={(event) => updateExpiryMapping(index, 'action', event.target.value)}
+                  />
+                </label>
+              </section>
+            ))}
+          </div>
+
+          <div className="expiry-mapping-footer">
+            <span>Saved in this browser for now. It can later move to a tenant/admin settings API.</span>
+            <button type="button" onClick={() => setExpiryLabelMappings(defaultExpiryLabelMappings)}>
+              Restore default mapping
+            </button>
+          </div>
+        </details>
+      </section>
+    );
   }
 
   async function handleCreateInventoryFromProductMaster(event: FormEvent<HTMLFormElement>) {
@@ -2232,12 +2641,6 @@ export function ProductInventoryPreview({
       {error && <div className="form-error">{error}</div>}
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
 
-      <section className="inventory-active-page-marker" data-active-inventory-view={activeInventoryView}>
-        <span>Inventory page</span>
-        <strong>{activeInventoryMeta.label}</strong>
-        <small>{activeInventoryMeta.description}</small>
-      </section>
-
       <section className="module-workspace-shell inventory-workspace-shell">
         {showInternalNavigation && (
           <aside className="module-section-rail" aria-label="Inventory module sections">
@@ -2331,7 +2734,7 @@ export function ProductInventoryPreview({
                                   }))
                                 }
                               />
-                              <span>{field === 'value' ? 'Number/value' : field === 'trend' ? 'AI weekly trend' : 'Status text'}</span>
+                              <span>{field === 'value' ? 'Number/value' : field === 'trend' ? 'Weekly trend' : 'Status text'}</span>
                             </label>
                           ))}
                         </div>
@@ -2370,8 +2773,8 @@ export function ProductInventoryPreview({
               <section className="inventory-ai-analytics">
                 <div className="section-heading">
                   <div>
-                    <h3>AI inventory analytics</h3>
-                    <span>Operational signals prepared for demand, reorder, expiry, margin and stock-out models.</span>
+                    <h3>Inventory review signals</h3>
+                    <span>Review low stock, expiry pressure, batch coverage and purchasing priorities.</span>
                   </div>
                   <button type="button" onClick={() => selectInventoryView('product-inventory')}>Open Product Inventory</button>
                 </div>
@@ -2968,6 +3371,8 @@ export function ProductInventoryPreview({
                   </span>
                 </div>
 
+                {renderExpiryControls('Review batches that need action before sale, dispensing, transfer, return or quarantine.')}
+
                 <div className="inventory-master-table inventory-master-table--rhia-format inventory-master-table--batch-expiry-register">
                   <div className="inventory-master-table__header batch-expiry-register-row">
                     <strong>SN</strong>
@@ -2984,6 +3389,8 @@ export function ProductInventoryPreview({
                     <strong className="rhia-number-cell">Remaining Days</strong>
                     <strong>Batch Status</strong>
                     <strong>Supplier</strong>
+                    <strong>Expiry Label</strong>
+                    <strong>AI Action</strong>
                     <strong>Actions</strong>
                   </div>
 
@@ -3013,9 +3420,13 @@ export function ProductInventoryPreview({
                           <span className="rhia-number-cell">{days === null ? 'N/A' : days}</span>
                           <span>{batchStatusText(batch)}</span>
                           <span>{batch?.supplier_name ?? 'Not set'}</span>
-                          <span className="table-action-row">
+                          <span>{renderExpiryChip(days)}</span>
+                          <span>{expiryAction(days)}</span>
+                          <span className="table-action-row table-action-row--compact">
                             <button type="button" onClick={() => markAction(`View batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>View</button>
                             <button type="button" onClick={() => markAction(`Review batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>Review</button>
+                            <button type="button" onClick={() => markAction(`Transfer review for batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>Transfer</button>
+                            <button type="button" className="danger" onClick={() => markAction(`Quarantine review for batch ${batch?.batch_number ?? batch?.id ?? ''}`)}>Quarantine</button>
                           </span>
                         </div>
                       );
@@ -3036,7 +3447,7 @@ export function ProductInventoryPreview({
                   exportCsv(
                     'near-expiry-watchlist.csv',
                     ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Expiry', 'Remaining days', 'Status', 'Recommended action'],
-                    nearExpiryRows.map((batch) => {
+                    visibleNearExpiryRows.map((batch) => {
                       const days = remainingDays(batch.expiry_date);
                       return [
                         batch.product.name,
@@ -3055,12 +3466,15 @@ export function ProductInventoryPreview({
                 onBulkDelete: () => markAction('Near-expiry bulk delete'),
               })}
 
+              {renderExpiryControls('Use this view to decide whether to sell first, transfer, return, or quarantine before expiry.')}
+
               <BatchTable
                 rows={pagedNearExpiry}
                 selectedBatchIds={selectedBatchIds}
                 onToggleBatch={toggleBatchSelection}
                 onSelectAll={() => selectAllBatches(pagedNearExpiry)}
                 onAction={renderBatchActions}
+                expiryMappings={expiryLabelMappings}
                 showRecommendedAction
               />
             </section>
@@ -3658,7 +4072,7 @@ export function ProductInventoryPreview({
             <section className="inventory-section">
               {renderTableToolbar({
                 title: 'Stock locations',
-                subtitle: 'Branch-scoped stock storage points, shelves and stores.',
+                subtitle: 'Update stock location details used by receiving, dispensing and stock counts.',
                 selectedCount: 0,
                 onExport: () =>
                   exportCsv(
@@ -3677,15 +4091,85 @@ export function ProductInventoryPreview({
                 onBulkDelete: () => markAction('Stock location bulk delete'),
               })}
 
-              <div className="inventory-table location-preview-table">
-                {locations.locations.map((location) => (
-                  <div key={location.id}>
-                    <strong>{location.name}</strong>
-                    <span>{location.code}</span>
-                    <span>{location.location_type.replaceAll('_', ' ')}</span>
-                    <small>{location.stock_batches_count} batches</small>
-                  </div>
+              <div className="inventory-action-card-grid inventory-action-card-grid--title-only stock-location-management-actions">
+                {[
+                  ['create', 'Create New'],
+                  ['edit', 'Edit'],
+                  ['delete', 'Delete'],
+                  ['replace', 'Replace'],
+                ].map(([action, label]) => (
+                  <button
+                    key={action}
+                    type="button"
+                    onClick={() =>
+                      setInventoryNotice(
+                        action === 'create'
+                          ? 'Create New stock location selected. Capture name, code, branch, type and status before saving.'
+                          : `${label} stock location selected. Choose the row below and confirm permissions before making changes.`,
+                      )
+                    }
+                  >
+                    <strong>{label}</strong>
+                  </button>
                 ))}
+              </div>
+
+              <div className="inventory-master-table inventory-master-table--wide inventory-master-table--stock-locations">
+                <div className="inventory-master-table__header stock-location-register-row">
+                  <strong>Location</strong>
+                  <strong>Code</strong>
+                  <strong>Type</strong>
+                  <strong>Branch</strong>
+                  <strong className="rhia-number-cell">Batches</strong>
+                  <strong>Status</strong>
+                  <strong>Actions</strong>
+                </div>
+
+                {locations.locations.length === 0 ? (
+                  <div className="stock-location-register-row stock-location-register-row--empty">
+                    <span>No stock locations found.</span>
+                  </div>
+                ) : (
+                  locations.locations.map((location) => (
+                    <div key={location.id} className="stock-location-register-row">
+                      <span><strong>{location.name}</strong></span>
+                      <span>{location.code}</span>
+                      <span>{location.location_type.replaceAll('_', ' ')}</span>
+                      <span>{location.branch?.name ?? 'Branch not set'}</span>
+                      <span className="rhia-number-cell">{formatNumber(location.stock_batches_count)}</span>
+                      <span>{location.status}</span>
+                      <span className="table-action-row table-action-row--compact">
+                        <button type="button" onClick={() => setInventoryNotice(`Viewing ${location.name}.`)}>
+                          View
+                        </button>
+                        <button type="button" onClick={() => setInventoryNotice(`Edit selected for ${location.name}.`)}>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() =>
+                            setInventoryNotice(
+                              `Delete requested for ${location.name}. Confirm the backend delete endpoint before removing an active location.`,
+                            )
+                          }
+                        >
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setInventoryNotice(
+                              `Replace requested for ${location.name}. Confirm replacement rules before moving stock records.`,
+                            )
+                          }
+                        >
+                          Replace
+                        </button>
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
           )}
@@ -3790,6 +4274,7 @@ function BatchTable({
   onToggleBatch,
   onSelectAll,
   onAction,
+  expiryMappings = defaultExpiryLabelMappings,
   showRecommendedAction = false,
 }: {
   rows: PharmaStockBatch[];
@@ -3797,11 +4282,12 @@ function BatchTable({
   onToggleBatch: (id: number) => void;
   onSelectAll: () => void;
   onAction: (batch: PharmaStockBatch) => React.ReactNode;
+  expiryMappings?: ExpiryLabelMapping[];
   showRecommendedAction?: boolean;
 }) {
   return (
-    <div className="inventory-master-table inventory-master-table--wide">
-      <div className="inventory-master-table__header">
+    <div className="inventory-master-table inventory-master-table--wide inventory-master-table--batch-watch">
+      <div className="inventory-master-table__header batch-watch-row">
         <strong><input type="checkbox" onChange={onSelectAll} /></strong>
         <strong>Product</strong>
         <strong>Batch</strong>
@@ -3810,7 +4296,7 @@ function BatchTable({
         <strong>Expiry</strong>
         <strong>Remaining days</strong>
         <strong>Supplier</strong>
-        {showRecommendedAction && <strong>Recommended action</strong>}
+        {showRecommendedAction && <strong>AI action</strong>}
         <strong>Actions</strong>
       </div>
 
@@ -3819,18 +4305,31 @@ function BatchTable({
       ) : (
         rows.map((batch) => {
           const days = remainingDays(batch.expiry_date);
+          const mapping = expiryMappingForDays(days, expiryMappings);
 
           return (
-            <div key={batch.id}>
+            <div
+              key={batch.id}
+              className={`batch-watch-row expiry-risk-row expiry-risk-row--${mapping.key}`}
+              style={expiryRowStyle(days, expiryMappings)}
+            >
               <span><input type="checkbox" checked={selectedBatchIds.includes(batch.id)} onChange={() => onToggleBatch(batch.id)} /></span>
               <span><strong>{batch.product.name}</strong><small>{batch.product.sku}</small></span>
               <span>{batch.batch_number}</span>
               <span>{batch.stock_location.name} ({batch.stock_location.code})</span>
-              <span>{formatNumber(batch.available_quantity)}</span>
+              <span className="rhia-number-cell">{formatNumber(batch.available_quantity)}</span>
               <span>{formatDate(batch.expiry_date)}</span>
-              <span>{days === null ? 'N/A' : days}</span>
-              <span>{batch.supplier_name ?? 'Not set'} · {expiryStatus(days)}</span>
-              {showRecommendedAction && <span>{expiryAction(days)}</span>}
+              <span className="rhia-number-cell">{days === null ? 'N/A' : days}</span>
+              <span>
+                <small>{batch.supplier_name ?? 'Not set'}</small>
+                <span
+                  className={`expiry-risk-chip expiry-risk-chip--${mapping.key}`}
+                  style={{ backgroundColor: mapping.backgroundColor, color: mapping.fontColor }}
+                >
+                  {mapping.label}
+                </span>
+              </span>
+              {showRecommendedAction && <span>{mapping.action}</span>}
               <span>{onAction(batch)}</span>
             </div>
           );
