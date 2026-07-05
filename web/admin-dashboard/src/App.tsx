@@ -3923,16 +3923,14 @@ function App() {
         };
       });
 
-    const salesSummaryRows = Array.from({ length: 15 }).map((_, index) => {
-      const saleNumber = `SAL-${String(2400 + index).padStart(5, '0')}`;
-      const customer = index % 3 === 0 ? 'Walk-in' : index % 3 === 1 ? 'Insurance customer' : 'Existing customer';
-      const method = index % 4 === 0 ? 'Cash' : index % 4 === 1 ? 'MoMo' : index % 4 === 2 ? 'Insurance' : 'Card';
-      const status = index % 5 === 0 ? 'Review' : 'Completed';
-      const amount = `RWF ${(12500 + index * 3750).toLocaleString('en-RW')}`;
-      const dateTime = `Jul 03, ${String(8 + (index % 10)).padStart(2, '0')}:${index % 2 === 0 ? '15' : '45'}`;
-
-      return [dateTime, saleNumber, customer, method, status, amount] as const;
-    });
+    const salesSummaryRows: Array<{
+      dateTime: string;
+      saleNumber: string;
+      customer: string;
+      method: string;
+      status: string;
+      amount: string;
+    }> = [];
 
     const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
 
@@ -4124,25 +4122,30 @@ function App() {
     if (activePosWorkspace === 'overview') {
       return (
         <section className="section-page pos-executive-overview">
-          <section className="pos-executive-hero">
+          <section className="pos-executive-hero pos-international-hero">
             <div>
-              <span>POS executive view</span>
-              <h2>Sales performance and cashier control</h2>
-              <p>Live sales, payment mix, insurance exposure, exceptions and till readiness in one manager view.</p>
+              <span>POS and sales operations</span>
+              <h2>International pharmacy POS command dashboard</h2>
+              <p>Real sales control, cashier readiness, pharmacist review, customer queues, receipts, and daily close signals without fake transaction data.</p>
             </div>
-            <button type="button" onClick={() => setActivePosWorkspace('pos')}>
-              Open POS Counter
-            </button>
+            <div className="pos-overview-hero-actions">
+              <button type="button" onClick={() => setActivePosWorkspace('pos')}>
+                Open Dedicated POS Counter
+              </button>
+              <button type="button" className="secondary-action" onClick={() => navigateToSection('overview')}>
+                Main Dashboard
+              </button>
+            </div>
           </section>
 
-          <section className="pos-overview-analytics-grid executive">
+          <section className="pos-overview-analytics-grid executive pos-real-kpi-grid">
             {[
-              ['Today gross sales', 'RWF 1.84M', '+12% vs yesterday', 'All confirmed sales'],
-              ['Transactions', '126', '118 completed', '8 require review'],
-              ['Insurance claims', 'RWF 540K', '29% of sales value', 'RSSB, MMI, Radiant'],
-              ['Cashier variance', 'RWF 8.5K', 'Needs review', 'Cash close exception'],
-              ['Average basket', 'RWF 14.6K', '36% chronic refill', 'High-value transactions'],
-              ['Open cart risk', '6 carts', 'Unconfirmed drafts', 'Follow before close'],
+              ['POS session', isPosDayOpen ? 'Open' : 'Closed', isPosDayOpen ? 'Ready for counter work' : 'Open day before serving', 'Controlled by cashier day opening'],
+              ['Current cart lines', String(posCartItems.length), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
+              ['Current cart total', `RWF ${posSaleSummary.total.toLocaleString('en-RW')}`, posPaymentMethod.replaceAll('_', ' '), 'Calculated from current cart only'],
+              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Load current inventory before selling'],
+              ['Prescription state', posPrescriptionStatus.replaceAll('-', ' '), posPrescriptionStatus === 'manual-review' ? 'Needs review' : 'Counter selected', 'Used for pharmacist safety handoff'],
+              ['Receipt readiness', posCustomerInvoice === 'yes' ? 'Invoice requested' : 'Receipt only', posInvoiceDelivery.replaceAll('_', ' '), 'No fake transactions displayed'],
             ].map(([title, value, signal, detail]) => (
               <article key={title} className="pos-executive-card">
                 <span>{title}</span>
@@ -4157,17 +4160,17 @@ function App() {
             <article className="panel wide">
               <div className="section-heading">
                 <div>
-                  <span>Payment mix</span>
-                  <h2>Sales movement by channel</h2>
+                  <span>Real-data readiness</span>
+                  <h2>POS data quality and workflow readiness</h2>
                 </div>
               </div>
 
-              <div className="pos-channel-bars">
+              <div className="pos-channel-bars pos-readiness-bars">
                 {[
-                  ['Cash', '38%', 'RWF 699K'],
-                  ['MoMo', '27%', 'RWF 497K'],
-                  ['Insurance', '29%', 'RWF 534K'],
-                  ['Card/Credit', '6%', 'RWF 110K'],
+                  ['Current inventory', posInventoryBatches.length ? '100%' : '8%', posInventoryBatches.length ? `${posInventoryBatches.length} batches loaded` : 'Not loaded'],
+                  ['Active cart', posCartItems.length ? '72%' : '12%', posCartItems.length ? `${posCartItems.length} line(s)` : 'No active sale'],
+                  ['Payment setup', posPaymentMethod ? '88%' : '10%', posPaymentMethod.replaceAll('_', ' ')],
+                  ['Receipt setup', posCustomerInvoice === 'yes' ? '76%' : '35%', posCustomerInvoice === 'yes' ? posInvoiceDelivery : 'Standard receipt'],
                 ].map(([label, width, value]) => (
                   <div key={label} className="pos-channel-row">
                     <span>{label}</span>
@@ -4181,17 +4184,17 @@ function App() {
             <article className="panel wide">
               <div className="section-heading">
                 <div>
-                  <span>Operational alerts</span>
-                  <h2>What needs attention</h2>
+                  <span>Counter guidance</span>
+                  <h2>What the cashier should check next</h2>
                 </div>
               </div>
 
               <div className="pos-alert-stack">
                 {[
-                  ['High', 'Cash variance above tolerance', 'Review till close before manager approval'],
-                  ['Medium', '8 sales awaiting receipt confirmation', 'Follow receipt delivery queue'],
-                  ['Medium', '3 insurance transactions missing institution', 'Confirm scheme rate before claim'],
-                  ['Low', '6 open carts still unconfirmed', 'Close or cancel before end of day'],
+                  [isPosDayOpen ? 'Ready' : 'Start', isPosDayOpen ? 'POS day is open' : 'Open POS day', isPosDayOpen ? 'Counter can serve customers.' : 'Open the day before confirming payments.'],
+                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Load current inventory', posInventoryBatches.length ? 'Sellable batches are available for picking.' : 'Use current inventory to avoid selling unavailable stock.'],
+                  [posCartItems.length ? 'Active' : 'Idle', posCartItems.length ? 'Cart in progress' : 'No active cart', posCartItems.length ? 'Review quantity, payer, and receipt before payment.' : 'Search or scan a product to begin.'],
+                  [posPrescriptionStatus === 'manual-review' ? 'Review' : 'Safe', posPrescriptionStatus === 'manual-review' ? 'Prescription needs manual review' : 'Prescription status selected', 'Pharmacist Review remains available for controlled dispensing.'],
                 ].map(([level, title, detail]) => (
                   <div key={title}>
                     <strong>{level}</strong>
@@ -4203,23 +4206,84 @@ function App() {
             </article>
           </section>
 
-          <FocusRegisterPreview
-            title="Recent POS exceptions"
-            description="Transactions needing attention before close of day."
-            rows={previewRows}
-          />
+          <section className="pos-real-register-card">
+            <div className="section-heading">
+              <div>
+                <span>Real sales register</span>
+                <h3>Recent POS transactions</h3>
+                <p className="muted">No dummy rows are shown here. Real sales will appear after they are created through the backend-connected POS and dispensing workflow.</p>
+              </div>
+              <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
+                Open Sales Register
+              </button>
+            </div>
+            <div className="system-table-wrap">
+              <table className="system-table">
+                <thead>
+                  <tr>
+                    <th>Date / Time</th>
+                    <th>Sale No.</th>
+                    <th>Customer</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colSpan={6}>No real POS transactions loaded in this dashboard view yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
         </section>
       );
     }
 
     if (activePosWorkspace === 'pos') {
       return (
-        <section className="section-page">
-          <section className="pos-counter-page">
+        <section className="section-page pos-dedicated-counter-shell">
+          <section className="pos-counter-page pos-counter-page--dedicated">
+            <nav className="pos-dedicated-command-bar" aria-label="POS workspace navigation">
+              <button type="button" onClick={() => navigateToSection('overview')}>
+                <span>Main Dashboard</span>
+                <strong>Exit POS</strong>
+              </button>
+              <button type="button" onClick={() => setActivePosWorkspace('overview')}>
+                <span>POS Dashboard</span>
+                <strong>Control view</strong>
+              </button>
+              <button type="button" className="active" onClick={() => setActivePosWorkspace('pos')}>
+                <span>POS Counter</span>
+                <strong>Serve customer</strong>
+              </button>
+              <button type="button" onClick={() => setActivePosWorkspace('dispensing-review')}>
+                <span>Pharmacist Review</span>
+                <strong>Safety queue</strong>
+              </button>
+              <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
+                <span>Sales Register</span>
+                <strong>Real sales</strong>
+              </button>
+              <button type="button" onClick={() => setActivePosWorkspace('payment-receipt')}>
+                <span>Receipts & Payments</span>
+                <strong>Collection</strong>
+              </button>
+              <button type="button" onClick={() => setActivePosWorkspace('customers')}>
+                <span>Customers</span>
+                <strong>Patients</strong>
+              </button>
+              <button type="button" onClick={() => setActivePosWorkspace('prescriptions')}>
+                <span>Prescriptions</span>
+                <strong>Rx files</strong>
+              </button>
+            </nav>
+
             <section className="pos-counter-heading">
               <div>
-                <p className="eyebrow">POS</p>
-                <h2>Pharmacy sales counter</h2>
+                <p className="eyebrow">Simple but Mighty POS</p>
+                <h2>Pharmacy POS Counter</h2>
                 <p className="muted">Select drugs, build cart, complete transaction setup, confirm payment, then generate invoice when required.</p>
               </div>
 
@@ -4292,7 +4356,7 @@ function App() {
                 <div className="section-heading">
                   <div>
                     <span>Step 1</span>
-                    <h3>Select drugs</h3>
+                    <h3>Product search & stock pick</h3>
                   </div>
                 </div>
 
@@ -4662,9 +4726,14 @@ function App() {
                   <span>Sales register</span>
                   <h3>Recent counter transactions</h3>
                 </div>
-                <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
-                  Open Sales Register
-                </button>
+                <div className="pos-table-management-actions">
+                  <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
+                    Open Sales Register
+                  </button>
+                  <button type="button" className="secondary-action" onClick={() => setPosNotice('POS table management will control visible columns, filters, export, and row density for admin users.')}>
+                    Table Management
+                  </button>
+                </div>
               </div>
 
               <div className="system-table-wrap">
@@ -4680,16 +4749,24 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {salesSummaryRows.map(([dateTime, saleNumber, customer, method, status, amount]) => (
-                      <tr key={saleNumber}>
-                        <td>{dateTime}</td>
-                        <td>{saleNumber}</td>
-                        <td>{customer}</td>
-                        <td>{method}</td>
-                        <td>{status}</td>
-                        <td>{amount}</td>
+                    {salesSummaryRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={6}>
+                          No real recent sales loaded here yet. Create or load backend POS sales to populate this register.
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      salesSummaryRows.map(({ dateTime, saleNumber, customer, method, status, amount }) => (
+                        <tr key={saleNumber}>
+                          <td>{dateTime}</td>
+                          <td>{saleNumber}</td>
+                          <td>{customer}</td>
+                          <td>{method}</td>
+                          <td>{status}</td>
+                          <td>{amount}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
