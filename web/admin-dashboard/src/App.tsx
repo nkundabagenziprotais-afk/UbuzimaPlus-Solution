@@ -4358,6 +4358,25 @@ function App() {
         minute: '2-digit',
       });
 
+      const posPaymentOperationalCards = [
+        ['Date', posSummaryTimestamp],
+        ['Cart lines', posFinancialLineCount],
+        ['Quantity', posFinancialTotalQuantity],
+        ['% Customer', `${posSummaryCustomerContributionPercent}%`],
+        ['% Insurer', `${posSummaryInsurerContributionPercent}%`],
+      ];
+
+      const posPaymentFinancialCards = [
+        ['Sub-Total', `RWF ${posFinancialSubtotal.toLocaleString('en-RW')}`],
+        ['Discount', `RWF ${posSummaryDiscountAmount.toLocaleString('en-RW')}`],
+        ['Net Discount', `RWF ${posSummaryNetDiscount.toLocaleString('en-RW')}`],
+        ['Taxable Base', `RWF ${posSummaryTaxableBase.toLocaleString('en-RW')}`],
+        ['Tax', `RWF ${posSummaryTaxAmount.toLocaleString('en-RW')}`],
+        ['Total Amount', `RWF ${posSummaryTotalAmount.toLocaleString('en-RW')}`],
+        ['Customer Payment', `RWF ${posSummaryCustomerPayment.toLocaleString('en-RW')}`],
+        ['Insurer Payment', `RWF ${posSummaryInsurerPayment.toLocaleString('en-RW')}`],
+      ];
+
       return (
         <section className="section-page pos-dedicated-counter-shell">
           <section className="pos-counter-page pos-counter-page--dedicated pos-stable-page-v16">
@@ -4783,64 +4802,24 @@ function App() {
                     <small>{posSummaryTimestamp}</small>
                   </div>
 
-                  <div className="pos-payment-summary-grid pos-payment-summary-grid-v16">
-                    <dl className="pos-summary-list pos-summary-list-v16 pos-summary-list--operational">
-                      <div>
-                        <dt>Date</dt>
-                        <dd>{posSummaryTimestamp}</dd>
-                      </div>
-                      <div>
-                        <dt>Cart lines</dt>
-                        <dd>{posFinancialLineCount}</dd>
-                      </div>
-                      <div>
-                        <dt>Quantity</dt>
-                        <dd>{posFinancialTotalQuantity}</dd>
-                      </div>
-                      <div>
-                        <dt>% Customer</dt>
-                        <dd>{posSummaryCustomerContributionPercent}%</dd>
-                      </div>
-                      <div>
-                        <dt>% Insurer</dt>
-                        <dd>{posSummaryInsurerContributionPercent}%</dd>
-                      </div>
-                    </dl>
+                  <div className="pos-payment-summary-grid pos-payment-summary-grid-v17">
+                    <div className="pos-payment-summary-column pos-payment-summary-column--operational" aria-label="Operational payment summary">
+                      {posPaymentOperationalCards.map(([label, value]) => (
+                        <article key={`operational-${label}`} className="pos-summary-field-card pos-summary-field-card--operational">
+                          <span>{label}</span>
+                          <strong>{value}</strong>
+                        </article>
+                      ))}
+                    </div>
 
-                    <dl className="pos-summary-list pos-summary-list-v16 pos-summary-list--financial">
-                      <div>
-                        <dt>Sub-Total</dt>
-                        <dd>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</dd>
-                      </div>
-                      <div>
-                        <dt>Discount</dt>
-                        <dd>RWF {posSummaryDiscountAmount.toLocaleString('en-RW')}</dd>
-                      </div>
-                      <div>
-                        <dt>Net Discount</dt>
-                        <dd>RWF {posSummaryNetDiscount.toLocaleString('en-RW')}</dd>
-                      </div>
-                      <div>
-                        <dt>Taxable Base</dt>
-                        <dd>RWF {posSummaryTaxableBase.toLocaleString('en-RW')}</dd>
-                      </div>
-                      <div>
-                        <dt>Tax</dt>
-                        <dd>RWF {posSummaryTaxAmount.toLocaleString('en-RW')}</dd>
-                      </div>
-                      <div>
-                        <dt>Total Amount</dt>
-                        <dd>RWF {posSummaryTotalAmount.toLocaleString('en-RW')}</dd>
-                      </div>
-                      <div>
-                        <dt>Customer Payment</dt>
-                        <dd>RWF {posSummaryCustomerPayment.toLocaleString('en-RW')}</dd>
-                      </div>
-                      <div>
-                        <dt>Insurer Payment</dt>
-                        <dd>RWF {posSummaryInsurerPayment.toLocaleString('en-RW')}</dd>
-                      </div>
-                    </dl>
+                    <div className="pos-payment-summary-column pos-payment-summary-column--financial" aria-label="Financial payment summary">
+                      {posPaymentFinancialCards.map(([label, value]) => (
+                        <article key={`financial-${label}`} className="pos-summary-field-card pos-summary-field-card--financial">
+                          <span>{label}</span>
+                          <strong>{value}</strong>
+                        </article>
+                      ))}
+                    </div>
                   </div>
                   <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartItems.length === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
