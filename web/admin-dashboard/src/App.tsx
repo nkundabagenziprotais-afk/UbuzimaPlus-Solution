@@ -3968,7 +3968,7 @@ function App() {
       : posProducts;
 
     const posSearchHelperText = posInventoryBatches.length === 0
-      ? 'Load all sellable inventory before searching products.'
+      ? ''
       : normalizedPosTerminalSearch
         ? `${posVisibleProducts.length} matching product${posVisibleProducts.length === 1 ? '' : 's'}`
         : `${posProducts.length} fast product tile${posProducts.length === 1 ? '' : 's'} ready`;
@@ -4221,7 +4221,7 @@ function App() {
               ['POS session', isPosDayOpen ? 'Open' : 'Closed', isPosDayOpen ? 'Ready for counter work' : 'Open day before serving', 'Controlled by cashier day opening'],
               ['Current cart lines', String(posCartItems.length), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
               ['Current cart total', `RWF ${posSaleSummary.total.toLocaleString('en-RW')}`, posPaymentMethod.replaceAll('_', ' '), 'Calculated from current cart only'],
-              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Load all sellable inventory before selling'],
+              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Refresh stock before selling'],
               ['Prescription state', posPrescriptionStatus.replaceAll('-', ' '), posPrescriptionStatus === 'manual-review' ? 'Needs review' : 'Counter selected', 'Used for pharmacist safety handoff'],
               ['Receipt readiness', posCustomerInvoice === 'yes' ? 'Invoice requested' : 'Receipt only', posInvoiceDelivery.replaceAll('_', ' '), 'No fake transactions displayed'],
             ].map(([title, value, signal, detail]) => (
@@ -4270,7 +4270,7 @@ function App() {
               <div className="pos-alert-stack">
                 {[
                   [isPosDayOpen ? 'Ready' : 'Start', isPosDayOpen ? 'POS day is open' : 'Open POS day', isPosDayOpen ? 'Counter can serve customers.' : 'Open the day before confirming payments.'],
-                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Load all sellable inventory', posInventoryBatches.length ? 'Sellable batches are available for picking.' : 'Use current inventory to avoid selling unavailable stock.'],
+                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Refresh stock', posInventoryBatches.length ? 'Sellable batches are available for picking.' : 'Use current inventory to avoid selling unavailable stock.'],
                   [posCartItems.length ? 'Active' : 'Idle', posCartItems.length ? 'Cart in progress' : 'No active cart', posCartItems.length ? 'Review quantity, payer, and receipt before payment.' : 'Search or scan a product to begin.'],
                   [posPrescriptionStatus === 'manual-review' ? 'Review' : 'Safe', posPrescriptionStatus === 'manual-review' ? 'Prescription needs manual review' : 'Prescription status selected', 'Pharmacist Review remains available for controlled dispensing.'],
                 ].map(([level, title, detail]) => (
@@ -4435,11 +4435,10 @@ function App() {
                     }
                   }}
                 />
-                <small className="pos-terminal-search-helper">{posSearchHelperText}</small>
 
                 <div className="pos-inventory-load-panel">
                   <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
-                    {isLoadingPosInventory ? 'Loading inventory…' : 'Refresh stock'}
+                    {isLoadingPosInventory ? 'Loading stock…' : 'Refresh stock'}
                   </button>
                   <span>
                     {posInventoryLoadedAt
@@ -4454,7 +4453,7 @@ function App() {
                   {posProducts.length === 0 ? (
                     <div className="pos-inventory-empty-state">
                       <strong>Loading sellable inventory</strong>
-                      <small>The POS loads available stock automatically. Use Refresh stock only when you need to reload.</small>
+                      <small></small>
                     </div>
                   ) : (
                     posVisibleProducts.length === 0 ? (
@@ -4464,26 +4463,41 @@ function App() {
                       </div>
                     ) : (
                       posVisibleProducts.map((product) => {
-                        const sameProductBatchCount = posProducts.filter((candidate) => candidate.name === product.name).length;
-                        const productColourIndex = product.name.split('').reduce((sum, character) => sum + character.charCodeAt(0), 0) % 8;
-                        const isMultiBatchProduct = sameProductBatchCount > 1;
-                        const isExpiryAttention = ['expiry', 'expire', 'near', 'soon', 'warning'].some((keyword) =>
-                          product.status.toLowerCase().includes(keyword),
-                        );
+                        const productRecord = product as {
+                          expiryDate?: string;
+                          expiresAt?: string;
+                          expiry_date?: string;
+                          expires_at?: string;
+                          batchExpiryDate?: string;
+                        };
+                        const expiryDateText =
+                          productRecord.expiryDate ||
+                          productRecord.expiresAt ||
+                          productRecord.expiry_date ||
+                          productRecord.expires_at ||
+                          productRecord.batchExpiryDate ||
+                          product.status.match(/(?:exp(?:iry|ires)?\s*[:\-]?\s*)([^·|,]+)/i)?.[1]?.trim() ||
+                          'Not set';
+                        const normalizedStatus = product.status.toLowerCase();
+                        const expiryStatusClass = normalizedStatus.includes('expired')
+                          ? 'expired'
+                          : normalizedStatus.includes('critical') || normalizedStatus.includes('danger')
+                            ? 'critical'
+                            : normalizedStatus.includes('near') || normalizedStatus.includes('soon') || normalizedStatus.includes('warning')
+                              ? 'warning'
+                              : normalizedStatus.includes('watch')
+                                ? 'watch'
+                                : 'safe';
 
                         return (
                           <button
                             key={product.code}
                             type="button"
-                            className={`pos-product-tile pos-product-colour-${productColourIndex}${isMultiBatchProduct ? ' multi-batch' : ''}${isExpiryAttention ? ' expiry-attention' : ''}`}
+                            className={`pos-product-tile product-expiry-${expiryStatusClass}`}
                             onClick={() => addPosProductToCart(product)}
                           >
-                            <span className="pos-product-card-topline">
-                              <i>{isMultiBatchProduct ? 'Multi-batch' : 'Sellable'}</i>
-                              {isExpiryAttention && <em>⚠ Expiry</em>}
-                            </span>
                             <strong>{product.name}</strong>
-                            <small>{product.status}</small>
+                            <small>Exp: {expiryDateText}</small>
                             <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
                           </button>
                         );
