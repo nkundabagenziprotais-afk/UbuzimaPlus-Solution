@@ -4334,18 +4334,21 @@ function App() {
         (total, item) => total + item.quantity * item.unitPrice,
         0,
       );
-      const posSummaryDiscountAmount = Math.max(Number(posDiscountAmount || 0), 0);
+      const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
       const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
-      const posSummaryNetDiscount = posSummaryAppliedDiscount;
-      const posSummaryTaxableBase = Math.max(posFinancialSubtotal - posSummaryAppliedDiscount, 0);
+      const posSummaryNetDiscount = Math.max(posFinancialSubtotal - posSummaryAppliedDiscount, 0);
+
+      // Tax mode will later come from Finance > Tax Compliance Management.
+      // Inclusive means the displayed price already includes tax.
+      // Exclusive means tax is added on top of Net Discount.
       const posTaxMode: 'inclusive' | 'exclusive' = 'inclusive';
       const posTaxRatePercent = 0;
       const posSummaryTaxAmount = posTaxMode === 'exclusive'
-        ? Math.round((posSummaryTaxableBase * posTaxRatePercent) / 100)
+        ? Math.round((posSummaryNetDiscount * posTaxRatePercent) / 100)
         : 0;
       const posSummaryTotalAmount = posTaxMode === 'exclusive'
-        ? posSummaryTaxableBase + posSummaryTaxAmount
-        : posSummaryTaxableBase;
+        ? posSummaryNetDiscount + posSummaryTaxAmount
+        : posSummaryNetDiscount;
       const posSummaryCustomerPayment = posPaymentMethod === 'insurance'
         ? Math.round((posSummaryTotalAmount * posSummaryCustomerContributionPercent) / 100)
         : posSummaryTotalAmount;
