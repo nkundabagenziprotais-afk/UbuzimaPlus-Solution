@@ -4092,65 +4092,113 @@ function App() {
       setPosNotice('Payment summary refreshed from the stable POS cart snapshot.');
     }
 
+    function readActivePosCounterItems() {
+      return buildPosCounterCartSnapshot([
+        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
+      ]).items;
+    }
+
+    function makePosCartItemFromProduct(product: typeof posProducts[number]) {
+      const rawProduct = product as typeof product & Record<string, unknown>;
+      const parsedAvailableQuantity = Number(
+        rawProduct.availableQuantity
+          ?? rawProduct.currentQuantity
+          ?? rawProduct.stockQuantity
+          ?? rawProduct.availableStock
+          ?? rawProduct.onHandQuantity
+          ?? rawProduct.onHand
+          ?? 1,
+      );
+      const availableQuantity = Math.max(
+        1,
+        Number.isFinite(parsedAvailableQuantity) ? Math.floor(parsedAvailableQuantity) : 1,
+      );
+      const productCode = String(
+        rawProduct.code
+          ?? rawProduct.productCode
+          ?? rawProduct.sku
+          ?? rawProduct.productId
+          ?? rawProduct.id
+          ?? rawProduct.name
+          ?? '',
+      ).trim();
+      const batchId = String(
+        rawProduct.batchId
+          ?? rawProduct.inventoryBatchId
+          ?? rawProduct.batch_id
+          ?? rawProduct.id
+          ?? productCode,
+      ).trim();
+      const unitPrice = Number(
+        rawProduct.unitPrice
+          ?? rawProduct.sellingPrice
+          ?? rawProduct.price
+          ?? 0,
+      );
+
+      return {
+        code: productCode,
+        name: String(rawProduct.name ?? 'Selected product'),
+        strength: String(rawProduct.strength ?? ''),
+        quantity: 1,
+        unitPrice: Number.isFinite(unitPrice) ? unitPrice : 0,
+        batchId,
+        productId: String(rawProduct.productId ?? rawProduct.id ?? productCode),
+        batchNumber: String(rawProduct.batchNumber ?? rawProduct.batchNo ?? ''),
+        availableQuantity,
+        expiryDate: String(rawProduct.expiryDate ?? rawProduct.expiresAt ?? ''),
+        locationName: String(rawProduct.locationName ?? rawProduct.location ?? ''),
+      };
+    }
+
     function addPosProductToCart(product: typeof posProducts[number]) {
-      if (!product.batchId || product.availableQuantity <= 0) {
+      const cartProduct = makePosCartItemFromProduct(product);
+
+      if (!cartProduct.code) {
+        setPosNotice('This product cannot be added because its product code is missing.');
+        return;
+      }
+
+      if (cartProduct.availableQuantity <= 0) {
         setPosNotice('This product is not available in current inventory and cannot be sold.');
         return;
       }
 
-      const currentItems = normalizePosCartItems(posCounterItems);
-      const existing = currentItems.find((item) => item.code === product.code);
+      const currentItems = readActivePosCounterItems();
+      const existing = currentItems.find((item) => item.code === cartProduct.code);
 
-      let nextItems: typeof posCounterItems;
+      const nextItems = existing
+        ? currentItems.map((item) => {
+            if (item.code !== cartProduct.code) return item;
 
-      if (existing) {
-        const nextQuantity = Math.min(existing.quantity + 1, product.availableQuantity);
+            const nextQuantity = Math.min(Number(item.quantity || 0) + 1, cartProduct.availableQuantity);
 
-        if (nextQuantity === existing.quantity) {
-          setPosNotice(`${product.name} cannot exceed available inventory of ${product.availableQuantity}.`);
-        }
+            if (nextQuantity === Number(item.quantity || 0)) {
+              setPosNotice(`${cartProduct.name} cannot exceed available inventory of ${cartProduct.availableQuantity}.`);
+            }
 
-        nextItems = currentItems.map((item) =>
-          item.code === product.code
-            ? {
-                ...item,
-                quantity: nextQuantity,
-                availableQuantity: product.availableQuantity,
-                unitPrice: product.unitPrice,
-              }
-            : item,
-        );
-      } else {
-        nextItems = [
-          ...currentItems,
-          {
-            code: product.code,
-            name: product.name,
-            strength: product.strength,
-            quantity: 1,
-            unitPrice: product.unitPrice,
-            batchId: product.batchId,
-            productId: product.productId,
-            batchNumber: product.batchNumber,
-            availableQuantity: product.availableQuantity,
-            expiryDate: product.expiryDate,
-            locationName: product.locationName,
-          },
-        ];
-      }
+            return {
+              ...item,
+              ...cartProduct,
+              quantity: nextQuantity,
+            };
+          })
+        : [...currentItems, cartProduct];
 
       commitPosCounterItems(nextItems);
     }
 
     function updateCartQuantity(code: string, quantity: number) {
-      const currentItems = normalizePosCartItems(posCounterItems);
+      const currentItems = readActivePosCounterItems();
 
       const nextItems = currentItems.map((item) => {
         if (item.code !== code) return item;
 
         const safeQuantity = Math.min(
           Math.max(1, Number.isFinite(quantity) ? quantity : 1),
-          item.availableQuantity,
+          Number(item.availableQuantity || 1),
         );
 
         if (safeQuantity !== quantity) {
@@ -4167,7 +4215,7 @@ function App() {
     }
 
     function removeCartItem(code: string) {
-      const nextItems = normalizePosCartItems(posCounterItems).filter((item) => item.code !== code);
+      const nextItems = readActivePosCounterItems().filter((item) => item.code !== code);
       commitPosCounterItems(nextItems);
     }
 
@@ -4206,7 +4254,8 @@ function App() {
     }
 
     function confirmTransaction() {
-      const unavailableItem = posCounterCart.items.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
+      const currentItems = readActivePosCounterItems();
+      const unavailableItem = currentItems.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
 
       if (unavailableItem) {
         setPosNotice(`${unavailableItem.name} is no longer available in the selected quantity. Refresh current inventory before confirming.`);
@@ -4214,7 +4263,7 @@ function App() {
         return;
       }
 
-      if (posCounterItems.length === 0) {
+      if (currentItems.length === 0) {
         setPosNotice('Add at least one drug to cart before confirming payment.');
         return;
       }
@@ -4224,6 +4273,7 @@ function App() {
         return;
       }
 
+      commitPosCounterItems(currentItems);
       setPosTransactionConfirmed(true);
       setPosNotice(
         posCustomerInvoice === 'yes'
