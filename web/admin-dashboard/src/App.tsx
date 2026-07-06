@@ -4688,59 +4688,44 @@ function App() {
               </section>
                 </section>
 
-<section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card pos-cart-table-ledger-card">
+<section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
                   <div className="section-heading">
                     <div>
                       <span>Section 2 · Cart</span>
-                      <h3>Cart</h3>
+                      <h3>Cart <small style={{ fontSize: '11px', color: '#16a34a' }}>POS-C.1.35</small></h3>
+                    </div>
+                    <div className="pos-cart-header-actions">
+                      <small>{posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posCartOperatingUnits === 0}>
+                        Clear cart
+                      </button>
                     </div>
                   </div>
 
-                  <div className="system-table-wrap pos-cart-operating-table-wrap">
-                    <table className="system-table pos-cart-operating-table">
-                      <thead>
-                        <tr>
-                          <th>Cart status</th>
-                          <th>Product lines</th>
-                          <th>Total units</th>
-                          <th>Sub-total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>{posCartOperatingUnits > 0 ? 'Active cart' : 'Empty cart'}</td>
-                          <td>{posLiveCartItems.length}</td>
-                          <td>{posCartOperatingUnits}</td>
-                          <td>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                  
+
 
                   <div className="system-table-wrap">
-                    <table className="system-table pos-cart-table pos-cart-table--records">
+                    <table className="system-table pos-cart-table">
                       <thead>
                         <tr>
-                          <th>Product / batch</th>
+                          <th>Product</th>
                           <th>Qty</th>
-                          <th>Line total</th>
+                          <th>Total</th>
                           <th>Action</th>
                         </tr>
                       </thead>
                       <tbody>
                         {posCartOperatingUnits === 0 ? (
                           <tr>
-                            <td colSpan={4}>No products added yet. Select products from the stock pick table.</td>
+                            <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
                           posLiveCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
-                                <small>
-                                  Unit RWF {item.unitPrice.toLocaleString('en-RW')}
-                                  {item.batchNumber ? ` · Batch ${item.batchNumber}` : ''}
-                                </small>
+                                <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')}</small>
                               </td>
                               <td>
                                 <input
@@ -4766,12 +4751,6 @@ function App() {
                         )}
                       </tbody>
                     </table>
-                  </div>
-
-                  <div className="pos-cart-table-actions">
-                    <button type="button" onClick={clearPosCart} disabled={posCartOperatingUnits === 0}>
-                      Clear cart
-                    </button>
                   </div>
                 </section>
 
