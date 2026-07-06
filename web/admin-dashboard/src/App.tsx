@@ -4692,7 +4692,7 @@ function App() {
                   <div className="section-heading">
                     <div>
                       <span>Section 2 · Cart</span>
-                      <h3>Cart <small style={{ fontSize: '11px', color: '#16a34a' }}>POS-C.1.33</small></h3>
+                      <h3>Cart <small style={{ fontSize: '11px', color: '#16a34a' }}>POS-C.1.35</small></h3>
                     </div>
                     <div className="pos-cart-header-actions">
                       <small>{posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
@@ -4905,26 +4905,76 @@ function App() {
                     <small>{posSummaryTimestamp}</small>
                   </div>
 
-                  <div className="pos-payment-summary-grid pos-payment-summary-grid-v17">
-                    <div className="pos-payment-summary-column pos-payment-summary-column--operational" aria-label="Operational payment summary">
-                      {posPaymentOperationalCards.map(([label, value]) => (
-                        <article key={`operational-${label}`} className="pos-summary-field-card pos-summary-field-card--operational">
-                          <span>{label}</span>
-                          <strong>{value}</strong>
-                        </article>
-                      ))}
-                    </div>
+                  <div className="pos-payment-summary-grid pos-payment-summary-grid-v17 pos-summary-ledger-grid">
+                    <table className="pos-summary-ledger-table pos-summary-ledger-table--operational" aria-label="Operational POS cart summary">
+                      <thead>
+                        <tr>
+                          <th colSpan={2}>Cart operation</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <th scope="row">Date</th>
+                          <td>{posSummaryTimestamp}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Cart lines</th>
+                          <td>{posLiveCartItems.length}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Cart units</th>
+                          <td>{posCartOperatingUnits}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">% Customer</th>
+                          <td>{posSummaryCustomerContributionPercent}%</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">% Insurer</th>
+                          <td>{posSummaryInsurerContributionPercent}%</td>
+                        </tr>
+                      </tbody>
+                    </table>
 
-                    <div className="pos-payment-summary-column pos-payment-summary-column--financial" aria-label="Financial payment summary">
-                      {posPaymentFinancialCards.map(([label, value]) => (
-                        <article key={`financial-${label}`} className="pos-summary-field-card pos-summary-field-card--financial">
-                          <span>{label}</span>
-                          <strong>{value}</strong>
-                        </article>
-                      ))}
-                    </div>
+                    <table className="pos-summary-ledger-table pos-summary-ledger-table--financial" aria-label="Financial POS payment summary">
+                      <thead>
+                        <tr>
+                          <th colSpan={2}>Payment values</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <th scope="row">Sub-Total</th>
+                          <td>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Discount</th>
+                          <td>RWF {posSummaryDiscountAmount.toLocaleString('en-RW')}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Net Discount</th>
+                          <td>RWF {posSummaryNetDiscount.toLocaleString('en-RW')}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Tax</th>
+                          <td>RWF {posSummaryTaxAmount.toLocaleString('en-RW')}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Total Amount</th>
+                          <td>RWF {posSummaryTotalAmount.toLocaleString('en-RW')}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Customer Payment</th>
+                          <td>RWF {posSummaryCustomerPayment.toLocaleString('en-RW')}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Insurer Payment</th>
+                          <td>RWF {posSummaryInsurerPayment.toLocaleString('en-RW')}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCounterItems.length === 0}>
+                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartOperatingUnits === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
                 </section>
