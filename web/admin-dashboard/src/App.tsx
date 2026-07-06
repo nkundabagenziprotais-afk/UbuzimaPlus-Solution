@@ -4334,15 +4334,17 @@ function App() {
         0,
       );
       const posSummaryDiscountAmount = Math.max(Number(posDiscountAmount || 0), 0);
-      const posSummaryNetDiscount = Math.max(posFinancialSubtotal - Math.min(posSummaryDiscountAmount, posFinancialSubtotal), 0);
+      const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
+      const posSummaryNetDiscount = posSummaryAppliedDiscount;
+      const posSummaryTaxableBase = Math.max(posFinancialSubtotal - posSummaryAppliedDiscount, 0);
       const posTaxMode: 'inclusive' | 'exclusive' = 'inclusive';
       const posTaxRatePercent = 0;
       const posSummaryTaxAmount = posTaxMode === 'exclusive'
-        ? Math.round((posSummaryNetDiscount * posTaxRatePercent) / 100)
+        ? Math.round((posSummaryTaxableBase * posTaxRatePercent) / 100)
         : 0;
       const posSummaryTotalAmount = posTaxMode === 'exclusive'
-        ? posSummaryNetDiscount + posSummaryTaxAmount
-        : posSummaryNetDiscount;
+        ? posSummaryTaxableBase + posSummaryTaxAmount
+        : posSummaryTaxableBase;
       const posSummaryCustomerPayment = posPaymentMethod === 'insurance'
         ? Math.round((posSummaryTotalAmount * posSummaryCustomerContributionPercent) / 100)
         : posSummaryTotalAmount;
@@ -4817,6 +4819,10 @@ function App() {
                       <div>
                         <dt>Net Discount</dt>
                         <dd>RWF {posSummaryNetDiscount.toLocaleString('en-RW')}</dd>
+                      </div>
+                      <div>
+                        <dt>Taxable Base</dt>
+                        <dd>RWF {posSummaryTaxableBase.toLocaleString('en-RW')}</dd>
                       </div>
                       <div>
                         <dt>Tax</dt>
