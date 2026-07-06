@@ -19797,3 +19797,189 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
+
+
+/* Patch POS-C.1.12 - Move POS session into Cart and reclaim product space */
+
+/* Header should be independent; main POS starts after header, never under it */
+.pos-fixed-top-v16 {
+  position: relative !important;
+  z-index: 5 !important;
+  margin: 0 !important;
+}
+
+.pos-scroll-body-v16 {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  align-content: start !important;
+}
+
+/* Remove the old header session pill visually if any cached JSX still renders it */
+.pos-session-pill {
+  display: none !important;
+}
+
+/* Main two-column POS area starts immediately after header and notice */
+.pos-operating-cockpit-v2 {
+  margin-top: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 65fr) minmax(500px, 35fr) !important;
+  grid-template-areas: "products transaction" !important;
+  gap: 10px !important;
+  align-items: start !important;
+}
+
+.pos-product-stock-section {
+  grid-area: products !important;
+  min-height: 898px !important;
+}
+
+.pos-sale-transaction-section {
+  grid-area: transaction !important;
+  display: grid !important;
+  gap: 8px !important;
+  align-content: start !important;
+  min-width: 0 !important;
+}
+
+/* Clock-in / Clock-out now lives inside Cart as a compact control strip */
+.pos-cart-shift-strip {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 0 8px 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.pos-cart-shift-strip .pos-shift-card-v16 {
+  display: grid !important;
+  grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1.12fr) 78px !important;
+  gap: 5px !important;
+  align-items: end !important;
+  min-height: 58px !important;
+  padding: 6px !important;
+  border-radius: 12px !important;
+  overflow: visible !important;
+}
+
+.pos-cart-shift-strip .pos-shift-title {
+  min-height: 38px !important;
+  border-radius: 9px !important;
+  font-size: 0.58rem !important;
+  letter-spacing: 0.04em !important;
+  padding: 0 5px !important;
+}
+
+.pos-cart-shift-strip .pos-shift-field,
+.pos-cart-shift-strip .pos-shift-check {
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+
+.pos-cart-shift-strip .pos-shift-field span,
+.pos-cart-shift-strip .pos-shift-check span {
+  font-size: 0.55rem !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-cart-shift-strip .pos-shift-field select,
+.pos-cart-shift-strip .pos-shift-field input {
+  height: 28px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
+  padding: 2px 5px !important;
+  font-size: 0.62rem !important;
+}
+
+.pos-cart-shift-strip .pos-shift-check {
+  grid-template-columns: 14px minmax(0, 1fr) !important;
+  min-height: 28px !important;
+  padding: 2px 4px !important;
+  border-radius: 8px !important;
+}
+
+.pos-cart-shift-strip .pos-shift-check input {
+  width: 13px !important;
+  height: 13px !important;
+  min-height: 13px !important;
+}
+
+.pos-cart-shift-strip .pos-shift-card-v16 button {
+  min-height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 0.58rem !important;
+  padding: 2px 4px !important;
+}
+
+/* Product card order: name, price, available, expiry, days */
+.pos-product-tile-v16 {
+  grid-template-rows: 2.15em 1.15em 1.05em 1.05em 1.05em !important;
+}
+
+.pos-product-tile-v16 > em {
+  order: 2 !important;
+  font-size: 0.62rem !important;
+  font-weight: 950 !important;
+}
+
+.pos-product-tile-v16 .pos-product-card-line {
+  font-size: 0.57rem !important;
+}
+
+/* Payment Summary: keep structure but reduce font size slightly */
+.pos-summary-field-card {
+  min-height: 46px !important;
+  padding: 8px 9px !important;
+}
+
+.pos-summary-field-card span {
+  font-size: 0.66rem !important;
+  line-height: 1.1 !important;
+}
+
+.pos-summary-field-card strong {
+  font-size: 0.76rem !important;
+  line-height: 1.1 !important;
+}
+
+.pos-payment-summary-column--operational .pos-summary-field-card:first-child strong {
+  font-size: 0.7rem !important;
+}
+
+/* Recent transactions must always sit below all POS working sections */
+.pos-recent-transactions-bottom,
+.pos-sales-summary-table-card {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  margin-top: 10px !important;
+  clear: both !important;
+}
+
+/* Responsive safety */
+@media (max-width: 1280px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "transaction" !important;
+  }
+
+  .pos-cart-shift-strip {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-cart-shift-strip .pos-shift-card-v16 {
+    grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1.12fr) 78px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .pos-cart-shift-strip .pos-shift-card-v16 {
+    grid-template-columns: 1fr !important;
+  }
+}
+

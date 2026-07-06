@@ -4394,78 +4394,13 @@ function App() {
                 <h2>Pharmacy POS Counter</h2>
                 <p className="muted">Select drugs, build cart, complete transaction setup, confirm payment, then generate invoice when required.</p>
               </div>
-
-              <div className={`pos-session-pill ${isPosDayOpen ? 'open' : 'closed'}`}>
-                <span>{isPosDayOpen ? 'Session open' : 'Session closed'}</span>
-                <strong>RWF {Number(posStartingCashBalance || 0).toLocaleString('en-RW')}</strong>
-              </div>
             </section>
             </div>
 
             <div className="pos-terminal-main-scroll pos-scroll-body-v16">
               {posNotice && <div className="form-success">{posNotice}</div>}
 
-              <section className="pos-day-control-strip pos-day-control-strip--two-by-two pos-shift-strip-v16">
-                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
-                  <strong className="pos-shift-title">Clock-in</strong>
-
-                  <label className="pos-shift-field">
-                    <span>Opening mode</span>
-                    <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
-                      <option value="fresh-start">Fresh start day</option>
-                      <option value="handover">Handover from previous teller</option>
-                    </select>
-                  </label>
-
-                  <label className="pos-shift-field">
-                    <span>Starting cash balance</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={posStartingCashBalance}
-                      onChange={(event) => setPosStartingCashBalance(event.target.value)}
-                    />
-                  </label>
-
-                  <button type="button" onClick={openPosDay}>Open Day</button>
-                </article>
-
-                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--close">
-                  <strong className="pos-shift-title">Clock-out</strong>
-
-                  <label className="pos-shift-field">
-                    <span>Closing mode</span>
-                    <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
-                      <option value="handover">Handover to incoming staff</option>
-                      <option value="final-close">Final close with manager deposit proof</option>
-                    </select>
-                  </label>
-
-                  {posCloseMode === 'handover' ? (
-                    <label className="pos-shift-check">
-                      <input
-                        type="checkbox"
-                        checked={posTillZeroized}
-                        onChange={(event) => setPosTillZeroized(event.target.checked)}
-                      />
-                      <span>Till zeroized and incoming staff acknowledged</span>
-                    </label>
-                  ) : (
-                    <label className="pos-shift-field">
-                      <span>Deposit proof reference</span>
-                      <input
-                        value={posDepositProof}
-                        onChange={(event) => setPosDepositProof(event.target.value)}
-                        placeholder="Deposit slip, bank ref, MoMo ref"
-                      />
-                    </label>
-                  )}
-
-                  <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
-                </article>
-              </section>
-
-                        <section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
+<section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
               <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
                 <div className="section-heading">
                   <div>
@@ -4564,10 +4499,10 @@ function App() {
                             onClick={() => addPosProductToCart(product)}
                           >
                             <strong>{product.name}</strong>
+                            <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
+                            <span className="pos-product-card-line">Available: {product.availableQuantity.toLocaleString('en-RW')}</span>
                             <span className="pos-product-card-line">Exp: {expiryDateText}</span>
                             <span className="pos-product-card-line">{expiryDaysText}</span>
-                            <span className="pos-product-card-line">Available: {product.availableQuantity.toLocaleString('en-RW')}</span>
-                            <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
                           </button>
                         );
                       })
@@ -4601,6 +4536,66 @@ function App() {
                       </button>
                     </div>
                   </div>
+
+                  <section className="pos-cart-shift-strip pos-shift-strip-v16">
+                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
+                  <strong className="pos-shift-title">Clock-in</strong>
+
+                  <label className="pos-shift-field">
+                    <span>Opening mode</span>
+                    <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
+                      <option value="fresh-start">Fresh start day</option>
+                      <option value="handover">Handover from previous teller</option>
+                    </select>
+                  </label>
+
+                  <label className="pos-shift-field">
+                    <span>Starting cash balance</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={posStartingCashBalance}
+                      onChange={(event) => setPosStartingCashBalance(event.target.value)}
+                    />
+                  </label>
+
+                  <button type="button" onClick={openPosDay}>Open Day</button>
+                </article>
+
+                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--close">
+                  <strong className="pos-shift-title">Clock-out</strong>
+
+                  <label className="pos-shift-field">
+                    <span>Closing mode</span>
+                    <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
+                      <option value="handover">Handover to incoming staff</option>
+                      <option value="final-close">Final close with manager deposit proof</option>
+                    </select>
+                  </label>
+
+                  {posCloseMode === 'handover' ? (
+                    <label className="pos-shift-check">
+                      <input
+                        type="checkbox"
+                        checked={posTillZeroized}
+                        onChange={(event) => setPosTillZeroized(event.target.checked)}
+                      />
+                      <span>Till zeroized and incoming staff acknowledged</span>
+                    </label>
+                  ) : (
+                    <label className="pos-shift-field">
+                      <span>Deposit proof reference</span>
+                      <input
+                        value={posDepositProof}
+                        onChange={(event) => setPosDepositProof(event.target.value)}
+                        placeholder="Deposit slip, bank ref, MoMo ref"
+                      />
+                    </label>
+                  )}
+
+                  <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
+                </article>
+              </section>
 
                   <div className="system-table-wrap">
                     <table className="system-table pos-cart-table">
@@ -4872,7 +4867,7 @@ function App() {
               </section>
             </section>
 
-<section className="pos-sales-summary-table-card">
+<section className="pos-sales-summary-table-card pos-recent-transactions-bottom">
               <div className="section-heading">
                 <div>
                   <span>Current POS session</span>
