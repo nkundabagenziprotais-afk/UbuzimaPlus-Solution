@@ -18493,3 +18493,58 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
+
+/* POS-C.1.36 Section 2 Cart table ledger */
+.pos-cart-table-ledger-card .section-heading {
+  margin-bottom: 14px;
+}
+
+.pos-cart-operating-table-wrap {
+  margin-bottom: 14px;
+}
+
+.pos-cart-operating-table th,
+.pos-cart-operating-table td,
+.pos-cart-table--records th,
+.pos-cart-table--records td {
+  vertical-align: middle;
+}
+
+.pos-cart-operating-table tbody td {
+  font-weight: 900;
+}
+
+.pos-cart-table--records td strong {
+  display: block;
+  font-weight: 900;
+}
+
+.pos-cart-table--records td small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.pos-cart-table--records input[type="number"] {
+  width: 86px;
+  min-width: 86px;
+  text-align: center;
+}
+
+.pos-cart-table-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.pos-cart-table-actions button {
+  min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .pos-cart-operating-table,
+  .pos-cart-table--records {
+    min-width: 620px;
+  }
+}
