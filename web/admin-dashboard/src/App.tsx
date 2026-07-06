@@ -4358,8 +4358,9 @@ function App() {
 
       return (
         <section className="section-page pos-dedicated-counter-shell">
-          <section className="pos-counter-page pos-counter-page--dedicated">
-            {renderPosWorkspaceTopMenu('pos')}
+          <section className="pos-counter-page pos-counter-page--dedicated pos-stable-page-v16">
+            <div className="pos-fixed-top-v16">
+              {renderPosWorkspaceTopMenu('pos')}
 
             <PosInventoryAutoLoader
               shouldLoad={activePosWorkspace === 'pos' && !isLoadingPosInventory && !posInventoryLoadedAt && !posInventoryError}
@@ -4378,12 +4379,13 @@ function App() {
                 <strong>RWF {Number(posStartingCashBalance || 0).toLocaleString('en-RW')}</strong>
               </div>
             </section>
+            </div>
 
-            <div className="pos-terminal-main-scroll">
+            <div className="pos-terminal-main-scroll pos-scroll-body-v16">
               {posNotice && <div className="form-success">{posNotice}</div>}
 
-              <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
-                <article className="pos-shift-card pos-shift-card--open">
+              <section className="pos-day-control-strip pos-day-control-strip--two-by-two pos-shift-strip-v16">
+                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
                   <strong className="pos-shift-title">Clock-in</strong>
 
                   <label className="pos-shift-field">
@@ -4407,7 +4409,7 @@ function App() {
                   <button type="button" onClick={openPosDay}>Open Day</button>
                 </article>
 
-                <article className="pos-shift-card pos-shift-card--close">
+                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--close">
                   <strong className="pos-shift-title">Clock-out</strong>
 
                   <label className="pos-shift-field">
@@ -4537,7 +4539,7 @@ function App() {
                           <button
                             key={product.code}
                             type="button"
-                            className={`pos-product-tile product-expiry-${expiryStatusClass}`}
+                            className={`pos-product-tile pos-product-tile-v16 product-expiry-${expiryStatusClass}`}
                             onClick={() => addPosProductToCart(product)}
                           >
                             <strong>{product.name}</strong>
@@ -4779,8 +4781,8 @@ function App() {
                     <small>{posSummaryTimestamp}</small>
                   </div>
 
-                  <div className="pos-payment-summary-grid">
-                    <dl className="pos-summary-list pos-summary-list--operational">
+                  <div className="pos-payment-summary-grid pos-payment-summary-grid-v16">
+                    <dl className="pos-summary-list pos-summary-list-v16 pos-summary-list--operational">
                       <div>
                         <dt>Date</dt>
                         <dd>{posSummaryTimestamp}</dd>
@@ -4803,7 +4805,7 @@ function App() {
                       </div>
                     </dl>
 
-                    <dl className="pos-summary-list pos-summary-list--financial">
+                    <dl className="pos-summary-list pos-summary-list-v16 pos-summary-list--financial">
                       <div>
                         <dt>Sub-Total</dt>
                         <dd>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</dd>

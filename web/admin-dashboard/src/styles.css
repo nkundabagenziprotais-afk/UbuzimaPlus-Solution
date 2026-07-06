@@ -18919,3 +18919,305 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
+
+/* Patch POS-C.1.16 - Real structural POS layout fix */
+
+/* Page shell: header/menu fixed in layout, only main body scrolls */
+.pos-dedicated-counter-shell {
+  height: 100dvh !important;
+  overflow: hidden !important;
+  background: #eef2f7 !important;
+}
+
+.pos-stable-page-v16 {
+  height: 100dvh !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 8px !important;
+  padding: 6px !important;
+  overflow: hidden !important;
+}
+
+.pos-fixed-top-v16 {
+  grid-row: 1 !important;
+  display: grid !important;
+  gap: 6px !important;
+  position: relative !important;
+  z-index: 20 !important;
+}
+
+.pos-fixed-top-v16 .pos-dedicated-command-bar {
+  margin: 0 !important;
+}
+
+.pos-scroll-body-v16 {
+  grid-row: 2 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: grid !important;
+  gap: 8px !important;
+  align-content: start !important;
+  padding-bottom: 18px !important;
+}
+
+/* Clock-in / Clock-out: one-line professional cards */
+.pos-shift-strip-v16 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+}
+
+.pos-shift-card-v16 {
+  display: grid !important;
+  grid-template-columns: 74px minmax(145px, 0.9fr) minmax(210px, 1.35fr) 96px !important;
+  gap: 8px !important;
+  align-items: end !important;
+  min-height: 58px !important;
+  padding: 8px !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06) !important;
+  overflow: hidden !important;
+}
+
+.pos-shift-card-v16 .pos-shift-title {
+  align-self: stretch !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 11px !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.pos-shift-card-v16 .pos-shift-field,
+.pos-shift-card-v16 .pos-shift-check {
+  min-width: 0 !important;
+  width: 100% !important;
+  display: grid !important;
+  gap: 3px !important;
+}
+
+.pos-shift-card-v16 .pos-shift-field span,
+.pos-shift-card-v16 .pos-shift-check span {
+  font-size: 0.63rem !important;
+  line-height: 1.08 !important;
+  color: #64748b !important;
+  font-weight: 850 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-shift-card-v16 .pos-shift-field span {
+  white-space: nowrap !important;
+}
+
+.pos-shift-card-v16 .pos-shift-check {
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  align-items: center !important;
+  min-height: 32px !important;
+}
+
+.pos-shift-card-v16 .pos-shift-check input {
+  width: 16px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  margin: 0 !important;
+}
+
+.pos-shift-card-v16 .pos-shift-check span {
+  white-space: nowrap !important;
+}
+
+.pos-shift-card-v16 select,
+.pos-shift-card-v16 input {
+  width: 100% !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  border-radius: 9px !important;
+  font-size: 0.72rem !important;
+  padding: 2px 7px !important;
+}
+
+.pos-shift-card-v16 button {
+  width: 100% !important;
+  min-height: 32px !important;
+  border-radius: 9px !important;
+  font-size: 0.7rem !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  padding: 3px 7px !important;
+}
+
+/* Main POS area */
+.pos-operating-cockpit-v2 {
+  grid-template-columns: minmax(0, 65fr) minmax(480px, 35fr) !important;
+  gap: 8px !important;
+  align-items: start !important;
+}
+
+/* Product card rows: name is protected, extra info appears below */
+.pos-product-stock-section {
+  grid-template-rows: auto 38px 40px minmax(766px, 766px) 32px !important;
+  min-height: 898px !important;
+  overflow: hidden !important;
+}
+
+.pos-drug-list--ten {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-rows: 102px !important;
+  min-height: 766px !important;
+  max-height: 766px !important;
+  gap: 6px !important;
+  padding: 8px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  align-content: start !important;
+}
+
+.pos-product-tile-v16 {
+  min-height: 102px !important;
+  max-height: 102px !important;
+  display: grid !important;
+  grid-template-rows: 2.2em 1.05em 1.05em 1.05em 1.15em !important;
+  gap: 3px !important;
+  padding: 8px !important;
+  overflow: hidden !important;
+}
+
+.pos-product-tile-v16 strong {
+  display: block !important;
+  font-size: 0.72rem !important;
+  line-height: 1.1 !important;
+  min-height: 2.2em !important;
+  max-height: 2.2em !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+}
+
+.pos-product-tile-v16 .pos-product-card-line,
+.pos-product-tile-v16 > em {
+  display: block !important;
+  font-size: 0.58rem !important;
+  line-height: 1.05 !important;
+  min-height: 1.05em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-style: normal !important;
+  margin: 0 !important;
+}
+
+.pos-product-tile-v16 > em {
+  font-weight: 900 !important;
+}
+
+/* Payment Summary: equal columns, tight gap, no overlap */
+.pos-payment-summary-grid-v16 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 0 6px 6px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  align-items: start !important;
+}
+
+.pos-summary-list-v16 {
+  min-width: 0 !important;
+  gap: 6px !important;
+}
+
+.pos-summary-list-v16 div {
+  min-width: 0 !important;
+  min-height: 34px !important;
+  grid-template-columns: minmax(72px, 0.9fr) minmax(0, 1.1fr) !important;
+  gap: 6px !important;
+  padding: 7px 8px !important;
+  align-items: center !important;
+}
+
+.pos-summary-list-v16 dt {
+  min-width: 0 !important;
+  font-size: 0.66rem !important;
+  line-height: 1.08 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+.pos-summary-list-v16 dd {
+  min-width: 0 !important;
+  font-size: 0.76rem !important;
+  line-height: 1.08 !important;
+  font-weight: 900 !important;
+  text-align: right !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  word-break: normal !important;
+}
+
+.pos-summary-list--operational.pos-summary-list-v16 div:first-child {
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+}
+
+.pos-summary-list--operational.pos-summary-list-v16 div:first-child dd {
+  font-size: 0.72rem !important;
+}
+
+/* Cart keeps expanding */
+.pos-sale-cart-section,
+.pos-sale-cart-section .system-table-wrap {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Responsive safety */
+@media (max-width: 1180px) {
+  .pos-stable-page-v16 {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+  }
+
+  .pos-scroll-body-v16 {
+    overflow: visible !important;
+  }
+
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "transaction"
+      "session" !important;
+  }
+
+  .pos-shift-strip-v16 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-shift-card-v16 {
+    grid-template-columns: 74px minmax(0, 1fr) minmax(0, 1.2fr) 96px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .pos-shift-card-v16,
+  .pos-payment-summary-grid-v16,
+  .pos-field-grid--two {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
