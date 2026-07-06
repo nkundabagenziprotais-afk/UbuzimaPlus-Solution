@@ -18211,3 +18211,349 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Patch POS-C.1.14 - Fit, sync protection, and international POS layout correction */
+
+/* Keep POS page clean and prevent header/card overlap */
+.pos-counter-page--dedicated,
+.pos-terminal-main-scroll,
+.pos-operating-cockpit-v2 {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Inventory loaded alert: professional, compact, does not dominate top section */
+.pos-terminal-main-scroll > .form-success {
+  margin: 0 !important;
+  padding: 9px 14px !important;
+  border-radius: 16px !important;
+  font-size: 0.78rem !important;
+  line-height: 1.25 !important;
+  font-weight: 850 !important;
+}
+
+/* Clock-in and Clock-out: one-line operational cards */
+.pos-day-control-strip--two-by-two {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+}
+
+.pos-shift-card {
+  display: grid !important;
+  grid-template-columns: 76px minmax(0, 1.05fr) minmax(0, 1.2fr) 96px !important;
+  gap: 8px !important;
+  align-items: end !important;
+  min-height: 58px !important;
+  padding: 8px !important;
+  overflow: hidden !important;
+}
+
+.pos-shift-title {
+  min-width: 0 !important;
+  align-self: stretch !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 7px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-shift-field,
+.pos-shift-check {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.pos-shift-field span,
+.pos-shift-check span {
+  font-size: 0.62rem !important;
+  line-height: 1.08 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.pos-shift-field span {
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-shift-check {
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  align-items: center !important;
+  min-height: 32px !important;
+  padding: 0 4px !important;
+}
+
+.pos-shift-check span {
+  display: block !important;
+  white-space: normal !important;
+  max-height: 2.2em !important;
+}
+
+.pos-shift-field select,
+.pos-shift-field input {
+  height: 32px !important;
+  min-height: 32px !important;
+  font-size: 0.7rem !important;
+}
+
+.pos-shift-card button {
+  min-width: 0 !important;
+  width: 100% !important;
+  min-height: 32px !important;
+  font-size: 0.68rem !important;
+  white-space: nowrap !important;
+}
+
+/* POS workspace: keep products and transaction column aligned */
+.pos-operating-cockpit-v2 {
+  grid-template-columns: minmax(0, 65fr) minmax(470px, 35fr) !important;
+  gap: 8px !important;
+  align-items: start !important;
+}
+
+/* Product Search & Stock Pick: keep products contained and increase useful visible rows */
+.pos-product-stock-section {
+  grid-template-rows: auto 38px 40px minmax(724px, 724px) 32px !important;
+  min-height: 856px !important;
+  overflow: hidden !important;
+}
+
+.pos-search-input {
+  height: 36px !important;
+  min-height: 36px !important;
+  font-size: 0.78rem !important;
+  border-radius: 12px !important;
+}
+
+.pos-inventory-load-panel {
+  grid-template-columns: 118px minmax(0, 1fr) !important;
+  min-height: 34px !important;
+}
+
+.pos-inventory-load-panel button {
+  min-height: 28px !important;
+}
+
+.pos-drug-list--ten {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-rows: 96px !important;
+  min-height: 724px !important;
+  max-height: 724px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  align-content: start !important;
+}
+
+.pos-product-tile {
+  min-height: 96px !important;
+  max-height: 96px !important;
+  padding: 8px !important;
+  gap: 3px !important;
+  overflow: hidden !important;
+}
+
+.pos-product-tile strong {
+  font-size: 0.72rem !important;
+  line-height: 1.08 !important;
+  max-height: 2.16em !important;
+}
+
+.pos-product-card-line,
+.pos-product-tile > em {
+  font-size: 0.58rem !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Cart: expands with selected products; no internal hiding */
+.pos-sale-cart-section,
+.pos-sale-cart-section .system-table-wrap {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+.pos-sale-transaction-section {
+  grid-template-rows: auto auto 38px auto auto !important;
+  align-content: start !important;
+  overflow: visible !important;
+}
+
+/* Transaction Set-UP: readable, visible, no internal scroll */
+.pos-transaction-setup-section {
+  overflow: visible !important;
+}
+
+.pos-field-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  padding: 0 8px 8px !important;
+}
+
+.pos-field-grid--two label {
+  padding: 7px !important;
+  min-height: 54px !important;
+}
+
+.pos-field-grid--two label span {
+  font-size: 0.64rem !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-field-grid--two input,
+.pos-field-grid--two select {
+  height: 32px !important;
+  min-height: 32px !important;
+  font-size: 0.72rem !important;
+}
+
+/* Update Summary: button only */
+.pos-summary-update-bridge {
+  min-height: 38px !important;
+  padding: 5px !important;
+  overflow: hidden !important;
+}
+
+.pos-summary-update-bridge button {
+  min-height: 30px !important;
+  font-size: 0.72rem !important;
+}
+
+/* Payment Summary: protect all fields from overlap and keep split readable */
+.pos-summary-confirmation-card {
+  overflow: visible !important;
+}
+
+.pos-summary-confirmation-card .section-heading h3 {
+  font-size: 0.96rem !important;
+}
+
+.pos-summary-sync-note {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  align-items: center !important;
+  margin: 6px 8px !important;
+  padding: 7px 8px !important;
+}
+
+.pos-summary-sync-note span {
+  font-size: 0.66rem !important;
+  letter-spacing: 0.08em !important;
+  white-space: nowrap !important;
+}
+
+.pos-summary-sync-note strong {
+  font-size: 0.78rem !important;
+  white-space: nowrap !important;
+}
+
+.pos-summary-sync-note small {
+  grid-column: 1 / -1 !important;
+  font-size: 0.66rem !important;
+}
+
+/* Wider internal columns: operational left, financial right */
+.pos-payment-summary-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.42fr) !important;
+  gap: 8px !important;
+  padding: 0 8px 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  align-items: start !important;
+}
+
+.pos-summary-list {
+  min-width: 0 !important;
+  gap: 6px !important;
+}
+
+.pos-summary-list div {
+  min-width: 0 !important;
+  min-height: 34px !important;
+  grid-template-columns: minmax(78px, 0.92fr) minmax(0, 1.18fr) !important;
+  gap: 7px !important;
+  padding: 7px 8px !important;
+  align-items: center !important;
+}
+
+.pos-summary-list dt {
+  min-width: 0 !important;
+  font-size: 0.66rem !important;
+  line-height: 1.05 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+.pos-summary-list dd {
+  min-width: 0 !important;
+  font-size: 0.76rem !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Date row needs extra value space */
+.pos-summary-list--operational div:first-child {
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+}
+
+.pos-summary-list--operational div:first-child dd {
+  font-size: 0.74rem !important;
+}
+
+/* Remove Taxable Base visually if any older cached/legacy markup renders it */
+.pos-summary-list div:has(dt):has(dd) dt {
+  pointer-events: none !important;
+}
+
+/* Cart remove button fit */
+.pos-cart-remove-button {
+  font-size: 0.5rem !important;
+  letter-spacing: -0.02em !important;
+  padding: 2px 1px !important;
+}
+
+/* Responsive safety */
+@media (max-width: 1440px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "transaction"
+      "session" !important;
+  }
+
+  .pos-day-control-strip--two-by-two {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-shift-card {
+    grid-template-columns: 82px minmax(0, 1fr) minmax(0, 1fr) 96px !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .pos-shift-card,
+  .pos-payment-summary-grid,
+  .pos-field-grid--two {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+

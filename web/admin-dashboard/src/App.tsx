@@ -4478,8 +4478,7 @@ function App() {
                 <div className="pos-drug-list pos-drug-list--ten">
                   {posProducts.length === 0 ? (
                     <div className="pos-inventory-empty-state">
-                      <strong>Loading sellable inventory</strong>
-                      <small></small>
+                      <strong>Loading stock…</strong>
                     </div>
                   ) : (
                     posVisibleProducts.length === 0 ? (
