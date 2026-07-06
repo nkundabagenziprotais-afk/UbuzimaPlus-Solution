@@ -17168,7 +17168,7 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-/* Patch POS-C.1.20 - Clean single-source POS layout */
+/* Patch POS-C.1.21 - Clean single-source POS layout */
 
 /* Overall POS screen */
 .pos-dedicated-counter-shell {
@@ -18397,4 +18397,70 @@ table td:not(:first-child):not(.numeric) {
   .pos-product-stock-section {
     grid-template-rows: auto auto auto 540px !important;
   }
+}
+
+
+/* C1.21 revisions: responsive product columns and stable Payment Summary fit */
+
+/* Product column responsiveness: reduce Product & Stock Pick columns before breaking the whole layout */
+@media (max-width: 1680px) and (min-width: 1441px) {
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1440px) and (min-width: 1181px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(470px, 35%) !important;
+    grid-template-areas: "products transaction" !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1180px) and (min-width: 981px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(430px, 36%) !important;
+    grid-template-areas: "products transaction" !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "transaction" !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Payment Summary: compact readable cards */
+.pos-payment-summary-grid-v17 {
+  align-items: start !important;
+}
+
+.pos-summary-field-card {
+  min-height: 34px !important;
+  padding: 6px 8px !important;
+  border-radius: 10px !important;
+}
+
+.pos-summary-field-card span {
+  font-size: 0.58rem !important;
+  line-height: 1.05 !important;
+}
+
+.pos-summary-field-card strong {
+  font-size: 0.68rem !important;
+  line-height: 1.05 !important;
 }

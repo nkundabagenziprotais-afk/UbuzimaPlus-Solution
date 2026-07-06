@@ -4358,20 +4358,63 @@ function App() {
         minute: '2-digit',
       });
 
-      const posPaymentOperationalCards = [
-        ['Date', posSummaryTimestamp],
-        ['Cart lines', posFinancialLineCount],
-        ['Quantity', posFinancialTotalQuantity],
-        ['% Customer', `${posSummaryCustomerContributionPercent}%`],
-        ['% Insurer', `${posSummaryInsurerContributionPercent}%`],
+      const posSummarySubtotal = posCartItems.reduce(
+        (sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+        0,
+      );
+      const posSummaryDiscount = Math.min(
+        Math.max(0, Number.parseFloat(posDiscountAmount || '0') || 0),
+        posSummarySubtotal,
+      );
+      const posSummaryNetDiscount = Math.max(0, posSummarySubtotal - posSummaryDiscount);
+
+      // POS currently uses the tenant tax mode from Finance Tax Compliance Management.
+      // Until the backend setting is exposed here, inclusive is the safe default.
+      const posTaxMode: 'inclusive' | 'exclusive' = 'inclusive';
+      const posTaxRate = 0.18;
+      const posSummaryTax = posTaxMode === 'exclusive'
+        ? Math.round(posSummaryNetDiscount * posTaxRate)
+        : Math.round((posSummaryNetDiscount * posTaxRate) / (1 + posTaxRate));
+
+      const posSummaryTotalAmount = posTaxMode === 'exclusive'
+        ? posSummaryNetDiscount + posSummaryTax
+        : posSummaryNetDiscount;
+
+      const selectedInsuranceForSummary = (posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0])!;
+      const selectedInstitutionForSummary =
+        selectedInsuranceForSummary.institutions.find((institution) => institution.id === posInsuranceInstitution) ?? null;
+
+      const posSummaryCustomerPercent =
+        posPaymentMethod === 'insurance'
+          ? selectedInstitutionForSummary?.customerContributionPercent ?? selectedInsuranceForSummary.masterCustomerContributionPercent
+          : 100;
+
+      const posSummaryInsurerPercent =
+        posPaymentMethod === 'insurance' ? Math.max(0, 100 - posSummaryCustomerPercent) : 0;
+
+      const posSummaryCustomerPayment =
+        posPaymentMethod === 'insurance'
+          ? Math.round((posSummaryTotalAmount * posSummaryCustomerPercent) / 100)
+          : posSummaryTotalAmount;
+
+      const posSummaryInsurerPayment =
+        posPaymentMethod === 'insurance'
+          ? Math.max(0, posSummaryTotalAmount - posSummaryCustomerPayment)
+          : 0;
+
+      const posPaymentOperationalCards: Array<[string, string]> = [
+        ['Date', new Date().toLocaleDateString('en-RW')],
+        ['Cart lines', String(posCartItems.length)],
+        ['Quantity', String(posCartItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0))],
+        ['% Customer', `${posSummaryCustomerPercent}%`],
+        ['% Insurer', `${posSummaryInsurerPercent}%`],
       ];
 
-      const posPaymentFinancialCards = [
-        ['Sub-Total', `RWF ${posFinancialSubtotal.toLocaleString('en-RW')}`],
-        ['Discount', `RWF ${posSummaryDiscountAmount.toLocaleString('en-RW')}`],
+      const posPaymentFinancialCards: Array<[string, string]> = [
+        ['Sub-Total', `RWF ${posSummarySubtotal.toLocaleString('en-RW')}`],
+        ['Discount', `RWF ${posSummaryDiscount.toLocaleString('en-RW')}`],
         ['Net Discount', `RWF ${posSummaryNetDiscount.toLocaleString('en-RW')}`],
-        ['Taxable Base', `RWF ${posSummaryTaxableBase.toLocaleString('en-RW')}`],
-        ['Tax', `RWF ${posSummaryTaxAmount.toLocaleString('en-RW')}`],
+        ['Tax', `RWF ${posSummaryTax.toLocaleString('en-RW')}`],
         ['Total Amount', `RWF ${posSummaryTotalAmount.toLocaleString('en-RW')}`],
         ['Customer Payment', `RWF ${posSummaryCustomerPayment.toLocaleString('en-RW')}`],
         ['Insurer Payment', `RWF ${posSummaryInsurerPayment.toLocaleString('en-RW')}`],
