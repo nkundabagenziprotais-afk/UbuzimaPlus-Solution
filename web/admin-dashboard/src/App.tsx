@@ -4861,71 +4861,92 @@ function App() {
               </section>
                 </section>
 
-<section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
-                  <div className="section-heading">
-                    <div>
-                      <span>Section 2 · Cart</span>
-                      <h3>Cart</h3>
-                    </div>
-                    <div className="pos-cart-header-actions">
-                      <small>{posFinancialLineCount} line{posFinancialLineCount === 1 ? '' : 's'} · {posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posFinancialLineCount === 0}>
-                        Clear cart
-                      </button>
-                    </div>
-                  </div>
+{(() => {
+                  const visibleCartRows = createStablePosCartSnapshot([
+                    ...(Array.isArray(posRenderedCartItems) ? posRenderedCartItems : []),
+                    ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
+                    ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+                    ...(Array.isArray(posCartItems) ? posCartItems : []),
+                  ]).items.map((item) => ({
+                    ...item,
+                    quantity: Math.max(1, Number(item.quantity || 1)),
+                    unitPrice: Math.max(0, Number(item.unitPrice || 0)),
+                    availableQuantity: Math.max(1, Number(item.availableQuantity || item.quantity || 1)),
+                  }));
 
-                  
+                  const visibleCartLineCount = visibleCartRows.length;
+                  const visibleCartUnitCount = visibleCartRows.reduce(
+                    (total, item) => total + Number(item.quantity || 0),
+                    0,
+                  );
 
+                  return (
+                    <section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
+                      <div className="section-heading">
+                        <div>
+                          <span>Section 2 · Cart</span>
+                          <h3>Cart</h3>
+                        </div>
+                        <div className="pos-cart-header-actions">
+                          <small>
+                            {visibleCartLineCount} line{visibleCartLineCount === 1 ? '' : 's'} · {visibleCartUnitCount} unit{visibleCartUnitCount === 1 ? '' : 's'}
+                          </small>
+                          <button type="button" onClick={clearPosCart} disabled={visibleCartLineCount === 0}>
+                            Clear cart
+                          </button>
+                        </div>
+                      </div>
 
-                  <div className="system-table-wrap">
-                    <table className="system-table pos-cart-table">
-                      <thead>
-                        <tr>
-                          <th>Product</th>
-                          <th>Qty</th>
-                          <th>Total</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {posFinancialLineCount === 0 ? (
-                          <tr>
-                            <td colSpan={4}>No products added yet. Select products from the tile board.</td>
-                          </tr>
-                        ) : (
-                          posCartDisplayItems.map((item) => (
-                            <tr key={item.code}>
-                              <td>
-                                <strong>{item.name}</strong>
-                                <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')}</small>
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  max={item.availableQuantity}
-                                  value={item.quantity}
-                                  onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
-                                />
-                              </td>
-                              <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="pos-cart-remove-button"
-                                  onClick={() => removeCartItem(item.code)}
-                                >
-                                  Remove
-                                </button>
-                              </td>
+                      <div className="system-table-wrap">
+                        <table className="system-table pos-cart-table">
+                          <thead>
+                            <tr>
+                              <th>Product</th>
+                              <th>Qty</th>
+                              <th>Total</th>
+                              <th>Action</th>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
+                          </thead>
+                          <tbody>
+                            {visibleCartLineCount === 0 ? (
+                              <tr>
+                                <td colSpan={4}>No products added yet. Select products from the tile board.</td>
+                              </tr>
+                            ) : (
+                              visibleCartRows.map((item) => (
+                                <tr key={item.code}>
+                                  <td>
+                                    <strong>{item.name}</strong>
+                                    <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')}</small>
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      max={item.availableQuantity}
+                                      value={item.quantity}
+                                      onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
+                                    />
+                                  </td>
+                                  <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="pos-cart-remove-button"
+                                      onClick={() => removeCartItem(item.code)}
+                                    >
+                                      Remove
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  );
+                })()}
 
                 <section className="pos-transaction-setup-section pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
                   <div className="section-heading">
