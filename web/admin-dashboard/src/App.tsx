@@ -2563,6 +2563,7 @@ function App() {
     expiryDate: string | null;
     locationName: string;
   }>>([]);
+  const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
   const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
   const [posCounterCart, setPosCounterCart] = useState<{
     items: typeof posCartItems;
@@ -4195,6 +4196,7 @@ function App() {
       setPosCounterCart(cartSnapshot);
       setPosCounterItems(cartSnapshot.items);
       setPosCartItems(cartSnapshot.items);
+      setPosRenderedCartItems(cartSnapshot.items);
       setPosSaleSummary(
         calculatePosSaleSummary({
           cartItems: cartSnapshot.items,
@@ -4548,36 +4550,12 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posLiveCartItems = [
+      const posLiveCartItems = createStablePosCartSnapshot([
+        ...(Array.isArray(posRenderedCartItems) ? posRenderedCartItems : []),
         ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
         ...(Array.isArray(posCounterItems) ? posCounterItems : []),
         ...(Array.isArray(posCartItems) ? posCartItems : []),
-      ].reduce<typeof posCartItems>((uniqueItems, item) => {
-        if (!item || !item.code) return uniqueItems;
-
-        const existingIndex = uniqueItems.findIndex((existingItem) => existingItem.code === item.code);
-        const normalizedItem = {
-          ...item,
-          quantity: Math.max(1, Number(item.quantity || 1)),
-          unitPrice: Number(item.unitPrice || 0),
-          availableQuantity: Number(item.availableQuantity || 0),
-        };
-
-        if (existingIndex >= 0) {
-          const existingItem = uniqueItems[existingIndex];
-          uniqueItems[existingIndex] = {
-            ...existingItem,
-            ...normalizedItem,
-            quantity: Math.max(Number(existingItem.quantity || 0), normalizedItem.quantity),
-            unitPrice: normalizedItem.unitPrice || Number(existingItem.unitPrice || 0),
-            availableQuantity: normalizedItem.availableQuantity || Number(existingItem.availableQuantity || 0),
-          };
-        } else {
-          uniqueItems.push(normalizedItem);
-        }
-
-        return uniqueItems;
-      }, []);
+      ]).items;
 
       const posFinancialLineCount = posLiveCartItems.length;
       const posFinancialTotalQuantity = posLiveCartItems.reduce(
