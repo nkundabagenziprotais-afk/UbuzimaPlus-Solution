@@ -3999,7 +3999,7 @@ function App() {
     }
 
     function normalizePosCartItems(cartItems = posCartItems) {
-      return cartItems.filter((item) => Number(item.quantity || 0) > 0 && Number(item.unitPrice || 0) >= 0);
+      return cartItems;
     }
 
     function forceRefreshSaleSummary() {
@@ -4332,7 +4332,7 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posLiveCartItems = normalizePosCartItems(posCartItems);
+      const posLiveCartItems = posCartItems;
       const posFinancialLineCount = posLiveCartItems.length;
       const posFinancialTotalQuantity = posLiveCartItems.reduce((total, item) => total + item.quantity, 0);
       const posSummarySyncKey = posSummaryRefreshKey;
