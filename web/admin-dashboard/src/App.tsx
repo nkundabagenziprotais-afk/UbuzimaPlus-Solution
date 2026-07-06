@@ -4003,7 +4003,7 @@ function App() {
     }
 
     function forceRefreshSaleSummary() {
-      const liveCartItems = Array.isArray(posCartItems) ? posCartItems : [];
+      const liveCartItems = normalizePosCartItems(posCartItems);
       setPosSaleSummary(
         calculatePosSaleSummary({
           cartItems: liveCartItems,
@@ -4013,8 +4013,6 @@ function App() {
           insuranceInstitutionId: posInsuranceInstitution,
         }),
       );
-      setPosSummaryRefreshKey((current) => current + 1);
-      setPosTransactionConfirmed(false);
       setPosNotice('Payment summary updated from the current cart and Transaction Set-UP settings.');
     }
 
@@ -4597,8 +4595,8 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posCartRenderItems.length} item line{posCartRenderItems.length === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posCartRenderItems.length === 0}>
+                      <small>{posFinancialLineCount} item line{posFinancialLineCount === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posFinancialLineCount === 0}>
                         Clear cart
                       </button>
                     </div>
@@ -4618,12 +4616,12 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posCartRenderItems.length === 0 ? (
+                        {posFinancialLineCount === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posCartRenderItems.map((item) => (
+                          posLiveCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
@@ -4787,7 +4785,7 @@ function App() {
                 </section>
 
                 <div className="pos-summary-update-bridge">
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartRenderItems.length === 0}>
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posFinancialLineCount === 0}>
                     Update Summary
                   </button>
                 </div>
