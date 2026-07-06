@@ -3990,14 +3990,7 @@ function App() {
         setPosCartItems([]);
         setPosTransactionConfirmed(false);
 
-        const sellableCount = batches.filter((batch) => {
-          const availableQuantity = resolveBatchAvailableQuantity(batch);
-          const expiryIsValid = !batch.expiry_date || batch.expiry_date >= new Date().toISOString().slice(0, 10);
-
-          return availableQuantity > 0 && (!batch.status || batch.status === 'active') && expiryIsValid;
-        }).length;
-
-        setPosNotice(`Sellable inventory loaded for POS. ${sellableCount} sellable batch${sellableCount === 1 ? '' : 'es'} available for product search and stock picking.`);
+        setPosNotice('');
       } catch (err) {
         setPosInventoryError(err instanceof Error ? err.message : 'Unable to load current inventory for POS.');
       } finally {
@@ -4320,11 +4313,24 @@ function App() {
     }
 
     if (activePosWorkspace === 'pos') {
+      const selectedInsuranceInstitution = selectedInsurance.institutions.find(
+        (institution) => institution.id === posInsuranceInstitution,
+      );
+      const posSummaryCustomerContributionPercent = posPaymentMethod === 'insurance'
+        ? Number(
+            selectedInsuranceInstitution?.customerContributionPercent ??
+            selectedInsurance.masterCustomerContributionPercent ??
+            100,
+          )
+        : 100;
+      const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
+        ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
+        : 0;
       const posFinancialSubtotal = posCartItems.reduce(
         (total, item) => total + item.quantity * item.unitPrice,
         0,
       );
-      const posSummaryDiscountAmount = Number(posDiscountAmount || 0);
+      const posSummaryDiscountAmount = Math.max(Number(posDiscountAmount || 0), 0);
       const posSummaryNetDiscount = Math.max(posFinancialSubtotal - Math.min(posSummaryDiscountAmount, posFinancialSubtotal), 0);
       const posTaxMode: 'inclusive' | 'exclusive' = 'inclusive';
       const posTaxRatePercent = 0;
@@ -4335,12 +4341,11 @@ function App() {
         ? posSummaryNetDiscount + posSummaryTaxAmount
         : posSummaryNetDiscount;
       const posSummaryCustomerPayment = posPaymentMethod === 'insurance'
-        ? Math.round((posSummaryTotalAmount * posSaleSummary.customerContributionPercent) / 100)
+        ? Math.round((posSummaryTotalAmount * posSummaryCustomerContributionPercent) / 100)
         : posSummaryTotalAmount;
       const posSummaryInsurerPayment = posPaymentMethod === 'insurance'
         ? Math.max(posSummaryTotalAmount - posSummaryCustomerPayment, 0)
         : 0;
-
 
       return (
         <section className="section-page pos-dedicated-counter-shell">
@@ -4451,9 +4456,7 @@ function App() {
                     {isLoadingPosInventory ? 'Loading stock…' : 'Refresh stock'}
                   </button>
                   <span>
-                    {posInventoryLoadedAt
-                      ? `Inventory loaded at ${posInventoryLoadedAt}`
-                      : 'Inventory loads automatically when the POS Counter opens.'}
+                    {posInventoryLoadedAt ? `Inventory loaded at ${posInventoryLoadedAt}` : ''}
                   </span>
                 </div>
 
@@ -4779,11 +4782,11 @@ function App() {
                       </div>
                       <div>
                         <dt>% Customer</dt>
-                        <dd>{posPaymentMethod === 'insurance' ? `${posSaleSummary.customerContributionPercent}%` : '100%'}</dd>
+                        <dd>{`${posSummaryCustomerContributionPercent}%`}</dd>
                       </div>
                       <div>
                         <dt>% Insurer</dt>
-                        <dd>{posPaymentMethod === 'insurance' ? `${posSaleSummary.insuranceContributionPercent}%` : '0%'}</dd>
+                        <dd>{`${posSummaryInsurerContributionPercent}%`}</dd>
                       </div>
                     </dl>
 
