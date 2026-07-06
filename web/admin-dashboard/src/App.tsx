@@ -4570,23 +4570,28 @@ function App() {
         };
       });
 
-      const posFinancialLineCount = posVisibleCartItems.length;
-      const posFinancialTotalQuantity = posVisibleCartItems.reduce(
-        (total, item) => total + Number(item.quantity || 0),
+      const posCartDisplayItems = posVisibleCartItems.length > 0 ? posVisibleCartItems : posLiveCartItems;
+      const posCartDisplayLineCount = posCartDisplayItems.length;
+      const posCartDisplayUnitCount = posCartDisplayItems.reduce(
+        (total, item) => total + Math.max(1, Number(item.quantity || 1)),
         0,
       );
-      const posCartOperatingUnits = posFinancialTotalQuantity;
-      const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posVisibleCartItems.reduce(
-        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+      const posCartDisplaySubtotal = posCartDisplayItems.reduce(
+        (total, item) => total + Math.max(1, Number(item.quantity || 1)) * Math.max(0, Number(item.unitPrice || 0)),
         0,
       );
 
+      const posFinancialLineCount = posCartDisplayLineCount;
+      const posFinancialTotalQuantity = posCartDisplayUnitCount;
+      const posCartOperatingUnits = posCartDisplayUnitCount;
+      const posSummarySyncKey = posSummaryRefreshKey;
+      const posFinancialSubtotal = posCartDisplaySubtotal;
+
       const posOperatingCart = {
-        items: posVisibleCartItems,
-        lineCount: posFinancialLineCount,
-        totalQuantity: posFinancialTotalQuantity,
-        subtotal: posFinancialSubtotal,
+        items: posCartDisplayItems,
+        lineCount: posCartDisplayLineCount,
+        totalQuantity: posCartDisplayUnitCount,
+        subtotal: posCartDisplaySubtotal,
       };
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
@@ -4844,7 +4849,7 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posFinancialLineCount} line{posFinancialLineCount === 1 ? '' : 's'} · {posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
+                      <small>{posCartDisplayLineCount} line{posCartDisplayLineCount === 1 ? '' : 's'} · {posCartDisplayUnitCount} unit{posCartDisplayUnitCount === 1 ? '' : 's'}</small>
                       <button type="button" onClick={clearPosCart} disabled={posFinancialLineCount === 0}>
                         Clear cart
                       </button>
@@ -4865,12 +4870,12 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posFinancialLineCount === 0 ? (
+                        {posCartDisplayLineCount === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posVisibleCartItems.map((item) => (
+                          posCartDisplayItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
@@ -5066,7 +5071,7 @@ function App() {
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
                         <span>Cart units</span>
-                        <strong>{posCartOperatingUnits}</strong>
+                        <strong>{posCartDisplayUnitCount}</strong>
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
                         <span>% Customer</span>
@@ -5081,7 +5086,7 @@ function App() {
                     <div className="pos-payment-summary-column pos-payment-summary-column--financial" aria-label="Financial payment summary">
                       <article className="pos-summary-field-card pos-summary-field-card--financial">
                         <span>Sub-Total</span>
-                        <strong>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</strong>
+                        <strong>RWF {posCartDisplaySubtotal.toLocaleString('en-RW')}</strong>
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--financial">
                         <span>Discount</span>
