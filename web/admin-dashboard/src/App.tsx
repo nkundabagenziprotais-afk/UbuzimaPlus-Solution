@@ -4420,26 +4420,6 @@ function App() {
         0,
       );
 
-      const posOperatingCartItems = [
-        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
-        ...(Array.isArray(posCartItems) ? posCartItems : []),
-      ].reduce<typeof posCartItems>((uniqueItems, item) => {
-        if (!uniqueItems.some((existingItem) => existingItem.code === item.code)) {
-          uniqueItems.push(item);
-        }
-        return uniqueItems;
-      }, []);
-
-      const posOperatingCart = {
-        items: posOperatingCartItems,
-        lineCount: posOperatingCartItems.length,
-        totalQuantity: posOperatingCartItems.reduce((total, item) => total + Number(item.quantity || 0), 0),
-        subtotal: posOperatingCartItems.reduce(
-          (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
-          0,
-        ),
-      };
-
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
       const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posOperatingCart.subtotal);
       const posSummaryNetDiscount = Math.max(posFinancialSubtotal - posSummaryAppliedDiscount, 0);
@@ -4478,7 +4458,7 @@ function App() {
       ];
 
       const posPaymentFinancialCards = [
-        ['Sub-Total', `RWF ${posOperatingCart.subtotal.toLocaleString('en-RW')}`],
+        ['Sub-Total', `RWF ${posFinancialSubtotal.toLocaleString('en-RW')}`],
         ['Discount', `RWF ${posSummaryDiscountAmount.toLocaleString('en-RW')}`],
         ['Net Discount', `RWF ${posSummaryNetDiscount.toLocaleString('en-RW')}`],
         ['Tax', `RWF ${posSummaryTaxAmount.toLocaleString('en-RW')}`],
@@ -4692,7 +4672,7 @@ function App() {
                   <div className="section-heading">
                     <div>
                       <span>Section 2 · Cart</span>
-                      <h3>Cart <small style={{ fontSize: '11px', color: '#16a34a' }}>POS-C.1.33</small></h3>
+                      <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
                       <small>{posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
@@ -4924,7 +4904,7 @@ function App() {
                       ))}
                     </div>
                   </div>
-                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCounterItems.length === 0}>
+                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartOperatingUnits === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
                 </section>
