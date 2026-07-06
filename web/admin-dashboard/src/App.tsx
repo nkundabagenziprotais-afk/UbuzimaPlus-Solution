@@ -4329,6 +4329,7 @@ function App() {
         : 0;
       const posFinancialLineCount = posCartItems.length;
       const posFinancialTotalQuantity = posCartItems.reduce((total, item) => total + item.quantity, 0);
+      const posSummarySyncKey = posSummaryRefreshKey;
       const posFinancialSubtotal = posCartItems.reduce(
         (total, item) => total + item.quantity * item.unitPrice,
         0,
@@ -4358,6 +4359,7 @@ function App() {
         minute: '2-digit',
       });
 
+      void posSummarySyncKey;
       const posPaymentOperationalCards = [
         ['Date', posSummaryTimestamp],
         ['Cart lines', posFinancialLineCount],
@@ -4370,7 +4372,6 @@ function App() {
         ['Sub-Total', `RWF ${posFinancialSubtotal.toLocaleString('en-RW')}`],
         ['Discount', `RWF ${posSummaryDiscountAmount.toLocaleString('en-RW')}`],
         ['Net Discount', `RWF ${posSummaryNetDiscount.toLocaleString('en-RW')}`],
-        ['Taxable Base', `RWF ${posSummaryTaxableBase.toLocaleString('en-RW')}`],
         ['Tax', `RWF ${posSummaryTaxAmount.toLocaleString('en-RW')}`],
         ['Total Amount', `RWF ${posSummaryTotalAmount.toLocaleString('en-RW')}`],
         ['Customer Payment', `RWF ${posSummaryCustomerPayment.toLocaleString('en-RW')}`],
