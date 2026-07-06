@@ -4062,6 +4062,7 @@ function App() {
         ];
       });
 
+      setPosSummaryRefreshKey((current) => current + 1);
       setPosTransactionConfirmed(false);
     }
 
@@ -4371,8 +4372,8 @@ function App() {
       void posSummarySyncKey;
       const posPaymentOperationalCards = [
         ['Date', posSummaryTimestamp],
-        ['Cart lines', posFinancialLineCount],
-        ['Quantity', posFinancialTotalQuantity],
+        ['Cart lines', posCartItems.length],
+        ['Quantity', posCartItems.reduce((total, item) => total + item.quantity, 0)],
         ['% Customer', `${posSummaryCustomerContributionPercent}%`],
         ['% Insurer', `${posSummaryInsurerContributionPercent}%`],
       ];
@@ -4595,8 +4596,8 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posFinancialLineCount} item line{posFinancialLineCount === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posFinancialLineCount === 0}>
+                      <small>{posCartItems.length} item line{posCartItems.length === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
                         Clear cart
                       </button>
                     </div>
@@ -4616,12 +4617,12 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posFinancialLineCount === 0 ? (
+                        {posCartItems.length === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posLiveCartItems.map((item) => (
+                          posCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
@@ -4785,7 +4786,7 @@ function App() {
                 </section>
 
                 <div className="pos-summary-update-bridge">
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posFinancialLineCount === 0}>
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartItems.length === 0}>
                     Update Summary
                   </button>
                 </div>
@@ -4801,7 +4802,7 @@ function App() {
 
                   <div className="pos-summary-sync-note">
                     <span>Payment Summary</span>
-                    <strong>{posFinancialLineCount} line{posFinancialLineCount === 1 ? '' : 's'} · {posFinancialTotalQuantity} unit{posFinancialTotalQuantity === 1 ? '' : 's'}</strong>
+                    <strong>{posCartItems.length} line{posCartItems.length === 1 ? '' : 's'} · {posCartItems.reduce((total, item) => total + item.quantity, 0)} unit{posCartItems.reduce((total, item) => total + item.quantity, 0) === 1 ? '' : 's'}</strong>
                     <small>{posSummaryTimestamp}</small>
                   </div>
 
