@@ -4316,16 +4316,19 @@ function App() {
       const selectedInsuranceInstitution = selectedInsurance.institutions.find(
         (institution) => institution.id === posInsuranceInstitution,
       );
+      const rawCustomerContributionPercent = Number(
+        selectedInsuranceInstitution?.customerContributionPercent ??
+        selectedInsurance.masterCustomerContributionPercent ??
+        100,
+      );
       const posSummaryCustomerContributionPercent = posPaymentMethod === 'insurance'
-        ? Number(
-            selectedInsuranceInstitution?.customerContributionPercent ??
-            selectedInsurance.masterCustomerContributionPercent ??
-            100,
-          )
+        ? Math.min(Math.max(rawCustomerContributionPercent, 0), 100)
         : 100;
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
+      const posFinancialLineCount = posCartItems.length;
+      const posFinancialTotalQuantity = posCartItems.reduce((total, item) => total + item.quantity, 0);
       const posFinancialSubtotal = posCartItems.reduce(
         (total, item) => total + item.quantity * item.unitPrice,
         0,
@@ -4346,6 +4349,12 @@ function App() {
       const posSummaryInsurerPayment = posPaymentMethod === 'insurance'
         ? Math.max(posSummaryTotalAmount - posSummaryCustomerPayment, 0)
         : 0;
+      const posSummaryTimestamp = new Date().toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
 
       return (
         <section className="section-page pos-dedicated-counter-shell">
@@ -4374,60 +4383,64 @@ function App() {
               {posNotice && <div className="form-success">{posNotice}</div>}
 
               <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
-              <article>
-                <span>Clock-in</span>
-                <label>
-                  <small>Opening mode</small>
-                  <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
-                    <option value="fresh-start">Fresh start day</option>
-                    <option value="handover">Handover from previous teller</option>
-                  </select>
-                </label>
-                <label>
-                  <small>Starting cash balance</small>
-                  <input
-                    type="number"
-                    min="0"
-                    value={posStartingCashBalance}
-                    onChange={(event) => setPosStartingCashBalance(event.target.value)}
-                  />
-                </label>
-                <button type="button" onClick={openPosDay}>Open Day</button>
-              </article>
+                <article className="pos-shift-card pos-shift-card--open">
+                  <strong className="pos-shift-title">Clock-in</strong>
 
-              <article>
-                <span>Clock-out</span>
-                <label>
-                  <small>Closing mode</small>
-                  <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
-                    <option value="handover">Handover to incoming staff</option>
-                    <option value="final-close">Final close with manager deposit proof</option>
-                  </select>
-                </label>
-
-                {posCloseMode === 'handover' ? (
-                  <label className="pos-inline-check">
-                    <input
-                      type="checkbox"
-                      checked={posTillZeroized}
-                      onChange={(event) => setPosTillZeroized(event.target.checked)}
-                    />
-                    <small>Till zeroized and incoming staff acknowledged</small>
+                  <label className="pos-shift-field">
+                    <span>Opening mode</span>
+                    <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
+                      <option value="fresh-start">Fresh start day</option>
+                      <option value="handover">Handover from previous teller</option>
+                    </select>
                   </label>
-                ) : (
-                  <label>
-                    <small>Deposit proof reference</small>
+
+                  <label className="pos-shift-field">
+                    <span>Starting cash balance</span>
                     <input
-                      value={posDepositProof}
-                      onChange={(event) => setPosDepositProof(event.target.value)}
-                      placeholder="Deposit slip, bank ref, MoMo ref"
+                      type="number"
+                      min="0"
+                      value={posStartingCashBalance}
+                      onChange={(event) => setPosStartingCashBalance(event.target.value)}
                     />
                   </label>
-                )}
 
-                <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
-              </article>
-            </section>
+                  <button type="button" onClick={openPosDay}>Open Day</button>
+                </article>
+
+                <article className="pos-shift-card pos-shift-card--close">
+                  <strong className="pos-shift-title">Clock-out</strong>
+
+                  <label className="pos-shift-field">
+                    <span>Closing mode</span>
+                    <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
+                      <option value="handover">Handover to incoming staff</option>
+                      <option value="final-close">Final close with manager deposit proof</option>
+                    </select>
+                  </label>
+
+                  {posCloseMode === 'handover' ? (
+                    <label className="pos-shift-check">
+                      <input
+                        type="checkbox"
+                        checked={posTillZeroized}
+                        onChange={(event) => setPosTillZeroized(event.target.checked)}
+                      />
+                      <span>Till zeroized and incoming staff acknowledged</span>
+                    </label>
+                  ) : (
+                    <label className="pos-shift-field">
+                      <span>Deposit proof reference</span>
+                      <input
+                        value={posDepositProof}
+                        onChange={(event) => setPosDepositProof(event.target.value)}
+                        placeholder="Deposit slip, bank ref, MoMo ref"
+                      />
+                    </label>
+                  )}
+
+                  <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
+                </article>
+              </section>
 
                         <section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
               <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
@@ -4496,7 +4509,7 @@ function App() {
                           ? Math.ceil((expiryDateValue.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
                           : null;
                         const expiryDaysText = expiryDaysRemaining === null
-                          ? ''
+                          ? 'Days: N/A'
                           : expiryDaysRemaining < 0
                             ? `${Math.abs(expiryDaysRemaining)}d overdue`
                             : `${expiryDaysRemaining}d left`;
@@ -4529,8 +4542,9 @@ function App() {
                             onClick={() => addPosProductToCart(product)}
                           >
                             <strong>{product.name}</strong>
-                            <small>Exp: {expiryDateText}{expiryDaysText ? ` · ${expiryDaysText}` : ''}</small>
-                            <i>Qty: {product.availableQuantity.toLocaleString('en-RW')}</i>
+                            <span className="pos-product-card-line">Exp: {expiryDateText}</span>
+                            <span className="pos-product-card-line">{expiryDaysText}</span>
+                            <span className="pos-product-card-line">Available: {product.availableQuantity.toLocaleString('en-RW')}</span>
                             <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
                           </button>
                         );
@@ -4762,31 +4776,31 @@ function App() {
 
                   <div className="pos-summary-sync-note">
                     <span>Payment Summary</span>
-                    <strong>{posSaleSummary.lineCount} line{posSaleSummary.lineCount === 1 ? '' : 's'} · {posSaleSummary.totalQuantity} unit{posSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
-                    <small>{posSaleSummary.calculatedAt}</small>
+                    <strong>{posFinancialLineCount} line{posFinancialLineCount === 1 ? '' : 's'} · {posFinancialTotalQuantity} unit{posFinancialTotalQuantity === 1 ? '' : 's'}</strong>
+                    <small>{posSummaryTimestamp}</small>
                   </div>
 
                   <div className="pos-payment-summary-grid">
                     <dl className="pos-summary-list pos-summary-list--operational">
                       <div>
                         <dt>Date</dt>
-                        <dd>{new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd>
+                        <dd>{posSummaryTimestamp}</dd>
                       </div>
                       <div>
                         <dt>Cart lines</dt>
-                        <dd>{posSaleSummary.lineCount}</dd>
+                        <dd>{posFinancialLineCount}</dd>
                       </div>
                       <div>
                         <dt>Quantity</dt>
-                        <dd>{posSaleSummary.totalQuantity}</dd>
+                        <dd>{posFinancialTotalQuantity}</dd>
                       </div>
                       <div>
                         <dt>% Customer</dt>
-                        <dd>{`${posSummaryCustomerContributionPercent}%`}</dd>
+                        <dd>{posSummaryCustomerContributionPercent}%</dd>
                       </div>
                       <div>
                         <dt>% Insurer</dt>
-                        <dd>{`${posSummaryInsurerContributionPercent}%`}</dd>
+                        <dd>{posSummaryInsurerContributionPercent}%</dd>
                       </div>
                     </dl>
 
