@@ -4410,6 +4410,7 @@ function App() {
       const posLiveCartItems = posCounterCart.items;
       const posFinancialLineCount = posCounterCart.lineCount;
       const posFinancialTotalQuantity = posCounterCart.totalQuantity;
+      const posCartOperatingUnits = posFinancialTotalQuantity;
       const posSummarySyncKey = posSummaryRefreshKey;
       const posFinancialSubtotal = posCounterCart.subtotal;
 
@@ -4688,8 +4689,8 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posCounterCart.lineCount} item line{posCounterCart.lineCount === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posCounterCart.lineCount === 0}>
+                      <small>{posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posCartOperatingUnits === 0}>
                         Clear cart
                       </button>
                     </div>
@@ -4709,7 +4710,7 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posCounterCart.lineCount === 0 ? (
+                        {posCartOperatingUnits === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
@@ -4878,7 +4879,7 @@ function App() {
                 </section>
 
                 <div className="pos-summary-update-bridge">
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCounterCart.lineCount === 0}>
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartOperatingUnits === 0}>
                     Update Summary
                   </button>
                 </div>
@@ -4894,7 +4895,7 @@ function App() {
 
                   <div className="pos-summary-sync-note">
                     <span>Payment Summary</span>
-                    <strong>{posCounterCart.lineCount} line{posCounterCart.lineCount === 1 ? '' : 's'} · {posCounterCart.totalQuantity} unit{posCounterCart.totalQuantity === 1 ? '' : 's'}</strong>
+                    <strong>{posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'} in cart</strong>
                     <small>{posSummaryTimestamp}</small>
                   </div>
 
