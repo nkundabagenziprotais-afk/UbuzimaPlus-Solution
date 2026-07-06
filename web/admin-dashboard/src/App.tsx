@@ -4027,12 +4027,23 @@ function App() {
       const liveCartItems = [
         ...(Array.isArray(posCounterItems) ? posCounterItems : []),
         ...(Array.isArray(posCartItems) ? posCartItems : []),
-      ].reduce<typeof posCartItems>((uniqueItems, item) => {
-        if (!uniqueItems.some((existingItem) => existingItem.code === item.code)) {
+      ].reduce((uniqueItems, item) => {
+        const existingIndex = uniqueItems.findIndex((existingItem) => existingItem.code === item.code);
+
+        if (existingIndex >= 0) {
+          const existingItem = uniqueItems[existingIndex];
+          uniqueItems[existingIndex] = {
+            ...existingItem,
+            ...item,
+            quantity: Math.max(Number(existingItem.quantity || 0), Number(item.quantity || 0)),
+            unitPrice: Number(item.unitPrice || existingItem.unitPrice || 0),
+          };
+        } else {
           uniqueItems.push(item);
         }
+
         return uniqueItems;
-      }, []);
+      }, [] as typeof posCartItems);
 
       setPosSaleSummary(
         calculatePosSaleSummary({
@@ -4045,7 +4056,7 @@ function App() {
       );
       setPosSummaryRefreshKey((current) => current + 1);
       setPosTransactionConfirmed(false);
-      setPosNotice('Payment summary refreshed from the visible POS cart.');
+      setPosNotice('Payment summary refreshed from the live visible POS cart.');
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
@@ -4363,34 +4374,34 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posLiveCartItems = posCounterItems;
-      const posFinancialLineCount = posLiveCartItems.length;
-      const posFinancialTotalQuantity = posLiveCartItems.reduce((total, item) => total + item.quantity, 0);
-      const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posLiveCartItems.reduce(
-        (total, item) => total + item.quantity * item.unitPrice,
-        0,
-      );
-
-      const posOperatingCartItems = [
+      const posLiveCartItems = [
         ...(Array.isArray(posCounterItems) ? posCounterItems : []),
         ...(Array.isArray(posCartItems) ? posCartItems : []),
-      ].reduce<typeof posCartItems>((uniqueItems, item) => {
-        if (!uniqueItems.some((existingItem) => existingItem.code === item.code)) {
+      ].reduce((uniqueItems, item) => {
+        const existingIndex = uniqueItems.findIndex((existingItem) => existingItem.code === item.code);
+
+        if (existingIndex >= 0) {
+          const existingItem = uniqueItems[existingIndex];
+          uniqueItems[existingIndex] = {
+            ...existingItem,
+            ...item,
+            quantity: Math.max(Number(existingItem.quantity || 0), Number(item.quantity || 0)),
+            unitPrice: Number(item.unitPrice || existingItem.unitPrice || 0),
+          };
+        } else {
           uniqueItems.push(item);
         }
-        return uniqueItems;
-      }, []);
 
-      const posOperatingCart = {
-        items: posOperatingCartItems,
-        lineCount: posOperatingCartItems.length,
-        totalQuantity: posOperatingCartItems.reduce((total, item) => total + Number(item.quantity || 0), 0),
-        subtotal: posOperatingCartItems.reduce(
-          (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
-          0,
-        ),
-      };
+        return uniqueItems;
+      }, [] as typeof posCartItems);
+
+      const posFinancialLineCount = posLiveCartItems.length;
+      const posFinancialTotalQuantity = posLiveCartItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
+      const posSummarySyncKey = posSummaryRefreshKey;
+      const posFinancialSubtotal = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+        0,
+      );
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
       const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posOperatingCart.subtotal);
@@ -4423,14 +4434,14 @@ function App() {
       void posSummarySyncKey;
       const posPaymentOperationalCards = [
         ['Date', posSummaryTimestamp],
-        ['Cart lines', posCounterItems.length],
-        ['Quantity', posCounterItems.reduce((total, item) => total + item.quantity, 0)],
+        ['Cart lines', posFinancialLineCount],
+        ['Quantity', posFinancialTotalQuantity],
         ['% Customer', `${posSummaryCustomerContributionPercent}%`],
         ['% Insurer', `${posSummaryInsurerContributionPercent}%`],
       ];
 
       const posPaymentFinancialCards = [
-        ['Sub-Total', `RWF ${posOperatingCart.subtotal.toLocaleString('en-RW')}`],
+        ['Sub-Total', `RWF ${posFinancialSubtotal.toLocaleString('en-RW')}`],
         ['Discount', `RWF ${posSummaryDiscountAmount.toLocaleString('en-RW')}`],
         ['Net Discount', `RWF ${posSummaryNetDiscount.toLocaleString('en-RW')}`],
         ['Tax', `RWF ${posSummaryTaxAmount.toLocaleString('en-RW')}`],
@@ -4647,8 +4658,8 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posCounterItems.length} item line{posCounterItems.length === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posCounterItems.length === 0}>
+                      <small>{posFinancialLineCount} item line{posFinancialLineCount === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posFinancialLineCount === 0}>
                         Clear cart
                       </button>
                     </div>
@@ -4668,12 +4679,12 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posCounterItems.length === 0 ? (
+                        {posFinancialLineCount === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posCounterItems.map((item) => (
+                          posLiveCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
@@ -4837,7 +4848,7 @@ function App() {
                 </section>
 
                 <div className="pos-summary-update-bridge">
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCounterItems.length === 0}>
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posFinancialLineCount === 0}>
                     Update Summary
                   </button>
                 </div>
@@ -4853,7 +4864,7 @@ function App() {
 
                   <div className="pos-summary-sync-note">
                     <span>Payment Summary</span>
-                    <strong>{posCounterItems.length} line{posCounterItems.length === 1 ? '' : 's'} · {posCounterItems.reduce((total, item) => total + item.quantity, 0)} unit{posCounterItems.reduce((total, item) => total + item.quantity, 0) === 1 ? '' : 's'}</strong>
+                    <strong>{posFinancialLineCount} line{posFinancialLineCount === 1 ? '' : 's'} · {posFinancialTotalQuantity} unit{posFinancialTotalQuantity === 1 ? '' : 's'}</strong>
                     <small>{posSummaryTimestamp}</small>
                   </div>
 
