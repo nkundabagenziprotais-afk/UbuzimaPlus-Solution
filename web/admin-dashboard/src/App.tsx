@@ -4527,15 +4527,13 @@ function App() {
                 <section className="pos-shift-control-section pos-session-control-card">
                   <div className="section-heading">
                     <div>
-                      <span>Section 2 · POS Session</span>
-                      <h3>Clock-in / Clock-out</h3>
+                      <span>Section 2 · Teller session</span>
+                      <h3>POS Session</h3>
                     </div>
                   </div>
 
                   <section className="pos-shift-control-grid pos-shift-strip-v16">
                 <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
-                  <strong className="pos-shift-title">Clock-in</strong>
-
                   <label className="pos-shift-field">
                     <span>Opening mode</span>
                     <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
@@ -4558,8 +4556,6 @@ function App() {
                 </article>
 
                 <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--close">
-                  <strong className="pos-shift-title">Clock-out</strong>
-
                   <label className="pos-shift-field">
                     <span>Closing mode</span>
                     <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
@@ -4834,53 +4830,7 @@ function App() {
                   </button>
                 </section>
 
-                {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
-                  <section className="pos-invoice-journey">
-                    <h3>Invoice delivery</h3>
-
-                    <label>
-                      <span>Delivery channel</span>
-                      <select value={posInvoiceDelivery} onChange={(event) => setPosInvoiceDelivery(event.target.value as typeof posInvoiceDelivery)}>
-                        <option value="printer">Printer</option>
-                        <option value="whatsapp">WhatsApp</option>
-                        <option value="email">Corporate Email</option>
-                      </select>
-                    </label>
-
-                    <button type="button" onClick={() => setPosNotice('Invoice PDF generated for the confirmed transaction.')}>
-                      Generate invoice PDF
-                    </button>
-
-                    {posInvoiceDelivery === 'printer' && (
-                      <button type="button" onClick={() => window.print()}>
-                        Print invoice
-                      </button>
-                    )}
-
-                    {posInvoiceDelivery === 'whatsapp' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const phone = posInvoiceContact.replace(/[^\d+]/g, '');
-                          window.open(`https://wa.me/${phone.replace('+', '')}`, '_blank', 'noopener,noreferrer');
-                        }}
-                      >
-                        Open WhatsApp
-                      </button>
-                    )}
-
-                    {posInvoiceDelivery === 'email' && (
-                      <button type="button" onClick={() => navigateToSection('corporate-email')}>
-                        Open Corporate Email with invoice attached
-                      </button>
-                    )}
-                  </section>
-                )}
-              </section>
-              </section>
-            </section>
-
-<section className="pos-sales-summary-table-card pos-recent-transactions-bottom">
+                <section className="pos-sales-summary-table-card pos-recent-transactions-bottom pos-recent-transactions-after-summary">
               <div className="section-heading">
                 <div>
                   <span>Current POS session</span>
@@ -4943,6 +4893,56 @@ function App() {
                 </table>
               </div>
             </section>
+
+
+                {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
+                  <section className="pos-invoice-journey">
+                    <h3>Invoice delivery</h3>
+
+                    <label>
+                      <span>Delivery channel</span>
+                      <select value={posInvoiceDelivery} onChange={(event) => setPosInvoiceDelivery(event.target.value as typeof posInvoiceDelivery)}>
+                        <option value="printer">Printer</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="email">Corporate Email</option>
+                      </select>
+                    </label>
+
+                    <button type="button" onClick={() => setPosNotice('Invoice PDF generated for the confirmed transaction.')}>
+                      Generate invoice PDF
+                    </button>
+
+                    {posInvoiceDelivery === 'printer' && (
+                      <button type="button" onClick={() => window.print()}>
+                        Print invoice
+                      </button>
+                    )}
+
+                    {posInvoiceDelivery === 'whatsapp' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const phone = posInvoiceContact.replace(/[^\d+]/g, '');
+                          window.open(`https://wa.me/${phone.replace('+', '')}`, '_blank', 'noopener,noreferrer');
+                        }}
+                      >
+                        Open WhatsApp
+                      </button>
+                    )}
+
+                    {posInvoiceDelivery === 'email' && (
+                      <button type="button" onClick={() => navigateToSection('corporate-email')}>
+                        Open Corporate Email with invoice attached
+                      </button>
+                    )}
+                  </section>
+                )}
+              </section>
+              </section>
+            </section>
+
+
+
             </div>
           </section>
         </section>
