@@ -4692,7 +4692,7 @@ function App() {
                   <div className="section-heading">
                     <div>
                       <span>Section 2 · Cart</span>
-                      <h3>Cart</h3>
+                      <h3>Cart <small style={{ fontSize: '11px', color: '#16a34a' }}>POS-C.1.33</small></h3>
                     </div>
                     <div className="pos-cart-header-actions">
                       <small>{posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
