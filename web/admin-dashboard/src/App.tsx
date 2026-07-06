@@ -4523,21 +4523,16 @@ function App() {
               </section>
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
-                <section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
+                
+                <section className="pos-shift-control-section pos-session-control-card">
                   <div className="section-heading">
                     <div>
-                      <span>Section 2 · Cart</span>
-                      <h3>Cart</h3>
-                    </div>
-                    <div className="pos-cart-header-actions">
-                      <small>{posCartItems.length} item line{posCartItems.length === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
-                        Clear cart
-                      </button>
+                      <span>Section 2 · POS Session</span>
+                      <h3>Clock-in / Clock-out</h3>
                     </div>
                   </div>
 
-                  <section className="pos-cart-shift-strip pos-shift-strip-v16">
+                  <section className="pos-shift-control-grid pos-shift-strip-v16">
                 <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
                   <strong className="pos-shift-title">Clock-in</strong>
 
@@ -4596,6 +4591,24 @@ function App() {
                   <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
                 </article>
               </section>
+                </section>
+
+<section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
+                  <div className="section-heading">
+                    <div>
+                      <span>Section 2 · Cart</span>
+                      <h3>Cart</h3>
+                    </div>
+                    <div className="pos-cart-header-actions">
+                      <small>{posCartItems.length} item line{posCartItems.length === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
+                        Clear cart
+                      </button>
+                    </div>
+                  </div>
+
+                  
+
 
                   <div className="system-table-wrap">
                     <table className="system-table pos-cart-table">
