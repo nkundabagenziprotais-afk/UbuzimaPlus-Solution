@@ -3998,10 +3998,15 @@ function App() {
       }
     }
 
+    function normalizePosCartItems(cartItems = posCartItems) {
+      return cartItems.filter((item) => Number(item.quantity || 0) > 0 && Number(item.unitPrice || 0) >= 0);
+    }
+
     function forceRefreshSaleSummary() {
+      const liveCartItems = normalizePosCartItems(posCartItems);
       setPosSaleSummary(
         calculatePosSaleSummary({
-          cartItems: posCartItems,
+          cartItems: liveCartItems,
           discountAmount: posDiscountAmount,
           paymentMethod: posPaymentMethod,
           insuranceProviderId: posInsuranceProvider,
@@ -4327,10 +4332,11 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posFinancialLineCount = posCartItems.length;
-      const posFinancialTotalQuantity = posCartItems.reduce((total, item) => total + item.quantity, 0);
+      const posLiveCartItems = normalizePosCartItems(posCartItems);
+      const posFinancialLineCount = posLiveCartItems.length;
+      const posFinancialTotalQuantity = posLiveCartItems.reduce((total, item) => total + item.quantity, 0);
       const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posCartItems.reduce(
+      const posFinancialSubtotal = posLiveCartItems.reduce(
         (total, item) => total + item.quantity * item.unitPrice,
         0,
       );
@@ -4589,8 +4595,8 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posCartItems.length} item line{posCartItems.length === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
+                      <small>{posFinancialLineCount} item line{posFinancialLineCount === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posFinancialLineCount === 0}>
                         Clear cart
                       </button>
                     </div>
@@ -4610,12 +4616,12 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posCartItems.length === 0 ? (
+                        {posFinancialLineCount === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posCartItems.map((item) => (
+                          posLiveCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
@@ -4779,7 +4785,7 @@ function App() {
                 </section>
 
                 <div className="pos-summary-update-bridge">
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartItems.length === 0}>
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posFinancialLineCount === 0}>
                     Update Summary
                   </button>
                 </div>
