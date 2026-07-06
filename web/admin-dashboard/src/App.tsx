@@ -4471,8 +4471,8 @@ function App() {
       void posSummarySyncKey;
       const posPaymentOperationalCards = [
         ['Date', posSummaryTimestamp],
-        ['Cart lines', posCounterItems.length],
-        ['Quantity', posCounterItems.reduce((total, item) => total + item.quantity, 0)],
+        ['Cart lines', posFinancialLineCount],
+        ['Cart units', posCartOperatingUnits],
         ['% Customer', `${posSummaryCustomerContributionPercent}%`],
         ['% Insurer', `${posSummaryInsurerContributionPercent}%`],
       ];
