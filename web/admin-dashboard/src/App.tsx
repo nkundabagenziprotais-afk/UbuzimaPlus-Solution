@@ -4221,7 +4221,7 @@ function App() {
               ['POS session', isPosDayOpen ? 'Open' : 'Closed', isPosDayOpen ? 'Ready for counter work' : 'Open day before serving', 'Controlled by cashier day opening'],
               ['Current cart lines', String(posCartItems.length), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
               ['Current cart total', `RWF ${posSaleSummary.total.toLocaleString('en-RW')}`, posPaymentMethod.replaceAll('_', ' '), 'Calculated from current cart only'],
-              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Refresh stock before selling'],
+              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Stock readiness'],
               ['Prescription state', posPrescriptionStatus.replaceAll('-', ' '), posPrescriptionStatus === 'manual-review' ? 'Needs review' : 'Counter selected', 'Used for pharmacist safety handoff'],
               ['Receipt readiness', posCustomerInvoice === 'yes' ? 'Invoice requested' : 'Receipt only', posInvoiceDelivery.replaceAll('_', ' '), 'No fake transactions displayed'],
             ].map(([title, value, signal, detail]) => (
@@ -4270,7 +4270,7 @@ function App() {
               <div className="pos-alert-stack">
                 {[
                   [isPosDayOpen ? 'Ready' : 'Start', isPosDayOpen ? 'POS day is open' : 'Open POS day', isPosDayOpen ? 'Counter can serve customers.' : 'Open the day before confirming payments.'],
-                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Refresh stock', posInventoryBatches.length ? 'Sellable batches are available for picking.' : 'Use current inventory to avoid selling unavailable stock.'],
+                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Refresh stock', posInventoryBatches.length ? 'Sellable stock ready for picking.' : 'Current sellable stock is used for cashier picking.'],
                   [posCartItems.length ? 'Active' : 'Idle', posCartItems.length ? 'Cart in progress' : 'No active cart', posCartItems.length ? 'Review quantity, payer, and receipt before payment.' : 'Search or scan a product to begin.'],
                   [posPrescriptionStatus === 'manual-review' ? 'Review' : 'Safe', posPrescriptionStatus === 'manual-review' ? 'Prescription needs manual review' : 'Prescription status selected', 'Pharmacist Review remains available for controlled dispensing.'],
                 ].map(([level, title, detail]) => (
