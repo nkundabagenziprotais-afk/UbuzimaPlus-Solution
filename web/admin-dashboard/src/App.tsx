@@ -4407,36 +4407,7 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posLiveCartItems = [
-        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
-        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
-        ...(Array.isArray(posCartItems) ? posCartItems : []),
-      ].reduce<typeof posCartItems>((uniqueItems, item) => {
-        if (!item?.code) return uniqueItems;
-
-        const existingIndex = uniqueItems.findIndex((existingItem) => existingItem.code === item.code);
-        const normalizedItem = {
-          ...item,
-          quantity: Math.max(1, Number(item.quantity || 1)),
-          unitPrice: Number(item.unitPrice || 0),
-          availableQuantity: Number(item.availableQuantity || 0),
-        };
-
-        if (existingIndex >= 0) {
-          const existingItem = uniqueItems[existingIndex];
-          uniqueItems[existingIndex] = {
-            ...existingItem,
-            ...normalizedItem,
-            quantity: Math.max(Number(existingItem.quantity || 0), normalizedItem.quantity),
-            unitPrice: normalizedItem.unitPrice || Number(existingItem.unitPrice || 0),
-          };
-        } else {
-          uniqueItems.push(normalizedItem);
-        }
-
-        return uniqueItems;
-      }, []);
-
+      const posLiveCartItems = Array.isArray(posCounterCart.items) ? posCounterCart.items : [];
       const posFinancialLineCount = posLiveCartItems.length;
       const posFinancialTotalQuantity = posLiveCartItems.reduce(
         (total, item) => total + Number(item.quantity || 0),
@@ -4449,15 +4420,28 @@ function App() {
         0,
       );
 
+      const posOperatingCartItems = [
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
+      ].reduce<typeof posCartItems>((uniqueItems, item) => {
+        if (!uniqueItems.some((existingItem) => existingItem.code === item.code)) {
+          uniqueItems.push(item);
+        }
+        return uniqueItems;
+      }, []);
+
       const posOperatingCart = {
-        items: posLiveCartItems,
-        lineCount: posFinancialLineCount,
-        totalQuantity: posFinancialTotalQuantity,
-        subtotal: posFinancialSubtotal,
+        items: posOperatingCartItems,
+        lineCount: posOperatingCartItems.length,
+        totalQuantity: posOperatingCartItems.reduce((total, item) => total + Number(item.quantity || 0), 0),
+        subtotal: posOperatingCartItems.reduce(
+          (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+          0,
+        ),
       };
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
-      const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
+      const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posOperatingCart.subtotal);
       const posSummaryNetDiscount = Math.max(posFinancialSubtotal - posSummaryAppliedDiscount, 0);
 
       // Tax mode will later come from Finance > Tax Compliance Management.
