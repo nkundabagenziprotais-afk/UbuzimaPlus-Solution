@@ -4509,17 +4509,6 @@ function App() {
                     )
                   )}
                 </div>
-
-                <button
-                  type="button"
-                  className="pos-view-products-link"
-                  onClick={() => {
-                    setActiveInventoryView('product-master');
-                    navigateToSection('inventory');
-                  }}
-                >
-                  View full product list
-                </button>
               </section>
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
@@ -4830,7 +4819,57 @@ function App() {
                   </button>
                 </section>
 
-                <section className="pos-sales-summary-table-card pos-recent-transactions-bottom pos-recent-transactions-after-summary">
+                
+
+
+
+                {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
+                  <section className="pos-invoice-journey">
+                    <h3>Invoice delivery</h3>
+
+                    <label>
+                      <span>Delivery channel</span>
+                      <select value={posInvoiceDelivery} onChange={(event) => setPosInvoiceDelivery(event.target.value as typeof posInvoiceDelivery)}>
+                        <option value="printer">Printer</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="email">Corporate Email</option>
+                      </select>
+                    </label>
+
+                    <button type="button" onClick={() => setPosNotice('Invoice PDF generated for the confirmed transaction.')}>
+                      Generate invoice PDF
+                    </button>
+
+                    {posInvoiceDelivery === 'printer' && (
+                      <button type="button" onClick={() => window.print()}>
+                        Print invoice
+                      </button>
+                    )}
+
+                    {posInvoiceDelivery === 'whatsapp' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const phone = posInvoiceContact.replace(/[^\d+]/g, '');
+                          window.open(`https://wa.me/${phone.replace('+', '')}`, '_blank', 'noopener,noreferrer');
+                        }}
+                      >
+                        Open WhatsApp
+                      </button>
+                    )}
+
+                    {posInvoiceDelivery === 'email' && (
+                      <button type="button" onClick={() => navigateToSection('corporate-email')}>
+                        Open Corporate Email with invoice attached
+                      </button>
+                    )}
+                  </section>
+                )}
+              </section>
+              </section>
+            </section>
+
+<section className="pos-sales-summary-table-card pos-recent-transactions-bottom pos-recent-transactions-fullwidth">
               <div className="section-heading">
                 <div>
                   <span>Current POS session</span>
@@ -4895,51 +4934,9 @@ function App() {
             </section>
 
 
-                {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
-                  <section className="pos-invoice-journey">
-                    <h3>Invoice delivery</h3>
 
-                    <label>
-                      <span>Delivery channel</span>
-                      <select value={posInvoiceDelivery} onChange={(event) => setPosInvoiceDelivery(event.target.value as typeof posInvoiceDelivery)}>
-                        <option value="printer">Printer</option>
-                        <option value="whatsapp">WhatsApp</option>
-                        <option value="email">Corporate Email</option>
-                      </select>
-                    </label>
 
-                    <button type="button" onClick={() => setPosNotice('Invoice PDF generated for the confirmed transaction.')}>
-                      Generate invoice PDF
-                    </button>
 
-                    {posInvoiceDelivery === 'printer' && (
-                      <button type="button" onClick={() => window.print()}>
-                        Print invoice
-                      </button>
-                    )}
-
-                    {posInvoiceDelivery === 'whatsapp' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const phone = posInvoiceContact.replace(/[^\d+]/g, '');
-                          window.open(`https://wa.me/${phone.replace('+', '')}`, '_blank', 'noopener,noreferrer');
-                        }}
-                      >
-                        Open WhatsApp
-                      </button>
-                    )}
-
-                    {posInvoiceDelivery === 'email' && (
-                      <button type="button" onClick={() => navigateToSection('corporate-email')}>
-                        Open Corporate Email with invoice attached
-                      </button>
-                    )}
-                  </section>
-                )}
-              </section>
-              </section>
-            </section>
 
 
 

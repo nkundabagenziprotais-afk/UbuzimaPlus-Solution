@@ -17168,7 +17168,7 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-/* Patch POS-C.1.15 - Clean single-source POS layout */
+/* Patch POS-C.1.16 - Clean single-source POS layout */
 
 /* Overall POS screen */
 .pos-dedicated-counter-shell {
@@ -17935,20 +17935,14 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
+/* C1.16 revisions: full-width Recent Transactions and reset product cards */
 
-
-/* C1.15 revisions: Recent after Payment Summary, cleaner product cards, larger visible stock board */
-
-/* Recent Transactions now belongs to the right workflow immediately after Payment Summary */
-.pos-payment-summary-section {
+/* Recent Transactions: independent full-width table, placed after the POS workbench */
+.pos-recent-transactions-fullwidth,
+.pos-sales-summary-table-card.pos-recent-transactions-fullwidth {
   display: grid !important;
-  gap: 10px !important;
-  align-content: start !important;
-}
-
-.pos-recent-transactions-after-summary {
-  display: grid !important;
-  position: static !important;
+  position: relative !important;
+  z-index: 3 !important;
   width: 100% !important;
   margin: 0 !important;
   padding: 10px !important;
@@ -17957,14 +17951,15 @@ table td:not(:first-child):not(.numeric) {
   border: 1px solid rgba(15, 23, 42, 0.08) !important;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
   overflow: visible !important;
+  clear: both !important;
 }
 
-.pos-recent-transactions-after-summary .section-heading {
+.pos-recent-transactions-fullwidth .section-heading {
   padding: 0 !important;
   margin: 0 !important;
 }
 
-.pos-recent-transactions-after-summary .system-table-wrap {
+.pos-recent-transactions-fullwidth .system-table-wrap {
   width: 100% !important;
   max-height: none !important;
   margin: 0 !important;
@@ -17972,73 +17967,103 @@ table td:not(:first-child):not(.numeric) {
   overflow-y: visible !important;
 }
 
-.pos-recent-transactions-after-summary table {
-  min-width: 760px !important;
+.pos-recent-transactions-fullwidth table {
+  min-width: 920px !important;
 }
 
-/* Remove Clock-in / Clock-out title column. Session cards use full width for fields. */
-.pos-shift-control-grid .pos-shift-title {
-  display: none !important;
+/* Remove old right-column recent-transaction behavior completely */
+.pos-recent-transactions-after-summary {
+  position: static !important;
 }
 
-.pos-shift-control-grid .pos-shift-card-v16 {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) 94px !important;
-  min-height: 58px !important;
-  padding: 7px !important;
-  gap: 7px !important;
+/* Let the workbench finish at a practical height so Recent Transactions begins after Payment Summary area */
+.pos-operating-cockpit-v2 {
   align-items: stretch !important;
 }
 
-.pos-shift-control-grid .pos-shift-field,
-.pos-shift-control-grid .pos-shift-check {
-  min-height: 44px !important;
-  align-content: center !important;
+.pos-product-stock-section {
+  min-height: 0 !important;
+  height: 100% !important;
 }
 
-/* Product board: increase visible default rows before scrolling */
+/* Product & Stock Pick: show more default product rows before scrolling */
 .pos-drug-list--ten {
-  grid-auto-rows: 112px !important;
-  min-height: 952px !important;
-  max-height: 952px !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-rows: 104px !important;
+  min-height: 728px !important;
+  max-height: 728px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  align-content: start !important;
 }
 
-/* Product card exact row order and left-centered alignment */
+/* Remove View Full Product List from POS counter */
+.pos-view-products-link {
+  display: none !important;
+}
+
+/* Product card reset: one column, five rows, left-centered content */
 .pos-product-tile-v16 {
-  min-height: 112px !important;
-  max-height: 112px !important;
-  grid-template-rows: 2.55em 1.12em 1.12em 1.12em 1.12em !important;
-  justify-items: start !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: minmax(0, 2.45em) 1.1em 1.1em 1.1em 1.1em !important;
+  gap: 4px !important;
   align-items: center !important;
+  justify-items: start !important;
+  min-height: 104px !important;
+  max-height: 104px !important;
+  padding: 8px 10px !important;
+  border-radius: 12px !important;
   text-align: left !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
 }
 
 .pos-product-tile-v16 strong,
 .pos-product-tile-v16 > em,
 .pos-product-tile-v16 .pos-product-card-line {
+  grid-column: 1 !important;
   width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
   justify-self: start !important;
+  align-self: center !important;
   text-align: left !important;
 }
 
 .pos-product-tile-v16 strong {
-  display: flex !important;
-  align-items: center !important;
-  min-height: 2.55em !important;
-  max-height: 2.55em !important;
-  font-size: 0.72rem !important;
+  order: 1 !important;
+  display: block !important;
+  font-size: 0.7rem !important;
   line-height: 1.12 !important;
+  font-weight: 950 !important;
+  white-space: normal !important;
   overflow: hidden !important;
+  text-overflow: clip !important;
+  max-height: 2.45em !important;
 }
 
 .pos-product-tile-v16 > em {
   order: 2 !important;
-  font-size: 0.63rem !important;
+  display: block !important;
+  font-style: normal !important;
+  font-size: 0.62rem !important;
+  line-height: 1.08 !important;
   font-weight: 950 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .pos-product-tile-v16 .pos-product-card-line {
+  display: block !important;
   font-size: 0.58rem !important;
   line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .pos-product-tile-v16 .pos-product-card-line:nth-of-type(1) {
@@ -18053,7 +18078,59 @@ table td:not(:first-child):not(.numeric) {
   order: 5 !important;
 }
 
-/* Keep Payment Summary compact so Recent Transactions begins immediately below it */
+/* Expiry watch-list aligned product colors only */
+.pos-product-tile-v16.product-expiry-expired {
+  background: #7f1d1d !important;
+  border-color: #7f1d1d !important;
+  color: #ffffff !important;
+}
+
+.pos-product-tile-v16.product-expiry-expired strong,
+.pos-product-tile-v16.product-expiry-expired em,
+.pos-product-tile-v16.product-expiry-expired span {
+  color: #ffffff !important;
+}
+
+.pos-product-tile-v16.product-expiry-critical {
+  background: #fee2e2 !important;
+  border-color: #fecaca !important;
+  color: #7f1d1d !important;
+}
+
+.pos-product-tile-v16.product-expiry-warning {
+  background: #ffedd5 !important;
+  border-color: #fed7aa !important;
+  color: #7c2d12 !important;
+}
+
+.pos-product-tile-v16.product-expiry-watch {
+  background: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #78350f !important;
+}
+
+.pos-product-tile-v16.product-expiry-safe {
+  background: #ecfdf5 !important;
+  border-color: #bbf7d0 !important;
+  color: #064e3b !important;
+}
+
+.pos-product-tile-v16.product-expiry-critical strong,
+.pos-product-tile-v16.product-expiry-critical em,
+.pos-product-tile-v16.product-expiry-critical span,
+.pos-product-tile-v16.product-expiry-warning strong,
+.pos-product-tile-v16.product-expiry-warning em,
+.pos-product-tile-v16.product-expiry-warning span,
+.pos-product-tile-v16.product-expiry-watch strong,
+.pos-product-tile-v16.product-expiry-watch em,
+.pos-product-tile-v16.product-expiry-watch span,
+.pos-product-tile-v16.product-expiry-safe strong,
+.pos-product-tile-v16.product-expiry-safe em,
+.pos-product-tile-v16.product-expiry-safe span {
+  color: inherit !important;
+}
+
+/* Keep compact Payment Summary so the table starts directly after the workbench */
 .pos-summary-field-card {
   min-height: 30px !important;
   padding: 5px 7px !important;
@@ -18070,17 +18147,15 @@ table td:not(:first-child):not(.numeric) {
 /* Responsive safety */
 @media (max-width: 1180px) {
   .pos-drug-list--ten {
-    min-height: 700px !important;
-    max-height: 700px !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    min-height: 624px !important;
+    max-height: 624px !important;
   }
 }
 
 @media (max-width: 760px) {
-  .pos-shift-control-grid .pos-shift-card-v16 {
-    grid-template-columns: 1fr !important;
-  }
-
   .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     min-height: 520px !important;
     max-height: 520px !important;
   }
