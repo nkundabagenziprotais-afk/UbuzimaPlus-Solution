@@ -4003,9 +4003,10 @@ function App() {
     }
 
     function forceRefreshSaleSummary() {
+      const liveCartItems = normalizePosCartItems(posCartItems);
       setPosSaleSummary(
         calculatePosSaleSummary({
-          cartItems: posCartItems,
+          cartItems: liveCartItems,
           discountAmount: posDiscountAmount,
           paymentMethod: posPaymentMethod,
           insuranceProviderId: posInsuranceProvider,
@@ -4331,10 +4332,11 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posFinancialLineCount = posCartItems.length;
-      const posFinancialTotalQuantity = posCartItems.reduce((total, item) => total + item.quantity, 0);
+      const posLiveCartItems = posCartItems;
+      const posFinancialLineCount = posLiveCartItems.length;
+      const posFinancialTotalQuantity = posLiveCartItems.reduce((total, item) => total + item.quantity, 0);
       const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posCartItems.reduce(
+      const posFinancialSubtotal = posLiveCartItems.reduce(
         (total, item) => total + item.quantity * item.unitPrice,
         0,
       );
@@ -4619,7 +4621,7 @@ function App() {
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posCartItems.map((item) => (
+                          posLiveCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
