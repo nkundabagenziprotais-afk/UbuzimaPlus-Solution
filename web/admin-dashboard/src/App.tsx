@@ -41,6 +41,7 @@ import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
+import { SalesCreationPanel } from './components/SalesCreationPanel';
 
 type StoredSession = {
   token: string;
@@ -2563,7 +2564,6 @@ function App() {
     expiryDate: string | null;
     locationName: string;
   }>>([]);
-  const [posSingleCartItems, setPosSingleCartItems] = useState<typeof posCartItems>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
   const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
   const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
@@ -3109,7 +3109,6 @@ function App() {
     });
     setPharmaCoreError('');
     setPosCartItems([]);
-    setPosSingleCartItems([]);
     setPosCounterItems([]);
     setPosCounterCart({ items: [], lineCount: 0, totalQuantity: 0, subtotal: 0 });
     setPosInventoryBatches([]);
@@ -4006,7 +4005,6 @@ function App() {
         setPosInventoryBatches(batches);
         setPosInventoryLoadedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         setPosCartItems([]);
-    setPosSingleCartItems([]);
         setPosCounterItems([]);
         setPosCounterCart({ items: [], lineCount: 0, totalQuantity: 0, subtotal: 0 });
         setPosTransactionConfirmed(false);
@@ -4194,55 +4192,18 @@ function App() {
       };
     }
 
-    function buildSinglePosCartSnapshot(items: typeof posCartItems) {
-      const stableItems = (Array.isArray(items) ? items : [])
-        .filter((item) => item && item.code)
-        .reduce<typeof posCartItems>((cartItems, item) => {
-          const quantity = Math.max(1, Number(item.quantity || 1));
-          const availableQuantity = Math.max(1, Number(item.availableQuantity || quantity));
-          const normalizedItem = {
-            ...item,
-            quantity: Math.min(quantity, availableQuantity),
-            unitPrice: Math.max(0, Number(item.unitPrice || 0)),
-            availableQuantity,
-            batchId: Number(item.batchId || 0),
-            productId: Number(item.productId || 0),
-            batchNumber: String(item.batchNumber || ''),
-          };
+    function commitPosCounterItems(nextItems: typeof posCounterItems) {
+      const cartSnapshot = createStablePosCartSnapshot(nextItems);
 
-          const existingIndex = cartItems.findIndex(
-            (existing) =>
-              existing.code === normalizedItem.code &&
-              Number(existing.batchId || 0) === Number(normalizedItem.batchId || 0),
-          );
-
-          if (existingIndex >= 0) {
-            cartItems[existingIndex] = normalizedItem;
-          } else {
-            cartItems.push(normalizedItem);
-          }
-
-          return cartItems;
-        }, []);
-
-      return {
-        items: stableItems,
-        lineCount: stableItems.length,
-        totalQuantity: stableItems.reduce((total, item) => total + Number(item.quantity || 0), 0),
-        subtotal: stableItems.reduce(
-          (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
-          0,
-        ),
-      };
-    }
-
-    function commitPosCounterItems(nextItems: typeof posCartItems) {
-      const cartSnapshot = buildSinglePosCartSnapshot(nextItems);
-
-      setPosSingleCartItems(cartSnapshot.items);
-      setPosCartItems(cartSnapshot.items);
-      setPosCounterItems(cartSnapshot.items);
       setPosCounterCart(cartSnapshot);
+      setPosCounterItems(cartSnapshot.items);
+      setPosCartItems(cartSnapshot.items);
+      setPosRenderedCartItems(cartSnapshot.items);
+      setPosRenderedCartMetrics({
+        lineCount: Number(cartSnapshot.lineCount || cartSnapshot.items.length || 0),
+        totalQuantity: Number(cartSnapshot.totalQuantity || cartSnapshot.items.reduce((total, item) => total + Number(item.quantity || 0), 0)),
+        subtotal: Number(cartSnapshot.subtotal || cartSnapshot.items.reduce((total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0)),
+      });
       setPosSaleSummary(
         calculatePosSaleSummary({
           cartItems: cartSnapshot.items,
@@ -4257,142 +4218,105 @@ function App() {
     }
 
     function forceRefreshSaleSummary() {
-      const cartSnapshot = buildSinglePosCartSnapshot(posSingleCartItems);
+      const cartSnapshot = createStablePosCartSnapshot([
+        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
+      ]);
 
-      setPosSingleCartItems(cartSnapshot.items);
-      setPosCartItems(cartSnapshot.items);
-      setPosCounterItems(cartSnapshot.items);
-      setPosCounterCart(cartSnapshot);
-      setPosSaleSummary(
-        calculatePosSaleSummary({
-          cartItems: cartSnapshot.items,
-          discountAmount: posDiscountAmount,
-          paymentMethod: posPaymentMethod,
-          insuranceProviderId: posInsuranceProvider,
-          insuranceInstitutionId: posInsuranceInstitution,
-        }),
+      commitPosCounterItems(cartSnapshot.items);
+      setPosNotice('Payment summary refreshed from the active POS cart.');
+    }
+
+    function readActivePosCounterItems() {
+      return createStablePosCartSnapshot([
+        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
+      ]).items;
+    }
+
+    function makePosCartItemFromProduct(product: typeof posProducts[number]) {
+      const rawProduct = product as typeof product & Record<string, unknown>;
+      const code = String(
+        rawProduct.code
+          ?? rawProduct.productCode
+          ?? rawProduct.sku
+          ?? rawProduct.productId
+          ?? rawProduct.id
+          ?? rawProduct.name
+          ?? `POS-${Date.now()}`,
+      ).trim();
+
+      const availableQuantity = Math.max(
+        1,
+        Number(rawProduct.availableQuantity ?? rawProduct.currentQuantity ?? rawProduct.stockQuantity ?? rawProduct.availableStock ?? rawProduct.onHandQuantity ?? 1) || 1,
       );
-      setPosSummaryRefreshKey((current) => current + 1);
-      setPosTransactionConfirmed(false);
-      setPosNotice('Payment summary refreshed from the active cart.');
+
+      const unitPrice = Math.max(
+        0,
+        Number(rawProduct.unitPrice ?? rawProduct.sellingPrice ?? rawProduct.price ?? 0) || 0,
+      );
+
+      return {
+        code,
+        name: String(rawProduct.name ?? 'Selected product'),
+        strength: String(rawProduct.strength ?? ''),
+        quantity: 1,
+        unitPrice,
+        batchId: String(rawProduct.batchId ?? rawProduct.inventoryBatchId ?? rawProduct.batch_id ?? rawProduct.id ?? code),
+        productId: String(rawProduct.productId ?? rawProduct.id ?? code),
+        batchNumber: String(rawProduct.batchNumber ?? rawProduct.batchNo ?? ''),
+        availableQuantity,
+        expiryDate: String(rawProduct.expiryDate ?? rawProduct.expiresAt ?? ''),
+        locationName: String(rawProduct.locationName ?? rawProduct.location ?? ''),
+      };
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
-      if (!product.batchId || product.availableQuantity <= 0) {
-        setPosNotice('This product is not available in current inventory and cannot be sold.');
-        return;
-      }
+      const cartProduct = makePosCartItemFromProduct(product);
+      const currentItems = readActivePosCounterItems();
+      const existingItem = currentItems.find((item) => item.code === cartProduct.code);
 
-      const currentItems = buildSinglePosCartSnapshot(posSingleCartItems).items;
-      const existing = currentItems.find(
-        (item) =>
-          item.code === product.code &&
-          Number(item.batchId || 0) === Number(product.batchId || 0),
-      );
+      const nextItems = existingItem
+        ? currentItems.map((item) =>
+            item.code === cartProduct.code
+              ? {
+                  ...item,
+                  ...cartProduct,
+                  quantity: Math.min(Number(item.quantity || 0) + 1, cartProduct.availableQuantity),
+                }
+              : item,
+          )
+        : [...currentItems, cartProduct];
 
-      let nextItems: typeof posCartItems;
-
-      if (existing) {
-        const nextQuantity = Math.min(Number(existing.quantity || 0) + 1, product.availableQuantity);
-
-        nextItems = currentItems.map((item) =>
-          item.code === product.code && Number(item.batchId || 0) === Number(product.batchId || 0)
-            ? {
-                ...item,
-                quantity: nextQuantity,
-                availableQuantity: product.availableQuantity,
-                unitPrice: product.unitPrice,
-              }
-            : item,
-        );
-      } else {
-        nextItems = [
-          ...currentItems,
-          {
-            code: product.code,
-            name: product.name,
-            strength: product.strength,
-            quantity: 1,
-            unitPrice: product.unitPrice,
-            batchId: product.batchId,
-            productId: product.productId,
-            batchNumber: product.batchNumber,
-            availableQuantity: product.availableQuantity,
-            expiryDate: product.expiryDate,
-            locationName: product.locationName,
-          },
-        ];
-      }
-
-      const nextSnapshot = buildSinglePosCartSnapshot(nextItems);
+      const nextSnapshot = createStablePosCartSnapshot(nextItems);
       commitPosCounterItems(nextSnapshot.items);
-      setPosNotice(`${product.name} added to cart. Cart now has ${nextSnapshot.lineCount} line${nextSnapshot.lineCount === 1 ? '' : 's'} and ${nextSnapshot.totalQuantity} unit${nextSnapshot.totalQuantity === 1 ? '' : 's'}.`);
-    }
 
-    function updateCartQuantity(code: string, batchIdOrQuantity: number, maybeQuantity?: number) {
-      const targetBatchId = maybeQuantity === undefined ? null : Number(batchIdOrQuantity || 0);
-      const requestedQuantity = maybeQuantity === undefined ? batchIdOrQuantity : maybeQuantity;
-      const currentItems = buildSinglePosCartSnapshot(posSingleCartItems).items;
-
-      const nextItems = currentItems.map((item) => {
-        const sameLine = item.code === code && (targetBatchId === null || Number(item.batchId || 0) === targetBatchId);
-        if (!sameLine) return item;
-
-        const safeQuantity = Math.min(
-          Math.max(1, Number.isFinite(requestedQuantity) ? requestedQuantity : 1),
-          item.availableQuantity,
-        );
-
-        if (safeQuantity !== requestedQuantity) {
-          setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
-        }
-
-        return {
-          ...item,
-          quantity: safeQuantity,
-        };
-      });
-
-      commitPosCounterItems(nextItems);
-    }
-
-    function updateCartStockBatch(code: string, currentBatchId: number, nextBatchId: number) {
-      const selectedProduct = posProducts.find((product) => Number(product.batchId || 0) === Number(nextBatchId || 0));
-
-      if (!selectedProduct) {
-        return;
-      }
-
-      const currentItems = buildSinglePosCartSnapshot(posSingleCartItems).items;
-      const nextItems = currentItems.map((item) => {
-        const sameLine = item.code === code && Number(item.batchId || 0) === Number(currentBatchId || 0);
-        if (!sameLine) return item;
-
-        return {
-          ...item,
-          code: selectedProduct.code,
-          name: selectedProduct.name,
-          strength: selectedProduct.strength,
-          unitPrice: selectedProduct.unitPrice,
-          batchId: selectedProduct.batchId,
-          productId: selectedProduct.productId,
-          batchNumber: selectedProduct.batchNumber,
-          availableQuantity: selectedProduct.availableQuantity,
-          expiryDate: selectedProduct.expiryDate,
-          locationName: selectedProduct.locationName,
-          quantity: Math.min(Number(item.quantity || 1), selectedProduct.availableQuantity),
-        };
-      });
-
-      commitPosCounterItems(nextItems);
-    }
-
-    function removeCartItem(code: string, batchId?: number) {
-      const nextItems = buildSinglePosCartSnapshot(posSingleCartItems).items.filter(
-        (item) => !(item.code === code && (batchId === undefined || Number(item.batchId || 0) === Number(batchId || 0))),
+      setPosNotice(
+        `${cartProduct.name} added to cart. Cart now has ${nextSnapshot.lineCount} line${nextSnapshot.lineCount === 1 ? '' : 's'} and ${nextSnapshot.totalQuantity} unit${nextSnapshot.totalQuantity === 1 ? '' : 's'}.`,
       );
+    }
+
+    function updateCartQuantity(code: string, quantity: number) {
+      const currentItems = readActivePosCounterItems();
+      const nextItems = currentItems.map((item) => {
+        if (item.code !== code) return item;
+
+        return {
+          ...item,
+          quantity: Math.min(
+            Math.max(1, Number(quantity) || 1),
+            Number(item.availableQuantity || 1),
+          ),
+        };
+      });
 
       commitPosCounterItems(nextItems);
+    }
+
+    function removeCartItem(code: string) {
+      commitPosCounterItems(readActivePosCounterItems().filter((item) => item.code !== code));
     }
 
     function clearPosCart() {
@@ -4619,6 +4543,12 @@ function App() {
     }
 
     if (activePosWorkspace === 'pos') {
+      return (
+        <SalesCreationPanel />
+      );
+    }
+
+    if (activePosWorkspace === 'pos') {
       const selectedInsuranceInstitution = selectedInsurance.institutions.find(
         (institution) => institution.id === posInsuranceInstitution,
       );
@@ -4633,24 +4563,61 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posLiveCartItems = buildSinglePosCartSnapshot(posSingleCartItems).items;
-      const posFinancialLineCount = posLiveCartItems.length;
-      const posFinancialTotalQuantity = posLiveCartItems.reduce(
-        (total, item) => total + Number(item.quantity || 0),
+      const posLiveCartItems = createStablePosCartSnapshot([
+        ...(Array.isArray(posRenderedCartItems) ? posRenderedCartItems : []),
+        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
+      ]).items;
+
+      const posVisibleCartItems = posLiveCartItems.map((item) => {
+        const rawQuantity = Number(item.quantity ?? 1);
+        const rawUnitPrice = Number(item.unitPrice ?? 0);
+        const rawAvailableQuantity = Number(item.availableQuantity ?? item.quantity ?? 1);
+
+        return {
+          ...item,
+          quantity: Math.max(1, Number.isFinite(rawQuantity) ? rawQuantity : 1),
+          unitPrice: Math.max(0, Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0),
+          availableQuantity: Math.max(1, Number.isFinite(rawAvailableQuantity) ? rawAvailableQuantity : 1),
+        };
+      });
+
+      const posCartDisplayItems = posVisibleCartItems.length > 0 ? posVisibleCartItems : posLiveCartItems;
+      const posCartDisplayLineCount = posCartDisplayItems.length;
+      const posCartDisplayUnitCount = posCartDisplayItems.reduce(
+        (total, item) => total + Math.max(1, Number(item.quantity || 1)),
         0,
       );
-      const posCartOperatingUnits = posFinancialTotalQuantity;
-      const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posLiveCartItems.reduce(
-        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+      const posCartDisplaySubtotal = posCartDisplayItems.reduce(
+        (total, item) => total + Math.max(1, Number(item.quantity || 1)) * Math.max(0, Number(item.unitPrice || 0)),
         0,
       );
 
+      const posCommittedLineCount = Math.max(
+        posCartDisplayLineCount,
+        Number(posRenderedCartMetrics.lineCount || 0),
+      );
+      const posCommittedUnitCount = Math.max(
+        posCartDisplayUnitCount,
+        Number(posRenderedCartMetrics.totalQuantity || 0),
+      );
+      const posCommittedSubtotal = Math.max(
+        posCartDisplaySubtotal,
+        Number(posRenderedCartMetrics.subtotal || 0),
+      );
+
+      const posFinancialLineCount = posCommittedLineCount;
+      const posFinancialTotalQuantity = posCommittedUnitCount;
+      const posCartOperatingUnits = posCommittedUnitCount;
+      const posSummarySyncKey = posSummaryRefreshKey;
+      const posFinancialSubtotal = posCommittedSubtotal;
+
       const posOperatingCart = {
-        items: posLiveCartItems,
-        lineCount: posFinancialLineCount,
-        totalQuantity: posFinancialTotalQuantity,
-        subtotal: posFinancialSubtotal,
+        items: posCartDisplayItems,
+        lineCount: posCommittedLineCount,
+        totalQuantity: posCommittedUnitCount,
+        subtotal: posCommittedSubtotal,
       };
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
@@ -4902,9 +4869,23 @@ function App() {
                 </section>
 
 {(() => {
-                  const visibleCartRows = posLiveCartItems;
-                  const visibleCartLineCount = posFinancialLineCount;
-                  const visibleCartUnitCount = posCartOperatingUnits;
+                  const visibleCartRows = createStablePosCartSnapshot([
+                    ...(Array.isArray(posRenderedCartItems) ? posRenderedCartItems : []),
+                    ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
+                    ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+                    ...(Array.isArray(posCartItems) ? posCartItems : []),
+                  ]).items.map((item) => ({
+                    ...item,
+                    quantity: Math.max(1, Number(item.quantity || 1)),
+                    unitPrice: Math.max(0, Number(item.unitPrice || 0)),
+                    availableQuantity: Math.max(1, Number(item.availableQuantity || item.quantity || 1)),
+                  }));
+
+                  const visibleCartLineCount = visibleCartRows.length;
+                  const visibleCartUnitCount = visibleCartRows.reduce(
+                    (total, item) => total + Number(item.quantity || 0),
+                    0,
+                  );
 
                   return (
                     <section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
@@ -4928,7 +4909,6 @@ function App() {
                           <thead>
                             <tr>
                               <th>Product</th>
-                              <th>Stock pick</th>
                               <th>Qty</th>
                               <th>Total</th>
                               <th>Action</th>
@@ -4937,61 +4917,36 @@ function App() {
                           <tbody>
                             {visibleCartLineCount === 0 ? (
                               <tr>
-                                <td colSpan={5}>No products added yet. Select products from the tile board.</td>
+                                <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                               </tr>
                             ) : (
-                              visibleCartRows.map((item) => {
-                                const batchOptions = posProducts.filter(
-                                  (product) => Number(product.productId || 0) === Number(item.productId || 0) && product.availableQuantity > 0,
-                                );
-
-                                return (
-                                  <tr key={`${item.code}-${item.batchId || 'batch'}`}>
-                                    <td>
-                                      <strong>{item.name}</strong>
-                                      <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')}</small>
-                                    </td>
-                                    <td>
-                                      <label className="pos-stock-pick">
-                                        <span className="sr-only">Stock pick</span>
-                                        <select
-                                          value={String(item.batchId || '')}
-                                          onChange={(event) =>
-                                            updateCartStockBatch(item.code, Number(item.batchId || 0), Number(event.target.value))
-                                          }
-                                        >
-                                          {batchOptions.map((product) => (
-                                            <option key={product.batchId} value={String(product.batchId)}>
-                                              {product.batchNumber || 'Batch'} · {product.locationName || 'Main stock'} · {product.availableQuantity}
-                                            </option>
-                                          ))}
-                                        </select>
-                                      </label>
-                                    </td>
-                                    <td>
-                                      <input
-                                        type="number"
-                                        min="1"
-                                        max={item.availableQuantity}
-                                        value={item.quantity}
-                                        onChange={(event) =>
-                                          updateCartQuantity(item.code, Number(item.batchId || 0), Number(event.target.value))
-                                        }
-                                      />
-                                    </td>
-                                    <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
-                                    <td>
-                                      <button
-                                        type="button"
-                                        className="pos-cart-remove-button"
-                                        onClick={() => removeCartItem(item.code, Number(item.batchId || 0))}
-                                      >
-                                        Remove
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })
+                              visibleCartRows.map((item) => (
+                                <tr key={item.code}>
+                                  <td>
+                                    <strong>{item.name}</strong>
+                                    <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')}</small>
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      max={item.availableQuantity}
+                                      value={item.quantity}
+                                      onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
+                                    />
+                                  </td>
+                                  <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="pos-cart-remove-button"
+                                      onClick={() => removeCartItem(item.code)}
+                                    >
+                                      Remove
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
                             )}
                           </tbody>
                         </table>
