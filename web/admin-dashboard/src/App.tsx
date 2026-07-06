@@ -4320,17 +4320,27 @@ function App() {
     }
 
     if (activePosWorkspace === 'pos') {
+      const posFinancialSubtotal = posCartItems.reduce(
+        (total, item) => total + item.quantity * item.unitPrice,
+        0,
+      );
       const posSummaryDiscountAmount = Number(posDiscountAmount || 0);
-      const posSummaryNetDiscount = Math.min(posSummaryDiscountAmount, posSaleSummary.subtotal);
-      const posSummaryTaxableBase = Math.max(posSaleSummary.subtotal - posSummaryNetDiscount, 0);
-      const posSummaryTaxAmount = 0;
-      const posSummaryTotalAmount = posSummaryTaxableBase + posSummaryTaxAmount;
+      const posSummaryNetDiscount = Math.max(posFinancialSubtotal - Math.min(posSummaryDiscountAmount, posFinancialSubtotal), 0);
+      const posTaxMode: 'inclusive' | 'exclusive' = 'inclusive';
+      const posTaxRatePercent = 0;
+      const posSummaryTaxAmount = posTaxMode === 'exclusive'
+        ? Math.round((posSummaryNetDiscount * posTaxRatePercent) / 100)
+        : 0;
+      const posSummaryTotalAmount = posTaxMode === 'exclusive'
+        ? posSummaryNetDiscount + posSummaryTaxAmount
+        : posSummaryNetDiscount;
       const posSummaryCustomerPayment = posPaymentMethod === 'insurance'
         ? Math.round((posSummaryTotalAmount * posSaleSummary.customerContributionPercent) / 100)
         : posSummaryTotalAmount;
       const posSummaryInsurerPayment = posPaymentMethod === 'insurance'
         ? Math.max(posSummaryTotalAmount - posSummaryCustomerPayment, 0)
         : 0;
+
 
       return (
         <section className="section-page pos-dedicated-counter-shell">
@@ -4478,16 +4488,35 @@ function App() {
                           productRecord.batchExpiryDate ||
                           product.status.match(/(?:exp(?:iry|ires)?\s*[:\-]?\s*)([^·|,]+)/i)?.[1]?.trim() ||
                           'Not set';
+                        const expiryDateValue = expiryDateText !== 'Not set' ? new Date(expiryDateText) : null;
+                        const expiryDaysRemaining = expiryDateValue && !Number.isNaN(expiryDateValue.getTime())
+                          ? Math.ceil((expiryDateValue.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                          : null;
+                        const expiryDaysText = expiryDaysRemaining === null
+                          ? ''
+                          : expiryDaysRemaining < 0
+                            ? `${Math.abs(expiryDaysRemaining)}d overdue`
+                            : `${expiryDaysRemaining}d left`;
                         const normalizedStatus = product.status.toLowerCase();
-                        const expiryStatusClass = normalizedStatus.includes('expired')
-                          ? 'expired'
-                          : normalizedStatus.includes('critical') || normalizedStatus.includes('danger')
-                            ? 'critical'
-                            : normalizedStatus.includes('near') || normalizedStatus.includes('soon') || normalizedStatus.includes('warning')
-                              ? 'warning'
-                              : normalizedStatus.includes('watch')
-                                ? 'watch'
-                                : 'safe';
+                        const expiryStatusClass = expiryDaysRemaining !== null
+                          ? expiryDaysRemaining <= 0
+                            ? 'expired'
+                            : expiryDaysRemaining <= 30
+                              ? 'critical'
+                              : expiryDaysRemaining <= 90
+                                ? 'warning'
+                                : expiryDaysRemaining <= 180
+                                  ? 'watch'
+                                  : 'safe'
+                          : normalizedStatus.includes('expired')
+                            ? 'expired'
+                            : normalizedStatus.includes('critical') || normalizedStatus.includes('danger')
+                              ? 'critical'
+                              : normalizedStatus.includes('near') || normalizedStatus.includes('soon') || normalizedStatus.includes('warning')
+                                ? 'warning'
+                                : normalizedStatus.includes('watch')
+                                  ? 'watch'
+                                  : 'safe';
 
                         return (
                           <button
@@ -4497,7 +4526,8 @@ function App() {
                             onClick={() => addPosProductToCart(product)}
                           >
                             <strong>{product.name}</strong>
-                            <small>Exp: {expiryDateText}</small>
+                            <small>Exp: {expiryDateText}{expiryDaysText ? ` · ${expiryDaysText}` : ''}</small>
+                            <i>Qty: {product.availableQuantity.toLocaleString('en-RW')}</i>
                             <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
                           </button>
                         );
@@ -4727,15 +4757,16 @@ function App() {
                     </div>
                   </div>
 
-                  <div className="pos-summary-sync-note" data-cart-lines={posSaleSummary.lineCount} data-cart-quantity={posSaleSummary.totalQuantity}>
-                    <span>Live cart sync</span>
-                    <strong>{posSaleSummary.lineCount} item line{posSaleSummary.lineCount === 1 ? '' : 's'} · {posSaleSummary.totalQuantity} unit{posSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
-                    <small>Updated {posSaleSummary.calculatedAt}</small>
+                  <div className="pos-summary-sync-note">
+                    <span>Payment Summary</span>
+                    <strong>{posSaleSummary.lineCount} line{posSaleSummary.lineCount === 1 ? '' : 's'} · {posSaleSummary.totalQuantity} unit{posSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
+                    <small>{posSaleSummary.calculatedAt}</small>
                   </div>
+
                   <div className="pos-payment-summary-grid">
                     <dl className="pos-summary-list pos-summary-list--operational">
                       <div>
-                        <dt>Date and time</dt>
+                        <dt>Date</dt>
                         <dd>{new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd>
                       </div>
                       <div>
@@ -4759,7 +4790,7 @@ function App() {
                     <dl className="pos-summary-list pos-summary-list--financial">
                       <div>
                         <dt>Sub-Total</dt>
-                        <dd>RWF {posSaleSummary.subtotal.toLocaleString('en-RW')}</dd>
+                        <dd>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</dd>
                       </div>
                       <div>
                         <dt>Discount</dt>
@@ -4768,10 +4799,6 @@ function App() {
                       <div>
                         <dt>Net Discount</dt>
                         <dd>RWF {posSummaryNetDiscount.toLocaleString('en-RW')}</dd>
-                      </div>
-                      <div>
-                        <dt>Taxable Base</dt>
-                        <dd>RWF {posSummaryTaxableBase.toLocaleString('en-RW')}</dd>
                       </div>
                       <div>
                         <dt>Tax</dt>
@@ -4791,7 +4818,6 @@ function App() {
                       </div>
                     </dl>
                   </div>
-
                   <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartItems.length === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
