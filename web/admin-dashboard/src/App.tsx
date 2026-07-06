@@ -4014,49 +4014,8 @@ function App() {
       }
     }
 
-    function normalizePosCartItems(cartItems = posCartItems) {
-      const sourceItems = Array.isArray(cartItems) ? cartItems : [];
-
-      return sourceItems
-        .filter((item) => item && item.code)
-        .map((item) => ({
-          ...item,
-          quantity: Math.max(1, Number(item.quantity || 1)),
-          unitPrice: Number(item.unitPrice || 0),
-          availableQuantity: Number(item.availableQuantity || 0),
-        }));
-    }
-
-    function buildPosCartLedger(cartItems = posCartItems) {
-      const items = normalizePosCartItems(cartItems).reduce<typeof posCartItems>((uniqueItems, item) => {
-        const existingIndex = uniqueItems.findIndex((existingItem) => existingItem.code === item.code);
-
-        if (existingIndex >= 0) {
-          const existingItem = uniqueItems[existingIndex];
-
-          uniqueItems[existingIndex] = {
-            ...existingItem,
-            ...item,
-            quantity: Math.max(Number(existingItem.quantity || 0), Number(item.quantity || 0)),
-            unitPrice: Number(item.unitPrice || existingItem.unitPrice || 0),
-            availableQuantity: Number(item.availableQuantity || existingItem.availableQuantity || 0),
-          };
-        } else {
-          uniqueItems.push({ ...item });
-        }
-
-        return uniqueItems;
-      }, []);
-
-      return {
-        items,
-        productLines: items.length,
-        totalUnits: items.reduce((total, item) => total + Number(item.quantity || 0), 0),
-        subtotal: items.reduce(
-          (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
-          0,
-        ),
-      };
+    function normalizePosCartItems(cartItems = posCounterItems) {
+      return Array.isArray(cartItems) ? cartItems : [];
     }
 
     function buildPosCounterCartSnapshot(items: typeof posCartItems) {
@@ -4090,20 +4049,15 @@ function App() {
       };
     }
 
-    function commitPosCounterItems(nextItems: typeof posCartItems) {
-      const cartLedger = buildPosCartLedger(nextItems);
+    function commitPosCounterItems(nextItems: typeof posCounterItems) {
+      const cartSnapshot = buildPosCounterCartSnapshot(nextItems);
 
-      setPosCartItems(cartLedger.items);
-      setPosCounterItems(cartLedger.items);
-      setPosCounterCart({
-        items: cartLedger.items,
-        lineCount: cartLedger.productLines,
-        totalQuantity: cartLedger.totalUnits,
-        subtotal: cartLedger.subtotal,
-      });
+      setPosCounterCart(cartSnapshot);
+      setPosCounterItems(cartSnapshot.items);
+      setPosCartItems(cartSnapshot.items);
       setPosSaleSummary(
         calculatePosSaleSummary({
-          cartItems: cartLedger.items,
+          cartItems: cartSnapshot.items,
           discountAmount: posDiscountAmount,
           paymentMethod: posPaymentMethod,
           insuranceProviderId: posInsuranceProvider,
@@ -4115,8 +4069,27 @@ function App() {
     }
 
     function forceRefreshSaleSummary() {
-      commitPosCounterItems(posCartItems);
-      setPosNotice('Payment summary refreshed from the active POS cart.');
+      const cartSnapshot = buildPosCounterCartSnapshot([
+        ...posCounterCart.items,
+        ...posCounterItems,
+        ...posCartItems,
+      ]);
+
+      setPosCounterCart(cartSnapshot);
+      setPosCounterItems(cartSnapshot.items);
+      setPosCartItems(cartSnapshot.items);
+      setPosSaleSummary(
+        calculatePosSaleSummary({
+          cartItems: cartSnapshot.items,
+          discountAmount: posDiscountAmount,
+          paymentMethod: posPaymentMethod,
+          insuranceProviderId: posInsuranceProvider,
+          insuranceInstitutionId: posInsuranceInstitution,
+        }),
+      );
+      setPosSummaryRefreshKey((current) => current + 1);
+      setPosTransactionConfirmed(false);
+      setPosNotice('Payment summary refreshed from the stable POS cart snapshot.');
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
@@ -4125,10 +4098,10 @@ function App() {
         return;
       }
 
-      const currentItems = buildPosCartLedger(posCartItems).items;
+      const currentItems = normalizePosCartItems(posCounterItems);
       const existing = currentItems.find((item) => item.code === product.code);
 
-      let nextItems: typeof posCartItems;
+      let nextItems: typeof posCounterItems;
 
       if (existing) {
         const nextQuantity = Math.min(existing.quantity + 1, product.availableQuantity);
@@ -4170,7 +4143,7 @@ function App() {
     }
 
     function updateCartQuantity(code: string, quantity: number) {
-      const currentItems = buildPosCartLedger(posCartItems).items;
+      const currentItems = normalizePosCartItems(posCounterItems);
 
       const nextItems = currentItems.map((item) => {
         if (item.code !== code) return item;
@@ -4194,7 +4167,7 @@ function App() {
     }
 
     function removeCartItem(code: string) {
-      const nextItems = buildPosCartLedger(posCartItems).items.filter((item) => item.code !== code);
+      const nextItems = normalizePosCartItems(posCounterItems).filter((item) => item.code !== code);
       commitPosCounterItems(nextItems);
     }
 
@@ -4233,43 +4206,30 @@ function App() {
     }
 
     function confirmTransaction() {
-      const cartLedger = buildPosCartLedger(posCartItems);
-      const unavailableItem = cartLedger.items.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
-
-      if (!isPosDayOpen) {
-        setPosNotice('Open the POS day before confirming payment.');
-        return;
-      }
-
-      if (cartLedger.totalUnits === 0) {
-        setPosNotice('Add at least one product unit before confirming payment.');
-        return;
-      }
+      const unavailableItem = posCounterCart.items.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
 
       if (unavailableItem) {
-        setPosNotice(`${unavailableItem.name} is not available in the requested quantity.`);
+        setPosNotice(`${unavailableItem.name} is no longer available in the selected quantity. Refresh current inventory before confirming.`);
+        setPosTransactionConfirmed(false);
         return;
       }
 
-      setPosCartItems(cartLedger.items);
-      setPosCounterItems(cartLedger.items);
-      setPosCounterCart({
-        items: cartLedger.items,
-        lineCount: cartLedger.productLines,
-        totalQuantity: cartLedger.totalUnits,
-        subtotal: cartLedger.subtotal,
-      });
-      setPosSaleSummary(
-        calculatePosSaleSummary({
-          cartItems: cartLedger.items,
-          discountAmount: posDiscountAmount,
-          paymentMethod: posPaymentMethod,
-          insuranceProviderId: posInsuranceProvider,
-          insuranceInstitutionId: posInsuranceInstitution,
-        }),
-      );
+      if (posCounterItems.length === 0) {
+        setPosNotice('Add at least one drug to cart before confirming payment.');
+        return;
+      }
+
+      if (posCustomerInvoice === 'yes' && posInvoiceDelivery !== 'printer' && !posInvoiceContact.trim()) {
+        setPosNotice('Provide customer WhatsApp number or email before invoice delivery.');
+        return;
+      }
+
       setPosTransactionConfirmed(true);
-      setPosNotice('Payment confirmed from the active POS cart.');
+      setPosNotice(
+        posCustomerInvoice === 'yes'
+          ? 'Payment confirmed. Invoice generation and delivery are now available inside POS.'
+          : 'Payment confirmed without customer invoice.',
+      );
     }
 
 
@@ -4447,13 +4407,38 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posCartLedger = buildPosCartLedger(posCartItems);
-      const posLiveCartItems = posCartLedger.items;
-      const posFinancialLineCount = posCartLedger.productLines;
-      const posFinancialTotalQuantity = posCartLedger.totalUnits;
-      const posCartOperatingUnits = posCartLedger.totalUnits;
+      const posLiveCartItems = Array.isArray(posCounterCart.items) ? posCounterCart.items : [];
+      const posFinancialLineCount = posLiveCartItems.length;
+      const posFinancialTotalQuantity = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0),
+        0,
+      );
+      const posCartOperatingUnits = posFinancialTotalQuantity;
       const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posCartLedger.subtotal;
+      const posFinancialSubtotal = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+        0,
+      );
+
+      const posOperatingCartItems = [
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
+      ].reduce<typeof posCartItems>((uniqueItems, item) => {
+        if (!uniqueItems.some((existingItem) => existingItem.code === item.code)) {
+          uniqueItems.push(item);
+        }
+        return uniqueItems;
+      }, []);
+
+      const posOperatingCart = {
+        items: posOperatingCartItems,
+        lineCount: posOperatingCartItems.length,
+        totalQuantity: posOperatingCartItems.reduce((total, item) => total + Number(item.quantity || 0), 0),
+        subtotal: posOperatingCartItems.reduce(
+          (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+          0,
+        ),
+      };
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
       const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posOperatingCart.subtotal);
