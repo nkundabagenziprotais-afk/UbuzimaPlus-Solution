@@ -4049,8 +4049,78 @@ function App() {
       };
     }
 
+    function createStablePosCartSnapshot(sourceItems: typeof posCartItems) {
+      const normalizedItems = (Array.isArray(sourceItems) ? sourceItems : [])
+        .filter(Boolean)
+        .map((item) => {
+          const rawItem = item as typeof item & Record<string, unknown>;
+          const code = String(
+            rawItem.code
+              ?? rawItem.productCode
+              ?? rawItem.sku
+              ?? rawItem.productId
+              ?? rawItem.id
+              ?? rawItem.name
+              ?? `POS-${Date.now()}`,
+          ).trim();
+
+          const quantity = Math.max(1, Number(rawItem.quantity ?? 1) || 1);
+          const availableQuantity = Math.max(1, Number(rawItem.availableQuantity ?? rawItem.availableStock ?? rawItem.onHandQuantity ?? quantity) || quantity);
+          const unitPrice = Math.max(0, Number(rawItem.unitPrice ?? rawItem.sellingPrice ?? rawItem.price ?? 0) || 0);
+
+          return {
+            ...item,
+            code,
+            name: String(rawItem.name ?? 'Selected product'),
+            strength: String(rawItem.strength ?? ''),
+            quantity: Math.min(quantity, availableQuantity),
+            unitPrice,
+            batchId: String(rawItem.batchId ?? rawItem.inventoryBatchId ?? rawItem.batch_id ?? rawItem.id ?? code),
+            productId: String(rawItem.productId ?? rawItem.id ?? code),
+            batchNumber: String(rawItem.batchNumber ?? rawItem.batchNo ?? ''),
+            availableQuantity,
+            expiryDate: String(rawItem.expiryDate ?? rawItem.expiresAt ?? ''),
+            locationName: String(rawItem.locationName ?? rawItem.location ?? ''),
+          };
+        })
+        .filter((item) => item.code);
+
+      const uniqueItems = normalizedItems.reduce((items, item) => {
+        const existingIndex = items.findIndex((existingItem) => existingItem.code === item.code);
+
+        if (existingIndex >= 0) {
+          const existingItem = items[existingIndex];
+          items[existingIndex] = {
+            ...existingItem,
+            ...item,
+            quantity: Math.min(
+              Math.max(Number(existingItem.quantity || 0), Number(item.quantity || 1)),
+              Number(item.availableQuantity || existingItem.availableQuantity || item.quantity || 1),
+            ),
+          };
+        } else {
+          items.push(item);
+        }
+
+        return items;
+      }, [] as typeof normalizedItems);
+
+      const totalQuantity = uniqueItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
+      const subtotal = uniqueItems.reduce(
+        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+        0,
+      );
+
+      return {
+        items: uniqueItems,
+        lineCount: uniqueItems.length,
+        totalQuantity,
+        subtotal,
+      };
+    }
+
     function commitPosCounterItems(nextItems: typeof posCounterItems) {
-      const cartSnapshot = buildPosCounterCartSnapshot(nextItems);
+      const cartSnapshot = createStablePosCartSnapshot(nextItems);
 
       setPosCounterCart(cartSnapshot);
       setPosCounterItems(cartSnapshot.items);
@@ -4069,31 +4139,18 @@ function App() {
     }
 
     function forceRefreshSaleSummary() {
-      const cartSnapshot = buildPosCounterCartSnapshot([
-        ...posCounterCart.items,
-        ...posCounterItems,
-        ...posCartItems,
+      const cartSnapshot = createStablePosCartSnapshot([
+        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
       ]);
 
-      setPosCounterCart(cartSnapshot);
-      setPosCounterItems(cartSnapshot.items);
-      setPosCartItems(cartSnapshot.items);
-      setPosSaleSummary(
-        calculatePosSaleSummary({
-          cartItems: cartSnapshot.items,
-          discountAmount: posDiscountAmount,
-          paymentMethod: posPaymentMethod,
-          insuranceProviderId: posInsuranceProvider,
-          insuranceInstitutionId: posInsuranceInstitution,
-        }),
-      );
-      setPosSummaryRefreshKey((current) => current + 1);
-      setPosTransactionConfirmed(false);
-      setPosNotice('Payment summary refreshed from the stable POS cart snapshot.');
+      commitPosCounterItems(cartSnapshot.items);
+      setPosNotice('Payment summary refreshed from the active POS cart.');
     }
 
     function readActivePosCounterItems() {
-      return buildPosCounterCartSnapshot([
+      return createStablePosCartSnapshot([
         ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
         ...(Array.isArray(posCounterItems) ? posCounterItems : []),
         ...(Array.isArray(posCartItems) ? posCartItems : []),
@@ -4102,50 +4159,34 @@ function App() {
 
     function makePosCartItemFromProduct(product: typeof posProducts[number]) {
       const rawProduct = product as typeof product & Record<string, unknown>;
-      const parsedAvailableQuantity = Number(
-        rawProduct.availableQuantity
-          ?? rawProduct.currentQuantity
-          ?? rawProduct.stockQuantity
-          ?? rawProduct.availableStock
-          ?? rawProduct.onHandQuantity
-          ?? rawProduct.onHand
-          ?? 1,
-      );
-      const availableQuantity = Math.max(
-        1,
-        Number.isFinite(parsedAvailableQuantity) ? Math.floor(parsedAvailableQuantity) : 1,
-      );
-      const productCode = String(
+      const code = String(
         rawProduct.code
           ?? rawProduct.productCode
           ?? rawProduct.sku
           ?? rawProduct.productId
           ?? rawProduct.id
           ?? rawProduct.name
-          ?? '',
+          ?? `POS-${Date.now()}`,
       ).trim();
-      const batchId = String(
-        rawProduct.batchId
-          ?? rawProduct.inventoryBatchId
-          ?? rawProduct.batch_id
-          ?? rawProduct.id
-          ?? productCode,
-      ).trim();
-      const unitPrice = Number(
-        rawProduct.unitPrice
-          ?? rawProduct.sellingPrice
-          ?? rawProduct.price
-          ?? 0,
+
+      const availableQuantity = Math.max(
+        1,
+        Number(rawProduct.availableQuantity ?? rawProduct.currentQuantity ?? rawProduct.stockQuantity ?? rawProduct.availableStock ?? rawProduct.onHandQuantity ?? 1) || 1,
+      );
+
+      const unitPrice = Math.max(
+        0,
+        Number(rawProduct.unitPrice ?? rawProduct.sellingPrice ?? rawProduct.price ?? 0) || 0,
       );
 
       return {
-        code: productCode,
+        code,
         name: String(rawProduct.name ?? 'Selected product'),
         strength: String(rawProduct.strength ?? ''),
         quantity: 1,
-        unitPrice: Number.isFinite(unitPrice) ? unitPrice : 0,
-        batchId,
-        productId: String(rawProduct.productId ?? rawProduct.id ?? productCode),
+        unitPrice,
+        batchId: String(rawProduct.batchId ?? rawProduct.inventoryBatchId ?? rawProduct.batch_id ?? rawProduct.id ?? code),
+        productId: String(rawProduct.productId ?? rawProduct.id ?? code),
         batchNumber: String(rawProduct.batchNumber ?? rawProduct.batchNo ?? ''),
         availableQuantity,
         expiryDate: String(rawProduct.expiryDate ?? rawProduct.expiresAt ?? ''),
@@ -4155,59 +4196,40 @@ function App() {
 
     function addPosProductToCart(product: typeof posProducts[number]) {
       const cartProduct = makePosCartItemFromProduct(product);
-
-      if (!cartProduct.code) {
-        setPosNotice('This product cannot be added because its product code is missing.');
-        return;
-      }
-
-      if (cartProduct.availableQuantity <= 0) {
-        setPosNotice('This product is not available in current inventory and cannot be sold.');
-        return;
-      }
-
       const currentItems = readActivePosCounterItems();
-      const existing = currentItems.find((item) => item.code === cartProduct.code);
+      const existingItem = currentItems.find((item) => item.code === cartProduct.code);
 
-      const nextItems = existing
-        ? currentItems.map((item) => {
-            if (item.code !== cartProduct.code) return item;
-
-            const nextQuantity = Math.min(Number(item.quantity || 0) + 1, cartProduct.availableQuantity);
-
-            if (nextQuantity === Number(item.quantity || 0)) {
-              setPosNotice(`${cartProduct.name} cannot exceed available inventory of ${cartProduct.availableQuantity}.`);
-            }
-
-            return {
-              ...item,
-              ...cartProduct,
-              quantity: nextQuantity,
-            };
-          })
+      const nextItems = existingItem
+        ? currentItems.map((item) =>
+            item.code === cartProduct.code
+              ? {
+                  ...item,
+                  ...cartProduct,
+                  quantity: Math.min(Number(item.quantity || 0) + 1, cartProduct.availableQuantity),
+                }
+              : item,
+          )
         : [...currentItems, cartProduct];
 
-      commitPosCounterItems(nextItems);
+      const nextSnapshot = createStablePosCartSnapshot(nextItems);
+      commitPosCounterItems(nextSnapshot.items);
+
+      setPosNotice(
+        `${cartProduct.name} added to cart. Cart now has ${nextSnapshot.lineCount} line${nextSnapshot.lineCount === 1 ? '' : 's'} and ${nextSnapshot.totalQuantity} unit${nextSnapshot.totalQuantity === 1 ? '' : 's'}.`,
+      );
     }
 
     function updateCartQuantity(code: string, quantity: number) {
       const currentItems = readActivePosCounterItems();
-
       const nextItems = currentItems.map((item) => {
         if (item.code !== code) return item;
 
-        const safeQuantity = Math.min(
-          Math.max(1, Number.isFinite(quantity) ? quantity : 1),
-          Number(item.availableQuantity || 1),
-        );
-
-        if (safeQuantity !== quantity) {
-          setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
-        }
-
         return {
           ...item,
-          quantity: safeQuantity,
+          quantity: Math.min(
+            Math.max(1, Number(quantity) || 1),
+            Number(item.availableQuantity || 1),
+          ),
         };
       });
 
@@ -4215,8 +4237,7 @@ function App() {
     }
 
     function removeCartItem(code: string) {
-      const nextItems = readActivePosCounterItems().filter((item) => item.code !== code);
-      commitPosCounterItems(nextItems);
+      commitPosCounterItems(readActivePosCounterItems().filter((item) => item.code !== code));
     }
 
     function clearPosCart() {
