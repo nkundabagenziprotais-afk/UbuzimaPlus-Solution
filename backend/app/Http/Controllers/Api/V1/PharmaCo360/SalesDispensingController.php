@@ -300,6 +300,7 @@ class SalesDispensingController extends Controller
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
+            'items.*.stock_batch_id' => ['nullable', 'integer'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
             'items.*.unit_price' => ['required', 'numeric', 'gte:0'],
             'items.*.discount_amount' => ['nullable', 'numeric', 'gte:0'],
@@ -372,6 +373,25 @@ class SalesDispensingController extends Controller
             ]);
         }
 
+        $stockBatchIds = collect($validated['items'])
+            ->pluck('stock_batch_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $stockBatches = StockBatch::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('branch_id', $branch->id)
+            ->whereIn('id', $stockBatchIds)
+            ->get()
+            ->keyBy('id');
+
+        if ($stockBatchIds->isNotEmpty() && $stockBatches->count() !== $stockBatchIds->count()) {
+            throw ValidationException::withMessages([
+                'items' => ['One or more selected stock batches do not belong to the current tenant branch.'],
+            ]);
+        }
+
         $requiresPrescription = $products->contains(fn (Product $product) => (bool) $product->requires_prescription);
 
         if ($requiresPrescription && ! $prescription) {
@@ -380,10 +400,10 @@ class SalesDispensingController extends Controller
             ]);
         }
 
-        $result = DB::transaction(function () use ($request, $tenant, $validated, $branch, $customer, $prescription, $products) {
+        $result = DB::transaction(function () use ($request, $tenant, $validated, $branch, $customer, $prescription, $products, $stockBatches) {
             $saleNumber = $this->nextSaleNumber($tenant->id);
 
-            $lineItems = collect($validated['items'])->map(function (array $item) use ($tenant, $products) {
+            $lineItems = collect($validated['items'])->map(function (array $item) use ($tenant, $products, $stockBatches) {
                 /** @var Product $product */
                 $product = $products->get($item['product_id']);
 
@@ -392,6 +412,25 @@ class SalesDispensingController extends Controller
                 $discount = round((float) ($item['discount_amount'] ?? 0), 2);
                 $tax = round((float) ($item['tax_amount'] ?? 0), 2);
                 $lineTotal = round(($quantity * $unitPrice) - $discount + $tax, 2);
+                $stockBatch = null;
+
+                if (! empty($item['stock_batch_id'])) {
+                    $stockBatch = $stockBatches->get($item['stock_batch_id']);
+
+                    if (! $stockBatch || (int) $stockBatch->product_id !== (int) $product->id) {
+                        throw ValidationException::withMessages([
+                            'items' => ["Selected stock batch does not match product {$product->sku}."],
+                        ]);
+                    }
+
+                    $availableQuantity = (float) $stockBatch->quantity_on_hand - (float) $stockBatch->quantity_reserved;
+
+                    if ($stockBatch->status !== 'active' || $availableQuantity < $quantity) {
+                        throw ValidationException::withMessages([
+                            'items' => ["Selected stock batch for product {$product->sku} is not available for the requested quantity."],
+                        ]);
+                    }
+                }
 
                 if ($lineTotal < 0) {
                     throw ValidationException::withMessages([
@@ -403,6 +442,8 @@ class SalesDispensingController extends Controller
                     'uuid' => (string) Str::uuid(),
                     'tenant_id' => $tenant->id,
                     'product_id' => $product->id,
+                    'stock_batch_id' => $stockBatch?->id,
+                    'stock_location_id' => $stockBatch?->stock_location_id,
                     'product_name_snapshot' => $product->name,
                     'sku_snapshot' => $product->sku,
                     'quantity' => $quantity,
@@ -416,6 +457,7 @@ class SalesDispensingController extends Controller
                     'metadata' => [
                         'creation_workflow' => 'phase_6_1_create_sale',
                         'stock_deducted' => false,
+                        'stock_pick_source' => $stockBatch ? 'pos_cart' : 'dispensing_review',
                     ],
                 ];
             });

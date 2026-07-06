@@ -1044,6 +1044,7 @@ p {
 .pos-meta-grid input,
 .pos-meta-grid select,
 .pos-cart-line input,
+.pos-cart-line select,
 .pos-cart-footer input {
   width: 100%;
   min-height: 42px;
@@ -1717,7 +1718,7 @@ p {
 
 .pos-cart-line {
   display: grid;
-  grid-template-columns: minmax(160px, 1.4fr) 84px 110px 110px 110px auto;
+  grid-template-columns: minmax(160px, 1.4fr) minmax(130px, 0.9fr) 84px 110px 110px 110px auto;
   gap: 0.65rem;
   align-items: end;
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -6211,7 +6212,7 @@ h3,
 }
 
 .pos-cart-line {
-  grid-template-columns: minmax(180px, 1.35fr) minmax(72px, 0.45fr) minmax(96px, 0.55fr) minmax(96px, 0.55fr) minmax(96px, 0.55fr) auto;
+  grid-template-columns: minmax(180px, 1.35fr) minmax(130px, 0.85fr) minmax(72px, 0.45fr) minmax(96px, 0.55fr) minmax(96px, 0.55fr) minmax(96px, 0.55fr) auto;
 }
 
 .transaction-contribution-grid {

@@ -1311,6 +1311,7 @@ export type CreatePharmaSalePayload = {
   notes?: string | null;
   items: Array<{
     product_id: number;
+    stock_batch_id?: number | null;
     quantity: number;
     unit_price: number;
     discount_amount?: number;

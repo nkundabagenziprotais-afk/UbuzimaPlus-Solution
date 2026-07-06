@@ -10,6 +10,7 @@ use App\Models\PharmacoSale;
 use App\Models\PharmacoTaxComplianceRule;
 use App\Models\Product;
 use App\Models\Solution;
+use App\Models\StockBatch;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -194,6 +195,54 @@ class PharmacoSalesCreationApiTest extends TestCase
             'action' => 'pharmaco.sale.created',
             'auditable_type' => PharmacoSale::class,
             'auditable_id' => $saleId,
+        ]);
+    }
+
+    public function test_tenant_admin_can_create_single_unit_sale_with_stock_pick(): void
+    {
+        $this->seed();
+
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+        $tenant = $this->tenant();
+        $branch = Branch::where('tenant_id', $tenant->id)->firstOrFail();
+        $product = Product::where('tenant_id', $tenant->id)
+            ->where('requires_prescription', false)
+            ->firstOrFail();
+        $stockBatch = StockBatch::where('tenant_id', $tenant->id)
+            ->where('branch_id', $branch->id)
+            ->where('product_id', $product->id)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/sales', [
+                'branch_id' => $branch->id,
+                'sale_type' => 'cash_sale',
+                'items' => [
+                    [
+                        'product_id' => $product->id,
+                        'stock_batch_id' => $stockBatch->id,
+                        'quantity' => 1,
+                        'unit_price' => 25,
+                        'discount_amount' => 0,
+                        'tax_amount' => 0,
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('message', 'Draft sale created successfully.')
+            ->assertJsonPath('sale.items_count', 1)
+            ->assertJsonPath('sale.items.0.quantity', 1)
+            ->assertJsonPath('sale.items.0.stock_batch.id', $stockBatch->id)
+            ->assertJsonPath('sale.items.0.stock_location.id', $stockBatch->stock_location_id)
+            ->assertJsonPath('sale.total_amount', 25);
+
+        $this->assertDatabaseHas('pharmaco_sale_items', [
+            'pharmaco_sale_id' => $response->json('sale.id'),
+            'product_id' => $product->id,
+            'stock_batch_id' => $stockBatch->id,
+            'quantity' => 1,
         ]);
     }
 

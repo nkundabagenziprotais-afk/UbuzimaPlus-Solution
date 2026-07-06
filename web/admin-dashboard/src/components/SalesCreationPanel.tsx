@@ -49,6 +49,7 @@ type PrescriptionForm = {
 
 type SaleLineForm = {
   product_id: string;
+  stock_batch_id: string;
   quantity: string;
   unit_price: string;
   discount_amount: string;
@@ -96,6 +97,7 @@ function blankPrescriptionForm(customerId = ''): PrescriptionForm {
 function blankSaleLine(productId = ''): SaleLineForm {
   return {
     product_id: productId,
+    stock_batch_id: '',
     quantity: '1',
     unit_price: '',
     discount_amount: '0',
@@ -112,7 +114,7 @@ function blankSaleForm(branchId = '', customerId = '', prescriptionId = ''): Sal
     discount_amount: '0',
     tax_amount: '0',
     notes: '',
-    items: [blankSaleLine()],
+    items: [],
   };
 }
 
@@ -334,6 +336,18 @@ export function SalesCreationPanel({
     return Array.from(categories.entries()).map(([code, name]) => ({ code, name }));
   }, [activeProducts]);
 
+  function stockBatchesForProduct(productId: number): PharmaStockBatch[] {
+    return batches
+      .filter((batch) => batch.product.id === productId)
+      .filter((batch) => batch.status === 'active' && batch.available_quantity > 0)
+      .sort((left, right) => {
+        const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+
+        return leftExpiry - rightExpiry || left.id - right.id;
+      });
+  }
+
   const visibleProducts = useMemo(() => {
     const normalizedSearch = productSearch.trim().toLowerCase();
 
@@ -362,50 +376,45 @@ export function SalesCreationPanel({
   }, [activeCategory, activeProducts, productSearch]);
 
   function bestBatch(productId: number): PharmaStockBatch | undefined {
-    return batches
-      .filter((batch) => batch.product.id === productId)
-      .filter((batch) => batch.status === 'active' && batch.available_quantity > 0)
-      .sort((left, right) => {
-        const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
-        const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
-
-        return leftExpiry - rightExpiry || left.id - right.id;
-      })[0];
+    return stockBatchesForProduct(productId)[0];
   }
 
-  function preferredPrice(product: PharmaProduct): string {
-    const price = bestBatch(product.id)?.selling_price;
+  function preferredPrice(product: PharmaProduct, stockBatch?: PharmaStockBatch): string {
+    const price = stockBatch?.selling_price ?? bestBatch(product.id)?.selling_price;
 
     return price === null || price === undefined ? '' : String(price);
   }
 
-  function addProductToCart(product: PharmaProduct) {
-    const price = preferredPrice(product);
+  function addProductToCart(product: PharmaProduct, stockBatch = bestBatch(product.id)) {
+    const price = preferredPrice(product, stockBatch);
+    const nextLine = {
+      ...blankSaleLine(String(product.id)),
+      stock_batch_id: stockBatch ? String(stockBatch.id) : '',
+      unit_price: price,
+    };
 
     setSaleForm((current) => {
-      const existingIndex = current.items.findIndex((item) => item.product_id === String(product.id));
+      const currentItems = current.items.filter((item) => item.product_id);
+      const existingIndex = currentItems.findIndex(
+        (item) =>
+          item.product_id === nextLine.product_id &&
+          (item.stock_batch_id || '') === (nextLine.stock_batch_id || ''),
+      );
 
       if (existingIndex >= 0) {
         return {
           ...current,
-          items: current.items.map((item, index) =>
+          items: currentItems.map((item, index) =>
             index === existingIndex
               ? {
                   ...item,
-                  quantity: String(toNumber(item.quantity) + 1),
+                  quantity: String(Math.max(toNumber(item.quantity), 0) + 1),
                   unit_price: item.unit_price || price,
                 }
               : item,
           ),
         };
       }
-
-      const nextLine = blankSaleLine(String(product.id));
-      nextLine.unit_price = price;
-
-      const currentItems = current.items.length === 1 && !current.items[0].product_id
-        ? []
-        : current.items;
 
       return {
         ...current,
@@ -497,6 +506,7 @@ export function SalesCreationPanel({
       .filter((item) => item.product_id && toNumber(item.quantity) > 0 && toNumber(item.unit_price) >= 0)
       .map((item) => ({
         product_id: Number(item.product_id),
+        stock_batch_id: item.stock_batch_id ? Number(item.stock_batch_id) : null,
         quantity: toNumber(item.quantity),
         unit_price: toNumber(item.unit_price),
         discount_amount: toNumber(item.discount_amount),
@@ -640,7 +650,7 @@ export function SalesCreationPanel({
               const price = preferredPrice(product);
 
               return (
-                <button key={product.id} type="button" onClick={() => addProductToCart(product)}>
+                <button key={product.id} type="button" onClick={() => addProductToCart(product, batch)}>
                   <span className={product.requires_prescription ? 'rx-chip' : 'otc-chip'}>
                     {product.requires_prescription ? 'RX' : 'OTC'}
                   </span>
@@ -793,6 +803,7 @@ export function SalesCreationPanel({
 
                 const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
                 const linePreview = salePreview.lines.find((line) => line.index === index);
+                const productBatches = product ? stockBatchesForProduct(product.id) : [];
 
                 return (
                   <div key={`${item.product_id}-${index}`} className="pos-cart-line">
@@ -800,6 +811,29 @@ export function SalesCreationPanel({
                       <strong>{product?.name ?? 'Selected product'}</strong>
                       <small>{product?.sku ?? 'SKU pending'} · {product?.requires_prescription ? 'Prescription required' : 'OTC/general'}</small>
                     </div>
+                    <label className="pos-stock-pick">
+                      Stock pick
+                      <select
+                        value={item.stock_batch_id}
+                        onChange={(event) => {
+                          const nextBatch = batches.find((batch) => batch.id === Number(event.target.value));
+
+                          updateSaleLine(index, {
+                            stock_batch_id: event.target.value,
+                            unit_price: nextBatch?.selling_price !== null && nextBatch?.selling_price !== undefined
+                              ? String(nextBatch.selling_price)
+                              : item.unit_price,
+                          });
+                        }}
+                      >
+                        <option value="">FEFO auto</option>
+                        {productBatches.map((batch) => (
+                          <option key={batch.id} value={batch.id}>
+                            {batch.batch_number} · {batch.stock_location.name} · {batch.available_quantity}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <label>
                       Qty
                       <input
@@ -913,7 +947,7 @@ export function SalesCreationPanel({
               onClick={() =>
                 setSaleForm((current) => ({
                   ...current,
-                  items: [blankSaleLine()],
+                  items: [],
                 }))
               }
             >
