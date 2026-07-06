@@ -4924,24 +4924,60 @@ function App() {
 
                   <div className="pos-payment-summary-grid pos-payment-summary-grid-v17">
                     <div className="pos-payment-summary-column pos-payment-summary-column--operational" aria-label="Operational payment summary">
-                      {posPaymentOperationalCards.map(([label, value]) => (
-                        <article key={`operational-${label}`} className="pos-summary-field-card pos-summary-field-card--operational">
-                          <span>{label}</span>
-                          <strong>{value}</strong>
-                        </article>
-                      ))}
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>Date</span>
+                        <strong>{posSummaryTimestamp}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>Cart lines</span>
+                        <strong>{posLiveCartItems.length}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>Cart units</span>
+                        <strong>{posCartOperatingUnits}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>% Customer</span>
+                        <strong>{posSummaryCustomerContributionPercent}%</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>% Insurer</span>
+                        <strong>{posSummaryInsurerContributionPercent}%</strong>
+                      </article>
                     </div>
 
                     <div className="pos-payment-summary-column pos-payment-summary-column--financial" aria-label="Financial payment summary">
-                      {posPaymentFinancialCards.map(([label, value]) => (
-                        <article key={`financial-${label}`} className="pos-summary-field-card pos-summary-field-card--financial">
-                          <span>{label}</span>
-                          <strong>{value}</strong>
-                        </article>
-                      ))}
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Sub-Total</span>
+                        <strong>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Discount</span>
+                        <strong>RWF {posSummaryDiscountAmount.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Net Discount</span>
+                        <strong>RWF {posSummaryNetDiscount.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Tax</span>
+                        <strong>RWF {posSummaryTaxAmount.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Total Amount</span>
+                        <strong>RWF {posSummaryTotalAmount.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Customer Payment</span>
+                        <strong>RWF {posSummaryCustomerPayment.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Insurer Payment</span>
+                        <strong>RWF {posSummaryInsurerPayment.toLocaleString('en-RW')}</strong>
+                      </article>
                     </div>
                   </div>
-                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCounterItems.length === 0}>
+                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartOperatingUnits === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
                 </section>
