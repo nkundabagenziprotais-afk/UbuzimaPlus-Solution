@@ -4557,20 +4557,33 @@ function App() {
         ...(Array.isArray(posCartItems) ? posCartItems : []),
       ]).items;
 
-      const posFinancialLineCount = posLiveCartItems.length;
-      const posFinancialTotalQuantity = posLiveCartItems.reduce(
+      const posVisibleCartItems = posLiveCartItems.map((item) => {
+        const rawQuantity = Number(item.quantity ?? 1);
+        const rawUnitPrice = Number(item.unitPrice ?? 0);
+        const rawAvailableQuantity = Number(item.availableQuantity ?? item.quantity ?? 1);
+
+        return {
+          ...item,
+          quantity: Math.max(1, Number.isFinite(rawQuantity) ? rawQuantity : 1),
+          unitPrice: Math.max(0, Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0),
+          availableQuantity: Math.max(1, Number.isFinite(rawAvailableQuantity) ? rawAvailableQuantity : 1),
+        };
+      });
+
+      const posFinancialLineCount = posVisibleCartItems.length;
+      const posFinancialTotalQuantity = posVisibleCartItems.reduce(
         (total, item) => total + Number(item.quantity || 0),
         0,
       );
       const posCartOperatingUnits = posFinancialTotalQuantity;
       const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posLiveCartItems.reduce(
+      const posFinancialSubtotal = posVisibleCartItems.reduce(
         (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
         0,
       );
 
       const posOperatingCart = {
-        items: posLiveCartItems,
+        items: posVisibleCartItems,
         lineCount: posFinancialLineCount,
         totalQuantity: posFinancialTotalQuantity,
         subtotal: posFinancialSubtotal,
@@ -4831,8 +4844,8 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posCartOperatingUnits === 0}>
+                      <small>{posFinancialLineCount} line{posFinancialLineCount === 1 ? '' : 's'} · {posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posFinancialLineCount === 0}>
                         Clear cart
                       </button>
                     </div>
@@ -4852,12 +4865,12 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posCartOperatingUnits === 0 ? (
+                        {posFinancialLineCount === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posLiveCartItems.map((item) => (
+                          posVisibleCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
