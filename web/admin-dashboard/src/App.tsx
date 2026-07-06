@@ -4407,12 +4407,18 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posLiveCartItems = posCounterCart.items;
-      const posFinancialLineCount = posCounterCart.lineCount;
-      const posFinancialTotalQuantity = posCounterCart.totalQuantity;
+      const posLiveCartItems = Array.isArray(posCounterCart.items) ? posCounterCart.items : [];
+      const posFinancialLineCount = posLiveCartItems.length;
+      const posFinancialTotalQuantity = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0),
+        0,
+      );
       const posCartOperatingUnits = posFinancialTotalQuantity;
       const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posCounterCart.subtotal;
+      const posFinancialSubtotal = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+        0,
+      );
 
       const posOperatingCartItems = [
         ...(Array.isArray(posCounterItems) ? posCounterItems : []),
@@ -4715,7 +4721,7 @@ function App() {
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posCounterCart.items.map((item) => (
+                          posLiveCartItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
