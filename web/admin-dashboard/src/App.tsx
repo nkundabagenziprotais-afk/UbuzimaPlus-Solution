@@ -3998,7 +3998,25 @@ function App() {
       }
     }
 
+    function buildCurrentPosSaleSummary(cartItems = posCartItems) {
+      return calculatePosSaleSummary({
+        cartItems,
+        discountAmount: posDiscountAmount,
+        paymentMethod: posPaymentMethod,
+        insuranceProviderId: posInsuranceProvider,
+        insuranceInstitutionId: posInsuranceInstitution,
+      });
+    }
+
     function forceRefreshSaleSummary() {
+      const refreshedSummary = buildCurrentPosSaleSummary(posCartItems);
+      setPosSaleSummary(refreshedSummary);
+      setPosSummaryRefreshKey((current) => current + 1);
+      setPosTransactionConfirmed(false);
+      setPosNotice('Payment summary synchronized from the current cart and Transaction Set-UP settings.');
+    }
+
+    useEffect(() => {
       setPosSaleSummary(
         calculatePosSaleSummary({
           cartItems: posCartItems,
@@ -4008,8 +4026,7 @@ function App() {
           insuranceInstitutionId: posInsuranceInstitution,
         }),
       );
-      setPosNotice('Payment summary updated from the current cart and Transaction Set-UP settings.');
-    }
+    }, [posCartItems, posDiscountAmount, posPaymentMethod, posInsuranceProvider, posInsuranceInstitution]);
 
     function addPosProductToCart(product: typeof posProducts[number]) {
       if (!product.batchId || product.availableQuantity <= 0) {
@@ -4329,7 +4346,7 @@ function App() {
         : 0;
       const posFinancialLineCount = posCartItems.length;
       const posFinancialTotalQuantity = posCartItems.reduce((total, item) => total + item.quantity, 0);
-      const posSummarySyncKey = posSummaryRefreshKey;
+      const posSummarySyncKey = `${posSummaryRefreshKey}-${posSaleSummary.totalQuantity}-${posSaleSummary.total}`;
       const posFinancialSubtotal = posCartItems.reduce(
         (total, item) => total + item.quantity * item.unitPrice,
         0,
