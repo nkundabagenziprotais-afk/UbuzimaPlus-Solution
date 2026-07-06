@@ -4119,6 +4119,76 @@ function App() {
       };
     }
 
+    function createStablePosCartSnapshot(sourceItems: typeof posCartItems) {
+      const normalizedItems = (Array.isArray(sourceItems) ? sourceItems : [])
+        .filter(Boolean)
+        .map((item) => {
+          const rawItem = item as typeof item & Record<string, unknown>;
+          const code = String(
+            rawItem.code
+              ?? rawItem.productCode
+              ?? rawItem.sku
+              ?? rawItem.productId
+              ?? rawItem.id
+              ?? rawItem.name
+              ?? `POS-${Date.now()}`,
+          ).trim();
+
+          const quantity = Math.max(1, Number(rawItem.quantity ?? 1) || 1);
+          const availableQuantity = Math.max(1, Number(rawItem.availableQuantity ?? rawItem.availableStock ?? rawItem.onHandQuantity ?? quantity) || quantity);
+          const unitPrice = Math.max(0, Number(rawItem.unitPrice ?? rawItem.sellingPrice ?? rawItem.price ?? 0) || 0);
+
+          return {
+            ...item,
+            code,
+            name: String(rawItem.name ?? 'Selected product'),
+            strength: String(rawItem.strength ?? ''),
+            quantity: Math.min(quantity, availableQuantity),
+            unitPrice,
+            batchId: String(rawItem.batchId ?? rawItem.inventoryBatchId ?? rawItem.batch_id ?? rawItem.id ?? code),
+            productId: String(rawItem.productId ?? rawItem.id ?? code),
+            batchNumber: String(rawItem.batchNumber ?? rawItem.batchNo ?? ''),
+            availableQuantity,
+            expiryDate: String(rawItem.expiryDate ?? rawItem.expiresAt ?? ''),
+            locationName: String(rawItem.locationName ?? rawItem.location ?? ''),
+          };
+        })
+        .filter((item) => item.code);
+
+      const uniqueItems = normalizedItems.reduce((items, item) => {
+        const existingIndex = items.findIndex((existingItem) => existingItem.code === item.code);
+
+        if (existingIndex >= 0) {
+          const existingItem = items[existingIndex];
+          items[existingIndex] = {
+            ...existingItem,
+            ...item,
+            quantity: Math.min(
+              Math.max(Number(existingItem.quantity || 0), Number(item.quantity || 1)),
+              Number(item.availableQuantity || existingItem.availableQuantity || item.quantity || 1),
+            ),
+          };
+        } else {
+          items.push(item);
+        }
+
+        return items;
+      }, [] as typeof normalizedItems);
+
+      const totalQuantity = uniqueItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
+      const subtotal = uniqueItems.reduce(
+        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+        0,
+      );
+
+      return {
+        items: uniqueItems,
+        lineCount: uniqueItems.length,
+        totalQuantity,
+        subtotal,
+      };
+    }
+
     function commitPosCounterItems(nextItems: typeof posCounterItems) {
       const cartSnapshot = createStablePosCartSnapshot(nextItems);
 
