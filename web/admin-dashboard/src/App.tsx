@@ -2386,6 +2386,1844 @@ function ModuleReadinessGrid({
   return (
     <div className="module-readiness-grid">
       {items.map(([title, text]) => (
+        <article key={title}>
+          <strong>{title}</strong>
+          <span>{text}</span>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function ModulePageIntro({
+  eyebrow,
+  title,
+  description,
+  status,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  status: string;
+}) {
+  return (
+    <section className="module-page-intro">
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2>{title}</h2>
+        <p className="muted">{description}</p>
+      </div>
+      <span>{status}</span>
+    </section>
+  );
+}
+
+function ModuleWorkspaceRail<K extends string>({
+  label,
+  items,
+  activeKey,
+  onSelect,
+}: {
+  label: string;
+  items: Array<{ key: K; label: string; description: string }>;
+  activeKey: K;
+  onSelect: (key: K) => void;
+}) {
+  return (
+    <aside className="module-section-rail" aria-label={`${label} sections`}>
+      <span>{label}</span>
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          className={activeKey === item.key ? 'active' : ''}
+          onClick={() => onSelect(item.key)}
+        >
+          <strong>{item.label}</strong>
+          <small>{item.description}</small>
+        </button>
+      ))}
+    </aside>
+  );
+}
+
+function BulkActionStrip({ label = 'Selected rows' }: { label?: string }) {
+  return (
+    <div className="bulk-action-row" aria-label={`${label} bulk actions`}>
+      <button type="button">Bulk edit</button>
+      <button type="button">Export</button>
+      <button type="button">Bulk approval</button>
+      <button type="button" className="danger">Bulk delete</button>
+    </div>
+  );
+}
+
+function FocusRegisterPreview({
+  title,
+  description,
+  rows,
+}: {
+  title: string;
+  description: string;
+  rows: Array<[string, string, string, string]>;
+}) {
+  return (
+    <article className="panel wide focus-register-panel">
+      <div className="panel-heading-row">
+        <div>
+          <h2>{title}</h2>
+          <p className="muted">{description}</p>
+        </div>
+        <BulkActionStrip label={title} />
+      </div>
+
+      <div className="focus-register-table">
+        {rows.slice(0, 15).map(([primary, secondary, status, amount]) => (
+          <div key={`${primary}-${secondary}`}>
+            <span>
+              <strong>{primary}</strong>
+              <small>{secondary}</small>
+            </span>
+            <span>{status}</span>
+            <small>{amount}</small>
+            <button type="button">Open detail</button>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function App() {
+  const [session, setSession] = useState<StoredSession | null>(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const [staffLoginLanguage, setStaffLoginLanguage] = useState<StaffLoginLanguage>(readStoredStaffLanguage);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [unreadMailCount, setUnreadMailCount] = useState(0);
+  const [twoFactorFlow, setTwoFactorFlow] = useState<TwoFactorFlowState | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [trustThisDevice, setTrustThisDevice] = useState(true);
+  const [newRecoveryCodes, setNewRecoveryCodes] = useState<string[] | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false);
+  const [passwordResetEmail, setPasswordResetEmail] = useState('');
+  const [passwordResetStatus, setPasswordResetStatus] = useState('');
+  const [isRequestingPasswordReset, setIsRequestingPasswordReset] = useState(false);
+  const [accessCheck, setAccessCheck] = useState<AccessCheckState>(null);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(false);
+  const [pharmaCore, setPharmaCore] = useState<PharmaCoreState>({
+    profile: null,
+    branches: null,
+    departments: null,
+  });
+  const [isLoadingPharmaCore, setIsLoadingPharmaCore] = useState(false);
+  const [pharmaCoreError, setPharmaCoreError] = useState('');
+  const [activeSection, setActiveSection] = useState<AdminSectionKey>(loadStoredActiveSection);
+  const [navigationStack, setNavigationStack] = useState<AdminSectionKey[]>([]);
+  const [activeErpWorkspace, setActiveErpWorkspace] = useState<ErpWorkspaceKey>('erp-overview');
+  const [activeSolution, setActiveSolution] = useState<SolutionKey>('pharmaco');
+  const [activePharmaSegment, setActivePharmaSegment] = useState<PharmaSegmentKey>('retail');
+  const [activePharmaFeature, setActivePharmaFeature] = useState<PharmaFeatureKey>('ai-model');
+  const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
+  const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
+  const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
+  const [isPosDayOpen, setIsPosDayOpen] = useState(false);
+  const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
+  const [posStartingCashBalance, setPosStartingCashBalance] = useState('0');
+  const [posCustomerType, setPosCustomerType] = useState<'walk-in' | 'existing-customer' | 'insurance-customer' | 'corporate-customer'>('walk-in');
+  const [posPrescriptionStatus, setPosPrescriptionStatus] = useState<'not-required' | 'required' | 'captured' | 'manual-review'>('not-required');
+  const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'momo' | 'card' | 'insurance' | 'credit'>('cash');
+  const [posInsuranceProvider, setPosInsuranceProvider] = useState('rssb');
+  const [posInsuranceInstitution, setPosInsuranceInstitution] = useState('');
+  const [posCustomerInvoice, setPosCustomerInvoice] = useState<'no' | 'yes'>('no');
+  const [posInvoiceDelivery, setPosInvoiceDelivery] = useState<'printer' | 'whatsapp' | 'email'>('printer');
+  const [posInvoiceContact, setPosInvoiceContact] = useState('');
+  const [posDiscountAmount, setPosDiscountAmount] = useState('0');
+  const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
+  const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
+  const [posTillZeroized, setPosTillZeroized] = useState(false);
+  const [posDepositProof, setPosDepositProof] = useState('');
+  const [posNotice, setPosNotice] = useState('');
+  const [posCartItems, setPosCartItems] = useState<Array<{
+    code: string;
+    name: string;
+    strength: string;
+    quantity: number;
+    unitPrice: number;
+    batchId: number;
+    productId: number;
+    batchNumber: string;
+    availableQuantity: number;
+    expiryDate: string | null;
+    locationName: string;
+  }>>([]);
+  const [posInventoryBatches, setPosInventoryBatches] = useState<PharmaStockBatch[]>([]);
+  const [isLoadingPosInventory, setIsLoadingPosInventory] = useState(false);
+  const [posInventoryError, setPosInventoryError] = useState('');
+  const [posInventoryLoadedAt, setPosInventoryLoadedAt] = useState('');
+  const [posSaleSummary, setPosSaleSummary] = useState<PosSaleSummary>(() =>
+    calculatePosSaleSummary({
+      cartItems: [],
+      discountAmount: '0',
+      paymentMethod: 'cash',
+      insuranceProviderId: 'rssb',
+      insuranceInstitutionId: '',
+    }),
+  );
+  const [posSummaryRefreshKey, setPosSummaryRefreshKey] = useState(0);
+  const [posTerminalSearch, setPosTerminalSearch] = useState('');
+  const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
+  const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
+  const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
+  const [activeNotificationWorkspace, setActiveNotificationWorkspace] = useState<'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center'>('overview');
+  const [activePharmacistChatWorkspace, setActivePharmacistChatWorkspace] = useState<'in-app-chat' | 'whatsapp-chat'>('in-app-chat');
+  const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({ current_password: '', password: '', password_confirmation: '' });
+  const [changePasswordNotice, setChangePasswordNotice] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [openPrincipalMenus, setOpenPrincipalMenus] = useState<Partial<Record<AdminSectionKey, boolean>>>({});
+  const [homeWidgets, setHomeWidgets] = useState<Record<HomeWidgetKey, boolean>>({
+    summary: true,
+    'tenant-dashboard': true,
+    'quick-actions': true,
+    'system-experience': false,
+    'role-workspaces': false,
+  });
+  const [leftMenuAppearance, setLeftMenuAppearance] = useState<LeftMenuAppearance>(loadStoredLeftMenuAppearance);
+  const [dashboardCardVisibility, setDashboardCardVisibility] = useState<Record<DashboardCardKey, boolean>>(loadStoredDashboardCardVisibility);
+  const [dashboardCardFieldVisibility, setDashboardCardFieldVisibility] = useState<Record<DashboardCardKey, Record<string, boolean>>>(loadStoredDashboardCardFieldVisibility);
+  const [openMenuGroups, setOpenMenuGroups] = useState<Record<MenuGroupKey, boolean>>({
+    erp: false,
+    solutions: false,
+    ai: false,
+    admin: false,
+    'tenant-ops': true,
+    'tenant-admin': true,
+    market: false,
+  });
+
+  const profile = session?.profile;
+  const visibleMenuGroups = useMemo(() => buildVisibleMenuGroups(profile), [profile]);
+  const visibleSectionKeys = useMemo(() => {
+    const keys = new Set<AdminSectionKey>(['overview']);
+    visibleMenuGroups.forEach((group) => group.items.forEach((item) => keys.add(item.key)));
+    return keys;
+  }, [visibleMenuGroups]);
+  const principalMenuItems = useMemo(
+    () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
+    [visibleMenuGroups],
+  );
+  const currentSection = sectionMeta[activeSection] ?? sectionMeta.overview;
+  const activeLeftSubmenuLabel =
+    leftMenuSubmenus[activeSection]?.find((submenu) => {
+      if (activeSection === 'inventory') return submenu.target === activeInventoryView;
+      if (activeSection === 'pos') return submenu.target === activePosWorkspace;
+      if (activeSection === 'suppliers') return submenu.target === activeSupplierWorkspace;
+      if (activeSection === 'finance') return submenu.target === activeFinanceWorkspace;
+      if (activeSection === 'reports') return submenu.target === activeAdhocReportWorkspace;
+      if (activeSection === 'ai-center') return submenu.target === activeAiWorkspace;
+      if (activeSection === 'admin-panel') return submenu.target === activeAdminPanelWorkspace;
+      if (activeSection === 'notifications') return submenu.target === activeNotificationWorkspace;
+      if (activeSection === 'pharmacist-chat') return submenu.target === activePharmacistChatWorkspace;
+      return false;
+    })?.label ?? null;
+  const loginStatusText = profile
+    ? `Logged in now as ${profile.user.name || profile.user.email}`
+    : '';
+  const profileDisplayName = profile?.user.name || profile?.user.email || 'User';
+  const profileInitials = profileDisplayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'U';
+  const profileInstitution =
+    profile?.tenant_assignments?.[0]?.tenant?.name ||
+    (profile?.scope.type ? `${profile.scope.type} scope` : 'Ubuzima+');
+  const profileAvatarUrl = ((profile?.user ?? {}) as { avatar_url?: string }).avatar_url || '';
+  const nextStaffLoginLanguage = staffLoginLanguages[
+    (staffLoginLanguages.indexOf(staffLoginLanguage) + 1) % staffLoginLanguages.length
+  ];
+
+  const appEnv = import.meta.env;
+  const tenantWebsiteSignals = [
+    profile?.user?.email,
+    ...(profile?.tenant_assignments ?? []).map((assignment) => assignment.tenant?.slug),
+    ...(profile?.tenant_assignments ?? []).map((assignment) => assignment.tenant?.name),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  const ubuzimaPlusWebsiteUrl = appEnv.VITE_UBUZIMA_PLUS_WEBSITE_URL || 'https://www.ubuzimaplus.com';
+  const vitaPharmaWebsiteUrl = appEnv.VITE_VITAPHARMA_WEBSITE_URL || 'https://www.vitapharmaafrica.com';
+  const isVitaPharmaContext =
+    tenantWebsiteSignals.includes('vitapharma') ||
+    tenantWebsiteSignals.includes('vita pharma') ||
+    tenantWebsiteSignals.includes('vita-pharma') ||
+    tenantWebsiteSignals.includes('vitapharmaafrica');
+
+  const publicWebsiteUrl = isVitaPharmaContext ? vitaPharmaWebsiteUrl : ubuzimaPlusWebsiteUrl;
+  const publicWebsiteLabel = isVitaPharmaContext ? 'Vita Pharma website' : 'Ubuzima+ website';
+
+  useEffect(() => {
+    const language = staffLanguageCode(staffLoginLanguage);
+    let frame = 0;
+
+    const applyUsability = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        applyInputKeyboardModes();
+        applyRuntimeLanguage(language);
+      });
+    };
+
+    applyUsability();
+
+    const observer = new MutationObserver(applyUsability);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      const stored = loadStoredSession();
+
+      if (!stored?.token) {
+        setIsRestoringSession(false);
+        return;
+      }
+
+      try {
+        const verifiedProfile = await getAuthenticatedProfile(stored.token);
+
+        if (!cancelled) {
+          const verifiedSession = {
+            token: stored.token,
+            profile: verifiedProfile,
+          };
+
+          localStorage.setItem(storageKey, JSON.stringify(verifiedSession));
+          setSession(verifiedSession);
+        }
+      } catch {
+        localStorage.removeItem(storageKey);
+
+        if (!cancelled) {
+          setSession(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsRestoringSession(false);
+        }
+      }
+    }
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+  const permissionGroups = useMemo(() => {
+    if (!profile) return [];
+
+    return [
+      {
+        title: 'Security',
+        items: profile.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
+      },
+      {
+        title: 'Operations 360',
+        items: profile.permissions.filter((item) => item.startsWith('pharmaco.')),
+      },
+      {
+        title: 'AI & Platform',
+        items: profile.permissions.filter((item) => item.includes('ai') || item.includes('platform')),
+      },
+    ].filter((group) => group.items.length > 0);
+  }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem(activeSectionStorageKey, activeSection);
+  }, [activeSection]);
+
+  useEffect(() => {
+    localStorage.setItem(staffLanguageStorageKey, staffLoginLanguage);
+  }, [staffLoginLanguage]);
+
+  useEffect(() => {
+    localStorage.setItem(leftMenuAppearanceStorageKey, JSON.stringify(leftMenuAppearance));
+  }, [leftMenuAppearance]);
+
+  useEffect(() => {
+    localStorage.setItem(dashboardCardVisibilityStorageKey, JSON.stringify(dashboardCardVisibility));
+  }, [dashboardCardVisibility]);
+
+  useEffect(() => {
+    localStorage.setItem(dashboardCardFieldVisibilityStorageKey, JSON.stringify(dashboardCardFieldVisibility));
+  }, [dashboardCardFieldVisibility]);
+
+  const leftMenuStyle = {
+    '--left-menu-accent': leftMenuAppearance.primaryColor,
+    '--left-menu-title-color': leftMenuAppearance.titleColor,
+    '--left-menu-card-padding-y': leftMenuAppearance.density === 'compact' ? '0.34rem' : '0.52rem',
+    '--left-menu-card-padding-x': leftMenuAppearance.density === 'compact' ? '0.48rem' : '0.62rem',
+    '--left-menu-submenu-font-size': leftMenuAppearance.density === 'compact' ? '0.7rem' : '0.76rem',
+  } as CSSProperties;
+
+  useEffect(() => {
+    if (!session?.token) {
+      setUnreadMailCount(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadUnreadMailCount() {
+      try {
+        const response = await getCorporateMailOverview(session.token, 'inbox');
+        const unread = response.folders.reduce((sum, folder) => sum + folder.unread_count, 0);
+
+        if (!cancelled) {
+          setUnreadMailCount(unread);
+        }
+      } catch {
+        if (!cancelled) {
+          setUnreadMailCount(0);
+        }
+      }
+    }
+
+    void loadUnreadMailCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.token]);
+
+  useEffect(() => {
+    if (profile && !visibleSectionKeys.has(activeSection)) {
+      setActiveSection('overview');
+      setNavigationStack([]);
+    }
+  }, [activeSection, profile, visibleSectionKeys]);
+
+  function navigateToSection(section: AdminSectionKey) {
+    if (section === activeSection) {
+      return;
+    }
+
+    setNavigationStack((current) => [activeSection, ...current].slice(0, 10));
+    setActiveSection(section);
+  }
+
+  function activateModuleDefaultPage(item: MenuItem) {
+    const firstSubmenu = leftMenuSubmenus[item.key]?.[0];
+
+    if (item.key === 'inventory' && firstSubmenu?.target) setActiveInventoryView(firstSubmenu.target as InventoryView);
+    if (item.key === 'pos' && firstSubmenu?.target) setActivePosWorkspace(firstSubmenu.target as PosWorkspaceKey);
+    if (item.key === 'suppliers' && firstSubmenu?.target) setActiveSupplierWorkspace(firstSubmenu.target as SupplierWorkspaceKey);
+    if (item.key === 'finance' && firstSubmenu?.target) setActiveFinanceWorkspace(firstSubmenu.target as FinanceWorkspaceKey);
+    if (item.key === 'reports' && firstSubmenu?.target) setActiveAdhocReportWorkspace(firstSubmenu.target as AdhocReportWorkspaceKey);
+    if (item.key === 'ai-center' && firstSubmenu?.target) setActiveAiWorkspace(firstSubmenu.target as AiWorkspaceKey);
+    if (item.key === 'admin-panel' && firstSubmenu?.target) setActiveAdminPanelWorkspace(firstSubmenu.target as AdminPanelWorkspaceKey);
+    if (item.key === 'notifications' && firstSubmenu?.target) setActiveNotificationWorkspace(firstSubmenu.target as 'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center');
+    if (item.key === 'pharmacist-chat' && firstSubmenu?.target) setActivePharmacistChatWorkspace(firstSubmenu.target as 'in-app-chat' | 'whatsapp-chat');
+  }
+
+  function togglePrincipalMenu(item: MenuItem) {
+    setOpenPrincipalMenus((current) => ({
+      ...current,
+      [item.key]: !current[item.key],
+    }));
+
+    handleMenuItemClick(item);
+  }
+
+  function openPrincipalMenu(item: MenuItem) {
+    setOpenPrincipalMenus((current) => ({
+      ...current,
+      [item.key]: true,
+    }));
+  }
+
+  function handleMenuItemClick(item: MenuItem) {
+    if (item.key === 'erp' && item.context) {
+      setActiveErpWorkspace(item.context as ErpWorkspaceKey);
+    }
+
+    if (item.key === 'solution-portfolio' && item.context) {
+      setActiveSolution(item.context as SolutionKey);
+      if (item.context === 'pharmaco') {
+        setActivePharmaSegment('retail');
+      }
+    }
+
+    if (item.key === 'ai-center' && item.context) {
+      setActiveAiWorkspace(item.context as AiWorkspaceKey);
+    }
+
+    if (item.key === 'admin-panel' && item.context) {
+      setActiveAdminPanelWorkspace(item.context as AdminPanelWorkspaceKey);
+    }
+
+    activateModuleDefaultPage(item);
+    navigateToSection(item.key);
+  }
+
+  function handleLeftSubmenuClick(item: MenuItem, submenu: LeftMenuSubmenu) {
+    openPrincipalMenu(item);
+
+    if (item.key === 'inventory' && submenu.target) {
+      setActiveInventoryView(submenu.target as InventoryView);
+      navigateToSection('inventory');
+      return;
+    }
+
+    if (item.key === 'pos' && submenu.target) setActivePosWorkspace(submenu.target as PosWorkspaceKey);
+    if (item.key === 'suppliers' && submenu.target) setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
+    if (item.key === 'finance' && submenu.target) setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
+    if (item.key === 'reports' && submenu.target) setActiveAdhocReportWorkspace(submenu.target as AdhocReportWorkspaceKey);
+    if (item.key === 'ai-center' && submenu.target) setActiveAiWorkspace(submenu.target as AiWorkspaceKey);
+    if (item.key === 'admin-panel' && submenu.target) setActiveAdminPanelWorkspace(submenu.target as AdminPanelWorkspaceKey);
+    if (item.key === 'notifications' && submenu.target) setActiveNotificationWorkspace(submenu.target as 'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center');
+    if (item.key === 'pharmacist-chat' && submenu.target) setActivePharmacistChatWorkspace(submenu.target as 'in-app-chat' | 'whatsapp-chat');
+
+    navigateToSection(item.key);
+  }
+
+  function isActiveLeftSubmenu(item: MenuItem, submenu: LeftMenuSubmenu) {
+    if (activeSection !== item.key) return false;
+
+    if (item.key === 'inventory') return submenu.target === activeInventoryView;
+    if (item.key === 'pos') return submenu.target === activePosWorkspace;
+    if (item.key === 'suppliers') return submenu.target === activeSupplierWorkspace;
+    if (item.key === 'finance') return submenu.target === activeFinanceWorkspace;
+    if (item.key === 'reports') return submenu.target === activeAdhocReportWorkspace;
+    if (item.key === 'ai-center') return submenu.target === activeAiWorkspace;
+    if (item.key === 'admin-panel') return submenu.target === activeAdminPanelWorkspace;
+    if (item.key === 'notifications') return submenu.target === activeNotificationWorkspace;
+    if (item.key === 'pharmacist-chat') return submenu.target === activePharmacistChatWorkspace;
+
+    return false;
+  }
+
+  function isActiveMenuItem(item: MenuItem) {
+    if (activeSection !== item.key) return false;
+
+    if (item.key === 'erp') {
+      return item.context === activeErpWorkspace;
+    }
+
+    if (item.key === 'solution-portfolio') {
+      return item.context === activeSolution;
+    }
+
+    if (item.key === 'ai-center') {
+      return item.context === activeAiWorkspace;
+    }
+
+    if (item.key === 'admin-panel') {
+      return item.context === activeAdminPanelWorkspace;
+    }
+
+    return true;
+  }
+
+  function goBack() {
+    const [previous, ...rest] = navigationStack;
+
+    if (!previous) {
+      return;
+    }
+
+    setNavigationStack(rest);
+    setActiveSection(previous);
+  }
+
+  function toggleMenuGroup(group: MenuGroupKey) {
+    setOpenMenuGroups((current) => ({
+      ...current,
+      [group]: !current[group],
+    }));
+  }
+
+  function persistSession(nextSession: StoredSession, trustedDeviceToken?: string) {
+    localStorage.setItem(storageKey, JSON.stringify(nextSession));
+
+    if (trustedDeviceToken) {
+      localStorage.setItem(trustedDeviceStorageKey, trustedDeviceToken);
+    }
+
+    setSession(nextSession);
+  }
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setTwoFactorFlow(null);
+    setNewRecoveryCodes(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await login({
+        login_method: loginMethod,
+        email: loginMethod === 'email' ? email.trim() : undefined,
+        phone: loginMethod === 'phone' ? phone.trim() : undefined,
+        password: loginMethod === 'email' ? password : undefined,
+        pin: loginMethod === 'phone' ? pin : undefined,
+        device_name: 'Ubuzima+ Admin Dashboard',
+        trusted_device_token: localStorage.getItem(trustedDeviceStorageKey),
+      });
+
+      if ('status' in response && response.status?.startsWith('two_factor_')) {
+        setTwoFactorFlow(response as TwoFactorFlowState);
+        setPassword('');
+        setPin('');
+        return;
+      }
+
+      const nextSession = {
+        token: response.access_token,
+        profile: response.profile,
+      };
+
+      persistSession(nextSession);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handlePasswordResetRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const targetEmail = (passwordResetEmail || email).trim();
+
+    if (!targetEmail) {
+      setPasswordResetStatus('Enter your staff email address before requesting a reset.');
+      return;
+    }
+
+    setError('');
+    setPasswordResetStatus('');
+    setIsRequestingPasswordReset(true);
+
+    try {
+      const response = await requestPasswordReset({ email: targetEmail });
+      setPasswordResetStatus(response.message);
+    } catch (err) {
+      setPasswordResetStatus(
+        err instanceof Error
+          ? err.message
+          : 'Unable to submit the password reset request. Please contact the platform administrator.',
+      );
+    } finally {
+      setIsRequestingPasswordReset(false);
+    }
+  }
+
+  async function handleTwoFactorVerify(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!twoFactorFlow) {
+      return;
+    }
+
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await verifyTwoFactor({
+        challenge_token: twoFactorFlow.challenge_token,
+        code: twoFactorCode,
+        trust_device: trustThisDevice,
+        device_name: 'Ubuzima+ Admin Dashboard',
+      });
+
+      const nextSession = {
+        token: response.access_token,
+        profile: response.profile,
+      };
+
+      setNewRecoveryCodes(response.recovery_codes);
+      setTwoFactorFlow(null);
+      setTwoFactorCode('');
+      persistSession(nextSession, response.trusted_device?.trusted_device_token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Two-factor verification failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleLogout() {
+    if (session?.token) {
+      await logout(session.token).catch(() => undefined);
+    }
+
+    localStorage.removeItem(storageKey);
+    setSession(null);
+    setAccessCheck(null);
+    setPharmaCore({
+      profile: null,
+      branches: null,
+      departments: null,
+    });
+    setPharmaCoreError('');
+    setPosCartItems([]);
+    setPosInventoryBatches([]);
+    setPosInventoryError('');
+    setPosInventoryLoadedAt('');
+  }
+
+  async function handleChangePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!session?.token) return;
+
+    if (changePasswordForm.password !== changePasswordForm.password_confirmation) {
+      setChangePasswordError('New password and confirmation do not match.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setChangePasswordError('');
+    setChangePasswordNotice('');
+
+    try {
+      const response = await changePassword(session.token, changePasswordForm);
+      persistSession({ token: session.token, profile: response.profile });
+      setChangePasswordNotice(response.message);
+      setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
+    } catch (err) {
+      setChangePasswordError(err instanceof Error ? err.message : 'Unable to change password.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  }
+
+  async function handleAccessCheck(
+    label: string,
+    endpoint: 'security' | 'inventory' | 'ai',
+    tenantSlug?: string,
+  ) {
+    if (!session?.token) return;
+
+    setIsCheckingAccess(true);
+
+    try {
+      const result = await runAccessCheck(session.token, endpoint, tenantSlug);
+      setAccessCheck({ label, result });
+    } finally {
+      setIsCheckingAccess(false);
+    }
+  }
+
+  async function loadPharmaCore() {
+    if (!session?.token) return;
+
+    const tenantSlug =
+      profile?.tenant_assignments?.[0]?.tenant?.slug ||
+      (profile?.scope?.is_tenant ? 'vitapharma' : '');
+
+    if (!tenantSlug) {
+      setPharmaCoreError('No tenant assignment is available for this account.');
+      return;
+    }
+
+    setIsLoadingPharmaCore(true);
+    setPharmaCoreError('');
+
+    try {
+      const profileResponse = await getPharmacyProfile(session.token, tenantSlug);
+      const branchesResponse = await getPharmaBranches(session.token, tenantSlug);
+      const firstBranch = branchesResponse.branches[0] ?? null;
+      const departmentsResponse = firstBranch
+        ? await getBranchDepartments(session.token, tenantSlug, firstBranch.id)
+        : null;
+
+      setPharmaCore({
+        profile: profileResponse,
+        branches: branchesResponse,
+        departments: departmentsResponse,
+      });
+    } catch (err) {
+      setPharmaCoreError(err instanceof Error ? err.message : 'Unable to load Operations 360 data.');
+    } finally {
+      setIsLoadingPharmaCore(false);
+    }
+  }
+
+
+  if (isRestoringSession) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-panel">
+          <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
+          <p className="eyebrow">Ubuzima+ Platform</p>
+          <h1>Checking your secure session.</h1>
+          <p className="auth-copy">
+            We are validating your stored access token before opening the admin workspace.
+          </p>
+        </section>
+
+        <section className="auth-side">
+          <div className="status-card">
+            <span className="status-dot" />
+            <div>
+              <strong>Session validation</strong>
+              <p>Stored sessions are verified through the backend before dashboard access.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <main className="auth-shell auth-shell--identity">
+        <section className="auth-side auth-info-panel">
+          <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
+          <p className="eyebrow">Ubuzima+ Platform</p>
+          <h1>Secure access for real pharmacy operations.</h1>
+          <p className="auth-copy">
+            Ubuzima+ connects PharmaCore 360 operations, tenant data, staff permissions, stock,
+            POS, procurement, finance, ad-hoc reports, and controlled AI in one governed workspace.
+          </p>
+
+          <div className="auth-info-grid">
+            <div>
+              <strong>First tenant</strong>
+              <span>VitaPharma onboarding</span>
+            </div>
+            <div>
+              <strong>Staff security</strong>
+              <span>Mandatory authenticator with trusted-device control</span>
+            </div>
+            <div>
+              <strong>Operational modules</strong>
+              <span>Inventory, POS, suppliers, finance, ad-hoc reports, AI</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="auth-panel auth-form-panel">
+          <div className="auth-language-row">
+            <span>Staff Identity</span>
+            <div>
+              <a href={publicWebsiteUrl}>Back to website</a>
+              <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
+                {staffLoginLanguage}
+              </button>
+            </div>
+          </div>
+
+          <div className="login-card">
+            <p className="eyebrow">Sign in</p>
+            <h2>Access your workspace</h2>
+            <p className="auth-copy">
+              Use your staff account. Access is tenant-aware and limited by your role, branch, package, and permissions.
+            </p>
+
+            <div className="login-method-tabs" aria-label="Login method">
+              <button
+                type="button"
+                className={loginMethod === 'email' ? 'active' : ''}
+                onClick={() => setLoginMethod('email')}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                className={loginMethod === 'phone' ? 'active' : ''}
+                onClick={() => setLoginMethod('phone')}
+              >
+                Phone PIN
+              </button>
+            </div>
+
+            {!twoFactorFlow ? (
+              <form className="login-form" onSubmit={handleLogin}>
+                {loginMethod === 'email' ? (
+                  <>
+                    <label>
+                      Email address
+                      <input
+                        type="email"
+                        inputMode="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        autoComplete="off"
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      Password
+                      <div className="password-input-row">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          autoComplete="new-password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="password-visibility-button"
+                          onClick={() => setShowPassword((current) => !current)}
+                          aria-label={showPassword ? 'Hide password' : 'View password'}
+                        >
+                          {showPassword ? 'Hide' : 'View'}
+                        </button>
+                      </div>
+                    </label>
+
+                    <div className="login-assist-row">
+                      <button
+                        type="button"
+                        className="auth-link-button"
+                        onClick={() => {
+                          setPasswordResetEmail(email);
+                          setPasswordResetStatus('');
+                          setIsPasswordResetOpen((current) => !current);
+                        }}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <label>
+                      Phone number
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        autoComplete="off"
+                        placeholder="+250..."
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      Staff PIN
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        value={pin}
+                        onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                        autoComplete="new-password"
+                        placeholder="Enter your PIN"
+                        required
+                      />
+                    </label>
+                  </>
+                )}
+
+                {error && <div className="form-error">{error}</div>}
+
+                <button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Checking access...' : 'Continue'}
+                </button>
+              </form>
+            ) : (
+              <form className="login-form two-factor-login-form" onSubmit={handleTwoFactorVerify}>
+                <div className="two-factor-login-copy">
+                  <strong>
+                    {twoFactorFlow.status === 'two_factor_setup_required'
+                      ? 'Set up authenticator'
+                      : 'Two-factor verification'}
+                  </strong>
+                  <span>{twoFactorFlow.message}</span>
+                </div>
+
+                {twoFactorFlow.setup && (
+                  <div className="two-factor-login-setup">
+                    <div dangerouslySetInnerHTML={{ __html: twoFactorFlow.setup.qr_svg }} />
+                    <code>{twoFactorFlow.setup.manual_secret}</code>
+                  </div>
+                )}
+
+                <label>
+                  Authenticator or recovery code
+                  <input
+                    value={twoFactorCode}
+                    onChange={(event) => setTwoFactorCode(event.target.value)}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="000000"
+                    required
+                  />
+                </label>
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={trustThisDevice}
+                    onChange={(event) => setTrustThisDevice(event.target.checked)}
+                  />
+                  Trust this device after approval
+                </label>
+
+                {error && <div className="form-error">{error}</div>}
+
+                <button type="submit" disabled={isSubmitting || twoFactorCode.trim().length < 6}>
+                  {isSubmitting ? 'Verifying...' : 'Verify and continue'}
+                </button>
+              </form>
+            )}
+
+            {newRecoveryCodes && (
+              <div className="recovery-code-panel auth-recovery-panel">
+                <h3>Recovery codes</h3>
+                <p className="muted">Store these codes securely. They are shown once.</p>
+                <div>
+                  {newRecoveryCodes.map((code) => (
+                    <code key={code}>{code}</code>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  const summaryGrid = (
+    <section className="summary-grid compact-summary-grid">
+      <article>
+        <span>Active roles</span>
+        <strong>{profile.roles.length}</strong>
+      </article>
+      <article>
+        <span>Permissions</span>
+        <strong>{profile.permissions.length}</strong>
+      </article>
+      <article>
+        <span>Tenant assignments</span>
+        <strong>{profile.tenant_assignments.length}</strong>
+      </article>
+      <article>
+        <span>Admin scopes</span>
+        <strong>{profile.admin_scopes.length}</strong>
+      </article>
+    </section>
+  );
+
+  const tenantOperationsPanel = (
+    <article className="panel wide pharmaco-panel">
+      <div className="panel-heading-row">
+        <div>
+          <h2>Operation Helicopter View</h2>
+          <p className="muted">
+            Live tenant-scoped data from profile, branch, inventory, sales, finance, supplier, and department APIs.
+          </p>
+        </div>
+
+        <button type="button" onClick={loadPharmaCore} disabled={isLoadingPharmaCore}>
+          {isLoadingPharmaCore ? 'Loading...' : 'Load VitaPharma profile'}
+        </button>
+      </div>
+
+      {pharmaCoreError && <div className="form-error">{pharmaCoreError}</div>}
+
+      {pharmaCore.profile && (
+        <div className="pharmaco-grid">
+          <section className="pharmaco-card">
+            <span className="section-label">Pharmacy profile</span>
+            <h3>{pharmaCore.profile.profile.trading_name}</h3>
+            <p>{pharmaCore.profile.profile.legal_name}</p>
+            <div className="mini-facts">
+              <span>Category: {pharmaCore.profile.profile.pharmacy_category}</span>
+              <span>Regulator: {pharmaCore.profile.profile.regulator_name}</span>
+              <span>Status: {pharmaCore.profile.profile.status}</span>
+              <span>District: {pharmaCore.profile.profile.district ?? 'Not set'}</span>
+            </div>
+          </section>
+
+          <section className="pharmaco-card">
+            <span className="section-label">Capabilities</span>
+            <div className="tag-list">
+              {pharmaCore.profile.profile.capabilities.map((capability) => (
+                <span key={capability}>{capability.replaceAll('_', ' ')}</span>
+              ))}
+            </div>
+          </section>
+
+          <section className="pharmaco-card">
+            <span className="section-label">Insurance partners</span>
+            <div className="tag-list">
+              {pharmaCore.profile.profile.insurance_partners.map((partner) => (
+                <span key={partner}>{partner}</span>
+              ))}
+            </div>
+          </section>
+
+          <section className="pharmaco-card">
+            <span className="section-label">Operating hours</span>
+            <div className="mini-facts">
+              {Object.entries(pharmaCore.profile.profile.operating_hours).map(([day, hours]) => (
+                <span key={day}>{day.replaceAll('_', ' ')}: {hours}</span>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {pharmaCore.branches && (
+        <div className="branch-preview">
+          <h3>Branches</h3>
+          {pharmaCore.branches.branches.map((branch) => (
+            <div key={branch.id}>
+              <strong>{branch.name}</strong>
+              <span>{branch.code}</span>
+              <span>{branch.branch_type}</span>
+              <small>{branch.status}</small>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {pharmaCore.departments && (
+        <div className="department-preview">
+          <h3>{pharmaCore.departments.branch.name} departments</h3>
+          {pharmaCore.departments.departments.map((department) => (
+            <div key={department.id}>
+              <strong>{department.name}</strong>
+              <span>{department.code}</span>
+              <span>{department.department_type}</span>
+              <small>{department.is_revenue_center ? 'Revenue center' : 'Support unit'}</small>
+            </div>
+          ))}
+        </div>
+      )}
+    </article>
+  );
+
+  const accessControlPanel = (
+    <article className="panel wide">
+      <h2>Live access control checks</h2>
+      <p className="muted">
+        These buttons call protected backend endpoints using your current Bearer token.
+      </p>
+
+      <div className="access-actions">
+        <button
+          type="button"
+          onClick={() => handleAccessCheck('Security permission check', 'security')}
+          disabled={isCheckingAccess}
+        >
+          Check security access
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleAccessCheck('VitaPharma inventory module check', 'inventory', 'vitapharma')}
+          disabled={isCheckingAccess}
+        >
+          Check inventory access
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleAccessCheck('AI Center controlled-module check', 'ai', 'vitapharma')}
+          disabled={isCheckingAccess}
+        >
+          Check AI Center access
+        </button>
+      </div>
+
+      {accessCheck && (
+        <div className={`access-result ${accessCheck.result.access?.status === 'granted' ? 'granted' : 'blocked'}`}>
+          <strong>{accessCheck.label}</strong>
+          <span>Status: {accessCheck.result.access?.status ?? accessCheck.result.status ?? 'unknown'}</span>
+          {accessCheck.result.access?.area && <span>Area: {accessCheck.result.access.area}</span>}
+          {accessCheck.result.access?.module && <span>Module: {accessCheck.result.access.module}</span>}
+          {accessCheck.result.access?.tenant && <span>Tenant: {accessCheck.result.access.tenant}</span>}
+          {accessCheck.result.message && <span>Message: {accessCheck.result.message}</span>}
+          {accessCheck.result.missing_permissions?.length ? (
+            <span>Missing: {accessCheck.result.missing_permissions.join(', ')}</span>
+          ) : null}
+        </div>
+      )}
+    </article>
+  );
+
+  const tenantAssignmentsPanel = (
+    <article className="panel wide">
+      <h2>Tenant assignments</h2>
+      {profile.tenant_assignments.length === 0 ? (
+        <p className="muted">No tenant assignment is attached to this account.</p>
+      ) : (
+        <div className="tenant-table">
+          {profile.tenant_assignments.map((assignment) => (
+            <div key={assignment.tenant.slug}>
+              <strong>{assignment.tenant.name}</strong>
+              <span>{assignment.branch?.name ?? 'All branches'}</span>
+              <span>{assignment.job_title ?? 'Assigned user'}</span>
+              <small>{assignment.status}</small>
+            </div>
+          ))}
+        </div>
+      )}
+    </article>
+  );
+
+  function renderErpWorkspace() {
+    const selectedErpModule = erpModules.find((module) => module.key === activeErpWorkspace) ?? erpModules[0];
+
+    return (
+      <section className="section-page">
+<div className="workspace-selector erp-selector">
+          {erpModules.map((module) => (
+            <button
+              key={module.key}
+              type="button"
+              className={activeErpWorkspace === module.key ? 'active' : ''}
+              onClick={() => setActiveErpWorkspace(module.key)}
+            >
+              <strong>{module.title}</strong>
+              <span>{module.status}</span>
+            </button>
+          ))}
+        </div>
+
+        <section className="erp-module-grid">
+          <article className="panel">
+            <h2>{selectedErpModule.title} workspace model</h2>
+            <p className="muted">{selectedErpModule.summary}</p>
+            <div className="framework-chip-list">
+              {selectedErpModule.workspace.map((item) => (
+                <small key={item}>{item}</small>
+              ))}
+            </div>
+          </article>
+
+          <article className="panel">
+            <h2>Recommended access split</h2>
+            <div className="workflow-list">
+              <div><strong>Owner</strong><span>Executive health, risk, cash position, branch performance, and strategic approvals.</span></div>
+              <div><strong>Finance</strong><span>Payables, receivables, collections, daily close, supplier aging, and exports.</span></div>
+              <div><strong>Operator</strong><span>Only the task surface needed for the role, branch, tenant, and active package.</span></div>
+            </div>
+          </article>
+        </section>
+
+        {activeErpWorkspace === 'finance' && (
+          <>
+            <PayablesWorkflow token={session.token} profile={profile} />
+            <ReceivablesWorkflow token={session.token} profile={profile} />
+          </>
+        )}
+
+        {activeErpWorkspace === 'procurement' && (
+          <ProcurementWorkflow token={session.token} profile={profile} />
+        )}
+
+        {!['finance', 'procurement'].includes(activeErpWorkspace) && (
+          <article className="panel wide roadmap-panel">
+            <h2>Activation plan</h2>
+            <p className="muted">
+              This ERP workspace is visible in the framework so ChatGPT and future implementation can align
+              with the platform architecture. Production actions stay inactive until backend permissions,
+              data model, and tenant package activation are approved.
+            </p>
+          </article>
+        )}
+      </section>
+    );
+  }
+
+  function renderPharmaFeatureContent() {
+    const segmentConfig = pharmaFeaturesBySegment[activePharmaSegment];
+    const selectedFeature = segmentConfig.features.find((feature) => feature.key === activePharmaFeature) ?? segmentConfig.features[0];
+
+    return (
+      <section className="pharma-feature-stage">
+        <div className="feature-stage-heading">
+          <div>
+            <p className="eyebrow">Third section</p>
+            <h2>{selectedFeature.title}</h2>
+            <p className="muted">{selectedFeature.summary}</p>
+          </div>
+          <span>{selectedFeature.status}</span>
+        </div>
+
+        <div className="feature-action-grid">
+          {selectedFeature.actions.map((action) => (
+            <article key={action}>
+              <strong>{action}</strong>
+              <span>Visible only when the user role, tenant, package, and branch scope allow it.</span>
+            </article>
+          ))}
+        </div>
+
+        {selectedFeature.key === 'ai-model' && (
+          <>
+<AiOperationsPanel token={session.token} profile={profile} />
+            <section className="ai-model-grid">
+              {pharmaAiModels.map(([model, description]) => (
+                <article key={model}>
+                  <strong>{model}</strong>
+                  <span>{description}</span>
+                </article>
+              ))}
+            </section>
+            {accessControlPanel}
+          </>
+        )}
+
+        {selectedFeature.key === 'inventory' && (
+          <>
+<ProductInventoryPreview
+              token={session.token}
+              profile={profile}
+              activeView={activeInventoryView}
+              onActiveViewChange={setActiveInventoryView}
+              showInternalNavigation={false}
+            />
+            {activeInventoryView === 'product-master' && (
+              <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
+
+                <ProductInventoryActions token={session.token} profile={profile} />
+
+              </div>
+            )}
+          </>
+        )}
+
+        {selectedFeature.key === 'pos' && (
+          <>
+<SalesDispensingReview token={session.token} profile={profile} />
+          </>
+        )}
+
+        {selectedFeature.key === 'procurement' && (
+          <>
+<ProcurementWorkflow token={session.token} profile={profile} />
+          </>
+        )}
+
+        {selectedFeature.key === 'reports' && (
+          <>
+            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
+            <ReportingDashboard token={session.token} profile={profile} />
+          </>
+        )}
+
+        {selectedFeature.key === 'product-master' && (
+          <>
+            <ProductInventoryPreview token={session.token} profile={profile} />
+            <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
+
+              <ProductInventoryActions token={session.token} profile={profile} />
+
+            </div>
+          </>
+        )}
+
+        {['prescriptions', 'customers'].includes(selectedFeature.key) && (
+          <SalesDispensingReview token={session.token} profile={profile} />
+        )}
+      </section>
+    );
+  }
+
+  function renderSolutionPortfolio() {
+    const selectedSolution = solutionPortfolio.find((solution) => solution.key === activeSolution) ?? solutionPortfolio[0];
+    const activeSegment = pharmaSegments.find((segment) => segment.key === activePharmaSegment) ?? pharmaSegments[0];
+    const segmentConfig = pharmaFeaturesBySegment[activePharmaSegment];
+
+    return (
+      <section className="section-page">
+<section className="solution-card-grid">
+          {solutionPortfolio.map((solution) => (
+            <button
+              key={solution.key}
+              type="button"
+              className={activeSolution === solution.key ? 'active' : ''}
+              onClick={() => setActiveSolution(solution.key)}
+            >
+              <span>{solution.status}</span>
+              <strong>{solution.title}</strong>
+              <small>{solution.audience}</small>
+            </button>
+          ))}
+        </section>
+
+        {activeSolution !== 'pharmaco' && (
+          <article className="panel wide roadmap-panel">
+            <h2>{selectedSolution.title} readiness</h2>
+            <p className="muted">{selectedSolution.next}</p>
+            <div className="framework-chip-list">
+              <small>Coming soon</small>
+              <small>Role-based activation required</small>
+              <small>Tenant package pending</small>
+            </div>
+          </article>
+        )}
+
+        {activeSolution === 'pharmaco' && (
+          <>
+            <section className="pharma-segment-section">
+              <div className="framework-heading">
+                <div>
+                  <p className="eyebrow">PharmaCore 360 dedicated menu</p>
+                  <h2>Select the operating segment first.</h2>
+                  <p className="muted">
+                    These options appear directly below the fixed header when PharmaCore 360 is selected.
+                    The detailed feature workspace opens underneath as the third section.
+                  </p>
+                </div>
+                <div className="framework-scope-card">
+                  <span>Active segment</span>
+                  <strong>{activeSegment.label}</strong>
+                  <small>{activeSegment.status}</small>
+                </div>
+              </div>
+
+              <div className="segment-switcher">
+                {pharmaSegments.map((segment) => (
+                  <button
+                    key={segment.key}
+                    type="button"
+                    className={activePharmaSegment === segment.key ? 'active' : ''}
+                    onClick={() => {
+                      setActivePharmaSegment(segment.key);
+                      setActivePharmaFeature(pharmaFeaturesBySegment[segment.key].features[0]?.key ?? 'ai-model');
+                    }}
+                  >
+                    <strong>{segment.label}</strong>
+                    <span>{segment.status}</span>
+                    <small>{segment.summary}</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="pharma-feature-selector-panel">
+              <div>
+                <p className="eyebrow">Feature menu</p>
+                <h2>{activeSegment.label} features</h2>
+                <p className="muted">{segmentConfig.note}</p>
+              </div>
+
+              <div className="feature-tabs">
+                {segmentConfig.features.map((feature) => (
+                  <button
+                    key={feature.key}
+                    type="button"
+                    className={activePharmaFeature === feature.key ? 'active' : ''}
+                    onClick={() => setActivePharmaFeature(feature.key)}
+                  >
+                    <strong>{feature.title}</strong>
+                    <span>{feature.status}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {renderPharmaFeatureContent()}
+
+            <section className="role-dashboard-section">
+              <div>
+                <p className="eyebrow">Role dashboards</p>
+                <h2>Recommended dashboards by user type</h2>
+                <p className="muted">
+                  Admins and Ubuzima+ staff can see the portfolio flow. Tenant users should land on the
+                  dashboard that matches their institution, branch, role, and activated package.
+                </p>
+              </div>
+              <div className="role-dashboard-grid">
+                {roleDashboardModels.map(([role, description]) => (
+                  <article key={role}>
+                    <strong>{role}</strong>
+                    <span>{description}</span>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            {tenantOperationsPanel}
+          </>
+        )}
+      </section>
+    );
+  }
+
+  function renderPosWorkspace() {
+    const previewRows: Array<[string, string, string, string]> = [
+      ['Walk-in customer', 'Counter sale draft', 'Needs payment', 'RWF 18,500'],
+      ['Insurance customer', 'Co-pay plus insurer split', 'Receipt pending', 'RWF 64,200'],
+      ['Chronic refill', 'Prescription review required', 'Pharmacist review', 'RWF 32,800'],
+      ['Corporate client', 'Institution balance', 'Credit follow-up', 'RWF 118,400'],
+    ];
+
+    const posTenantSlug =
+      profile?.tenant_assignments?.[0]?.tenant?.slug ||
+      (profile?.scope?.is_tenant ? 'vitapharma' : 'vitapharma');
+
+    const todayDate = new Date().toISOString().slice(0, 10);
+
+    function resolveBatchAvailableQuantity(batch: PharmaStockBatch) {
+      const quantityOnHand = Number(batch.quantity_on_hand ?? 0);
+      const quantityReserved = Number((batch as PharmaStockBatch & { quantity_reserved?: number | string }).quantity_reserved ?? 0);
+      const availableQuantity = Number(batch.available_quantity ?? quantityOnHand - quantityReserved);
+
+      return Number.isFinite(availableQuantity) ? Math.max(0, availableQuantity) : 0;
+    }
+
+    const posProducts = posInventoryBatches
+      .filter((batch) => {
+        const availableQuantity = resolveBatchAvailableQuantity(batch);
+        const batchIsActive = !batch.status || batch.status === 'active';
+        const productIsActive = !batch.product || true;
+        const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
+
+        return availableQuantity > 0 && batchIsActive && productIsActive && expiryIsValid;
+      })
+      .sort((left, right) => {
+        const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
+
+        if (leftExpiry !== rightExpiry) return leftExpiry - rightExpiry;
+
+        return String(left.product?.name || '').localeCompare(String(right.product?.name || ''));
+      })
+      .map((batch) => {
+        const availableQuantity = resolveBatchAvailableQuantity(batch);
+        const sellingPrice = Number(batch.selling_price ?? 0);
+        const productName = batch.product?.name || 'Unnamed product';
+        const sku = batch.product?.sku || `BATCH-${batch.id}`;
+        const locationName = batch.stock_location?.name || 'Current stock';
+
+        return {
+          code: `${sku}-B${batch.id}`,
+          name: productName,
+          strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
+          quantity: 1,
+          unitPrice: sellingPrice,
+          status: `${availableQuantity.toLocaleString('en-RW')} available`,
+          batchId: batch.id,
+          productId: batch.product?.id || 0,
+          batchNumber: batch.batch_number,
+          availableQuantity,
+          expiryDate: batch.expiry_date,
+          locationName,
+        };
+      });
+
+    const salesSummaryRows: Array<{
+      dateTime: string;
+      saleNumber: string;
+      customer: string;
+      method: string;
+      status: string;
+      amount: string;
+    }> = [];
+
+    const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
+
+    const normalizedPosTerminalSearch = posTerminalSearch.trim().toLowerCase();
+    const posVisibleProducts = normalizedPosTerminalSearch
+      ? posProducts.filter((product) =>
+          [
+            product.name,
+            product.strength,
+            product.code,
+            product.batchNumber,
+            product.locationName,
+          ]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(normalizedPosTerminalSearch)),
+        )
+      : posProducts;
+
+    const posSearchHelperText = posInventoryBatches.length === 0
+      ? ''
+      : normalizedPosTerminalSearch
+        ? `${posVisibleProducts.length} matching product${posVisibleProducts.length === 1 ? '' : 's'}`
+        : `${posProducts.length} fast product tile${posProducts.length === 1 ? '' : 's'} ready`;
+
+
+    async function loadCurrentPosInventory() {
+      if (!session?.token) return;
+
+      setIsLoadingPosInventory(true);
+      setPosInventoryError('');
+      setPosNotice('');
+
+      try {
+        const response = await getPharmaInventoryBatches(session.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
+        const batches = response.batches || [];
+
+        setPosInventoryBatches(batches);
+        setPosInventoryLoadedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        setPosCartItems([]);
+        setPosTransactionConfirmed(false);
+
+        setPosNotice('');
+      } catch (err) {
+        setPosInventoryError(err instanceof Error ? err.message : 'Unable to load current inventory for POS.');
+      } finally {
+        setIsLoadingPosInventory(false);
+      }
+    }
+
+    function forceRefreshSaleSummary() {
+      setPosSaleSummary(
+        calculatePosSaleSummary({
+          cartItems: posCartItems,
+          discountAmount: posDiscountAmount,
+          paymentMethod: posPaymentMethod,
+          insuranceProviderId: posInsuranceProvider,
+          insuranceInstitutionId: posInsuranceInstitution,
+        }),
+      );
+      setPosNotice('Payment summary updated from the current cart and Transaction Set-UP settings.');
+    }
+
+    function addPosProductToCart(product: typeof posProducts[number]) {
+      if (!product.batchId || product.availableQuantity <= 0) {
+        setPosNotice('This product is not available in current inventory and cannot be sold.');
+        return;
+      }
+
+      setPosCartItems((current) => {
+        const existing = current.find((item) => item.code === product.code);
+
+        if (existing) {
+          const nextQuantity = Math.min(existing.quantity + 1, product.availableQuantity);
+
+          if (nextQuantity === existing.quantity) {
+            setPosNotice(`${product.name} cannot exceed available inventory of ${product.availableQuantity}.`);
+          }
+
+          return current.map((item) =>
+            item.code === product.code
+              ? {
+                  ...item,
+                  quantity: nextQuantity,
+                  availableQuantity: product.availableQuantity,
+                  unitPrice: product.unitPrice,
+                }
+              : item,
+          );
+        }
+
+        return [
+          ...current,
+          {
+            code: product.code,
+            name: product.name,
+            strength: product.strength,
+            quantity: 1,
+            unitPrice: product.unitPrice,
+            batchId: product.batchId,
+            productId: product.productId,
+            batchNumber: product.batchNumber,
+            availableQuantity: product.availableQuantity,
+            expiryDate: product.expiryDate,
+            locationName: product.locationName,
+          },
+        ];
+      });
+
+      setPosTransactionConfirmed(false);
+    }
+
+    function updateCartQuantity(code: string, quantity: number) {
+      setPosCartItems((current) =>
+        current.map((item) => {
+          if (item.code !== code) return item;
+
+          const safeQuantity = Math.min(
+            Math.max(1, Number.isFinite(quantity) ? quantity : 1),
+            item.availableQuantity,
+          );
+
+          if (safeQuantity !== quantity) {
+            setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
+          }
+
+          return {
+            ...item,
+            quantity: safeQuantity,
+          };
+        }),
+      );
+
+      setPosTransactionConfirmed(false);
+    }
+
+    function removeCartItem(code: string) {
+      setPosCartItems((current) => current.filter((item) => item.code !== code));
+      setPosTransactionConfirmed(false);
+      setPosNotice('Item removed from cart.');
+    }
+
+    function clearPosCart() {
+      setPosCartItems([]);
+      setPosTransactionConfirmed(false);
+      setPosNotice('Cart cleared.');
+    }
+
+    function openPosDay() {
+      setIsPosDayOpen(true);
+      setPosTransactionConfirmed(false);
+      setPosNotice(
+        posOpeningMode === 'fresh-start'
+          ? 'POS day opened. Starting cash balance requires manager confirmation for a fresh start day.'
+          : 'POS day opened from handover. Incoming staff acknowledgement becomes the next starting position.',
+      );
+    }
+
+    function closePosDay() {
+      if (posCloseMode === 'handover' && !posTillZeroized) {
+        setPosNotice('Before handover close, the teller must zeroize the till account and incoming staff must acknowledge the cash.');
+        return;
+      }
+
+      if (posCloseMode === 'final-close' && !posDepositProof.trim()) {
+        setPosNotice('Final close requires proof of deposit for manager confirmation.');
+        return;
+      }
+
+      setIsPosDayOpen(false);
+      setPosNotice(
+        posCloseMode === 'handover'
+          ? 'POS day closed through handover. Incoming staff acknowledgement is recorded as the next starting balance.'
+          : 'POS day closed for final deposit review. Manager confirmation is required.',
+      );
+    }
+
+    function confirmTransaction() {
+      const unavailableItem = posCartItems.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
+
+      if (unavailableItem) {
+        setPosNotice(`${unavailableItem.name} is no longer available in the selected quantity. Refresh current inventory before confirming.`);
+        setPosTransactionConfirmed(false);
+        return;
+      }
+
+      if (posCartItems.length === 0) {
+        setPosNotice('Add at least one drug to cart before confirming payment.');
+        return;
+      }
+
+      if (posCustomerInvoice === 'yes' && posInvoiceDelivery !== 'printer' && !posInvoiceContact.trim()) {
+        setPosNotice('Provide customer WhatsApp number or email before invoice delivery.');
+        return;
+      }
+
+      setPosTransactionConfirmed(true);
+      setPosNotice(
+        posCustomerInvoice === 'yes'
+          ? 'Payment confirmed. Invoice generation and delivery are now available inside POS.'
+          : 'Payment confirmed without customer invoice.',
+      );
+    }
+
+
+    function renderPosWorkspaceTopMenu(activeKey: PosWorkspaceKey | 'main-dashboard' = activePosWorkspace) {
+      const posTerminalMenuItems = [
+        { key: 'main-dashboard', label: 'Main Dashboard', detail: 'Exit POS' },
+        { key: 'overview', label: 'POS Dashboard', detail: 'Control view' },
+        { key: 'pos', label: 'POS Counter', detail: 'Serve customer' },
+        { key: 'dispensing-review', label: 'Pharmacist Review', detail: 'Safety queue' },
+        { key: 'customers', label: 'Customers', detail: 'Patients' },
+        { key: 'prescriptions', label: 'Prescriptions', detail: 'Rx files' },
+        { key: 'sales-performance', label: 'Sales Register', detail: 'Real sales' },
+        { key: 'payment-receipt', label: 'Receipts & Payments', detail: 'Collection' },
+      ] as const;
+
+      return (
+        <nav className="pos-dedicated-command-bar pos-unified-terminal-menu" aria-label="POS workspace navigation">
+          {posTerminalMenuItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={activeKey === item.key ? 'active' : ''}
+              onClick={() => {
+                if (item.key === 'main-dashboard') {
+                  navigateToSection('overview');
+                  return;
+                }
+
+                setActivePosWorkspace(item.key);
+              }}
+            >
+              <span>{item.label}</span>
+              <strong>{item.detail}</strong>
+            </button>
+          ))}
+        </nav>
+      );
+    }
+
+    if (activePosWorkspace === 'overview') {
+      return (
+        <section className="section-page pos-executive-overview pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('overview')}
+          <section className="pos-executive-hero pos-international-hero">
+            <div>
+              <span>POS and sales operations</span>
+              <h2>Pharmacy POS Dashboard</h2>
+              <p>Counter readiness, sales flow, pharmacist review, customer queues, receipts, and daily close controls in one real-data POS workspace.</p>
+            </div>
+            <div className="pos-overview-hero-actions">
+              <button type="button" onClick={() => setActivePosWorkspace('pos')}>
+                Open Dedicated POS Counter
+              </button>
+              <button type="button" className="secondary-action" onClick={() => navigateToSection('overview')}>
+                Main Dashboard
+              </button>
+            </div>
+          </section>
+
+          <section className="pos-overview-analytics-grid executive pos-real-kpi-grid">
+            {[
+              ['POS session', isPosDayOpen ? 'Open' : 'Closed', isPosDayOpen ? 'Ready for counter work' : 'Open day before serving', 'Controlled by cashier day opening'],
+              ['Current cart lines', String(posCartItems.length), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
+              ['Current cart total', `RWF ${posSaleSummary.total.toLocaleString('en-RW')}`, posPaymentMethod.replaceAll('_', ' '), 'Calculated from current cart only'],
+              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Stock readiness'],
+              ['Prescription state', posPrescriptionStatus.replaceAll('-', ' '), posPrescriptionStatus === 'manual-review' ? 'Needs review' : 'Counter selected', 'Used for pharmacist safety handoff'],
+              ['Receipt readiness', posCustomerInvoice === 'yes' ? 'Invoice requested' : 'Receipt only', posInvoiceDelivery.replaceAll('_', ' '), 'No fake transactions displayed'],
+            ].map(([title, value, signal, detail]) => (
+              <article key={title} className="pos-executive-card">
+                <span>{title}</span>
+                <strong>{value}</strong>
+                <em>{signal}</em>
+                <small>{detail}</small>
+              </article>
             ))}
           </section>
 
