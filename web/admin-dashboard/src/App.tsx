@@ -2564,6 +2564,7 @@ function App() {
     locationName: string;
   }>>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
+  const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
   const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
   const [posCounterCart, setPosCounterCart] = useState<{
     items: typeof posCartItems;
@@ -4197,6 +4198,11 @@ function App() {
       setPosCounterItems(cartSnapshot.items);
       setPosCartItems(cartSnapshot.items);
       setPosRenderedCartItems(cartSnapshot.items);
+      setPosRenderedCartMetrics({
+        lineCount: Number(cartSnapshot.lineCount || cartSnapshot.items.length || 0),
+        totalQuantity: Number(cartSnapshot.totalQuantity || cartSnapshot.items.reduce((total, item) => total + Number(item.quantity || 0), 0)),
+        subtotal: Number(cartSnapshot.subtotal || cartSnapshot.items.reduce((total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0)),
+      });
       setPosSaleSummary(
         calculatePosSaleSummary({
           cartItems: cartSnapshot.items,
@@ -4581,17 +4587,30 @@ function App() {
         0,
       );
 
-      const posFinancialLineCount = posCartDisplayLineCount;
-      const posFinancialTotalQuantity = posCartDisplayUnitCount;
-      const posCartOperatingUnits = posCartDisplayUnitCount;
+      const posCommittedLineCount = Math.max(
+        posCartDisplayLineCount,
+        Number(posRenderedCartMetrics.lineCount || 0),
+      );
+      const posCommittedUnitCount = Math.max(
+        posCartDisplayUnitCount,
+        Number(posRenderedCartMetrics.totalQuantity || 0),
+      );
+      const posCommittedSubtotal = Math.max(
+        posCartDisplaySubtotal,
+        Number(posRenderedCartMetrics.subtotal || 0),
+      );
+
+      const posFinancialLineCount = posCommittedLineCount;
+      const posFinancialTotalQuantity = posCommittedUnitCount;
+      const posCartOperatingUnits = posCommittedUnitCount;
       const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posCartDisplaySubtotal;
+      const posFinancialSubtotal = posCommittedSubtotal;
 
       const posOperatingCart = {
         items: posCartDisplayItems,
-        lineCount: posCartDisplayLineCount,
-        totalQuantity: posCartDisplayUnitCount,
-        subtotal: posCartDisplaySubtotal,
+        lineCount: posCommittedLineCount,
+        totalQuantity: posCommittedUnitCount,
+        subtotal: posCommittedSubtotal,
       };
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
@@ -4849,7 +4868,7 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posCartDisplayLineCount} line{posCartDisplayLineCount === 1 ? '' : 's'} · {posCartDisplayUnitCount} unit{posCartDisplayUnitCount === 1 ? '' : 's'}</small>
+                      <small>{posFinancialLineCount} line{posFinancialLineCount === 1 ? '' : 's'} · {posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'}</small>
                       <button type="button" onClick={clearPosCart} disabled={posFinancialLineCount === 0}>
                         Clear cart
                       </button>
@@ -4870,7 +4889,7 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posCartDisplayLineCount === 0 ? (
+                        {posFinancialLineCount === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
@@ -5067,11 +5086,11 @@ function App() {
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
                         <span>Cart lines</span>
-                        <strong>{posLiveCartItems.length}</strong>
+                        <strong>{posFinancialLineCount}</strong>
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
                         <span>Cart units</span>
-                        <strong>{posCartDisplayUnitCount}</strong>
+                        <strong>{posCartOperatingUnits}</strong>
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
                         <span>% Customer</span>
@@ -5086,7 +5105,7 @@ function App() {
                     <div className="pos-payment-summary-column pos-payment-summary-column--financial" aria-label="Financial payment summary">
                       <article className="pos-summary-field-card pos-summary-field-card--financial">
                         <span>Sub-Total</span>
-                        <strong>RWF {posCartDisplaySubtotal.toLocaleString('en-RW')}</strong>
+                        <strong>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</strong>
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--financial">
                         <span>Discount</span>
