@@ -4024,7 +4024,15 @@ function App() {
     }
 
     function forceRefreshSaleSummary() {
-      const liveCartItems = normalizePosCartItems(posCounterItems);
+      const liveCartItems = [
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
+      ].reduce<typeof posCartItems>((uniqueItems, item) => {
+        if (!uniqueItems.some((existingItem) => existingItem.code === item.code)) {
+          uniqueItems.push(item);
+        }
+        return uniqueItems;
+      }, []);
 
       setPosSaleSummary(
         calculatePosSaleSummary({
@@ -4037,7 +4045,7 @@ function App() {
       );
       setPosSummaryRefreshKey((current) => current + 1);
       setPosTransactionConfirmed(false);
-      setPosNotice('Payment summary refreshed from the live POS cart.');
+      setPosNotice('Payment summary refreshed from the visible POS cart.');
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
@@ -4363,8 +4371,29 @@ function App() {
         (total, item) => total + item.quantity * item.unitPrice,
         0,
       );
+
+      const posOperatingCartItems = [
+        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
+        ...(Array.isArray(posCartItems) ? posCartItems : []),
+      ].reduce<typeof posCartItems>((uniqueItems, item) => {
+        if (!uniqueItems.some((existingItem) => existingItem.code === item.code)) {
+          uniqueItems.push(item);
+        }
+        return uniqueItems;
+      }, []);
+
+      const posOperatingCart = {
+        items: posOperatingCartItems,
+        lineCount: posOperatingCartItems.length,
+        totalQuantity: posOperatingCartItems.reduce((total, item) => total + Number(item.quantity || 0), 0),
+        subtotal: posOperatingCartItems.reduce(
+          (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+          0,
+        ),
+      };
+
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
-      const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
+      const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posOperatingCart.subtotal);
       const posSummaryNetDiscount = Math.max(posFinancialSubtotal - posSummaryAppliedDiscount, 0);
 
       // Tax mode will later come from Finance > Tax Compliance Management.
@@ -4401,7 +4430,7 @@ function App() {
       ];
 
       const posPaymentFinancialCards = [
-        ['Sub-Total', `RWF ${posFinancialSubtotal.toLocaleString('en-RW')}`],
+        ['Sub-Total', `RWF ${posOperatingCart.subtotal.toLocaleString('en-RW')}`],
         ['Discount', `RWF ${posSummaryDiscountAmount.toLocaleString('en-RW')}`],
         ['Net Discount', `RWF ${posSummaryNetDiscount.toLocaleString('en-RW')}`],
         ['Tax', `RWF ${posSummaryTaxAmount.toLocaleString('en-RW')}`],
