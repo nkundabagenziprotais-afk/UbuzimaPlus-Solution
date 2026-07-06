@@ -2563,6 +2563,7 @@ function App() {
     expiryDate: string | null;
     locationName: string;
   }>>([]);
+  const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
   const [posInventoryBatches, setPosInventoryBatches] = useState<PharmaStockBatch[]>([]);
   const [isLoadingPosInventory, setIsLoadingPosInventory] = useState(false);
   const [posInventoryError, setPosInventoryError] = useState('');
@@ -3094,6 +3095,7 @@ function App() {
     });
     setPharmaCoreError('');
     setPosCartItems([]);
+    setPosCounterItems([]);
     setPosInventoryBatches([]);
     setPosInventoryError('');
     setPosInventoryLoadedAt('');
@@ -3988,6 +3990,7 @@ function App() {
         setPosInventoryBatches(batches);
         setPosInventoryLoadedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         setPosCartItems([]);
+        setPosCounterItems([]);
         setPosTransactionConfirmed(false);
 
         setPosNotice('');
@@ -3998,12 +4001,31 @@ function App() {
       }
     }
 
-    function normalizePosCartItems(cartItems = posCartItems) {
-      return cartItems;
+    function normalizePosCartItems(cartItems = posCounterItems) {
+      return Array.isArray(cartItems) ? cartItems : [];
+    }
+
+    function commitPosCounterItems(nextItems: typeof posCounterItems) {
+      const stableItems = nextItems.map((item) => ({ ...item }));
+
+      setPosCounterItems(stableItems);
+      setPosCartItems(stableItems);
+      setPosSaleSummary(
+        calculatePosSaleSummary({
+          cartItems: stableItems,
+          discountAmount: posDiscountAmount,
+          paymentMethod: posPaymentMethod,
+          insuranceProviderId: posInsuranceProvider,
+          insuranceInstitutionId: posInsuranceInstitution,
+        }),
+      );
+      setPosSummaryRefreshKey((current) => current + 1);
+      setPosTransactionConfirmed(false);
     }
 
     function forceRefreshSaleSummary() {
-      const liveCartItems = normalizePosCartItems(posCartItems);
+      const liveCartItems = normalizePosCartItems(posCounterItems);
+
       setPosSaleSummary(
         calculatePosSaleSummary({
           cartItems: liveCartItems,
@@ -4013,7 +4035,9 @@ function App() {
           insuranceInstitutionId: posInsuranceInstitution,
         }),
       );
-      setPosNotice('Payment summary updated from the current cart and Transaction Set-UP settings.');
+      setPosSummaryRefreshKey((current) => current + 1);
+      setPosTransactionConfirmed(false);
+      setPosNotice('Payment summary refreshed from the live POS cart.');
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
@@ -4022,30 +4046,31 @@ function App() {
         return;
       }
 
-      setPosCartItems((current) => {
-        const existing = current.find((item) => item.code === product.code);
+      const currentItems = normalizePosCartItems(posCounterItems);
+      const existing = currentItems.find((item) => item.code === product.code);
 
-        if (existing) {
-          const nextQuantity = Math.min(existing.quantity + 1, product.availableQuantity);
+      let nextItems: typeof posCounterItems;
 
-          if (nextQuantity === existing.quantity) {
-            setPosNotice(`${product.name} cannot exceed available inventory of ${product.availableQuantity}.`);
-          }
+      if (existing) {
+        const nextQuantity = Math.min(existing.quantity + 1, product.availableQuantity);
 
-          return current.map((item) =>
-            item.code === product.code
-              ? {
-                  ...item,
-                  quantity: nextQuantity,
-                  availableQuantity: product.availableQuantity,
-                  unitPrice: product.unitPrice,
-                }
-              : item,
-          );
+        if (nextQuantity === existing.quantity) {
+          setPosNotice(`${product.name} cannot exceed available inventory of ${product.availableQuantity}.`);
         }
 
-        return [
-          ...current,
+        nextItems = currentItems.map((item) =>
+          item.code === product.code
+            ? {
+                ...item,
+                quantity: nextQuantity,
+                availableQuantity: product.availableQuantity,
+                unitPrice: product.unitPrice,
+              }
+            : item,
+        );
+      } else {
+        nextItems = [
+          ...currentItems,
           {
             code: product.code,
             name: product.name,
@@ -4060,45 +4085,42 @@ function App() {
             locationName: product.locationName,
           },
         ];
-      });
+      }
 
-      setPosSummaryRefreshKey((current) => current + 1);
-      setPosTransactionConfirmed(false);
+      commitPosCounterItems(nextItems);
     }
 
     function updateCartQuantity(code: string, quantity: number) {
-      setPosCartItems((current) =>
-        current.map((item) => {
-          if (item.code !== code) return item;
+      const currentItems = normalizePosCartItems(posCounterItems);
 
-          const safeQuantity = Math.min(
-            Math.max(1, Number.isFinite(quantity) ? quantity : 1),
-            item.availableQuantity,
-          );
+      const nextItems = currentItems.map((item) => {
+        if (item.code !== code) return item;
 
-          if (safeQuantity !== quantity) {
-            setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
-          }
+        const safeQuantity = Math.min(
+          Math.max(1, Number.isFinite(quantity) ? quantity : 1),
+          item.availableQuantity,
+        );
 
-          return {
-            ...item,
-            quantity: safeQuantity,
-          };
-        }),
-      );
+        if (safeQuantity !== quantity) {
+          setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
+        }
 
-      setPosTransactionConfirmed(false);
+        return {
+          ...item,
+          quantity: safeQuantity,
+        };
+      });
+
+      commitPosCounterItems(nextItems);
     }
 
     function removeCartItem(code: string) {
-      setPosCartItems((current) => current.filter((item) => item.code !== code));
-      setPosTransactionConfirmed(false);
-      setPosNotice('Item removed from cart.');
+      const nextItems = normalizePosCartItems(posCounterItems).filter((item) => item.code !== code);
+      commitPosCounterItems(nextItems);
     }
 
     function clearPosCart() {
-      setPosCartItems([]);
-      setPosTransactionConfirmed(false);
+      commitPosCounterItems([]);
       setPosNotice('Cart cleared.');
     }
 
@@ -4140,7 +4162,7 @@ function App() {
         return;
       }
 
-      if (posCartItems.length === 0) {
+      if (posCounterItems.length === 0) {
         setPosNotice('Add at least one drug to cart before confirming payment.');
         return;
       }
@@ -4218,7 +4240,7 @@ function App() {
           <section className="pos-overview-analytics-grid executive pos-real-kpi-grid">
             {[
               ['POS session', isPosDayOpen ? 'Open' : 'Closed', isPosDayOpen ? 'Ready for counter work' : 'Open day before serving', 'Controlled by cashier day opening'],
-              ['Current cart lines', String(posCartItems.length), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
+              ['Current cart lines', String(posCounterItems.length), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
               ['Current cart total', `RWF ${posSaleSummary.total.toLocaleString('en-RW')}`, posPaymentMethod.replaceAll('_', ' '), 'Calculated from current cart only'],
               ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Stock readiness'],
               ['Prescription state', posPrescriptionStatus.replaceAll('-', ' '), posPrescriptionStatus === 'manual-review' ? 'Needs review' : 'Counter selected', 'Used for pharmacist safety handoff'],
@@ -4245,7 +4267,7 @@ function App() {
               <div className="pos-channel-bars pos-readiness-bars">
                 {[
                   ['Current inventory', posInventoryBatches.length ? '100%' : '8%', posInventoryBatches.length ? `${posInventoryBatches.length} batches loaded` : 'Not loaded'],
-                  ['Active cart', posCartItems.length ? '72%' : '12%', posCartItems.length ? `${posCartItems.length} line(s)` : 'No active sale'],
+                  ['Active cart', posCounterItems.length ? '72%' : '12%', posCounterItems.length ? `${posCounterItems.length} line(s)` : 'No active sale'],
                   ['Payment setup', posPaymentMethod ? '88%' : '10%', posPaymentMethod.replaceAll('_', ' ')],
                   ['Receipt setup', posCustomerInvoice === 'yes' ? '76%' : '35%', posCustomerInvoice === 'yes' ? posInvoiceDelivery : 'Standard receipt'],
                 ].map(([label, width, value]) => (
@@ -4270,7 +4292,7 @@ function App() {
                 {[
                   [isPosDayOpen ? 'Ready' : 'Start', isPosDayOpen ? 'POS day is open' : 'Open POS day', isPosDayOpen ? 'Counter can serve customers.' : 'Open the day before confirming payments.'],
                   [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Refresh stock', posInventoryBatches.length ? 'Sellable stock ready for picking.' : 'Current sellable stock is used for cashier picking.'],
-                  [posCartItems.length ? 'Active' : 'Idle', posCartItems.length ? 'Cart in progress' : 'No active cart', posCartItems.length ? 'Review quantity, payer, and receipt before payment.' : 'Search or scan a product to begin.'],
+                  [posCounterItems.length ? 'Active' : 'Idle', posCounterItems.length ? 'Cart in progress' : 'No active cart', posCounterItems.length ? 'Review quantity, payer, and receipt before payment.' : 'Search or scan a product to begin.'],
                   [posPrescriptionStatus === 'manual-review' ? 'Review' : 'Safe', posPrescriptionStatus === 'manual-review' ? 'Prescription needs manual review' : 'Prescription status selected', 'Pharmacist Review remains available for controlled dispensing.'],
                 ].map(([level, title, detail]) => (
                   <div key={title}>
@@ -4333,7 +4355,7 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posLiveCartItems = posCartItems;
+      const posLiveCartItems = posCounterItems;
       const posFinancialLineCount = posLiveCartItems.length;
       const posFinancialTotalQuantity = posLiveCartItems.reduce((total, item) => total + item.quantity, 0);
       const posSummarySyncKey = posSummaryRefreshKey;
@@ -4372,8 +4394,8 @@ function App() {
       void posSummarySyncKey;
       const posPaymentOperationalCards = [
         ['Date', posSummaryTimestamp],
-        ['Cart lines', posCartItems.length],
-        ['Quantity', posCartItems.reduce((total, item) => total + item.quantity, 0)],
+        ['Cart lines', posCounterItems.length],
+        ['Quantity', posCounterItems.reduce((total, item) => total + item.quantity, 0)],
         ['% Customer', `${posSummaryCustomerContributionPercent}%`],
         ['% Insurer', `${posSummaryInsurerContributionPercent}%`],
       ];
@@ -4596,8 +4618,8 @@ function App() {
                       <h3>Cart</h3>
                     </div>
                     <div className="pos-cart-header-actions">
-                      <small>{posCartItems.length} item line{posCartItems.length === 1 ? '' : 's'}</small>
-                      <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
+                      <small>{posCounterItems.length} item line{posCounterItems.length === 1 ? '' : 's'}</small>
+                      <button type="button" onClick={clearPosCart} disabled={posCounterItems.length === 0}>
                         Clear cart
                       </button>
                     </div>
@@ -4617,12 +4639,12 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {posCartItems.length === 0 ? (
+                        {posCounterItems.length === 0 ? (
                           <tr>
                             <td colSpan={4}>No products added yet. Select products from the tile board.</td>
                           </tr>
                         ) : (
-                          posCartItems.map((item) => (
+                          posCounterItems.map((item) => (
                             <tr key={item.code}>
                               <td>
                                 <strong>{item.name}</strong>
@@ -4786,7 +4808,7 @@ function App() {
                 </section>
 
                 <div className="pos-summary-update-bridge">
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartItems.length === 0}>
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCounterItems.length === 0}>
                     Update Summary
                   </button>
                 </div>
@@ -4802,7 +4824,7 @@ function App() {
 
                   <div className="pos-summary-sync-note">
                     <span>Payment Summary</span>
-                    <strong>{posCartItems.length} line{posCartItems.length === 1 ? '' : 's'} · {posCartItems.reduce((total, item) => total + item.quantity, 0)} unit{posCartItems.reduce((total, item) => total + item.quantity, 0) === 1 ? '' : 's'}</strong>
+                    <strong>{posCounterItems.length} line{posCounterItems.length === 1 ? '' : 's'} · {posCounterItems.reduce((total, item) => total + item.quantity, 0)} unit{posCounterItems.reduce((total, item) => total + item.quantity, 0) === 1 ? '' : 's'}</strong>
                     <small>{posSummaryTimestamp}</small>
                   </div>
 
@@ -4825,7 +4847,7 @@ function App() {
                       ))}
                     </div>
                   </div>
-                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartItems.length === 0}>
+                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCounterItems.length === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
                 </section>
