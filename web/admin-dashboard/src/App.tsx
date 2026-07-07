@@ -1,5 +1,19 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
+
+type PosBatchProduct = PharmaStockBatch['product'] & {
+  selling_unit?: string | null;
+  base_unit?: string | null;
+  unit?: string | null;
+  quantity_per_selling_unit?: number | string | null;
+  allow_other_quantity?: boolean | null;
+  default_pos_quantity_mode?: string | null;
+};
+
+function configuredPosTaxMode(): 'inclusive' | 'exclusive' {
+  return 'inclusive';
+}
+
 type PosInventoryAutoLoaderProps = {
   shouldLoad: boolean;
   onLoad: () => void | Promise<void>;
@@ -736,6 +750,7 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     description: 'Batch, expiry, FEFO, stock movement, receiving, and shelf-readiness workflows.',
   },
   insurance: {
+    eyebrow: 'Insurance operations',
     title: 'Insurance Management',
     description: 'Partners, schemes, pricing, claims and reconciliation',
   },
@@ -886,7 +901,7 @@ const menuGroups: MenuGroup[] = [
 
 function hasAnyPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
   if (!profile) return false;
-  return permissions.some((permission) => profile.permissions.includes(permission));
+  return permissions.some((permission) => profile!.permissions.includes(permission));
 }
 
 const granularMenuPermissionMap: Record<string, string[]> = {
@@ -972,7 +987,7 @@ const granularMenuPermissionMap: Record<string, string[]> = {
     'reports.audit.view',
   ],
   'tenant-setup': [
-    'tenant.profile.view',
+    'tenant.profile!.view',
     'tenant.branches.view',
     'tenant.departments.view',
     'tenant.capabilities.view',
@@ -1130,7 +1145,7 @@ function profileRoleTokens(profile: AccessProfile | undefined): string[] {
 
 function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
   if (!profile) return false;
-  if (profile.scope.is_platform) return true;
+  if (profile!.scope.is_platform) return true;
 
   const adminRoles = new Set([
     'admin',
@@ -1629,10 +1644,10 @@ const granularPermissionMatrix: PermissionMatrixGroup[] = [
         label: 'Tenant Profile',
         description: 'Tenant profile and operational setup.',
         permissions: {
-          view: 'tenant.profile.view',
-          add: 'tenant.profile.add',
-          edit: 'tenant.profile.edit',
-          delete: 'tenant.profile.delete',
+          view: 'tenant.profile!.view',
+          add: 'tenant.profile!.add',
+          edit: 'tenant.profile!.edit',
+          delete: 'tenant.profile!.delete',
         },
       },
       {
@@ -1729,11 +1744,11 @@ function pruneMenuGroups(profile: AccessProfile | undefined, groups: MenuGroup[]
 }
 
 function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[] {
-  if (!profile || profile.scope.is_platform) {
+  if (!profile || profile!.scope.is_platform) {
     return menuGroups;
   }
 
-  if (profile.scope.is_solution) {
+  if (profile!.scope.is_solution) {
     return pruneMenuGroups(profile, [
       {
         key: 'solutions',
@@ -2689,6 +2704,7 @@ function App() {
   });
 
   const profile = session?.profile;
+  const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
   const visibleMenuGroups = useMemo(() => buildVisibleMenuGroups(profile), [profile]);
   const visibleSectionKeys = useMemo(() => {
     const keys = new Set<AdminSectionKey>(['overview']);
@@ -2715,7 +2731,7 @@ function App() {
       return false;
     })?.label ?? null;
   const loginStatusText = profile
-    ? `Logged in now as ${profile.user.name || profile.user.email}`
+    ? `Logged in now as ${profile!.user.name || profile!.user.email}`
     : '';
   const profileDisplayName = profile?.user.name || profile?.user.email || 'User';
   const profileInitials = profileDisplayName
@@ -2726,7 +2742,7 @@ function App() {
     .join('') || 'U';
   const profileInstitution =
     profile?.tenant_assignments?.[0]?.tenant?.name ||
-    (profile?.scope.type ? `${profile.scope.type} scope` : 'Ubuzima+');
+    (profile?.scope.type ? `${profile!.scope.type} scope` : 'Ubuzima+');
   const profileAvatarUrl = ((profile?.user ?? {}) as { avatar_url?: string }).avatar_url || '';
   const nextStaffLoginLanguage = staffLoginLanguages[
     (staffLoginLanguages.indexOf(staffLoginLanguage) + 1) % staffLoginLanguages.length
@@ -2829,15 +2845,15 @@ function App() {
     return [
       {
         title: 'Security',
-        items: profile.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
+        items: profile!.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
       },
       {
         title: 'Operations 360',
-        items: profile.permissions.filter((item) => item.startsWith('pharmaco.')),
+        items: profile!.permissions.filter((item) => item.startsWith('pharmaco.')),
       },
       {
         title: 'AI & Platform',
-        items: profile.permissions.filter((item) => item.includes('ai') || item.includes('platform')),
+        items: profile!.permissions.filter((item) => item.includes('ai') || item.includes('platform')),
       },
     ].filter((group) => group.items.length > 0);
   }, [profile]);
@@ -2868,7 +2884,7 @@ function App() {
     '--left-menu-card-padding-y': leftMenuAppearance.density === 'compact' ? '0.34rem' : '0.52rem',
     '--left-menu-card-padding-x': leftMenuAppearance.density === 'compact' ? '0.48rem' : '0.62rem',
     '--left-menu-submenu-font-size': leftMenuAppearance.density === 'compact' ? '0.7rem' : '0.76rem',
-  } as CSSProperties;
+  } as React.CSSProperties;
 
   useEffect(() => {
     if (!session?.token) {
@@ -2880,7 +2896,7 @@ function App() {
 
     async function loadUnreadMailCount() {
       try {
-        const response = await getCorporateMailOverview(session.token, 'inbox');
+        const response = await getCorporateMailOverview(session!.token, 'inbox');
         const unread = response.folders.reduce((sum, folder) => sum + folder.unread_count, 0);
 
         if (!cancelled) {
@@ -3090,6 +3106,10 @@ function App() {
         return;
       }
 
+      if (!('access_token' in response) || !('profile' in response)) {
+        throw new Error('Login response did not include an authenticated session.');
+      }
+
       const nextSession = {
         token: response.access_token,
         profile: response.profile,
@@ -3167,7 +3187,7 @@ function App() {
 
   async function handleLogout() {
     if (session?.token) {
-      await logout(session.token).catch(() => undefined);
+      await logout(session!.token).catch(() => undefined);
     }
 
     localStorage.removeItem(storageKey);
@@ -3202,8 +3222,8 @@ function App() {
     setChangePasswordNotice('');
 
     try {
-      const response = await changePassword(session.token, changePasswordForm);
-      persistSession({ token: session.token, profile: response.profile });
+      const response = await changePassword(session!.token, changePasswordForm);
+      persistSession({ token: session!.token, profile: response.profile });
       setChangePasswordNotice(response.message);
       setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
     } catch (err) {
@@ -3223,7 +3243,7 @@ function App() {
     setIsCheckingAccess(true);
 
     try {
-      const result = await runAccessCheck(session.token, endpoint, tenantSlug);
+      const result = await runAccessCheck(session!.token, endpoint, tenantSlug);
       setAccessCheck({ label, result });
     } finally {
       setIsCheckingAccess(false);
@@ -3246,11 +3266,11 @@ function App() {
     setPharmaCoreError('');
 
     try {
-      const profileResponse = await getPharmacyProfile(session.token, tenantSlug);
-      const branchesResponse = await getPharmaBranches(session.token, tenantSlug);
+      const profileResponse = await getPharmacyProfile(session!.token, tenantSlug);
+      const branchesResponse = await getPharmaBranches(session!.token, tenantSlug);
       const firstBranch = branchesResponse.branches[0] ?? null;
       const departmentsResponse = firstBranch
-        ? await getBranchDepartments(session.token, tenantSlug, firstBranch.id)
+        ? await getBranchDepartments(session!.token, tenantSlug, firstBranch.id)
         : null;
 
       setPharmaCore({
@@ -3509,19 +3529,19 @@ function App() {
     <section className="summary-grid compact-summary-grid">
       <article>
         <span>Active roles</span>
-        <strong>{profile.roles.length}</strong>
+        <strong>{profile!.roles.length}</strong>
       </article>
       <article>
         <span>Permissions</span>
-        <strong>{profile.permissions.length}</strong>
+        <strong>{profile!.permissions.length}</strong>
       </article>
       <article>
         <span>Tenant assignments</span>
-        <strong>{profile.tenant_assignments.length}</strong>
+        <strong>{profile!.tenant_assignments.length}</strong>
       </article>
       <article>
         <span>Admin scopes</span>
-        <strong>{profile.admin_scopes.length}</strong>
+        <strong>{profile!.admin_scopes.length}</strong>
       </article>
     </section>
   );
@@ -3547,20 +3567,20 @@ function App() {
         <div className="pharmaco-grid">
           <section className="pharmaco-card">
             <span className="section-label">Pharmacy profile</span>
-            <h3>{pharmaCore.profile.profile.trading_name}</h3>
-            <p>{pharmaCore.profile.profile.legal_name}</p>
+            <h3>{pharmaCore.profile!.profile!.trading_name}</h3>
+            <p>{pharmaCore.profile!.profile!.legal_name}</p>
             <div className="mini-facts">
-              <span>Category: {pharmaCore.profile.profile.pharmacy_category}</span>
-              <span>Regulator: {pharmaCore.profile.profile.regulator_name}</span>
-              <span>Status: {pharmaCore.profile.profile.status}</span>
-              <span>District: {pharmaCore.profile.profile.district ?? 'Not set'}</span>
+              <span>Category: {pharmaCore.profile!.profile!.pharmacy_category}</span>
+              <span>Regulator: {pharmaCore.profile!.profile!.regulator_name}</span>
+              <span>Status: {pharmaCore.profile!.profile!.status}</span>
+              <span>District: {pharmaCore.profile!.profile!.district ?? 'Not set'}</span>
             </div>
           </section>
 
           <section className="pharmaco-card">
             <span className="section-label">Capabilities</span>
             <div className="tag-list">
-              {pharmaCore.profile.profile.capabilities.map((capability) => (
+              {pharmaCore.profile!.profile!.capabilities.map((capability) => (
                 <span key={capability}>{capability.replaceAll('_', ' ')}</span>
               ))}
             </div>
@@ -3569,7 +3589,7 @@ function App() {
           <section className="pharmaco-card">
             <span className="section-label">Insurance partners</span>
             <div className="tag-list">
-              {pharmaCore.profile.profile.insurance_partners.map((partner) => (
+              {pharmaCore.profile!.profile!.insurance_partners.map((partner) => (
                 <span key={partner}>{partner}</span>
               ))}
             </div>
@@ -3578,7 +3598,7 @@ function App() {
           <section className="pharmaco-card">
             <span className="section-label">Operating hours</span>
             <div className="mini-facts">
-              {Object.entries(pharmaCore.profile.profile.operating_hours).map(([day, hours]) => (
+              {Object.entries(pharmaCore.profile!.profile!.operating_hours).map(([day, hours]) => (
                 <span key={day}>{day.replaceAll('_', ' ')}: {hours}</span>
               ))}
             </div>
@@ -3668,11 +3688,11 @@ function App() {
   const tenantAssignmentsPanel = (
     <article className="panel wide">
       <h2>Tenant assignments</h2>
-      {profile.tenant_assignments.length === 0 ? (
+      {profile!.tenant_assignments.length === 0 ? (
         <p className="muted">No tenant assignment is attached to this account.</p>
       ) : (
         <div className="tenant-table">
-          {profile.tenant_assignments.map((assignment) => (
+          {profile!.tenant_assignments.map((assignment) => (
             <div key={assignment.tenant.slug}>
               <strong>{assignment.tenant.name}</strong>
               <span>{assignment.branch?.name ?? 'All branches'}</span>
@@ -3727,13 +3747,13 @@ function App() {
 
         {activeErpWorkspace === 'finance' && (
           <>
-            <PayablesWorkflow token={session.token} profile={profile} />
-            <ReceivablesWorkflow token={session.token} profile={profile} />
+            <PayablesWorkflow token={session!.token} profile={profile!} />
+            <ReceivablesWorkflow token={session!.token} profile={{ tenant: profile!.tenant_assignments?.[0]?.tenant }} />
           </>
         )}
 
         {activeErpWorkspace === 'procurement' && (
-          <ProcurementWorkflow token={session.token} profile={profile} />
+          <ProcurementWorkflow token={session!.token} profile={profile!} />
         )}
 
         {!['finance', 'procurement'].includes(activeErpWorkspace) && (
@@ -3776,7 +3796,7 @@ function App() {
 
         {selectedFeature.key === 'ai-model' && (
           <>
-<AiOperationsPanel token={session.token} profile={profile} />
+<AiOperationsPanel token={session!.token} profile={profile!} />
             <section className="ai-model-grid">
               {pharmaAiModels.map(([model, description]) => (
                 <article key={model}>
@@ -3792,8 +3812,8 @@ function App() {
         {selectedFeature.key === 'inventory' && (
           <>
 <ProductInventoryPreview
-              token={session.token}
-              profile={profile}
+              token={session!.token}
+              profile={profile!}
               activeView={activeInventoryView}
               onActiveViewChange={setActiveInventoryView}
               showInternalNavigation={false}
@@ -3801,7 +3821,7 @@ function App() {
             {activeInventoryView === 'product-master' && (
               <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
 
-                <ProductInventoryActions token={session.token} profile={profile} />
+                <ProductInventoryActions token={session!.token} profile={profile!} />
 
               </div>
             )}
@@ -3810,36 +3830,36 @@ function App() {
 
         {selectedFeature.key === 'pos' && (
           <>
-<SalesDispensingReview token={session.token} profile={profile} />
+<SalesDispensingReview token={session!.token} profile={profile!} />
           </>
         )}
 
         {selectedFeature.key === 'procurement' && (
           <>
-<ProcurementWorkflow token={session.token} profile={profile} />
+<ProcurementWorkflow token={session!.token} profile={profile!} />
           </>
         )}
 
         {selectedFeature.key === 'reports' && (
           <>
-            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
-            <ReportingDashboard token={session.token} profile={profile} />
+            <PharmacoOperationsCommandCenter token={session!.token} profile={profile!} />
+            <ReportingDashboard token={session!.token} profile={profile!} />
           </>
         )}
 
         {selectedFeature.key === 'product-master' && (
           <>
-            <ProductInventoryPreview token={session.token} profile={profile} />
+            <ProductInventoryPreview token={session!.token} profile={profile!} />
             <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
 
-              <ProductInventoryActions token={session.token} profile={profile} />
+              <ProductInventoryActions token={session!.token} profile={profile!} />
 
             </div>
           </>
         )}
 
         {['prescriptions', 'customers'].includes(selectedFeature.key) && (
-          <SalesDispensingReview token={session.token} profile={profile} />
+          <SalesDispensingReview token={session!.token} profile={profile!} />
         )}
       </section>
     );
@@ -4026,15 +4046,14 @@ function App() {
           availableQuantity,
           expiryDate: batch.expiry_date,
           locationName,
-          sellingUnit: batch.product?.selling_unit || batch.product?.unit || 'unit',
-          baseUnit: batch.product?.base_unit || batch.product?.unit || 'unit',
+          sellingUnit: (batch.product as PosBatchProduct | undefined)?.selling_unit || (batch.product as PosBatchProduct | undefined)?.unit || 'unit',
+          baseUnit: (batch.product as PosBatchProduct | undefined)?.base_unit || (batch.product as PosBatchProduct | undefined)?.unit || 'unit',
           quantityPerSellingUnit: Math.max(
             0.0001,
-            Number(batch.product?.quantity_per_selling_unit || 1),
+            Number((batch.product as PosBatchProduct | undefined)?.quantity_per_selling_unit || 1),
           ),
-          allowOtherQuantity: batch.product?.allow_other_quantity !== false,
-          defaultQuantityMode:
-            batch.product?.default_pos_quantity_mode || 'selling_unit',
+          allowOtherQuantity: (batch.product as PosBatchProduct | undefined)?.allow_other_quantity !== false,
+          defaultQuantityMode: (((batch.product as PosBatchProduct | undefined)?.default_pos_quantity_mode || 'selling_unit') === 'other_quantity' ? 'other_quantity' : ((batch.product as PosBatchProduct | undefined)?.default_pos_quantity_mode || 'selling_unit') === 'combined' ? 'combined' : 'selling_unit') as 'selling_unit' | 'other_quantity' | 'combined',
         };
       });
 
@@ -4079,7 +4098,7 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
+        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
@@ -4603,7 +4622,7 @@ function App() {
       // Tax mode will later come from Finance > Tax Compliance Management.
       // Inclusive means the displayed price already includes tax.
       // Exclusive means tax is added on top of Net Discount.
-      const posTaxMode: 'inclusive' | 'exclusive' = 'inclusive';
+      const posTaxMode = configuredPosTaxMode();
       const posTaxRatePercent = 0;
       const posSummaryTaxAmount = posTaxMode === 'exclusive'
         ? Math.round((posSummaryNetDiscount * posTaxRatePercent) / 100)
@@ -5492,7 +5511,7 @@ function App() {
       return (
         <section className="section-page pos-unified-module-page">
           {renderPosWorkspaceTopMenu('dispensing-review')}
-          <SalesDispensingReview token={session.token} profile={profile} />
+          <SalesDispensingReview token={session!.token} profile={profile!} />
         </section>
       );
     }
@@ -5570,7 +5589,7 @@ function App() {
           )}
 
           {activeSupplierWorkspace === 'create-supplier' && (
-            <ProcurementWorkflow token={session.token} profile={profile} />
+            <ProcurementWorkflow token={session!.token} profile={profile!} />
           )}
 
           {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
@@ -5582,7 +5601,7 @@ function App() {
           )}
 
           {['create-purchase-order', 'receive-purchase-order'].includes(activeSupplierWorkspace) && (
-            <ProcurementWorkflow token={session.token} profile={profile} />
+            <ProcurementWorkflow token={session!.token} profile={profile!} />
           )}
         </div>
       </section>
@@ -5610,7 +5629,7 @@ function App() {
           )}
 
           {activeFinanceWorkspace === 'finance-flow' && (
-            <PayablesWorkflow token={session.token} profile={profile} />
+            <PayablesWorkflow token={session!.token} profile={profile!} />
           )}
 
           {activeFinanceWorkspace === 'exception-focus' && (
@@ -5620,12 +5639,12 @@ function App() {
                 description="Overdue receivables, overdue payables, payment variance, cash variance, and approval risks."
                 rows={financeRows}
               />
-              <PayablesWorkflow token={session.token} profile={profile} />
+              <PayablesWorkflow token={session!.token} profile={profile!} />
             </>
           )}
 
           {activeFinanceWorkspace === 'credits-receivables' && (
-            <ReceivablesWorkflow token={session.token} profile={profile} />
+            <ReceivablesWorkflow token={session!.token} profile={{ tenant: profile!.tenant_assignments?.[0]?.tenant }} />
           )}
 
           {['receivable-register', 'collection'].includes(activeFinanceWorkspace) && (
@@ -5675,7 +5694,7 @@ function App() {
       <section className="section-page">
         <div className="module-section-stage">
           {activeAdhocReportWorkspace === 'overview' && (
-            <ReportingDashboard token={session.token} profile={profile} />
+            <ReportingDashboard token={session!.token} profile={profile!} />
           )}
 
           {activeAdhocReportWorkspace !== 'overview' && (
@@ -5797,7 +5816,7 @@ function App() {
           </article>
         )}
 
-        <AiOperationsPanel token={session.token} profile={profile} />
+        <AiOperationsPanel token={session!.token} profile={profile!} />
       </section>
     );
   }
@@ -5820,7 +5839,7 @@ function App() {
           </div>
         </article>
 
-        <NotificationCenterPanel token={session.token} profile={profile} />
+        <NotificationCenterPanel token={session!.token} profile={profile!} />
       </section>
     );
   }
@@ -5837,13 +5856,13 @@ function App() {
           </p>
         </article>
 
-        <PharmacistChatPanel token={session.token} />
+        <PharmacistChatPanel token={session!.token} />
       </section>
     );
   }
 
   function renderAdminPanel() {
-    const visibleAdminPanelLayers = profile.scope.is_platform
+    const visibleAdminPanelLayers = profile!.scope.is_platform
       ? adminPanelLayers
       : adminPanelLayers.filter((layer) => layer.key === 'two-factor-auth');
     const selectedWorkspace = visibleAdminPanelLayers.some((layer) => layer.key === activeAdminPanelWorkspace)
@@ -5877,8 +5896,8 @@ function App() {
 
         {selectedWorkspace === 'two-factor-auth' && (
           <TwoFactorAdminPanel
-            token={session.token}
-            profile={profile}
+            token={session!.token}
+            profile={profile!}
             onVerified={(nextToken, nextProfile, trustedDeviceToken) => {
               persistSession({ token: nextToken, profile: nextProfile }, trustedDeviceToken);
             }}
@@ -5886,23 +5905,23 @@ function App() {
         )}
 
         {selectedWorkspace === 'platform-management' && (
-          <PlatformManagementPanel token={session.token} />
+          <PlatformManagementPanel token={session!.token} />
         )}
 
         {selectedWorkspace === 'notification-management' && (
-          <NotificationCenterPanel token={session.token} profile={profile} />
+          <NotificationCenterPanel token={session!.token} profile={profile!} />
         )}
 
         {selectedWorkspace === 'corporate-email' && (
-          <CorporateEmailPanel token={session.token} />
+          <CorporateEmailPanel token={session!.token} />
         )}
 
         {selectedWorkspace === 'pharmacist-chat' && (
-          <PharmacistChatPanel token={session.token} />
+          <PharmacistChatPanel token={session!.token} />
         )}
 
         {selectedWorkspace === 'data-layer' && (
-          <DataLayerAdminPanel token={session.token} />
+          <DataLayerAdminPanel token={session!.token} />
         )}
 
         <section className="admin-layer-grid">
@@ -6075,7 +6094,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility.inventory.pages && <span><b>7</b><small>Inventory pages</small></span>}
                     {dashboardCardFieldVisibility.inventory.expiry && <span><b>180d</b><small>Expiry watch</small></span>}
-                    {dashboardCardFieldVisibility.inventory.permission && <span><b>{profile.permissions.includes('pharmaco.inventory.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
+                    {dashboardCardFieldVisibility.inventory.permission && <span><b>{profile!.permissions.includes('pharmaco.inventory.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
                   </div>
                 </button>
               )}
@@ -6093,7 +6112,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility.pos.pages && <span><b>7</b><small>Sales pages</small></span>}
                     {dashboardCardFieldVisibility.pos.receipts && <span><b>PDF</b><small>Receipts</small></span>}
-                    {dashboardCardFieldVisibility.pos.permission && <span><b>{profile.permissions.includes('pharmaco.pos.use') ? 'On' : 'Off'}</b><small>POS access</small></span>}
+                    {dashboardCardFieldVisibility.pos.permission && <span><b>{profile!.permissions.includes('pharmaco.pos.use') ? 'On' : 'Off'}</b><small>POS access</small></span>}
                   </div>
                 </button>
               )}
@@ -6129,7 +6148,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility.suppliers.pages && <span><b>7</b><small>Supplier pages</small></span>}
                     {dashboardCardFieldVisibility.suppliers.po && <span><b>PO</b><small>Open orders</small></span>}
-                    {dashboardCardFieldVisibility.suppliers.permission && <span><b>{profile.permissions.includes('pharmaco.suppliers.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
+                    {dashboardCardFieldVisibility.suppliers.permission && <span><b>{profile!.permissions.includes('pharmaco.suppliers.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
                   </div>
                 </button>
               )}
@@ -6162,7 +6181,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility['ai-reports']['ai-tools'] && <span><b>18</b><small>AI tools</small></span>}
                     {dashboardCardFieldVisibility['ai-reports']['report-pages'] && <span><b>7</b><small>Report pages</small></span>}
-                    {dashboardCardFieldVisibility['ai-reports'].permission && <span><b>{profile.permissions.includes('ai.use') ? 'On' : 'Off'}</b><small>AI access</small></span>}
+                    {dashboardCardFieldVisibility['ai-reports'].permission && <span><b>{profile!.permissions.includes('ai.use') ? 'On' : 'Off'}</b><small>AI access</small></span>}
                   </div>
                 </button>
               )}
@@ -6178,15 +6197,15 @@ function App() {
                 >
                   <span>Profile and Access</span>
                   <div className="dashboard-card-metrics">
-                    {dashboardCardFieldVisibility.profile.permissions && <span><b>{profile.permissions.length}</b><small>Permissions</small></span>}
-                    {dashboardCardFieldVisibility.profile.scope && <span><b>{profile.scope.type}</b><small>Scope</small></span>}
-                    {dashboardCardFieldVisibility.profile.edit && <span><b>Edit</b><small>Profile</small></span>}
+                    {dashboardCardFieldVisibility.profile!.permissions && <span><b>{profile!.permissions.length}</b><small>Permissions</small></span>}
+                    {dashboardCardFieldVisibility.profile!.scope && <span><b>{profile!.scope.type}</b><small>Scope</small></span>}
+                    {dashboardCardFieldVisibility.profile!.edit && <span><b>Edit</b><small>Profile</small></span>}
                   </div>
                 </button>
               )}
             </section>
 
-            {(profile.scope.is_tenant || profile.scope.is_branch) && (
+            {(profile!.scope.is_tenant || profile!.scope.is_branch) && (
               <section className="dashboard-operating-tenant-summary operation-helicopter-view">
                 <div className="section-heading">
                   <div>
@@ -6221,7 +6240,7 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {(profile.tenant_assignments ?? []).map((assignment, index) => (
+                        {(profile!.tenant_assignments ?? []).map((assignment, index) => (
                           <tr key={`${assignment.tenant?.id ?? 'tenant'}-${assignment.branch?.id ?? index}`}>
                             <td>{assignment.branch?.name || assignment.tenant?.name || profileInstitution}</td>
                             <td>{assignment.branch?.code || assignment.tenant?.slug || 'Main'}</td>
@@ -6269,10 +6288,10 @@ function App() {
                       </thead>
                       <tbody>
                         <tr>
-                          <td>{profile.user.name || 'Current user'}</td>
-                          <td>{profile.user.email}</td>
-                          <td>{profile.user.phone || 'Not provided'}</td>
-                          <td>{profile.scope.type}</td>
+                          <td>{profile!.user.name || 'Current user'}</td>
+                          <td>{profile!.user.email}</td>
+                          <td>{profile!.user.phone || 'Not provided'}</td>
+                          <td>{profile!.scope.type}</td>
                           <td>
                             <button
                               type="button"
@@ -6311,8 +6330,8 @@ function App() {
           >
             <ProductInventoryPreview
               key={activeInventoryView}
-              token={session.token}
-              profile={profile}
+              token={session!.token}
+              profile={profile!}
               activeView={activeInventoryView}
               onActiveViewChange={setActiveInventoryView}
               showInternalNavigation={false}
@@ -6321,7 +6340,7 @@ function App() {
             {activeInventoryView === 'product-master' && (
               <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
 
-                <ProductInventoryActions token={session.token} profile={profile} />
+                <ProductInventoryActions token={session!.token} profile={profile!} />
 
               </div>
             )}
@@ -6348,7 +6367,7 @@ function App() {
         return (
           <section className="section-page">
             <InsuranceManagementWorkspace
-              token={session.token}
+              token={session!.token}
               tenantSlug={tenantSlug}
               activeWorkspace={activeInsuranceWorkspace}
               onWorkspaceChange={setActiveInsuranceWorkspace}
@@ -6368,28 +6387,28 @@ function App() {
         return (
           <section className="section-page">
 {tenantOperationsPanel}
-            <PharmaCoreEditor token={session.token} profile={profile} />
+            <PharmaCoreEditor token={session!.token} profile={profile!} />
           </section>
         );
       case 'security':
         return (
           <section className="section-page">
 <section className="content-grid security-content-grid">
-            <UserSecurityManagement token={session.token} tenantSlug="vitapharma" />
+            <UserSecurityManagement token={session!.token} tenantSlug="vitapharma" />
               <article className="panel">
                 <h2>Resolved access profile</h2>
                 <div className="scope-list">
-                  <div><span>Scope type</span><strong>{profile.scope.type}</strong></div>
-                  <div><span>Solution ID</span><strong>{profile.scope.solution_id ?? 'All'}</strong></div>
-                  <div><span>Tenant ID</span><strong>{profile.scope.tenant_id ?? 'All / none'}</strong></div>
-                  <div><span>Branch ID</span><strong>{profile.scope.branch_id ?? 'All / none'}</strong></div>
+                  <div><span>Scope type</span><strong>{profile!.scope.type}</strong></div>
+                  <div><span>Solution ID</span><strong>{profile!.scope.solution_id ?? 'All'}</strong></div>
+                  <div><span>Tenant ID</span><strong>{profile!.scope.tenant_id ?? 'All / none'}</strong></div>
+                  <div><span>Branch ID</span><strong>{profile!.scope.branch_id ?? 'All / none'}</strong></div>
                 </div>
               </article>
 
               <article className="panel">
                 <h2>Roles</h2>
                 <div className="tag-list">
-                  {profile.roles.map((role) => (
+                  {profile!.roles.map((role) => (
                     <span key={`${role.code}-${role.tenant_id ?? 'global'}`}>{role.name}</span>
                   ))}
                 </div>
@@ -6406,7 +6425,7 @@ function App() {
                   </div>
                 </div>
 
-                {renderProfilePermissionMatrix(profile)}
+                {renderProfilePermissionMatrix(profile!)}
               </article>
               {accessControlPanel}
               {tenantAssignmentsPanel}
@@ -6416,26 +6435,26 @@ function App() {
       case 'corporate-email':
         return (
           <section className="section-page">
-<CorporateEmailPanel token={session.token} />
+<CorporateEmailPanel token={session!.token} />
           </section>
         );
       case 'pharmacist-chat':
         return (
           <section className="section-page">
-<PharmacistChatPanel token={session.token} />
+<PharmacistChatPanel token={session!.token} />
           </section>
         );
       case 'notifications':
         return (
           <section className="section-page">
-<NotificationCenterPanel token={session.token} profile={profile} />
+<NotificationCenterPanel token={session!.token} profile={profile!} />
           </section>
         );
       case 'market-management':
       case 'localization':
         return (
           <section className="section-page">
-<MarketLocalizationPanel token={session.token} profile={profile} />
+<MarketLocalizationPanel token={session!.token} profile={profile!} />
           </section>
         );
       case 'nearby-providers':
@@ -6547,7 +6566,7 @@ function App() {
                   ['Suppliers', 'Supplier setup, PO, receiving', 'suppliers' as AdminSectionKey],
                   ['Ad-hoc Report', 'Operating alerts and reports', 'reports' as AdminSectionKey],
                 ].map(([title, text, section]) => (
-                  <button key={title} type="button" onClick={() => navigateToSection(section)}>
+                  <button key={title} type="button" onClick={() => navigateToSection(section as AdminSectionKey)}>
                     <strong>{title}</strong>
                     <span>{text}</span>
                   </button>
@@ -6557,8 +6576,8 @@ function App() {
 
             {shouldShowTenantOperationsDashboard && homeWidgets['tenant-dashboard'] ? (
               <TenantPharmacyDashboard
-                token={session.token}
-                profile={profile}
+                token={session!.token}
+                profile={profile!}
                 onOpenSection={(section) => navigateToSection(section)}
               />
             ) : (
@@ -6768,15 +6787,15 @@ function App() {
                   <dl>
                     <div>
                       <dt>Name</dt>
-                      <dd>{profile.user.name || 'Not provided'}</dd>
+                      <dd>{profile!.user.name || 'Not provided'}</dd>
                     </div>
                     <div>
                       <dt>Email</dt>
-                      <dd>{profile.user.email}</dd>
+                      <dd>{profile!.user.email}</dd>
                     </div>
                     <div>
                       <dt>Phone</dt>
-                      <dd>{profile.user.phone || 'Not provided'}</dd>
+                      <dd>{profile!.user.phone || 'Not provided'}</dd>
                     </div>
                     <div>
                       <dt>Institution</dt>

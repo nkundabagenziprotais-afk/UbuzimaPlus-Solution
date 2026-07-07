@@ -1958,6 +1958,15 @@ export type PharmaSupplierInvoice = {
   created_at?: string | null;
 };
 
+export type TenantPayload = {
+  id: number;
+  uuid?: string | null;
+  name: string;
+  slug: string;
+  code?: string | null;
+  status?: string | null;
+};
+
 export type PharmaSupplierInvoicesResponse = {
   tenant: TenantPayload;
   supplier_invoices: PharmaSupplierInvoice[];
@@ -2336,12 +2345,10 @@ export async function getPharmaCustomerCreditExposureExport(
   token: string,
   tenantSlug: string,
 ): Promise<PharmaCustomerCreditExposureExportResponse> {
-  return apiRequest<PharmaCustomerCreditExposureExportResponse>(
-    "/api/v1/pharmaco/reports/customer-credit-exposure/export",
-    {
-      token,
-      tenantSlug,
-    },
+  return getJsonWithTenant<PharmaCustomerCreditExposureExportResponse>(
+    token,
+    '/pharmaco/reports/customer-credit-exposure/export',
+    tenantSlug,
   );
 }
 

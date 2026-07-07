@@ -11,6 +11,11 @@ import {
   createPharmaSale,
 } from '../lib/api';
 
+
+type SalePreviewLine = {
+  index: number;
+} & Record<string, number>;
+
 type Props = {
   token: string;
   tenantSlug: string;
@@ -245,18 +250,6 @@ export function SalesCreationPanel({
         return leftRisk - rightRisk || left.name.localeCompare(right.name);
       });
   }, [activeCategory, activeProducts, productSearch]);
-
-  function bestBatch(productId: number): PharmaStockBatch | undefined {
-    return batches
-      .filter((batch) => batch.product.id === productId)
-      .filter((batch) => batch.status === 'active' && batch.available_quantity > 0)
-      .sort((left, right) => {
-        const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
-        const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
-
-        return leftExpiry - rightExpiry || left.id - right.id;
-      })[0];
-  }
 
   function preferredPrice(product: PharmaProduct): string {
     const price = bestBatch(product.id)?.selling_price;
@@ -698,7 +691,9 @@ export function SalesCreationPanel({
                 if (!item.product_id) return null;
 
                 const product = activeProducts.find((entry) => entry.id === Number(item.product_id));
-                const linePreview = salePreview.lines.find((line) => line.index === index);
+                const linePreview = (
+                  salePreview as typeof salePreview & { lines: SalePreviewLine[] }
+                ).lines?.find((line) => line.index === index);
                 const productBatches = product ? stockBatchesForProduct(product.id) : [];
 
                 return (
@@ -768,7 +763,7 @@ export function SalesCreationPanel({
                     <div className="pos-line-calculated">
                       <span>Tax</span>
                       <strong>{money(linePreview?.taxAmount ?? 0)}</strong>
-                      <small>{linePreview?.taxRule?.name ?? 'No active rule'}</small>
+                      <small>{linePreview?.taxRule ? `Tax rule #${linePreview.taxRule}` : 'No active rule'}</small>
                     </div>
 
                     <button type="button" onClick={() => removeSaleLine(index)}>
