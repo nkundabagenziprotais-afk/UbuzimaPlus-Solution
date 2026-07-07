@@ -4474,6 +4474,27 @@ function App() {
         minute: '2-digit',
       });
 
+      const posPaymentSummarySignature = [
+        posLiveCartItems.length
+          ? posLiveCartItems
+              .map((item) =>
+                [
+                  item.code,
+                  Number(item.batchId || 0),
+                  Number(item.quantity || 0),
+                  Number(item.unitPrice || 0),
+                ].join(':'),
+              )
+              .join('|')
+          : 'empty-cart',
+        posPaymentMethod,
+        posDiscountAmount,
+        posInsuranceProvider,
+        posInsuranceInstitution,
+        posSummaryCustomerContributionPercent,
+        posSummaryInsurerContributionPercent,
+      ].join('::');
+
       void posSummarySyncKey;
       const posPaymentOperationalCards = [
         ['Date', posSummaryTimestamp],
@@ -4925,7 +4946,16 @@ function App() {
                   </button>
                 </div>
 
-                <section className="pos-payment-summary-section pos-confirmation-rail">
+                <section
+                  key={posPaymentSummarySignature}
+                  className="pos-payment-summary-section pos-confirmation-rail"
+                  data-pos-summary-build="atomic-payment-summary-v1"
+                  data-pos-summary-signature={posPaymentSummarySignature}
+                  data-pos-summary-lines={posFinancialLineCount}
+                  data-pos-summary-units={posCartOperatingUnits}
+                  data-pos-summary-subtotal={posFinancialSubtotal}
+                  data-pos-summary-total={posSummaryTotalAmount}
+                >
                 <section className="pos-summary-confirmation-card">
                   <div className="section-heading">
                     <div>
