@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\TenantPublicStatusController;
 use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceManagementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
@@ -292,6 +293,21 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     'checkEligibility',
                 ]
             );
+
+            Route::get('/claims', [
+                InsuranceClaimController::class,
+                'claims',
+            ]);
+
+            Route::post('/claims/from-sale', [
+                InsuranceClaimController::class,
+                'createFromSale',
+            ]);
+
+            Route::get('/claims/{insuranceClaim}', [
+                InsuranceClaimController::class,
+                'claim',
+            ]);
 
             Route::post('/pricing/resolve', [
                 InsuranceManagementController::class,

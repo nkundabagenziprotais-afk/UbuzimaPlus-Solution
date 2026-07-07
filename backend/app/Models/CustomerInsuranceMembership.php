@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CustomerInsuranceMembership extends Model
@@ -71,5 +72,13 @@ class CustomerInsuranceMembership extends Model
     public function verifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->hasMany(
+            InsuranceClaim::class,
+            'customer_insurance_membership_id'
+        );
     }
 }

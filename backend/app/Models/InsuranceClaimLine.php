@@ -42,4 +42,20 @@ class InsuranceClaimLine extends Model
     {
         return $this->belongsTo(InsuranceClaim::class, 'insurance_claim_id');
     }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(
+            Product::class,
+            'product_id'
+        );
+    }
+
+    public function saleItem(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoSaleItem::class,
+            'sale_item_id'
+        );
+    }
 }

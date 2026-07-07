@@ -57,4 +57,28 @@ class InsuranceClaim extends Model
     {
         return $this->hasMany(InsuranceClaimLine::class);
     }
+
+    public function scheme(): BelongsTo
+    {
+        return $this->belongsTo(
+            InsuranceScheme::class,
+            'insurance_scheme_id'
+        );
+    }
+
+    public function membership(): BelongsTo
+    {
+        return $this->belongsTo(
+            CustomerInsuranceMembership::class,
+            'customer_insurance_membership_id'
+        );
+    }
+
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoSale::class,
+            'sale_id'
+        );
+    }
 }
