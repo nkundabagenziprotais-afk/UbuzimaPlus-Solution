@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\PharmaCo360;
 use App\Http\Controllers\Controller;
 use App\Models\InsuranceClaim;
 use App\Models\InsurancePartner;
+use App\Models\InsurancePayment;
 use App\Models\InsuranceReconciliationBatch;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
@@ -304,4 +305,224 @@ class InsuranceReconciliationController extends Controller
             'batch' => $batch,
         ]);
     }
+    public function reconcile(
+        Request $request,
+        InsuranceReconciliationBatch $insuranceReconciliationBatch,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless(
+            (int) $insuranceReconciliationBatch->tenant_id ===
+                (int) $tenant->id,
+            404
+        );
+
+        $validated = $request->validate([
+            'payment_ids' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'payment_ids.*' => [
+                'integer',
+                'distinct',
+            ],
+            'notes' => [
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+        ]);
+
+        $batch = DB::transaction(function () use (
+            $request,
+            $tenant,
+            $insuranceReconciliationBatch,
+            $validated
+        ): InsuranceReconciliationBatch {
+            $lockedBatch = InsuranceReconciliationBatch::query()
+                ->where('tenant_id', $tenant->id)
+                ->lockForUpdate()
+                ->findOrFail($insuranceReconciliationBatch->id);
+
+            if (!in_array(
+                $lockedBatch->status,
+                [
+                    'submitted',
+                    'partially_reconciled',
+                ],
+                true
+            )) {
+                abort(
+                    409,
+                    'Only a submitted or partially reconciled batch can be reconciled.'
+                );
+            }
+
+            $claimIds = collect(
+                $lockedBatch->metadata['claim_ids'] ?? []
+            )
+                ->map(fn ($id) => (int) $id)
+                ->values();
+
+            if ($claimIds->isEmpty()) {
+                abort(
+                    409,
+                    'The reconciliation batch has no eligible claims.'
+                );
+            }
+
+            $payments = InsurancePayment::query()
+                ->where('tenant_id', $tenant->id)
+                ->where(
+                    'insurance_partner_id',
+                    $lockedBatch->insurance_partner_id
+                )
+                ->whereIn('id', $validated['payment_ids'])
+                ->where(function ($query) use ($lockedBatch) {
+                    $query
+                        ->whereNull(
+                            'insurance_reconciliation_batch_id'
+                        )
+                        ->orWhere(
+                            'insurance_reconciliation_batch_id',
+                            $lockedBatch->id
+                        );
+                })
+                ->lockForUpdate()
+                ->get();
+
+            if ($payments->count() !== count($validated['payment_ids'])) {
+                abort(
+                    422,
+                    'Every selected payment must belong to the tenant and partner and must not belong to another reconciliation batch.'
+                );
+            }
+
+            foreach ($payments as $payment) {
+                $claimId = (int) data_get(
+                    $payment->allocation_details,
+                    'insurance_claim_id'
+                );
+
+                if (!$claimIds->contains($claimId)) {
+                    abort(
+                        422,
+                        'Every selected payment must be allocated to a claim included in the reconciliation batch.'
+                    );
+                }
+            }
+
+            InsurancePayment::query()
+                ->whereIn('id', $payments->pluck('id'))
+                ->update([
+                    'insurance_reconciliation_batch_id' =>
+                        $lockedBatch->id,
+                ]);
+
+            $totalPaid = round(
+                (float) InsurancePayment::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->where(
+                        'insurance_reconciliation_batch_id',
+                        $lockedBatch->id
+                    )
+                    ->sum('amount'),
+                2
+            );
+
+            $approvedAmount = round(
+                (float) $lockedBatch->approved_amount,
+                2
+            );
+
+            if ($totalPaid > $approvedAmount) {
+                abort(
+                    422,
+                    'Reconciliation payments cannot exceed the batch approved amount.'
+                );
+            }
+
+            $isFullyReconciled =
+                $totalPaid >= $approvedAmount;
+
+            $lockedBatch->paid_amount = $totalPaid;
+            $lockedBatch->status = $isFullyReconciled
+                ? 'reconciled'
+                : 'partially_reconciled';
+            $lockedBatch->reconciled_at =
+                $isFullyReconciled ? now() : null;
+            $lockedBatch->metadata = [
+                ...($lockedBatch->metadata ?? []),
+                'latest_reconciliation' => [
+                    'payment_ids' =>
+                        $payments->pluck('id')->values()->all(),
+                    'payment_references' =>
+                        $payments
+                            ->pluck('payment_reference')
+                            ->values()
+                            ->all(),
+                    'paid_amount' => $totalPaid,
+                    'remaining_amount' => round(
+                        $approvedAmount - $totalPaid,
+                        2
+                    ),
+                    'notes' => $validated['notes'] ?? null,
+                    'reconciled_by' =>
+                        $request->user()->id,
+                    'reconciled_at' =>
+                        now()->toISOString(),
+                ],
+            ];
+            $lockedBatch->save();
+
+            return $lockedBatch->fresh([
+                'partner',
+                'payments',
+            ]);
+        });
+
+        $scope = $scopeResolver->resolveForUser(
+            $request->user()
+        );
+
+        $auditLogService->record(
+            action:
+                'pharmaco.insurance_reconciliation_batch.reconciled',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'batch_id' => $batch->id,
+                'batch_number' => $batch->batch_number,
+                'approved_amount' =>
+                    (float) $batch->approved_amount,
+                'paid_amount' =>
+                    (float) $batch->paid_amount,
+                'remaining_amount' => round(
+                    (float) $batch->approved_amount
+                    - (float) $batch->paid_amount,
+                    2
+                ),
+                'status' => $batch->status,
+                'payment_count' =>
+                    $batch->payments->count(),
+            ],
+            dataClassification: 'confidential',
+            auditableType: InsuranceReconciliationBatch::class,
+            auditableId: $batch->id
+        );
+
+        return response()->json([
+            'message' =>
+                'Insurance reconciliation batch processed successfully.',
+            'tenant' => [
+                'id' => $tenant->id,
+                'slug' => $tenant->slug,
+            ],
+            'batch' => $batch,
+        ]);
+    }
+
 }

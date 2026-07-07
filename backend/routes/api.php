@@ -361,6 +361,14 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 ]
             );
 
+            Route::post(
+                '/reconciliation-batches/{insuranceReconciliationBatch}/reconcile',
+                [
+                    InsuranceReconciliationController::class,
+                    'reconcile',
+                ]
+            );
+
             Route::get('/claims/{insuranceClaim}', [
                 InsuranceClaimController::class,
                 'claim',

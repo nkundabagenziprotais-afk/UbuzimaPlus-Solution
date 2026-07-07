@@ -1010,6 +1010,163 @@ class PharmacoInsuranceClaimGenerationApiTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_submitted_batch_can_be_fully_reconciled(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndApproveClaim();
+
+        $paymentResponse = $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/payments",
+                [
+                    'payment_reference' =>
+                        'INS-REC-PAY-001',
+                    'payment_date' =>
+                        now()->toDateString(),
+                    'amount' =>
+                        (float) $claim->approved_amount,
+                ]
+            )
+            ->assertCreated();
+
+        $paymentId = $paymentResponse->json('payment.id');
+
+        $batchResponse = $this->withTenant()
+            ->postJson(
+                '/api/v1/pharmaco/insurance/reconciliation-batches',
+                [
+                    'insurance_partner_id' =>
+                        $claim->insurance_partner_id,
+                    'batch_number' =>
+                        'REC-FULL-001',
+                    'period_from' =>
+                        $claim->service_date->toDateString(),
+                    'period_to' =>
+                        $claim->service_date->toDateString(),
+                    'claim_ids' => [$claim->id],
+                ]
+            )
+            ->assertCreated();
+
+        $batchId = $batchResponse->json('batch.id');
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/reconciliation-batches/{$batchId}/submit"
+            )
+            ->assertOk();
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/reconciliation-batches/{$batchId}/reconcile",
+                [
+                    'payment_ids' => [$paymentId],
+                    'notes' =>
+                        'Full batch reconciliation.',
+                ]
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'message',
+                'Insurance reconciliation batch processed successfully.'
+            )
+            ->assertJsonPath(
+                'batch.status',
+                'reconciled'
+            );
+
+        $this->assertDatabaseHas(
+            'insurance_payments',
+            [
+                'id' => $paymentId,
+                'insurance_reconciliation_batch_id' =>
+                    $batchId,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'audit_logs',
+            [
+                'action' =>
+                    'pharmaco.insurance_reconciliation_batch.reconciled',
+                'auditable_type' =>
+                    InsuranceReconciliationBatch::class,
+                'auditable_id' =>
+                    $batchId,
+            ]
+        );
+    }
+
+    public function test_batch_rejects_payment_for_claim_outside_batch(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claimOne = $this->createAndApproveClaim();
+        $claimTwo = $this->createAndApproveClaim();
+
+        $paymentResponse = $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claimTwo->id}/payments",
+                [
+                    'payment_reference' =>
+                        'INS-REC-PAY-OUTSIDE-001',
+                    'payment_date' =>
+                        now()->toDateString(),
+                    'amount' =>
+                        (float) $claimTwo->approved_amount,
+                ]
+            )
+            ->assertCreated();
+
+        $paymentId = $paymentResponse->json('payment.id');
+
+        $batchResponse = $this->withTenant()
+            ->postJson(
+                '/api/v1/pharmaco/insurance/reconciliation-batches',
+                [
+                    'insurance_partner_id' =>
+                        $claimOne->insurance_partner_id,
+                    'batch_number' =>
+                        'REC-OUTSIDE-001',
+                    'period_from' =>
+                        $claimOne->service_date->toDateString(),
+                    'period_to' =>
+                        $claimOne->service_date->toDateString(),
+                    'claim_ids' => [$claimOne->id],
+                ]
+            )
+            ->assertCreated();
+
+        $batchId = $batchResponse->json('batch.id');
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/reconciliation-batches/{$batchId}/submit"
+            )
+            ->assertOk();
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/reconciliation-batches/{$batchId}/reconcile",
+                [
+                    'payment_ids' => [$paymentId],
+                ]
+            )
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas(
+            'insurance_payments',
+            [
+                'id' => $paymentId,
+                'insurance_reconciliation_batch_id' =>
+                    null,
+            ]
+        );
+    }
+
     private function createAndApproveClaim(): InsuranceClaim
     {
         $claim = $this->createAndSubmitClaim();
@@ -1167,6 +1324,69 @@ class PharmacoInsuranceClaimGenerationApiTest extends TestCase
             )
             ->firstOrFail();
 
+        if (
+            $sale->status !== 'draft'
+            || (bool) data_get(
+                $sale->metadata,
+                'stock_deducted',
+                false
+            )
+        ) {
+            $sourceSale = $sale;
+
+            $sale = $sourceSale->replicate([
+                'uuid',
+                'sale_number',
+                'status',
+                'paid_amount',
+                'balance_amount',
+                'payment_status',
+                'sold_at',
+                'metadata',
+                'created_at',
+                'updated_at',
+            ]);
+
+            $sale->uuid = (string) Str::uuid();
+            $sale->sale_number =
+                'SALE-CLAIM-' .
+                Str::upper(Str::random(10));
+            $sale->status = 'draft';
+            $sale->paid_amount = 0;
+            $sale->balance_amount =
+                $sourceSale->total_amount;
+            $sale->payment_status = 'unpaid';
+            $sale->sold_at = null;
+            $sale->metadata = null;
+            $sale->save();
+
+            foreach ($sourceSale->items as $sourceItem) {
+                $item = $sourceItem->replicate([
+                    'uuid',
+                    'pharmaco_sale_id',
+                    'stock_batch_id',
+                    'stock_location_id',
+                    'status',
+                    'metadata',
+                    'created_at',
+                    'updated_at',
+                ]);
+
+                $item->uuid = (string) Str::uuid();
+                $item->pharmaco_sale_id = $sale->id;
+                $item->stock_batch_id = null;
+                $item->stock_location_id = null;
+                $item->status = 'pending';
+                $item->metadata = null;
+                $item->save();
+            }
+
+            $sale->load([
+                'items',
+                'customer',
+            ]);
+        }
+
         if (!$sale->pharmaco_customer_id) {
             $customer =
                 PharmacoCustomer::query()
@@ -1255,7 +1475,8 @@ class PharmacoInsuranceClaimGenerationApiTest extends TestCase
                     'insurance_scheme_id' =>
                         $scheme->id,
                     'member_number' =>
-                        'CLAIM-MEMBER-001',
+                        'CLAIM-MEMBER-' .
+                        Str::upper(Str::random(8)),
                     'relationship_to_principal' =>
                         'self',
                     'coverage_from' =>
