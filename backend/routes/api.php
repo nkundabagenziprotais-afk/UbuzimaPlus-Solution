@@ -75,7 +75,7 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
     Route::put('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'update'])
         ->middleware('permission:roles.manage');
 
-    Route::delete('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'destroy'])
+    Route::delete('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'deactivate'])
         ->middleware('permission:roles.manage');
 
     Route::get('/inventory', [\App\Http\Controllers\Api\V1\AccessCheckController::class, 'inventoryAccessCheck'])

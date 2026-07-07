@@ -957,7 +957,16 @@ const granularMenuPermissionMap: Record<string, string[]> = {
     'inventory.table_settings.view',
     'inventory.expiry_labels.view',
   ],
-  insurance: ['pharmaco.insurance.manage'],
+  insurance: [
+    'insurance.dashboard.view',
+    'insurance.configuration.view',
+    'insurance.memberships.view',
+    'insurance.eligibility.check',
+    'insurance.claims.view',
+    'insurance.reconciliation.view',
+    'insurance.audit.view',
+    'pharmaco.insurance.manage',
+  ],
   pos: [
     'pos.sales.view',
     'pos.receipts.view',
@@ -987,12 +996,13 @@ const granularMenuPermissionMap: Record<string, string[]> = {
     'reports.audit.view',
   ],
   'tenant-setup': [
-    'tenant.profile!.view',
+    'tenant.profile.view',
     'tenant.branches.view',
     'tenant.departments.view',
     'tenant.capabilities.view',
   ],
   security: [
+    'users.staff.view',
     'security.users.view',
     'security.roles.view',
     'security.permissions.view',
@@ -1030,16 +1040,16 @@ const granularLeftSubmenuPermissionMap: Record<string, Record<string, string[]>>
     'expiry-labels': ['inventory.expiry_labels.view'],
   },
   insurance: {
-    overview: ['pharmaco.insurance.manage'],
-    partners: ['pharmaco.insurance.manage'],
-    institutions: ['pharmaco.insurance.manage'],
-    schemes: ['pharmaco.insurance.manage'],
-    'price-lists': ['pharmaco.insurance.manage'],
-    'product-prices': ['pharmaco.insurance.manage'],
-    'contribution-rules': ['pharmaco.insurance.manage'],
-    'claims-readiness': ['pharmaco.insurance.manage'],
-    'reconciliation-readiness': ['pharmaco.insurance.manage'],
-    'audit-readiness': ['pharmaco.insurance.manage'],
+    overview: ['insurance.dashboard.view', 'pharmaco.insurance.manage'],
+    partners: ['insurance.configuration.view', 'pharmaco.insurance.manage'],
+    institutions: ['insurance.configuration.view', 'pharmaco.insurance.manage'],
+    schemes: ['insurance.configuration.view', 'pharmaco.insurance.manage'],
+    'price-lists': ['insurance.configuration.view', 'pharmaco.insurance.manage'],
+    'product-prices': ['insurance.configuration.view', 'pharmaco.insurance.manage'],
+    'contribution-rules': ['insurance.configuration.view', 'pharmaco.insurance.manage'],
+    'claims-readiness': ['insurance.claims.view', 'pharmaco.insurance.manage'],
+    'reconciliation-readiness': ['insurance.reconciliation.view', 'pharmaco.insurance.manage'],
+    'audit-readiness': ['insurance.audit.view', 'pharmaco.insurance.manage'],
   },
   pos: {
     overview: ['pos.sales.view'],
@@ -1158,7 +1168,13 @@ function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
     'owner',
   ]);
 
-  return profileRoleTokens(profile).some((role) => adminRoles.has(role));
+  return profileRoleTokens(profile).some((role) =>
+    adminRoles.has(role)
+    || Array.from(adminRoles).some((adminRole) =>
+      role.endsWith(`_${adminRole}`)
+      || role.includes(`_${adminRole}_`)
+    )
+  );
 }
 
 function profileHasGranularPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
@@ -1644,7 +1660,7 @@ const granularPermissionMatrix: PermissionMatrixGroup[] = [
         label: 'Tenant Profile',
         description: 'Tenant profile and operational setup.',
         permissions: {
-          view: 'tenant.profile!.view',
+          view: 'tenant.profile.view',
           add: 'tenant.profile!.add',
           edit: 'tenant.profile!.edit',
           delete: 'tenant.profile!.delete',
@@ -6081,7 +6097,7 @@ function App() {
             </section>
 
             <section className="dashboard-operating-grid dashboard-operating-grid--focused">
-              {dashboardCardVisibility.inventory && (
+              {dashboardCardVisibility.inventory && profileHasGranularPermission(profile, granularMenuPermissionMap.inventory) && (
                 <button
                   type="button"
                   className="dashboard-operating-card dashboard-operating-card--metrics priority"
@@ -6099,7 +6115,7 @@ function App() {
                 </button>
               )}
 
-              {dashboardCardVisibility.pos && (
+              {dashboardCardVisibility.pos && profileHasGranularPermission(profile, granularMenuPermissionMap.pos) && (
                 <button
                   type="button"
                   className="dashboard-operating-card dashboard-operating-card--metrics"
@@ -6117,7 +6133,7 @@ function App() {
                 </button>
               )}
 
-              {dashboardCardVisibility.finance && (
+              {dashboardCardVisibility.finance && profileHasGranularPermission(profile, granularMenuPermissionMap.finance) && (
                 <button
                   type="button"
                   className="dashboard-operating-card dashboard-operating-card--metrics"
@@ -6153,7 +6169,7 @@ function App() {
                 </button>
               )}
 
-              {dashboardCardVisibility.communications && (
+              {dashboardCardVisibility.communications && profileHasGranularPermission(profile, ['communications.email.view', 'communications.notifications.view', 'communications.chat.view']) && (
                 <button
                   type="button"
                   className="dashboard-operating-card dashboard-operating-card--metrics mail"
@@ -6168,7 +6184,7 @@ function App() {
                 </button>
               )}
 
-              {dashboardCardVisibility['ai-reports'] && (
+              {dashboardCardVisibility['ai-reports'] && profileHasGranularPermission(profile, [...granularMenuPermissionMap.reports, 'ai.use']) && (
                 <button
                   type="button"
                   className="dashboard-operating-card dashboard-operating-card--metrics"
@@ -6565,7 +6581,12 @@ function App() {
                   ['Review Inventory', 'Products, stock, batches, expiry', 'inventory' as AdminSectionKey],
                   ['Suppliers', 'Supplier setup, PO, receiving', 'suppliers' as AdminSectionKey],
                   ['Ad-hoc Report', 'Operating alerts and reports', 'reports' as AdminSectionKey],
-                ].map(([title, text, section]) => (
+                ].filter(([, , section]) =>
+                  profileHasGranularPermission(
+                    profile,
+                    granularMenuPermissionMap[section as AdminSectionKey] ?? [],
+                  )
+                ).map(([title, text, section]) => (
                   <button key={title} type="button" onClick={() => navigateToSection(section as AdminSectionKey)}>
                     <strong>{title}</strong>
                     <span>{text}</span>
@@ -6574,7 +6595,7 @@ function App() {
               </section>
             )}
 
-            {shouldShowTenantOperationsDashboard && homeWidgets['tenant-dashboard'] ? (
+            {profileHasAdminAuthority(profile) && shouldShowTenantOperationsDashboard && homeWidgets['tenant-dashboard'] ? (
               <TenantPharmacyDashboard
                 token={session!.token}
                 profile={profile!}

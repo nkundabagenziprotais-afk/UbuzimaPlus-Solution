@@ -90,6 +90,21 @@ class TenantUserManagementController extends Controller
             'pharmaco.finance.reconciliation.manage',
             'pharmaco.finance.export',
 
+            'pharmaco.insurance.manage',
+            'insurance.dashboard.view',
+            'insurance.configuration.view',
+            'insurance.configuration.manage',
+            'insurance.memberships.view',
+            'insurance.memberships.manage',
+            'insurance.eligibility.check',
+            'insurance.claims.view',
+            'insurance.claims.create',
+            'insurance.claims.adjudicate',
+            'insurance.claims.payments',
+            'insurance.reconciliation.view',
+            'insurance.reconciliation.manage',
+            'insurance.audit.view',
+
             'pharmaco.reports.view',
             'pharmaco.reports.export',
             'pharmaco.reports.sales',
@@ -350,11 +365,15 @@ class TenantUserManagementController extends Controller
                     'name' => $assignment->branch->name,
                 ] : null,
                 'roles' => $assignment->user->roles
-                    ->filter(fn (Role $role) => (int) ($role->pivot->tenant_id ?? 0) === (int) $tenant->id)
+                    ->filter(fn (Role $role) =>
+                        (int) ($role->pivot->tenant_id ?? 0) === (int) $tenant->id
+                        && ($role->pivot->status ?? 'active') === 'active'
+                    )
                     ->map(fn (Role $role) => [
                         'id' => $role->id,
                         'name' => $role->name,
-                        'code' => $role->code,
+                        'code' => $this->normalizeRequestedRoleCode($tenant, $role->code),
+                        'stored_code' => $role->code,
                         'permissions' => $role->permissions->pluck('code')->values(),
                     ])
                     ->values(),
@@ -384,7 +403,7 @@ class TenantUserManagementController extends Controller
             'permissions.*' => ['string', 'max:100'],
             'password' => ['nullable', 'string', 'min:8', 'max:100'],
             'branch_id' => ['nullable', 'integer'],
-            'status' => ['nullable', 'string', 'max:30'],
+            'status' => ['nullable', 'string', 'in:active,invited,suspended,inactive'],
         ]);
 
         $temporaryPassword = $validated['password'] ?? (Str::random(10) . '1!');
@@ -420,14 +439,26 @@ class TenantUserManagementController extends Controller
                 $tenant,
                 $validated['role_code'],
                 $validated['permissions'] ?? null,
+                $user,
             );
+
+            $existingTenantRoleIds = $user->roles()
+                ->wherePivot('tenant_id', $tenant->id)
+                ->get()
+                ->pluck('id');
+
+            foreach ($existingTenantRoleIds as $roleId) {
+                $user->roles()->updateExistingPivot($roleId, ['status' => 'inactive']);
+            }
+
+            $assignmentStatus = $validated['status'] ?? 'active';
 
             $user->roles()->syncWithoutDetaching([
                 $role->id => [
                     'tenant_id' => $tenant->id,
                     'solution_id' => null,
                     'branch_id' => $validated['branch_id'] ?? null,
-                    'status' => 'active',
+                    'status' => in_array($assignmentStatus, ['active', 'invited'], true) ? 'active' : 'inactive',
                 ],
             ]);
 
@@ -445,12 +476,11 @@ class TenantUserManagementController extends Controller
             ],
         ], 201);
     }
-
     public function update(Request $request, User $user): JsonResponse
     {
         $tenant = $this->resolveTenant($request);
 
-        TenantUser::query()
+        $assignment = TenantUser::query()
             ->where('tenant_id', $tenant->id)
             ->where('user_id', $user->id)
             ->firstOrFail();
@@ -463,16 +493,79 @@ class TenantUserManagementController extends Controller
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'max:100'],
             'branch_id' => ['nullable', 'integer'],
-            'status' => ['nullable', 'string', 'max:30'],
+            'status' => ['nullable', 'string', 'in:active,invited,suspended,inactive'],
         ]);
 
-        DB::transaction(function () use ($tenant, $validated, $user) {
+        $updatedUser = DB::transaction(function () use ($tenant, $assignment, $validated, $user) {
             $user->name = $validated['name'] ?? $user->name;
-            $user->phone = $validated['phone'] ?? $user->phone;
-            if (array_key_exists('job_title', $validated)) {
-                $user->job_title = $validated['job_title'];
-            }
+            $user->phone = array_key_exists('phone', $validated)
+                ? $validated['phone']
+                : $user->phone;
             $user->save();
+
+            $assignmentStatus = $validated['status'] ?? $assignment->status ?? 'active';
+
+            $assignment->fill([
+                'branch_id' => $validated['branch_id'] ?? $assignment->branch_id,
+                'job_title' => array_key_exists('job_title', $validated)
+                    ? $validated['job_title']
+                    : $assignment->job_title,
+                'status' => $assignmentStatus,
+            ]);
+            $assignment->save();
+
+            $role = $this->ensureTenantRole(
+                $tenant,
+                $validated['role_code'],
+                $validated['permissions'] ?? null,
+                $user,
+            );
+
+            $existingTenantRoleIds = $user->roles()
+                ->wherePivot('tenant_id', $tenant->id)
+                ->get()
+                ->pluck('id');
+
+            foreach ($existingTenantRoleIds as $roleId) {
+                $user->roles()->updateExistingPivot($roleId, ['status' => 'inactive']);
+            }
+
+            $user->roles()->syncWithoutDetaching([
+                $role->id => [
+                    'tenant_id' => $tenant->id,
+                    'solution_id' => null,
+                    'branch_id' => $assignment->branch_id,
+                    'status' => in_array($assignmentStatus, ['active', 'invited'], true) ? 'active' : 'inactive',
+                ],
+            ]);
+
+            return $user->fresh(['roles.permissions', 'tenantAssignments']);
+        });
+
+        return response()->json([
+            'message' => 'User profile, role, permissions and status updated successfully.',
+            'user' => [
+                'id' => $updatedUser->id,
+                'name' => $updatedUser->name,
+                'email' => $updatedUser->email,
+                'phone' => $updatedUser->phone,
+                'status' => $assignment->fresh()->status,
+            ],
+        ]);
+    }
+
+
+    public function deactivate(Request $request, User $user): JsonResponse
+    {
+        $tenant = $this->resolveTenant($request);
+
+        $assignment = TenantUser::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        DB::transaction(function () use ($tenant, $assignment, $user) {
+            $assignment->forceFill(['status' => 'inactive'])->save();
 
             $roleIds = $user->roles()
                 ->wherePivot('tenant_id', $tenant->id)
@@ -480,16 +573,15 @@ class TenantUserManagementController extends Controller
                 ->pluck('id');
 
             foreach ($roleIds as $roleId) {
-                $user->roles()->updateExistingPivot($roleId, [
-                    'status' => 'inactive',
-                ]);
+                $user->roles()->updateExistingPivot($roleId, ['status' => 'inactive']);
             }
         });
 
         return response()->json([
-            'message' => 'User deactivated successfully. Audit history and previous records were retained.',
+            'message' => 'User access deactivated successfully. Audit history and business records were retained.',
         ]);
     }
+
 
     private function resolveTenant(Request $request): Tenant
     {
@@ -503,19 +595,31 @@ class TenantUserManagementController extends Controller
             ->orWhere('name', 'like', '%Vita%Pharma%')
             ->firstOrFail();
     }
-
-    private function ensureTenantRole(Tenant $tenant, string $requestedCode, ?array $requestedPermissions): Role
-    {
+    private function ensureTenantRole(
+        Tenant $tenant,
+        string $requestedCode,
+        ?array $requestedPermissions,
+        ?User $user = null,
+    ): Role {
         $templates = $this->roleTemplates();
-        $template = $templates[$requestedCode] ?? $templates['support-assistant'];
+        $templateCode = $this->normalizeRequestedRoleCode($tenant, $requestedCode);
+        $template = $templates[$templateCode] ?? $templates['support-assistant'];
 
-        $tenantRoleCode = Str::slug($tenant->slug . '-' . $requestedCode);
-        $permissions = $requestedPermissions ?: $template['permissions'];
+        $permissions = $requestedPermissions !== null
+            ? array_values(array_unique($requestedPermissions))
+            : $template['permissions'];
 
-        $role = Role::query()->firstOrCreate(
+        if ($templateCode === 'owner') {
+            $permissions = $templates['owner']['permissions'];
+        }
+
+        $identitySuffix = $user ? '-user-' . $user->id : '';
+        $tenantRoleCode = Str::slug($tenant->slug . '-' . $templateCode . $identitySuffix);
+
+        $role = Role::query()->updateOrCreate(
             ['code' => $tenantRoleCode],
             [
-                'name' => $tenant->name . ' ' . $template['name'],
+                'name' => $tenant->name . ' ' . $template['name'] . ($user ? ' — ' . $user->name : ''),
                 'scope_type' => 'tenant',
                 'description' => $template['description'],
                 'status' => 'active',
@@ -523,12 +627,15 @@ class TenantUserManagementController extends Controller
         );
 
         $permissionIds = collect($permissions)
+            ->filter(fn ($code) => is_string($code) && trim($code) !== '')
             ->map(fn (string $code) => Permission::query()->firstOrCreate(
                 ['code' => $code],
                 [
                     'name' => Str::headline(str_replace('.', ' ', $code)),
-                    'permission_group' => str_contains($code, 'pharmaco') ? 'pharmaco' : 'security',
-                    'description' => 'Default tenant permission for ' . $code,
+                    'permission_group' => str_contains($code, 'insurance')
+                        ? 'insurance'
+                        : (str_contains($code, 'pharmaco') ? 'pharmaco' : 'security'),
+                    'description' => 'Tenant permission for ' . $code,
                     'status' => 'active',
                 ],
             )->id)
@@ -538,5 +645,21 @@ class TenantUserManagementController extends Controller
         $role->permissions()->sync($permissionIds);
 
         return $role;
+    }
+
+    private function normalizeRequestedRoleCode(Tenant $tenant, string $requestedCode): string
+    {
+        $normalized = Str::slug($requestedCode);
+        $tenantPrefix = Str::slug($tenant->slug) . '-';
+
+        if (str_starts_with($normalized, $tenantPrefix)) {
+            $normalized = substr($normalized, strlen($tenantPrefix));
+        }
+
+        $normalized = preg_replace('/-user-\d+$/', '', $normalized) ?: $normalized;
+
+        return array_key_exists($normalized, $this->roleTemplates())
+            ? $normalized
+            : 'support-assistant';
     }
 }

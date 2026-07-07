@@ -231,6 +231,60 @@ const permissionMatrix: PermissionMatrixGroup[] = [
     ],
   },
   {
+    title: 'Insurance Management',
+    description: 'Insurance configuration, memberships, eligibility, claims, reconciliation and audit evidence.',
+    resources: [
+      {
+        label: 'Insurance dashboard',
+        description: 'View insurance operating summaries and readiness indicators.',
+        permissions: { view: 'insurance.dashboard.view' },
+      },
+      {
+        label: 'Partners, schemes and price rules',
+        description: 'Configure insurers, schemes, price lists, product prices and contribution rules.',
+        permissions: {
+          view: 'insurance.configuration.view',
+          add: 'insurance.configuration.manage',
+          edit: 'insurance.configuration.manage',
+          delete: 'insurance.configuration.manage',
+        },
+      },
+      {
+        label: 'Memberships and eligibility',
+        description: 'Review member coverage and perform eligibility checks.',
+        permissions: {
+          view: 'insurance.memberships.view',
+          add: 'insurance.memberships.manage',
+          edit: 'insurance.memberships.manage',
+        },
+      },
+      {
+        label: 'Claims',
+        description: 'Create, review, adjudicate and settle insurance claims.',
+        permissions: {
+          view: 'insurance.claims.view',
+          add: 'insurance.claims.create',
+          edit: 'insurance.claims.adjudicate',
+          delete: 'insurance.claims.payments',
+        },
+      },
+      {
+        label: 'Reconciliation',
+        description: 'Review and manage insurer reconciliation.',
+        permissions: {
+          view: 'insurance.reconciliation.view',
+          edit: 'insurance.reconciliation.manage',
+        },
+      },
+      {
+        label: 'Insurance audit',
+        description: 'View controlled insurance audit evidence.',
+        permissions: { view: 'insurance.audit.view' },
+      },
+    ],
+  },
+
+  {
     title: 'Finance',
     description: 'Payables, receivables, payments, reconciliation, and finance dashboard access.',
     resources: [
@@ -882,6 +936,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
               <option value="active">Active</option>
               <option value="invited">Invited</option>
               <option value="suspended">Suspended</option>
+              <option value="inactive">Inactive</option>
             </select>
           </label>
 
@@ -1035,16 +1090,6 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
         </div>
       </form>
 
-      <div className="tenant-user-role-cards">
-        {roles.map((role) => (
-          <article key={role.code}>
-            <strong>{role.name}</strong>
-            <span>{role.description}</span>
-            <small>{permissionCountLabel(normalizedRolePermissionMap.get(role.code)?.length ?? role.permissions.length)} normalized permissions</small>
-          </article>
-        ))}
-      </div>
-
       <section className="tenant-user-directory-panel">
         <div className="tenant-user-directory-panel__header">
           <div>
@@ -1092,11 +1137,13 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
                       <td>
                         <span className="table-action-row tenant-user-list-actions">
                           <button type="button" onClick={() => editUser(user)}>
-                            Edit
+                            {user.status === 'inactive' ? 'Review / reactivate' : 'Edit access'}
                           </button>
-                          <button type="button" className="danger" onClick={() => requestDeleteUser(user)}>
-                            Deactivate
-                          </button>
+                          {user.status !== 'inactive' && (
+                            <button type="button" className="danger" onClick={() => requestDeleteUser(user)}>
+                              Deactivate
+                            </button>
+                          )}
                         </span>
                       </td>
                     </tr>
