@@ -697,6 +697,230 @@ class PharmacoInsuranceClaimGenerationApiTest extends TestCase
             ->assertStatus(409);
     }
 
+    public function test_fully_approved_claim_can_receive_full_payment(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndApproveClaim();
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/payments",
+                [
+                    'payment_reference' =>
+                        'INS-PAY-FULL-001',
+                    'payment_date' =>
+                        now()->toDateString(),
+                    'amount' =>
+                        (float) $claim
+                            ->approved_amount,
+                    'payment_method' =>
+                        'bank_transfer',
+                    'bank_reference' =>
+                        'BANK-FULL-001',
+                ]
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'message',
+                'Insurance claim payment recorded successfully.'
+            )
+            ->assertJsonPath(
+                'claim.status',
+                'paid'
+            );
+
+        $claim->refresh();
+
+        $this->assertSame(
+            round(
+                (float) $claim
+                    ->approved_amount,
+                2
+            ),
+            round(
+                (float) $claim
+                    ->paid_amount,
+                2
+            )
+        );
+
+        $this->assertDatabaseHas(
+            'insurance_payments',
+            [
+                'tenant_id' =>
+                    $claim->tenant_id,
+                'insurance_partner_id' =>
+                    $claim
+                        ->insurance_partner_id,
+                'payment_reference' =>
+                    'INS-PAY-FULL-001',
+                'status' => 'allocated',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'audit_logs',
+            [
+                'action' =>
+                    'pharmaco.insurance_claim.payment_recorded',
+                'auditable_type' =>
+                    InsuranceClaim::class,
+                'auditable_id' =>
+                    $claim->id,
+            ]
+        );
+    }
+
+    public function test_approved_claim_can_receive_partial_then_final_payment(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndApproveClaim();
+
+        $firstAmount = round(
+            (float) $claim->approved_amount
+            / 2,
+            2
+        );
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/payments",
+                [
+                    'payment_reference' =>
+                        'INS-PAY-PART-001',
+                    'payment_date' =>
+                        now()->toDateString(),
+                    'amount' => $firstAmount,
+                ]
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'claim.status',
+                'partially_paid'
+            );
+
+        $claim->refresh();
+
+        $remainingAmount = round(
+            (float) $claim->approved_amount
+            - (float) $claim->paid_amount,
+            2
+        );
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/payments",
+                [
+                    'payment_reference' =>
+                        'INS-PAY-PART-002',
+                    'payment_date' =>
+                        now()->toDateString(),
+                    'amount' =>
+                        $remainingAmount,
+                ]
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'claim.status',
+                'paid'
+            );
+
+        $claim->refresh();
+
+        $this->assertSame(
+            round(
+                (float) $claim->approved_amount,
+                2
+            ),
+            round(
+                (float) $claim->paid_amount,
+                2
+            )
+        );
+    }
+
+    public function test_claim_payment_cannot_exceed_remaining_approved_amount(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndApproveClaim();
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/payments",
+                [
+                    'payment_reference' =>
+                        'INS-PAY-OVER-001',
+                    'payment_date' =>
+                        now()->toDateString(),
+                    'amount' =>
+                        round(
+                            (float) $claim
+                                ->approved_amount
+                            + 1,
+                            2
+                        ),
+                ]
+            )
+            ->assertStatus(422);
+
+        $claim->refresh();
+
+        $this->assertSame(
+            0.0,
+            round(
+                (float) $claim->paid_amount,
+                2
+            )
+        );
+
+        $this->assertDatabaseMissing(
+            'insurance_payments',
+            [
+                'payment_reference' =>
+                    'INS-PAY-OVER-001',
+            ]
+        );
+    }
+
+    private function createAndApproveClaim(): InsuranceClaim
+    {
+        $claim = $this->createAndSubmitClaim();
+
+        $payload = [
+            'adjudication_reference' =>
+                'AUTO-APPROVE-001',
+            'lines' => $claim->lines
+                ->map(
+                    fn ($line) => [
+                        'insurance_claim_line_id' =>
+                            $line->id,
+                        'approved_amount' =>
+                            (float) $line
+                                ->claimed_amount,
+                    ]
+                )
+                ->values()
+                ->all(),
+        ];
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/adjudicate",
+                $payload
+            )
+            ->assertOk();
+
+        return InsuranceClaim::query()
+            ->with('lines')
+            ->findOrFail($claim->id);
+    }
+
     private function createAndSubmitClaim(): InsuranceClaim
     {
         [, $sale, $membership] =

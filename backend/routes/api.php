@@ -320,6 +320,14 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 ]
             );
 
+            Route::post(
+                '/claims/{insuranceClaim}/payments',
+                [
+                    InsuranceClaimController::class,
+                    'recordClaimPayment',
+                ]
+            );
+
             Route::get('/claims/{insuranceClaim}', [
                 InsuranceClaimController::class,
                 'claim',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\PharmaCo360;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerInsuranceMembership;
 use App\Models\InsuranceClaim;
+use App\Models\InsurancePayment;
 use App\Models\PharmacoSale;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
@@ -12,6 +13,7 @@ use App\Services\PharmaCo360\InsuranceClaimGenerationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class InsuranceClaimController extends Controller
@@ -796,6 +798,333 @@ class InsuranceClaimController extends Controller
                 true
             ),
         ]);
+    }
+
+    public function recordClaimPayment(
+        Request $request,
+        InsuranceClaim $insuranceClaim,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless(
+            (int) $insuranceClaim->tenant_id ===
+                (int) $tenant->id,
+            404
+        );
+
+        $validated = $request->validate([
+            'payment_reference' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique(
+                    'insurance_payments',
+                    'payment_reference'
+                )->where(
+                    fn ($query) =>
+                        $query->where(
+                            'tenant_id',
+                            $tenant->id
+                        )
+                ),
+            ],
+            'payment_date' => [
+                'required',
+                'date',
+            ],
+            'amount' => [
+                'required',
+                'numeric',
+                'gt:0',
+            ],
+            'currency' => [
+                'nullable',
+                'string',
+                'size:3',
+            ],
+            'payment_method' => [
+                'nullable',
+                'string',
+                'max:60',
+            ],
+            'bank_reference' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'notes' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+        [$claim, $payment] = DB::transaction(
+            function () use (
+                $request,
+                $tenant,
+                $insuranceClaim,
+                $validated
+            ): array {
+                $lockedClaim = InsuranceClaim::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->lockForUpdate()
+                    ->findOrFail($insuranceClaim->id);
+
+                if (!in_array(
+                    $lockedClaim->status,
+                    [
+                        'approved',
+                        'partially_approved',
+                        'partially_paid',
+                    ],
+                    true
+                )) {
+                    abort(
+                        409,
+                        'Only an approved or partially approved claim can receive insurer payment.'
+                    );
+                }
+
+                $approvedAmount = round(
+                    (float) $lockedClaim
+                        ->approved_amount,
+                    2
+                );
+
+                $currentPaid = round(
+                    (float) $lockedClaim
+                        ->paid_amount,
+                    2
+                );
+
+                $amount = round(
+                    (float) $validated['amount'],
+                    2
+                );
+
+                $remainingAmount = round(
+                    $approvedAmount - $currentPaid,
+                    2
+                );
+
+                if ($approvedAmount <= 0) {
+                    abort(
+                        409,
+                        'The claim has no approved amount available for payment.'
+                    );
+                }
+
+                if ($amount > $remainingAmount) {
+                    abort(
+                        422,
+                        'Payment amount cannot exceed the remaining approved claim balance.'
+                    );
+                }
+
+                $newPaidAmount = round(
+                    $currentPaid + $amount,
+                    2
+                );
+
+                $payment = InsurancePayment::query()
+                    ->create([
+                        'uuid' =>
+                            (string) Str::uuid(),
+                        'tenant_id' =>
+                            $tenant->id,
+                        'insurance_partner_id' =>
+                            $lockedClaim
+                                ->insurance_partner_id,
+                        'insurance_reconciliation_batch_id' =>
+                            null,
+                        'payment_reference' =>
+                            $validated[
+                                'payment_reference'
+                            ],
+                        'payment_date' =>
+                            $validated[
+                                'payment_date'
+                            ],
+                        'amount' => $amount,
+                        'currency' =>
+                            strtoupper(
+                                $validated[
+                                    'currency'
+                                ] ?? 'RWF'
+                            ),
+                        'payment_method' =>
+                            $validated[
+                                'payment_method'
+                            ] ?? null,
+                        'bank_reference' =>
+                            $validated[
+                                'bank_reference'
+                            ] ?? null,
+                        'status' => 'allocated',
+                        'allocation_details' => [
+                            'insurance_claim_id' =>
+                                $lockedClaim->id,
+                            'claim_number' =>
+                                $lockedClaim
+                                    ->claim_number,
+                            'approved_amount' =>
+                                $approvedAmount,
+                            'previous_paid_amount' =>
+                                $currentPaid,
+                            'allocated_amount' =>
+                                $amount,
+                            'new_paid_amount' =>
+                                $newPaidAmount,
+                            'remaining_amount' =>
+                                round(
+                                    $approvedAmount
+                                    - $newPaidAmount,
+                                    2
+                                ),
+                        ],
+                        'metadata' => [
+                            'workflow' =>
+                                'phase_4f1e_claim_payment',
+                            'recorded_by' =>
+                                $request->user()->id,
+                            'recorded_at' =>
+                                now()->toISOString(),
+                            'notes' =>
+                                $validated['notes']
+                                ?? null,
+                        ],
+                    ]);
+
+                $lockedClaim->paid_amount =
+                    $newPaidAmount;
+
+                $lockedClaim->status =
+                    $newPaidAmount >= $approvedAmount
+                        ? 'paid'
+                        : 'partially_paid';
+
+                $lockedClaim->metadata = [
+                    ...($lockedClaim->metadata ?? []),
+                    'latest_payment' => [
+                        'insurance_payment_id' =>
+                            $payment->id,
+                        'payment_reference' =>
+                            $payment
+                                ->payment_reference,
+                        'payment_date' =>
+                            $payment
+                                ->payment_date
+                                ?->toDateString(),
+                        'amount' => $amount,
+                        'new_paid_amount' =>
+                            $newPaidAmount,
+                        'remaining_amount' =>
+                            round(
+                                $approvedAmount
+                                - $newPaidAmount,
+                                2
+                            ),
+                        'recorded_by' =>
+                            $request->user()->id,
+                        'recorded_at' =>
+                            now()->toISOString(),
+                    ],
+                ];
+
+                $lockedClaim->save();
+
+                return [
+                    $lockedClaim->fresh([
+                        'partner',
+                        'scheme',
+                        'membership.customer',
+                        'sale.branch',
+                        'sale.customer',
+                        'lines.product',
+                        'lines.saleItem',
+                    ]),
+                    $payment->fresh([
+                        'partner',
+                    ]),
+                ];
+            }
+        );
+
+        $scope = $scopeResolver->resolveForUser(
+            $request->user()
+        );
+
+        $auditLogService->record(
+            action:
+                'pharmaco.insurance_claim.payment_recorded',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'claim_id' => $claim->id,
+                'claim_number' =>
+                    $claim->claim_number,
+                'insurance_payment_id' =>
+                    $payment->id,
+                'payment_reference' =>
+                    $payment->payment_reference,
+                'payment_amount' =>
+                    (float) $payment->amount,
+                'approved_amount' =>
+                    (float) $claim
+                        ->approved_amount,
+                'paid_amount' =>
+                    (float) $claim
+                        ->paid_amount,
+                'remaining_amount' =>
+                    round(
+                        (float) $claim
+                            ->approved_amount
+                        - (float) $claim
+                            ->paid_amount,
+                        2
+                    ),
+                'status' => $claim->status,
+            ],
+            dataClassification: 'confidential',
+            auditableType: InsuranceClaim::class,
+            auditableId: $claim->id
+        );
+
+        return response()->json([
+            'message' =>
+                'Insurance claim payment recorded successfully.',
+            'tenant' =>
+                $this->tenantPayload($tenant),
+            'claim' => $this->serializeClaim(
+                $claim,
+                true
+            ),
+            'payment' => [
+                'id' => $payment->id,
+                'uuid' => $payment->uuid,
+                'payment_reference' =>
+                    $payment->payment_reference,
+                'payment_date' =>
+                    $payment
+                        ->payment_date
+                        ?->toDateString(),
+                'amount' =>
+                    (float) $payment->amount,
+                'currency' =>
+                    $payment->currency,
+                'payment_method' =>
+                    $payment->payment_method,
+                'bank_reference' =>
+                    $payment->bank_reference,
+                'status' =>
+                    $payment->status,
+                'allocation_details' =>
+                    $payment->allocation_details,
+            ],
+        ], 201);
     }
 
     private function serializeClaim(
