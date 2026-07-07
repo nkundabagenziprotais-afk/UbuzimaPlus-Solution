@@ -12,6 +12,7 @@ use App\Models\StockLocation;
 use App\Models\StockMovement;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
+use App\Services\PharmaCo360\ProductSellingUnitSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -397,6 +398,48 @@ class ProductInventoryController extends Controller
         ]);
     }
 
+    public function deleteStockLocation(
+        Request $request,
+        StockLocation $stockLocation,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless((int) $stockLocation->tenant_id === (int) $tenant->id, 404);
+
+        $stockLocation->loadCount('stockBatches');
+
+        if ((int) $stockLocation->stock_batches_count > 0) {
+            throw ValidationException::withMessages([
+                'stock_location' => 'This stock location is linked to stock batches. Move or replace the batches before deleting it.',
+            ]);
+        }
+
+        $before = $stockLocation->only(['name', 'code', 'location_type', 'status', 'branch_id']);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $stockLocation->delete();
+
+        $auditLogService->record(
+            action: 'pharmaco.stock_location.deleted',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'before' => $before,
+            ],
+            dataClassification: 'internal',
+            auditableType: StockLocation::class,
+            auditableId: $stockLocation->id
+        );
+
+        return response()->json([
+            'message' => 'Stock location deleted successfully.',
+        ]);
+    }
+
     public function batches(Request $request): JsonResponse
     {
         $tenant = $request->attributes->get('tenant');
@@ -549,6 +592,15 @@ class ProductInventoryController extends Controller
             'dosage_form' => ['nullable', 'string', 'max:120'],
             'strength' => ['nullable', 'string', 'max:120'],
             'unit' => ['required', 'string', 'max:80'],
+            'selling_unit' => ['nullable', 'string', 'max:80'],
+            'base_unit' => ['nullable', 'string', 'max:80'],
+            'quantity_per_selling_unit' => ['sometimes', 'numeric', 'min:0.0001'],
+            'allow_other_quantity' => ['sometimes', 'boolean'],
+            'default_pos_quantity_mode' => [
+                'sometimes',
+                Rule::in(['selling_unit', 'other_quantity', 'combined']),
+            ],
+            'selling_unit_notes' => ['nullable', 'string', 'max:2000'],
             'pack_size' => ['nullable', 'string', 'max:120'],
             'route_of_administration' => ['nullable', 'string', 'max:120'],
             'product_type' => ['required', Rule::in(['medicine', 'consumable', 'device', 'service'])],
@@ -566,6 +618,11 @@ class ProductInventoryController extends Controller
             ...$validated,
             'uuid' => (string) Str::uuid(),
             'tenant_id' => $tenant->id,
+            'selling_unit' => $validated['selling_unit'] ?? $validated['unit'],
+            'base_unit' => $validated['base_unit'] ?? $validated['unit'],
+            'quantity_per_selling_unit' => $validated['quantity_per_selling_unit'] ?? 1,
+            'allow_other_quantity' => $validated['allow_other_quantity'] ?? true,
+            'default_pos_quantity_mode' => $validated['default_pos_quantity_mode'] ?? 'selling_unit',
             'requires_prescription' => $validated['requires_prescription'] ?? false,
             'is_controlled' => $validated['is_controlled'] ?? false,
             'reorder_level' => $validated['reorder_level'] ?? 0,
@@ -635,6 +692,15 @@ class ProductInventoryController extends Controller
             'dosage_form' => ['nullable', 'string', 'max:120'],
             'strength' => ['nullable', 'string', 'max:120'],
             'unit' => ['sometimes', 'string', 'max:80'],
+            'selling_unit' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'base_unit' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'quantity_per_selling_unit' => ['sometimes', 'numeric', 'min:0.0001'],
+            'allow_other_quantity' => ['sometimes', 'boolean'],
+            'default_pos_quantity_mode' => [
+                'sometimes',
+                Rule::in(['selling_unit', 'other_quantity', 'combined']),
+            ],
+            'selling_unit_notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'pack_size' => ['nullable', 'string', 'max:120'],
             'route_of_administration' => ['nullable', 'string', 'max:120'],
             'product_type' => ['sometimes', Rule::in(['medicine', 'consumable', 'device', 'service'])],
@@ -676,6 +742,210 @@ class ProductInventoryController extends Controller
         return response()->json([
             'message' => 'Product updated successfully.',
             'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
+        ]);
+    }
+
+    public function generateSellingUnitSuggestion(
+        Request $request,
+        Product $product,
+        ProductSellingUnitSuggestionService $suggestionService,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'trusted_source' => ['nullable', 'string', 'max:1000'],
+            'trusted_reference' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $suggestion = $suggestionService->suggest($product);
+
+        if (! empty($validated['trusted_source'])) {
+            $suggestion['source'] = trim($validated['trusted_source']);
+        }
+
+        if (! empty($validated['trusted_reference'])) {
+            $suggestion['reference'] = trim($validated['trusted_reference']);
+        }
+
+        $before = [
+            'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+            'ai_suggested_quantity_per_unit' => $product->ai_suggested_quantity_per_unit,
+            'ai_suggestion_status' => $product->ai_suggestion_status,
+        ];
+
+        $product->forceFill([
+            'ai_suggested_quantity_per_unit' => $suggestion['proposed_value'],
+            'ai_suggestion_status' => 'pending_review',
+            'ai_suggestion_confidence' => $suggestion['confidence'],
+            'ai_suggestion_explanation' => $suggestion['explanation'],
+            'ai_suggestion_source' => $suggestion['source'],
+            'ai_suggestion_reference' => $suggestion['reference'],
+            'ai_suggestion_reviewed_by' => null,
+            'ai_suggestion_reviewed_at' => null,
+        ])->save();
+
+        $auditLogService->record(
+            action: 'pharmaco.product.selling_unit_ai_suggested',
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'before' => $before,
+                'proposal' => [
+                    'proposed_value' => $suggestion['proposed_value'],
+                    'confidence' => $suggestion['confidence'],
+                    'explanation' => $suggestion['explanation'],
+                    'source' => $suggestion['source'],
+                    'reference' => $suggestion['reference'],
+                ],
+                'auto_applied' => false,
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $product->id
+        );
+
+        return response()->json([
+            'message' => 'Selling-unit AI suggestion generated for human review.',
+            'auto_applied' => false,
+            'product' => $this->serializeProduct(
+                $product->fresh('category'),
+                includeStockSummary: true
+            ),
+        ]);
+    }
+
+    public function reviewSellingUnitSuggestion(
+        Request $request,
+        Product $product,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        if ($product->ai_suggestion_status !== 'pending_review') {
+            throw ValidationException::withMessages([
+                'ai_suggestion_status' => [
+                    'This product does not have a pending selling-unit AI suggestion.',
+                ],
+            ]);
+        }
+
+        $validated = $request->validate([
+            'action' => [
+                'required',
+                Rule::in(['approve', 'reject', 'edit_and_approve']),
+            ],
+            'approved_value' => [
+                'required_if:action,edit_and_approve',
+                'nullable',
+                'numeric',
+                'min:0.0001',
+            ],
+            'review_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $action = $validated['action'];
+        $suggestedValue = (float) $product->ai_suggested_quantity_per_unit;
+        $approvedValue = $action === 'edit_and_approve'
+            ? (float) $validated['approved_value']
+            : $suggestedValue;
+
+        if (
+            in_array($action, ['approve', 'edit_and_approve'], true)
+            && $suggestedValue <= 0
+        ) {
+            throw ValidationException::withMessages([
+                'ai_suggested_quantity_per_unit' => [
+                    'The pending suggestion does not contain a valid quantity.',
+                ],
+            ]);
+        }
+
+        $before = [
+            'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+            'ai_suggested_quantity_per_unit' => $suggestedValue,
+            'ai_suggestion_status' => $product->ai_suggestion_status,
+        ];
+
+        $updates = [
+            'ai_suggestion_status' => $action === 'reject'
+                ? 'rejected'
+                : 'approved',
+            'ai_suggestion_reviewed_by' => $request->user()->id,
+            'ai_suggestion_reviewed_at' => now(),
+        ];
+
+        if ($action !== 'reject') {
+            $updates['quantity_per_selling_unit'] = $approvedValue;
+        }
+
+        $metadata = is_array($product->metadata)
+            ? $product->metadata
+            : [];
+
+        $metadata['selling_unit_ai_review'] = [
+            'action' => $action,
+            'review_notes' => $validated['review_notes'] ?? null,
+            'proposed_value' => $suggestedValue,
+            'approved_value' => $action === 'reject'
+                ? null
+                : $approvedValue,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now()->toISOString(),
+        ];
+
+        $updates['metadata'] = $metadata;
+
+        $product->forceFill($updates)->save();
+
+        $auditLogService->record(
+            action: match ($action) {
+                'reject' => 'pharmaco.product.selling_unit_ai_rejected',
+                'edit_and_approve' => 'pharmaco.product.selling_unit_ai_edited_and_approved',
+                default => 'pharmaco.product.selling_unit_ai_approved',
+            },
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'review_action' => $action,
+                'review_notes' => $validated['review_notes'] ?? null,
+                'before' => $before,
+                'after' => [
+                    'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+                    'ai_suggestion_status' => $product->ai_suggestion_status,
+                    'ai_suggestion_reviewed_by' => $product->ai_suggestion_reviewed_by,
+                    'ai_suggestion_reviewed_at' => optional(
+                        $product->ai_suggestion_reviewed_at
+                    )?->toISOString(),
+                ],
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $product->id
+        );
+
+        return response()->json([
+            'message' => match ($action) {
+                'reject' => 'Selling-unit AI suggestion rejected.',
+                'edit_and_approve' => 'Selling-unit AI suggestion edited and approved.',
+                default => 'Selling-unit AI suggestion approved.',
+            },
+            'product' => $this->serializeProduct(
+                $product->fresh('category'),
+                includeStockSummary: true
+            ),
         ]);
     }
 
@@ -1408,6 +1678,24 @@ class ProductInventoryController extends Controller
             'dosage_form' => $product->dosage_form,
             'strength' => $product->strength,
             'unit' => $product->unit,
+            'selling_unit' => $product->selling_unit ?? $product->unit,
+            'base_unit' => $product->base_unit ?? $product->unit,
+            'quantity_per_selling_unit' => (float) ($product->quantity_per_selling_unit ?? 1),
+            'allow_other_quantity' => (bool) $product->allow_other_quantity,
+            'default_pos_quantity_mode' => $product->default_pos_quantity_mode ?? 'selling_unit',
+            'selling_unit_notes' => $product->selling_unit_notes,
+            'ai_suggested_quantity_per_unit' => $product->ai_suggested_quantity_per_unit === null
+                ? null
+                : (float) $product->ai_suggested_quantity_per_unit,
+            'ai_suggestion_status' => $product->ai_suggestion_status ?? 'not_requested',
+            'ai_suggestion_confidence' => $product->ai_suggestion_confidence === null
+                ? null
+                : (float) $product->ai_suggestion_confidence,
+            'ai_suggestion_explanation' => $product->ai_suggestion_explanation,
+            'ai_suggestion_source' => $product->ai_suggestion_source,
+            'ai_suggestion_reference' => $product->ai_suggestion_reference,
+            'ai_suggestion_reviewed_by' => $product->ai_suggestion_reviewed_by,
+            'ai_suggestion_reviewed_at' => optional($product->ai_suggestion_reviewed_at)?->toISOString(),
             'pack_size' => $product->pack_size,
             'route_of_administration' => $product->route_of_administration,
             'product_type' => $product->product_type,

@@ -13,6 +13,10 @@ use App\Http\Controllers\Api\V1\PharmacistChatController;
 use App\Http\Controllers\Api\V1\SolutionController;
 use App\Http\Controllers\Api\V1\TenantPublicStatusController;
 use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceManagementController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
@@ -155,6 +159,234 @@ Route::middleware(['auth:sanctum', 'permission:ai.manage', 'tenant.module:platfo
     });
 
 Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
+
+    Route::prefix('insurance')
+        ->middleware([
+            'permission:pharmaco.insurance.manage',
+            'tenant.module:pharmaco.insurance',
+        ])
+        ->group(function () {
+            Route::post('/bootstrap', [
+                InsuranceManagementController::class,
+                'bootstrap',
+            ]);
+
+            Route::get('/partners', [
+                InsuranceManagementController::class,
+                'partners',
+            ]);
+
+            Route::post('/partners', [
+                InsuranceManagementController::class,
+                'createPartner',
+            ]);
+
+            Route::patch('/partners/{insurancePartner}', [
+                InsuranceManagementController::class,
+                'updatePartner',
+            ]);
+
+            Route::get('/schemes', [
+                InsuranceManagementController::class,
+                'schemes',
+            ]);
+
+            Route::post('/schemes', [
+                InsuranceManagementController::class,
+                'createScheme',
+            ]);
+
+            Route::get('/institutions', [
+                InsuranceManagementController::class,
+                'institutions',
+            ]);
+
+            Route::post('/institutions', [
+                InsuranceManagementController::class,
+                'createInstitution',
+            ]);
+
+            Route::patch('/institutions/{insuranceInstitution}', [
+                InsuranceManagementController::class,
+                'updateInstitution',
+            ]);
+
+            Route::patch('/schemes/{insuranceScheme}', [
+                InsuranceManagementController::class,
+                'updateScheme',
+            ]);
+
+            Route::get('/price-lists', [
+                InsuranceManagementController::class,
+                'priceLists',
+            ]);
+
+            Route::post('/price-lists', [
+                InsuranceManagementController::class,
+                'createPriceList',
+            ]);
+
+            Route::patch('/price-lists/{insurancePriceList}', [
+                InsuranceManagementController::class,
+                'updatePriceList',
+            ]);
+
+            Route::get('/product-prices', [
+                InsuranceManagementController::class,
+                'productPrices',
+            ]);
+
+            Route::post('/product-prices', [
+                InsuranceManagementController::class,
+                'upsertProductPrice',
+            ]);
+
+            Route::post('/product-prices/bulk-import', [
+                InsuranceManagementController::class,
+                'bulkImportProductPrices',
+            ]);
+
+            Route::get('/product-prices/export', [
+                InsuranceManagementController::class,
+                'exportProductPrices',
+            ]);
+
+            Route::get('/contribution-rules', [
+                InsuranceManagementController::class,
+                'contributionRules',
+            ]);
+
+            Route::post('/contribution-rules', [
+                InsuranceManagementController::class,
+                'createContributionRule',
+            ]);
+
+            Route::patch(
+                '/contribution-rules/{insuranceContributionRule}',
+                [
+                    InsuranceManagementController::class,
+                    'updateContributionRule',
+                ]
+            );
+
+            Route::get('/memberships', [
+                InsuranceMembershipController::class,
+                'memberships',
+            ]);
+
+            Route::post('/memberships', [
+                InsuranceMembershipController::class,
+                'createMembership',
+            ]);
+
+            Route::patch(
+                '/memberships/{customerInsuranceMembership}',
+                [
+                    InsuranceMembershipController::class,
+                    'updateMembership',
+                ]
+            );
+
+            Route::post(
+                '/memberships/{customerInsuranceMembership}/eligibility',
+                [
+                    InsuranceMembershipController::class,
+                    'checkEligibility',
+                ]
+            );
+
+            Route::get('/claims', [
+                InsuranceClaimController::class,
+                'claims',
+            ]);
+
+            Route::post('/claims/from-sale', [
+                InsuranceClaimController::class,
+                'createFromSale',
+            ]);
+
+            Route::post(
+                '/claims/{insuranceClaim}/submit',
+                [
+                    InsuranceClaimController::class,
+                    'submitClaim',
+                ]
+            );
+
+            Route::post(
+                '/claims/{insuranceClaim}/adjudicate',
+                [
+                    InsuranceClaimController::class,
+                    'adjudicateClaim',
+                ]
+            );
+
+            Route::post(
+                '/claims/{insuranceClaim}/payments',
+                [
+                    InsuranceClaimController::class,
+                    'recordClaimPayment',
+                ]
+            );
+
+            Route::get(
+                '/reconciliation-batches',
+                [
+                    InsuranceReconciliationController::class,
+                    'index',
+                ]
+            );
+
+            Route::post(
+                '/reconciliation-batches',
+                [
+                    InsuranceReconciliationController::class,
+                    'store',
+                ]
+            );
+
+            Route::get(
+                '/reconciliation-batches/{insuranceReconciliationBatch}',
+                [
+                    InsuranceReconciliationController::class,
+                    'show',
+                ]
+            );
+
+            Route::post(
+                '/reconciliation-batches/{insuranceReconciliationBatch}/submit',
+                [
+                    InsuranceReconciliationController::class,
+                    'submit',
+                ]
+            );
+
+            Route::get(
+                '/reconciliation-batches/{insuranceReconciliationBatch}/eligible-payments',
+                [
+                    InsuranceReconciliationController::class,
+                    'eligiblePayments',
+                ]
+            );
+
+            Route::post(
+                '/reconciliation-batches/{insuranceReconciliationBatch}/reconcile',
+                [
+                    InsuranceReconciliationController::class,
+                    'reconcile',
+                ]
+            );
+
+            Route::get('/claims/{insuranceClaim}', [
+                InsuranceClaimController::class,
+                'claim',
+            ]);
+
+            Route::post('/pricing/resolve', [
+                InsuranceManagementController::class,
+                'resolvePricing',
+            ]);
+        });
 
     Route::get('/receivables', [ReceivablesController::class, 'receivables'])
         ->middleware([
@@ -359,6 +591,22 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.inventory',
         ]);
 
+    Route::post(
+        '/products/{product}/selling-unit-ai-suggestion/generate',
+        [ProductInventoryController::class, 'generateSellingUnitSuggestion']
+    )->middleware([
+        'permission:pharmaco.inventory.manage',
+        'tenant.module:pharmaco.inventory',
+    ]);
+
+    Route::post(
+        '/products/{product}/selling-unit-ai-suggestion/review',
+        [ProductInventoryController::class, 'reviewSellingUnitSuggestion']
+    )->middleware([
+        'permission:pharmaco.inventory.manage',
+        'tenant.module:pharmaco.inventory',
+    ]);
+
     Route::get('/products/{product}', [ProductInventoryController::class, 'product'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
@@ -395,6 +643,12 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ]);
 
     Route::patch('/inventory/locations/{stockLocation}', [ProductInventoryController::class, 'updateStockLocation'])
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ]);
+
+    Route::delete('/inventory/locations/{stockLocation}', [ProductInventoryController::class, 'deleteStockLocation'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
             'tenant.module:pharmaco.inventory',

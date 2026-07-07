@@ -1,4 +1,36 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+
+
+type PosBatchProduct = PharmaStockBatch['product'] & {
+  selling_unit?: string | null;
+  base_unit?: string | null;
+  unit?: string | null;
+  quantity_per_selling_unit?: number | string | null;
+  allow_other_quantity?: boolean | null;
+  default_pos_quantity_mode?: string | null;
+};
+
+function configuredPosTaxMode(): 'inclusive' | 'exclusive' {
+  return 'inclusive';
+}
+
+type PosInventoryAutoLoaderProps = {
+  shouldLoad: boolean;
+  onLoad: () => void | Promise<void>;
+};
+
+function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderProps) {
+  useEffect(() => {
+    if (!shouldLoad) {
+      return;
+    }
+
+    void onLoad();
+  }, [onLoad, shouldLoad]);
+
+  return null;
+}
+
 import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
@@ -21,8 +53,13 @@ import { TenantPharmacyDashboard } from './components/TenantPharmacyDashboard';
 import { UserSecurityManagement } from './components/UserSecurityManagement';
 import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
+import { calculatePosQuantity } from './lib/posQuantity';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
+import {
+  InsuranceManagementWorkspace,
+  type InsuranceWorkspaceKey,
+} from './components/InsuranceManagementWorkspace';
 
 type StoredSession = {
   token: string;
@@ -55,6 +92,7 @@ type AdminSectionKey =
   | 'ai-center'
   | 'admin-panel'
   | 'inventory'
+  | 'insurance'
   | 'pos'
   | 'suppliers'
   | 'finance'
@@ -455,14 +493,26 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'inventory-product-inventory', label: 'Product Inventory', target: 'product-inventory' },
     { key: 'inventory-locations', label: 'Stock Locations', target: 'locations' },
   ],
+  insurance: [
+    { key: 'insurance-overview', label: 'Insurance Overview', target: 'overview' },
+    { key: 'insurance-partners', label: 'Insurance Partners', target: 'partners' },
+    { key: 'insurance-institutions', label: 'Institutions', target: 'institutions' },
+    { key: 'insurance-schemes', label: 'Insurance Schemes', target: 'schemes' },
+    { key: 'insurance-price-lists', label: 'Price Lists', target: 'price-lists' },
+    { key: 'insurance-product-prices', label: 'Product Prices', target: 'product-prices' },
+    { key: 'insurance-contribution-rules', label: 'Contribution Rules', target: 'contribution-rules' },
+    { key: 'insurance-claims', label: 'Claims', target: 'claims-readiness' },
+    { key: 'insurance-reconciliation', label: 'Reconciliation', target: 'reconciliation-readiness' },
+    { key: 'insurance-audit', label: 'Insurance Audit', target: 'audit-readiness' },
+  ],
   pos: [
     { key: 'pos-overview', label: 'POS and Sales Overview', target: 'overview' },
-    { key: 'pos-counter', label: 'POS', target: 'pos' },
-    { key: 'pos-dispensing', label: 'Dispensing Review', target: 'dispensing-review' },
+    { key: 'pos-counter', label: 'POS Counter', target: 'pos' },
+    { key: 'pos-dispensing', label: 'Pharmacist Review', target: 'dispensing-review' },
     { key: 'pos-customers', label: 'Customers and Patients', target: 'customers' },
     { key: 'pos-prescriptions', label: 'Prescriptions', target: 'prescriptions' },
-    { key: 'pos-performance', label: 'Sales Performance', target: 'sales-performance' },
-    { key: 'pos-payment-receipt', label: 'Payment and Receipt', target: 'payment-receipt' },
+    { key: 'pos-performance', label: 'Sales Register', target: 'sales-performance' },
+    { key: 'pos-payment-receipt', label: 'Receipts & Payments', target: 'payment-receipt' },
   ],
   suppliers: [
     { key: 'supplier-overview', label: 'Procurement Overview', target: 'overview' },
@@ -699,6 +749,11 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     title: 'Inventory command workspace',
     description: 'Batch, expiry, FEFO, stock movement, receiving, and shelf-readiness workflows.',
   },
+  insurance: {
+    eyebrow: 'Insurance operations',
+    title: 'Insurance Management',
+    description: 'Partners, schemes, pricing, claims and reconciliation',
+  },
   pos: {
     eyebrow: 'POS and dispensing',
     title: 'Pharmacy POS workspace',
@@ -725,8 +780,8 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     description: 'Business profile, branches, departments, capabilities, operating hours, and local setup.',
   },
   security: {
-    eyebrow: 'Access and governance',
-    title: 'Security, roles, and tenant scope',
+    eyebrow: 'POS and Sales Operations',
+    title: 'Counter, dispensing, customers, prescriptions, receipts, and sales control',
     description: 'Resolved permissions, access checks, tenant assignments, audit posture, and protected modules.',
   },
   'corporate-email': {
@@ -846,34 +901,837 @@ const menuGroups: MenuGroup[] = [
 
 function hasAnyPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
   if (!profile) return false;
-  return permissions.some((permission) => profile.permissions.includes(permission));
+  return permissions.some((permission) => profile!.permissions.includes(permission));
 }
+
+const granularMenuPermissionMap: Record<string, string[]> = {
+  'erp:erp-overview': ['erp.dashboard.view'],
+  'erp:finance': ['finance.dashboard.view', 'finance.payables.view', 'finance.receivables.view'],
+  'erp:hr': ['hr.staff.view'],
+  'erp:procurement': ['procurement.purchases.view', 'procurement.suppliers.view'],
+  'erp:projects': ['projects.projects.view'],
+  'erp:customer-care': ['customer_care.tickets.view'],
+
+  'solution-portfolio:pharmaco': ['solutions.pharmaco.view'],
+  'solution-portfolio:vetcore': ['solutions.vetcore.view'],
+  'solution-portfolio:cliniccore': ['solutions.cliniccore.view'],
+  'solution-portfolio:insucore': ['solutions.insucore.view'],
+
+  'ai-center:governance': ['ai.governance.view'],
+  'ai-center:provider-management': ['ai.providers.view'],
+  'ai-center:model-registry': ['ai.models.view'],
+  'ai-center:agent-management': ['ai.agents.view'],
+  'ai-center:prompt-library': ['ai.prompts.view'],
+  'ai-center:knowledge-base': ['ai.knowledge_base.view'],
+  'ai-center:data-connectors': ['ai.data_connectors.view'],
+  'ai-center:recommendations': ['ai.recommendations.view'],
+  'ai-center:workflow-automation': ['ai.workflow_automation.view'],
+  'ai-center:approval-center': ['ai.approvals.view'],
+  'ai-center:feedback-learning': ['ai.feedback.view'],
+  'ai-center:usage-cost': ['ai.usage_cost.view'],
+  'ai-center:risk-compliance': ['ai.risk_compliance.view'],
+  'ai-center:audit-logs': ['ai.audit_logs.view'],
+  'ai-center:insights-dashboard': ['ai.insights.view'],
+
+  'admin-panel:user-profiles': ['users.staff.view'],
+  'admin-panel:backend-api': ['platform.backend.view'],
+  'admin-panel:two-factor-auth': ['security.two_factor.view'],
+  'admin-panel:platform-management': ['platform.management.view'],
+  'admin-panel:notification-management': ['communications.notifications.view'],
+  'admin-panel:corporate-email': ['communications.email.view'],
+  'admin-panel:pharmacist-chat': ['communications.chat.view'],
+  'admin-panel:web-application': ['platform.web_application.view'],
+  'admin-panel:mobile-application': ['platform.mobile_application.view'],
+  'admin-panel:desktop-application': ['platform.desktop_application.view'],
+  'admin-panel:data-layer': ['platform.data_layer.view'],
+  'admin-panel:infrastructure': ['platform.infrastructure.view'],
+
+  inventory: [
+    'inventory.dashboard.view',
+    'inventory.products.view',
+    'inventory.batches.view',
+    'inventory.receiving.view',
+    'inventory.locations.view',
+    'inventory.low_stock.view',
+    'inventory.expiry_review.view',
+    'inventory.table_settings.view',
+    'inventory.expiry_labels.view',
+  ],
+  insurance: ['pharmaco.insurance.manage'],
+  pos: [
+    'pos.sales.view',
+    'pos.receipts.view',
+    'pos.returns.view',
+    'pos.cashier_close.view',
+    'pos.insurance.view',
+    'pos.payments.view',
+  ],
+  suppliers: [
+    'procurement.suppliers.view',
+    'procurement.purchase_orders.view',
+    'procurement.receiving.view',
+    'procurement.dispatch.view',
+  ],
+  finance: [
+    'finance.dashboard.view',
+    'finance.payables.view',
+    'finance.receivables.view',
+    'finance.payments.view',
+    'finance.reconciliation.view',
+  ],
+  reports: [
+    'reports.inventory.view',
+    'reports.sales.view',
+    'reports.finance.view',
+    'reports.procurement.view',
+    'reports.audit.view',
+  ],
+  'tenant-setup': [
+    'tenant.profile!.view',
+    'tenant.branches.view',
+    'tenant.departments.view',
+    'tenant.capabilities.view',
+  ],
+  security: [
+    'security.users.view',
+    'security.roles.view',
+    'security.permissions.view',
+    'security.audit.view',
+    'security.two_factor.view',
+  ],
+  'corporate-email': ['communications.email.view'],
+  'pharmacist-chat': ['communications.chat.view'],
+  notifications: ['communications.notifications.view'],
+  'market-management': ['markets.management.view'],
+  localization: ['settings.localization.view'],
+  'nearby-providers': ['markets.providers.view'],
+  'vitapharma-website': ['tenant.website.view'],
+  settings: ['settings.platform.view'],
+};
+
+const granularLeftSubmenuPermissionMap: Record<string, Record<string, string[]>> = {
+  inventory: {
+    overview: ['inventory.dashboard.view'],
+    dashboard: ['inventory.dashboard.view'],
+    'inventory-dashboard': ['inventory.dashboard.view'],
+    'product-master': ['inventory.products.view'],
+    products: ['inventory.products.view'],
+    'product-inventory': ['inventory.batches.view'],
+    batches: ['inventory.batches.view'],
+    'receive-stock': ['inventory.receiving.view'],
+    receiving: ['inventory.receiving.view'],
+    'stock-locations': ['inventory.locations.view'],
+    locations: ['inventory.locations.view'],
+    'low-stock': ['inventory.low_stock.view'],
+    'batch-expiry': ['inventory.expiry_review.view'],
+    'expiry-review': ['inventory.expiry_review.view'],
+    'near-expiry': ['inventory.expiry_review.view'],
+    'table-settings': ['inventory.table_settings.view'],
+    'expiry-labels': ['inventory.expiry_labels.view'],
+  },
+  insurance: {
+    overview: ['pharmaco.insurance.manage'],
+    partners: ['pharmaco.insurance.manage'],
+    institutions: ['pharmaco.insurance.manage'],
+    schemes: ['pharmaco.insurance.manage'],
+    'price-lists': ['pharmaco.insurance.manage'],
+    'product-prices': ['pharmaco.insurance.manage'],
+    'contribution-rules': ['pharmaco.insurance.manage'],
+    'claims-readiness': ['pharmaco.insurance.manage'],
+    'reconciliation-readiness': ['pharmaco.insurance.manage'],
+    'audit-readiness': ['pharmaco.insurance.manage'],
+  },
+  pos: {
+    overview: ['pos.sales.view'],
+    dashboard: ['pos.sales.view'],
+    sales: ['pos.sales.view'],
+    'sales-register': ['pos.sales.view'],
+    receipts: ['pos.receipts.view'],
+    returns: ['pos.returns.view'],
+    payments: ['pos.payments.view'],
+    insurance: ['pos.insurance.view'],
+    'cashier-close': ['pos.cashier_close.view'],
+    'daily-close': ['pos.cashier_close.view'],
+  },
+  suppliers: {
+    overview: ['procurement.suppliers.view'],
+    suppliers: ['procurement.suppliers.view'],
+    'purchase-orders': ['procurement.purchase_orders.view'],
+    receiving: ['procurement.receiving.view'],
+    dispatch: ['procurement.dispatch.view'],
+  },
+  finance: {
+    overview: ['finance.dashboard.view'],
+    dashboard: ['finance.dashboard.view'],
+    payables: ['finance.payables.view'],
+    receivables: ['finance.receivables.view'],
+    payments: ['finance.payments.view'],
+    reconciliation: ['finance.reconciliation.view'],
+  },
+  reports: {
+    overview: ['reports.inventory.view', 'reports.sales.view', 'reports.finance.view'],
+    inventory: ['reports.inventory.view'],
+    sales: ['reports.sales.view'],
+    finance: ['reports.finance.view'],
+    procurement: ['reports.procurement.view'],
+    audit: ['reports.audit.view'],
+  },
+  'ai-center': {
+    governance: ['ai.governance.view'],
+    'provider-management': ['ai.providers.view'],
+    'model-registry': ['ai.models.view'],
+    'agent-management': ['ai.agents.view'],
+    'prompt-library': ['ai.prompts.view'],
+    'knowledge-base': ['ai.knowledge_base.view'],
+    'data-connectors': ['ai.data_connectors.view'],
+    recommendations: ['ai.recommendations.view'],
+    'workflow-automation': ['ai.workflow_automation.view'],
+    'approval-center': ['ai.approvals.view'],
+    'feedback-learning': ['ai.feedback.view'],
+    'usage-cost': ['ai.usage_cost.view'],
+    'risk-compliance': ['ai.risk_compliance.view'],
+    'audit-logs': ['ai.audit_logs.view'],
+    'insights-dashboard': ['ai.insights.view'],
+  },
+  'admin-panel': {
+    'user-profiles': ['users.staff.view'],
+    'two-factor-auth': ['security.two_factor.view'],
+    'platform-management': ['platform.management.view'],
+    'notification-management': ['communications.notifications.view'],
+    'corporate-email': ['communications.email.view'],
+    'pharmacist-chat': ['communications.chat.view'],
+    'data-layer': ['platform.data_layer.view'],
+    'backend-api': ['platform.backend.view'],
+    'web-application': ['platform.web_application.view'],
+    'mobile-application': ['platform.mobile_application.view'],
+    'desktop-application': ['platform.desktop_application.view'],
+    infrastructure: ['platform.infrastructure.view'],
+  },
+  notifications: {
+    overview: ['communications.notifications.view'],
+    'create-notification': ['communications.notifications.add'],
+    'recurring-notifications': ['communications.notifications.edit'],
+    'platform-notification-center': ['communications.notifications.view'],
+  },
+  'pharmacist-chat': {
+    'in-app-chat': ['communications.chat.view'],
+    'whatsapp-chat': ['communications.chat.view'],
+  },
+};
+
+function normalizePermissionKey(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function profilePermissionSet(profile: AccessProfile | undefined): Set<string> {
+  return new Set((profile?.permissions ?? []).map((permission) => normalizePermissionKey(permission)));
+}
+
+function profileRoleTokens(profile: AccessProfile | undefined): string[] {
+  return (profile?.roles ?? [])
+    .flatMap((role) => [
+      role.code,
+      role.name,
+      (role as unknown as Record<string, unknown>).slug,
+      (role as unknown as Record<string, unknown>).key,
+    ])
+    .map((role) => normalizePermissionKey(role))
+    .filter(Boolean);
+}
+
+function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
+  if (!profile) return false;
+  if (profile!.scope.is_platform) return true;
+
+  const adminRoles = new Set([
+    'admin',
+    'administrator',
+    'super_admin',
+    'system_admin',
+    'platform_admin',
+    'solution_admin',
+    'tenant_admin',
+    'owner',
+  ]);
+
+  return profileRoleTokens(profile).some((role) => adminRoles.has(role));
+}
+
+function profileHasGranularPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
+  if (!profile) return false;
+  if (profileHasAdminAuthority(profile)) return true;
+
+  const availablePermissions = profilePermissionSet(profile);
+
+  return permissions
+    .map((permission) => normalizePermissionKey(permission))
+    .some((permission) => availablePermissions.has(permission));
+}
+
+function menuPermissionLookupKey(item: MenuItem): string {
+  return item.context ? `${item.key}:${item.context}` : item.key;
+}
+
+function moduleKeyForMenuItem(item: MenuItem): string {
+  if (item.key === 'admin-panel') return 'platform';
+  if (item.key === 'ai-center') return 'ai';
+  if (item.key === 'solution-portfolio') return 'solutions';
+  if (item.key === 'tenant-setup') return 'tenant';
+  if (item.key === 'corporate-email') return 'communications';
+  if (item.key === 'pharmacist-chat') return 'communications';
+  if (item.key === 'market-management') return 'markets';
+  if (item.key === 'nearby-providers') return 'markets';
+
+  return normalizePermissionKey(item.key);
+}
+
+function viewPermissionsForMenuItem(item: MenuItem): string[] {
+  const direct = granularMenuPermissionMap[menuPermissionLookupKey(item)] ?? granularMenuPermissionMap[item.key];
+
+  if (direct) return direct;
+
+  const moduleKey = moduleKeyForMenuItem(item);
+  const resourceKey = normalizePermissionKey(item.context ?? item.key);
+
+  return [`${moduleKey}.${resourceKey}.view`];
+}
+
+function viewPermissionsForLeftSubmenu(item: MenuItem, submenu: LeftMenuSubmenu): string[] {
+  const submenuKey = normalizePermissionKey(submenu.target ?? submenu.key);
+  const direct = granularLeftSubmenuPermissionMap[item.key]?.[submenuKey];
+
+  if (direct) return direct;
+
+  const moduleKey = moduleKeyForMenuItem(item);
+
+  return [`${moduleKey}.${submenuKey}.view`];
+}
+
+function leftSubmenuIsVisibleForProfile(
+  profile: AccessProfile | undefined,
+  item: MenuItem,
+  submenu: LeftMenuSubmenu,
+): boolean {
+  if (!profile) return false;
+  if (profileHasAdminAuthority(profile)) return true;
+
+  return profileHasGranularPermission(profile, viewPermissionsForLeftSubmenu(item, submenu));
+}
+
+
 
 function tenantDisplayName(profile: AccessProfile | undefined): string {
   return profile?.tenant_assignments?.[0]?.tenant?.name ?? 'Tenant';
 }
 
+
+
+type PermissionMatrixAction = 'view' | 'add' | 'edit' | 'delete';
+
+type PermissionMatrixResource = {
+  label: string;
+  description: string;
+  permissions: Partial<Record<PermissionMatrixAction, string>>;
+};
+
+type PermissionMatrixGroup = {
+  title: string;
+  description: string;
+  resources: PermissionMatrixResource[];
+};
+
+const granularPermissionMatrix: PermissionMatrixGroup[] = [
+  {
+    title: 'Inventory',
+    description: 'Products, batches, receiving, stock locations, expiry review, and inventory customization.',
+    resources: [
+      {
+        label: 'Inventory Dashboard',
+        description: 'Summary cards, stock overview, and inventory health.',
+        permissions: { view: 'inventory.dashboard.view' },
+      },
+      {
+        label: 'Product Master',
+        description: 'Commercial product records used by stock and POS.',
+        permissions: {
+          view: 'inventory.products.view',
+          add: 'inventory.products.add',
+          edit: 'inventory.products.edit',
+          delete: 'inventory.products.delete',
+        },
+      },
+      {
+        label: 'Inventory Batches',
+        description: 'Batch-level quantity, cost, expiry, and pricing.',
+        permissions: {
+          view: 'inventory.batches.view',
+          add: 'inventory.batches.add',
+          edit: 'inventory.batches.edit',
+          delete: 'inventory.batches.delete',
+        },
+      },
+      {
+        label: 'Receiving',
+        description: 'Stock receiving workflow from Product Master.',
+        permissions: {
+          view: 'inventory.receiving.view',
+          add: 'inventory.receiving.add',
+          edit: 'inventory.receiving.edit',
+          delete: 'inventory.receiving.delete',
+        },
+      },
+      {
+        label: 'Stock Locations',
+        description: 'Shelves, stores, branches, and inventory holding points.',
+        permissions: {
+          view: 'inventory.locations.view',
+          add: 'inventory.locations.add',
+          edit: 'inventory.locations.edit',
+          delete: 'inventory.locations.delete',
+        },
+      },
+      {
+        label: 'Low Stock',
+        description: 'Low stock monitoring and replenishment attention.',
+        permissions: {
+          view: 'inventory.low_stock.view',
+          add: 'inventory.low_stock.add',
+          edit: 'inventory.low_stock.edit',
+          delete: 'inventory.low_stock.delete',
+        },
+      },
+      {
+        label: 'Expiry Review',
+        description: 'Near-expiry, expired, and expiry-risk review tables.',
+        permissions: {
+          view: 'inventory.expiry_review.view',
+          add: 'inventory.expiry_review.add',
+          edit: 'inventory.expiry_review.edit',
+          delete: 'inventory.expiry_review.delete',
+        },
+      },
+      {
+        label: 'Expiry Labels',
+        description: 'Expiry thresholds, row colours, and label mapping.',
+        permissions: {
+          view: 'inventory.expiry_labels.view',
+          edit: 'inventory.expiry_labels.edit',
+        },
+      },
+      {
+        label: 'Table Settings',
+        description: 'Table density, font size, wrapping, sticky columns, and table style.',
+        permissions: {
+          view: 'inventory.table_settings.view',
+          edit: 'inventory.table_settings.edit',
+        },
+      },
+    ],
+  },
+  {
+    title: 'POS and Sales',
+    description: 'Counter sales, receipts, returns, payments, insurance, and cashier close.',
+    resources: [
+      {
+        label: 'Sales Register',
+        description: 'Create and manage sales transactions.',
+        permissions: {
+          view: 'pos.sales.view',
+          add: 'pos.sales.add',
+          edit: 'pos.sales.edit',
+          delete: 'pos.sales.delete',
+        },
+      },
+      {
+        label: 'Receipts',
+        description: 'Receipt viewing, printing, and correction.',
+        permissions: {
+          view: 'pos.receipts.view',
+          add: 'pos.receipts.add',
+          edit: 'pos.receipts.edit',
+          delete: 'pos.receipts.delete',
+        },
+      },
+      {
+        label: 'Returns',
+        description: 'Returned items and refund handling.',
+        permissions: {
+          view: 'pos.returns.view',
+          add: 'pos.returns.add',
+          edit: 'pos.returns.edit',
+          delete: 'pos.returns.delete',
+        },
+      },
+      {
+        label: 'Payments',
+        description: 'Cash, mobile money, card, and insurance payment handling.',
+        permissions: {
+          view: 'pos.payments.view',
+          add: 'pos.payments.add',
+          edit: 'pos.payments.edit',
+          delete: 'pos.payments.delete',
+        },
+      },
+      {
+        label: 'Cashier Close',
+        description: 'Daily cashier close and shift reconciliation.',
+        permissions: {
+          view: 'pos.cashier_close.view',
+          add: 'pos.cashier_close.add',
+          edit: 'pos.cashier_close.edit',
+        },
+      },
+      {
+        label: 'Insurance',
+        description: 'Insurance-linked sales and claim preparation.',
+        permissions: {
+          view: 'pos.insurance.view',
+          add: 'pos.insurance.add',
+          edit: 'pos.insurance.edit',
+          delete: 'pos.insurance.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Procurement and Suppliers',
+    description: 'Supplier records, purchase orders, receiving, and dispatch coordination.',
+    resources: [
+      {
+        label: 'Suppliers',
+        description: 'Supplier registry and supplier profile management.',
+        permissions: {
+          view: 'procurement.suppliers.view',
+          add: 'procurement.suppliers.add',
+          edit: 'procurement.suppliers.edit',
+          delete: 'procurement.suppliers.delete',
+        },
+      },
+      {
+        label: 'Purchase Orders',
+        description: 'Purchase planning and order preparation.',
+        permissions: {
+          view: 'procurement.purchase_orders.view',
+          add: 'procurement.purchase_orders.add',
+          edit: 'procurement.purchase_orders.edit',
+          delete: 'procurement.purchase_orders.delete',
+        },
+      },
+      {
+        label: 'Receiving',
+        description: 'Supplier delivery and stock receipt confirmation.',
+        permissions: {
+          view: 'procurement.receiving.view',
+          add: 'procurement.receiving.add',
+          edit: 'procurement.receiving.edit',
+          delete: 'procurement.receiving.delete',
+        },
+      },
+      {
+        label: 'Dispatch',
+        description: 'Dispatch coordination and delivery movement.',
+        permissions: {
+          view: 'procurement.dispatch.view',
+          add: 'procurement.dispatch.add',
+          edit: 'procurement.dispatch.edit',
+          delete: 'procurement.dispatch.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Finance',
+    description: 'Payables, receivables, reconciliation, and finance operations.',
+    resources: [
+      {
+        label: 'Finance Dashboard',
+        description: 'Finance overview and operational indicators.',
+        permissions: { view: 'finance.dashboard.view' },
+      },
+      {
+        label: 'Payables',
+        description: 'Supplier bills and payable tracking.',
+        permissions: {
+          view: 'finance.payables.view',
+          add: 'finance.payables.add',
+          edit: 'finance.payables.edit',
+          delete: 'finance.payables.delete',
+        },
+      },
+      {
+        label: 'Receivables',
+        description: 'Customer, insurer, and partner receivables.',
+        permissions: {
+          view: 'finance.receivables.view',
+          add: 'finance.receivables.add',
+          edit: 'finance.receivables.edit',
+          delete: 'finance.receivables.delete',
+        },
+      },
+      {
+        label: 'Payments',
+        description: 'Payment records and settlement operations.',
+        permissions: {
+          view: 'finance.payments.view',
+          add: 'finance.payments.add',
+          edit: 'finance.payments.edit',
+          delete: 'finance.payments.delete',
+        },
+      },
+      {
+        label: 'Reconciliation',
+        description: 'Cash, bank, mobile money, and settlement reconciliation.',
+        permissions: {
+          view: 'finance.reconciliation.view',
+          add: 'finance.reconciliation.add',
+          edit: 'finance.reconciliation.edit',
+          delete: 'finance.reconciliation.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Users, Roles, and Security',
+    description: 'Staff users, roles, permission assignment, 2FA, and audit trails.',
+    resources: [
+      {
+        label: 'Staff Users',
+        description: 'User accounts and staff profile access.',
+        permissions: {
+          view: 'users.staff.view',
+          add: 'users.staff.add',
+          edit: 'users.staff.edit',
+          delete: 'users.staff.delete',
+        },
+      },
+      {
+        label: 'Roles',
+        description: 'Role creation and role assignment.',
+        permissions: {
+          view: 'security.roles.view',
+          add: 'security.roles.add',
+          edit: 'security.roles.edit',
+          delete: 'security.roles.delete',
+        },
+      },
+      {
+        label: 'Permissions',
+        description: 'Fine-grained permission assignment.',
+        permissions: {
+          view: 'security.permissions.view',
+          add: 'security.permissions.add',
+          edit: 'security.permissions.edit',
+          delete: 'security.permissions.delete',
+        },
+      },
+      {
+        label: 'Audit Trail',
+        description: 'Security and activity audit review.',
+        permissions: {
+          view: 'security.audit.view',
+          add: 'security.audit.add',
+          edit: 'security.audit.edit',
+          delete: 'security.audit.delete',
+        },
+      },
+      {
+        label: 'Two-Factor Authentication',
+        description: '2FA policy and trusted device control.',
+        permissions: {
+          view: 'security.two_factor.view',
+          add: 'security.two_factor.add',
+          edit: 'security.two_factor.edit',
+          delete: 'security.two_factor.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Reports',
+    description: 'Inventory, sales, finance, procurement, and audit reporting.',
+    resources: [
+      {
+        label: 'Inventory Reports',
+        description: 'Inventory reporting and exports.',
+        permissions: {
+          view: 'reports.inventory.view',
+          add: 'reports.inventory.add',
+          edit: 'reports.inventory.edit',
+          delete: 'reports.inventory.delete',
+        },
+      },
+      {
+        label: 'Sales Reports',
+        description: 'Sales reporting and exports.',
+        permissions: {
+          view: 'reports.sales.view',
+          add: 'reports.sales.add',
+          edit: 'reports.sales.edit',
+          delete: 'reports.sales.delete',
+        },
+      },
+      {
+        label: 'Finance Reports',
+        description: 'Finance reporting and exports.',
+        permissions: {
+          view: 'reports.finance.view',
+          add: 'reports.finance.add',
+          edit: 'reports.finance.edit',
+          delete: 'reports.finance.delete',
+        },
+      },
+      {
+        label: 'Procurement Reports',
+        description: 'Supplier and procurement reporting.',
+        permissions: {
+          view: 'reports.procurement.view',
+          add: 'reports.procurement.add',
+          edit: 'reports.procurement.edit',
+          delete: 'reports.procurement.delete',
+        },
+      },
+      {
+        label: 'Audit Reports',
+        description: 'Audit and compliance reporting.',
+        permissions: {
+          view: 'reports.audit.view',
+          add: 'reports.audit.add',
+          edit: 'reports.audit.edit',
+          delete: 'reports.audit.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Communications and Platform',
+    description: 'Notifications, email, chat, tenant profile, branches, and platform tools.',
+    resources: [
+      {
+        label: 'Notifications',
+        description: 'Notification center and message scheduling.',
+        permissions: {
+          view: 'communications.notifications.view',
+          add: 'communications.notifications.add',
+          edit: 'communications.notifications.edit',
+          delete: 'communications.notifications.delete',
+        },
+      },
+      {
+        label: 'Corporate Email',
+        description: 'Corporate email and message templates.',
+        permissions: {
+          view: 'communications.email.view',
+          add: 'communications.email.add',
+          edit: 'communications.email.edit',
+          delete: 'communications.email.delete',
+        },
+      },
+      {
+        label: 'Pharmacist Chat',
+        description: 'In-app and WhatsApp communication workspace.',
+        permissions: {
+          view: 'communications.chat.view',
+          add: 'communications.chat.add',
+          edit: 'communications.chat.edit',
+          delete: 'communications.chat.delete',
+        },
+      },
+      {
+        label: 'Tenant Profile',
+        description: 'Tenant profile and operational setup.',
+        permissions: {
+          view: 'tenant.profile!.view',
+          add: 'tenant.profile!.add',
+          edit: 'tenant.profile!.edit',
+          delete: 'tenant.profile!.delete',
+        },
+      },
+      {
+        label: 'Branches',
+        description: 'Branch and location setup.',
+        permissions: {
+          view: 'tenant.branches.view',
+          add: 'tenant.branches.add',
+          edit: 'tenant.branches.edit',
+          delete: 'tenant.branches.delete',
+        },
+      },
+    ],
+  },
+];
+
+function permissionMatrixCell(profile: AccessProfile, permission?: string) {
+  if (!permission) {
+    return <span className="permission-matrix-cell permission-matrix-cell--not-applicable">—</span>;
+  }
+
+  const allowed = profileHasGranularPermission(profile, [permission]);
+
+  return (
+    <span
+      className={`permission-matrix-cell ${allowed ? 'permission-matrix-cell--allowed' : 'permission-matrix-cell--blocked'}`}
+      title={permission}
+    >
+      {allowed ? '✓' : '—'}
+    </span>
+  );
+}
+
+function renderProfilePermissionMatrix(profile: AccessProfile) {
+  return (
+    <div className="security-permission-matrix">
+      {granularPermissionMatrix.map((group) => (
+        <section key={group.title} className="security-permission-matrix-group">
+          <div className="security-permission-matrix-group__header">
+            <div>
+              <h3>{group.title}</h3>
+              <p>{group.description}</p>
+            </div>
+          </div>
+
+          <div className="security-permission-table-shell">
+            <table className="security-permission-table">
+              <thead>
+                <tr>
+                  <th scope="col">Resource</th>
+                  <th scope="col">View</th>
+                  <th scope="col">Add</th>
+                  <th scope="col">Edit</th>
+                  <th scope="col">Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.resources.map((resource) => (
+                  <tr key={`${group.title}-${resource.label}`}>
+                    <td>
+                      <strong>{resource.label}</strong>
+                      <span>{resource.description}</span>
+                    </td>
+                    <td>{permissionMatrixCell(profile, resource.permissions.view)}</td>
+                    <td>{permissionMatrixCell(profile, resource.permissions.add)}</td>
+                    <td>{permissionMatrixCell(profile, resource.permissions.edit)}</td>
+                    <td>{permissionMatrixCell(profile, resource.permissions.delete)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+
 function itemIsVisibleForProfile(profile: AccessProfile | undefined, item: MenuItem): boolean {
-  if (!profile || profile.scope.is_platform) return true;
+  if (!profile) return false;
+  if (profileHasAdminAuthority(profile)) return true;
 
-  if (item.key === 'inventory') return hasAnyPermission(profile, ['pharmaco.inventory.manage']);
-  if (item.key === 'pos') return hasAnyPermission(profile, ['pharmaco.pos.use', 'pharmaco.sales.manage']);
-  if (item.key === 'suppliers') return hasAnyPermission(profile, ['pharmaco.suppliers.manage']);
-  if (item.key === 'finance') return hasAnyPermission(profile, ['pharmaco.sales.manage', 'pharmaco.suppliers.manage']);
-  if (item.key === 'reports') return hasAnyPermission(profile, ['pharmaco.reports.view', 'pharmaco.sales.manage', 'pharmaco.inventory.manage']);
-  if (item.key === 'tenant-setup') return hasAnyPermission(profile, ['pharmaco.profile.manage', 'pharmaco.branches.manage']);
-  if (item.key === 'ai-center') return hasAnyPermission(profile, ['ai.use', 'ai.manage']);
-  if (item.key === 'corporate-email') return hasAnyPermission(profile, ['communications.email.use']);
-  if (item.key === 'pharmacist-chat') return hasAnyPermission(profile, ['pharmaco.chat.manage']);
-  if (item.key === 'notifications') return hasAnyPermission(profile, ['notifications.view', 'notifications.manage']);
-  if (item.key === 'market-management') return hasAnyPermission(profile, ['markets.manage']);
-  if (item.key === 'localization') return hasAnyPermission(profile, ['localization.use', 'localization.manage']);
-  if (item.key === 'nearby-providers') return hasAnyPermission(profile, ['markets.view', 'markets.manage', 'localization.use']);
-  if (item.key === 'security') return true;
-  if (item.key === 'admin-panel') return item.context === 'two-factor-auth';
-  if (item.key === 'solution-portfolio') return profile.scope.is_solution;
-
-  return false;
+  return profileHasGranularPermission(profile, viewPermissionsForMenuItem(item));
 }
 
 function pruneMenuGroups(profile: AccessProfile | undefined, groups: MenuGroup[]): MenuGroup[] {
@@ -886,11 +1744,11 @@ function pruneMenuGroups(profile: AccessProfile | undefined, groups: MenuGroup[]
 }
 
 function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[] {
-  if (!profile || profile.scope.is_platform) {
+  if (!profile || profile!.scope.is_platform) {
     return menuGroups;
   }
 
-  if (profile.scope.is_solution) {
+  if (profile!.scope.is_solution) {
     return pruneMenuGroups(profile, [
       {
         key: 'solutions',
@@ -906,6 +1764,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
         icon: 'PH',
         items: [
           { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
+          { key: 'insurance', label: 'Insurance', description: 'Partners, schemes, pricing and claims', icon: 'IS', status: 'Live' },
           { key: 'pos', label: 'POS', description: 'Sales and dispensing', icon: 'PS', status: 'Live' },
           { key: 'suppliers', label: 'Procurement', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
           { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
@@ -943,8 +1802,9 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       label: `${tenantName} Pharmacy`,
       icon: 'PH',
       items: [
-        { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
         { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
+        { key: 'insurance', label: 'Insurance', description: 'Partners, schemes, pricing and claims', icon: 'IS', status: 'Live' },
+        { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
         { key: 'suppliers', label: 'Procurement', description: 'Purchasing and receiving', icon: 'PR', status: 'Live' },
         { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN', status: 'Live' },
         { key: 'reports', label: 'Ad-hoc Report', description: 'Daily and monthly review', icon: 'AR', status: 'Live' },
@@ -1488,11 +2348,11 @@ const settingsBlueprint = [
 
 const posWorkspaceItems: Array<{ key: PosWorkspaceKey; label: string; description: string }> = [
   { key: 'overview', label: 'Overview Summary', description: 'Sales, customers, prescriptions, charts, and queues' },
-  { key: 'pos', label: 'POS', description: 'Counter sale, cart, insurance, payment, receipt' },
+  { key: 'pos', label: 'POS Counter', description: 'Fast sale, cart, customer, insurance, payment, receipt' },
   { key: 'customers', label: 'Customers / Patients', description: 'Customer records, invoice-ready capture, bulk tools' },
   { key: 'prescriptions', label: 'Prescriptions', description: 'Rx capture, AI extraction, previous records' },
-  { key: 'sales-performance', label: 'Sales Performance', description: '15-row register, review detail, export' },
-  { key: 'payment-receipt', label: 'Payment / Receipt', description: 'Payments, balances, printer, WhatsApp, email' },
+  { key: 'sales-performance', label: 'Sales Register', description: '15-row register, review detail, export' },
+  { key: 'payment-receipt', label: 'Receipts & Payments', description: 'Payments, balances, printer, WhatsApp, email' },
 ];
 
 const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; description: string }> = [
@@ -1724,6 +2584,7 @@ function App() {
   const [activePharmaFeature, setActivePharmaFeature] = useState<PharmaFeatureKey>('ai-model');
   const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
   const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
+  const [activeInsuranceWorkspace, setActiveInsuranceWorkspace] = useState<InsuranceWorkspaceKey>('overview');
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
   const [isPosDayOpen, setIsPosDayOpen] = useState(false);
   const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
@@ -1754,7 +2615,26 @@ function App() {
     availableQuantity: number;
     expiryDate: string | null;
     locationName: string;
+    sellingUnit: string;
+    baseUnit: string;
+    quantityPerSellingUnit: number;
+    sellingUnitQuantity: number;
+    otherQuantity: number;
   }>>([]);
+  const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
+  const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
+  const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
+  const [posCounterCart, setPosCounterCart] = useState<{
+    items: typeof posCartItems;
+    lineCount: number;
+    totalQuantity: number;
+    subtotal: number;
+  }>({
+    items: [],
+    lineCount: 0,
+    totalQuantity: 0,
+    subtotal: 0,
+  });
   const [posInventoryBatches, setPosInventoryBatches] = useState<PharmaStockBatch[]>([]);
   const [isLoadingPosInventory, setIsLoadingPosInventory] = useState(false);
   const [posInventoryError, setPosInventoryError] = useState('');
@@ -1769,6 +2649,27 @@ function App() {
     }),
   );
   const [posSummaryRefreshKey, setPosSummaryRefreshKey] = useState(0);
+  const [posTerminalSearch, setPosTerminalSearch] = useState('');
+  const [posQuantityProduct, setPosQuantityProduct] = useState<{
+    code: string;
+    name: string;
+    strength: string;
+    quantity: number;
+    unitPrice: number;
+    batchId: number;
+    productId: number;
+    batchNumber: string;
+    availableQuantity: number;
+    expiryDate: string | null;
+    locationName: string;
+    sellingUnit: string;
+    baseUnit: string;
+    quantityPerSellingUnit: number;
+    allowOtherQuantity: boolean;
+    defaultQuantityMode: 'selling_unit' | 'other_quantity' | 'combined';
+  } | null>(null);
+  const [posSellingUnitQuantity, setPosSellingUnitQuantity] = useState('1');
+  const [posOtherQuantity, setPosOtherQuantity] = useState('0');
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
@@ -1803,6 +2704,7 @@ function App() {
   });
 
   const profile = session?.profile;
+  const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
   const visibleMenuGroups = useMemo(() => buildVisibleMenuGroups(profile), [profile]);
   const visibleSectionKeys = useMemo(() => {
     const keys = new Set<AdminSectionKey>(['overview']);
@@ -1817,6 +2719,7 @@ function App() {
   const activeLeftSubmenuLabel =
     leftMenuSubmenus[activeSection]?.find((submenu) => {
       if (activeSection === 'inventory') return submenu.target === activeInventoryView;
+      if (activeSection === 'insurance') return submenu.target === activeInsuranceWorkspace;
       if (activeSection === 'pos') return submenu.target === activePosWorkspace;
       if (activeSection === 'suppliers') return submenu.target === activeSupplierWorkspace;
       if (activeSection === 'finance') return submenu.target === activeFinanceWorkspace;
@@ -1828,7 +2731,7 @@ function App() {
       return false;
     })?.label ?? null;
   const loginStatusText = profile
-    ? `Logged in now as ${profile.user.name || profile.user.email}`
+    ? `Logged in now as ${profile!.user.name || profile!.user.email}`
     : '';
   const profileDisplayName = profile?.user.name || profile?.user.email || 'User';
   const profileInitials = profileDisplayName
@@ -1839,7 +2742,7 @@ function App() {
     .join('') || 'U';
   const profileInstitution =
     profile?.tenant_assignments?.[0]?.tenant?.name ||
-    (profile?.scope.type ? `${profile.scope.type} scope` : 'Ubuzima+');
+    (profile?.scope.type ? `${profile!.scope.type} scope` : 'Ubuzima+');
   const profileAvatarUrl = ((profile?.user ?? {}) as { avatar_url?: string }).avatar_url || '';
   const nextStaffLoginLanguage = staffLoginLanguages[
     (staffLoginLanguages.indexOf(staffLoginLanguage) + 1) % staffLoginLanguages.length
@@ -1890,7 +2793,7 @@ function App() {
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
+  }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activeInsuranceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1942,15 +2845,15 @@ function App() {
     return [
       {
         title: 'Security',
-        items: profile.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
+        items: profile!.permissions.filter((item) => item.includes('roles') || item.includes('audit')),
       },
       {
         title: 'Operations 360',
-        items: profile.permissions.filter((item) => item.startsWith('pharmaco.')),
+        items: profile!.permissions.filter((item) => item.startsWith('pharmaco.')),
       },
       {
         title: 'AI & Platform',
-        items: profile.permissions.filter((item) => item.includes('ai') || item.includes('platform')),
+        items: profile!.permissions.filter((item) => item.includes('ai') || item.includes('platform')),
       },
     ].filter((group) => group.items.length > 0);
   }, [profile]);
@@ -1981,7 +2884,7 @@ function App() {
     '--left-menu-card-padding-y': leftMenuAppearance.density === 'compact' ? '0.34rem' : '0.52rem',
     '--left-menu-card-padding-x': leftMenuAppearance.density === 'compact' ? '0.48rem' : '0.62rem',
     '--left-menu-submenu-font-size': leftMenuAppearance.density === 'compact' ? '0.7rem' : '0.76rem',
-  } as CSSProperties;
+  } as React.CSSProperties;
 
   useEffect(() => {
     if (!session?.token) {
@@ -1993,7 +2896,7 @@ function App() {
 
     async function loadUnreadMailCount() {
       try {
-        const response = await getCorporateMailOverview(session.token, 'inbox');
+        const response = await getCorporateMailOverview(session!.token, 'inbox');
         const unread = response.folders.reduce((sum, folder) => sum + folder.unread_count, 0);
 
         if (!cancelled) {
@@ -2033,6 +2936,7 @@ function App() {
     const firstSubmenu = leftMenuSubmenus[item.key]?.[0];
 
     if (item.key === 'inventory' && firstSubmenu?.target) setActiveInventoryView(firstSubmenu.target as InventoryView);
+    if (item.key === 'insurance' && firstSubmenu?.target) setActiveInsuranceWorkspace(firstSubmenu.target as InsuranceWorkspaceKey);
     if (item.key === 'pos' && firstSubmenu?.target) setActivePosWorkspace(firstSubmenu.target as PosWorkspaceKey);
     if (item.key === 'suppliers' && firstSubmenu?.target) setActiveSupplierWorkspace(firstSubmenu.target as SupplierWorkspaceKey);
     if (item.key === 'finance' && firstSubmenu?.target) setActiveFinanceWorkspace(firstSubmenu.target as FinanceWorkspaceKey);
@@ -2092,6 +2996,12 @@ function App() {
       return;
     }
 
+    if (item.key === 'insurance' && submenu.target) {
+      setActiveInsuranceWorkspace(submenu.target as InsuranceWorkspaceKey);
+      navigateToSection('insurance');
+      return;
+    }
+
     if (item.key === 'pos' && submenu.target) setActivePosWorkspace(submenu.target as PosWorkspaceKey);
     if (item.key === 'suppliers' && submenu.target) setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
     if (item.key === 'finance' && submenu.target) setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
@@ -2108,6 +3018,7 @@ function App() {
     if (activeSection !== item.key) return false;
 
     if (item.key === 'inventory') return submenu.target === activeInventoryView;
+    if (item.key === 'insurance') return submenu.target === activeInsuranceWorkspace;
     if (item.key === 'pos') return submenu.target === activePosWorkspace;
     if (item.key === 'suppliers') return submenu.target === activeSupplierWorkspace;
     if (item.key === 'finance') return submenu.target === activeFinanceWorkspace;
@@ -2195,6 +3106,10 @@ function App() {
         return;
       }
 
+      if (!('access_token' in response) || !('profile' in response)) {
+        throw new Error('Login response did not include an authenticated session.');
+      }
+
       const nextSession = {
         token: response.access_token,
         profile: response.profile,
@@ -2272,7 +3187,7 @@ function App() {
 
   async function handleLogout() {
     if (session?.token) {
-      await logout(session.token).catch(() => undefined);
+      await logout(session!.token).catch(() => undefined);
     }
 
     localStorage.removeItem(storageKey);
@@ -2285,6 +3200,8 @@ function App() {
     });
     setPharmaCoreError('');
     setPosCartItems([]);
+    setPosCounterItems([]);
+    setPosCounterCart({ items: [], lineCount: 0, totalQuantity: 0, subtotal: 0 });
     setPosInventoryBatches([]);
     setPosInventoryError('');
     setPosInventoryLoadedAt('');
@@ -2305,8 +3222,8 @@ function App() {
     setChangePasswordNotice('');
 
     try {
-      const response = await changePassword(session.token, changePasswordForm);
-      persistSession({ token: session.token, profile: response.profile });
+      const response = await changePassword(session!.token, changePasswordForm);
+      persistSession({ token: session!.token, profile: response.profile });
       setChangePasswordNotice(response.message);
       setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
     } catch (err) {
@@ -2326,7 +3243,7 @@ function App() {
     setIsCheckingAccess(true);
 
     try {
-      const result = await runAccessCheck(session.token, endpoint, tenantSlug);
+      const result = await runAccessCheck(session!.token, endpoint, tenantSlug);
       setAccessCheck({ label, result });
     } finally {
       setIsCheckingAccess(false);
@@ -2349,11 +3266,11 @@ function App() {
     setPharmaCoreError('');
 
     try {
-      const profileResponse = await getPharmacyProfile(session.token, tenantSlug);
-      const branchesResponse = await getPharmaBranches(session.token, tenantSlug);
+      const profileResponse = await getPharmacyProfile(session!.token, tenantSlug);
+      const branchesResponse = await getPharmaBranches(session!.token, tenantSlug);
       const firstBranch = branchesResponse.branches[0] ?? null;
       const departmentsResponse = firstBranch
-        ? await getBranchDepartments(session.token, tenantSlug, firstBranch.id)
+        ? await getBranchDepartments(session!.token, tenantSlug, firstBranch.id)
         : null;
 
       setPharmaCore({
@@ -2612,19 +3529,19 @@ function App() {
     <section className="summary-grid compact-summary-grid">
       <article>
         <span>Active roles</span>
-        <strong>{profile.roles.length}</strong>
+        <strong>{profile!.roles.length}</strong>
       </article>
       <article>
         <span>Permissions</span>
-        <strong>{profile.permissions.length}</strong>
+        <strong>{profile!.permissions.length}</strong>
       </article>
       <article>
         <span>Tenant assignments</span>
-        <strong>{profile.tenant_assignments.length}</strong>
+        <strong>{profile!.tenant_assignments.length}</strong>
       </article>
       <article>
         <span>Admin scopes</span>
-        <strong>{profile.admin_scopes.length}</strong>
+        <strong>{profile!.admin_scopes.length}</strong>
       </article>
     </section>
   );
@@ -2650,20 +3567,20 @@ function App() {
         <div className="pharmaco-grid">
           <section className="pharmaco-card">
             <span className="section-label">Pharmacy profile</span>
-            <h3>{pharmaCore.profile.profile.trading_name}</h3>
-            <p>{pharmaCore.profile.profile.legal_name}</p>
+            <h3>{pharmaCore.profile!.profile!.trading_name}</h3>
+            <p>{pharmaCore.profile!.profile!.legal_name}</p>
             <div className="mini-facts">
-              <span>Category: {pharmaCore.profile.profile.pharmacy_category}</span>
-              <span>Regulator: {pharmaCore.profile.profile.regulator_name}</span>
-              <span>Status: {pharmaCore.profile.profile.status}</span>
-              <span>District: {pharmaCore.profile.profile.district ?? 'Not set'}</span>
+              <span>Category: {pharmaCore.profile!.profile!.pharmacy_category}</span>
+              <span>Regulator: {pharmaCore.profile!.profile!.regulator_name}</span>
+              <span>Status: {pharmaCore.profile!.profile!.status}</span>
+              <span>District: {pharmaCore.profile!.profile!.district ?? 'Not set'}</span>
             </div>
           </section>
 
           <section className="pharmaco-card">
             <span className="section-label">Capabilities</span>
             <div className="tag-list">
-              {pharmaCore.profile.profile.capabilities.map((capability) => (
+              {pharmaCore.profile!.profile!.capabilities.map((capability) => (
                 <span key={capability}>{capability.replaceAll('_', ' ')}</span>
               ))}
             </div>
@@ -2672,7 +3589,7 @@ function App() {
           <section className="pharmaco-card">
             <span className="section-label">Insurance partners</span>
             <div className="tag-list">
-              {pharmaCore.profile.profile.insurance_partners.map((partner) => (
+              {pharmaCore.profile!.profile!.insurance_partners.map((partner) => (
                 <span key={partner}>{partner}</span>
               ))}
             </div>
@@ -2681,7 +3598,7 @@ function App() {
           <section className="pharmaco-card">
             <span className="section-label">Operating hours</span>
             <div className="mini-facts">
-              {Object.entries(pharmaCore.profile.profile.operating_hours).map(([day, hours]) => (
+              {Object.entries(pharmaCore.profile!.profile!.operating_hours).map(([day, hours]) => (
                 <span key={day}>{day.replaceAll('_', ' ')}: {hours}</span>
               ))}
             </div>
@@ -2771,11 +3688,11 @@ function App() {
   const tenantAssignmentsPanel = (
     <article className="panel wide">
       <h2>Tenant assignments</h2>
-      {profile.tenant_assignments.length === 0 ? (
+      {profile!.tenant_assignments.length === 0 ? (
         <p className="muted">No tenant assignment is attached to this account.</p>
       ) : (
         <div className="tenant-table">
-          {profile.tenant_assignments.map((assignment) => (
+          {profile!.tenant_assignments.map((assignment) => (
             <div key={assignment.tenant.slug}>
               <strong>{assignment.tenant.name}</strong>
               <span>{assignment.branch?.name ?? 'All branches'}</span>
@@ -2830,13 +3747,13 @@ function App() {
 
         {activeErpWorkspace === 'finance' && (
           <>
-            <PayablesWorkflow token={session.token} profile={profile} />
-            <ReceivablesWorkflow token={session.token} profile={profile} />
+            <PayablesWorkflow token={session!.token} profile={profile!} />
+            <ReceivablesWorkflow token={session!.token} profile={{ tenant: profile!.tenant_assignments?.[0]?.tenant }} />
           </>
         )}
 
         {activeErpWorkspace === 'procurement' && (
-          <ProcurementWorkflow token={session.token} profile={profile} />
+          <ProcurementWorkflow token={session!.token} profile={profile!} />
         )}
 
         {!['finance', 'procurement'].includes(activeErpWorkspace) && (
@@ -2879,7 +3796,7 @@ function App() {
 
         {selectedFeature.key === 'ai-model' && (
           <>
-<AiOperationsPanel token={session.token} profile={profile} />
+<AiOperationsPanel token={session!.token} profile={profile!} />
             <section className="ai-model-grid">
               {pharmaAiModels.map(([model, description]) => (
                 <article key={model}>
@@ -2895,8 +3812,8 @@ function App() {
         {selectedFeature.key === 'inventory' && (
           <>
 <ProductInventoryPreview
-              token={session.token}
-              profile={profile}
+              token={session!.token}
+              profile={profile!}
               activeView={activeInventoryView}
               onActiveViewChange={setActiveInventoryView}
               showInternalNavigation={false}
@@ -2904,7 +3821,7 @@ function App() {
             {activeInventoryView === 'product-master' && (
               <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
 
-                <ProductInventoryActions token={session.token} profile={profile} />
+                <ProductInventoryActions token={session!.token} profile={profile!} />
 
               </div>
             )}
@@ -2913,36 +3830,36 @@ function App() {
 
         {selectedFeature.key === 'pos' && (
           <>
-<SalesDispensingReview token={session.token} profile={profile} />
+<SalesDispensingReview token={session!.token} profile={profile!} />
           </>
         )}
 
         {selectedFeature.key === 'procurement' && (
           <>
-<ProcurementWorkflow token={session.token} profile={profile} />
+<ProcurementWorkflow token={session!.token} profile={profile!} />
           </>
         )}
 
         {selectedFeature.key === 'reports' && (
           <>
-            <PharmacoOperationsCommandCenter token={session.token} profile={profile} />
-            <ReportingDashboard token={session.token} profile={profile} />
+            <PharmacoOperationsCommandCenter token={session!.token} profile={profile!} />
+            <ReportingDashboard token={session!.token} profile={profile!} />
           </>
         )}
 
         {selectedFeature.key === 'product-master' && (
           <>
-            <ProductInventoryPreview token={session.token} profile={profile} />
+            <ProductInventoryPreview token={session!.token} profile={profile!} />
             <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
 
-              <ProductInventoryActions token={session.token} profile={profile} />
+              <ProductInventoryActions token={session!.token} profile={profile!} />
 
             </div>
           </>
         )}
 
         {['prescriptions', 'customers'].includes(selectedFeature.key) && (
-          <SalesDispensingReview token={session.token} profile={profile} />
+          <SalesDispensingReview token={session!.token} profile={profile!} />
         )}
       </section>
     );
@@ -3109,7 +4026,6 @@ function App() {
 
         return String(left.product?.name || '').localeCompare(String(right.product?.name || ''));
       })
-      .slice(0, 10)
       .map((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
         const sellingPrice = Number(batch.selling_price ?? 0);
@@ -3130,21 +4046,49 @@ function App() {
           availableQuantity,
           expiryDate: batch.expiry_date,
           locationName,
+          sellingUnit: (batch.product as PosBatchProduct | undefined)?.selling_unit || (batch.product as PosBatchProduct | undefined)?.unit || 'unit',
+          baseUnit: (batch.product as PosBatchProduct | undefined)?.base_unit || (batch.product as PosBatchProduct | undefined)?.unit || 'unit',
+          quantityPerSellingUnit: Math.max(
+            0.0001,
+            Number((batch.product as PosBatchProduct | undefined)?.quantity_per_selling_unit || 1),
+          ),
+          allowOtherQuantity: (batch.product as PosBatchProduct | undefined)?.allow_other_quantity !== false,
+          defaultQuantityMode: (((batch.product as PosBatchProduct | undefined)?.default_pos_quantity_mode || 'selling_unit') === 'other_quantity' ? 'other_quantity' : ((batch.product as PosBatchProduct | undefined)?.default_pos_quantity_mode || 'selling_unit') === 'combined' ? 'combined' : 'selling_unit') as 'selling_unit' | 'other_quantity' | 'combined',
         };
       });
 
-    const salesSummaryRows = Array.from({ length: 15 }).map((_, index) => {
-      const saleNumber = `SAL-${String(2400 + index).padStart(5, '0')}`;
-      const customer = index % 3 === 0 ? 'Walk-in' : index % 3 === 1 ? 'Insurance customer' : 'Existing customer';
-      const method = index % 4 === 0 ? 'Cash' : index % 4 === 1 ? 'MoMo' : index % 4 === 2 ? 'Insurance' : 'Card';
-      const status = index % 5 === 0 ? 'Review' : 'Completed';
-      const amount = `RWF ${(12500 + index * 3750).toLocaleString('en-RW')}`;
-      const dateTime = `Jul 03, ${String(8 + (index % 10)).padStart(2, '0')}:${index % 2 === 0 ? '15' : '45'}`;
-
-      return [dateTime, saleNumber, customer, method, status, amount] as const;
-    });
+    const salesSummaryRows: Array<{
+      dateTime: string;
+      saleNumber: string;
+      customer: string;
+      method: string;
+      status: string;
+      amount: string;
+    }> = [];
 
     const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
+
+    const normalizedPosTerminalSearch = posTerminalSearch.trim().toLowerCase();
+    const posVisibleProducts = normalizedPosTerminalSearch
+      ? posProducts.filter((product) =>
+          [
+            product.name,
+            product.strength,
+            product.code,
+            product.batchNumber,
+            product.locationName,
+          ]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(normalizedPosTerminalSearch)),
+        )
+      : posProducts;
+
+    const posSearchHelperText = posInventoryBatches.length === 0
+      ? ''
+      : normalizedPosTerminalSearch
+        ? `${posVisibleProducts.length} matching product${posVisibleProducts.length === 1 ? '' : 's'}`
+        : `${posProducts.length} fast product tile${posProducts.length === 1 ? '' : 's'} ready`;
+
 
     async function loadCurrentPosInventory() {
       if (!session?.token) return;
@@ -3154,22 +4098,17 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session.token, posTenantSlug, undefined, { perPage: 150, sellableOnly: true });
+        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
         setPosInventoryLoadedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         setPosCartItems([]);
+        setPosCounterItems([]);
+        setPosCounterCart({ items: [], lineCount: 0, totalQuantity: 0, subtotal: 0 });
         setPosTransactionConfirmed(false);
 
-        const sellableCount = batches.filter((batch) => {
-          const availableQuantity = resolveBatchAvailableQuantity(batch);
-          const expiryIsValid = !batch.expiry_date || batch.expiry_date >= new Date().toISOString().slice(0, 10);
-
-          return availableQuantity > 0 && (!batch.status || batch.status === 'active') && expiryIsValid;
-        }).length;
-
-        setPosNotice(`Current inventory loaded. ${sellableCount} sellable batch${sellableCount === 1 ? '' : 'es'} available for POS picking.`);
+        setPosNotice('');
       } catch (err) {
         setPosInventoryError(err instanceof Error ? err.message : 'Unable to load current inventory for POS.');
       } finally {
@@ -3177,101 +4116,253 @@ function App() {
       }
     }
 
-    function forceRefreshSaleSummary() {
+    function normalizePosCartItems(cartItems: typeof posCartItems = []) {
+      const normalizedItems = (Array.isArray(cartItems) ? cartItems : [])
+        .filter((item) => item && item.code)
+        .reduce<typeof posCartItems>((items, item) => {
+          const quantity = Math.max(1, Number(item.quantity || 1));
+          const availableQuantity = Math.max(1, Number(item.availableQuantity || quantity));
+
+          const normalizedItem = {
+            ...item,
+            quantity: Math.min(quantity, availableQuantity),
+            unitPrice: Math.max(0, Number(item.unitPrice || 0)),
+            availableQuantity,
+            batchId: Number(item.batchId || 0),
+            productId: Number(item.productId || 0),
+            batchNumber: String(item.batchNumber || ''),
+          };
+
+          const existingIndex = items.findIndex(
+            (existing) =>
+              existing.code === normalizedItem.code &&
+              Number(existing.batchId || 0) === Number(normalizedItem.batchId || 0),
+          );
+
+          if (existingIndex >= 0) {
+            items[existingIndex] = normalizedItem;
+          } else {
+            items.push(normalizedItem);
+          }
+
+          return items;
+        }, []);
+
+      return normalizedItems;
+    }
+
+    function buildPosCounterCartSnapshot(items: typeof posCartItems = []) {
+      const stableItems = normalizePosCartItems(items);
+
+      return {
+        items: stableItems,
+        lineCount: stableItems.length,
+        totalQuantity: stableItems.reduce((total, item) => total + Number(item.quantity || 0), 0),
+        subtotal: stableItems.reduce(
+          (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+          0,
+        ),
+      };
+    }
+
+    function createStablePosCartSnapshot(sourceItems: typeof posCartItems = []) {
+      return normalizePosCartItems(sourceItems);
+    }
+
+    function readActivePosCounterItems() {
+      return createStablePosCartSnapshot(posRenderedCartItems);
+    }
+
+    function commitPosCounterItems(nextItems: typeof posCartItems) {
+      const snapshot = buildPosCounterCartSnapshot(nextItems);
+
+      setPosRenderedCartItems(snapshot.items);
+      setPosCartItems(snapshot.items);
+      setPosCounterItems(snapshot.items);
+      setPosCounterCart(snapshot);
       setPosSaleSummary(
         calculatePosSaleSummary({
-          cartItems: posCartItems,
+          cartItems: snapshot.items,
           discountAmount: posDiscountAmount,
           paymentMethod: posPaymentMethod,
           insuranceProviderId: posInsuranceProvider,
           insuranceInstitutionId: posInsuranceInstitution,
         }),
       );
-      setPosNotice('Sale Summary refreshed from current cart.');
+      setPosSummaryRefreshKey((current) => current + 1);
+      setPosTransactionConfirmed(false);
     }
 
-    function addPosProductToCart(product: typeof posProducts[number]) {
+    function forceRefreshSaleSummary() {
+      const snapshot = buildPosCounterCartSnapshot(readActivePosCounterItems());
+
+      setPosRenderedCartItems(snapshot.items);
+      setPosCartItems(snapshot.items);
+      setPosCounterItems(snapshot.items);
+      setPosCounterCart(snapshot);
+      setPosSaleSummary(
+        calculatePosSaleSummary({
+          cartItems: snapshot.items,
+          discountAmount: posDiscountAmount,
+          paymentMethod: posPaymentMethod,
+          insuranceProviderId: posInsuranceProvider,
+          insuranceInstitutionId: posInsuranceInstitution,
+        }),
+      );
+      setPosSummaryRefreshKey((current) => current + 1);
+      setPosTransactionConfirmed(false);
+      setPosNotice('Payment summary refreshed from the active cart.');
+    }
+
+    function openPosQuantityPopup(product: typeof posProducts[number]) {
       if (!product.batchId || product.availableQuantity <= 0) {
         setPosNotice('This product is not available in current inventory and cannot be sold.');
         return;
       }
 
-      setPosCartItems((current) => {
-        const existing = current.find((item) => item.code === product.code);
+      setPosQuantityProduct(product);
 
-        if (existing) {
-          const nextQuantity = Math.min(existing.quantity + 1, product.availableQuantity);
+      if (product.defaultQuantityMode === 'other_quantity') {
+        setPosSellingUnitQuantity('0');
+        setPosOtherQuantity('1');
+      } else {
+        setPosSellingUnitQuantity('1');
+        setPosOtherQuantity('0');
+      }
 
-          if (nextQuantity === existing.quantity) {
-            setPosNotice(`${product.name} cannot exceed available inventory of ${product.availableQuantity}.`);
-          }
+      setPosNotice('');
+    }
 
-          return current.map((item) =>
-            item.code === product.code
-              ? {
-                  ...item,
-                  quantity: nextQuantity,
-                  availableQuantity: product.availableQuantity,
-                  unitPrice: product.unitPrice,
-                }
-              : item,
-          );
-        }
+    function closePosQuantityPopup() {
+      setPosQuantityProduct(null);
+      setPosSellingUnitQuantity('1');
+      setPosOtherQuantity('0');
+    }
 
-        return [
-          ...current,
+    function addConfiguredPosProductToCart() {
+      const product = posQuantityProduct;
+
+      if (!product) return;
+
+      const calculation = calculatePosQuantity({
+        sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
+        otherQuantity: product.allowOtherQuantity
+          ? Number(posOtherQuantity || 0)
+          : 0,
+        quantityPerSellingUnit: product.quantityPerSellingUnit,
+        sellingUnitPrice: product.unitPrice,
+      });
+
+      if (calculation.totalBaseQuantity <= 0) {
+        setPosNotice('Enter at least one selling unit or another permitted quantity.');
+        return;
+      }
+
+      const currentItems = readActivePosCounterItems();
+      const existing = currentItems.find(
+        (item) =>
+          item.code === product.code &&
+          Number(item.batchId || 0) === Number(product.batchId || 0),
+      );
+
+      const existingQuantity = Number(existing?.quantity || 0);
+      const requestedTotalQuantity =
+        existingQuantity + calculation.totalBaseQuantity;
+
+      if (requestedTotalQuantity > product.availableQuantity) {
+        setPosNotice(
+          `${product.name} has ${product.availableQuantity.toLocaleString('en-RW')} ${product.baseUnit} available. Requested total is ${requestedTotalQuantity.toLocaleString('en-RW')}.`,
+        );
+        return;
+      }
+
+      let nextItems: typeof posCartItems;
+
+      if (existing) {
+        nextItems = currentItems.map((item) =>
+          item.code === product.code &&
+          Number(item.batchId || 0) === Number(product.batchId || 0)
+            ? {
+                ...item,
+                quantity: requestedTotalQuantity,
+                unitPrice: calculation.baseUnitPrice,
+                availableQuantity: product.availableQuantity,
+                sellingUnit: product.sellingUnit,
+                baseUnit: product.baseUnit,
+                quantityPerSellingUnit: product.quantityPerSellingUnit,
+                sellingUnitQuantity:
+                  Number(item.sellingUnitQuantity || 0) +
+                  calculation.sellingUnitQuantity,
+                otherQuantity:
+                  Number(item.otherQuantity || 0) +
+                  calculation.otherQuantity,
+              }
+            : item,
+        );
+      } else {
+        nextItems = [
+          ...currentItems,
           {
             code: product.code,
             name: product.name,
             strength: product.strength,
-            quantity: 1,
-            unitPrice: product.unitPrice,
+            quantity: calculation.totalBaseQuantity,
+            unitPrice: calculation.baseUnitPrice,
             batchId: product.batchId,
             productId: product.productId,
             batchNumber: product.batchNumber,
             availableQuantity: product.availableQuantity,
             expiryDate: product.expiryDate,
             locationName: product.locationName,
+            sellingUnit: product.sellingUnit,
+            baseUnit: product.baseUnit,
+            quantityPerSellingUnit: product.quantityPerSellingUnit,
+            sellingUnitQuantity: calculation.sellingUnitQuantity,
+            otherQuantity: calculation.otherQuantity,
           },
-        ].slice(0, 10);
-      });
+        ];
+      }
 
-      setPosTransactionConfirmed(false);
+      const snapshot = buildPosCounterCartSnapshot(nextItems);
+      commitPosCounterItems(snapshot.items);
+
+      setPosNotice(
+        `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}` +
+        `${calculation.otherQuantity > 0 ? ` + ${calculation.otherQuantity.toLocaleString('en-RW')} ${product.baseUnit}` : ''}` +
+        ` = ${calculation.totalBaseQuantity.toLocaleString('en-RW')} ${product.baseUnit}.`,
+      );
+
+      closePosQuantityPopup();
     }
 
     function updateCartQuantity(code: string, quantity: number) {
-      setPosCartItems((current) =>
-        current.map((item) => {
-          if (item.code !== code) return item;
+      const nextItems = readActivePosCounterItems().map((item) => {
+        if (item.code !== code) return item;
 
-          const safeQuantity = Math.min(
-            Math.max(1, Number.isFinite(quantity) ? quantity : 1),
-            item.availableQuantity,
-          );
+        const safeQuantity = Math.min(
+          Math.max(1, Number.isFinite(quantity) ? quantity : 1),
+          item.availableQuantity,
+        );
 
-          if (safeQuantity !== quantity) {
-            setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
-          }
+        if (safeQuantity !== quantity) {
+          setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
+        }
 
-          return {
-            ...item,
-            quantity: safeQuantity,
-          };
-        }),
-      );
+        return {
+          ...item,
+          quantity: safeQuantity,
+        };
+      });
 
-      setPosTransactionConfirmed(false);
+      commitPosCounterItems(nextItems);
     }
 
     function removeCartItem(code: string) {
-      setPosCartItems((current) => current.filter((item) => item.code !== code));
-      setPosTransactionConfirmed(false);
-      setPosNotice('Item removed from cart.');
+      commitPosCounterItems(readActivePosCounterItems().filter((item) => item.code !== code));
     }
 
     function clearPosCart() {
-      setPosCartItems([]);
-      setPosTransactionConfirmed(false);
+      commitPosCounterItems([]);
       setPosNotice('Cart cleared.');
     }
 
@@ -3305,7 +4396,8 @@ function App() {
     }
 
     function confirmTransaction() {
-      const unavailableItem = posCartItems.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
+      const currentItems = readActivePosCounterItems();
+      const unavailableItem = currentItems.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
 
       if (unavailableItem) {
         setPosNotice(`${unavailableItem.name} is no longer available in the selected quantity. Refresh current inventory before confirming.`);
@@ -3313,7 +4405,7 @@ function App() {
         return;
       }
 
-      if (posCartItems.length === 0) {
+      if (currentItems.length === 0) {
         setPosNotice('Add at least one drug to cart before confirming payment.');
         return;
       }
@@ -3323,6 +4415,7 @@ function App() {
         return;
       }
 
+      commitPosCounterItems(currentItems);
       setPosTransactionConfirmed(true);
       setPosNotice(
         posCustomerInvoice === 'yes'
@@ -3331,28 +4424,71 @@ function App() {
       );
     }
 
+
+    function renderPosWorkspaceTopMenu(activeKey: PosWorkspaceKey | 'main-dashboard' = activePosWorkspace) {
+      const posTerminalMenuItems = [
+        { key: 'main-dashboard', label: 'Main Dashboard', detail: 'Exit POS' },
+        { key: 'overview', label: 'POS Dashboard', detail: 'Control view' },
+        { key: 'pos', label: 'POS Counter', detail: 'Serve customer' },
+        { key: 'dispensing-review', label: 'Pharmacist Review', detail: 'Safety queue' },
+        { key: 'customers', label: 'Customers', detail: 'Patients' },
+        { key: 'prescriptions', label: 'Prescriptions', detail: 'Rx files' },
+        { key: 'sales-performance', label: 'Sales Register', detail: 'Real sales' },
+        { key: 'payment-receipt', label: 'Receipts & Payments', detail: 'Collection' },
+      ] as const;
+
+      return (
+        <nav className="pos-dedicated-command-bar pos-unified-terminal-menu" aria-label="POS workspace navigation">
+          {posTerminalMenuItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={activeKey === item.key ? 'active' : ''}
+              onClick={() => {
+                if (item.key === 'main-dashboard') {
+                  navigateToSection('overview');
+                  return;
+                }
+
+                setActivePosWorkspace(item.key);
+              }}
+            >
+              <span>{item.label}</span>
+              <strong>{item.detail}</strong>
+            </button>
+          ))}
+        </nav>
+      );
+    }
+
     if (activePosWorkspace === 'overview') {
       return (
-        <section className="section-page pos-executive-overview">
-          <section className="pos-executive-hero">
+        <section className="section-page pos-executive-overview pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('overview')}
+          <section className="pos-executive-hero pos-international-hero">
             <div>
-              <span>POS executive view</span>
-              <h2>Sales performance and cashier control</h2>
-              <p>Live sales, payment mix, insurance exposure, exceptions and till readiness in one manager view.</p>
+              <span>POS and sales operations</span>
+              <h2>Pharmacy POS Dashboard</h2>
+              <p>Counter readiness, sales flow, pharmacist review, customer queues, receipts, and daily close controls in one real-data POS workspace.</p>
             </div>
-            <button type="button" onClick={() => setActivePosWorkspace('pos')}>
-              Open POS Counter
-            </button>
+            <div className="pos-overview-hero-actions">
+              <button type="button" onClick={() => setActivePosWorkspace('pos')}>
+                Open Dedicated POS Counter
+              </button>
+              <button type="button" className="secondary-action" onClick={() => navigateToSection('overview')}>
+                Main Dashboard
+              </button>
+            </div>
           </section>
 
-          <section className="pos-overview-analytics-grid executive">
+          <section className="pos-overview-analytics-grid executive pos-real-kpi-grid">
             {[
-              ['Today gross sales', 'RWF 1.84M', '+12% vs yesterday', 'All confirmed sales'],
-              ['Transactions', '126', '118 completed', '8 require review'],
-              ['Insurance claims', 'RWF 540K', '29% of sales value', 'RSSB, MMI, Radiant'],
-              ['Cashier variance', 'RWF 8.5K', 'Needs review', 'Cash close exception'],
-              ['Average basket', 'RWF 14.6K', '36% chronic refill', 'High-value transactions'],
-              ['Open cart risk', '6 carts', 'Unconfirmed drafts', 'Follow before close'],
+              ['POS session', isPosDayOpen ? 'Open' : 'Closed', isPosDayOpen ? 'Ready for counter work' : 'Open day before serving', 'Controlled by cashier day opening'],
+              ['Current cart lines', String(posCounterCart.lineCount), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
+              ['Current cart total', `RWF ${posSaleSummary.total.toLocaleString('en-RW')}`, posPaymentMethod.replaceAll('_', ' '), 'Calculated from current cart only'],
+              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Stock readiness'],
+              ['Prescription state', posPrescriptionStatus.replaceAll('-', ' '), posPrescriptionStatus === 'manual-review' ? 'Needs review' : 'Counter selected', 'Used for pharmacist safety handoff'],
+              ['Receipt readiness', posCustomerInvoice === 'yes' ? 'Invoice requested' : 'Receipt only', posInvoiceDelivery.replaceAll('_', ' '), 'No fake transactions displayed'],
             ].map(([title, value, signal, detail]) => (
               <article key={title} className="pos-executive-card">
                 <span>{title}</span>
@@ -3367,17 +4503,17 @@ function App() {
             <article className="panel wide">
               <div className="section-heading">
                 <div>
-                  <span>Payment mix</span>
-                  <h2>Sales movement by channel</h2>
+                  <span>Real-data readiness</span>
+                  <h2>POS data quality and workflow readiness</h2>
                 </div>
               </div>
 
-              <div className="pos-channel-bars">
+              <div className="pos-channel-bars pos-readiness-bars">
                 {[
-                  ['Cash', '38%', 'RWF 699K'],
-                  ['MoMo', '27%', 'RWF 497K'],
-                  ['Insurance', '29%', 'RWF 534K'],
-                  ['Card/Credit', '6%', 'RWF 110K'],
+                  ['Current inventory', posInventoryBatches.length ? '100%' : '8%', posInventoryBatches.length ? `${posInventoryBatches.length} batches loaded` : 'Not loaded'],
+                  ['Active cart', posCounterCart.lineCount ? '72%' : '12%', posCounterCart.lineCount ? `${posCounterCart.lineCount} line(s)` : 'No active sale'],
+                  ['Payment setup', posPaymentMethod ? '88%' : '10%', posPaymentMethod.replaceAll('_', ' ')],
+                  ['Receipt setup', posCustomerInvoice === 'yes' ? '76%' : '35%', posCustomerInvoice === 'yes' ? posInvoiceDelivery : 'Standard receipt'],
                 ].map(([label, width, value]) => (
                   <div key={label} className="pos-channel-row">
                     <span>{label}</span>
@@ -3391,17 +4527,17 @@ function App() {
             <article className="panel wide">
               <div className="section-heading">
                 <div>
-                  <span>Operational alerts</span>
-                  <h2>What needs attention</h2>
+                  <span>Counter guidance</span>
+                  <h2>What the cashier should check next</h2>
                 </div>
               </div>
 
               <div className="pos-alert-stack">
                 {[
-                  ['High', 'Cash variance above tolerance', 'Review till close before manager approval'],
-                  ['Medium', '8 sales awaiting receipt confirmation', 'Follow receipt delivery queue'],
-                  ['Medium', '3 insurance transactions missing institution', 'Confirm scheme rate before claim'],
-                  ['Low', '6 open carts still unconfirmed', 'Close or cancel before end of day'],
+                  [isPosDayOpen ? 'Ready' : 'Start', isPosDayOpen ? 'POS day is open' : 'Open POS day', isPosDayOpen ? 'Counter can serve customers.' : 'Open the day before confirming payments.'],
+                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Refresh stock', posInventoryBatches.length ? 'Sellable stock ready for picking.' : 'Current sellable stock is used for cashier picking.'],
+                  [posCounterCart.lineCount ? 'Active' : 'Idle', posCounterCart.lineCount ? 'Cart in progress' : 'No active cart', posCounterCart.lineCount ? 'Review quantity, payer, and receipt before payment.' : 'Search or scan a product to begin.'],
+                  [posPrescriptionStatus === 'manual-review' ? 'Review' : 'Safe', posPrescriptionStatus === 'manual-review' ? 'Prescription needs manual review' : 'Prescription status selected', 'Pharmacist Review remains available for controlled dispensing.'],
                 ].map(([level, title, detail]) => (
                   <div key={title}>
                     <strong>{level}</strong>
@@ -3413,109 +4549,191 @@ function App() {
             </article>
           </section>
 
-          <FocusRegisterPreview
-            title="Recent POS exceptions"
-            description="Transactions needing attention before close of day."
-            rows={previewRows}
-          />
+          <section className="pos-real-register-card">
+            <div className="section-heading">
+              <div>
+                <span>Real sales register</span>
+                <h3>Recent Session Transactions</h3>
+                <p className="muted">No dummy rows are shown here. Real sales will appear after they are created through the backend-connected POS and dispensing workflow.</p>
+              </div>
+              <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
+                Open Sales Register
+              </button>
+            </div>
+            <div className="system-table-wrap">
+              <table className="system-table">
+                <thead>
+                  <tr>
+                    <th>Date / Time</th>
+                    <th>Sale No.</th>
+                    <th>Customer</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colSpan={6}>No real POS transactions loaded in this dashboard view yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
         </section>
       );
     }
 
     if (activePosWorkspace === 'pos') {
+      const selectedInsuranceInstitution = selectedInsurance.institutions.find(
+        (institution) => institution.id === posInsuranceInstitution,
+      );
+      const rawCustomerContributionPercent = Number(
+        selectedInsuranceInstitution?.customerContributionPercent ??
+        selectedInsurance.masterCustomerContributionPercent ??
+        100,
+      );
+      const posSummaryCustomerContributionPercent = posPaymentMethod === 'insurance'
+        ? Math.min(Math.max(rawCustomerContributionPercent, 0), 100)
+        : 100;
+      const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
+        ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
+        : 0;
+      const posLiveCartItems = readActivePosCounterItems();
+      const posVisibleCartItems = posLiveCartItems;
+      const posCartDisplayItems = posLiveCartItems;
+      const posFinancialLineCount = posLiveCartItems.length;
+      const posFinancialTotalQuantity = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0),
+        0,
+      );
+      const posCartOperatingUnits = posFinancialTotalQuantity;
+      const posSummarySyncKey = posSummaryRefreshKey;
+      const posFinancialSubtotal = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+        0,
+      );
+      const posOperatingCart = buildPosCounterCartSnapshot(posLiveCartItems);
+
+      const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
+      const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
+      const posSummaryNetDiscount = Math.max(posFinancialSubtotal - posSummaryAppliedDiscount, 0);
+
+      // Tax mode will later come from Finance > Tax Compliance Management.
+      // Inclusive means the displayed price already includes tax.
+      // Exclusive means tax is added on top of Net Discount.
+      const posTaxMode = configuredPosTaxMode();
+      const posTaxRatePercent = 0;
+      const posSummaryTaxAmount = posTaxMode === 'exclusive'
+        ? Math.round((posSummaryNetDiscount * posTaxRatePercent) / 100)
+        : 0;
+      const posSummaryTotalAmount = posTaxMode === 'exclusive'
+        ? posSummaryNetDiscount + posSummaryTaxAmount
+        : posSummaryNetDiscount;
+      const posSummaryCustomerPayment = posPaymentMethod === 'insurance'
+        ? Math.round((posSummaryTotalAmount * posSummaryCustomerContributionPercent) / 100)
+        : posSummaryTotalAmount;
+      const posSummaryInsurerPayment = posPaymentMethod === 'insurance'
+        ? Math.max(posSummaryTotalAmount - posSummaryCustomerPayment, 0)
+        : 0;
+      const posSummaryTimestamp = new Date().toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      const posPaymentSummarySignature = [
+        posLiveCartItems.length
+          ? posLiveCartItems
+              .map((item) =>
+                [
+                  item.code,
+                  Number(item.batchId || 0),
+                  Number(item.quantity || 0),
+                  Number(item.unitPrice || 0),
+                ].join(':'),
+              )
+              .join('|')
+          : 'empty-cart',
+        posPaymentMethod,
+        posDiscountAmount,
+        posInsuranceProvider,
+        posInsuranceInstitution,
+        posSummaryCustomerContributionPercent,
+        posSummaryInsurerContributionPercent,
+      ].join('::');
+
+      void posSummarySyncKey;
+      const posPaymentOperationalCards = [
+        ['Date', posSummaryTimestamp],
+        ['Cart lines', posFinancialLineCount],
+        ['Cart units', posCartOperatingUnits],
+        ['% Customer', `${posSummaryCustomerContributionPercent}%`],
+        ['% Insurer', `${posSummaryInsurerContributionPercent}%`],
+      ];
+
+      const posPaymentFinancialCards = [
+        ['Sub-Total', `RWF ${posOperatingCart.subtotal.toLocaleString('en-RW')}`],
+        ['Discount', `RWF ${posSummaryDiscountAmount.toLocaleString('en-RW')}`],
+        ['Net Discount', `RWF ${posSummaryNetDiscount.toLocaleString('en-RW')}`],
+        ['Tax', `RWF ${posSummaryTaxAmount.toLocaleString('en-RW')}`],
+        ['Total Amount', `RWF ${posSummaryTotalAmount.toLocaleString('en-RW')}`],
+        ['Customer Payment', `RWF ${posSummaryCustomerPayment.toLocaleString('en-RW')}`],
+        ['Insurer Payment', `RWF ${posSummaryInsurerPayment.toLocaleString('en-RW')}`],
+      ];
+
       return (
-        <section className="section-page">
-          <section className="pos-counter-page">
+        <section className="section-page pos-dedicated-counter-shell">
+          <section className="pos-counter-page pos-counter-page--dedicated pos-stable-page-v16">
+            <div className="pos-fixed-top-v16">
+              {renderPosWorkspaceTopMenu('pos')}
+
+            <PosInventoryAutoLoader
+              shouldLoad={activePosWorkspace === 'pos' && !isLoadingPosInventory && !posInventoryLoadedAt && !posInventoryError}
+              onLoad={loadCurrentPosInventory}
+            />
+
             <section className="pos-counter-heading">
               <div>
-                <p className="eyebrow">POS</p>
-                <h2>Pharmacy sales counter</h2>
+                <p className="eyebrow">Pharmacy counter</p>
+                <h2>Pharmacy POS Counter</h2>
                 <p className="muted">Select drugs, build cart, complete transaction setup, confirm payment, then generate invoice when required.</p>
               </div>
-
-              <div className={`pos-session-pill ${isPosDayOpen ? 'open' : 'closed'}`}>
-                <span>{isPosDayOpen ? 'Session open' : 'Session closed'}</span>
-                <strong>RWF {Number(posStartingCashBalance || 0).toLocaleString('en-RW')}</strong>
-              </div>
             </section>
+            </div>
 
-            {posNotice && <div className="form-success">{posNotice}</div>}
+            <div className="pos-terminal-main-scroll pos-scroll-body-v16">
+              {posNotice && <div className="form-success">{posNotice}</div>}
 
-            <section className="pos-day-control-strip pos-day-control-strip--two-by-two">
-              <article>
-                <span>Open POS Day</span>
-                <label>
-                  <small>Opening mode</small>
-                  <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
-                    <option value="fresh-start">Fresh start day</option>
-                    <option value="handover">Handover from previous teller</option>
-                  </select>
-                </label>
-                <label>
-                  <small>Starting cash balance</small>
-                  <input
-                    type="number"
-                    min="0"
-                    value={posStartingCashBalance}
-                    onChange={(event) => setPosStartingCashBalance(event.target.value)}
-                  />
-                </label>
-                <button type="button" onClick={openPosDay}>Open POS Day</button>
-              </article>
-
-              <article>
-                <span>Close POS Day</span>
-                <label>
-                  <small>Closing mode</small>
-                  <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
-                    <option value="handover">Handover to incoming staff</option>
-                    <option value="final-close">Final close with manager deposit proof</option>
-                  </select>
-                </label>
-
-                {posCloseMode === 'handover' ? (
-                  <label className="pos-inline-check">
-                    <input
-                      type="checkbox"
-                      checked={posTillZeroized}
-                      onChange={(event) => setPosTillZeroized(event.target.checked)}
-                    />
-                    <small>Till zeroized and incoming staff acknowledged</small>
-                  </label>
-                ) : (
-                  <label>
-                    <small>Deposit proof reference</small>
-                    <input
-                      value={posDepositProof}
-                      onChange={(event) => setPosDepositProof(event.target.value)}
-                      placeholder="Deposit slip, bank ref, MoMo ref"
-                    />
-                  </label>
-                )}
-
-                <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close POS Day</button>
-              </article>
-            </section>
-
-            <section className="pos-counter-workbench pos-counter-workbench--cart-middle">
-              <aside className="pos-rx-queue">
+<section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
+              <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
                 <div className="section-heading">
                   <div>
                     <span>Step 1</span>
-                    <h3>Select drugs</h3>
+                    <h3>Product search & stock pick</h3>
                   </div>
                 </div>
 
-                <input className="pos-search-input" placeholder="Search current inventory, batch, barcode..." />
+                <input
+                  className="pos-search-input"
+                  value={posTerminalSearch}
+                  placeholder="Scan barcode or search product, batch, SKU..."
+                  onChange={(event) => setPosTerminalSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && posVisibleProducts.length === 1) {
+                      openPosQuantityPopup(posVisibleProducts[0]);
+                      setPosTerminalSearch('');
+                    }
+                  }}
+                />
 
                 <div className="pos-inventory-load-panel">
                   <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
-                    {isLoadingPosInventory ? 'Loading current inventory…' : 'Load current inventory'}
+                    {isLoadingPosInventory ? 'Loading stock…' : 'Refresh stock'}
                   </button>
                   <span>
-                    {posInventoryLoadedAt
-                      ? `Current inventory loaded at ${posInventoryLoadedAt}`
-                      : 'Load stock batches before adding products to cart.'}
+                    {posInventoryLoadedAt ? `Inventory loaded at ${posInventoryLoadedAt}` : ''}
                   </span>
                 </div>
 
@@ -3524,106 +4742,429 @@ function App() {
                 <div className="pos-drug-list pos-drug-list--ten">
                   {posProducts.length === 0 ? (
                     <div className="pos-inventory-empty-state">
-                      <strong>No current inventory loaded</strong>
-                      <small>Load current inventory to pick only sellable batches with available stock.</small>
+                      <strong>Loading stock…</strong>
                     </div>
                   ) : (
-                    posProducts.map((product) => (
-                      <button key={product.code} type="button" onClick={() => addPosProductToCart(product)}>
-                        <strong>{product.name}</strong>
-                        <small>{product.strength}</small>
-                        <em>{product.code}</em>
-                        <span>{product.status}</span>
-                        <i>Add to cart</i>
-                      </button>
-                    ))
+                    posVisibleProducts.length === 0 ? (
+                      <div className="pos-inventory-empty-state">
+                        <strong>No matching product</strong>
+                        <small>Try another product name, SKU, batch, barcode, or clear the search.</small>
+                      </div>
+                    ) : (
+                      posVisibleProducts.map((product) => {
+                        const productRecord = product as {
+                          expiryDate?: string;
+                          expiresAt?: string;
+                          expiry_date?: string;
+                          expires_at?: string;
+                          batchExpiryDate?: string;
+                        };
+                        const expiryDateText =
+                          productRecord.expiryDate ||
+                          productRecord.expiresAt ||
+                          productRecord.expiry_date ||
+                          productRecord.expires_at ||
+                          productRecord.batchExpiryDate ||
+                          product.status.match(/(?:exp(?:iry|ires)?\s*[:\-]?\s*)([^·|,]+)/i)?.[1]?.trim() ||
+                          'Not set';
+                        const expiryDateValue = expiryDateText !== 'Not set' ? new Date(expiryDateText) : null;
+                        const expiryDaysRemaining = expiryDateValue && !Number.isNaN(expiryDateValue.getTime())
+                          ? Math.ceil((expiryDateValue.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                          : null;
+                        const expiryDaysText = expiryDaysRemaining === null
+                          ? 'Days: N/A'
+                          : expiryDaysRemaining < 0
+                            ? `${Math.abs(expiryDaysRemaining)}d overdue`
+                            : `${expiryDaysRemaining}d left`;
+                        const normalizedStatus = product.status.toLowerCase();
+                        const expiryStatusClass = expiryDaysRemaining !== null
+                          ? expiryDaysRemaining <= 0
+                            ? 'expired'
+                            : expiryDaysRemaining <= 30
+                              ? 'critical'
+                              : expiryDaysRemaining <= 90
+                                ? 'warning'
+                                : expiryDaysRemaining <= 180
+                                  ? 'watch'
+                                  : 'safe'
+                          : normalizedStatus.includes('expired')
+                            ? 'expired'
+                            : normalizedStatus.includes('critical') || normalizedStatus.includes('danger')
+                              ? 'critical'
+                              : normalizedStatus.includes('near') || normalizedStatus.includes('soon') || normalizedStatus.includes('warning')
+                                ? 'warning'
+                                : normalizedStatus.includes('watch')
+                                  ? 'watch'
+                                  : 'safe';
+
+                        return (
+                          <button
+                            key={product.code}
+                            type="button"
+                            className={`pos-product-tile pos-product-tile-v16 product-expiry-${expiryStatusClass}`}
+                            onClick={() => openPosQuantityPopup(product)}
+                          >
+                            <strong>{product.name}</strong>
+                            <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
+                            <span className="pos-product-card-line">Available: {product.availableQuantity.toLocaleString('en-RW')}</span>
+                            <span className="pos-product-card-line">Exp: {expiryDateText}</span>
+                            <span className="pos-product-card-line">{expiryDaysText}</span>
+                          </button>
+                        );
+                      })
+                    )
                   )}
                 </div>
+              </section>
 
-                <button
-                  type="button"
-                  className="pos-view-products-link"
-                  onClick={() => {
-                    setActiveInventoryView('product-master');
-                    navigateToSection('inventory');
-                  }}
-                >
-                  View full product list
-                </button>
-              </aside>
+              {posQuantityProduct && (() => {
+                const quantityPreview = calculatePosQuantity({
+                  sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
+                  otherQuantity: posQuantityProduct.allowOtherQuantity
+                    ? Number(posOtherQuantity || 0)
+                    : 0,
+                  quantityPerSellingUnit: posQuantityProduct.quantityPerSellingUnit,
+                  sellingUnitPrice: posQuantityProduct.unitPrice,
+                });
 
-              <main className="pos-cart-center">
-                <section className="pos-cart-card">
+                return (
+                  <div
+                    className="pos-quantity-dialog-backdrop"
+                    role="presentation"
+                    onMouseDown={(event) => {
+                      if (event.target === event.currentTarget) {
+                        closePosQuantityPopup();
+                      }
+                    }}
+                  >
+                    <section
+                      className="pos-quantity-dialog"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-labelledby="pos-quantity-dialog-title"
+                    >
+                      <div className="pos-quantity-dialog__header">
+                        <div>
+                          <span>POS quantity configuration</span>
+                          <h3 id="pos-quantity-dialog-title">
+                            {posQuantityProduct.name}
+                          </h3>
+                          <small>
+                            Batch {posQuantityProduct.batchNumber} · Available{' '}
+                            {posQuantityProduct.availableQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </small>
+                        </div>
+
+                        <button
+                          type="button"
+                          aria-label="Close quantity popup"
+                          onClick={closePosQuantityPopup}
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      <div className="pos-quantity-dialog__fields">
+                        <label>
+                          <span>Quantity as per Selling Unit</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={posSellingUnitQuantity}
+                            onChange={(event) =>
+                              setPosSellingUnitQuantity(event.target.value)
+                            }
+                          />
+                          <small>
+                            1 {posQuantityProduct.sellingUnit} ={' '}
+                            {posQuantityProduct.quantityPerSellingUnit.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </small>
+                        </label>
+
+                        <label>
+                          <span>Other Quantity</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={posOtherQuantity}
+                            disabled={!posQuantityProduct.allowOtherQuantity}
+                            onChange={(event) =>
+                              setPosOtherQuantity(event.target.value)
+                            }
+                          />
+                          <small>
+                            {posQuantityProduct.allowOtherQuantity
+                              ? `Enter additional ${posQuantityProduct.baseUnit} quantity.`
+                              : 'Other quantity is disabled for this product.'}
+                          </small>
+                        </label>
+                      </div>
+
+                      <section className="pos-quantity-conversion-preview">
+                        <h4>Conversion preview</h4>
+
+                        <div>
+                          <span>Selling-unit conversion</span>
+                          <strong>
+                            {quantityPreview.sellingUnitQuantity.toLocaleString('en-RW')} ×{' '}
+                            {quantityPreview.quantityPerSellingUnit.toLocaleString('en-RW')} ={' '}
+                            {quantityPreview.convertedSellingUnitQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>Other quantity</span>
+                          <strong>
+                            {quantityPreview.otherQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </strong>
+                        </div>
+
+                        <div className="pos-quantity-conversion-preview__total">
+                          <span>Total cart quantity</span>
+                          <strong>
+                            {quantityPreview.totalBaseQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>Selling-unit price</span>
+                          <strong>
+                            RWF {posQuantityProduct.unitPrice.toLocaleString('en-RW')} /{' '}
+                            {posQuantityProduct.sellingUnit}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>Proportional base-unit price</span>
+                          <strong>
+                            RWF {quantityPreview.baseUnitPrice.toLocaleString('en-RW', {
+                              maximumFractionDigits: 4,
+                            })}{' '}
+                            / {posQuantityProduct.baseUnit}
+                          </strong>
+                        </div>
+
+                        <div className="pos-quantity-conversion-preview__total">
+                          <span>Calculated total</span>
+                          <strong>
+                            RWF {quantityPreview.totalPrice.toLocaleString('en-RW', {
+                              maximumFractionDigits: 2,
+                            })}
+                          </strong>
+                        </div>
+                      </section>
+
+                      <div className="pos-quantity-dialog__actions">
+                        <button type="button" onClick={closePosQuantityPopup}>
+                          Cancel
+                        </button>
+
+                        <button
+                          type="button"
+                          className="primary"
+                          disabled={
+                            quantityPreview.totalBaseQuantity <= 0 ||
+                            quantityPreview.totalBaseQuantity >
+                              posQuantityProduct.availableQuantity
+                          }
+                          onClick={addConfiguredPosProductToCart}
+                        >
+                          Add to cart
+                        </button>
+                      </div>
+                    </section>
+                  </div>
+                );
+              })()}
+
+              <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
+                
+                <section className="pos-shift-control-section pos-session-control-card">
                   <div className="section-heading">
                     <div>
-                      <span>Step 2</span>
-                      <h3>Cart</h3>
-                    </div>
-                    <div className="pos-cart-header-actions">
-                      <small>{posCartItems.length}/10 rows</small>
-                      <button type="button" onClick={clearPosCart} disabled={posCartItems.length === 0}>
-                        Clear cart
-                      </button>
+                      <span>Section 2 · Teller session</span>
+                      <h3>POS Session</h3>
                     </div>
                   </div>
 
-                  <div className="system-table-wrap">
-                    <table className="system-table pos-cart-table">
-                      <thead>
-                        <tr>
-                          <th>Drug</th>
-                          <th>Qty</th>
-                          <th>Unit price</th>
-                          <th>Total</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {posCartItems.length === 0 ? (
-                          <tr>
-                            <td colSpan={5}>No drugs added yet. Select drugs from the left list.</td>
-                          </tr>
-                        ) : (
-                          posCartItems.slice(0, 10).map((item) => (
-                            <tr key={item.code}>
-                              <td>
-                                <strong>{item.name}</strong>
-                                <small>{item.strength}</small>
-                                <small>Batch {item.batchNumber} · Available {item.availableQuantity.toLocaleString('en-RW')} · {item.locationName}</small>
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  max={item.availableQuantity}
-                                  value={item.quantity}
-                                  onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
-                                />
-                              </td>
-                              <td>RWF {item.unitPrice.toLocaleString('en-RW')}</td>
-                              <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="pos-cart-remove-button"
-                                  onClick={() => removeCartItem(item.code)}
-                                >
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                  <section className="pos-shift-control-grid pos-shift-strip-v16">
+                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
+                  <label className="pos-shift-field">
+                    <span>Opening mode</span>
+                    <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
+                      <option value="fresh-start">Fresh start day</option>
+                      <option value="handover">Handover from previous teller</option>
+                    </select>
+                  </label>
+
+                  <label className="pos-shift-field">
+                    <span>Starting cash balance</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={posStartingCashBalance}
+                      onChange={(event) => setPosStartingCashBalance(event.target.value)}
+                    />
+                  </label>
+
+                  <button type="button" onClick={openPosDay}>Open Day</button>
+                </article>
+
+                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--close">
+                  <label className="pos-shift-field">
+                    <span>Closing mode</span>
+                    <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
+                      <option value="handover">Handover to incoming staff</option>
+                      <option value="final-close">Final close with manager deposit proof</option>
+                    </select>
+                  </label>
+
+                  {posCloseMode === 'handover' ? (
+                    <label className="pos-shift-check">
+                      <input
+                        type="checkbox"
+                        checked={posTillZeroized}
+                        onChange={(event) => setPosTillZeroized(event.target.checked)}
+                      />
+                      <span>Till zeroized and incoming staff acknowledged</span>
+                    </label>
+                  ) : (
+                    <label className="pos-shift-field">
+                      <span>Deposit proof reference</span>
+                      <input
+                        value={posDepositProof}
+                        onChange={(event) => setPosDepositProof(event.target.value)}
+                        placeholder="Deposit slip, bank ref, MoMo ref"
+                      />
+                    </label>
+                  )}
+
+                  <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
+                </article>
+              </section>
                 </section>
 
-                <section className="pos-transaction-setup-card pos-transaction-setup-card--two-column">
+{(() => {
+                  const visibleCartRows = posLiveCartItems;
+                  const visibleCartLineCount = visibleCartRows.length;
+                  const visibleCartUnitCount = visibleCartRows.reduce(
+                    (total, item) => total + Number(item.quantity || 0),
+                    0,
+                  );
+                  const visibleCartSignature = visibleCartRows.length
+                    ? visibleCartRows
+                        .map((item) =>
+                          [
+                            item.code,
+                            Number(item.batchId || 0),
+                            Number(item.quantity || 0),
+                            Number(item.unitPrice || 0),
+                          ].join(':'),
+                        )
+                        .join('|')
+                    : 'empty-cart';
+
+                  return (
+                    <section
+                      key={visibleCartSignature}
+                      className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card"
+                      data-pos-cart-build="atomic-visible-cart-v1"
+                      data-pos-cart-signature={visibleCartSignature}
+                      data-pos-cart-lines={visibleCartLineCount}
+                      data-pos-cart-units={visibleCartUnitCount}
+                    >
+                      <div className="section-heading">
+                        <div>
+                          <span>Section 2 · Cart</span>
+                          <h3>Cart</h3>
+                        </div>
+                        <div className="pos-cart-header-actions">
+                          <small>
+                            {visibleCartLineCount} line{visibleCartLineCount === 1 ? '' : 's'} · {visibleCartUnitCount} unit{visibleCartUnitCount === 1 ? '' : 's'}
+                          </small>
+                          <button type="button" onClick={clearPosCart} disabled={visibleCartLineCount === 0}>
+                            Clear cart
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="system-table-wrap">
+                        <table className="system-table pos-cart-table">
+                          <thead>
+                            <tr>
+                              <th>Product</th>
+                              <th>Qty</th>
+                              <th>Total</th>
+                              <th>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {visibleCartLineCount === 0 ? (
+                              <tr>
+                                <td colSpan={4}>No products added yet. Select products from the tile board.</td>
+                              </tr>
+                            ) : (
+                              visibleCartRows.map((item) => (
+                                <tr key={item.code}>
+                                  <td>
+                                    <strong>{item.name}</strong>
+                                    <small>
+                                      {item.sellingUnitQuantity > 0
+                                        ? `${item.sellingUnitQuantity.toLocaleString('en-RW')} ${item.sellingUnit}`
+                                        : ''}
+                                      {item.sellingUnitQuantity > 0 && item.otherQuantity > 0 ? ' + ' : ''}
+                                      {item.otherQuantity > 0
+                                        ? `${item.otherQuantity.toLocaleString('en-RW')} ${item.baseUnit}`
+                                        : ''}
+                                    </small>
+                                    <small>
+                                      Total {item.quantity.toLocaleString('en-RW')} {item.baseUnit} ·
+                                      RWF {item.unitPrice.toLocaleString('en-RW', {
+                                        maximumFractionDigits: 4,
+                                      })} / {item.baseUnit}
+                                    </small>
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      max={item.availableQuantity}
+                                      value={item.quantity}
+                                      onChange={(event) => updateCartQuantity(item.code, Number(event.target.value))}
+                                    />
+                                  </td>
+                                  <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="pos-cart-remove-button"
+                                      onClick={() => removeCartItem(item.code)}
+                                    >
+                                      Remove
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  );
+                })()}
+
+                <section className="pos-transaction-setup-section pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
                   <div className="section-heading">
                     <div>
-                      <span>Step 3</span>
-                      <h3>Transaction setup</h3>
+                      <span>Section 2 · Transaction Set-UP</span>
+                      <h3>Transaction Set-UP</h3>
                     </div>
                   </div>
 
@@ -3748,78 +5289,100 @@ function App() {
                     </label>
                   </div>
                 </section>
-              </main>
 
-              <aside className="pos-confirmation-rail">
+                <div className="pos-summary-update-bridge">
+                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartOperatingUnits === 0}>
+                    Update Summary
+                  </button>
+                </div>
+
+                <section
+                  key={posPaymentSummarySignature}
+                  className="pos-payment-summary-section pos-confirmation-rail"
+                  data-pos-summary-build="atomic-payment-summary-v1"
+                  data-pos-summary-signature={posPaymentSummarySignature}
+                  data-pos-summary-lines={posFinancialLineCount}
+                  data-pos-summary-units={posCartOperatingUnits}
+                  data-pos-summary-subtotal={posFinancialSubtotal}
+                  data-pos-summary-total={posSummaryTotalAmount}
+                >
                 <section className="pos-summary-confirmation-card">
                   <div className="section-heading">
                     <div>
                       <span>Step 4</span>
-                      <h3>Sale Summary</h3>
+                      <h3>Payment summary</h3>
                     </div>
                   </div>
 
-                  <button type="button" className="pos-refresh-summary-button" onClick={forceRefreshSaleSummary}>
-                    Refresh Summary
-                  </button>
-
-                  <div className="pos-summary-sync-note" data-cart-lines={posSaleSummary.lineCount} data-cart-quantity={posSaleSummary.totalQuantity}>
-                    <span>Live cart sync</span>
-                    <strong>{posSaleSummary.lineCount} item line{posSaleSummary.lineCount === 1 ? '' : 's'} · {posSaleSummary.totalQuantity} unit{posSaleSummary.totalQuantity === 1 ? '' : 's'}</strong>
-                    <small>Updated {posSaleSummary.calculatedAt}</small>
+                  <div className="pos-summary-sync-note">
+                    <span>Payment Summary</span>
+                    <strong>{posCartOperatingUnits} unit{posCartOperatingUnits === 1 ? '' : 's'} in cart</strong>
+                    <small>{posSummaryTimestamp}</small>
                   </div>
 
-                  <dl className="pos-summary-list">
-                    <div>
-                      <dt>Date and time</dt>
-                      <dd>{new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</dd>
+                  <div className="pos-payment-summary-grid pos-payment-summary-grid-v17">
+                    <div className="pos-payment-summary-column pos-payment-summary-column--operational" aria-label="Operational payment summary">
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>Date</span>
+                        <strong>{posSummaryTimestamp}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>Cart lines</span>
+                        <strong>{posFinancialLineCount}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>Cart units</span>
+                        <strong>{posCartOperatingUnits}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>% Customer</span>
+                        <strong>{posSummaryCustomerContributionPercent}%</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--operational">
+                        <span>% Insurer</span>
+                        <strong>{posSummaryInsurerContributionPercent}%</strong>
+                      </article>
                     </div>
-                    <div>
-                      <dt>Cart lines</dt>
-                      <dd>{posSaleSummary.lineCount}</dd>
-                    </div>
-                    <div>
-                      <dt>Total quantity</dt>
-                      <dd>{posSaleSummary.totalQuantity}</dd>
-                    </div>
-                    <div>
-                      <dt>Subtotal</dt>
-                      <dd>RWF {posSaleSummary.subtotal.toLocaleString('en-RW')}</dd>
-                    </div>
-                    {posPaymentMethod === 'insurance' && (
-                      <>
-                        <div>
-                          <dt>Cust %</dt>
-                          <dd>{posSaleSummary.customerContributionPercent}%</dd>
-                        </div>
-                        <div>
-                          <dt>Insur %</dt>
-                          <dd>{posSaleSummary.insuranceContributionPercent}%</dd>
-                        </div>
-                      </>
-                    )}
-                    <div>
-                      <dt>Customer contribution</dt>
-                      <dd>RWF {posSaleSummary.customerContribution.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div>
-                      <dt>Insurance contribution</dt>
-                      <dd>RWF {posSaleSummary.insuranceContribution.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div>
-                      <dt>Tax</dt>
-                      <dd>RWF {posSaleSummary.tax.toLocaleString('en-RW')}</dd>
-                    </div>
-                    <div className="total">
-                      <dt>Total</dt>
-                      <dd>RWF {posSaleSummary.total.toLocaleString('en-RW')}</dd>
-                    </div>
-                  </dl>
 
-                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartItems.length === 0}>
+                    <div className="pos-payment-summary-column pos-payment-summary-column--financial" aria-label="Financial payment summary">
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Sub-Total</span>
+                        <strong>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Discount</span>
+                        <strong>RWF {posSummaryDiscountAmount.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Net Discount</span>
+                        <strong>RWF {posSummaryNetDiscount.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Tax</span>
+                        <strong>RWF {posSummaryTaxAmount.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Total Amount</span>
+                        <strong>RWF {posSummaryTotalAmount.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Customer Payment</span>
+                        <strong>RWF {posSummaryCustomerPayment.toLocaleString('en-RW')}</strong>
+                      </article>
+                      <article className="pos-summary-field-card pos-summary-field-card--financial">
+                        <span>Insurer Payment</span>
+                        <strong>RWF {posSummaryInsurerPayment.toLocaleString('en-RW')}</strong>
+                      </article>
+                    </div>
+                  </div>
+                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartOperatingUnits === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
                 </section>
+
+                
+
+
 
                 {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
                   <section className="pos-invoice-journey">
@@ -3863,21 +5426,39 @@ function App() {
                     )}
                   </section>
                 )}
-              </aside>
+              </section>
+              </section>
             </section>
 
-            <section className="pos-sales-summary-table-card">
+<section className="pos-sales-summary-table-card pos-recent-transactions-bottom pos-recent-transactions-fullwidth">
               <div className="section-heading">
                 <div>
-                  <span>Recent sales</span>
-                  <h3>Recent sales</h3>
+                  <span>Current POS session</span>
+                  <h3>Recent transactions in this session</h3>
                 </div>
-                <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
-                  Open Sales Performance
-                </button>
+                <div className="pos-table-management-actions">
+                  <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
+                    Open Sales Register
+                  </button>
+                  <button type="button" className="secondary-action" onClick={() => setPosNotice('POS table management will control visible columns, filters, export, and row density for admin users.')}>
+                    Table Management
+                  </button>
+                </div>
               </div>
 
-              <div className="system-table-wrap">
+                              <div className="pos-current-session-table-toolbar" aria-label="Current session transaction table controls">
+                  <input aria-label="Search current session transactions" placeholder="Search receipt, customer, payment..." />
+                  <select aria-label="Filter current session transactions" defaultValue="current-session">
+                    <option value="current-session">Current session only</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="invoice">Invoice requested</option>
+                  </select>
+                  <button type="button" onClick={() => setPosNotice('Column manager is ready for the current session transaction table.')}>Columns</button>
+                  <button type="button" onClick={() => setPosNotice('Export will use current session transaction rows once backend session rows are connected.')}>Export</button>
+                </div>
+
+<div className="system-table-wrap">
                 <table className="system-table">
                   <thead>
                     <tr>
@@ -3890,20 +5471,37 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {salesSummaryRows.map(([dateTime, saleNumber, customer, method, status, amount]) => (
-                      <tr key={saleNumber}>
-                        <td>{dateTime}</td>
-                        <td>{saleNumber}</td>
-                        <td>{customer}</td>
-                        <td>{method}</td>
-                        <td>{status}</td>
-                        <td>{amount}</td>
+                    {salesSummaryRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={6}>
+                          No transactions have been recorded in this POS session yet. Current-session sales will appear here from POS opening to POS closure.
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      salesSummaryRows.map(({ dateTime, saleNumber, customer, method, status, amount }) => (
+                        <tr key={saleNumber}>
+                          <td>{dateTime}</td>
+                          <td>{saleNumber}</td>
+                          <td>{customer}</td>
+                          <td>{method}</td>
+                          <td>{status}</td>
+                          <td>{amount}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </section>
+
+
+
+
+
+
+
+
+            </div>
           </section>
         </section>
       );
@@ -3911,15 +5509,17 @@ function App() {
 
     if (activePosWorkspace === 'dispensing-review') {
       return (
-        <section className="section-page">
-          <SalesDispensingReview token={session.token} profile={profile} />
+        <section className="section-page pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('dispensing-review')}
+          <SalesDispensingReview token={session!.token} profile={profile!} />
         </section>
       );
     }
 
     if (activePosWorkspace === 'customers') {
       return (
-        <section className="section-page">
+        <section className="section-page pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('customers')}
           <FocusRegisterPreview
             title="Customers and Patients"
             description="Customer and patient register with default 15-row view, export, bulk edit, and controlled delete."
@@ -3931,7 +5531,8 @@ function App() {
 
     if (activePosWorkspace === 'prescriptions') {
       return (
-        <section className="section-page">
+        <section className="section-page pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('prescriptions')}
           <FocusRegisterPreview
             title="Prescriptions"
             description="Prescription capture, camera readiness, AI text extraction, manual correction, and returning customer lookup."
@@ -3943,7 +5544,8 @@ function App() {
 
     if (activePosWorkspace === 'sales-performance') {
       return (
-        <section className="section-page">
+        <section className="section-page pos-unified-module-page">
+          {renderPosWorkspaceTopMenu('sales-performance')}
           <FocusRegisterPreview
             title="Sales Performance"
             description="Sales list with selected sale detail, export, review, and manager follow-up."
@@ -3954,9 +5556,10 @@ function App() {
     }
 
     return (
-      <section className="section-page">
+      <section className="section-page pos-unified-module-page">
+        {renderPosWorkspaceTopMenu('payment-receipt')}
         <FocusRegisterPreview
-          title="Payment and Receipt"
+          title="Receipts & Payments"
           description="Payment register with receipt print, Bluetooth readiness, WhatsApp, email, and corporate email delivery."
           rows={previewRows}
         />
@@ -3986,7 +5589,7 @@ function App() {
           )}
 
           {activeSupplierWorkspace === 'create-supplier' && (
-            <ProcurementWorkflow token={session.token} profile={profile} />
+            <ProcurementWorkflow token={session!.token} profile={profile!} />
           )}
 
           {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
@@ -3998,7 +5601,7 @@ function App() {
           )}
 
           {['create-purchase-order', 'receive-purchase-order'].includes(activeSupplierWorkspace) && (
-            <ProcurementWorkflow token={session.token} profile={profile} />
+            <ProcurementWorkflow token={session!.token} profile={profile!} />
           )}
         </div>
       </section>
@@ -4026,7 +5629,7 @@ function App() {
           )}
 
           {activeFinanceWorkspace === 'finance-flow' && (
-            <PayablesWorkflow token={session.token} profile={profile} />
+            <PayablesWorkflow token={session!.token} profile={profile!} />
           )}
 
           {activeFinanceWorkspace === 'exception-focus' && (
@@ -4036,12 +5639,12 @@ function App() {
                 description="Overdue receivables, overdue payables, payment variance, cash variance, and approval risks."
                 rows={financeRows}
               />
-              <PayablesWorkflow token={session.token} profile={profile} />
+              <PayablesWorkflow token={session!.token} profile={profile!} />
             </>
           )}
 
           {activeFinanceWorkspace === 'credits-receivables' && (
-            <ReceivablesWorkflow token={session.token} profile={profile} />
+            <ReceivablesWorkflow token={session!.token} profile={{ tenant: profile!.tenant_assignments?.[0]?.tenant }} />
           )}
 
           {['receivable-register', 'collection'].includes(activeFinanceWorkspace) && (
@@ -4091,7 +5694,7 @@ function App() {
       <section className="section-page">
         <div className="module-section-stage">
           {activeAdhocReportWorkspace === 'overview' && (
-            <ReportingDashboard token={session.token} profile={profile} />
+            <ReportingDashboard token={session!.token} profile={profile!} />
           )}
 
           {activeAdhocReportWorkspace !== 'overview' && (
@@ -4213,7 +5816,7 @@ function App() {
           </article>
         )}
 
-        <AiOperationsPanel token={session.token} profile={profile} />
+        <AiOperationsPanel token={session!.token} profile={profile!} />
       </section>
     );
   }
@@ -4236,7 +5839,7 @@ function App() {
           </div>
         </article>
 
-        <NotificationCenterPanel token={session.token} profile={profile} />
+        <NotificationCenterPanel token={session!.token} profile={profile!} />
       </section>
     );
   }
@@ -4253,13 +5856,13 @@ function App() {
           </p>
         </article>
 
-        <PharmacistChatPanel token={session.token} />
+        <PharmacistChatPanel token={session!.token} />
       </section>
     );
   }
 
   function renderAdminPanel() {
-    const visibleAdminPanelLayers = profile.scope.is_platform
+    const visibleAdminPanelLayers = profile!.scope.is_platform
       ? adminPanelLayers
       : adminPanelLayers.filter((layer) => layer.key === 'two-factor-auth');
     const selectedWorkspace = visibleAdminPanelLayers.some((layer) => layer.key === activeAdminPanelWorkspace)
@@ -4293,8 +5896,8 @@ function App() {
 
         {selectedWorkspace === 'two-factor-auth' && (
           <TwoFactorAdminPanel
-            token={session.token}
-            profile={profile}
+            token={session!.token}
+            profile={profile!}
             onVerified={(nextToken, nextProfile, trustedDeviceToken) => {
               persistSession({ token: nextToken, profile: nextProfile }, trustedDeviceToken);
             }}
@@ -4302,23 +5905,23 @@ function App() {
         )}
 
         {selectedWorkspace === 'platform-management' && (
-          <PlatformManagementPanel token={session.token} />
+          <PlatformManagementPanel token={session!.token} />
         )}
 
         {selectedWorkspace === 'notification-management' && (
-          <NotificationCenterPanel token={session.token} profile={profile} />
+          <NotificationCenterPanel token={session!.token} profile={profile!} />
         )}
 
         {selectedWorkspace === 'corporate-email' && (
-          <CorporateEmailPanel token={session.token} />
+          <CorporateEmailPanel token={session!.token} />
         )}
 
         {selectedWorkspace === 'pharmacist-chat' && (
-          <PharmacistChatPanel token={session.token} />
+          <PharmacistChatPanel token={session!.token} />
         )}
 
         {selectedWorkspace === 'data-layer' && (
-          <DataLayerAdminPanel token={session.token} />
+          <DataLayerAdminPanel token={session!.token} />
         )}
 
         <section className="admin-layer-grid">
@@ -4491,7 +6094,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility.inventory.pages && <span><b>7</b><small>Inventory pages</small></span>}
                     {dashboardCardFieldVisibility.inventory.expiry && <span><b>180d</b><small>Expiry watch</small></span>}
-                    {dashboardCardFieldVisibility.inventory.permission && <span><b>{profile.permissions.includes('pharmaco.inventory.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
+                    {dashboardCardFieldVisibility.inventory.permission && <span><b>{profile!.permissions.includes('pharmaco.inventory.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
                   </div>
                 </button>
               )}
@@ -4509,7 +6112,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility.pos.pages && <span><b>7</b><small>Sales pages</small></span>}
                     {dashboardCardFieldVisibility.pos.receipts && <span><b>PDF</b><small>Receipts</small></span>}
-                    {dashboardCardFieldVisibility.pos.permission && <span><b>{profile.permissions.includes('pharmaco.pos.use') ? 'On' : 'Off'}</b><small>POS access</small></span>}
+                    {dashboardCardFieldVisibility.pos.permission && <span><b>{profile!.permissions.includes('pharmaco.pos.use') ? 'On' : 'Off'}</b><small>POS access</small></span>}
                   </div>
                 </button>
               )}
@@ -4545,7 +6148,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility.suppliers.pages && <span><b>7</b><small>Supplier pages</small></span>}
                     {dashboardCardFieldVisibility.suppliers.po && <span><b>PO</b><small>Open orders</small></span>}
-                    {dashboardCardFieldVisibility.suppliers.permission && <span><b>{profile.permissions.includes('pharmaco.suppliers.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
+                    {dashboardCardFieldVisibility.suppliers.permission && <span><b>{profile!.permissions.includes('pharmaco.suppliers.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
                   </div>
                 </button>
               )}
@@ -4578,7 +6181,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility['ai-reports']['ai-tools'] && <span><b>18</b><small>AI tools</small></span>}
                     {dashboardCardFieldVisibility['ai-reports']['report-pages'] && <span><b>7</b><small>Report pages</small></span>}
-                    {dashboardCardFieldVisibility['ai-reports'].permission && <span><b>{profile.permissions.includes('ai.use') ? 'On' : 'Off'}</b><small>AI access</small></span>}
+                    {dashboardCardFieldVisibility['ai-reports'].permission && <span><b>{profile!.permissions.includes('ai.use') ? 'On' : 'Off'}</b><small>AI access</small></span>}
                   </div>
                 </button>
               )}
@@ -4594,15 +6197,15 @@ function App() {
                 >
                   <span>Profile and Access</span>
                   <div className="dashboard-card-metrics">
-                    {dashboardCardFieldVisibility.profile.permissions && <span><b>{profile.permissions.length}</b><small>Permissions</small></span>}
-                    {dashboardCardFieldVisibility.profile.scope && <span><b>{profile.scope.type}</b><small>Scope</small></span>}
-                    {dashboardCardFieldVisibility.profile.edit && <span><b>Edit</b><small>Profile</small></span>}
+                    {dashboardCardFieldVisibility.profile!.permissions && <span><b>{profile!.permissions.length}</b><small>Permissions</small></span>}
+                    {dashboardCardFieldVisibility.profile!.scope && <span><b>{profile!.scope.type}</b><small>Scope</small></span>}
+                    {dashboardCardFieldVisibility.profile!.edit && <span><b>Edit</b><small>Profile</small></span>}
                   </div>
                 </button>
               )}
             </section>
 
-            {(profile.scope.is_tenant || profile.scope.is_branch) && (
+            {(profile!.scope.is_tenant || profile!.scope.is_branch) && (
               <section className="dashboard-operating-tenant-summary operation-helicopter-view">
                 <div className="section-heading">
                   <div>
@@ -4637,7 +6240,7 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {(profile.tenant_assignments ?? []).map((assignment, index) => (
+                        {(profile!.tenant_assignments ?? []).map((assignment, index) => (
                           <tr key={`${assignment.tenant?.id ?? 'tenant'}-${assignment.branch?.id ?? index}`}>
                             <td>{assignment.branch?.name || assignment.tenant?.name || profileInstitution}</td>
                             <td>{assignment.branch?.code || assignment.tenant?.slug || 'Main'}</td>
@@ -4685,10 +6288,10 @@ function App() {
                       </thead>
                       <tbody>
                         <tr>
-                          <td>{profile.user.name || 'Current user'}</td>
-                          <td>{profile.user.email}</td>
-                          <td>{profile.user.phone || 'Not provided'}</td>
-                          <td>{profile.scope.type}</td>
+                          <td>{profile!.user.name || 'Current user'}</td>
+                          <td>{profile!.user.email}</td>
+                          <td>{profile!.user.phone || 'Not provided'}</td>
+                          <td>{profile!.scope.type}</td>
                           <td>
                             <button
                               type="button"
@@ -4727,8 +6330,8 @@ function App() {
           >
             <ProductInventoryPreview
               key={activeInventoryView}
-              token={session.token}
-              profile={profile}
+              token={session!.token}
+              profile={profile!}
               activeView={activeInventoryView}
               onActiveViewChange={setActiveInventoryView}
               showInternalNavigation={false}
@@ -4737,12 +6340,41 @@ function App() {
             {activeInventoryView === 'product-master' && (
               <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
 
-                <ProductInventoryActions token={session.token} profile={profile} />
+                <ProductInventoryActions token={session!.token} profile={profile!} />
 
               </div>
             )}
           </section>
         );
+      case 'insurance': {
+        const tenantSlug =
+          profile?.tenant_assignments?.[0]?.tenant?.slug ||
+          (profile?.scope?.is_tenant ? 'vitapharma' : '');
+
+        if (!tenantSlug) {
+          return (
+            <section className="section-page">
+              <article className="panel wide">
+                <h2>Insurance Management</h2>
+                <p className="form-error">
+                  No tenant assignment is available for this insurance workspace.
+                </p>
+              </article>
+            </section>
+          );
+        }
+
+        return (
+          <section className="section-page">
+            <InsuranceManagementWorkspace
+              token={session!.token}
+              tenantSlug={tenantSlug}
+              activeWorkspace={activeInsuranceWorkspace}
+              onWorkspaceChange={setActiveInsuranceWorkspace}
+            />
+          </section>
+        );
+      }
       case 'pos':
         return renderPosWorkspace();
       case 'suppliers':
@@ -4755,45 +6387,45 @@ function App() {
         return (
           <section className="section-page">
 {tenantOperationsPanel}
-            <PharmaCoreEditor token={session.token} profile={profile} />
+            <PharmaCoreEditor token={session!.token} profile={profile!} />
           </section>
         );
       case 'security':
         return (
           <section className="section-page">
 <section className="content-grid security-content-grid">
-            <UserSecurityManagement token={session.token} tenantSlug="vitapharma" />
+            <UserSecurityManagement token={session!.token} tenantSlug="vitapharma" />
               <article className="panel">
                 <h2>Resolved access profile</h2>
                 <div className="scope-list">
-                  <div><span>Scope type</span><strong>{profile.scope.type}</strong></div>
-                  <div><span>Solution ID</span><strong>{profile.scope.solution_id ?? 'All'}</strong></div>
-                  <div><span>Tenant ID</span><strong>{profile.scope.tenant_id ?? 'All / none'}</strong></div>
-                  <div><span>Branch ID</span><strong>{profile.scope.branch_id ?? 'All / none'}</strong></div>
+                  <div><span>Scope type</span><strong>{profile!.scope.type}</strong></div>
+                  <div><span>Solution ID</span><strong>{profile!.scope.solution_id ?? 'All'}</strong></div>
+                  <div><span>Tenant ID</span><strong>{profile!.scope.tenant_id ?? 'All / none'}</strong></div>
+                  <div><span>Branch ID</span><strong>{profile!.scope.branch_id ?? 'All / none'}</strong></div>
                 </div>
               </article>
 
               <article className="panel">
                 <h2>Roles</h2>
                 <div className="tag-list">
-                  {profile.roles.map((role) => (
+                  {profile!.roles.map((role) => (
                     <span key={`${role.code}-${role.tenant_id ?? 'global'}`}>{role.name}</span>
                   ))}
                 </div>
               </article>
 
-              <article className="panel wide">
-                <h2>Permissions by area</h2>
-                <div className="permission-grid">
-                  {permissionGroups.map((group) => (
-                    <div key={group.title}>
-                      <h3>{group.title}</h3>
-                      {group.items.map((item) => (
-                        <span key={item}>{item}</span>
-                      ))}
-                    </div>
-                  ))}
+              <article className="panel wide permission-matrix-panel">
+                <div className="permission-matrix-panel__header">
+                  <div>
+                    <p className="eyebrow">Granular access matrix</p>
+                    <h2>Permissions by module and action</h2>
+                    <span>
+                      Each resource is separated into View, Add, Edit, and Delete so roles do not receive more power than intended.
+                    </span>
+                  </div>
                 </div>
+
+                {renderProfilePermissionMatrix(profile!)}
               </article>
               {accessControlPanel}
               {tenantAssignmentsPanel}
@@ -4803,26 +6435,26 @@ function App() {
       case 'corporate-email':
         return (
           <section className="section-page">
-<CorporateEmailPanel token={session.token} />
+<CorporateEmailPanel token={session!.token} />
           </section>
         );
       case 'pharmacist-chat':
         return (
           <section className="section-page">
-<PharmacistChatPanel token={session.token} />
+<PharmacistChatPanel token={session!.token} />
           </section>
         );
       case 'notifications':
         return (
           <section className="section-page">
-<NotificationCenterPanel token={session.token} profile={profile} />
+<NotificationCenterPanel token={session!.token} profile={profile!} />
           </section>
         );
       case 'market-management':
       case 'localization':
         return (
           <section className="section-page">
-<MarketLocalizationPanel token={session.token} profile={profile} />
+<MarketLocalizationPanel token={session!.token} profile={profile!} />
           </section>
         );
       case 'nearby-providers':
@@ -4934,7 +6566,7 @@ function App() {
                   ['Suppliers', 'Supplier setup, PO, receiving', 'suppliers' as AdminSectionKey],
                   ['Ad-hoc Report', 'Operating alerts and reports', 'reports' as AdminSectionKey],
                 ].map(([title, text, section]) => (
-                  <button key={title} type="button" onClick={() => navigateToSection(section)}>
+                  <button key={title} type="button" onClick={() => navigateToSection(section as AdminSectionKey)}>
                     <strong>{title}</strong>
                     <span>{text}</span>
                   </button>
@@ -4944,8 +6576,8 @@ function App() {
 
             {shouldShowTenantOperationsDashboard && homeWidgets['tenant-dashboard'] ? (
               <TenantPharmacyDashboard
-                token={session.token}
-                profile={profile}
+                token={session!.token}
+                profile={profile!}
                 onOpenSection={(section) => navigateToSection(section)}
               />
             ) : (
@@ -5063,7 +6695,7 @@ function App() {
 
                   {childSubmenus.length > 0 && openPrincipalMenus[item.key] && (
                     <div className="tree-child-submenu" aria-label={`${item.label} pages`}>
-                      {childSubmenus.map((submenu) => (
+                      {childSubmenus.filter((submenu) => leftSubmenuIsVisibleForProfile(profile, item, submenu)).map((submenu) => (
                         <button
                           key={submenu.key}
                           type="button"
@@ -5155,15 +6787,15 @@ function App() {
                   <dl>
                     <div>
                       <dt>Name</dt>
-                      <dd>{profile.user.name || 'Not provided'}</dd>
+                      <dd>{profile!.user.name || 'Not provided'}</dd>
                     </div>
                     <div>
                       <dt>Email</dt>
-                      <dd>{profile.user.email}</dd>
+                      <dd>{profile!.user.email}</dd>
                     </div>
                     <div>
                       <dt>Phone</dt>
-                      <dd>{profile.user.phone || 'Not provided'}</dd>
+                      <dd>{profile!.user.phone || 'Not provided'}</dd>
                     </div>
                     <div>
                       <dt>Institution</dt>

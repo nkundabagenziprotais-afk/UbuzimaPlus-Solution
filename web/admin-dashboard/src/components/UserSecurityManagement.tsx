@@ -15,23 +15,514 @@ type Props = {
   tenantSlug?: string;
 };
 
-const fallbackPermissions = [
-  'tenant.dashboard.view',
-  'roles.manage',
-  'users.view',
-  'users.create',
-  'users.update',
-  'users.permissions.edit',
-  'pharmaco.pos.use',
-  'pharmaco.sales.manage',
-  'pharmaco.inventory.manage',
-  'pharmaco.suppliers.manage',
-  'pharmaco.procurement.view',
-  'pharmaco.finance.view',
-  'pharmaco.reports.view',
-  'notifications.manage',
-  'ai.use',
-  'audit.logs.view',
+type PermissionAction = 'view' | 'add' | 'edit' | 'delete';
+
+type PermissionMatrixResource = {
+  label: string;
+  description: string;
+  permissions: Partial<Record<PermissionAction, string>>;
+};
+
+type PermissionMatrixGroup = {
+  title: string;
+  description: string;
+  resources: PermissionMatrixResource[];
+};
+
+const permissionActions: PermissionAction[] = ['view', 'add', 'edit', 'delete'];
+
+const permissionMatrix: PermissionMatrixGroup[] = [
+  {
+    title: 'Inventory',
+    description: 'Product Master, stock batches, receiving, locations, low stock, expiry review, and inventory customization.',
+    resources: [
+      {
+        label: 'Inventory Dashboard',
+        description: 'Inventory overview, stock position, alerts, and summary cards.',
+        permissions: { view: 'inventory.dashboard.view' },
+      },
+      {
+        label: 'Product Master',
+        description: 'Commercial products used by stock, pricing, and POS.',
+        permissions: {
+          view: 'inventory.products.view',
+          add: 'inventory.products.add',
+          edit: 'inventory.products.edit',
+          delete: 'inventory.products.delete',
+        },
+      },
+      {
+        label: 'Inventory Batches',
+        description: 'Batch quantities, cost, expiry date, margin, and selling price.',
+        permissions: {
+          view: 'inventory.batches.view',
+          add: 'inventory.batches.add',
+          edit: 'inventory.batches.edit',
+          delete: 'inventory.batches.delete',
+        },
+      },
+      {
+        label: 'Receiving',
+        description: 'Receive stock against Product Master.',
+        permissions: {
+          view: 'inventory.receiving.view',
+          add: 'inventory.receiving.add',
+          edit: 'inventory.receiving.edit',
+          delete: 'inventory.receiving.delete',
+        },
+      },
+      {
+        label: 'Stock Locations',
+        description: 'Branches, stores, shelves, and inventory holding points.',
+        permissions: {
+          view: 'inventory.locations.view',
+          add: 'inventory.locations.add',
+          edit: 'inventory.locations.edit',
+          delete: 'inventory.locations.delete',
+        },
+      },
+      {
+        label: 'Low Stock',
+        description: 'Low stock monitoring and replenishment attention.',
+        permissions: {
+          view: 'inventory.low_stock.view',
+          add: 'inventory.low_stock.add',
+          edit: 'inventory.low_stock.edit',
+          delete: 'inventory.low_stock.delete',
+        },
+      },
+      {
+        label: 'Expiry Review',
+        description: 'Near-expiry, expired, and expiry-risk reviews.',
+        permissions: {
+          view: 'inventory.expiry_review.view',
+          add: 'inventory.expiry_review.add',
+          edit: 'inventory.expiry_review.edit',
+          delete: 'inventory.expiry_review.delete',
+        },
+      },
+      {
+        label: 'Expiry Labels',
+        description: 'Expiry thresholds, colour mapping, and label rules.',
+        permissions: {
+          view: 'inventory.expiry_labels.view',
+          edit: 'inventory.expiry_labels.edit',
+        },
+      },
+      {
+        label: 'Table Settings',
+        description: 'Table style, density, font size, wrapping, and sticky columns.',
+        permissions: {
+          view: 'inventory.table_settings.view',
+          edit: 'inventory.table_settings.edit',
+        },
+      },
+    ],
+  },
+  {
+    title: 'POS and Sales',
+    description: 'Sales register, receipts, returns, payments, insurance handling, and cashier close.',
+    resources: [
+      {
+        label: 'Sales Register',
+        description: 'Create and manage counter sales.',
+        permissions: {
+          view: 'pos.sales.view',
+          add: 'pos.sales.add',
+          edit: 'pos.sales.edit',
+          delete: 'pos.sales.delete',
+        },
+      },
+      {
+        label: 'Receipts',
+        description: 'Receipt viewing, correction, and reprint control.',
+        permissions: {
+          view: 'pos.receipts.view',
+          add: 'pos.receipts.add',
+          edit: 'pos.receipts.edit',
+          delete: 'pos.receipts.delete',
+        },
+      },
+      {
+        label: 'Returns',
+        description: 'Returns, refunds, and returned item review.',
+        permissions: {
+          view: 'pos.returns.view',
+          add: 'pos.returns.add',
+          edit: 'pos.returns.edit',
+          delete: 'pos.returns.delete',
+        },
+      },
+      {
+        label: 'Payments',
+        description: 'Cash, card, mobile money, and insurance payment handling.',
+        permissions: {
+          view: 'pos.payments.view',
+          add: 'pos.payments.add',
+          edit: 'pos.payments.edit',
+          delete: 'pos.payments.delete',
+        },
+      },
+      {
+        label: 'Insurance',
+        description: 'Insurance-linked sales and claim preparation.',
+        permissions: {
+          view: 'pos.insurance.view',
+          add: 'pos.insurance.add',
+          edit: 'pos.insurance.edit',
+          delete: 'pos.insurance.delete',
+        },
+      },
+      {
+        label: 'Cashier Close',
+        description: 'Shift close, daily close, and cashier reconciliation.',
+        permissions: {
+          view: 'pos.cashier_close.view',
+          add: 'pos.cashier_close.add',
+          edit: 'pos.cashier_close.edit',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Procurement and Suppliers',
+    description: 'Suppliers, purchase orders, receiving, and dispatch coordination.',
+    resources: [
+      {
+        label: 'Suppliers',
+        description: 'Supplier registry and supplier profile control.',
+        permissions: {
+          view: 'procurement.suppliers.view',
+          add: 'procurement.suppliers.add',
+          edit: 'procurement.suppliers.edit',
+          delete: 'procurement.suppliers.delete',
+        },
+      },
+      {
+        label: 'Purchase Orders',
+        description: 'Purchase order planning and approval preparation.',
+        permissions: {
+          view: 'procurement.purchase_orders.view',
+          add: 'procurement.purchase_orders.add',
+          edit: 'procurement.purchase_orders.edit',
+          delete: 'procurement.purchase_orders.delete',
+        },
+      },
+      {
+        label: 'Receiving',
+        description: 'Supplier delivery and received item confirmation.',
+        permissions: {
+          view: 'procurement.receiving.view',
+          add: 'procurement.receiving.add',
+          edit: 'procurement.receiving.edit',
+          delete: 'procurement.receiving.delete',
+        },
+      },
+      {
+        label: 'Dispatch',
+        description: 'Dispatch and stock movement coordination.',
+        permissions: {
+          view: 'procurement.dispatch.view',
+          add: 'procurement.dispatch.add',
+          edit: 'procurement.dispatch.edit',
+          delete: 'procurement.dispatch.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Finance',
+    description: 'Payables, receivables, payments, reconciliation, and finance dashboard access.',
+    resources: [
+      {
+        label: 'Finance Dashboard',
+        description: 'Finance summary and operational indicators.',
+        permissions: { view: 'finance.dashboard.view' },
+      },
+      {
+        label: 'Payables',
+        description: 'Supplier bills and payable tracking.',
+        permissions: {
+          view: 'finance.payables.view',
+          add: 'finance.payables.add',
+          edit: 'finance.payables.edit',
+          delete: 'finance.payables.delete',
+        },
+      },
+      {
+        label: 'Receivables',
+        description: 'Customer, insurer, and partner receivable control.',
+        permissions: {
+          view: 'finance.receivables.view',
+          add: 'finance.receivables.add',
+          edit: 'finance.receivables.edit',
+          delete: 'finance.receivables.delete',
+        },
+      },
+      {
+        label: 'Payments',
+        description: 'Payment records and settlement operations.',
+        permissions: {
+          view: 'finance.payments.view',
+          add: 'finance.payments.add',
+          edit: 'finance.payments.edit',
+          delete: 'finance.payments.delete',
+        },
+      },
+      {
+        label: 'Reconciliation',
+        description: 'Cash, bank, mobile money, and settlement reconciliation.',
+        permissions: {
+          view: 'finance.reconciliation.view',
+          add: 'finance.reconciliation.add',
+          edit: 'finance.reconciliation.edit',
+          delete: 'finance.reconciliation.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Users, Roles, and Security',
+    description: 'Staff users, role assignment, permission control, 2FA, and audit review.',
+    resources: [
+      {
+        label: 'Staff Users',
+        description: 'User list, user detail, and staff profile access.',
+        permissions: {
+          view: 'users.staff.view',
+          add: 'users.staff.add',
+          edit: 'users.staff.edit',
+          delete: 'users.staff.delete',
+        },
+      },
+      {
+        label: 'User Status',
+        description: 'Deactivate or reactivate user access while preserving audit history.',
+        permissions: {
+          view: 'users.staff.view',
+          edit: 'users.staff.deactivate',
+        },
+      },
+      {
+        label: 'Roles',
+        description: 'Role templates and role assignment.',
+        permissions: {
+          view: 'security.roles.view',
+          add: 'security.roles.add',
+          edit: 'security.roles.edit',
+          delete: 'security.roles.delete',
+        },
+      },
+      {
+        label: 'Permissions',
+        description: 'Fine-grained permission assignment.',
+        permissions: {
+          view: 'security.permissions.view',
+          add: 'security.permissions.add',
+          edit: 'security.permissions.edit',
+          delete: 'security.permissions.delete',
+        },
+      },
+      {
+        label: 'Two-Factor Authentication',
+        description: '2FA policy and trusted device management.',
+        permissions: {
+          view: 'security.two_factor.view',
+          add: 'security.two_factor.add',
+          edit: 'security.two_factor.edit',
+          delete: 'security.two_factor.delete',
+        },
+      },
+      {
+        label: 'Audit Trail',
+        description: 'Security and activity audit review.',
+        permissions: {
+          view: 'security.audit.view',
+          add: 'security.audit.add',
+          edit: 'security.audit.edit',
+          delete: 'security.audit.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Reports',
+    description: 'Inventory, sales, finance, procurement, and audit reports.',
+    resources: [
+      {
+        label: 'Inventory Reports',
+        description: 'Inventory report review and export preparation.',
+        permissions: {
+          view: 'reports.inventory.view',
+          add: 'reports.inventory.add',
+          edit: 'reports.inventory.edit',
+          delete: 'reports.inventory.delete',
+        },
+      },
+      {
+        label: 'Sales Reports',
+        description: 'Sales reporting and cashier performance review.',
+        permissions: {
+          view: 'reports.sales.view',
+          add: 'reports.sales.add',
+          edit: 'reports.sales.edit',
+          delete: 'reports.sales.delete',
+        },
+      },
+      {
+        label: 'Finance Reports',
+        description: 'Finance reporting and settlement review.',
+        permissions: {
+          view: 'reports.finance.view',
+          add: 'reports.finance.add',
+          edit: 'reports.finance.edit',
+          delete: 'reports.finance.delete',
+        },
+      },
+      {
+        label: 'Procurement Reports',
+        description: 'Supplier and purchase reporting.',
+        permissions: {
+          view: 'reports.procurement.view',
+          add: 'reports.procurement.add',
+          edit: 'reports.procurement.edit',
+          delete: 'reports.procurement.delete',
+        },
+      },
+      {
+        label: 'Audit Reports',
+        description: 'Audit, compliance, and security reports.',
+        permissions: {
+          view: 'reports.audit.view',
+          add: 'reports.audit.add',
+          edit: 'reports.audit.edit',
+          delete: 'reports.audit.delete',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Communications and Platform',
+    description: 'Notifications, email, chat, tenant setup, branches, and platform areas.',
+    resources: [
+      {
+        label: 'Notifications',
+        description: 'Notification center and scheduled communications.',
+        permissions: {
+          view: 'communications.notifications.view',
+          add: 'communications.notifications.add',
+          edit: 'communications.notifications.edit',
+          delete: 'communications.notifications.delete',
+        },
+      },
+      {
+        label: 'Corporate Email',
+        description: 'Corporate email and message templates.',
+        permissions: {
+          view: 'communications.email.view',
+          add: 'communications.email.add',
+          edit: 'communications.email.edit',
+          delete: 'communications.email.delete',
+        },
+      },
+      {
+        label: 'Pharmacist Chat',
+        description: 'In-app and WhatsApp communication workspace.',
+        permissions: {
+          view: 'communications.chat.view',
+          add: 'communications.chat.add',
+          edit: 'communications.chat.edit',
+          delete: 'communications.chat.delete',
+        },
+      },
+      {
+        label: 'Tenant Profile',
+        description: 'Tenant identity and operational setup.',
+        permissions: {
+          view: 'tenant.profile.view',
+          add: 'tenant.profile.add',
+          edit: 'tenant.profile.edit',
+          delete: 'tenant.profile.delete',
+        },
+      },
+      {
+        label: 'Branches',
+        description: 'Branch and location setup.',
+        permissions: {
+          view: 'tenant.branches.view',
+          add: 'tenant.branches.add',
+          edit: 'tenant.branches.edit',
+          delete: 'tenant.branches.delete',
+        },
+      },
+      {
+        label: 'Platform Settings',
+        description: 'Platform configuration and application controls.',
+        permissions: {
+          view: 'settings.platform.view',
+          add: 'settings.platform.add',
+          edit: 'settings.platform.edit',
+          delete: 'settings.platform.delete',
+        },
+      },
+    ],
+  },
+];
+
+const allGranularPermissions = Array.from(
+  new Set(
+    permissionMatrix.flatMap((group) =>
+      group.resources.flatMap((resource) =>
+        permissionActions
+          .map((action) => resource.permissions[action])
+          .filter((permission): permission is string => Boolean(permission)),
+      ),
+    ),
+  ),
+).sort();
+
+const validGranularPermissionSet = new Set(allGranularPermissions);
+
+const legacyPermissionMap: Record<string, string[]> = {
+  'tenant.dashboard.view': ['tenant.profile.view'],
+  'roles.manage': ['security.roles.view', 'security.roles.add', 'security.roles.edit', 'security.permissions.view', 'security.permissions.edit'],
+  'users.view': ['users.staff.view'],
+  'users.create': ['users.staff.add'],
+  'users.update': ['users.staff.edit'],
+  'users.permissions.edit': ['security.permissions.view', 'security.permissions.edit'],
+  'pharmaco.pos.use': ['pos.sales.view', 'pos.sales.add', 'pos.receipts.view', 'pos.payments.view'],
+  'pharmaco.sales.view': ['pos.sales.view', 'pos.receipts.view'],
+  'pharmaco.sales.create': ['pos.sales.add', 'pos.payments.add'],
+  'pharmaco.sales.manage': ['pos.sales.view', 'pos.receipts.view', 'pos.returns.view', 'pos.payments.view', 'pos.insurance.view'],
+  'pharmaco.inventory.manage': [
+    'inventory.dashboard.view',
+    'inventory.products.view',
+    'inventory.batches.view',
+    'inventory.receiving.view',
+    'inventory.locations.view',
+    'inventory.low_stock.view',
+    'inventory.expiry_review.view',
+  ],
+  'pharmaco.suppliers.manage': [
+    'procurement.suppliers.view',
+    'procurement.purchase_orders.view',
+    'procurement.receiving.view',
+    'procurement.dispatch.view',
+  ],
+  'pharmaco.procurement.view': ['procurement.suppliers.view', 'procurement.purchase_orders.view', 'procurement.receiving.view'],
+  'pharmaco.finance.view': ['finance.dashboard.view', 'finance.payables.view', 'finance.receivables.view'],
+  'pharmaco.reports.view': ['reports.inventory.view', 'reports.sales.view', 'reports.finance.view'],
+  'notifications.manage': ['communications.notifications.view', 'communications.notifications.add', 'communications.notifications.edit'],
+  'ai.use': ['ai.governance.view'],
+  'audit.logs.view': ['security.audit.view', 'reports.audit.view'],
+};
+
+const defaultStaffPermissions = [
+  'tenant.profile.view',
+  'pos.sales.view',
+  'pos.sales.add',
+  'pos.receipts.view',
+  'pos.payments.view',
 ];
 
 const emptyForm = {
@@ -40,53 +531,51 @@ const emptyForm = {
   phone: '',
   job_title: '',
   role_code: 'cashier',
-  permissions: ['tenant.dashboard.view', 'pharmaco.pos.use', 'pharmaco.sales.view', 'pharmaco.sales.create'],
+  permissions: defaultStaffPermissions,
   password: '',
   status: 'active',
 };
 
-const permissionGroupOrder = [
-  'Dashboard & Tenant',
-  'Users & Security',
-  'POS',
-  'Sales & Customers',
-  'Pharmacy & Dispensing',
-  'Inventory',
-  'Procurement',
-  'Finance',
-  'Reports',
-  'HR',
-  'Delivery',
-  'AI',
-  'Notifications',
-  'Audit',
-  'Other',
-];
-
-function permissionGroup(permission: string) {
-  if (permission.startsWith('tenant.') || permission.startsWith('branches.')) return 'Dashboard & Tenant';
-  if (permission.startsWith('roles.') || permission.startsWith('users.') || permission.startsWith('security.')) return 'Users & Security';
-  if (permission.includes('.pos.')) return 'POS';
-  if (permission.includes('.sales') || permission.includes('.customers')) return 'Sales & Customers';
-  if (permission.includes('.prescriptions') || permission.includes('.dispensing') || permission.includes('.clinical')) return 'Pharmacy & Dispensing';
-  if (permission.includes('.inventory') || permission.includes('.product_master') || permission.includes('.product_inventory')) return 'Inventory';
-  if (permission.includes('.suppliers') || permission.includes('.procurement')) return 'Procurement';
-  if (permission.includes('.finance')) return 'Finance';
-  if (permission.includes('.reports')) return 'Reports';
-  if (permission.includes('.hr') || permission.includes('.staff_schedule')) return 'HR';
-  if (permission.includes('.delivery')) return 'Delivery';
-  if (permission.startsWith('ai.')) return 'AI';
-  if (permission.startsWith('notifications.')) return 'Notifications';
-  if (permission.includes('audit')) return 'Audit';
-  return 'Other';
+function normalizePermissionKey(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
-function humanizePermission(permission: string) {
-  return permission
-    .replace(/^pharmaco\./, '')
-    .replaceAll('_', ' ')
-    .replaceAll('.', ' / ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+function normalizePermissionList(permissions: string[]) {
+  const normalized = new Set<string>();
+
+  permissions.forEach((permission) => {
+    const key = normalizePermissionKey(permission);
+    const replacements = legacyPermissionMap[key];
+
+    if (replacements?.length) {
+      replacements.forEach((item) => normalized.add(item));
+      return;
+    }
+
+    if (validGranularPermissionSet.has(key)) {
+      normalized.add(key);
+    }
+  });
+
+  return Array.from(normalized).sort();
+}
+
+function permissionCountLabel(count: number) {
+  return `${count} permission${count === 1 ? '' : 's'}`;
+}
+
+function statusClassName(status?: string) {
+  const normalized = normalizePermissionKey(status || 'active');
+
+  if (normalized === 'active') return 'status-chip status-chip--active';
+  if (normalized === 'invited' || normalized === 'pending') return 'status-chip status-chip--pending';
+  if (normalized === 'suspended' || normalized === 'inactive') return 'status-chip status-chip--blocked';
+
+  return 'status-chip';
 }
 
 export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Props) {
@@ -101,25 +590,11 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
   const [pendingDeleteUser, setPendingDeleteUser] = useState<TenantSecurityUser | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
 
-  const allPermissions = useMemo(() => {
-    return Array.from(new Set([...fallbackPermissions, ...roles.flatMap((role) => role.permissions)])).sort();
+  const normalizedRolePermissionMap = useMemo(() => {
+    const entries = roles.map((role) => [role.code, normalizePermissionList(role.permissions)] as const);
+
+    return new Map(entries);
   }, [roles]);
-
-  const groupedPermissions = useMemo(() => {
-    const grouped = new Map<string, string[]>();
-
-    allPermissions.forEach((permission) => {
-      const group = permissionGroup(permission);
-      grouped.set(group, [...(grouped.get(group) ?? []), permission]);
-    });
-
-    return permissionGroupOrder
-      .map((group) => ({
-        group,
-        permissions: (grouped.get(group) ?? []).sort(),
-      }))
-      .filter((item) => item.permissions.length > 0);
-  }, [allPermissions]);
 
   async function loadSecurityUsers() {
     const [roleResponse, userResponse] = await Promise.all([
@@ -163,21 +638,55 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
 
   function selectRole(code: string) {
     const role = roles.find((item) => item.code === code);
+    const normalizedRolePermissions = normalizePermissionList(role?.permissions ?? []);
+
     setForm((current) => ({
       ...current,
       role_code: code,
-      permissions: role?.permissions ?? current.permissions,
+      permissions: normalizedRolePermissions.length ? normalizedRolePermissions : current.permissions,
       job_title: current.job_title || role?.name || '',
     }));
   }
 
   function togglePermission(permission: string) {
-    setForm((current) => ({
-      ...current,
-      permissions: current.permissions.includes(permission)
-        ? current.permissions.filter((item) => item !== permission)
-        : [...current.permissions, permission],
-    }));
+    setForm((current) => {
+      const normalized = normalizePermissionKey(permission);
+      const currentPermissions = new Set(normalizePermissionList(current.permissions));
+
+      if (currentPermissions.has(normalized)) {
+        currentPermissions.delete(normalized);
+      } else {
+        currentPermissions.add(normalized);
+      }
+
+      return {
+        ...current,
+        permissions: Array.from(currentPermissions).sort(),
+      };
+    });
+  }
+
+  function setResourcePermissions(resource: PermissionMatrixResource, selected: boolean) {
+    const permissions = permissionActions
+      .map((action) => resource.permissions[action])
+      .filter((permission): permission is string => Boolean(permission));
+
+    setForm((current) => {
+      const next = new Set(normalizePermissionList(current.permissions));
+
+      permissions.forEach((permission) => {
+        if (selected) {
+          next.add(permission);
+        } else {
+          next.delete(permission);
+        }
+      });
+
+      return {
+        ...current,
+        permissions: Array.from(next).sort(),
+      };
+    });
   }
 
   function editUser(user: TenantSecurityUser) {
@@ -195,17 +704,17 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
       phone: user.phone ?? '',
       job_title: user.job_title ?? role?.name ?? '',
       role_code: cleanRoleCode,
-      permissions: role?.permissions?.length ? role.permissions : ['tenant.dashboard.view'],
+      permissions: normalizePermissionList(role?.permissions?.length ? role.permissions : ['tenant.profile.view']),
       password: '',
       status: user.status || 'active',
     });
-    setNotice(`Editing ${user.name}. Update role or permissions, then save changes.`);
+    setNotice(`Editing ${user.name}. Update identity, role, status, or granular permissions, then save changes.`);
   }
 
   function requestDeleteUser(user: TenantSecurityUser) {
     setPendingDeleteUser(user);
     setError('');
-    setNotice(`Confirm delete/deactivate access for ${user.name}. Audit history and past transactions will be retained.`);
+    setNotice(`Confirm deactivation for ${user.name}. Audit history and previous transactions will be retained.`);
   }
 
   async function confirmDeleteUser() {
@@ -222,7 +731,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
       requestAppDataRefresh('security');
       await loadSecurityUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to deactivate user.');
+      setError(err instanceof Error ? err.message : 'Unable to deactivate user access.');
     } finally {
       setIsDeletingUser(false);
     }
@@ -236,6 +745,8 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
     setNotice('');
     setTemporaryPassword('');
 
+    const payloadPermissions = normalizePermissionList(form.permissions);
+
     try {
       if (editingUserId) {
         const response = await updateTenantSecurityUser(token, tenantSlug, editingUserId, {
@@ -244,7 +755,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
           phone: form.phone,
           job_title: form.job_title,
           role_code: form.role_code,
-          permissions: form.permissions,
+          permissions: payloadPermissions,
           status: form.status,
         });
 
@@ -257,7 +768,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
           phone: form.phone,
           job_title: form.job_title,
           role_code: form.role_code,
-          permissions: form.permissions,
+          permissions: payloadPermissions,
           password: form.password || undefined,
           status: form.status,
         });
@@ -278,13 +789,17 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
   }
 
   const selectedRole = roles.find((role) => role.code === form.role_code);
+  const selectedPermissionSet = new Set(normalizePermissionList(form.permissions));
 
   return (
-    <section className="tenant-user-security-panel">
-      <div className="section-heading">
+    <section className="tenant-user-security-panel tenant-user-security-console">
+      <div className="section-heading tenant-user-console-heading">
         <div>
-          <h2>Vita Pharma user creation</h2>
-          <span>Create tenant users, assign role-based default rights, and amend permissions before saving.</span>
+          <p className="eyebrow">International user access standard</p>
+          <h2>User management and permission assignment</h2>
+          <span>
+            Create users, edit staff access, assign granular permissions, and deactivate access without losing audit history.
+          </span>
         </div>
         <button
           type="button"
@@ -292,6 +807,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
             setEditingUserId(null);
             setForm(emptyForm);
             setTemporaryPassword('');
+            setNotice('New user form is ready.');
           }}
         >
           New user
@@ -311,9 +827,9 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
       {pendingDeleteUser && (
         <div className="tenant-user-delete-confirmation">
           <div>
-            <strong>Delete / deactivate user access</strong>
+            <strong>Deactivate user access</strong>
             <span>
-              {pendingDeleteUser.name} will no longer access this tenant. Sales history, audit records and previous assignments remain retained.
+              {pendingDeleteUser.name} will no longer access this tenant. Sales history, audit records, and previous assignments remain retained.
             </span>
           </div>
           <div>
@@ -321,7 +837,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
               Cancel
             </button>
             <button type="button" className="danger" disabled={isDeletingUser} onClick={() => void confirmDeleteUser()}>
-              {isDeletingUser ? 'Deleting access…' : 'Delete access'}
+              {isDeletingUser ? 'Deactivating access…' : 'Deactivate access'}
             </button>
           </div>
         </div>
@@ -331,7 +847,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
         <div className="tenant-user-form-section tenant-user-form-section--identity">
           <div className="tenant-user-form-section-heading">
             <strong>Staff identity</strong>
-            <span>Basic login and staff details for Vita Pharma.</span>
+            <span>Basic login and staff details.</span>
           </div>
 
           <label>
@@ -385,7 +901,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
         <div className="tenant-user-form-section tenant-user-form-section--role">
           <div className="tenant-user-form-section-heading">
             <strong>Role template</strong>
-            <span>Choose a practical pharmacy role. Permissions remain editable below.</span>
+            <span>Select a starting role. Broad legacy rights are converted into safer granular permissions.</span>
           </div>
 
           <label>
@@ -403,53 +919,108 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
             <div className="tenant-user-selected-role-card">
               <strong>{selectedRole.name}</strong>
               <span>{selectedRole.description}</span>
-              <small>{selectedRole.permissions.length} default permissions loaded</small>
+              <small>
+                {permissionCountLabel(normalizedRolePermissionMap.get(selectedRole.code)?.length ?? selectedRole.permissions.length)} available after normalization
+              </small>
             </div>
           )}
 
           <div className="tenant-user-permission-summary">
-            <strong>{form.permissions.length}</strong>
-            <span>permissions selected for this user</span>
+            <strong>{selectedPermissionSet.size}</strong>
+            <span>granular permissions selected for this user</span>
           </div>
         </div>
 
-        <div className="tenant-user-permissions tenant-user-permissions--grouped">
+        <div className="tenant-user-permissions tenant-user-permissions--matrix">
           <div className="tenant-user-form-section-heading">
-            <strong>Permission rights</strong>
-            <span>Defaults come from the selected role. Tick or untick rights before saving.</span>
+            <strong>Granular permission matrix</strong>
+            <span>Assign only what the user needs. Each resource is separated into View, Add, Edit, and Delete.</span>
           </div>
 
-          <div className="tenant-user-permission-groups">
-            {groupedPermissions.map((group) => (
-              <article key={group.group} className="tenant-user-permission-group">
-                <header>
-                  <strong>{group.group}</strong>
-                  <small>{group.permissions.filter((permission) => form.permissions.includes(permission)).length}/{group.permissions.length} selected</small>
-                </header>
-
-                <div>
-                  {group.permissions.map((permission) => (
-                    <label key={permission}>
-                      <input
-                        type="checkbox"
-                        checked={form.permissions.includes(permission)}
-                        onChange={() => togglePermission(permission)}
-                      />
-                      <span>
-                        <b>{humanizePermission(permission)}</b>
-                        <small>{permission}</small>
-                      </span>
-                    </label>
-                  ))}
+          <div className="tenant-permission-assignment-matrix">
+            {permissionMatrix.map((group) => (
+              <section key={group.title} className="tenant-permission-assignment-group">
+                <div className="tenant-permission-assignment-group__header">
+                  <div>
+                    <h3>{group.title}</h3>
+                    <p>{group.description}</p>
+                  </div>
                 </div>
-              </article>
+
+                <div className="tenant-permission-table-shell">
+                  <table className="tenant-permission-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Resource</th>
+                        {permissionActions.map((action) => (
+                          <th key={action} scope="col">
+                            {action}
+                          </th>
+                        ))}
+                        <th scope="col">All</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.resources.map((resource) => {
+                        const resourcePermissions = permissionActions
+                          .map((action) => resource.permissions[action])
+                          .filter((permission): permission is string => Boolean(permission));
+                        const allSelected = resourcePermissions.length > 0 && resourcePermissions.every((permission) => selectedPermissionSet.has(permission));
+
+                        return (
+                          <tr key={`${group.title}-${resource.label}`}>
+                            <td>
+                              <strong>{resource.label}</strong>
+                              <span>{resource.description}</span>
+                            </td>
+                            {permissionActions.map((action) => {
+                              const permission = resource.permissions[action];
+
+                              return (
+                                <td key={action}>
+                                  {permission ? (
+                                    <label className="permission-checkbox" title={permission}>
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedPermissionSet.has(permission)}
+                                        onChange={() => togglePermission(permission)}
+                                      />
+                                      <span>{selectedPermissionSet.has(permission) ? 'Allowed' : 'Blocked'}</span>
+                                    </label>
+                                  ) : (
+                                    <span className="permission-not-applicable">—</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td>
+                              {resourcePermissions.length > 0 ? (
+                                <label className="permission-checkbox permission-checkbox--all">
+                                  <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={(event) => setResourcePermissions(resource, event.target.checked)}
+                                  />
+                                  <span>All</span>
+                                </label>
+                              ) : (
+                                <span className="permission-not-applicable">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             ))}
           </div>
         </div>
 
         <div className="inventory-form-actions tenant-user-form-actions">
           <button type="submit" disabled={isSaving}>
-            {isSaving ? 'Saving user…' : editingUserId ? 'Update user access' : 'Create Vita Pharma user'}
+            {isSaving ? 'Saving user…' : editingUserId ? 'Update user access' : 'Create user'}
           </button>
           <button
             type="button"
@@ -469,43 +1040,73 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
           <article key={role.code}>
             <strong>{role.name}</strong>
             <span>{role.description}</span>
-            <small>{role.permissions.length} default permissions</small>
+            <small>{permissionCountLabel(normalizedRolePermissionMap.get(role.code)?.length ?? role.permissions.length)} normalized permissions</small>
           </article>
         ))}
       </div>
 
-      <div className="tenant-user-list">
-        <div className="tenant-user-list__header">
-          <strong>Name</strong>
-          <strong>Email</strong>
-          <strong>Role</strong>
-          <strong>Status</strong>
-          <strong>Actions</strong>
+      <section className="tenant-user-directory-panel">
+        <div className="tenant-user-directory-panel__header">
+          <div>
+            <h3>Staff directory</h3>
+            <p>Review staff identity, role, status, and access actions.</p>
+          </div>
         </div>
 
-        {users.length === 0 ? (
-          <div>
-            <span>No Vita Pharma users found yet.</span>
-          </div>
-        ) : (
-          users.map((user) => (
-            <div key={user.id}>
-              <span>{user.name}</span>
-              <span>{user.email}</span>
-              <span>{user.roles[0]?.name ?? 'No role assigned'}</span>
-              <span>{user.status ?? 'active'}</span>
-              <span className="table-action-row tenant-user-list-actions">
-                <button type="button" onClick={() => editUser(user)}>
-                  Edit access
-                </button>
-                <button type="button" className="danger" onClick={() => requestDeleteUser(user)}>
-                  Deactivate
-                </button>
-              </span>
-            </div>
-          ))
-        )}
-      </div>
+        <div className="tenant-user-directory-table-shell">
+          <table className="tenant-user-directory-table">
+            <thead>
+              <tr>
+                <th scope="col">Staff member</th>
+                <th scope="col">Role</th>
+                <th scope="col">Status</th>
+                <th scope="col">Permissions</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>No tenant users found yet.</td>
+                </tr>
+              ) : (
+                users.map((user) => {
+                  const role = user.roles[0];
+                  const normalizedUserPermissions = normalizePermissionList(role?.permissions ?? []);
+
+                  return (
+                    <tr key={user.id}>
+                      <td>
+                        <strong>{user.name}</strong>
+                        <span>{user.email}</span>
+                        {user.phone && <small>{user.phone}</small>}
+                      </td>
+                      <td>
+                        <strong>{role?.name ?? 'No role assigned'}</strong>
+                        <span>{user.job_title ?? 'No job title'}</span>
+                      </td>
+                      <td>
+                        <span className={statusClassName(user.status ?? undefined)}>{user.status ?? 'active'}</span>
+                      </td>
+                      <td>{permissionCountLabel(normalizedUserPermissions.length)}</td>
+                      <td>
+                        <span className="table-action-row tenant-user-list-actions">
+                          <button type="button" onClick={() => editUser(user)}>
+                            Edit
+                          </button>
+                          <button type="button" className="danger" onClick={() => requestDeleteUser(user)}>
+                            Deactivate
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   );
 }

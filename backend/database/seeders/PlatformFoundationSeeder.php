@@ -93,7 +93,9 @@ class PlatformFoundationSeeder extends Seeder
             DB::table('solution_modules')->updateOrInsert(
                 ['solution_id' => $pharma->id, 'module_id' => $module->id],
                 [
-                    'status' => in_array($item['code'], ['pharmaco.insurance', 'pharmaco.clinic_integration'], true) ? 'planned' : 'available',
+                    'status' => $item['code'] === 'pharmaco.clinic_integration'
+                        ? 'planned'
+                        : 'available',
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]
@@ -241,6 +243,7 @@ class PlatformFoundationSeeder extends Seeder
             'pharmaco.branches',
             'pharmaco.products',
             'pharmaco.inventory',
+            'pharmaco.insurance',
             'pharmaco.pos',
             'pharmaco.sales',
             'pharmaco.pharmacist_chat',

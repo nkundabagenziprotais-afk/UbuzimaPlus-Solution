@@ -13761,3 +13761,5347 @@ table td:not(:first-child):not(.numeric) {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.78);
 }
+
+
+/* Simple but Mighty Inventory Command Center */
+.inventory-simple-command-center {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.94));
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-simple-command-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.inventory-simple-command-heading h3 {
+  margin: 0.1rem 0;
+}
+
+.inventory-simple-command-heading span,
+.inventory-simple-command-note span,
+.inventory-simple-command-note small {
+  color: #64748b;
+}
+
+.inventory-simple-command-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.75rem;
+}
+
+.inventory-simple-command-card {
+  display: grid;
+  gap: 0.35rem;
+  text-align: left;
+  padding: 0.9rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  min-height: 150px;
+}
+
+.inventory-simple-command-card:hover,
+.inventory-simple-command-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.inventory-simple-command-card small {
+  color: #64748b;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.inventory-simple-command-card strong {
+  font-size: 1rem;
+}
+
+.inventory-simple-command-card span {
+  color: #475569;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.inventory-simple-command-card em {
+  align-self: end;
+  color: #1d4ed8;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.inventory-simple-command-card--primary {
+  border-color: rgba(37, 99, 235, 0.32);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.inventory-simple-command-card--alert {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.inventory-simple-command-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 16px;
+  background: rgba(241, 245, 249, 0.84);
+}
+
+.inventory-guided-flow-panel.is-hidden {
+  display: none;
+}
+
+.inventory-guided-flow-launch-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px dashed rgba(37, 99, 235, 0.28);
+  border-radius: 20px;
+  background: rgba(239, 246, 255, 0.6);
+}
+
+.inventory-guided-flow-launch-panel h3 {
+  margin: 0.1rem 0;
+}
+
+.inventory-guided-flow-launch-panel span {
+  color: #475569;
+}
+
+@media (max-width: 720px) {
+  .inventory-simple-command-heading,
+  .inventory-guided-flow-launch-panel {
+    display: grid;
+  }
+
+  .inventory-simple-command-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* International Inventory Homepage Polish */
+.inventory-home-summary-suite {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.07);
+}
+
+.inventory-home-summary-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.inventory-home-summary-heading h3 {
+  margin: 0.1rem 0;
+  letter-spacing: -0.02em;
+}
+
+.inventory-home-summary-heading span {
+  color: #64748b;
+}
+
+.inventory-home-summary-status {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: end;
+  padding: 0.65rem 0.8rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  white-space: nowrap;
+}
+
+.inventory-home-summary-status strong {
+  color: #0f172a;
+}
+
+.inventory-home-summary-status span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.inventory-home-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.inventory-home-summary-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 0.35rem;
+  min-height: 124px;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.inventory-home-summary-card::after {
+  content: "";
+  position: absolute;
+  right: -24px;
+  top: -24px;
+  width: 74px;
+  height: 74px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.inventory-home-summary-card span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.inventory-home-summary-card strong {
+  color: #0f172a;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.inventory-home-summary-card small {
+  color: #64748b;
+  font-weight: 650;
+}
+
+.inventory-home-summary-card--value {
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+.inventory-home-summary-card--warning {
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+.inventory-home-summary-card--good {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+/* Compact command center refinement */
+.inventory-simple-command-center {
+  padding: 0.9rem;
+  border-radius: 22px;
+}
+
+.inventory-simple-command-heading {
+  align-items: center;
+}
+
+.inventory-simple-command-heading span {
+  font-size: 0.9rem;
+}
+
+.inventory-simple-command-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.inventory-simple-command-card {
+  min-height: 112px;
+  padding: 0.78rem;
+  border-radius: 16px;
+}
+
+.inventory-simple-command-card strong {
+  font-size: 0.95rem;
+}
+
+.inventory-simple-command-card span {
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.inventory-simple-command-card em {
+  font-size: 0.78rem;
+}
+
+.inventory-simple-command-note {
+  padding: 0.65rem 0.75rem;
+}
+
+@media (max-width: 980px) {
+  .inventory-home-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .inventory-home-summary-heading,
+  .inventory-home-summary-status {
+    display: grid;
+    justify-items: start;
+  }
+
+  .inventory-home-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* System-wide two-column table actions */
+.module-section-stage :where(
+  .table-action-row,
+  .product-master-action-button-row,
+  .product-inventory-action-button-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+),
+.tenant-user-list :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+),
+.data-grid-table :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+),
+.inventory-table :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.42rem !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+.module-section-stage :where(
+  .table-action-row,
+  .product-master-action-button-row,
+  .product-inventory-action-button-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) button,
+.tenant-user-list :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) button,
+.data-grid-table :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) button,
+.inventory-table :where(
+  .table-action-row,
+  [class*="table-action-row"],
+  [class*="action-button-row"]
+) button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Inventory summary card identity refinement */
+.inventory-home-summary-card {
+  isolation: isolate;
+}
+
+.inventory-home-summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  border-radius: 22px 0 0 22px;
+  background: rgba(37, 99, 235, 0.42);
+}
+
+.inventory-home-summary-card-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inventory-home-summary-card-top i {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.inventory-home-summary-card strong,
+.inventory-home-summary-card small {
+  position: relative;
+  z-index: 1;
+}
+
+.inventory-home-summary-card--value::before {
+  background: linear-gradient(180deg, #2563eb, #60a5fa);
+}
+
+.inventory-home-summary-card--catalog::before {
+  background: linear-gradient(180deg, #7c3aed, #a78bfa);
+}
+
+.inventory-home-summary-card--batch::before {
+  background: linear-gradient(180deg, #0f766e, #5eead4);
+}
+
+.inventory-home-summary-card--warning::before {
+  background: linear-gradient(180deg, #d97706, #fbbf24);
+}
+
+.inventory-home-summary-card--good::before {
+  background: linear-gradient(180deg, #16a34a, #86efac);
+}
+
+.inventory-home-summary-card--catalog {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(124, 58, 237, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.94);
+}
+
+.inventory-home-summary-card--batch {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(15, 118, 110, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.94);
+}
+
+/* Cleaner action cards without detail text */
+.inventory-simple-command-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.inventory-simple-command-card {
+  min-height: 96px;
+  align-content: space-between;
+}
+
+.inventory-simple-command-card span {
+  display: none;
+}
+
+.inventory-simple-command-card em {
+  justify-self: start;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+/* Premium inventory page surfaces */
+.inventory-active-page-marker {
+  border-radius: 18px !important;
+  background:
+    linear-gradient(135deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.96)) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+.module-section-rail button {
+  border-radius: 16px !important;
+}
+
+.module-section-rail button.active {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
+}
+
+.module-section-stage {
+  border-radius: 22px;
+}
+
+@media (max-width: 720px) {
+  .module-section-stage :where(
+    .table-action-row,
+    .product-master-action-button-row,
+    .product-inventory-action-button-row,
+    [class*="table-action-row"],
+    [class*="action-button-row"]
+  ) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+
+/* Inventory refinement package A */
+.inventory-preview-panel > .panel-heading-row h2 {
+  letter-spacing: -0.03em;
+}
+
+.inventory-preview-panel > .panel-heading-row .muted {
+  max-width: 760px;
+}
+
+.inventory-master-table,
+.inventory-master-table--rhia-format,
+.inventory-master-table--batch-expiry-register,
+.inventory-master-table--near-expiry-watch-list,
+.inventory-master-table--low-stock-product-master {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.inventory-master-table > div,
+.inventory-master-table--rhia-format > div,
+.inventory-master-table--batch-expiry-register > div,
+.inventory-master-table--near-expiry-watch-list > div,
+.inventory-master-table--low-stock-product-master > div {
+  align-items: center !important;
+}
+
+.inventory-master-table > div > span,
+.inventory-master-table > div > strong,
+.inventory-master-table--rhia-format > div > span,
+.inventory-master-table--rhia-format > div > strong {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  line-height: 1.35 !important;
+}
+
+/* Enforce 2x2 action buttons across inventory-style tables */
+.inventory-master-table .table-action-row,
+.inventory-master-table--rhia-format .table-action-row,
+.inventory-master-table--batch-expiry-register .table-action-row,
+.inventory-master-table--near-expiry-watch-list .table-action-row,
+.inventory-master-table--low-stock-product-master .table-action-row,
+.product-master-action-button-row,
+.product-inventory-action-button-row,
+.location-preview-table .table-action-row,
+.inventory-table .table-action-row,
+.data-grid-table .table-action-row,
+.tenant-user-list .table-action-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.42rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  align-items: stretch !important;
+}
+
+.inventory-master-table .table-action-row button,
+.inventory-master-table--rhia-format .table-action-row button,
+.inventory-master-table--batch-expiry-register .table-action-row button,
+.inventory-master-table--near-expiry-watch-list .table-action-row button,
+.inventory-master-table--low-stock-product-master .table-action-row button,
+.product-master-action-button-row button,
+.product-inventory-action-button-row button,
+.location-preview-table .table-action-row button,
+.inventory-table .table-action-row button,
+.data-grid-table .table-action-row button,
+.tenant-user-list .table-action-row button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Expiry labels, filters, and mapping */
+.inventory-expiry-control-suite {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.78);
+  margin-bottom: 0.85rem;
+}
+
+.inventory-expiry-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.inventory-expiry-filter-row button {
+  border-radius: 999px;
+  padding: 0.48rem 0.75rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #fff;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.inventory-expiry-filter-row button.active {
+  background: #0f172a;
+  color: #fff;
+}
+
+.inventory-expiry-map-button {
+  margin-left: auto;
+}
+
+.inventory-expiry-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.inventory-expiry-legend span {
+  display: inline-grid;
+  gap: 0.05rem;
+  min-width: 116px;
+  padding: 0.48rem 0.65rem;
+  border-radius: 14px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.inventory-expiry-legend small {
+  color: inherit;
+  opacity: 0.82;
+  font-weight: 700;
+}
+
+.inventory-expiry-label-manager {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.85rem;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.inventory-expiry-label-manager h4,
+.inventory-expiry-label-manager p {
+  margin: 0;
+}
+
+.inventory-expiry-label-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.inventory-expiry-label-grid label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-weight: 800;
+}
+
+.inventory-expiry-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  border-radius: 999px;
+  padding: 0.26rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 900;
+  color: inherit;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.inventory-expiry-row--expired {
+  background: #7f1d1d !important;
+  color: #ffffff !important;
+}
+
+.inventory-expiry-row--expired > span,
+.inventory-expiry-row--expired > strong,
+.inventory-expiry-row--expired small,
+.inventory-expiry-row--expired .rhia-number-cell {
+  color: #ffffff !important;
+}
+
+.inventory-expiry-row--expired button {
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #7f1d1d !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.inventory-expiry-row--critical {
+  background: #fee2e2 !important;
+}
+
+.inventory-expiry-row--warning {
+  background: #ffedd5 !important;
+}
+
+.inventory-expiry-row--watch {
+  background: #fef3c7 !important;
+}
+
+.inventory-expiry-row--valid {
+  background: #ecfdf5 !important;
+}
+
+.inventory-expiry-row--noDate {
+  background: #f1f5f9 !important;
+}
+
+.inventory-master-table--near-expiry-watch-list .near-expiry-watch-row {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.4fr)
+    minmax(110px, 0.8fr)
+    minmax(110px, 0.8fr)
+    minmax(90px, 0.7fr)
+    minmax(90px, 0.7fr)
+    minmax(110px, 0.8fr)
+    minmax(70px, 0.5fr)
+    minmax(100px, 0.8fr)
+    minmax(220px, 1.5fr)
+    minmax(170px, 1.1fr);
+}
+
+.inventory-master-table--batch-expiry-register .batch-expiry-register-row {
+  grid-template-columns:
+    54px
+    minmax(110px, 0.7fr)
+    minmax(190px, 1.2fr)
+    minmax(210px, 1.3fr)
+    minmax(100px, 0.7fr)
+    minmax(110px, 0.8fr)
+    minmax(110px, 0.8fr)
+    minmax(120px, 0.8fr)
+    minmax(110px, 0.8fr)
+    minmax(92px, 0.7fr)
+    minmax(110px, 0.8fr)
+    minmax(82px, 0.6fr)
+    minmax(110px, 0.8fr)
+    minmax(130px, 0.9fr)
+    minmax(230px, 1.4fr)
+    minmax(170px, 1.1fr);
+}
+
+@media (max-width: 860px) {
+  .inventory-expiry-map-button {
+    margin-left: 0;
+  }
+}
+
+
+/* Inventory refinement package B */
+.inventory-section--stock-locations {
+  gap: 1rem;
+}
+
+.stock-location-action-cards {
+  margin-bottom: 1rem;
+}
+
+.stock-location-action-panel {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 22px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+}
+
+.stock-location-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.stock-location-form-grid label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.stock-location-form-grid input,
+.stock-location-form-grid select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.stock-location-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.stock-location-profile-grid article {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  padding: 0.85rem;
+  background: #ffffff;
+}
+
+.stock-location-profile-grid span {
+  display: block;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.stock-location-table-shell {
+  overflow-x: auto;
+}
+
+.inventory-master-table--stock-locations {
+  min-width: 1420px;
+}
+
+.stock-location-management-row {
+  display: grid;
+  grid-template-columns:
+    minmax(54px, 0.38fr)
+    minmax(190px, 1.3fr)
+    minmax(120px, 0.8fr)
+    minmax(130px, 0.85fr)
+    minmax(190px, 1.25fr)
+    minmax(110px, 0.75fr)
+    minmax(120px, 0.8fr)
+    minmax(260px, 1.55fr)
+    minmax(175px, 1.05fr);
+  align-items: stretch;
+}
+
+.stock-location-management-row > span,
+.stock-location-management-row > strong {
+  min-width: 0;
+  padding: 0.65rem 0.7rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.18rem;
+  word-break: break-word;
+}
+
+.stock-location-management-row small {
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+.stock-location-management-row--inactive {
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.stock-location-management-row--empty {
+  grid-template-columns: 1fr;
+}
+
+.stock-location-status-chip {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  font-weight: 800;
+  text-transform: capitalize;
+  font-size: 0.75rem;
+}
+
+.stock-location-status-chip--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.stock-location-status-chip--inactive {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* Standard 2x2 action buttons for all inventory tables going forward. */
+.inventory-master-table .table-action-row,
+.product-master-action-button-row,
+.product-inventory-action-button-row,
+.stock-location-action-button-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.inventory-master-table .table-action-row button,
+.product-master-action-button-row button,
+.product-inventory-action-button-row button,
+.stock-location-action-button-row button {
+  min-width: 0;
+  width: 100%;
+  min-height: 32px;
+  padding: 0.38rem 0.42rem;
+  border-radius: 10px;
+  white-space: normal;
+  line-height: 1.05;
+  font-size: 0.74rem;
+}
+
+.batch-expiry-register-row .product-inventory-row-actions,
+.near-expiry-watch-row .product-inventory-row-actions,
+.product-inventory-register-row .product-inventory-row-actions,
+.stock-location-management-row .stock-location-action-button-row {
+  min-width: 165px;
+}
+
+.inventory-master-table--batch-expiry-register,
+.inventory-master-table--near-expiry-watch-list,
+.inventory-master-table--low-stock-product-master,
+.inventory-master-table--stock-locations {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+@media (max-width: 980px) {
+  .stock-location-form-grid,
+  .stock-location-profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inventory Table Audit + Alignment Standard - Patch C */
+
+.inventory-table-shell {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.inventory-data-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.inventory-data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  text-align: left;
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.inventory-data-table tbody td {
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.inventory-data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.inventory-data-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.inventory-data-table .cell-wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.inventory-data-table .cell-nowrap {
+  white-space: nowrap;
+}
+
+.inventory-data-table .cell-muted {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.inventory-data-table .cell-strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.inventory-data-table .cell-number {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.inventory-data-table .cell-center {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.inventory-data-table .table-cell-actions {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.inventory-data-table .table-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  min-width: 168px;
+}
+
+.inventory-data-table .table-action-grid button {
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.inventory-data-table .col-sn { width: 64px; }
+.inventory-data-table .col-product { width: 250px; }
+.inventory-data-table .col-code { width: 135px; }
+.inventory-data-table .col-category { width: 150px; }
+.inventory-data-table .col-location { width: 180px; }
+.inventory-data-table .col-branch { width: 190px; }
+.inventory-data-table .col-type { width: 145px; }
+.inventory-data-table .col-number { width: 110px; }
+.inventory-data-table .col-date { width: 130px; }
+.inventory-data-table .col-days { width: 115px; }
+.inventory-data-table .col-status { width: 155px; }
+.inventory-data-table .col-label { width: 175px; }
+.inventory-data-table .col-recommendation { width: 290px; }
+.inventory-data-table .col-actions { width: 190px; }
+
+.inventory-data-table--low-stock {
+  min-width: 1320px;
+}
+
+.inventory-data-table--batch-expiry,
+.inventory-data-table--near-expiry {
+  min-width: 1480px;
+}
+
+.inventory-data-table--product-master {
+  min-width: 1460px;
+}
+
+.inventory-data-table--stock-locations {
+  min-width: 1380px;
+}
+
+.inventory-data-table tr.expiry-row--expired td,
+.inventory-data-table tr.expiry-row--expired:hover td {
+  background: #7f1d1d;
+  color: #ffffff;
+}
+
+.inventory-data-table tr.expiry-row--expired .cell-muted,
+.inventory-data-table tr.expiry-row--expired .cell-strong {
+  color: #ffffff;
+}
+
+.inventory-data-table tr.expiry-row--critical td {
+  background: #fef2f2;
+}
+
+.inventory-data-table tr.expiry-row--warning td {
+  background: #fffbeb;
+}
+
+.inventory-data-table tr.expiry-row--watch td {
+  background: #f8fafc;
+}
+
+.inventory-table-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: normal;
+  text-align: center;
+}
+
+.inventory-table-chip--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.inventory-table-chip--inactive {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.inventory-table-chip--expired {
+  background: #450a0a;
+  color: #ffffff;
+}
+
+.inventory-table-chip--critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.inventory-table-chip--warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.inventory-table-chip--safe {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+@media (max-width: 768px) {
+  .inventory-table-shell {
+    border-radius: 12px;
+  }
+
+  .inventory-data-table {
+    min-width: 1080px;
+    font-size: 0.82rem;
+  }
+
+  .inventory-data-table thead th,
+  .inventory-data-table tbody td {
+    padding: 11px 12px;
+  }
+
+  .inventory-data-table .col-recommendation {
+    width: 260px;
+  }
+
+  .inventory-data-table .col-actions {
+    width: 180px;
+  }
+}
+
+
+/* Patch C.2 - Product register table width */
+.inventory-data-table--product-register {
+  min-width: 1460px;
+}
+
+
+/* Patch C.2 - Admin Table Management */
+
+.inventory-table-management-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.inventory-table-management-panel > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.inventory-table-management-panel > div:first-child strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.inventory-table-management-panel > div:first-child span {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.inventory-table-management-panel label {
+  display: grid;
+  gap: 5px;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.inventory-table-management-panel select,
+.inventory-table-management-panel input[type='range'] {
+  width: 100%;
+}
+
+.inventory-table-toggle {
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px !important;
+  min-height: 36px;
+}
+
+.inventory-table-toggle input {
+  margin: 0;
+}
+
+.inventory-table-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inventory-table-management-actions button,
+.expiry-label-manager-actions button {
+  min-height: 36px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 800;
+}
+
+.inventory-table-management-actions button.primary,
+.expiry-label-manager-actions button.primary {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.expiry-label-manager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 14px;
+  padding: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+/* Table Management variables */
+
+.inventory-table-shell .inventory-data-table {
+  font-size: var(--inventory-table-font-size, 14px);
+}
+
+.inventory-table-shell .inventory-data-table thead th,
+.inventory-table-shell .inventory-data-table tbody td {
+  padding: var(--inventory-table-cell-padding-y, 13px) var(--inventory-table-cell-padding-x, 14px);
+}
+
+.inventory-table-no-sticky-header .inventory-data-table thead th {
+  position: static;
+}
+
+.inventory-table-style--striped .inventory-data-table tbody tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.inventory-table-style--bordered .inventory-data-table thead th,
+.inventory-table-style--bordered .inventory-data-table tbody td {
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.inventory-table-style--bordered .inventory-data-table thead th:last-child,
+.inventory-table-style--bordered .inventory-data-table tbody td:last-child {
+  border-right: 0;
+}
+
+.inventory-table-wrap--off .inventory-data-table .cell-wrap {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-table-wrap--on .inventory-data-table .cell-wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.inventory-table-sticky-actions .inventory-data-table th:last-child,
+.inventory-table-sticky-actions .inventory-data-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: inherit;
+  box-shadow: -8px 0 14px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-table-sticky-actions .inventory-data-table thead th:last-child {
+  z-index: 3;
+  background: #f8fafc;
+}
+
+/* Column width presets */
+
+.inventory-table-width--compact .inventory-data-table .col-product { width: 210px; }
+.inventory-table-width--compact .inventory-data-table .col-recommendation { width: 240px; }
+.inventory-table-width--compact .inventory-data-table .col-location { width: 150px; }
+.inventory-table-width--compact .inventory-data-table .col-branch { width: 160px; }
+.inventory-table-width--compact .inventory-data-table .col-actions { width: 170px; }
+
+.inventory-table-width--balanced .inventory-data-table .col-product { width: 250px; }
+.inventory-table-width--balanced .inventory-data-table .col-recommendation { width: 290px; }
+.inventory-table-width--balanced .inventory-data-table .col-location { width: 180px; }
+.inventory-table-width--balanced .inventory-data-table .col-branch { width: 190px; }
+.inventory-table-width--balanced .inventory-data-table .col-actions { width: 190px; }
+
+.inventory-table-width--wide .inventory-data-table .col-product { width: 320px; }
+.inventory-table-width--wide .inventory-data-table .col-recommendation { width: 360px; }
+.inventory-table-width--wide .inventory-data-table .col-location { width: 230px; }
+.inventory-table-width--wide .inventory-data-table .col-branch { width: 240px; }
+.inventory-table-width--wide .inventory-data-table .col-actions { width: 210px; }
+
+.inventory-data-table--low-stock {
+  min-width: 1780px;
+}
+
+.inventory-data-table--batch-expiry {
+  min-width: 1980px;
+}
+
+.inventory-data-table--near-expiry {
+  min-width: 1420px;
+}
+
+.inventory-data-table--product-register {
+  min-width: 1460px;
+}
+
+@media (max-width: 1280px) {
+  .inventory-table-management-panel {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .inventory-table-management-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Platform Table Foundation - applies the Ubuzima+ table standard beyond Inventory */
+
+.system-table,
+.helicopter-table,
+.payables-line-table,
+.payables-register-table,
+.receivables-table,
+.data-table-preview table,
+.data-layer-table,
+.data-table-list table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: var(--platform-table-font-size, 14px);
+  color: #0f172a;
+}
+
+.system-table th,
+.system-table td,
+.helicopter-table th,
+.helicopter-table td,
+.payables-line-table th,
+.payables-line-table td,
+.payables-register-table th,
+.payables-register-table td,
+.receivables-table th,
+.receivables-table td,
+.data-table-preview table th,
+.data-table-preview table td,
+.data-layer-table th,
+.data-layer-table td,
+.data-table-list table th,
+.data-table-list table td {
+  padding: 12px 14px;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  overflow-wrap: anywhere;
+}
+
+.system-table th,
+.helicopter-table th,
+.payables-line-table th,
+.payables-register-table th,
+.receivables-table th,
+.data-table-preview table th,
+.data-layer-table th,
+.data-table-list table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 800;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.system-table td,
+.helicopter-table td,
+.payables-line-table td,
+.payables-register-table td,
+.receivables-table td,
+.data-table-preview table td,
+.data-layer-table td,
+.data-table-list table td {
+  line-height: 1.45;
+}
+
+.system-table tbody tr:hover,
+.helicopter-table tbody tr:hover,
+.payables-line-table tbody tr:hover,
+.payables-register-table tbody tr:hover,
+.receivables-table tbody tr:hover,
+.data-table-preview table tbody tr:hover,
+.data-layer-table tbody tr:hover,
+.data-table-list table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Global managed table shell for future reusable Admin Table Management */
+
+.platform-managed-table-shell {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.platform-managed-table-shell table {
+  min-width: 1080px;
+}
+
+
+/* Patch C.3 - finish Inventory real-table conversion */
+
+.inventory-data-table--product-register {
+  min-width: 1540px;
+}
+
+.inventory-data-table--product-master {
+  min-width: 1980px;
+}
+
+.inventory-data-table--generic {
+  min-width: 1380px;
+}
+
+.inventory-data-table .table-cell-actions > span,
+.inventory-data-table .table-cell-actions > div {
+  width: 100%;
+}
+
+.inventory-data-table .table-cell-actions button {
+  max-width: 100%;
+}
+
+
+/* Patch D - make table and labelling controls visibly apply */
+
+.inventory-table-management-panel {
+  position: relative;
+}
+
+.inventory-table-management-actions button.primary::after,
+.expiry-label-manager-actions button.primary::after {
+  content: " ✓";
+}
+
+.inventory-table-shell.inventory-table-style--striped .inventory-data-table tbody tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.inventory-table-shell.inventory-table-style--bordered .inventory-data-table th,
+.inventory-table-shell.inventory-table-style--bordered .inventory-data-table td {
+  border-right: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.inventory-table-shell.inventory-table-density--compact .inventory-data-table th,
+.inventory-table-shell.inventory-table-density--compact .inventory-data-table td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.inventory-table-shell.inventory-table-density--tall .inventory-data-table th,
+.inventory-table-shell.inventory-table-density--tall .inventory-data-table td {
+  padding-top: 17px;
+  padding-bottom: 17px;
+}
+
+.inventory-table-shell.inventory-table-wrap--off .cell-wrap {
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inventory-table-shell.inventory-table-wrap--on .cell-wrap {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.inventory-table-shell.inventory-table-sticky-actions .inventory-data-table th:last-child,
+.inventory-table-shell.inventory-table-sticky-actions .inventory-data-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.inventory-table-shell.inventory-table-sticky-actions .inventory-data-table thead th:last-child {
+  z-index: 4;
+  background: #f8fafc;
+}
+
+.inventory-expiry-label {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+
+/* Patch E - Inventory layout cleanup and anti-overlap polish */
+
+/* General inventory section spacing */
+.inventory-section {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.inventory-section > * {
+  min-width: 0;
+}
+
+/* Section headings should not collide with actions */
+.inventory-section .section-heading,
+.inventory-table-toolbar,
+.inventory-toolbar,
+.inventory-master-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.inventory-section .section-heading > div,
+.inventory-table-toolbar > div,
+.inventory-toolbar > div,
+.inventory-master-toolbar > div {
+  min-width: 240px;
+  flex: 1 1 320px;
+}
+
+.inventory-section .section-heading h2,
+.inventory-section .section-heading h3,
+.inventory-table-toolbar h3,
+.inventory-toolbar h3,
+.inventory-master-toolbar h3 {
+  margin: 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.inventory-section .section-heading span,
+.inventory-section .section-heading p,
+.inventory-table-toolbar span,
+.inventory-toolbar span,
+.inventory-master-toolbar span {
+  display: block;
+  max-width: 980px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Product Inventory metric cards */
+.inventory-product-inventory-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.inventory-product-inventory-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  min-height: 118px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+.inventory-product-inventory-card span {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.inventory-product-inventory-card strong {
+  color: #0f172a;
+  font-size: clamp(1.25rem, 2vw, 1.85rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.inventory-product-inventory-card small {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Table Management panel: clean Excel-like control layout without overlap */
+.inventory-table-management-panel {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1.25fr) repeat(4, minmax(130px, 1fr));
+  gap: 12px;
+  align-items: end;
+  width: 100%;
+  min-width: 0;
+  margin: 14px 0 16px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.inventory-table-management-panel > * {
+  min-width: 0;
+}
+
+.inventory-table-management-panel > div:first-child {
+  align-self: center;
+}
+
+.inventory-table-management-panel > div:first-child strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.inventory-table-management-panel > div:first-child span {
+  display: block;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.inventory-table-management-panel label {
+  min-width: 0;
+}
+
+.inventory-table-management-panel select,
+.inventory-table-management-panel input[type='range'] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.inventory-table-management-panel small {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.inventory-table-toggle {
+  min-width: 120px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.inventory-table-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.inventory-table-management-actions button {
+  flex: 1 1 112px;
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+/* Expiry label manager controls */
+.expiry-label-manager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.expiry-label-manager-actions button {
+  min-width: 150px;
+  white-space: normal;
+}
+
+/* Action card grids should wrap cleanly */
+.inventory-action-card-grid,
+.stock-location-action-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.inventory-action-card-grid button,
+.stock-location-action-cards button {
+  min-width: 0;
+  min-height: 64px;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* Guided receiving and form panels */
+.inventory-guided-flow-launch-panel,
+.inventory-guided-flow-panel,
+.inventory-create-from-master-panel,
+.stock-location-action-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.inventory-guided-flow-launch-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.inventory-guided-flow-launch-panel > div {
+  min-width: 240px;
+  flex: 1 1 420px;
+}
+
+.inventory-guided-flow-launch-panel button {
+  flex: 0 1 220px;
+  white-space: normal;
+}
+
+/* Real table shell cleanup */
+.inventory-table-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  margin-top: 4px;
+}
+
+.inventory-data-table {
+  table-layout: fixed;
+}
+
+.inventory-data-table th,
+.inventory-data-table td {
+  min-width: 0;
+}
+
+.inventory-data-table .cell-wrap,
+.inventory-data-table .cell-muted,
+.inventory-data-table .cell-strong {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.inventory-data-table .cell-nowrap {
+  white-space: nowrap;
+}
+
+.inventory-data-table .cell-number,
+.inventory-data-table th.cell-number {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Prevent action buttons from overflowing cells */
+.inventory-data-table .table-cell-actions {
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.inventory-data-table .table-action-grid,
+.inventory-data-table .stock-location-action-button-row,
+.inventory-data-table .product-inventory-action-button-row,
+.inventory-data-table .product-master-action-button-row,
+.inventory-data-table .table-action-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.inventory-data-table .table-action-grid button,
+.inventory-data-table .stock-location-action-button-row button,
+.inventory-data-table .product-inventory-action-button-row button,
+.inventory-data-table .product-master-action-button-row button,
+.inventory-data-table .table-action-row button {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 6px 7px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.1;
+  text-align: center;
+}
+
+/* Sticky action column should not cover content badly */
+.inventory-table-sticky-actions .inventory-data-table th:last-child,
+.inventory-table-sticky-actions .inventory-data-table td:last-child {
+  background: #ffffff;
+  box-shadow: -8px 0 16px rgba(15, 23, 42, 0.08);
+}
+
+.inventory-table-sticky-actions .inventory-data-table thead th:last-child {
+  background: #f8fafc;
+}
+
+/* Label/chip cleanup */
+.inventory-expiry-label,
+.inventory-table-chip,
+.stock-location-status-chip {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+/* Keep dark expired rows readable even with custom labels */
+.inventory-data-table tr.expiry-row--expired td,
+.inventory-data-table tr.expiry-risk--expired td {
+  color: #ffffff;
+}
+
+.inventory-data-table tr.expiry-row--expired .cell-muted,
+.inventory-data-table tr.expiry-risk--expired .cell-muted,
+.inventory-data-table tr.expiry-row--expired .cell-strong,
+.inventory-data-table tr.expiry-risk--expired .cell-strong {
+  color: #ffffff;
+}
+
+/* Large tablet */
+@media (max-width: 1280px) {
+  .inventory-product-inventory-card-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .inventory-table-management-panel {
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+  }
+
+  .inventory-table-management-panel > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .inventory-section {
+    gap: 14px;
+  }
+
+  .inventory-table-management-panel {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    padding: 12px;
+  }
+
+  .inventory-product-inventory-card-grid {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+
+  .inventory-guided-flow-launch-panel button {
+    flex: 1 1 100%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .inventory-section .section-heading,
+  .inventory-table-toolbar,
+  .inventory-toolbar,
+  .inventory-master-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-product-inventory-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-table-management-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-action-card-grid,
+  .stock-location-action-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-table-management-actions button,
+  .expiry-label-manager-actions button {
+    flex: 1 1 100%;
+  }
+}
+
+
+/* Patch F - professional settings surface cleanup */
+
+.inventory-settings-surface {
+  display: grid;
+  gap: 18px;
+  margin: 14px 0 18px;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.inventory-settings-surface__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.inventory-settings-surface__header h3,
+.inventory-settings-surface__header h4 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+.inventory-settings-surface__header p,
+.inventory-settings-surface__header span {
+  margin: 4px 0 0;
+  color: #64748b;
+  line-height: 1.45;
+  max-width: 900px;
+}
+
+.inventory-settings-group-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  min-width: 0;
+}
+
+.inventory-settings-group {
+  min-width: 0;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+.inventory-settings-group h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.inventory-settings-group p {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.inventory-settings-fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+}
+
+.inventory-settings-field {
+  min-width: 0;
+}
+
+.inventory-settings-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  line-height: 1.3;
+}
+
+.inventory-settings-field input,
+.inventory-settings-field select {
+  width: 100%;
+  min-width: 0;
+}
+
+.inventory-settings-field input[type='number'],
+.inventory-settings-field input[type='text'] {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.inventory-settings-color-input {
+  width: 100%;
+  height: 42px;
+  padding: 4px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.inventory-settings-preview-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.inventory-settings-preview-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.inventory-settings-preview-chip span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.inventory-settings-preview-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  flex: 0 0 auto;
+}
+
+.inventory-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.inventory-settings-actions button {
+  min-width: 180px;
+  white-space: normal;
+}
+
+/* tighten existing table management visual style */
+.inventory-table-management-panel {
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.inventory-table-management-panel label {
+  display: grid;
+  gap: 6px;
+}
+
+.inventory-table-management-panel label,
+.inventory-table-management-panel > div:first-child span {
+  overflow-wrap: anywhere;
+}
+
+/* responsive */
+@media (max-width: 1200px) {
+  .inventory-settings-group-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .inventory-settings-group-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-settings-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-settings-actions {
+    justify-content: stretch;
+  }
+
+  .inventory-settings-actions button {
+    flex: 1 1 100%;
+  }
+}
+
+
+/* Patch F.3 - final professional settings polish */
+
+.inventory-settings-surface--labelling {
+  gap: 20px;
+  padding: 20px;
+  border-radius: 24px;
+}
+
+.inventory-settings-surface--labelling .eyebrow {
+  margin: 0 0 5px;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inventory-settings-group__heading {
+  margin-bottom: 14px;
+}
+
+.inventory-settings-group__heading h4 {
+  margin: 0 0 4px;
+}
+
+.inventory-settings-group__heading p {
+  margin: 0;
+}
+
+.inventory-settings-group--thresholds {
+  background:
+    linear-gradient(180deg, rgba(236, 253, 245, 0.9), rgba(255, 255, 255, 0.95));
+}
+
+.inventory-settings-group--backgrounds {
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.95));
+}
+
+.inventory-settings-group--text {
+  background:
+    linear-gradient(180deg, rgba(250, 245, 255, 0.82), rgba(255, 255, 255, 0.95));
+}
+
+.inventory-settings-fields--thresholds {
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+}
+
+.inventory-settings-field small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.inventory-settings-field input[type='number'] {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.inventory-settings-field--colour {
+  display: grid;
+  gap: 6px;
+}
+
+.inventory-settings-color-input {
+  cursor: pointer;
+  inline-size: 100%;
+  block-size: 42px;
+}
+
+.inventory-settings-preview-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px dashed rgba(15, 23, 42, 0.16);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.inventory-settings-preview-panel h4 {
+  margin: 0 0 4px;
+  color: #0f172a;
+}
+
+.inventory-settings-preview-panel p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.inventory-settings-preview-chip {
+  justify-content: flex-start;
+  min-height: 42px;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+}
+
+.inventory-settings-preview-chip strong {
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.inventory-settings-actions {
+  padding-top: 2px;
+}
+
+.inventory-settings-actions .primary {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.inventory-settings-actions button {
+  border-radius: 14px;
+}
+
+/* Keep table management surfaces aligned with the new settings language */
+.inventory-table-management-panel {
+  padding: 16px !important;
+  border-radius: 20px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.045);
+}
+
+.inventory-table-management-panel > div:first-child {
+  padding: 2px 0;
+}
+
+.inventory-table-management-panel > div:first-child strong {
+  font-size: 0.98rem;
+}
+
+.inventory-table-management-panel > div:first-child span {
+  max-width: 620px;
+}
+
+.inventory-table-management-panel label,
+.inventory-table-toggle {
+  padding: 10px 11px;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.inventory-table-management-panel label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.inventory-table-management-panel select {
+  height: 38px;
+  border-radius: 11px;
+}
+
+.inventory-table-management-actions {
+  justify-content: flex-end;
+}
+
+.inventory-table-management-actions button {
+  border-radius: 13px;
+}
+
+@media (max-width: 1280px) {
+  .inventory-settings-fields--thresholds {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .inventory-settings-surface--labelling {
+    padding: 16px;
+  }
+
+  .inventory-settings-preview-legend {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .inventory-settings-preview-legend {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Patch H.2 - professional granular permission matrix */
+
+.permission-matrix-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.permission-matrix-panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.permission-matrix-panel__header .eyebrow {
+  margin: 0 0 4px;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.permission-matrix-panel__header h2 {
+  margin: 0;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.permission-matrix-panel__header span {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  line-height: 1.45;
+  max-width: 920px;
+}
+
+.security-permission-matrix {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.security-permission-matrix-group {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+}
+
+.security-permission-matrix-group__header h3 {
+  margin: 0;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.security-permission-matrix-group__header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.security-permission-table-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.security-permission-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.security-permission-table th {
+  padding: 12px 14px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.security-permission-table th:first-child {
+  text-align: left;
+  width: 48%;
+}
+
+.security-permission-table td {
+  padding: 12px 14px;
+  color: #0f172a;
+  font-size: 0.84rem;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.security-permission-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.security-permission-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.security-permission-table td:first-child {
+  text-align: left;
+}
+
+.security-permission-table td:first-child strong {
+  display: block;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.security-permission-table td:first-child span {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.permission-matrix-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.permission-matrix-cell--allowed {
+  color: #047857;
+  background: #dcfce7;
+  border: 1px solid rgba(4, 120, 87, 0.22);
+}
+
+.permission-matrix-cell--blocked {
+  color: #94a3b8;
+  background: #f1f5f9;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.permission-matrix-cell--not-applicable {
+  color: #cbd5e1;
+  background: #f8fafc;
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+}
+
+@media (max-width: 768px) {
+  .permission-matrix-panel__header {
+    display: grid;
+  }
+
+  .security-permission-matrix-group {
+    padding: 12px;
+  }
+
+  .security-permission-table {
+    min-width: 680px;
+  }
+}
+
+
+/* Patch H.3 - operational international user management console */
+
+.tenant-user-security-console {
+  display: grid;
+  gap: 20px;
+}
+
+.tenant-user-console-heading .eyebrow {
+  margin: 0 0 4px;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tenant-user-permissions--matrix {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.tenant-permission-assignment-matrix {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.tenant-permission-assignment-group {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.tenant-permission-assignment-group__header h3 {
+  margin: 0;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.tenant-permission-assignment-group__header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.tenant-permission-table-shell,
+.tenant-user-directory-table-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.tenant-permission-table,
+.tenant-user-directory-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tenant-permission-table th,
+.tenant-user-directory-table th {
+  padding: 12px 14px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.tenant-permission-table th:first-child,
+.tenant-user-directory-table th:first-child {
+  text-align: left;
+  width: 38%;
+}
+
+.tenant-permission-table td,
+.tenant-user-directory-table td {
+  padding: 12px 14px;
+  color: #0f172a;
+  font-size: 0.84rem;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tenant-permission-table td:first-child,
+.tenant-user-directory-table td:first-child,
+.tenant-user-directory-table td:nth-child(2) {
+  text-align: left;
+}
+
+.tenant-permission-table tbody tr:hover,
+.tenant-user-directory-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.tenant-permission-table td:first-child strong,
+.tenant-user-directory-table td strong {
+  display: block;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.tenant-permission-table td:first-child span,
+.tenant-user-directory-table td span,
+.tenant-user-directory-table td small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.permission-checkbox {
+  display: inline-grid;
+  gap: 4px;
+  justify-items: center;
+  align-items: center;
+  min-width: 68px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.permission-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0f766e;
+}
+
+.permission-checkbox span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.permission-checkbox--all span {
+  color: #0f766e;
+}
+
+.permission-not-applicable {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  font-weight: 900;
+}
+
+.tenant-user-directory-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.tenant-user-directory-panel__header h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.tenant-user-directory-panel__header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.status-chip {
+  display: inline-flex !important;
+  width: fit-content;
+  min-width: 78px;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #334155 !important;
+  background: #f1f5f9;
+  font-size: 0.72rem !important;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.status-chip--active {
+  color: #047857 !important;
+  background: #dcfce7;
+}
+
+.status-chip--pending {
+  color: #92400e !important;
+  background: #fef3c7;
+}
+
+.status-chip--blocked {
+  color: #991b1b !important;
+  background: #fee2e2;
+}
+
+.tenant-user-list-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tenant-user-list-actions button {
+  min-width: 0;
+  white-space: normal;
+}
+
+@media (max-width: 768px) {
+  .tenant-user-permissions--matrix,
+  .tenant-user-directory-panel {
+    padding: 12px;
+  }
+
+  .tenant-permission-assignment-group {
+    padding: 12px;
+  }
+
+  .tenant-permission-table,
+  .tenant-user-directory-table {
+    min-width: 760px;
+  }
+}
+
+
+/* Patch H.4 - row-based full-width permission matrix */
+
+/* Force each module to be arranged as a full-width row, not squeezed columns */
+.tenant-permission-assignment-matrix,
+.security-permission-matrix {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.tenant-permission-assignment-group,
+.security-permission-matrix-group {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Remove unnecessary internal card scrolling on desktop/laptop */
+.tenant-permission-table-shell,
+.security-permission-table-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: visible;
+}
+
+/* Make the matrix fit inside the available card width */
+.tenant-permission-table,
+.security-permission-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+/* Resource column gets the largest share, actions stay compact */
+.tenant-permission-table th:first-child,
+.security-permission-table th:first-child {
+  width: 42% !important;
+}
+
+.tenant-permission-table th:not(:first-child),
+.security-permission-table th:not(:first-child) {
+  width: auto;
+}
+
+.tenant-permission-table th,
+.security-permission-table th {
+  padding: 10px 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.tenant-permission-table td,
+.security-permission-table td {
+  padding: 10px 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tenant-permission-table td:first-child strong,
+.security-permission-table td:first-child strong {
+  font-size: 0.82rem;
+}
+
+.tenant-permission-table td:first-child span,
+.security-permission-table td:first-child span {
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+/* Permission checkbox cells become compact and professional */
+.tenant-permission-table .permission-checkbox {
+  width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tenant-permission-table .permission-checkbox input {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+/* The column heading already says View/Add/Edit/Delete, so hide repetitive Allowed/Blocked text visually */
+.tenant-permission-table .permission-checkbox span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.tenant-permission-table .permission-not-applicable,
+.security-permission-table .permission-matrix-cell {
+  margin-inline: auto;
+}
+
+/* Keep read-only permission matrix compact too */
+.security-permission-table .permission-matrix-cell {
+  width: 26px;
+  height: 26px;
+}
+
+/* Tablet and mobile: convert the matrix into stacked readable cards instead of hidden side-scroll */
+@media (max-width: 760px) {
+  .tenant-permission-table-shell,
+  .security-permission-table-shell {
+    overflow-x: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .tenant-permission-table,
+  .security-permission-table,
+  .tenant-permission-table thead,
+  .security-permission-table thead,
+  .tenant-permission-table tbody,
+  .security-permission-table tbody,
+  .tenant-permission-table tr,
+  .security-permission-table tr,
+  .tenant-permission-table th,
+  .security-permission-table th,
+  .tenant-permission-table td,
+  .security-permission-table td {
+    display: block;
+    width: 100% !important;
+  }
+
+  .tenant-permission-table thead,
+  .security-permission-table thead {
+    display: none;
+  }
+
+  .tenant-permission-table tbody,
+  .security-permission-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .tenant-permission-table tr,
+  .security-permission-table tr {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+  }
+
+  .tenant-permission-table td,
+  .security-permission-table td {
+    padding: 6px;
+    border: 0;
+    text-align: center;
+  }
+
+  .tenant-permission-table td:first-child,
+  .security-permission-table td:first-child {
+    grid-column: 1 / -1;
+    text-align: left;
+    padding: 0 0 6px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  }
+
+  .tenant-permission-table td:not(:first-child)::before,
+  .security-permission-table td:not(:first-child)::before {
+    display: block;
+    margin-bottom: 5px;
+    color: #64748b;
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .tenant-permission-table td:nth-child(2)::before,
+  .security-permission-table td:nth-child(2)::before {
+    content: 'View';
+  }
+
+  .tenant-permission-table td:nth-child(3)::before,
+  .security-permission-table td:nth-child(3)::before {
+    content: 'Add';
+  }
+
+  .tenant-permission-table td:nth-child(4)::before,
+  .security-permission-table td:nth-child(4)::before {
+    content: 'Edit';
+  }
+
+  .tenant-permission-table td:nth-child(5)::before,
+  .security-permission-table td:nth-child(5)::before {
+    content: 'Delete';
+  }
+
+  .tenant-permission-table td:nth-child(6)::before {
+    content: 'All';
+  }
+
+  .tenant-permission-table tr {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .tenant-permission-table tr,
+  .security-permission-table tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tenant-permission-table td:first-child,
+  .security-permission-table td:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+
+/* Patch POS-B.1 - Simple but Mighty POS Counter redesign */
+
+.pos-counter-page {
+  display: grid;
+  gap: 18px;
+}
+
+.pos-counter-heading {
+  align-items: stretch;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.13), transparent 34%),
+    linear-gradient(135deg, #ffffff 0%, #f8fafc 56%, #eef2ff 100%);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  padding: 22px;
+}
+
+.pos-counter-heading .eyebrow {
+  color: #0369a1;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.pos-counter-heading h2 {
+  margin-top: 5px;
+  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
+  line-height: 1.04;
+}
+
+.pos-session-pill {
+  min-width: 230px;
+  justify-content: center;
+  border-radius: 22px;
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.18);
+}
+
+.pos-session-pill.open {
+  background: linear-gradient(135deg, #047857, #065f46);
+}
+
+.pos-session-pill.closed {
+  background: linear-gradient(135deg, #991b1b, #7f1d1d);
+}
+
+.pos-day-control-strip--two-by-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.pos-day-control-strip--two-by-two article {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+  padding: 16px;
+}
+
+.pos-day-control-strip--two-by-two article > span {
+  display: inline-flex;
+  margin-bottom: 10px;
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pos-counter-workbench--cart-middle {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(440px, 1.45fr) minmax(300px, 0.92fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.pos-rx-queue,
+.pos-cart-card,
+.pos-transaction-setup-card,
+.pos-summary-confirmation-card,
+.pos-invoice-journey,
+.pos-sales-summary-table-card {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.pos-rx-queue,
+.pos-summary-confirmation-card {
+  position: sticky;
+  top: 86px;
+}
+
+.pos-rx-queue {
+  max-height: calc(100vh - 110px);
+  overflow: auto;
+}
+
+.pos-search-input {
+  height: 46px;
+  border-radius: 16px;
+  border: 1px solid rgba(14, 165, 233, 0.22);
+  background: #f8fafc;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.pos-inventory-load-panel {
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px dashed rgba(14, 165, 233, 0.28);
+  padding: 12px;
+}
+
+.pos-inventory-load-panel button,
+.pos-view-products-link {
+  width: 100%;
+}
+
+.pos-drug-list--ten {
+  display: grid;
+  gap: 10px;
+}
+
+.pos-drug-list--ten button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  padding: 12px;
+}
+
+.pos-drug-list--ten button strong {
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.pos-drug-list--ten button small,
+.pos-drug-list--ten button em {
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.pos-drug-list--ten button span {
+  justify-self: end;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pos-drug-list--ten button i {
+  grid-column: 1 / -1;
+  justify-self: start;
+  color: #0369a1;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.pos-cart-center {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.pos-cart-card {
+  overflow: hidden;
+}
+
+.pos-cart-card .section-heading,
+.pos-transaction-setup-card .section-heading,
+.pos-summary-confirmation-card .section-heading {
+  padding: 16px 16px 0;
+}
+
+.pos-cart-card .system-table-wrap {
+  margin: 14px 0 0;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+.pos-cart-table {
+  min-width: 720px;
+}
+
+.pos-cart-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pos-cart-table td strong {
+  display: block;
+  color: #0f172a;
+}
+
+.pos-cart-table td small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.pos-cart-table input {
+  width: 78px;
+  min-height: 38px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 800;
+}
+
+.pos-cart-remove-button {
+  min-width: 0;
+  border-color: rgba(220, 38, 38, 0.18) !important;
+  background: #fff1f2 !important;
+  color: #b91c1c !important;
+}
+
+.pos-transaction-setup-card {
+  padding-bottom: 16px;
+}
+
+.pos-field-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0 16px 16px;
+}
+
+.pos-field-grid--two label {
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 10px;
+}
+
+.pos-field-grid--two label span {
+  display: block;
+  margin-bottom: 6px;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pos-field-grid--two select,
+.pos-field-grid--two input {
+  min-height: 40px;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.pos-confirmation-rail {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pos-summary-confirmation-card {
+  overflow: hidden;
+}
+
+.pos-refresh-summary-button {
+  margin: 12px 16px 0;
+  width: calc(100% - 32px);
+}
+
+.pos-summary-sync-note {
+  margin: 12px 16px;
+  border-radius: 18px;
+  background: #eff6ff;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  padding: 12px;
+}
+
+.pos-summary-sync-note span,
+.pos-summary-sync-note small {
+  display: block;
+  color: #475569;
+  font-size: 0.72rem;
+}
+
+.pos-summary-sync-note strong {
+  display: block;
+  margin: 3px 0;
+  color: #1e3a8a;
+  font-size: 0.95rem;
+}
+
+.pos-summary-list {
+  margin: 0;
+  padding: 0 16px 16px;
+}
+
+.pos-summary-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  padding: 8px 0;
+}
+
+.pos-summary-list dt {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.pos-summary-list dd {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.pos-summary-list .total {
+  align-items: center;
+  border-bottom: 0;
+  margin-top: 4px;
+  border-radius: 16px;
+  background: #0f172a;
+  padding: 12px;
+}
+
+.pos-summary-list .total dt,
+.pos-summary-list .total dd {
+  color: #ffffff;
+}
+
+.pos-summary-list .total dd {
+  font-size: 1.05rem;
+}
+
+.pos-summary-confirmation-card > button:last-child {
+  width: calc(100% - 32px);
+  margin: 0 16px 16px;
+  min-height: 48px;
+  border-radius: 16px;
+  font-weight: 900;
+}
+
+.pos-invoice-journey {
+  padding: 16px;
+}
+
+.pos-invoice-journey h3 {
+  margin: 0 0 12px;
+}
+
+.pos-invoice-journey button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.pos-sales-summary-table-card {
+  overflow: hidden;
+}
+
+.pos-sales-summary-table-card .section-heading {
+  padding: 16px;
+}
+
+.pos-sales-summary-table-card .system-table-wrap {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+@media (max-width: 1280px) {
+  .pos-counter-workbench--cart-middle {
+    grid-template-columns: minmax(260px, 0.95fr) minmax(420px, 1.35fr);
+  }
+
+  .pos-confirmation-rail {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr);
+  }
+
+  .pos-rx-queue,
+  .pos-summary-confirmation-card {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .pos-day-control-strip--two-by-two,
+  .pos-counter-workbench--cart-middle,
+  .pos-confirmation-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-field-grid--two {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .pos-counter-heading {
+    border-radius: 22px;
+    padding: 16px;
+  }
+
+  .pos-session-pill {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .pos-cart-table {
+    min-width: 620px;
+  }
+}
+
+/* Patch POS-C.1.21A - Clean single-source POS layout */
+
+/* Overall POS screen */
+.pos-dedicated-counter-shell {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999 !important;
+  padding: 10px !important;
+  background: #eef2f7 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.pos-counter-page--dedicated.pos-stable-page-v16 {
+  width: 100% !important;
+  max-width: 1920px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 10px !important;
+  overflow: hidden !important;
+}
+
+/* Header: command bar + POS Counter header only */
+.pos-fixed-top-v16 {
+  grid-row: 1 !important;
+  display: grid !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+  position: static !important;
+  z-index: 10 !important;
+}
+
+.pos-stable-page-v16 .pos-dedicated-command-bar {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  display: grid !important;
+  grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 8px !important;
+  border-radius: 18px !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18) !important;
+  overflow: visible !important;
+}
+
+.pos-stable-page-v16 .pos-dedicated-command-bar button {
+  min-width: 0 !important;
+  min-height: 44px !important;
+  padding: 7px 9px !important;
+  border-radius: 12px !important;
+  text-align: left !important;
+  overflow: hidden !important;
+}
+
+.pos-stable-page-v16 .pos-dedicated-command-bar button span,
+.pos-stable-page-v16 .pos-dedicated-command-bar button strong {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-stable-page-v16 .pos-dedicated-command-bar button span {
+  font-size: 0.62rem !important;
+}
+
+.pos-stable-page-v16 .pos-dedicated-command-bar button strong {
+  font-size: 0.78rem !important;
+}
+
+.pos-counter-heading {
+  margin: 0 !important;
+  padding: 10px 14px !important;
+  min-height: 58px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+  overflow: hidden !important;
+}
+
+.pos-counter-heading h2 {
+  margin: 0 !important;
+  font-size: clamp(1.05rem, 1.45vw, 1.42rem) !important;
+  line-height: 1.08 !important;
+}
+
+.pos-counter-heading .eyebrow {
+  margin: 0 0 3px !important;
+  font-size: 0.62rem !important;
+  line-height: 1 !important;
+}
+
+.pos-counter-heading .muted {
+  margin: 2px 0 0 !important;
+  font-size: 0.68rem !important;
+  line-height: 1.2 !important;
+}
+
+/* Main page starts straight below header */
+.pos-scroll-body-v16 {
+  grid-row: 2 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: grid !important;
+  gap: 12px !important;
+  align-content: start !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 0 0 16px !important;
+  margin: 0 !important;
+}
+
+.pos-terminal-main-scroll > .form-success {
+  margin: 0 !important;
+  padding: 9px 12px !important;
+  border-radius: 14px !important;
+  font-size: 0.78rem !important;
+}
+
+/* Working area: product left, operation right */
+.pos-operating-cockpit-v2 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 65fr) minmax(480px, 35fr) !important;
+  grid-template-areas: "products transaction" !important;
+  gap: 12px !important;
+  align-items: start !important;
+  overflow: visible !important;
+  margin: 0 !important;
+}
+
+.pos-product-stock-section {
+  grid-area: products !important;
+}
+
+.pos-sale-transaction-section {
+  grid-area: transaction !important;
+  display: grid !important;
+  gap: 10px !important;
+  align-content: start !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.pos-rx-queue,
+.pos-product-stock-section,
+.pos-sale-cart-section,
+.pos-transaction-setup-section,
+.pos-summary-confirmation-card,
+.pos-invoice-journey,
+.pos-sales-summary-table-card,
+.pos-shift-control-section {
+  position: static !important;
+  top: auto !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Product and stock pick */
+.pos-product-stock-section {
+  display: grid !important;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  padding: 10px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.pos-product-stock-section .section-heading,
+.pos-sale-cart-section .section-heading,
+.pos-transaction-setup-section .section-heading,
+.pos-summary-confirmation-card .section-heading,
+.pos-sales-summary-table-card .section-heading,
+.pos-shift-control-section .section-heading {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.pos-product-stock-section .section-heading h3,
+.pos-sale-cart-section .section-heading h3,
+.pos-transaction-setup-section .section-heading h3,
+.pos-summary-confirmation-card .section-heading h3,
+.pos-sales-summary-table-card .section-heading h3,
+.pos-shift-control-section .section-heading h3 {
+  margin: 0 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.1 !important;
+}
+
+.pos-product-stock-section .section-heading span,
+.pos-sale-cart-section .section-heading span,
+.pos-transaction-setup-section .section-heading span,
+.pos-summary-confirmation-card .section-heading span,
+.pos-sales-summary-table-card .section-heading span,
+.pos-shift-control-section .section-heading span {
+  font-size: 0.62rem !important;
+  line-height: 1.1 !important;
+}
+
+.pos-search-input {
+  width: 100% !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  font-size: 0.78rem !important;
+}
+
+.pos-inventory-load-panel {
+  display: grid !important;
+  grid-template-columns: 120px minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  min-height: 36px !important;
+  padding: 6px !important;
+  border-radius: 12px !important;
+  background: #f8fafc !important;
+}
+
+.pos-inventory-load-panel button {
+  min-height: 28px !important;
+  font-size: 0.64rem !important;
+  border-radius: 9px !important;
+}
+
+.pos-inventory-load-panel span {
+  min-width: 0 !important;
+  font-size: 0.62rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-drug-list--ten {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-rows: 104px !important;
+  gap: 8px !important;
+  min-height: 440px !important;
+  max-height: 792px !important;
+  padding: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  align-content: start !important;
+}
+
+.pos-product-tile-v16 {
+  display: grid !important;
+  grid-template-rows: 2.2em 1.1em 1.1em 1.1em 1.1em !important;
+  gap: 3px !important;
+  align-content: start !important;
+  min-height: 104px !important;
+  max-height: 104px !important;
+  padding: 8px !important;
+  border-radius: 12px !important;
+  text-align: left !important;
+  overflow: hidden !important;
+}
+
+.pos-product-tile-v16 strong {
+  order: 1 !important;
+  display: block !important;
+  margin: 0 !important;
+  font-size: 0.72rem !important;
+  line-height: 1.1 !important;
+  min-height: 2.2em !important;
+  max-height: 2.2em !important;
+  overflow: hidden !important;
+}
+
+.pos-product-tile-v16 > em {
+  order: 2 !important;
+  display: block !important;
+  margin: 0 !important;
+  font-style: normal !important;
+  font-size: 0.62rem !important;
+  line-height: 1.08 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-product-tile-v16 .pos-product-card-line {
+  display: block !important;
+  margin: 0 !important;
+  font-size: 0.58rem !important;
+  line-height: 1.06 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-product-tile-v16 .pos-product-card-line:nth-of-type(1) {
+  order: 3 !important;
+}
+
+.pos-product-tile-v16 .pos-product-card-line:nth-of-type(2) {
+  order: 4 !important;
+}
+
+.pos-product-tile-v16 .pos-product-card-line:nth-of-type(3) {
+  order: 5 !important;
+}
+
+.pos-view-products-link {
+  min-height: 30px !important;
+  border-radius: 10px !important;
+  font-size: 0.68rem !important;
+}
+
+/* Independent POS Session section above Cart */
+.pos-shift-control-section {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px !important;
+  overflow: visible !important;
+}
+
+.pos-shift-control-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.pos-shift-control-grid .pos-shift-card-v16 {
+  display: grid !important;
+  grid-template-columns: 80px minmax(0, 1fr) minmax(0, 1.12fr) 94px !important;
+  gap: 7px !important;
+  align-items: stretch !important;
+  min-height: 66px !important;
+  padding: 7px !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.pos-shift-control-grid .pos-shift-title {
+  display: grid !important;
+  place-items: center !important;
+  min-height: 44px !important;
+  padding: 0 7px !important;
+  border-radius: 10px !important;
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-size: 0.62rem !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.pos-shift-control-grid .pos-shift-field,
+.pos-shift-control-grid .pos-shift-check {
+  display: grid !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  padding: 6px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+}
+
+.pos-shift-control-grid .pos-shift-field span,
+.pos-shift-control-grid .pos-shift-check span {
+  color: #475569 !important;
+  font-size: 0.58rem !important;
+  line-height: 1.06 !important;
+  font-weight: 900 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.pos-shift-control-grid .pos-shift-field select,
+.pos-shift-control-grid .pos-shift-field input {
+  width: 100% !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 2px 6px !important;
+  border-radius: 8px !important;
+  font-size: 0.64rem !important;
+}
+
+.pos-shift-control-grid .pos-shift-check {
+  grid-template-columns: 16px minmax(0, 1fr) !important;
+  align-items: center !important;
+}
+
+.pos-shift-control-grid .pos-shift-check input {
+  width: 14px !important;
+  height: 14px !important;
+  min-height: 14px !important;
+  margin: 0 !important;
+}
+
+.pos-shift-control-grid .pos-shift-card-v16 button {
+  width: 100% !important;
+  min-height: 30px !important;
+  border-radius: 9px !important;
+  font-size: 0.62rem !important;
+  font-weight: 950 !important;
+  padding: 3px 5px !important;
+  white-space: nowrap !important;
+}
+
+/* Cart */
+.pos-sale-cart-section {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px !important;
+  overflow: visible !important;
+}
+
+.pos-cart-header-actions {
+  display: flex !important;
+  gap: 6px !important;
+  align-items: center !important;
+}
+
+.pos-cart-header-actions small {
+  font-size: 0.66rem !important;
+}
+
+.pos-cart-header-actions button {
+  min-height: 28px !important;
+  font-size: 0.62rem !important;
+  border-radius: 8px !important;
+}
+
+.pos-sale-cart-section .system-table-wrap {
+  margin: 0 !important;
+  max-height: none !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.pos-cart-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+.pos-cart-table th,
+.pos-cart-table td {
+  padding: 5px 4px !important;
+  font-size: 0.6rem !important;
+  line-height: 1.08 !important;
+}
+
+.pos-cart-table th:nth-child(1),
+.pos-cart-table td:nth-child(1) {
+  width: 44% !important;
+}
+
+.pos-cart-table th:nth-child(2),
+.pos-cart-table td:nth-child(2) {
+  width: 16% !important;
+}
+
+.pos-cart-table th:nth-child(3),
+.pos-cart-table td:nth-child(3) {
+  width: 22% !important;
+}
+
+.pos-cart-table th:nth-child(4),
+.pos-cart-table td:nth-child(4) {
+  width: 18% !important;
+}
+
+.pos-cart-table input {
+  width: 100% !important;
+  min-height: 26px !important;
+  font-size: 0.58rem !important;
+  border-radius: 8px !important;
+}
+
+.pos-cart-remove-button {
+  width: 100% !important;
+  min-height: 26px !important;
+  padding: 2px 3px !important;
+  font-size: 0.52rem !important;
+  border-radius: 8px !important;
+}
+
+/* Transaction setup */
+.pos-transaction-setup-section {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px !important;
+  overflow: visible !important;
+}
+
+.pos-field-grid--two {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  padding: 0 !important;
+}
+
+.pos-field-grid--two label {
+  min-width: 0 !important;
+  min-height: 54px !important;
+  display: grid !important;
+  gap: 4px !important;
+  padding: 7px !important;
+  border-radius: 11px !important;
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+}
+
+.pos-field-grid--two label span {
+  font-size: 0.64rem !important;
+  line-height: 1.08 !important;
+  font-weight: 900 !important;
+  color: #475569 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-field-grid--two input,
+.pos-field-grid--two select {
+  width: 100% !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 0.7rem !important;
+  padding: 2px 7px !important;
+}
+
+/* Update summary */
+.pos-summary-update-bridge {
+  display: grid !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.pos-summary-update-bridge button {
+  width: 100% !important;
+  min-height: 32px !important;
+  border-radius: 10px !important;
+  font-size: 0.7rem !important;
+  font-weight: 950 !important;
+}
+
+/* Payment summary */
+.pos-summary-confirmation-card {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px !important;
+  overflow: visible !important;
+}
+
+.pos-summary-sync-note {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 6px !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 6px 8px !important;
+  border-radius: 10px !important;
+}
+
+.pos-summary-sync-note span {
+  font-size: 0.62rem !important;
+  letter-spacing: 0.08em !important;
+}
+
+.pos-summary-sync-note strong {
+  font-size: 0.74rem !important;
+  white-space: nowrap !important;
+}
+
+.pos-summary-sync-note small {
+  grid-column: 1 / -1 !important;
+  font-size: 0.62rem !important;
+}
+
+.pos-payment-summary-grid-v17 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.16fr) !important;
+  gap: 6px !important;
+  padding: 0 !important;
+}
+
+.pos-payment-summary-column {
+  display: grid !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+}
+
+.pos-summary-field-card {
+  display: grid !important;
+  grid-template-columns: minmax(76px, 0.82fr) minmax(0, 1.18fr) !important;
+  gap: 6px !important;
+  align-items: center !important;
+  min-height: 32px !important;
+  padding: 5px 7px !important;
+  border-radius: 9px !important;
+  box-sizing: border-box !important;
+}
+
+.pos-summary-field-card--operational {
+  background: #eff6ff !important;
+  border: 1px solid rgba(37, 99, 235, 0.15) !important;
+}
+
+.pos-summary-field-card--financial {
+  background: #ecfdf5 !important;
+  border: 1px solid rgba(5, 150, 105, 0.15) !important;
+}
+
+.pos-summary-field-card span {
+  color: #64748b !important;
+  font-size: 0.58rem !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.pos-summary-field-card strong {
+  color: #0f172a !important;
+  font-size: 0.66rem !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  text-align: right !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.pos-summary-confirmation-card > button:last-child {
+  width: 100% !important;
+  min-height: 34px !important;
+  margin: 0 !important;
+  border-radius: 10px !important;
+  font-size: 0.72rem !important;
+  font-weight: 950 !important;
+}
+
+/* Recent Transactions: bottom section, never hidden by product area */
+.pos-recent-transactions-bottom,
+.pos-sales-summary-table-card.pos-recent-transactions-bottom {
+  display: grid !important;
+  position: relative !important;
+  z-index: 2 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 10px !important;
+  background: #ffffff !important;
+  overflow: visible !important;
+  clear: both !important;
+}
+
+.pos-current-session-table-toolbar {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1fr) 160px auto auto !important;
+  gap: 8px !important;
+  padding: 8px 0 !important;
+}
+
+.pos-current-session-table-toolbar input,
+.pos-current-session-table-toolbar select {
+  height: 32px !important;
+  border-radius: 9px !important;
+  font-size: 0.66rem !important;
+}
+
+.pos-current-session-table-toolbar button {
+  min-height: 32px !important;
+  border-radius: 9px !important;
+  font-size: 0.64rem !important;
+  font-weight: 900 !important;
+}
+
+.pos-recent-transactions-bottom .system-table-wrap {
+  width: 100% !important;
+  max-height: none !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  margin: 0 !important;
+}
+
+.pos-recent-transactions-bottom table {
+  min-width: 880px !important;
+}
+
+/* Responsive safety */
+@media (max-width: 1180px) {
+  .pos-dedicated-counter-shell {
+    position: static !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+  }
+
+  .pos-counter-page--dedicated.pos-stable-page-v16 {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+  }
+
+  .pos-scroll-body-v16 {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .pos-stable-page-v16 .pos-dedicated-command-bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "transaction" !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    max-height: 640px !important;
+  }
+
+  .pos-current-session-table-toolbar {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .pos-stable-page-v16 .pos-dedicated-command-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pos-field-grid--two,
+  .pos-payment-summary-grid-v17,
+  .pos-shift-control-grid .pos-shift-card-v16 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pos-current-session-table-toolbar {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* C1.19 revisions: Recent Transactions behaves like footer below Payment Summary */
+
+/* 1) Keep the POS scroll body as a real vertical document flow:
+   header above, workbench, then Recent Transactions footer. */
+.pos-scroll-body-v16 {
+  display: block !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 0 0 18px !important;
+  margin: 0 !important;
+}
+
+/* 2) Workbench must keep its true height.
+   Payment Summary and cart expansion must push the footer down. */
+.pos-operating-cockpit-v2 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 65fr) minmax(500px, 35fr) !important;
+  grid-template-areas: "products transaction" !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  position: relative !important;
+}
+
+.pos-product-stock-section,
+.pos-sale-transaction-section {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* 3) Right workflow must contribute to workbench height.
+   Do not use display: contents for Payment Summary. */
+.pos-sale-transaction-section {
+  grid-area: transaction !important;
+  display: grid !important;
+  grid-auto-flow: row !important;
+  grid-template-rows: auto auto auto auto auto !important;
+  gap: 10px !important;
+  align-content: start !important;
+  height: auto !important;
+  min-height: max-content !important;
+  overflow: visible !important;
+}
+
+.pos-payment-summary-section,
+.pos-confirmation-rail {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  align-content: start !important;
+  height: auto !important;
+  min-height: max-content !important;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.pos-summary-confirmation-card {
+  position: static !important;
+  z-index: 1 !important;
+}
+
+/* 4) Product & Stock Pick matches the workbench height and scrolls internally.
+   This prevents product rows from pushing Recent Transactions upward or downward wrongly. */
+.pos-product-stock-section {
+  grid-area: products !important;
+  display: grid !important;
+  grid-template-rows: auto auto auto minmax(0, 1fr) !important;
+  gap: 8px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+
+.pos-drug-list--ten {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-rows: 108px !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  align-content: start !important;
+}
+
+/* 5) Recent Transactions footer:
+   independent full-width section, always after the workbench,
+   not merged with Payment Summary and not allowed to overlay it. */
+.pos-recent-transactions-bottom,
+.pos-recent-transactions-fullwidth,
+.pos-sales-summary-table-card.pos-recent-transactions-fullwidth {
+  display: grid !important;
+  grid-area: auto !important;
+  grid-column: auto !important;
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  margin: 12px 0 0 !important;
+  padding: 10px !important;
+  clear: both !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
+  overflow: visible !important;
+}
+
+.pos-recent-transactions-fullwidth .section-heading,
+.pos-recent-transactions-bottom .section-heading {
+  padding: 0 !important;
+  margin: 0 0 8px !important;
+}
+
+.pos-recent-transactions-fullwidth .system-table-wrap,
+.pos-recent-transactions-bottom .system-table-wrap {
+  width: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.pos-recent-transactions-fullwidth table,
+.pos-recent-transactions-bottom table {
+  min-width: 920px !important;
+}
+
+/* 6) Restore approved POS session layout:
+   two compact clock cards on wide screens, no Clock-in / Clock-out title column. */
+.pos-shift-control-section {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px !important;
+}
+
+.pos-shift-control-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.pos-shift-control-grid .pos-shift-title {
+  display: none !important;
+}
+
+.pos-shift-control-grid .pos-shift-card-v16 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) 94px !important;
+  gap: 7px !important;
+  align-items: stretch !important;
+  min-height: 58px !important;
+  padding: 7px !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.pos-shift-control-grid .pos-shift-field,
+.pos-shift-control-grid .pos-shift-check {
+  min-width: 0 !important;
+  min-height: 44px !important;
+  align-content: center !important;
+  background: #ffffff !important;
+}
+
+/* 7) Product card: transparent internal rows and simple 1-column / 5-row structure. */
+.pos-product-tile-v16 {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 2.4em 1.12em 1.12em 1.12em 1.12em !important;
+  gap: 4px !important;
+  align-items: center !important;
+  justify-items: start !important;
+  min-height: 108px !important;
+  max-height: 108px !important;
+  padding: 8px 10px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  text-align: left !important;
+}
+
+.pos-product-tile-v16 strong,
+.pos-product-tile-v16 em,
+.pos-product-tile-v16 span,
+.pos-product-tile-v16 .pos-product-card-line {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: inherit !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  text-align: left !important;
+  justify-self: start !important;
+}
+
+.pos-product-tile-v16 strong {
+  order: 1 !important;
+  display: block !important;
+  font-size: 0.68rem !important;
+  line-height: 1.12 !important;
+  font-weight: 950 !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  max-height: 2.4em !important;
+}
+
+.pos-product-tile-v16 > em {
+  order: 2 !important;
+  display: block !important;
+  font-style: normal !important;
+  font-size: 0.62rem !important;
+  line-height: 1.08 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-product-tile-v16 .pos-product-card-line {
+  display: block !important;
+  font-size: 0.58rem !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-product-tile-v16 .pos-product-card-line:nth-of-type(1) { order: 3 !important; }
+.pos-product-tile-v16 .pos-product-card-line:nth-of-type(2) { order: 4 !important; }
+.pos-product-tile-v16 .pos-product-card-line:nth-of-type(3) { order: 5 !important; }
+
+/* Full-card expiry colors only */
+.pos-product-tile-v16.product-expiry-expired {
+  background: #7f1d1d !important;
+  border-color: #7f1d1d !important;
+  color: #ffffff !important;
+}
+
+.pos-product-tile-v16.product-expiry-critical {
+  background: #fee2e2 !important;
+  border-color: #fecaca !important;
+  color: #7f1d1d !important;
+}
+
+.pos-product-tile-v16.product-expiry-warning {
+  background: #ffedd5 !important;
+  border-color: #fed7aa !important;
+  color: #7c2d12 !important;
+}
+
+.pos-product-tile-v16.product-expiry-watch {
+  background: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #78350f !important;
+}
+
+.pos-product-tile-v16.product-expiry-safe {
+  background: #ecfdf5 !important;
+  border-color: #bbf7d0 !important;
+  color: #064e3b !important;
+}
+
+/* 8) Keep unwanted helper buttons/overview strip hidden. */
+.pos-view-products-link,
+.pos-unified-module-page > .pos-dedicated-command-bar:first-child,
+.pos-unified-module-page > .pos-unified-terminal-menu:first-child,
+.pos-unified-module-page > .pos-workspace-menu:first-child,
+.pos-overview-hero-actions {
+  display: none !important;
+}
+
+@media (max-width: 1280px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "transaction" !important;
+  }
+
+  .pos-shift-control-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    min-height: 620px !important;
+    max-height: 620px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .pos-shift-control-grid .pos-shift-card-v16 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    min-height: 520px !important;
+    max-height: 520px !important;
+  }
+}
+
+
+/* C1.20 revisions: POS session 2-row/3-column layout and 9 product rows */
+
+/* POS Session: exactly two rows, each row has three operational columns */
+.pos-shift-control-section {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px !important;
+}
+
+.pos-shift-control-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-auto-rows: auto !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.pos-shift-control-grid .pos-shift-title {
+  display: none !important;
+}
+
+.pos-shift-control-grid .pos-shift-card-v16 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(110px, 0.42fr) !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+  min-height: 56px !important;
+  padding: 7px !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.pos-shift-control-grid .pos-shift-field,
+.pos-shift-control-grid .pos-shift-check {
+  display: grid !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  align-content: center !important;
+  padding: 6px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+}
+
+.pos-shift-control-grid .pos-shift-field span,
+.pos-shift-control-grid .pos-shift-check span {
+  font-size: 0.58rem !important;
+  line-height: 1.06 !important;
+  font-weight: 900 !important;
+  color: #475569 !important;
+}
+
+.pos-shift-control-grid .pos-shift-field select,
+.pos-shift-control-grid .pos-shift-field input {
+  width: 100% !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 0.64rem !important;
+  padding: 2px 6px !important;
+}
+
+.pos-shift-control-grid .pos-shift-check {
+  grid-template-columns: 16px minmax(0, 1fr) !important;
+  align-items: center !important;
+}
+
+.pos-shift-control-grid .pos-shift-check input {
+  width: 14px !important;
+  height: 14px !important;
+  min-height: 14px !important;
+  margin: 0 !important;
+}
+
+.pos-shift-control-grid .pos-shift-card-v16 button {
+  width: 100% !important;
+  min-height: 42px !important;
+  border-radius: 10px !important;
+  font-size: 0.66rem !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  padding: 4px 6px !important;
+}
+
+/* Product & Stock Pick: 9 visible product rows before internal scroll.
+   9 rows × 108px + 8 row gaps × 8px = 1036px visible product board. */
+.pos-drug-list--ten {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-rows: 108px !important;
+  min-height: 1036px !important;
+  max-height: 1036px !important;
+  height: 1036px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  align-content: start !important;
+}
+
+.pos-product-stock-section {
+  grid-template-rows: auto auto auto 1036px !important;
+  min-height: auto !important;
+  height: auto !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 1280px) {
+  .pos-shift-control-grid .pos-shift-card-v16 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(100px, 0.45fr) !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    min-height: 780px !important;
+    max-height: 780px !important;
+    height: 780px !important;
+  }
+
+  .pos-product-stock-section {
+    grid-template-rows: auto auto auto 780px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .pos-shift-control-grid .pos-shift-card-v16 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    min-height: 540px !important;
+    max-height: 540px !important;
+    height: 540px !important;
+  }
+
+  .pos-product-stock-section {
+    grid-template-rows: auto auto auto 540px !important;
+  }
+}
+
+
+/* C1.21A responsive Product & Stock Pick columns */
+@media (max-width: 1680px) and (min-width: 1441px) {
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1440px) and (min-width: 1181px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(470px, 35%) !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1180px) and (min-width: 981px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(430px, 36%) !important;
+  }
+
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .pos-operating-cockpit-v2 {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "products"
+      "transaction" !important;
+  }
+}
+
+/* POS selling-unit quantity dialog */
+.pos-quantity-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.pos-quantity-dialog {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid #d7dee8;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.24);
+}
+
+.pos-quantity-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+.pos-quantity-dialog__header span,
+.pos-quantity-dialog__header small {
+  display: block;
+  color: #5f6b7a;
+}
+
+.pos-quantity-dialog__header h3 {
+  margin: 4px 0 6px;
+}
+
+.pos-quantity-dialog__header > button {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  border: 1px solid #d7dee8;
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pos-quantity-dialog__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 22px 24px 10px;
+}
+
+.pos-quantity-dialog__fields label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pos-quantity-dialog__fields input {
+  width: 100%;
+  min-width: 0;
+}
+
+.pos-quantity-dialog__fields small {
+  color: #687386;
+  line-height: 1.45;
+}
+
+.pos-quantity-conversion-preview {
+  display: grid;
+  gap: 10px;
+  margin: 14px 24px 22px;
+  padding: 18px;
+  border: 1px solid #dfe6ee;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.pos-quantity-conversion-preview h4 {
+  margin: 0 0 4px;
+}
+
+.pos-quantity-conversion-preview > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+.pos-quantity-conversion-preview > div:last-child {
+  border-bottom: 0;
+}
+
+.pos-quantity-conversion-preview span {
+  color: #5f6b7a;
+}
+
+.pos-quantity-conversion-preview strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.pos-quantity-conversion-preview__total {
+  font-size: 1.04rem;
+}
+
+.pos-quantity-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 24px 24px;
+}
+
+.pos-quantity-dialog__actions button {
+  min-width: 120px;
+}
+
+@media (max-width: 700px) {
+  .pos-quantity-dialog-backdrop {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .pos-quantity-dialog {
+    max-height: calc(100vh - 20px);
+    border-radius: 18px 18px 10px 10px;
+  }
+
+  .pos-quantity-dialog__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-quantity-conversion-preview > div {
+    display: grid;
+    gap: 4px;
+  }
+
+  .pos-quantity-conversion-preview strong {
+    text-align: left;
+  }
+
+  .pos-quantity-dialog__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pos-quantity-dialog__actions button {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Insurance Management workspace */
+.insurance-management-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.insurance-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid rgba(75, 83, 32, 0.2);
+  border-radius: 22px;
+  padding: 1rem 1.1rem;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(75, 83, 32, 0.16),
+      transparent 32%
+    ),
+    linear-gradient(135deg, #ffffff, #f8faf7);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1);
+}
+
+.insurance-hero h2 {
+  margin: 0.15rem 0 0.35rem;
+  color: #17231b;
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+}
+
+.insurance-hero p:not(.eyebrow) {
+  max-width: 62rem;
+  margin: 0;
+  color: #526158;
+  line-height: 1.55;
+}
+
+.insurance-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.insurance-hero-actions button,
+.insurance-workspace-tabs button,
+.insurance-form-card > button,
+.insurance-filter-bar > button,
+.insurance-pagination button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.58rem 0.82rem;
+  background: var(--left-menu-accent, #4b5320);
+  color: var(--left-menu-title-color, #ffffff);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.insurance-hero-actions button:last-child {
+  border: 1px solid rgba(75, 83, 32, 0.24);
+  background: #ffffff;
+  color: var(--left-menu-accent, #4b5320);
+}
+
+.insurance-hero-actions button:disabled,
+.insurance-form-card > button:disabled,
+.insurance-filter-bar > button:disabled,
+.insurance-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.insurance-workspace-tabs {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding: 0.7rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.insurance-workspace-tabs button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #f8fafc;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.insurance-workspace-tabs button.active {
+  border-color: rgba(75, 83, 32, 0.45);
+  background: var(--left-menu-accent, #4b5320);
+  color: var(--left-menu-title-color, #ffffff);
+}
+
+.insurance-message {
+  border-radius: 14px;
+  padding: 0.8rem 0.95rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.insurance-message.success {
+  border: 1px solid rgba(22, 101, 52, 0.18);
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.insurance-message.error {
+  border: 1px solid rgba(153, 27, 27, 0.18);
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.insurance-workspace-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.insurance-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 0.8rem;
+}
+
+.insurance-kpi-grid article,
+.insurance-card,
+.insurance-form-card {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.insurance-kpi-grid article {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 116px;
+  padding: 0.9rem;
+  align-content: start;
+}
+
+.insurance-kpi-grid article:nth-child(3n + 1) {
+  border-top: 4px solid var(--left-menu-accent, #4b5320);
+}
+
+.insurance-kpi-grid article:nth-child(3n + 2) {
+  border-top: 4px solid #0877c9;
+}
+
+.insurance-kpi-grid article:nth-child(3n) {
+  border-top: 4px solid #c9811c;
+}
+
+.insurance-kpi-grid span {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.insurance-kpi-grid strong {
+  color: #17231b;
+  font-size: 1.45rem;
+}
+
+.insurance-kpi-grid small {
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.insurance-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.insurance-card {
+  padding: 1rem;
+}
+
+.insurance-card--wide {
+  grid-column: 1 / -1;
+}
+
+.insurance-readiness-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.insurance-readiness-list > div {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 14px;
+  padding: 0.75rem;
+  background: #f8fafc;
+}
+
+.insurance-readiness-list strong {
+  color: #243b2b;
+}
+
+.insurance-readiness-list span {
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.insurance-form-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.insurance-form-card > button {
+  justify-self: start;
+}
+
+.insurance-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+
+.insurance-form-grid label,
+.insurance-filter-bar label {
+  display: grid;
+  gap: 0.34rem;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.insurance-form-grid input,
+.insurance-form-grid select,
+.insurance-filter-bar input,
+.insurance-filter-bar select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 11px;
+  padding: 0.55rem 0.65rem;
+  background: #ffffff;
+  color: #17231b;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.insurance-checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  min-height: 40px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 11px;
+  padding: 0.55rem 0.65rem;
+  background: #f8fafc;
+}
+
+.insurance-checkbox-label input {
+  width: auto;
+  min-height: auto;
+}
+
+.insurance-filter-bar {
+  display: grid;
+  grid-template-columns:
+    minmax(240px, 1fr)
+    minmax(150px, 220px)
+    110px
+    auto;
+  gap: 0.75rem;
+  align-items: end;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  padding: 0.8rem;
+  background: #ffffff;
+}
+
+.insurance-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.insurance-table-scroll table {
+  min-width: 960px;
+  table-layout: auto;
+}
+
+.insurance-table-scroll td strong,
+.insurance-table-scroll td small {
+  display: block;
+}
+
+.insurance-table-scroll td small {
+  margin-top: 0.15rem;
+  color: #64748b;
+}
+
+.insurance-status-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  background: rgba(100, 116, 139, 0.14);
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.insurance-status-pill.active {
+  background: rgba(34, 197, 94, 0.16);
+  color: #166534;
+}
+
+.insurance-status-pill.inactive,
+.insurance-status-pill.suspended {
+  background: rgba(239, 68, 68, 0.13);
+  color: #991b1b;
+}
+
+.insurance-pagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.insurance-pagination > span,
+.insurance-pagination strong {
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.insurance-pagination > div {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 1380px) {
+  .insurance-kpi-grid {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
+
+  .insurance-form-grid {
+    grid-template-columns: repeat(3, minmax(170px, 1fr));
+  }
+}
+
+@media (max-width: 1080px) {
+  .insurance-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .insurance-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .insurance-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .insurance-form-grid {
+    grid-template-columns: repeat(2, minmax(170px, 1fr));
+  }
+
+  .insurance-filter-bar {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .insurance-kpi-grid,
+  .insurance-form-grid,
+  .insurance-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .insurance-hero-actions,
+  .insurance-hero-actions button,
+  .insurance-form-card > button,
+  .insurance-filter-bar > button {
+    width: 100%;
+  }
+
+  .insurance-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .insurance-pagination > div {
+    justify-content: space-between;
+  }
+}
+
+/* Insurance claims and reconciliation live workspace */
+.insurance-live-workspace { display: grid; gap: 1rem; }
+.insurance-live-toolbar,
+.insurance-live-filters,
+.insurance-live-layout { display: flex; gap: .85rem; }
+.insurance-live-toolbar { align-items: center; justify-content: space-between; }
+.insurance-live-toolbar span,
+.insurance-live-summary span,
+.insurance-live-table-wrap small,
+.insurance-claim-line span {
+  display: block;
+  color: var(--muted, #667085);
+  font-size: .78rem;
+}
+.insurance-live-filters { flex-wrap: wrap; }
+.insurance-live-filters > * { min-width: 210px; }
+.insurance-live-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .85rem;
+}
+.insurance-live-summary article,
+.insurance-live-detail,
+.insurance-live-form {
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  padding: 1rem;
+}
+.insurance-live-summary strong { display: block; margin-top: .35rem; }
+.insurance-live-layout { align-items: flex-start; }
+.insurance-live-layout > :first-child { flex: 1 1 auto; min-width: 0; }
+.insurance-live-detail { flex: 0 0 340px; position: sticky; top: 1rem; }
+.insurance-live-table-wrap { overflow-x: auto; }
+.insurance-live-table-wrap table { width: 100%; border-collapse: collapse; }
+.insurance-live-table-wrap th,
+.insurance-live-table-wrap td {
+  padding: .75rem;
+  border-bottom: 1px solid rgba(148, 163, 184, .22);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.insurance-live-detail dl { display: grid; gap: .55rem; }
+.insurance-live-detail dl div { display: flex; justify-content: space-between; gap: 1rem; }
+.insurance-live-form { display: grid; gap: .7rem; margin-top: 1rem; }
+.insurance-live-form--batch {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+.insurance-claim-line {
+  margin-top: .55rem;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, .1);
+  padding: .7rem;
+}
+@media (max-width: 1050px) {
+  .insurance-live-layout { display: grid; }
+  .insurance-live-detail { position: static; }
+  .insurance-live-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .insurance-live-form--batch { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .insurance-live-summary { grid-template-columns: 1fr; }
+  .insurance-live-filters > * { width: 100%; }
+}
+
+.insurance-selector-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.insurance-selector-list label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.insurance-selector-list label:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.insurance-selector-list input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+}

@@ -1,3 +1,4 @@
+import type { PharmaCustomerCreditExposureReport } from '../lib/api';
 import { useEffect, useMemo, useState } from 'react';
 import {
   getPharmaInventoryValuationReport,
@@ -564,7 +565,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
           </div>
 
           <div className="report-status-list report-status-list--aging">
-            {(state.customerCredit?.aging_buckets ?? []).map((bucket) => (
+            {(state.customerCredit?.aging_buckets ?? []).map((bucket: PharmaCustomerCreditExposureReport['aging_buckets'][number]) => (
               <div key={bucket.code}>
                 <span>{bucket.label}</span>
                 <span>

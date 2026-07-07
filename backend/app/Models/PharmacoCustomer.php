@@ -53,4 +53,12 @@ class PharmacoCustomer extends Model
     {
         return $this->hasMany(PharmacoSale::class);
     }
+
+    public function insuranceMemberships(): HasMany
+    {
+        return $this->hasMany(
+            CustomerInsuranceMembership::class,
+            'customer_id'
+        );
+    }
 }

@@ -513,7 +513,7 @@ class SalesDispensingController extends Controller
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.sale_item_id' => ['required', 'integer'],
-            'items.*.stock_batch_id' => ['required', 'integer'],
+            'items.*.stock_batch_id' => ['nullable', 'integer'],
             'items.*.prescription_verified' => ['sometimes', 'boolean'],
         ]);
 

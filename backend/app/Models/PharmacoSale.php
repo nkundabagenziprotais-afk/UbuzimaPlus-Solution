@@ -73,4 +73,12 @@ class PharmacoSale extends Model
     {
         return $this->hasMany(PharmacoPayment::class, 'pharmaco_sale_id');
     }
+
+    public function insuranceClaims(): HasMany
+    {
+        return $this->hasMany(
+            InsuranceClaim::class,
+            'sale_id'
+        );
+    }
 }

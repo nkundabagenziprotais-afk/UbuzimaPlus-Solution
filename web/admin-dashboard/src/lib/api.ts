@@ -678,6 +678,20 @@ export type PharmaProduct = {
   dosage_form: string | null;
   strength: string | null;
   unit: string;
+  selling_unit: string;
+  base_unit: string;
+  quantity_per_selling_unit: number;
+  allow_other_quantity: boolean;
+  default_pos_quantity_mode: 'selling_unit' | 'other_quantity' | 'combined';
+  selling_unit_notes: string | null;
+  ai_suggested_quantity_per_unit: number | null;
+  ai_suggestion_status: string;
+  ai_suggestion_confidence: number | null;
+  ai_suggestion_explanation: string | null;
+  ai_suggestion_source: string | null;
+  ai_suggestion_reference: string | null;
+  ai_suggestion_reviewed_by: number | null;
+  ai_suggestion_reviewed_at: string | null;
   pack_size: string | null;
   route_of_administration: string | null;
   product_type: string;
@@ -1130,6 +1144,33 @@ export async function updatePharmaStockLocation(
     'PATCH',
     payload,
   );
+}
+
+export async function deletePharmaStockLocation(
+  token: string,
+  tenantSlug: string,
+  locationId: number,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/pharmaco/inventory/locations/${locationId}`, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-Slug': tenantSlug,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors).flat().join(' ')
+      : null;
+
+    throw new Error(validationMessage || data?.message || 'Unable to delete stock location.');
+  }
+
+  return data as { message: string };
 }
 
 export async function receivePharmaStock(
@@ -1917,6 +1958,15 @@ export type PharmaSupplierInvoice = {
   created_at?: string | null;
 };
 
+export type TenantPayload = {
+  id: number;
+  uuid?: string | null;
+  name: string;
+  slug: string;
+  code?: string | null;
+  status?: string | null;
+};
+
 export type PharmaSupplierInvoicesResponse = {
   tenant: TenantPayload;
   supplier_invoices: PharmaSupplierInvoice[];
@@ -2295,12 +2345,10 @@ export async function getPharmaCustomerCreditExposureExport(
   token: string,
   tenantSlug: string,
 ): Promise<PharmaCustomerCreditExposureExportResponse> {
-  return apiRequest<PharmaCustomerCreditExposureExportResponse>(
-    "/api/v1/pharmaco/reports/customer-credit-exposure/export",
-    {
-      token,
-      tenantSlug,
-    },
+  return getJsonWithTenant<PharmaCustomerCreditExposureExportResponse>(
+    token,
+    '/pharmaco/reports/customer-credit-exposure/export',
+    tenantSlug,
   );
 }
 
