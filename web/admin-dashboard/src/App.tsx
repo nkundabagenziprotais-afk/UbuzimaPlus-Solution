@@ -42,6 +42,10 @@ import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
+import {
+  InsuranceManagementWorkspace,
+  type InsuranceWorkspaceKey,
+} from './components/InsuranceManagementWorkspace';
 
 type StoredSession = {
   token: string;
@@ -74,6 +78,7 @@ type AdminSectionKey =
   | 'ai-center'
   | 'admin-panel'
   | 'inventory'
+  | 'insurance'
   | 'pos'
   | 'suppliers'
   | 'finance'
@@ -474,6 +479,18 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'inventory-product-inventory', label: 'Product Inventory', target: 'product-inventory' },
     { key: 'inventory-locations', label: 'Stock Locations', target: 'locations' },
   ],
+  insurance: [
+    { key: 'insurance-overview', label: 'Insurance Overview', target: 'overview' },
+    { key: 'insurance-partners', label: 'Insurance Partners', target: 'partners' },
+    { key: 'insurance-institutions', label: 'Institutions', target: 'institutions' },
+    { key: 'insurance-schemes', label: 'Insurance Schemes', target: 'schemes' },
+    { key: 'insurance-price-lists', label: 'Price Lists', target: 'price-lists' },
+    { key: 'insurance-product-prices', label: 'Product Prices', target: 'product-prices' },
+    { key: 'insurance-contribution-rules', label: 'Contribution Rules', target: 'contribution-rules' },
+    { key: 'insurance-claims', label: 'Claims', target: 'claims-readiness' },
+    { key: 'insurance-reconciliation', label: 'Reconciliation', target: 'reconciliation-readiness' },
+    { key: 'insurance-audit', label: 'Insurance Audit', target: 'audit-readiness' },
+  ],
   pos: [
     { key: 'pos-overview', label: 'POS and Sales Overview', target: 'overview' },
     { key: 'pos-counter', label: 'POS Counter', target: 'pos' },
@@ -718,6 +735,10 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     title: 'Inventory command workspace',
     description: 'Batch, expiry, FEFO, stock movement, receiving, and shelf-readiness workflows.',
   },
+  insurance: {
+    title: 'Insurance Management',
+    description: 'Partners, schemes, pricing, claims and reconciliation',
+  },
   pos: {
     eyebrow: 'POS and dispensing',
     title: 'Pharmacy POS workspace',
@@ -921,6 +942,7 @@ const granularMenuPermissionMap: Record<string, string[]> = {
     'inventory.table_settings.view',
     'inventory.expiry_labels.view',
   ],
+  insurance: ['pharmaco.insurance.manage'],
   pos: [
     'pos.sales.view',
     'pos.receipts.view',
@@ -991,6 +1013,18 @@ const granularLeftSubmenuPermissionMap: Record<string, Record<string, string[]>>
     'near-expiry': ['inventory.expiry_review.view'],
     'table-settings': ['inventory.table_settings.view'],
     'expiry-labels': ['inventory.expiry_labels.view'],
+  },
+  insurance: {
+    overview: ['pharmaco.insurance.manage'],
+    partners: ['pharmaco.insurance.manage'],
+    institutions: ['pharmaco.insurance.manage'],
+    schemes: ['pharmaco.insurance.manage'],
+    'price-lists': ['pharmaco.insurance.manage'],
+    'product-prices': ['pharmaco.insurance.manage'],
+    'contribution-rules': ['pharmaco.insurance.manage'],
+    'claims-readiness': ['pharmaco.insurance.manage'],
+    'reconciliation-readiness': ['pharmaco.insurance.manage'],
+    'audit-readiness': ['pharmaco.insurance.manage'],
   },
   pos: {
     overview: ['pos.sales.view'],
@@ -1715,6 +1749,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
         icon: 'PH',
         items: [
           { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
+          { key: 'insurance', label: 'Insurance', description: 'Partners, schemes, pricing and claims', icon: 'IS', status: 'Live' },
           { key: 'pos', label: 'POS', description: 'Sales and dispensing', icon: 'PS', status: 'Live' },
           { key: 'suppliers', label: 'Procurement', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
           { key: 'finance', label: 'Finance', description: 'Receivables and payments', icon: 'FN', status: 'Live' },
@@ -1752,8 +1787,9 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       label: `${tenantName} Pharmacy`,
       icon: 'PH',
       items: [
-        { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
         { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
+        { key: 'insurance', label: 'Insurance', description: 'Partners, schemes, pricing and claims', icon: 'IS', status: 'Live' },
+        { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
         { key: 'suppliers', label: 'Procurement', description: 'Purchasing and receiving', icon: 'PR', status: 'Live' },
         { key: 'finance', label: 'Finance', description: 'Payables and receivables', icon: 'FN', status: 'Live' },
         { key: 'reports', label: 'Ad-hoc Report', description: 'Daily and monthly review', icon: 'AR', status: 'Live' },
@@ -2533,6 +2569,7 @@ function App() {
   const [activePharmaFeature, setActivePharmaFeature] = useState<PharmaFeatureKey>('ai-model');
   const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
   const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
+  const [activeInsuranceWorkspace, setActiveInsuranceWorkspace] = useState<InsuranceWorkspaceKey>('overview');
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
   const [isPosDayOpen, setIsPosDayOpen] = useState(false);
   const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
@@ -2666,6 +2703,7 @@ function App() {
   const activeLeftSubmenuLabel =
     leftMenuSubmenus[activeSection]?.find((submenu) => {
       if (activeSection === 'inventory') return submenu.target === activeInventoryView;
+      if (activeSection === 'insurance') return submenu.target === activeInsuranceWorkspace;
       if (activeSection === 'pos') return submenu.target === activePosWorkspace;
       if (activeSection === 'suppliers') return submenu.target === activeSupplierWorkspace;
       if (activeSection === 'finance') return submenu.target === activeFinanceWorkspace;
@@ -2739,7 +2777,7 @@ function App() {
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
+  }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activeInsuranceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2882,6 +2920,7 @@ function App() {
     const firstSubmenu = leftMenuSubmenus[item.key]?.[0];
 
     if (item.key === 'inventory' && firstSubmenu?.target) setActiveInventoryView(firstSubmenu.target as InventoryView);
+    if (item.key === 'insurance' && firstSubmenu?.target) setActiveInsuranceWorkspace(firstSubmenu.target as InsuranceWorkspaceKey);
     if (item.key === 'pos' && firstSubmenu?.target) setActivePosWorkspace(firstSubmenu.target as PosWorkspaceKey);
     if (item.key === 'suppliers' && firstSubmenu?.target) setActiveSupplierWorkspace(firstSubmenu.target as SupplierWorkspaceKey);
     if (item.key === 'finance' && firstSubmenu?.target) setActiveFinanceWorkspace(firstSubmenu.target as FinanceWorkspaceKey);
@@ -2941,6 +2980,12 @@ function App() {
       return;
     }
 
+    if (item.key === 'insurance' && submenu.target) {
+      setActiveInsuranceWorkspace(submenu.target as InsuranceWorkspaceKey);
+      navigateToSection('insurance');
+      return;
+    }
+
     if (item.key === 'pos' && submenu.target) setActivePosWorkspace(submenu.target as PosWorkspaceKey);
     if (item.key === 'suppliers' && submenu.target) setActiveSupplierWorkspace(submenu.target as SupplierWorkspaceKey);
     if (item.key === 'finance' && submenu.target) setActiveFinanceWorkspace(submenu.target as FinanceWorkspaceKey);
@@ -2957,6 +3002,7 @@ function App() {
     if (activeSection !== item.key) return false;
 
     if (item.key === 'inventory') return submenu.target === activeInventoryView;
+    if (item.key === 'insurance') return submenu.target === activeInsuranceWorkspace;
     if (item.key === 'pos') return submenu.target === activePosWorkspace;
     if (item.key === 'suppliers') return submenu.target === activeSupplierWorkspace;
     if (item.key === 'finance') return submenu.target === activeFinanceWorkspace;
@@ -6281,6 +6327,35 @@ function App() {
             )}
           </section>
         );
+      case 'insurance': {
+        const tenantSlug =
+          profile?.tenant_assignments?.[0]?.tenant?.slug ||
+          (profile?.scope?.is_tenant ? 'vitapharma' : '');
+
+        if (!tenantSlug) {
+          return (
+            <section className="section-page">
+              <article className="panel wide">
+                <h2>Insurance Management</h2>
+                <p className="form-error">
+                  No tenant assignment is available for this insurance workspace.
+                </p>
+              </article>
+            </section>
+          );
+        }
+
+        return (
+          <section className="section-page">
+            <InsuranceManagementWorkspace
+              token={session.token}
+              tenantSlug={tenantSlug}
+              activeWorkspace={activeInsuranceWorkspace}
+              onWorkspaceChange={setActiveInsuranceWorkspace}
+            />
+          </section>
+        );
+      }
       case 'pos':
         return renderPosWorkspace();
       case 'suppliers':
