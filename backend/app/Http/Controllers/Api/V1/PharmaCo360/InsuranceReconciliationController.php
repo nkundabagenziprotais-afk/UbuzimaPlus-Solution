@@ -305,6 +305,98 @@ class InsuranceReconciliationController extends Controller
             'batch' => $batch,
         ]);
     }
+    public function eligiblePayments(
+        Request $request,
+        InsuranceReconciliationBatch $insuranceReconciliationBatch
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless(
+            (int) $insuranceReconciliationBatch->tenant_id ===
+                (int) $tenant->id,
+            404
+        );
+
+        $claimIds = collect(
+            $insuranceReconciliationBatch->metadata['claim_ids'] ?? []
+        )
+            ->map(fn ($id) => (int) $id)
+            ->values();
+
+        $payments = InsurancePayment::query()
+            ->where('tenant_id', $tenant->id)
+            ->where(
+                'insurance_partner_id',
+                $insuranceReconciliationBatch->insurance_partner_id
+            )
+            ->where(function ($query) use (
+                $insuranceReconciliationBatch
+            ): void {
+                $query
+                    ->whereNull(
+                        'insurance_reconciliation_batch_id'
+                    )
+                    ->orWhere(
+                        'insurance_reconciliation_batch_id',
+                        $insuranceReconciliationBatch->id
+                    );
+            })
+            ->latest('payment_date')
+            ->latest('id')
+            ->get()
+            ->filter(
+                fn (InsurancePayment $payment) =>
+                    $claimIds->contains(
+                        (int) data_get(
+                            $payment->allocation_details,
+                            'insurance_claim_id'
+                        )
+                    )
+            )
+            ->map(
+                fn (InsurancePayment $payment) => [
+                    'id' => $payment->id,
+                    'payment_reference' =>
+                        $payment->payment_reference,
+                    'payment_date' =>
+                        $payment->payment_date
+                            ?->toDateString(),
+                    'amount' => (float) $payment->amount,
+                    'currency' => $payment->currency,
+                    'payment_method' =>
+                        $payment->payment_method,
+                    'bank_reference' =>
+                        $payment->bank_reference,
+                    'status' => $payment->status,
+                    'insurance_claim_id' =>
+                        (int) data_get(
+                            $payment->allocation_details,
+                            'insurance_claim_id'
+                        ),
+                    'insurance_reconciliation_batch_id' =>
+                        $payment
+                            ->insurance_reconciliation_batch_id,
+                ]
+            )
+            ->values();
+
+        return response()->json([
+            'tenant' => [
+                'id' => $tenant->id,
+                'slug' => $tenant->slug,
+            ],
+            'batch' => [
+                'id' => $insuranceReconciliationBatch->id,
+                'batch_number' =>
+                    $insuranceReconciliationBatch->batch_number,
+                'status' =>
+                    $insuranceReconciliationBatch->status,
+            ],
+            'payments' => $payments,
+        ]);
+    }
+
+
     public function reconcile(
         Request $request,
         InsuranceReconciliationBatch $insuranceReconciliationBatch,

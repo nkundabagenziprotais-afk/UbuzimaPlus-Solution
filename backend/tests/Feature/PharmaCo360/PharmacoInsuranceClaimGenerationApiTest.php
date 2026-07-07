@@ -1099,6 +1099,64 @@ class PharmacoInsuranceClaimGenerationApiTest extends TestCase
         );
     }
 
+    public function test_batch_lists_only_eligible_reconciliation_payments(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndApproveClaim();
+
+        $paymentResponse = $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/payments",
+                [
+                    'payment_reference' =>
+                        'INS-ELIGIBLE-PAY-001',
+                    'payment_date' =>
+                        now()->toDateString(),
+                    'amount' =>
+                        (float) $claim->approved_amount,
+                ]
+            )
+            ->assertCreated();
+
+        $paymentId = $paymentResponse->json('payment.id');
+
+        $batchResponse = $this->withTenant()
+            ->postJson(
+                '/api/v1/pharmaco/insurance/reconciliation-batches',
+                [
+                    'insurance_partner_id' =>
+                        $claim->insurance_partner_id,
+                    'batch_number' =>
+                        'REC-ELIGIBLE-PAY-001',
+                    'period_from' =>
+                        $claim->service_date->toDateString(),
+                    'period_to' =>
+                        $claim->service_date->toDateString(),
+                    'claim_ids' => [$claim->id],
+                ]
+            )
+            ->assertCreated();
+
+        $batchId = $batchResponse->json('batch.id');
+
+        $this->withTenant()
+            ->getJson(
+                "/api/v1/pharmaco/insurance/reconciliation-batches/{$batchId}/eligible-payments"
+            )
+            ->assertOk()
+            ->assertJsonPath('payments.0.id', $paymentId)
+            ->assertJsonPath(
+                'payments.0.payment_reference',
+                'INS-ELIGIBLE-PAY-001'
+            )
+            ->assertJsonPath(
+                'payments.0.insurance_claim_id',
+                $claim->id
+            );
+    }
+
     public function test_batch_rejects_payment_for_claim_outside_batch(): void
     {
         $this->seed();

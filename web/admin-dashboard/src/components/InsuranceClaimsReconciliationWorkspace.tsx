@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   InsuranceClaim,
   InsurancePartner,
+  InsurancePaymentOption,
   InsuranceReconciliationBatch,
   adjudicateInsuranceClaim,
   createInsuranceClaimPayment,
@@ -9,6 +10,7 @@ import {
   getInsuranceClaim,
   getInsuranceClaims,
   getInsurancePartners,
+  getEligibleInsuranceBatchPayments,
   getInsuranceReconciliationBatches,
   reconcileInsuranceBatch,
   submitInsuranceClaim,
@@ -57,8 +59,11 @@ export function InsuranceClaimsReconciliationWorkspace({
   const [batchNumber, setBatchNumber] = useState('');
   const [periodFrom, setPeriodFrom] = useState('');
   const [periodTo, setPeriodTo] = useState('');
-  const [claimIds, setClaimIds] = useState('');
-  const [paymentIds, setPaymentIds] = useState('');
+  const [eligibleClaims, setEligibleClaims] = useState<InsuranceClaim[]>([]);
+  const [selectedClaimIds, setSelectedClaimIds] = useState<number[]>([]);
+  const [eligiblePayments, setEligiblePayments] =
+    useState<InsurancePaymentOption[]>([]);
+  const [selectedPaymentIds, setSelectedPaymentIds] = useState<number[]>([]);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -80,23 +85,54 @@ export function InsuranceClaimsReconciliationWorkspace({
         });
         setClaims(response.data);
       } else {
-        const response = await getInsuranceReconciliationBatches(
-          token,
-          tenantSlug,
-          {
-            status: status || undefined,
-            partnerId: partnerId ? Number(partnerId) : undefined,
-            perPage: 100,
-          },
+        const [batchResponse, claimResponse] = await Promise.all([
+          getInsuranceReconciliationBatches(
+            token,
+            tenantSlug,
+            {
+              status: status || undefined,
+              partnerId: partnerId ? Number(partnerId) : undefined,
+              perPage: 100,
+            },
+          ),
+          getInsuranceClaims(
+            token,
+            tenantSlug,
+            {
+              partnerId: batchPartner
+                ? Number(batchPartner)
+                : undefined,
+              perPage: 200,
+            },
+          ),
+        ]);
+        setBatches(batchResponse.data);
+        setEligibleClaims(
+          claimResponse.data.filter(
+            (claim) =>
+              ['approved', 'partially_approved', 'partially_paid', 'paid']
+                .includes(claim.status)
+              && (!periodFrom || (claim.service_date || '') >= periodFrom)
+              && (!periodTo || (claim.service_date || '') <= periodTo),
+          ),
         );
-        setBatches(response.data);
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to load data.');
     } finally {
       setBusy(false);
     }
-  }, [mode, partnerId, search, status, tenantSlug, token]);
+  }, [
+    batchPartner,
+    mode,
+    partnerId,
+    periodFrom,
+    periodTo,
+    search,
+    status,
+    tenantSlug,
+    token,
+  ]);
 
   useEffect(() => {
     void load();
@@ -231,13 +267,13 @@ export function InsuranceClaimsReconciliationWorkspace({
           batch_number: batchNumber,
           period_from: periodFrom,
           period_to: periodTo,
-          claim_ids: claimIds.split(',').map((id) => Number(id.trim())).filter(Boolean),
+          claim_ids: selectedClaimIds,
         },
       );
       setSelectedBatch(response.batch);
       setNotice(response.message || 'Batch created.');
       setBatchNumber('');
-      setClaimIds('');
+      setSelectedClaimIds([]);
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to create batch.');
@@ -277,12 +313,12 @@ export function InsuranceClaimsReconciliationWorkspace({
         tenantSlug,
         selectedBatch.id,
         {
-          payment_ids: paymentIds.split(',').map((id) => Number(id.trim())).filter(Boolean),
+          payment_ids: selectedPaymentIds,
         },
       );
       setSelectedBatch(response.batch);
       setNotice(response.message || 'Batch reconciled.');
-      setPaymentIds('');
+      setSelectedPaymentIds([]);
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to reconcile batch.');
@@ -436,9 +472,35 @@ export function InsuranceClaimsReconciliationWorkspace({
                   placeholder="Batch number" />
                 <input required type="date" value={periodFrom} onChange={(event) => setPeriodFrom(event.target.value)} />
                 <input required type="date" value={periodTo} onChange={(event) => setPeriodTo(event.target.value)} />
-                <input required value={claimIds} onChange={(event) => setClaimIds(event.target.value)}
-                  placeholder="Claim IDs, comma separated" />
-                <button disabled={busy}>Create batch</button>
+                <div className="insurance-selector-list">
+                  <strong>Eligible claims</strong>
+                  {eligibleClaims.map((claim) => (
+                    <label key={claim.id}>
+                      <input
+                        type="checkbox"
+                        checked={selectedClaimIds.includes(claim.id)}
+                        onChange={(event) =>
+                          setSelectedClaimIds((current) =>
+                            event.target.checked
+                              ? [...current, claim.id]
+                              : current.filter((id) => id !== claim.id),
+                          )
+                        }
+                      />
+                      <span>
+                        {claim.claim_number} · {money(claim.approved_amount)} RWF
+                      </span>
+                    </label>
+                  ))}
+                  {!eligibleClaims.length && (
+                    <small>
+                      Select a partner and period to view eligible claims.
+                    </small>
+                  )}
+                </div>
+                <button disabled={busy || selectedClaimIds.length === 0}>
+                  Create batch ({selectedClaimIds.length})
+                </button>
               </form>
 
               <div className="insurance-live-table-wrap">
@@ -457,7 +519,30 @@ export function InsuranceClaimsReconciliationWorkspace({
                         <td>{money(batch.approved_amount)}</td>
                         <td>{money(batch.paid_amount)}</td>
                         <td><span className={`insurance-status-pill ${batch.status}`}>{label(batch.status)}</span></td>
-                        <td><button type="button" onClick={() => setSelectedBatch(batch)}>Open</button></td>
+                        <td><button
+                          type="button"
+                          onClick={() => {
+                            setSelectedBatch(batch);
+                            setSelectedPaymentIds([]);
+                            void getEligibleInsuranceBatchPayments(
+                              token,
+                              tenantSlug,
+                              batch.id,
+                            )
+                              .then((response) =>
+                                setEligiblePayments(response.payments),
+                              )
+                              .catch((reason) =>
+                                setError(
+                                  reason instanceof Error
+                                    ? reason.message
+                                    : 'Unable to load eligible payments.',
+                                ),
+                              );
+                          }}
+                        >
+                          Open
+                        </button></td>
                       </tr>
                     ))}
                     {!batches.length && <tr><td colSpan={8}>No matching batches.</td></tr>}
@@ -484,10 +569,39 @@ export function InsuranceClaimsReconciliationWorkspace({
 
                   {['submitted', 'partially_reconciled'].includes(selectedBatch.status) && (
                     <form className="insurance-live-form" onSubmit={reconcile}>
-                      <input required value={paymentIds}
-                        onChange={(event) => setPaymentIds(event.target.value)}
-                        placeholder="Payment IDs, comma separated" />
-                      <button disabled={busy}>Process reconciliation</button>
+                      <div className="insurance-selector-list">
+                        <strong>Eligible payments</strong>
+                        {eligiblePayments.map((payment) => (
+                          <label key={payment.id}>
+                            <input
+                              type="checkbox"
+                              checked={selectedPaymentIds.includes(payment.id)}
+                              onChange={(event) =>
+                                setSelectedPaymentIds((current) =>
+                                  event.target.checked
+                                    ? [...current, payment.id]
+                                    : current.filter(
+                                        (id) => id !== payment.id,
+                                      ),
+                                )
+                              }
+                            />
+                            <span>
+                              {payment.payment_reference} · {money(payment.amount)} RWF
+                            </span>
+                          </label>
+                        ))}
+                        {!eligiblePayments.length && (
+                          <small>
+                            No eligible unallocated payments are available.
+                          </small>
+                        )}
+                      </div>
+                      <button
+                        disabled={busy || selectedPaymentIds.length === 0}
+                      >
+                        Process reconciliation ({selectedPaymentIds.length})
+                      </button>
                     </form>
                   )}
                 </>

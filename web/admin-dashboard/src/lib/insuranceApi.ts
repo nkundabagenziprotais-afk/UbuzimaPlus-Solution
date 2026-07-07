@@ -622,3 +622,28 @@ export async function reconcileInsuranceBatch(
     { method: 'POST', body: payload },
   );
 }
+
+export type InsurancePaymentOption = {
+  id: number;
+  payment_reference: string;
+  payment_date?: string | null;
+  amount: number | string;
+  currency?: string | null;
+  payment_method?: string | null;
+  bank_reference?: string | null;
+  status?: string | null;
+  insurance_claim_id: number;
+  insurance_reconciliation_batch_id?: number | null;
+};
+
+export async function getEligibleInsuranceBatchPayments(
+  token: string,
+  tenantSlug: string,
+  batchId: number,
+): Promise<{ payments: InsurancePaymentOption[] }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/reconciliation-batches/${batchId}/eligible-payments`,
+  );
+}
