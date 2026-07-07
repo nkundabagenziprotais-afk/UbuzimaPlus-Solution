@@ -39,6 +39,17 @@ const numberFormatter = new Intl.NumberFormat('en-RW', {
   maximumFractionDigits: 0,
 });
 
+
+function numericReportField(source: unknown, ...keys: string[]): number {
+  if (!source || typeof source !== 'object') return 0;
+  const record = source as Record<string, unknown>;
+  for (const key of keys) {
+    const value = Number(record[key]);
+    if (Number.isFinite(value)) return value;
+  }
+  return 0;
+}
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -95,7 +106,7 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
 
   const hasTenantContext = Boolean(token && tenantSlug);
   const totalSales = Number(state.sales?.total_sales_amount ?? 0);
-  const supplierBalance = Number(state.payables?.open_balance ?? 0);
+  const supplierBalance = numericReportField(state.payables, 'balance_amount', 'open_balance');
   const stockAtCost = Number(state.inventory?.total_cost_value ?? 0);
 
   const collectionRate = useMemo(() => {
@@ -111,8 +122,8 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
   const creditRiskRate = percentage(overdueCredit, openCredit);
 
   const operationalAlerts = useMemo(() => {
-    const payablesOverdue = Number(state.payables?.overdue_balance ?? 0);
-    const purchaseOrdersApproved = Number(state.procurement?.approved_orders_count ?? 0);
+    const payablesOverdue = numericReportField(state.payables, 'overdue_amount', 'overdue_balance');
+    const purchaseOrdersApproved = numericReportField(state.procurement, 'approved_order_count', 'approved_orders_count', 'purchase_order_count');
     const stockValue = Number(state.inventory?.total_cost_value ?? 0);
 
     const alerts = [
@@ -176,19 +187,19 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
       },
       {
         title: 'Supplier payment queue',
-        count: formatNumber(state.payables?.open_invoices_count),
-        value: formatMoney(state.payables?.open_balance),
-        note: `${formatMoney(state.payables?.overdue_balance)} overdue supplier exposure`,
+        count: formatNumber(numericReportField(state.payables, 'open_invoice_count', 'open_invoices_count')),
+        value: formatMoney(numericReportField(state.payables, 'balance_amount', 'open_balance')),
+        note: `${formatMoney(numericReportField(state.payables, 'overdue_amount', 'overdue_balance'))} overdue supplier exposure`,
       },
       {
         title: 'Purchase receiving queue',
-        count: formatNumber(state.procurement?.approved_orders_count),
-        value: formatMoney(state.procurement?.approved_amount),
+        count: formatNumber(numericReportField(state.procurement, 'approved_order_count', 'approved_orders_count', 'purchase_order_count')),
+        value: formatMoney(numericReportField(state.procurement, 'approved_order_amount', 'approved_amount', 'total_order_amount')),
         note: 'Approved orders should be checked against received stock.',
       },
       {
         title: 'Sales collection queue',
-        count: formatNumber(state.sales?.sales_count),
+        count: formatNumber(state.sales?.sale_count),
         value: formatMoney(state.sales?.balance_amount),
         note: `${collectionRate}% of generated sales has been collected.`,
       },
@@ -325,13 +336,13 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
     },
     {
       label: 'Settle supplier payables',
-      value: formatMoney(state.payables?.open_balance),
+      value: formatMoney(numericReportField(state.payables, 'balance_amount', 'open_balance')),
       helper: `${payableSettlementRate}% settled this period`,
     },
     {
       label: 'Move approved purchases',
-      value: formatMoney(state.procurement?.approved_amount),
-      helper: `${formatNumber(state.procurement?.approved_orders_count)} approved orders`,
+      value: formatMoney(numericReportField(state.procurement, 'approved_order_amount', 'approved_amount', 'total_order_amount')),
+      helper: `${formatNumber(numericReportField(state.procurement, 'approved_order_count', 'approved_orders_count', 'purchase_order_count'))} approved orders`,
     },
   ];
 
@@ -370,7 +381,7 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
         <div>
           <span>Stock at cost</span>
           <strong>{formatMoney(state.inventory?.total_cost_value)}</strong>
-          <small>{formatNumber(state.inventory?.total_quantity)} units available</small>
+          <small>{formatNumber(numericReportField(state.inventory, 'available_quantity', 'total_quantity', 'quantity_on_hand'))} units available</small>
         </div>
         <div>
           <span>Sales generated</span>
@@ -384,8 +395,8 @@ export function PharmacoOperationsCommandCenter(props: PharmacoOperationsCommand
         </div>
         <div>
           <span>Supplier balance</span>
-          <strong>{formatMoney(state.payables?.open_balance)}</strong>
-          <small>{formatMoney(state.payables?.overdue_balance)} overdue</small>
+          <strong>{formatMoney(numericReportField(state.payables, 'balance_amount', 'open_balance'))}</strong>
+          <small>{formatMoney(numericReportField(state.payables, 'overdue_amount', 'overdue_balance'))} overdue</small>
         </div>
       </section>
 

@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   AccessProfile,
   PharmaInventoryBatchesResponse,
@@ -22,6 +22,14 @@ import {
   updatePharmaStockBatch,
   deletePharmaStockBatch,
 } from '../lib/api';
+
+
+type InventoryProductReference = Omit<Partial<PharmaProduct>, 'id' | 'name' | 'sku' | 'category'> & {
+  id: number;
+  name: string;
+  sku: string;
+  category?: PharmaProduct['category'] | PharmaStockBatch['product']['category'];
+};
 
 type ProductInventoryPreviewProps = {
   token: string;
@@ -371,7 +379,7 @@ function metadataNumber(metadata: Record<string, unknown> | null | undefined, ke
   return fallback;
 }
 
-function regulatoryPrice(product: PharmaProduct | null | undefined): number | null {
+function regulatoryPrice(product: InventoryProductReference | null | undefined): number | null {
   if (!product) return null;
 
   const price = metadataNumber(
@@ -383,7 +391,7 @@ function regulatoryPrice(product: PharmaProduct | null | undefined): number | nu
   return price > 0 ? price : null;
 }
 
-function productMarginRate(product: PharmaProduct | null | undefined): number {
+function productMarginRate(product: InventoryProductReference | null | undefined): number {
   return metadataNumber(
     product?.metadata,
     ['product_margin_rate', 'product_margin_percent', 'default_margin_percent', 'margin_percent', 'allowed_margin'],
@@ -391,7 +399,7 @@ function productMarginRate(product: PharmaProduct | null | undefined): number {
   );
 }
 
-function metadataText(product: PharmaProduct | null | undefined, keys: string[], fallback = ''): string {
+function metadataText(product: InventoryProductReference | null | undefined, keys: string[], fallback = ''): string {
   if (!product?.metadata) return fallback;
 
   for (const key of keys) {
@@ -787,17 +795,19 @@ export function ProductInventoryPreview({
   const [editingInventoryBatch, setEditingInventoryBatch] = useState<PharmaStockBatch | null>(null);
   const [isInventoryReceiveFlowOpen, setIsInventoryReceiveFlowOpen] = useState(false);
   const [expiryViewFilter, setExpiryViewFilter] = useState('all');
-  const [isExpiryLabelManagerOpen, setIsExpiryLabelManagerOpen] = useState(false);
-  const [expiryLabelRules, setExpiryLabelRules] = useState({
+  const defaultExpiryLabelRules = {
     expired: { label: 'Expired', maxDays: -1, background: '#7f1d1d', text: '#ffffff' },
     critical: { label: 'Critical', maxDays: 30, background: '#fee2e2', text: '#7f1d1d' },
     warning: { label: 'Warning', maxDays: 90, background: '#ffedd5', text: '#9a3412' },
     watch: { label: 'Watch', maxDays: 180, background: '#fef3c7', text: '#92400e' },
     valid: { label: 'Healthy', maxDays: 181, background: '#ecfdf5', text: '#065f46' },
     noDate: { label: 'No date', maxDays: 0, background: '#f1f5f9', text: '#334155' },
-  });
+  };
 
-  runtimeExpiryLabelRules = expiryLabelRules;
+  const [isExpiryLabelManagerOpen, setIsExpiryLabelManagerOpen] = useState(false);
+  const [expiryLabelRules, setExpiryLabelRules] = useState(() => ({ ...defaultExpiryLabelRules }));
+
+  runtimeExpiryLabelRules = Object.values(expiryLabelRules);
 
 
   const [tableSettingsByKey, setTableSettingsByKey] = useState<Record<string, InventoryTableSettings>>({});
@@ -827,8 +837,8 @@ export function ProductInventoryPreview({
       try {
         const parsedRules = JSON.parse(savedExpiryLabelRules);
 
-        if (Array.isArray(parsedRules) && parsedRules.length > 0) {
-          setExpiryLabelRules(parsedRules);
+        if (parsedRules && typeof parsedRules === 'object' && !Array.isArray(parsedRules)) {
+          setExpiryLabelRules(parsedRules as typeof expiryLabelRules);
         }
       } catch {
         window.localStorage.removeItem(EXPIRY_LABEL_RULES_STORAGE_KEY);
@@ -1121,7 +1131,6 @@ export function ProductInventoryPreview({
 
     try {
       const response = await getPharmaProducts(token, tenantSlug, {
-        page: 1,
         perPage: 30,
         search: searchValue,
         status: 'active',
@@ -1147,7 +1156,7 @@ export function ProductInventoryPreview({
       ...current,
       product_id: String(product.id),
       margin_percent: current.margin_percent || (defaultMargin > 0 ? String(defaultMargin) : ''),
-      selling_price: current.selling_price || (regulatorySellingPrice > 0 ? String(regulatorySellingPrice) : ''),
+      selling_price: current.selling_price || ((regulatorySellingPrice ?? 0) > 0 ? String(regulatorySellingPrice) : ''),
     }));
 
     // Clear the search box, close dropdown, but keep selected product available for the selected card.
@@ -1222,7 +1231,7 @@ export function ProductInventoryPreview({
         return null;
       }
 
-      const parsed = JSON.parse(raw) as { savedAt?: number; payload?: T };
+      const parsed = JSON.parse(raw) as { version?: string; savedAt?: number; payload?: T };
 
       if (!parsed.savedAt || Date.now() - parsed.savedAt > inventoryCacheTtlMs) {
         window.sessionStorage.removeItem(inventoryCacheKey(resource));
@@ -1863,7 +1872,7 @@ export function ProductInventoryPreview({
 
     setPendingDeleteProduct(null);
     setViewingProductMasterProduct(null);
-    setSelectedProductMasterEditId(null);
+    setSelectedProductMasterEditId('');
     setActiveProductMasterAction('replicate');
     setProductMasterSearchTerm('');
 
@@ -2723,7 +2732,8 @@ export function ProductInventoryPreview({
     });
 
     setInventoryProductSearchTerm('');
-    setInventoryProductOptions([batch.product]);
+    const masterProduct = allProducts.find((item) => item.id === batch.product.id);
+    setInventoryProductOptions(masterProduct ? [masterProduct] : []);
     setIsInventoryProductSearchOpen(false);
     setInventoryNotice(`Replicating ${batch.product.name}. Enter a new batch number and quantity, then click Create inventory.`);
   }
@@ -3393,7 +3403,7 @@ export function ProductInventoryPreview({
   }
 
   function handleSaveExpiryLabelRules() {
-    runtimeExpiryLabelRules = expiryLabelRules;
+    runtimeExpiryLabelRules = Object.values(expiryLabelRules);
 
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(EXPIRY_LABEL_RULES_STORAGE_KEY, JSON.stringify(expiryLabelRules));
@@ -3410,38 +3420,38 @@ export function ProductInventoryPreview({
 
     const thresholdFields = [
       {
-        key: 'criticalMaxDays',
+        key: 'critical',
         label: 'Critical max days',
         helper: 'Highest remaining days before an item becomes critical.',
       },
       {
-        key: 'warningMaxDays',
+        key: 'warning',
         label: 'Warning max days',
         helper: 'Upper limit for warning stock before it moves to watch.',
       },
       {
-        key: 'watchMaxDays',
+        key: 'watch',
         label: 'Watch max days',
         helper: 'Upper limit for early expiry monitoring.',
       },
     ] as const;
 
     const backgroundFields = [
-      { key: 'expiredBackground', label: 'Expired background', fallback: '#991b1b' },
-      { key: 'criticalBackground', label: 'Critical background', fallback: '#fee2e2' },
-      { key: 'warningBackground', label: 'Warning background', fallback: '#ffedd5' },
-      { key: 'watchBackground', label: 'Watch background', fallback: '#fef3c7' },
-      { key: 'healthyBackground', label: 'Healthy background', fallback: '#dcfce7' },
-      { key: 'noDateBackground', label: 'No date background', fallback: '#f1f5f9' },
+      { key: 'expired', label: 'Expired background', fallback: '#991b1b' },
+      { key: 'critical', label: 'Critical background', fallback: '#fee2e2' },
+      { key: 'warning', label: 'Warning background', fallback: '#ffedd5' },
+      { key: 'watch', label: 'Watch background', fallback: '#fef3c7' },
+      { key: 'valid', label: 'Healthy background', fallback: '#dcfce7' },
+      { key: 'noDate', label: 'No date background', fallback: '#f1f5f9' },
     ] as const;
 
     const textFields = [
-      { key: 'expiredText', label: 'Expired text', fallback: '#ffffff' },
-      { key: 'criticalText', label: 'Critical text', fallback: '#991b1b' },
-      { key: 'warningText', label: 'Warning text', fallback: '#9a3412' },
-      { key: 'watchText', label: 'Watch text', fallback: '#92400e' },
-      { key: 'healthyText', label: 'Healthy text', fallback: '#047857' },
-      { key: 'noDateText', label: 'No date text', fallback: '#334155' },
+      { key: 'expired', label: 'Expired text', fallback: '#ffffff' },
+      { key: 'critical', label: 'Critical text', fallback: '#991b1b' },
+      { key: 'warning', label: 'Warning text', fallback: '#9a3412' },
+      { key: 'watch', label: 'Watch text', fallback: '#92400e' },
+      { key: 'valid', label: 'Healthy text', fallback: '#047857' },
+      { key: 'noDate', label: 'No date text', fallback: '#334155' },
     ] as const;
 
     const previewFields = [
@@ -3489,7 +3499,7 @@ export function ProductInventoryPreview({
       },
     ] as const;
 
-    const updateExpiryNumberRule = (key: 'criticalMaxDays' | 'warningMaxDays' | 'watchMaxDays', value: string) => {
+    const updateExpiryNumberRule = (key: 'critical' | 'warningMaxDays' | 'watchMaxDays', value: string) => {
       setExpiryLabelRules((current) => ({
         ...current,
         [key]: Number(value || 0),
@@ -3530,8 +3540,16 @@ export function ProductInventoryPreview({
                     id={`expiry-rule-${field.key}`}
                     type="number"
                     min="0"
-                    value={expiryLabelRules[field.key] ?? 0}
-                    onChange={(event) => updateExpiryNumberRule(field.key, event.target.value)}
+                    value={expiryLabelRules[field.key].maxDays}
+                    onChange={(event) =>
+                      setExpiryLabelRules((current) => ({
+                        ...current,
+                        [field.key]: {
+                          ...current[field.key],
+                          maxDays: Number(event.target.value || 0),
+                        },
+                      }))
+                    }
                   />
                   <small>{field.helper}</small>
                 </div>
@@ -3553,8 +3571,13 @@ export function ProductInventoryPreview({
                     id={`expiry-rule-${field.key}`}
                     className="inventory-settings-color-input"
                     type="color"
-                    value={String(expiryLabelRules[field.key] ?? field.fallback)}
-                    onChange={(event) => updateExpiryColourRule(field.key, event.target.value)}
+                    value={String(expiryLabelRules[field.key].background ?? field.fallback)}
+                    onChange={(event) =>
+                      setExpiryLabelRules((current) => ({
+                        ...current,
+                        [field.key]: { ...current[field.key], background: event.target.value },
+                      }))
+                    }
                   />
                 </div>
               ))}
@@ -3575,8 +3598,13 @@ export function ProductInventoryPreview({
                     id={`expiry-rule-${field.key}`}
                     className="inventory-settings-color-input"
                     type="color"
-                    value={String(expiryLabelRules[field.key] ?? field.fallback)}
-                    onChange={(event) => updateExpiryColourRule(field.key, event.target.value)}
+                    value={String(expiryLabelRules[field.key].text ?? field.fallback)}
+                    onChange={(event) =>
+                      setExpiryLabelRules((current) => ({
+                        ...current,
+                        [field.key]: { ...current[field.key], text: event.target.value },
+                      }))
+                    }
                   />
                 </div>
               ))}
@@ -3592,8 +3620,14 @@ export function ProductInventoryPreview({
 
           <div className="inventory-settings-preview-legend">
             {previewFields.map((field) => {
-              const backgroundColor = String(expiryLabelRules[field.backgroundKey] ?? field.fallbackBackground);
-              const color = String(expiryLabelRules[field.textKey] ?? field.fallbackText);
+              const ruleKey =
+                field.label === 'Healthy'
+                  ? 'valid'
+                  : field.label === 'No date'
+                    ? 'noDate'
+                    : field.label.toLowerCase() as 'expired' | 'critical' | 'warning' | 'watch';
+              const backgroundColor = String(expiryLabelRules[ruleKey].background);
+              const color = String(expiryLabelRules[ruleKey].text);
 
               return (
                 <span
@@ -3622,7 +3656,7 @@ export function ProductInventoryPreview({
             onClick={() => {
               const defaultRules = { ...defaultExpiryLabelRules };
 
-              runtimeExpiryLabelRules = defaultRules;
+              runtimeExpiryLabelRules = Object.values(defaultRules);
               setExpiryLabelRules(defaultRules);
               markAction('Expiry labelling rules restored. Save changes to keep these defaults.');
             }}
@@ -3847,49 +3881,9 @@ export function ProductInventoryPreview({
           )}
 
           {activeInventoryView === 'low-stock' && (() => {
-            const productSource = (() => {
-              if (typeof allProducts !== 'undefined' && Array.isArray(allProducts)) {
-                return allProducts;
-              }
+            const productSource = allProducts;
 
-              if (typeof products !== 'undefined') {
-                if (Array.isArray(products)) {
-                  return products;
-                }
-
-                if (products && Array.isArray(products.data)) {
-                  return products.data;
-                }
-
-                if (products && Array.isArray(products.items)) {
-                  return products.items;
-                }
-              }
-
-              return [];
-            })();
-
-            const batchSource = (() => {
-              if (typeof allBatches !== 'undefined' && Array.isArray(allBatches)) {
-                return allBatches;
-              }
-
-              if (typeof batches !== 'undefined') {
-                if (Array.isArray(batches)) {
-                  return batches;
-                }
-
-                if (batches && Array.isArray(batches.data)) {
-                  return batches.data;
-                }
-
-                if (batches && Array.isArray(batches.items)) {
-                  return batches.items;
-                }
-              }
-
-              return [];
-            })();
+            const batchSource = allBatches;
 
             const toNumber = (value: unknown) => {
               const parsed = Number(value);
@@ -5109,7 +5103,7 @@ export function ProductInventoryPreview({
                     {[
                       ['Product', viewingInventoryBatch.product.name],
                       ['Drug code', viewingInventoryBatch.product.sku],
-                      ['Generic name', viewingInventoryBatch.product.generic_name ?? 'Generic name not set'],
+                      ['Generic name', metadataText(viewingInventoryBatch.product, ['generic_name'], 'Generic name not set')],
                       ['Batch number', viewingInventoryBatch.batch_number],
                       ['Location', `${viewingInventoryBatch.stock_location.name} (${viewingInventoryBatch.stock_location.code})`],
                       ['Available quantity', formatNumber(viewingInventoryBatch.available_quantity)],
@@ -5276,7 +5270,7 @@ export function ProductInventoryPreview({
                             <span className="cell-muted">Regulatory Price: {formatRwf(regulatoryPrice(batch.product))}</span>
                           </td>
                           <td className="cell-wrap">
-                            <strong className="cell-strong">{batch.product.generic_name ?? 'Generic name not set'}</strong>
+                            <strong className="cell-strong">{metadataText(batch.product, ['generic_name'], 'Generic name not set')}</strong>
                             <br />
                             <span className="cell-muted">
                               {metadataText(batch.product, ['designation', 'rhia_designation'], 'Designation not set')}

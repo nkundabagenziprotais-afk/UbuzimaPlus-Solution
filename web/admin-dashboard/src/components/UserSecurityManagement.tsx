@@ -1086,7 +1086,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
                         <span>{user.job_title ?? 'No job title'}</span>
                       </td>
                       <td>
-                        <span className={statusClassName(user.status)}>{user.status ?? 'active'}</span>
+                        <span className={statusClassName(user.status ?? undefined)}>{user.status ?? 'active'}</span>
                       </td>
                       <td>{permissionCountLabel(normalizedUserPermissions.length)}</td>
                       <td>
