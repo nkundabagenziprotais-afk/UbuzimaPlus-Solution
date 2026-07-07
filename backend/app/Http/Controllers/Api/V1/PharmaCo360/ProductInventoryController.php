@@ -12,6 +12,7 @@ use App\Models\StockLocation;
 use App\Models\StockMovement;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
+use App\Services\PharmaCo360\ProductSellingUnitSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -741,6 +742,210 @@ class ProductInventoryController extends Controller
         return response()->json([
             'message' => 'Product updated successfully.',
             'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
+        ]);
+    }
+
+    public function generateSellingUnitSuggestion(
+        Request $request,
+        Product $product,
+        ProductSellingUnitSuggestionService $suggestionService,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'trusted_source' => ['nullable', 'string', 'max:1000'],
+            'trusted_reference' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $suggestion = $suggestionService->suggest($product);
+
+        if (! empty($validated['trusted_source'])) {
+            $suggestion['source'] = trim($validated['trusted_source']);
+        }
+
+        if (! empty($validated['trusted_reference'])) {
+            $suggestion['reference'] = trim($validated['trusted_reference']);
+        }
+
+        $before = [
+            'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+            'ai_suggested_quantity_per_unit' => $product->ai_suggested_quantity_per_unit,
+            'ai_suggestion_status' => $product->ai_suggestion_status,
+        ];
+
+        $product->forceFill([
+            'ai_suggested_quantity_per_unit' => $suggestion['proposed_value'],
+            'ai_suggestion_status' => 'pending_review',
+            'ai_suggestion_confidence' => $suggestion['confidence'],
+            'ai_suggestion_explanation' => $suggestion['explanation'],
+            'ai_suggestion_source' => $suggestion['source'],
+            'ai_suggestion_reference' => $suggestion['reference'],
+            'ai_suggestion_reviewed_by' => null,
+            'ai_suggestion_reviewed_at' => null,
+        ])->save();
+
+        $auditLogService->record(
+            action: 'pharmaco.product.selling_unit_ai_suggested',
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'before' => $before,
+                'proposal' => [
+                    'proposed_value' => $suggestion['proposed_value'],
+                    'confidence' => $suggestion['confidence'],
+                    'explanation' => $suggestion['explanation'],
+                    'source' => $suggestion['source'],
+                    'reference' => $suggestion['reference'],
+                ],
+                'auto_applied' => false,
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $product->id
+        );
+
+        return response()->json([
+            'message' => 'Selling-unit AI suggestion generated for human review.',
+            'auto_applied' => false,
+            'product' => $this->serializeProduct(
+                $product->fresh('category'),
+                includeStockSummary: true
+            ),
+        ]);
+    }
+
+    public function reviewSellingUnitSuggestion(
+        Request $request,
+        Product $product,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        if ($product->ai_suggestion_status !== 'pending_review') {
+            throw ValidationException::withMessages([
+                'ai_suggestion_status' => [
+                    'This product does not have a pending selling-unit AI suggestion.',
+                ],
+            ]);
+        }
+
+        $validated = $request->validate([
+            'action' => [
+                'required',
+                Rule::in(['approve', 'reject', 'edit_and_approve']),
+            ],
+            'approved_value' => [
+                'required_if:action,edit_and_approve',
+                'nullable',
+                'numeric',
+                'min:0.0001',
+            ],
+            'review_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $action = $validated['action'];
+        $suggestedValue = (float) $product->ai_suggested_quantity_per_unit;
+        $approvedValue = $action === 'edit_and_approve'
+            ? (float) $validated['approved_value']
+            : $suggestedValue;
+
+        if (
+            in_array($action, ['approve', 'edit_and_approve'], true)
+            && $suggestedValue <= 0
+        ) {
+            throw ValidationException::withMessages([
+                'ai_suggested_quantity_per_unit' => [
+                    'The pending suggestion does not contain a valid quantity.',
+                ],
+            ]);
+        }
+
+        $before = [
+            'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+            'ai_suggested_quantity_per_unit' => $suggestedValue,
+            'ai_suggestion_status' => $product->ai_suggestion_status,
+        ];
+
+        $updates = [
+            'ai_suggestion_status' => $action === 'reject'
+                ? 'rejected'
+                : 'approved',
+            'ai_suggestion_reviewed_by' => $request->user()->id,
+            'ai_suggestion_reviewed_at' => now(),
+        ];
+
+        if ($action !== 'reject') {
+            $updates['quantity_per_selling_unit'] = $approvedValue;
+        }
+
+        $metadata = is_array($product->metadata)
+            ? $product->metadata
+            : [];
+
+        $metadata['selling_unit_ai_review'] = [
+            'action' => $action,
+            'review_notes' => $validated['review_notes'] ?? null,
+            'proposed_value' => $suggestedValue,
+            'approved_value' => $action === 'reject'
+                ? null
+                : $approvedValue,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now()->toISOString(),
+        ];
+
+        $updates['metadata'] = $metadata;
+
+        $product->forceFill($updates)->save();
+
+        $auditLogService->record(
+            action: match ($action) {
+                'reject' => 'pharmaco.product.selling_unit_ai_rejected',
+                'edit_and_approve' => 'pharmaco.product.selling_unit_ai_edited_and_approved',
+                default => 'pharmaco.product.selling_unit_ai_approved',
+            },
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'review_action' => $action,
+                'review_notes' => $validated['review_notes'] ?? null,
+                'before' => $before,
+                'after' => [
+                    'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+                    'ai_suggestion_status' => $product->ai_suggestion_status,
+                    'ai_suggestion_reviewed_by' => $product->ai_suggestion_reviewed_by,
+                    'ai_suggestion_reviewed_at' => optional(
+                        $product->ai_suggestion_reviewed_at
+                    )?->toISOString(),
+                ],
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $product->id
+        );
+
+        return response()->json([
+            'message' => match ($action) {
+                'reject' => 'Selling-unit AI suggestion rejected.',
+                'edit_and_approve' => 'Selling-unit AI suggestion edited and approved.',
+                default => 'Selling-unit AI suggestion approved.',
+            },
+            'product' => $this->serializeProduct(
+                $product->fresh('category'),
+                includeStockSummary: true
+            ),
         ]);
     }
 

@@ -359,6 +359,22 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.inventory',
         ]);
 
+    Route::post(
+        '/products/{product}/selling-unit-ai-suggestion/generate',
+        [ProductInventoryController::class, 'generateSellingUnitSuggestion']
+    )->middleware([
+        'permission:pharmaco.inventory.manage',
+        'tenant.module:pharmaco.inventory',
+    ]);
+
+    Route::post(
+        '/products/{product}/selling-unit-ai-suggestion/review',
+        [ProductInventoryController::class, 'reviewSellingUnitSuggestion']
+    )->middleware([
+        'permission:pharmaco.inventory.manage',
+        'tenant.module:pharmaco.inventory',
+    ]);
+
     Route::get('/products/{product}', [ProductInventoryController::class, 'product'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
