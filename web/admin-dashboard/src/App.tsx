@@ -39,6 +39,7 @@ import { TenantPharmacyDashboard } from './components/TenantPharmacyDashboard';
 import { UserSecurityManagement } from './components/UserSecurityManagement';
 import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
+import { calculatePosQuantity } from './lib/posQuantity';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 
@@ -2562,6 +2563,11 @@ function App() {
     availableQuantity: number;
     expiryDate: string | null;
     locationName: string;
+    sellingUnit: string;
+    baseUnit: string;
+    quantityPerSellingUnit: number;
+    sellingUnitQuantity: number;
+    otherQuantity: number;
   }>>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
   const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
@@ -2592,6 +2598,26 @@ function App() {
   );
   const [posSummaryRefreshKey, setPosSummaryRefreshKey] = useState(0);
   const [posTerminalSearch, setPosTerminalSearch] = useState('');
+  const [posQuantityProduct, setPosQuantityProduct] = useState<{
+    code: string;
+    name: string;
+    strength: string;
+    quantity: number;
+    unitPrice: number;
+    batchId: number;
+    productId: number;
+    batchNumber: string;
+    availableQuantity: number;
+    expiryDate: string | null;
+    locationName: string;
+    sellingUnit: string;
+    baseUnit: string;
+    quantityPerSellingUnit: number;
+    allowOtherQuantity: boolean;
+    defaultQuantityMode: 'selling_unit' | 'other_quantity' | 'combined';
+  } | null>(null);
+  const [posSellingUnitQuantity, setPosSellingUnitQuantity] = useState('1');
+  const [posOtherQuantity, setPosOtherQuantity] = useState('0');
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
@@ -3954,6 +3980,15 @@ function App() {
           availableQuantity,
           expiryDate: batch.expiry_date,
           locationName,
+          sellingUnit: batch.product?.selling_unit || batch.product?.unit || 'unit',
+          baseUnit: batch.product?.base_unit || batch.product?.unit || 'unit',
+          quantityPerSellingUnit: Math.max(
+            0.0001,
+            Number(batch.product?.quantity_per_selling_unit || 1),
+          ),
+          allowOtherQuantity: batch.product?.allow_other_quantity !== false,
+          defaultQuantityMode:
+            batch.product?.default_pos_quantity_mode || 'selling_unit',
         };
       });
 
@@ -4114,9 +4149,47 @@ function App() {
       setPosNotice('Payment summary refreshed from the active cart.');
     }
 
-    function addPosProductToCart(product: typeof posProducts[number]) {
+    function openPosQuantityPopup(product: typeof posProducts[number]) {
       if (!product.batchId || product.availableQuantity <= 0) {
         setPosNotice('This product is not available in current inventory and cannot be sold.');
+        return;
+      }
+
+      setPosQuantityProduct(product);
+
+      if (product.defaultQuantityMode === 'other_quantity') {
+        setPosSellingUnitQuantity('0');
+        setPosOtherQuantity('1');
+      } else {
+        setPosSellingUnitQuantity('1');
+        setPosOtherQuantity('0');
+      }
+
+      setPosNotice('');
+    }
+
+    function closePosQuantityPopup() {
+      setPosQuantityProduct(null);
+      setPosSellingUnitQuantity('1');
+      setPosOtherQuantity('0');
+    }
+
+    function addConfiguredPosProductToCart() {
+      const product = posQuantityProduct;
+
+      if (!product) return;
+
+      const calculation = calculatePosQuantity({
+        sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
+        otherQuantity: product.allowOtherQuantity
+          ? Number(posOtherQuantity || 0)
+          : 0,
+        quantityPerSellingUnit: product.quantityPerSellingUnit,
+        sellingUnitPrice: product.unitPrice,
+      });
+
+      if (calculation.totalBaseQuantity <= 0) {
+        setPosNotice('Enter at least one selling unit or another permitted quantity.');
         return;
       }
 
@@ -4127,18 +4200,37 @@ function App() {
           Number(item.batchId || 0) === Number(product.batchId || 0),
       );
 
+      const existingQuantity = Number(existing?.quantity || 0);
+      const requestedTotalQuantity =
+        existingQuantity + calculation.totalBaseQuantity;
+
+      if (requestedTotalQuantity > product.availableQuantity) {
+        setPosNotice(
+          `${product.name} has ${product.availableQuantity.toLocaleString('en-RW')} ${product.baseUnit} available. Requested total is ${requestedTotalQuantity.toLocaleString('en-RW')}.`,
+        );
+        return;
+      }
+
       let nextItems: typeof posCartItems;
 
       if (existing) {
-        const nextQuantity = Math.min(Number(existing.quantity || 0) + 1, product.availableQuantity);
-
         nextItems = currentItems.map((item) =>
-          item.code === product.code && Number(item.batchId || 0) === Number(product.batchId || 0)
+          item.code === product.code &&
+          Number(item.batchId || 0) === Number(product.batchId || 0)
             ? {
                 ...item,
-                quantity: nextQuantity,
+                quantity: requestedTotalQuantity,
+                unitPrice: calculation.baseUnitPrice,
                 availableQuantity: product.availableQuantity,
-                unitPrice: product.unitPrice,
+                sellingUnit: product.sellingUnit,
+                baseUnit: product.baseUnit,
+                quantityPerSellingUnit: product.quantityPerSellingUnit,
+                sellingUnitQuantity:
+                  Number(item.sellingUnitQuantity || 0) +
+                  calculation.sellingUnitQuantity,
+                otherQuantity:
+                  Number(item.otherQuantity || 0) +
+                  calculation.otherQuantity,
               }
             : item,
         );
@@ -4149,21 +4241,33 @@ function App() {
             code: product.code,
             name: product.name,
             strength: product.strength,
-            quantity: 1,
-            unitPrice: product.unitPrice,
+            quantity: calculation.totalBaseQuantity,
+            unitPrice: calculation.baseUnitPrice,
             batchId: product.batchId,
             productId: product.productId,
             batchNumber: product.batchNumber,
             availableQuantity: product.availableQuantity,
             expiryDate: product.expiryDate,
             locationName: product.locationName,
+            sellingUnit: product.sellingUnit,
+            baseUnit: product.baseUnit,
+            quantityPerSellingUnit: product.quantityPerSellingUnit,
+            sellingUnitQuantity: calculation.sellingUnitQuantity,
+            otherQuantity: calculation.otherQuantity,
           },
         ];
       }
 
       const snapshot = buildPosCounterCartSnapshot(nextItems);
       commitPosCounterItems(snapshot.items);
-      setPosNotice(`${product.name} added to cart. Cart now has ${snapshot.lineCount} line${snapshot.lineCount === 1 ? '' : 's'} and ${snapshot.totalQuantity} unit${snapshot.totalQuantity === 1 ? '' : 's'}.`);
+
+      setPosNotice(
+        `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}` +
+        `${calculation.otherQuantity > 0 ? ` + ${calculation.otherQuantity.toLocaleString('en-RW')} ${product.baseUnit}` : ''}` +
+        ` = ${calculation.totalBaseQuantity.toLocaleString('en-RW')} ${product.baseUnit}.`,
+      );
+
+      closePosQuantityPopup();
     }
 
     function updateCartQuantity(code: string, quantity: number) {
@@ -4553,7 +4657,7 @@ function App() {
                   onChange={(event) => setPosTerminalSearch(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' && posVisibleProducts.length === 1) {
-                      addPosProductToCart(posVisibleProducts[0]);
+                      openPosQuantityPopup(posVisibleProducts[0]);
                       setPosTerminalSearch('');
                     }
                   }}
@@ -4633,7 +4737,7 @@ function App() {
                             key={product.code}
                             type="button"
                             className={`pos-product-tile pos-product-tile-v16 product-expiry-${expiryStatusClass}`}
-                            onClick={() => addPosProductToCart(product)}
+                            onClick={() => openPosQuantityPopup(product)}
                           >
                             <strong>{product.name}</strong>
                             <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
@@ -4647,6 +4751,173 @@ function App() {
                   )}
                 </div>
               </section>
+
+              {posQuantityProduct && (() => {
+                const quantityPreview = calculatePosQuantity({
+                  sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
+                  otherQuantity: posQuantityProduct.allowOtherQuantity
+                    ? Number(posOtherQuantity || 0)
+                    : 0,
+                  quantityPerSellingUnit: posQuantityProduct.quantityPerSellingUnit,
+                  sellingUnitPrice: posQuantityProduct.unitPrice,
+                });
+
+                return (
+                  <div
+                    className="pos-quantity-dialog-backdrop"
+                    role="presentation"
+                    onMouseDown={(event) => {
+                      if (event.target === event.currentTarget) {
+                        closePosQuantityPopup();
+                      }
+                    }}
+                  >
+                    <section
+                      className="pos-quantity-dialog"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-labelledby="pos-quantity-dialog-title"
+                    >
+                      <div className="pos-quantity-dialog__header">
+                        <div>
+                          <span>POS quantity configuration</span>
+                          <h3 id="pos-quantity-dialog-title">
+                            {posQuantityProduct.name}
+                          </h3>
+                          <small>
+                            Batch {posQuantityProduct.batchNumber} · Available{' '}
+                            {posQuantityProduct.availableQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </small>
+                        </div>
+
+                        <button
+                          type="button"
+                          aria-label="Close quantity popup"
+                          onClick={closePosQuantityPopup}
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      <div className="pos-quantity-dialog__fields">
+                        <label>
+                          <span>Quantity as per Selling Unit</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={posSellingUnitQuantity}
+                            onChange={(event) =>
+                              setPosSellingUnitQuantity(event.target.value)
+                            }
+                          />
+                          <small>
+                            1 {posQuantityProduct.sellingUnit} ={' '}
+                            {posQuantityProduct.quantityPerSellingUnit.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </small>
+                        </label>
+
+                        <label>
+                          <span>Other Quantity</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={posOtherQuantity}
+                            disabled={!posQuantityProduct.allowOtherQuantity}
+                            onChange={(event) =>
+                              setPosOtherQuantity(event.target.value)
+                            }
+                          />
+                          <small>
+                            {posQuantityProduct.allowOtherQuantity
+                              ? `Enter additional ${posQuantityProduct.baseUnit} quantity.`
+                              : 'Other quantity is disabled for this product.'}
+                          </small>
+                        </label>
+                      </div>
+
+                      <section className="pos-quantity-conversion-preview">
+                        <h4>Conversion preview</h4>
+
+                        <div>
+                          <span>Selling-unit conversion</span>
+                          <strong>
+                            {quantityPreview.sellingUnitQuantity.toLocaleString('en-RW')} ×{' '}
+                            {quantityPreview.quantityPerSellingUnit.toLocaleString('en-RW')} ={' '}
+                            {quantityPreview.convertedSellingUnitQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>Other quantity</span>
+                          <strong>
+                            {quantityPreview.otherQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </strong>
+                        </div>
+
+                        <div className="pos-quantity-conversion-preview__total">
+                          <span>Total cart quantity</span>
+                          <strong>
+                            {quantityPreview.totalBaseQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>Selling-unit price</span>
+                          <strong>
+                            RWF {posQuantityProduct.unitPrice.toLocaleString('en-RW')} /{' '}
+                            {posQuantityProduct.sellingUnit}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>Proportional base-unit price</span>
+                          <strong>
+                            RWF {quantityPreview.baseUnitPrice.toLocaleString('en-RW', {
+                              maximumFractionDigits: 4,
+                            })}{' '}
+                            / {posQuantityProduct.baseUnit}
+                          </strong>
+                        </div>
+
+                        <div className="pos-quantity-conversion-preview__total">
+                          <span>Calculated total</span>
+                          <strong>
+                            RWF {quantityPreview.totalPrice.toLocaleString('en-RW', {
+                              maximumFractionDigits: 2,
+                            })}
+                          </strong>
+                        </div>
+                      </section>
+
+                      <div className="pos-quantity-dialog__actions">
+                        <button type="button" onClick={closePosQuantityPopup}>
+                          Cancel
+                        </button>
+
+                        <button
+                          type="button"
+                          className="primary"
+                          disabled={
+                            quantityPreview.totalBaseQuantity <= 0 ||
+                            quantityPreview.totalBaseQuantity >
+                              posQuantityProduct.availableQuantity
+                          }
+                          onClick={addConfiguredPosProductToCart}
+                        >
+                          Add to cart
+                        </button>
+                      </div>
+                    </section>
+                  </div>
+                );
+              })()}
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
                 
@@ -4779,7 +5050,21 @@ function App() {
                                 <tr key={item.code}>
                                   <td>
                                     <strong>{item.name}</strong>
-                                    <small>Unit RWF {item.unitPrice.toLocaleString('en-RW')}</small>
+                                    <small>
+                                      {item.sellingUnitQuantity > 0
+                                        ? `${item.sellingUnitQuantity.toLocaleString('en-RW')} ${item.sellingUnit}`
+                                        : ''}
+                                      {item.sellingUnitQuantity > 0 && item.otherQuantity > 0 ? ' + ' : ''}
+                                      {item.otherQuantity > 0
+                                        ? `${item.otherQuantity.toLocaleString('en-RW')} ${item.baseUnit}`
+                                        : ''}
+                                    </small>
+                                    <small>
+                                      Total {item.quantity.toLocaleString('en-RW')} {item.baseUnit} ·
+                                      RWF {item.unitPrice.toLocaleString('en-RW', {
+                                        maximumFractionDigits: 4,
+                                      })} / {item.baseUnit}
+                                    </small>
                                   </td>
                                   <td>
                                     <input

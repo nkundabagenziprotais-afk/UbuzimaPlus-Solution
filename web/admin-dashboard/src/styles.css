@@ -18435,3 +18435,163 @@ table td:not(:first-child):not(.numeric) {
       "transaction" !important;
   }
 }
+
+/* POS selling-unit quantity dialog */
+.pos-quantity-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.pos-quantity-dialog {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid #d7dee8;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.24);
+}
+
+.pos-quantity-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+.pos-quantity-dialog__header span,
+.pos-quantity-dialog__header small {
+  display: block;
+  color: #5f6b7a;
+}
+
+.pos-quantity-dialog__header h3 {
+  margin: 4px 0 6px;
+}
+
+.pos-quantity-dialog__header > button {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  border: 1px solid #d7dee8;
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pos-quantity-dialog__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 22px 24px 10px;
+}
+
+.pos-quantity-dialog__fields label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pos-quantity-dialog__fields input {
+  width: 100%;
+  min-width: 0;
+}
+
+.pos-quantity-dialog__fields small {
+  color: #687386;
+  line-height: 1.45;
+}
+
+.pos-quantity-conversion-preview {
+  display: grid;
+  gap: 10px;
+  margin: 14px 24px 22px;
+  padding: 18px;
+  border: 1px solid #dfe6ee;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.pos-quantity-conversion-preview h4 {
+  margin: 0 0 4px;
+}
+
+.pos-quantity-conversion-preview > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+.pos-quantity-conversion-preview > div:last-child {
+  border-bottom: 0;
+}
+
+.pos-quantity-conversion-preview span {
+  color: #5f6b7a;
+}
+
+.pos-quantity-conversion-preview strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.pos-quantity-conversion-preview__total {
+  font-size: 1.04rem;
+}
+
+.pos-quantity-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 24px 24px;
+}
+
+.pos-quantity-dialog__actions button {
+  min-width: 120px;
+}
+
+@media (max-width: 700px) {
+  .pos-quantity-dialog-backdrop {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .pos-quantity-dialog {
+    max-height: calc(100vh - 20px);
+    border-radius: 18px 18px 10px 10px;
+  }
+
+  .pos-quantity-dialog__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-quantity-conversion-preview > div {
+    display: grid;
+    gap: 4px;
+  }
+
+  .pos-quantity-conversion-preview strong {
+    text-align: left;
+  }
+
+  .pos-quantity-dialog__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pos-quantity-dialog__actions button {
+    min-width: 0;
+    width: 100%;
+  }
+}
