@@ -193,6 +193,79 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 'createScheme',
             ]);
 
+            Route::get('/institutions', [
+                InsuranceManagementController::class,
+                'institutions',
+            ]);
+
+            Route::post('/institutions', [
+                InsuranceManagementController::class,
+                'createInstitution',
+            ]);
+
+            Route::patch('/institutions/{insuranceInstitution}', [
+                InsuranceManagementController::class,
+                'updateInstitution',
+            ]);
+
+            Route::patch('/schemes/{insuranceScheme}', [
+                InsuranceManagementController::class,
+                'updateScheme',
+            ]);
+
+            Route::get('/price-lists', [
+                InsuranceManagementController::class,
+                'priceLists',
+            ]);
+
+            Route::post('/price-lists', [
+                InsuranceManagementController::class,
+                'createPriceList',
+            ]);
+
+            Route::patch('/price-lists/{insurancePriceList}', [
+                InsuranceManagementController::class,
+                'updatePriceList',
+            ]);
+
+            Route::get('/product-prices', [
+                InsuranceManagementController::class,
+                'productPrices',
+            ]);
+
+            Route::post('/product-prices', [
+                InsuranceManagementController::class,
+                'upsertProductPrice',
+            ]);
+
+            Route::post('/product-prices/bulk-import', [
+                InsuranceManagementController::class,
+                'bulkImportProductPrices',
+            ]);
+
+            Route::get('/product-prices/export', [
+                InsuranceManagementController::class,
+                'exportProductPrices',
+            ]);
+
+            Route::get('/contribution-rules', [
+                InsuranceManagementController::class,
+                'contributionRules',
+            ]);
+
+            Route::post('/contribution-rules', [
+                InsuranceManagementController::class,
+                'createContributionRule',
+            ]);
+
+            Route::patch(
+                '/contribution-rules/{insuranceContributionRule}',
+                [
+                    InsuranceManagementController::class,
+                    'updateContributionRule',
+                ]
+            );
+
             Route::post('/pricing/resolve', [
                 InsuranceManagementController::class,
                 'resolvePricing',
