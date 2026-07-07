@@ -429,6 +429,88 @@ class PharmacoInsuranceClaimGenerationApiTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_draft_claim_can_be_submitted(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        [, $sale, $membership] = $this->confirmedInsuranceContext();
+
+        $created = $this->withTenant()->postJson(
+            '/api/v1/pharmaco/insurance/claims/from-sale',
+            [
+                'sale_id' => $sale->id,
+                'customer_insurance_membership_id' => $membership->id,
+            ]
+        )->assertCreated();
+
+        $claimId = $created->json('claim.id');
+
+        $this->withTenant()->postJson(
+            "/api/v1/pharmaco/insurance/claims/{$claimId}/submit",
+            [
+                'external_claim_reference' => 'RSSB-EXT-0001',
+                'submission_channel' => 'manual_portal',
+            ]
+        )
+            ->assertOk()
+            ->assertJsonPath(
+                'message',
+                'Insurance claim submitted successfully.'
+            )
+            ->assertJsonPath(
+                'claim.external_claim_reference',
+                'RSSB-EXT-0001'
+            );
+
+        $claim = InsuranceClaim::with('lines')->findOrFail($claimId);
+
+        $this->assertContains(
+            $claim->status,
+            ['submitted', 'submitted_with_exceptions']
+        );
+        $this->assertNotNull($claim->submitted_at);
+        $this->assertNotEmpty($claim->submission_payload);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'pharmaco.insurance_claim.submitted',
+            'auditable_type' => InsuranceClaim::class,
+            'auditable_id' => $claim->id,
+        ]);
+    }
+
+    public function test_submitted_claim_cannot_be_submitted_twice(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        [, $sale, $membership] = $this->confirmedInsuranceContext();
+
+        $created = $this->withTenant()->postJson(
+            '/api/v1/pharmaco/insurance/claims/from-sale',
+            [
+                'sale_id' => $sale->id,
+                'customer_insurance_membership_id' => $membership->id,
+            ]
+        )->assertCreated();
+
+        $claimId = $created->json('claim.id');
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claimId}/submit",
+                []
+            )
+            ->assertOk();
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claimId}/submit",
+                []
+            )
+            ->assertStatus(409);
+    }
+
     private function confirmedInsuranceContext(): array
     {
         [$tenant, $sale, $membership] =

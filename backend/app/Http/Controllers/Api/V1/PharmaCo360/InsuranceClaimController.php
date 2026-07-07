@@ -11,6 +11,7 @@ use App\Services\Audit\AuditLogService;
 use App\Services\PharmaCo360\InsuranceClaimGenerationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class InsuranceClaimController extends Controller
@@ -292,6 +293,171 @@ class InsuranceClaimController extends Controller
                 true
             ),
         ], 201);
+    }
+
+    public function submitClaim(
+        Request $request,
+        InsuranceClaim $insuranceClaim,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless(
+            (int) $insuranceClaim->tenant_id === (int) $tenant->id,
+            404
+        );
+
+        $validated = $request->validate([
+            'external_claim_reference' => ['nullable', 'string', 'max:255'],
+            'submission_channel' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'submission_payload' => ['nullable', 'array'],
+        ]);
+
+        $claim = DB::transaction(function () use (
+            $request,
+            $tenant,
+            $insuranceClaim,
+            $validated
+        ): InsuranceClaim {
+            $lockedClaim = InsuranceClaim::query()
+                ->where('tenant_id', $tenant->id)
+                ->lockForUpdate()
+                ->findOrFail($insuranceClaim->id);
+
+            if ($lockedClaim->status !== 'draft') {
+                abort(409, 'Only a draft insurance claim can be submitted.');
+            }
+
+            $lockedClaim->load([
+                'partner',
+                'scheme',
+                'membership.customer',
+                'sale.branch',
+                'sale.customer',
+                'lines.product',
+                'lines.saleItem',
+            ]);
+
+            if ($lockedClaim->lines->isEmpty()) {
+                abort(409, 'An insurance claim without claim lines cannot be submitted.');
+            }
+
+            $blockedLines = $lockedClaim->lines->filter(
+                fn ($line) => in_array(
+                    $line->status,
+                    ['preauthorization_required', 'not_covered'],
+                    true
+                )
+            );
+
+            $submissionPayload = array_merge([
+                'claim_number' => $lockedClaim->claim_number,
+                'service_date' => $lockedClaim->service_date?->toDateString(),
+                'partner' => [
+                    'id' => $lockedClaim->insurance_partner_id,
+                    'code' => $lockedClaim->partner?->code,
+                    'name' => $lockedClaim->partner?->name,
+                ],
+                'scheme' => $lockedClaim->scheme ? [
+                    'id' => $lockedClaim->scheme->id,
+                    'code' => $lockedClaim->scheme->code,
+                    'name' => $lockedClaim->scheme->name,
+                ] : null,
+                'membership' => [
+                    'id' => $lockedClaim->customer_insurance_membership_id,
+                    'member_number' => $lockedClaim->membership?->member_number,
+                ],
+                'sale' => [
+                    'id' => $lockedClaim->sale_id,
+                    'sale_number' => $lockedClaim->sale?->sale_number,
+                ],
+                'amounts' => [
+                    'gross_amount' => (float) $lockedClaim->gross_amount,
+                    'customer_amount' => (float) $lockedClaim->customer_amount,
+                    'claimed_amount' => (float) $lockedClaim->claimed_amount,
+                ],
+                'lines' => $lockedClaim->lines->map(
+                    fn ($line) => [
+                        'id' => $line->id,
+                        'product_id' => $line->product_id,
+                        'description' => $line->description,
+                        'quantity' => (float) $line->quantity,
+                        'unit_price' => (float) $line->unit_price,
+                        'gross_amount' => (float) $line->gross_amount,
+                        'customer_amount' => (float) $line->customer_amount,
+                        'claimed_amount' => (float) $line->claimed_amount,
+                        'status' => $line->status,
+                    ]
+                )->values()->all(),
+                'submission_channel' => $validated['submission_channel'] ?? 'manual',
+                'submitted_by' => $request->user()->id,
+                'submitted_at' => now()->toISOString(),
+                'notes' => $validated['notes'] ?? null,
+            ], $validated['submission_payload'] ?? []);
+
+            $lockedClaim->external_claim_reference =
+                $validated['external_claim_reference']
+                ?? $lockedClaim->external_claim_reference;
+            $lockedClaim->submission_payload = $submissionPayload;
+            $lockedClaim->submitted_at = now();
+            $lockedClaim->status = $blockedLines->isEmpty()
+                ? 'submitted'
+                : 'submitted_with_exceptions';
+            $lockedClaim->metadata = [
+                ...($lockedClaim->metadata ?? []),
+                'submission_workflow' => 'phase_4f1c_claim_submission',
+                'submission_channel' => $validated['submission_channel'] ?? 'manual',
+                'submitted_by' => $request->user()->id,
+                'submitted_at' => now()->toISOString(),
+                'exception_line_count' => $blockedLines->count(),
+            ];
+            $lockedClaim->save();
+
+            $lockedClaim->lines()
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'submitted',
+                    'updated_at' => now(),
+                ]);
+
+            return $lockedClaim->fresh([
+                'partner',
+                'scheme',
+                'membership.customer',
+                'sale.branch',
+                'sale.customer',
+                'lines.product',
+                'lines.saleItem',
+            ]);
+        });
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.insurance_claim.submitted',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'claim_id' => $claim->id,
+                'claim_number' => $claim->claim_number,
+                'external_claim_reference' => $claim->external_claim_reference,
+                'status' => $claim->status,
+                'submitted_at' => $claim->submitted_at?->toISOString(),
+                'claimed_amount' => (float) $claim->claimed_amount,
+                'line_count' => $claim->lines->count(),
+            ],
+            dataClassification: 'confidential',
+            auditableType: InsuranceClaim::class,
+            auditableId: $claim->id
+        );
+
+        return response()->json([
+            'message' => 'Insurance claim submitted successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'claim' => $this->serializeClaim($claim, true),
+        ]);
     }
 
     private function serializeClaim(

@@ -304,6 +304,14 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 'createFromSale',
             ]);
 
+            Route::post(
+                '/claims/{insuranceClaim}/submit',
+                [
+                    InsuranceClaimController::class,
+                    'submitClaim',
+                ]
+            );
+
             Route::get('/claims/{insuranceClaim}', [
                 InsuranceClaimController::class,
                 'claim',
