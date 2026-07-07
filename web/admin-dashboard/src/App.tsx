@@ -4701,9 +4701,28 @@ function App() {
                     (total, item) => total + Number(item.quantity || 0),
                     0,
                   );
+                  const visibleCartSignature = visibleCartRows.length
+                    ? visibleCartRows
+                        .map((item) =>
+                          [
+                            item.code,
+                            Number(item.batchId || 0),
+                            Number(item.quantity || 0),
+                            Number(item.unitPrice || 0),
+                          ].join(':'),
+                        )
+                        .join('|')
+                    : 'empty-cart';
 
                   return (
-                    <section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
+                    <section
+                      key={visibleCartSignature}
+                      className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card"
+                      data-pos-cart-build="atomic-visible-cart-v1"
+                      data-pos-cart-signature={visibleCartSignature}
+                      data-pos-cart-lines={visibleCartLineCount}
+                      data-pos-cart-units={visibleCartUnitCount}
+                    >
                       <div className="section-heading">
                         <div>
                           <span>Section 2 · Cart</span>
