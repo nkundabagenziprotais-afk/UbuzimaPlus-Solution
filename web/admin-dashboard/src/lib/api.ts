@@ -746,6 +746,14 @@ export type PharmaStockBatch = {
     id: number;
     name: string;
     sku: string;
+    unit: string;
+    selling_unit: string;
+    selling_unit_source?: string;
+    base_unit: string;
+    quantity_per_selling_unit?: number;
+    allow_other_quantity?: boolean;
+    default_pos_quantity_mode?: 'selling_unit' | 'other_quantity' | 'combined';
+    metadata?: Record<string, unknown>;
     category: {
       name: string;
       code: string;

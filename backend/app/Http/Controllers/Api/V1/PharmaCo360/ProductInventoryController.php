@@ -1868,6 +1868,19 @@ class ProductInventoryController extends Controller
                 ? 'purchase-code'
                 : 'unknown');
 
+        $productMetadata = is_array($batch->product->metadata)
+            ? $batch->product->metadata
+            : [];
+        $masterSellingUnit = trim((string) (
+            $productMetadata['rhia_selling_unit']
+            ?? $batch->product->selling_unit
+            ?? $batch->product->unit
+            ?? 'unit'
+        ));
+
+        if ($masterSellingUnit === '') {
+            $masterSellingUnit = 'unit';
+        }
 
         return [
             'id' => $batch->id,
@@ -1886,6 +1899,16 @@ class ProductInventoryController extends Controller
                 'id' => $batch->product->id,
                 'name' => $batch->product->name,
                 'sku' => $batch->product->sku,
+                'unit' => $batch->product->unit,
+                'selling_unit' => $masterSellingUnit,
+                'selling_unit_source' => array_key_exists('rhia_selling_unit', $productMetadata)
+                    ? 'product_master.rhia_selling_unit'
+                    : 'product_master.selling_unit',
+                'base_unit' => $batch->product->base_unit ?? $batch->product->unit,
+                'quantity_per_selling_unit' => (float) ($batch->product->quantity_per_selling_unit ?? 1),
+                'allow_other_quantity' => (bool) $batch->product->allow_other_quantity,
+                'default_pos_quantity_mode' => $batch->product->default_pos_quantity_mode ?? 'selling_unit',
+                'metadata' => $productMetadata,
                 'category' => $batch->product->category ? [
                     'name' => $batch->product->category->name,
                     'code' => $batch->product->category->code,

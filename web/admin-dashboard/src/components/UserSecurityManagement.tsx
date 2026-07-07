@@ -637,6 +637,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
   const [users, setUsers] = useState<TenantSecurityUser[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [temporaryPassword, setTemporaryPassword] = useState('');
@@ -751,6 +752,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
       || 'cashier';
 
     setEditingUserId(user.id);
+    setIsEditorOpen(true);
     setTemporaryPassword('');
     setForm({
       name: user.name,
@@ -833,6 +835,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
 
       setForm(emptyForm);
       setEditingUserId(null);
+      setIsEditorOpen(false);
       requestAppDataRefresh('security');
       await loadSecurityUsers();
     } catch (err) {
@@ -852,7 +855,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
           <p className="eyebrow">International user access standard</p>
           <h2>User management and permission assignment</h2>
           <span>
-            Create users, edit staff access, assign granular permissions, and deactivate access without losing audit history.
+            Review the staff directory below. Create or edit a user in a focused pop-up without crowding the landing page.
           </span>
         </div>
         <button
@@ -861,7 +864,9 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
             setEditingUserId(null);
             setForm(emptyForm);
             setTemporaryPassword('');
-            setNotice('New user form is ready.');
+            setError('');
+            setNotice('');
+            setIsEditorOpen(true);
           }}
         >
           New user
@@ -897,7 +902,43 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
         </div>
       )}
 
-      <form className="tenant-user-form-grid tenant-user-form-grid--professional" onSubmit={handleSubmit}>
+      {isEditorOpen && (
+        <div
+          className="tenant-user-editor-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isSaving) {
+              setIsEditorOpen(false);
+            }
+          }}
+        >
+          <section
+            className="tenant-user-editor-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tenant-user-editor-title"
+          >
+            <header className="tenant-user-editor-modal__header">
+              <div>
+                <p className="eyebrow">{editingUserId ? 'Modify user access' : 'Create user access'}</p>
+                <h3 id="tenant-user-editor-title">
+                  {editingUserId ? `Edit ${form.name || 'user'}` : 'Create a new staff user'}
+                </h3>
+                <span>
+                  Assign a role, then increase, reduce, or replace granular permissions before saving.
+                </span>
+              </div>
+              <button
+                type="button"
+                aria-label="Close user editor"
+                disabled={isSaving}
+                onClick={() => setIsEditorOpen(false)}
+              >
+                ×
+              </button>
+            </header>
+
+            <form className="tenant-user-form-grid tenant-user-form-grid--professional tenant-user-form-grid--modal" onSubmit={handleSubmit}>
         <div className="tenant-user-form-section tenant-user-form-section--identity">
           <div className="tenant-user-form-section-heading">
             <strong>Staff identity</strong>
@@ -1083,12 +1124,16 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
               setEditingUserId(null);
               setForm(emptyForm);
               setTemporaryPassword('');
+              setIsEditorOpen(false);
             }}
           >
             Cancel
           </button>
         </div>
-      </form>
+            </form>
+          </section>
+        </div>
+      )}
 
       <section className="tenant-user-directory-panel">
         <div className="tenant-user-directory-panel__header">

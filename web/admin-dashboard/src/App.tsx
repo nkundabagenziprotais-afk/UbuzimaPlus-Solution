@@ -2463,6 +2463,38 @@ function ModuleReadinessGrid({
   );
 }
 
+function ModuleLandingCards<K extends string>({
+  moduleName,
+  items,
+  activeKey,
+  onOpen,
+}: {
+  moduleName: string;
+  items: Array<{ key: K; label: string; description: string }>;
+  activeKey: K;
+  onOpen: (key: K) => void;
+}) {
+  return (
+    <section className="module-landing-card-grid" aria-label={`${moduleName} pages`}>
+      {items.map((item) => (
+        <article
+          key={item.key}
+          className={`module-landing-card ${activeKey === item.key ? 'active' : ''}`}
+        >
+          <div>
+            <span>{moduleName}</span>
+            <h3>{item.label}</h3>
+            <p>{item.description}</p>
+          </div>
+          <button type="button" onClick={() => onOpen(item.key)}>
+            Open Module
+          </button>
+        </article>
+      ))}
+    </section>
+  );
+}
+
 function ModulePageIntro({
   eyebrow,
   title,
@@ -2483,6 +2515,31 @@ function ModulePageIntro({
       </div>
       <span>{status}</span>
     </section>
+  );
+}
+
+function DedicatedModuleHeader({
+  eyebrow,
+  title,
+  description,
+  onDashboard,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  onDashboard: () => void;
+}) {
+  return (
+    <header className="dedicated-module-header">
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      <button type="button" className="secondary-action" onClick={onDashboard}>
+        Main Dashboard
+      </button>
+    </header>
   );
 }
 
@@ -3827,13 +3884,21 @@ function App() {
 
         {selectedFeature.key === 'inventory' && (
           <>
-<ProductInventoryPreview
+<section className="dedicated-module-page">
+  <DedicatedModuleHeader
+    eyebrow="Inventory and Product Master"
+    title="Inventory Workspace"
+    description="Open Product Master, inventory records, stock locations, batch review, low stock, and expiry pages as focused operating modules."
+    onDashboard={() => navigateToSection('overview')}
+  />
+  <ProductInventoryPreview
               token={session!.token}
               profile={profile!}
               activeView={activeInventoryView}
               onActiveViewChange={setActiveInventoryView}
               showInternalNavigation={false}
             />
+</section>
             {activeInventoryView === 'product-master' && (
               <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
 
@@ -4062,14 +4127,18 @@ function App() {
           availableQuantity,
           expiryDate: batch.expiry_date,
           locationName,
-          sellingUnit: (batch.product as PosBatchProduct | undefined)?.selling_unit || (batch.product as PosBatchProduct | undefined)?.unit || 'unit',
-          baseUnit: (batch.product as PosBatchProduct | undefined)?.base_unit || (batch.product as PosBatchProduct | undefined)?.unit || 'unit',
+          sellingUnit: batch.product?.selling_unit || batch.product?.unit || 'unit',
+          baseUnit: batch.product?.base_unit || batch.product?.unit || 'unit',
           quantityPerSellingUnit: Math.max(
             0.0001,
-            Number((batch.product as PosBatchProduct | undefined)?.quantity_per_selling_unit || 1),
+            Number(batch.product?.quantity_per_selling_unit || 1),
           ),
-          allowOtherQuantity: (batch.product as PosBatchProduct | undefined)?.allow_other_quantity !== false,
-          defaultQuantityMode: (((batch.product as PosBatchProduct | undefined)?.default_pos_quantity_mode || 'selling_unit') === 'other_quantity' ? 'other_quantity' : ((batch.product as PosBatchProduct | undefined)?.default_pos_quantity_mode || 'selling_unit') === 'combined' ? 'combined' : 'selling_unit') as 'selling_unit' | 'other_quantity' | 'combined',
+          allowOtherQuantity: batch.product?.allow_other_quantity !== false,
+          defaultQuantityMode: ((batch.product?.default_pos_quantity_mode || 'selling_unit') === 'other_quantity'
+            ? 'other_quantity'
+            : (batch.product?.default_pos_quantity_mode || 'selling_unit') === 'combined'
+              ? 'combined'
+              : 'selling_unit') as 'selling_unit' | 'other_quantity' | 'combined',
         };
       });
 
@@ -4884,7 +4953,7 @@ function App() {
 
                       <section className="pos-quantity-selling-unit-hero">
                         <div>
-                          <span>Selling unit</span>
+                          <span>Product Master selling unit</span>
                           <strong>{posQuantityProduct.sellingUnit}</strong>
                           <small>
                             1 {posQuantityProduct.sellingUnit} ={' '}
@@ -4908,7 +4977,7 @@ function App() {
                             }}
                             aria-label={`Quantity in ${posQuantityProduct.sellingUnit}`}
                           />
-                          <small>Enter the number of {posQuantityProduct.sellingUnit} to sell.</small>
+                          <small>Enter the number of {posQuantityProduct.sellingUnit} selected from Product Master.</small>
                         </label>
                       </section>
 
@@ -5672,12 +5741,28 @@ function App() {
     ];
 
     return (
-      <section className="section-page">
+      <section className="section-page dedicated-module-page">
+        <DedicatedModuleHeader
+          eyebrow="Procurement and supplier operations"
+          title="Procurement Workspace"
+          description="Open a focused supplier, purchase order, receiving, or received-order page without carrying every workflow on one screen."
+          onDashboard={() => navigateToSection('overview')}
+        />
+
+        {activeSupplierWorkspace === 'overview' && (
+          <ModuleLandingCards
+            moduleName="Procurement"
+            items={supplierWorkspaceItems.filter((item) => item.key !== 'overview')}
+            activeKey={activeSupplierWorkspace}
+            onOpen={setActiveSupplierWorkspace}
+          />
+        )}
+
         <div className="module-section-stage">
           {activeSupplierWorkspace === 'overview' && (
             <FocusRegisterPreview
-              title="Supplier Overview"
-              description="Supplier performance, open PO status, receiving readiness, and procurement attention."
+              title="Procurement attention"
+              description="Supplier performance, open purchase-order status, receiving readiness, and procurement attention."
               rows={supplierRows}
             />
           )}
@@ -5712,7 +5797,21 @@ function App() {
     ];
 
     return (
-      <section className="section-page">
+      <section className="section-page dedicated-module-page">
+        <DedicatedModuleHeader
+          eyebrow="Finance and control"
+          title="Finance Workspace"
+          description="Move from finance overview to payables, receivables, collections, exceptions, and statements through focused pages."
+          onDashboard={() => navigateToSection('overview')}
+        />
+        {activeFinanceWorkspace === 'overview' && (
+          <ModuleLandingCards
+            moduleName="Finance"
+            items={financeWorkspaceItems.filter((item) => item.key !== 'overview')}
+            activeKey={activeFinanceWorkspace}
+            onOpen={setActiveFinanceWorkspace}
+          />
+        )}
         <div className="module-section-stage">
           {activeFinanceWorkspace === 'overview' && (
             <FocusRegisterPreview
@@ -5785,7 +5884,21 @@ function App() {
     ];
 
     return (
-      <section className="section-page">
+      <section className="section-page dedicated-module-page">
+        <DedicatedModuleHeader
+          eyebrow="Reports and management review"
+          title="Reports Workspace"
+          description="Open operational alerts, review queues, executive summaries, decisions, checklists, and follow-up pages individually."
+          onDashboard={() => navigateToSection('overview')}
+        />
+        {activeAdhocReportWorkspace === 'overview' && (
+          <ModuleLandingCards
+            moduleName="Reports"
+            items={adhocReportWorkspaceItems.filter((item) => item.key !== 'overview')}
+            activeKey={activeAdhocReportWorkspace}
+            onOpen={setActiveAdhocReportWorkspace}
+          />
+        )}
         <div className="module-section-stage">
           {activeAdhocReportWorkspace === 'overview' && (
             <ReportingDashboard token={session!.token} profile={profile!} />
@@ -6460,12 +6573,20 @@ function App() {
 
         return (
           <section className="section-page">
-            <InsuranceManagementWorkspace
+            <section className="dedicated-module-page">
+              <DedicatedModuleHeader
+                eyebrow="Insurance administration"
+                title="Insurance Workspace"
+                description="Manage partners, institutions, schemes, pricing, contributions, claims, reconciliation, and audit evidence in focused pages."
+                onDashboard={() => navigateToSection('overview')}
+              />
+              <InsuranceManagementWorkspace
               token={session!.token}
               tenantSlug={tenantSlug}
               activeWorkspace={activeInsuranceWorkspace}
               onWorkspaceChange={setActiveInsuranceWorkspace}
             />
+            </section>
           </section>
         );
       }
@@ -6488,7 +6609,15 @@ function App() {
         return (
           <section className="section-page">
 <section className="content-grid security-content-grid">
-            <UserSecurityManagement token={session!.token} tenantSlug="vitapharma" />
+            <section className="dedicated-module-page">
+              <DedicatedModuleHeader
+                eyebrow="Administration and access control"
+                title="User and Security Workspace"
+                description="Review the staff directory, create or modify users through pop-ups, and manage role-based access without an overloaded landing page."
+                onDashboard={() => navigateToSection('overview')}
+              />
+              <UserSecurityManagement token={session!.token} tenantSlug="vitapharma" />
+            </section>
               <article className="panel">
                 <h2>Resolved access profile</h2>
                 <div className="scope-list">
@@ -6774,7 +6903,20 @@ function App() {
                 return 0;
               })
               .map(({ group, item }) => {
-              const childSubmenus = item.key === 'pos' ? [] : (leftMenuSubmenus[item.key] ?? []);
+              const moduleOwnsInternalNavigation = [
+                'inventory',
+                'insurance',
+                'pos',
+                'suppliers',
+                'finance',
+                'reports',
+                'security',
+                'ai-center',
+                'admin-panel',
+              ].includes(item.key);
+              const childSubmenus = moduleOwnsInternalNavigation
+                ? []
+                : (leftMenuSubmenus[item.key] ?? []);
               const itemActive = isActiveMenuItem(item);
 
               return (
