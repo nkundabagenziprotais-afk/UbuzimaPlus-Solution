@@ -60,6 +60,61 @@ class PharmacoProductInventoryMutationApiTest extends TestCase
         ]);
     }
 
+    public function test_product_selling_unit_configuration_can_be_stored_and_read(): void
+    {
+        $this->seed();
+
+        $tenant = Tenant::where('slug', 'vitapharma')->firstOrFail();
+        $category = ProductCategory::where('tenant_id', $tenant->id)
+            ->where('code', 'CONSUMABLES')
+            ->firstOrFail();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/products', [
+                'product_category_id' => $category->id,
+                'name' => 'Paediatric Syrup 100ml',
+                'generic_name' => 'Paediatric Syrup',
+                'sku' => 'PAED-SYRUP-100ML',
+                'unit' => 'bottle',
+                'selling_unit' => 'bottle',
+                'base_unit' => 'ml',
+                'quantity_per_selling_unit' => 100,
+                'allow_other_quantity' => true,
+                'default_pos_quantity_mode' => 'selling_unit',
+                'selling_unit_notes' => 'One bottle contains 100 ml.',
+                'pack_size' => '100 ml bottle',
+                'product_type' => 'medicine',
+                'regulatory_status' => 'approved',
+            ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('product.selling_unit', 'bottle')
+            ->assertJsonPath('product.base_unit', 'ml')
+            ->assertJsonPath('product.quantity_per_selling_unit', 100)
+            ->assertJsonPath('product.allow_other_quantity', true)
+            ->assertJsonPath('product.default_pos_quantity_mode', 'selling_unit')
+            ->assertJsonPath('product.ai_suggestion_status', 'not_requested');
+
+        $productId = $response->json('product.id');
+        $product = Product::findOrFail($productId);
+
+        $this->assertSame('bottle', $product->selling_unit);
+        $this->assertSame('ml', $product->base_unit);
+        $this->assertSame(100.0, (float) $product->quantity_per_selling_unit);
+        $this->assertTrue($product->allow_other_quantity);
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->getJson("/api/v1/pharmaco/products/{$productId}")
+            ->assertOk()
+            ->assertJsonPath('product.selling_unit', 'bottle')
+            ->assertJsonPath('product.base_unit', 'ml')
+            ->assertJsonPath('product.quantity_per_selling_unit', 100);
+    }
+
     public function test_tenant_admin_can_update_product_and_audit_is_recorded(): void
     {
         $this->seed();
