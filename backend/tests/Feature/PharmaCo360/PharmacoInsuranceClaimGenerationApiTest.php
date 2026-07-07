@@ -4,6 +4,7 @@ namespace Tests\Feature\PharmaCo360;
 
 use App\Models\CustomerInsuranceMembership;
 use App\Models\InsuranceClaim;
+use App\Models\InsuranceReconciliationBatch;
 use App\Models\InsurancePartner;
 use App\Models\InsuranceScheme;
 use App\Models\PharmacoCustomer;
@@ -886,6 +887,127 @@ class PharmacoInsuranceClaimGenerationApiTest extends TestCase
                     'INS-PAY-OVER-001',
             ]
         );
+    }
+
+    public function test_admin_can_create_and_submit_reconciliation_batch(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndApproveClaim();
+
+        $response = $this->withTenant()
+            ->postJson(
+                '/api/v1/pharmaco/insurance/reconciliation-batches',
+                [
+                    'insurance_partner_id' =>
+                        $claim->insurance_partner_id,
+                    'batch_number' =>
+                        'REC-BATCH-001',
+                    'period_from' =>
+                        $claim->service_date->toDateString(),
+                    'period_to' =>
+                        $claim->service_date->toDateString(),
+                    'claim_ids' => [$claim->id],
+                    'notes' =>
+                        'Monthly insurer reconciliation.',
+                ]
+            )
+            ->assertCreated()
+            ->assertJsonPath(
+                'message',
+                'Insurance reconciliation batch created successfully.'
+            )
+            ->assertJsonPath(
+                'batch.status',
+                'draft'
+            )
+            ->assertJsonPath(
+                'batch.claim_count',
+                1
+            );
+
+        $batchId = $response->json('batch.id');
+
+        $this->withTenant()
+            ->getJson(
+                '/api/v1/pharmaco/insurance/reconciliation-batches'
+            )
+            ->assertOk();
+
+        $this->withTenant()
+            ->getJson(
+                "/api/v1/pharmaco/insurance/reconciliation-batches/{$batchId}"
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'batch.batch_number',
+                'REC-BATCH-001'
+            );
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/reconciliation-batches/{$batchId}/submit"
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'batch.status',
+                'submitted'
+            );
+
+        $batch = InsuranceReconciliationBatch::query()
+            ->findOrFail($batchId);
+
+        $this->assertNotNull($batch->submitted_at);
+
+        $this->assertDatabaseHas(
+            'audit_logs',
+            [
+                'action' =>
+                    'pharmaco.insurance_reconciliation_batch.created',
+                'auditable_type' =>
+                    InsuranceReconciliationBatch::class,
+                'auditable_id' =>
+                    $batch->id,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'audit_logs',
+            [
+                'action' =>
+                    'pharmaco.insurance_reconciliation_batch.submitted',
+                'auditable_type' =>
+                    InsuranceReconciliationBatch::class,
+                'auditable_id' =>
+                    $batch->id,
+            ]
+        );
+    }
+
+    public function test_reconciliation_batch_rejects_ineligible_claim(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndSubmitClaim();
+
+        $this->withTenant()
+            ->postJson(
+                '/api/v1/pharmaco/insurance/reconciliation-batches',
+                [
+                    'insurance_partner_id' =>
+                        $claim->insurance_partner_id,
+                    'batch_number' =>
+                        'REC-BATCH-INVALID-001',
+                    'period_from' =>
+                        $claim->service_date->toDateString(),
+                    'period_to' =>
+                        $claim->service_date->toDateString(),
+                    'claim_ids' => [$claim->id],
+                ]
+            )
+            ->assertStatus(422);
     }
 
     private function createAndApproveClaim(): InsuranceClaim

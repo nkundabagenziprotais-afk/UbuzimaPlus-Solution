@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceManagementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
@@ -325,6 +326,38 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 [
                     InsuranceClaimController::class,
                     'recordClaimPayment',
+                ]
+            );
+
+            Route::get(
+                '/reconciliation-batches',
+                [
+                    InsuranceReconciliationController::class,
+                    'index',
+                ]
+            );
+
+            Route::post(
+                '/reconciliation-batches',
+                [
+                    InsuranceReconciliationController::class,
+                    'store',
+                ]
+            );
+
+            Route::get(
+                '/reconciliation-batches/{insuranceReconciliationBatch}',
+                [
+                    InsuranceReconciliationController::class,
+                    'show',
+                ]
+            );
+
+            Route::post(
+                '/reconciliation-batches/{insuranceReconciliationBatch}/submit',
+                [
+                    InsuranceReconciliationController::class,
+                    'submit',
                 ]
             );
 
