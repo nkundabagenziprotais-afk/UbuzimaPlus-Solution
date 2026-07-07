@@ -511,6 +511,222 @@ class PharmacoInsuranceClaimGenerationApiTest extends TestCase
             ->assertStatus(409);
     }
 
+    public function test_submitted_claim_can_be_fully_approved(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndSubmitClaim();
+
+        $payload = [
+            'adjudication_reference' =>
+                'ADJ-FULL-001',
+            'decision_notes' =>
+                'Approved in full.',
+            'lines' => $claim->lines
+                ->map(
+                    fn ($line) => [
+                        'insurance_claim_line_id' =>
+                            $line->id,
+                        'approved_amount' =>
+                            (float) $line
+                                ->claimed_amount,
+                    ]
+                )
+                ->values()
+                ->all(),
+        ];
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/adjudicate",
+                $payload
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'message',
+                'Insurance claim adjudicated successfully.'
+            )
+            ->assertJsonPath(
+                'claim.status',
+                'approved'
+            );
+
+        $claim->refresh();
+
+        $this->assertSame(
+            round(
+                (float) $claim->claimed_amount,
+                2
+            ),
+            round(
+                (float) $claim->approved_amount,
+                2
+            )
+        );
+
+        $this->assertSame(
+            0.0,
+            round(
+                (float) $claim->rejected_amount,
+                2
+            )
+        );
+
+        $this->assertNotNull(
+            $claim->adjudicated_at
+        );
+
+        $this->assertDatabaseHas(
+            'audit_logs',
+            [
+                'action' =>
+                    'pharmaco.insurance_claim.adjudicated',
+                'auditable_type' =>
+                    InsuranceClaim::class,
+                'auditable_id' =>
+                    $claim->id,
+            ]
+        );
+    }
+
+    public function test_submitted_claim_can_be_partially_approved(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndSubmitClaim();
+
+        $payload = [
+            'adjudication_reference' =>
+                'ADJ-PARTIAL-001',
+            'decision_notes' =>
+                'Partially approved after insurer review.',
+            'lines' => $claim->lines
+                ->map(
+                    fn ($line) => [
+                        'insurance_claim_line_id' =>
+                            $line->id,
+                        'approved_amount' =>
+                            round(
+                                (float) $line
+                                    ->claimed_amount
+                                / 2,
+                                2
+                            ),
+                        'rejection_code' =>
+                            'PARTIAL_LIMIT',
+                        'rejection_reason' =>
+                            'Insurer benefit limit applied.',
+                    ]
+                )
+                ->values()
+                ->all(),
+        ];
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/adjudicate",
+                $payload
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'claim.status',
+                'partially_approved'
+            );
+
+        $claim->refresh();
+
+        $this->assertGreaterThan(
+            0,
+            (float) $claim->approved_amount
+        );
+
+        $this->assertGreaterThan(
+            0,
+            (float) $claim->rejected_amount
+        );
+
+        $this->assertSame(
+            round(
+                (float) $claim->claimed_amount,
+                2
+            ),
+            round(
+                (float) $claim->approved_amount
+                + (float) $claim->rejected_amount,
+                2
+            )
+        );
+    }
+
+    public function test_adjudicated_claim_cannot_be_adjudicated_twice(): void
+    {
+        $this->seed();
+        $this->authenticateAdmin();
+
+        $claim = $this->createAndSubmitClaim();
+
+        $payload = [
+            'lines' => $claim->lines
+                ->map(
+                    fn ($line) => [
+                        'insurance_claim_line_id' =>
+                            $line->id,
+                        'approved_amount' =>
+                            (float) $line
+                                ->claimed_amount,
+                    ]
+                )
+                ->values()
+                ->all(),
+        ];
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/adjudicate",
+                $payload
+            )
+            ->assertOk();
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claim->id}/adjudicate",
+                $payload
+            )
+            ->assertStatus(409);
+    }
+
+    private function createAndSubmitClaim(): InsuranceClaim
+    {
+        [, $sale, $membership] =
+            $this->confirmedInsuranceContext();
+
+        $created = $this->withTenant()
+            ->postJson(
+                '/api/v1/pharmaco/insurance/claims/from-sale',
+                [
+                    'sale_id' => $sale->id,
+                    'customer_insurance_membership_id' =>
+                        $membership->id,
+                ]
+            )
+            ->assertCreated();
+
+        $claimId = $created->json('claim.id');
+
+        $this->withTenant()
+            ->postJson(
+                "/api/v1/pharmaco/insurance/claims/{$claimId}/submit",
+                []
+            )
+            ->assertOk();
+
+        return InsuranceClaim::query()
+            ->with('lines')
+            ->findOrFail($claimId);
+    }
+
     private function confirmedInsuranceContext(): array
     {
         [$tenant, $sale, $membership] =

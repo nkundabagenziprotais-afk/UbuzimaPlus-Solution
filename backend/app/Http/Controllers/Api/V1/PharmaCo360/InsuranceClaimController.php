@@ -460,6 +460,344 @@ class InsuranceClaimController extends Controller
         ]);
     }
 
+    public function adjudicateClaim(
+        Request $request,
+        InsuranceClaim $insuranceClaim,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless(
+            (int) $insuranceClaim->tenant_id ===
+                (int) $tenant->id,
+            404
+        );
+
+        $validated = $request->validate([
+            'adjudication_reference' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'decision_notes' => [
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+            'response_payload' => [
+                'nullable',
+                'array',
+            ],
+            'lines' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'lines.*.insurance_claim_line_id' => [
+                'required',
+                'integer',
+            ],
+            'lines.*.approved_amount' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+            'lines.*.rejection_code' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'lines.*.rejection_reason' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+        $claim = DB::transaction(function () use (
+            $request,
+            $tenant,
+            $insuranceClaim,
+            $validated
+        ): InsuranceClaim {
+            $lockedClaim = InsuranceClaim::query()
+                ->where('tenant_id', $tenant->id)
+                ->lockForUpdate()
+                ->findOrFail($insuranceClaim->id);
+
+            if (!in_array(
+                $lockedClaim->status,
+                ['submitted', 'submitted_with_exceptions'],
+                true
+            )) {
+                abort(
+                    409,
+                    'Only a submitted insurance claim can be adjudicated.'
+                );
+            }
+
+            $lockedClaim->load([
+                'partner',
+                'scheme',
+                'membership.customer',
+                'sale.branch',
+                'sale.customer',
+                'lines.product',
+                'lines.saleItem',
+            ]);
+
+            $submittedLines = collect($validated['lines']);
+            $submittedIds = $submittedLines
+                ->pluck('insurance_claim_line_id')
+                ->map(fn ($id) => (int) $id);
+
+            if ($submittedIds->duplicates()->isNotEmpty()) {
+                abort(
+                    422,
+                    'Each insurance claim line may be adjudicated only once per response.'
+                );
+            }
+
+            $claimLineIds = $lockedClaim->lines
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id);
+
+            if (
+                $submittedIds->count() !== $claimLineIds->count()
+                || $submittedIds->diff($claimLineIds)->isNotEmpty()
+                || $claimLineIds->diff($submittedIds)->isNotEmpty()
+            ) {
+                abort(
+                    422,
+                    'The adjudication response must include every claim line exactly once.'
+                );
+            }
+
+            $lineResponses = [];
+
+            foreach ($submittedLines as $lineDecision) {
+                $line = $lockedClaim->lines->firstWhere(
+                    'id',
+                    (int) $lineDecision[
+                        'insurance_claim_line_id'
+                    ]
+                );
+
+                $claimedAmount = round(
+                    (float) $line->claimed_amount,
+                    2
+                );
+
+                $approvedAmount = round(
+                    (float) $lineDecision[
+                        'approved_amount'
+                    ],
+                    2
+                );
+
+                if ($approvedAmount > $claimedAmount) {
+                    abort(
+                        422,
+                        "Approved amount cannot exceed claimed amount for claim line {$line->id}."
+                    );
+                }
+
+                $rejectedAmount = round(
+                    $claimedAmount - $approvedAmount,
+                    2
+                );
+
+                if ($approvedAmount <= 0) {
+                    $lineStatus = 'rejected';
+                } elseif ($rejectedAmount <= 0) {
+                    $lineStatus = 'approved';
+                } else {
+                    $lineStatus = 'partially_approved';
+                }
+
+                $line->forceFill([
+                    'approved_amount' => $approvedAmount,
+                    'rejected_amount' => $rejectedAmount,
+                    'status' => $lineStatus,
+                    'rejection_code' =>
+                        $lineDecision['rejection_code']
+                        ?? null,
+                    'rejection_reason' =>
+                        $lineDecision['rejection_reason']
+                        ?? null,
+                    'metadata' => [
+                        ...($line->metadata ?? []),
+                        'adjudication' => [
+                            'approved_amount' =>
+                                $approvedAmount,
+                            'rejected_amount' =>
+                                $rejectedAmount,
+                            'status' => $lineStatus,
+                            'rejection_code' =>
+                                $lineDecision[
+                                    'rejection_code'
+                                ] ?? null,
+                            'rejection_reason' =>
+                                $lineDecision[
+                                    'rejection_reason'
+                                ] ?? null,
+                            'adjudicated_by' =>
+                                $request->user()->id,
+                            'adjudicated_at' =>
+                                now()->toISOString(),
+                        ],
+                    ],
+                ])->save();
+
+                $lineResponses[] = [
+                    'insurance_claim_line_id' =>
+                        $line->id,
+                    'claimed_amount' =>
+                        $claimedAmount,
+                    'approved_amount' =>
+                        $approvedAmount,
+                    'rejected_amount' =>
+                        $rejectedAmount,
+                    'status' => $lineStatus,
+                    'rejection_code' =>
+                        $line->rejection_code,
+                    'rejection_reason' =>
+                        $line->rejection_reason,
+                ];
+            }
+
+            $approvedTotal = round(
+                $lockedClaim->lines()
+                    ->sum('approved_amount'),
+                2
+            );
+
+            $rejectedTotal = round(
+                $lockedClaim->lines()
+                    ->sum('rejected_amount'),
+                2
+            );
+
+            if ($approvedTotal <= 0) {
+                $claimStatus = 'rejected';
+            } elseif ($rejectedTotal <= 0) {
+                $claimStatus = 'approved';
+            } else {
+                $claimStatus = 'partially_approved';
+            }
+
+            $adjudicationResponse = array_merge([
+                'adjudication_reference' =>
+                    $validated[
+                        'adjudication_reference'
+                    ] ?? null,
+                'decision_notes' =>
+                    $validated['decision_notes']
+                    ?? null,
+                'decision' => $claimStatus,
+                'claimed_amount' =>
+                    (float) $lockedClaim
+                        ->claimed_amount,
+                'approved_amount' =>
+                    $approvedTotal,
+                'rejected_amount' =>
+                    $rejectedTotal,
+                'lines' => $lineResponses,
+                'adjudicated_by' =>
+                    $request->user()->id,
+                'adjudicated_at' =>
+                    now()->toISOString(),
+            ], $validated['response_payload'] ?? []);
+
+            $lockedClaim->forceFill([
+                'approved_amount' => $approvedTotal,
+                'rejected_amount' => $rejectedTotal,
+                'adjudicated_at' => now(),
+                'status' => $claimStatus,
+                'rejection_reason' =>
+                    $claimStatus === 'rejected'
+                        ? (
+                            $validated[
+                                'decision_notes'
+                            ] ?? 'Claim rejected by insurer.'
+                        )
+                        : null,
+                'adjudication_response' =>
+                    $adjudicationResponse,
+                'metadata' => [
+                    ...($lockedClaim->metadata ?? []),
+                    'adjudication_workflow' =>
+                        'phase_4f1d_claim_adjudication',
+                    'adjudication_reference' =>
+                        $validated[
+                            'adjudication_reference'
+                        ] ?? null,
+                    'adjudicated_by' =>
+                        $request->user()->id,
+                    'adjudicated_at' =>
+                        now()->toISOString(),
+                ],
+            ])->save();
+
+            return $lockedClaim->fresh([
+                'partner',
+                'scheme',
+                'membership.customer',
+                'sale.branch',
+                'sale.customer',
+                'lines.product',
+                'lines.saleItem',
+            ]);
+        });
+
+        $scope = $scopeResolver->resolveForUser(
+            $request->user()
+        );
+
+        $auditLogService->record(
+            action:
+                'pharmaco.insurance_claim.adjudicated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'claim_id' => $claim->id,
+                'claim_number' =>
+                    $claim->claim_number,
+                'status' => $claim->status,
+                'claimed_amount' =>
+                    (float) $claim
+                        ->claimed_amount,
+                'approved_amount' =>
+                    (float) $claim
+                        ->approved_amount,
+                'rejected_amount' =>
+                    (float) $claim
+                        ->rejected_amount,
+                'line_count' =>
+                    $claim->lines->count(),
+                'adjudicated_at' =>
+                    $claim
+                        ->adjudicated_at
+                        ?->toISOString(),
+            ],
+            dataClassification: 'confidential',
+            auditableType: InsuranceClaim::class,
+            auditableId: $claim->id
+        );
+
+        return response()->json([
+            'message' =>
+                'Insurance claim adjudicated successfully.',
+            'tenant' =>
+                $this->tenantPayload($tenant),
+            'claim' => $this->serializeClaim(
+                $claim,
+                true
+            ),
+        ]);
+    }
+
     private function serializeClaim(
         InsuranceClaim $claim,
         bool $includeLines = false
