@@ -4238,13 +4238,10 @@ function App() {
 
       setPosQuantityProduct(product);
 
-      if (product.defaultQuantityMode === 'other_quantity') {
-        setPosSellingUnitQuantity('0');
-        setPosOtherQuantity('1');
-      } else {
-        setPosSellingUnitQuantity('1');
-        setPosOtherQuantity('0');
-      }
+      // The cashier enters only the selling-unit quantity.
+      // Base-unit conversion remains visible but read-only.
+      setPosSellingUnitQuantity('1');
+      setPosOtherQuantity('0');
 
       setPosNotice('');
     }
@@ -4679,6 +4676,10 @@ function App() {
         posSummaryCustomerContributionPercent,
         posSummaryInsurerContributionPercent,
       ].join('::');
+      const posReceiptReference = `POS-${posPaymentSummarySignature
+        .replace(/[^a-z0-9]/gi, '')
+        .slice(-10)
+        .toUpperCase() || 'RECEIPT'}`;
 
       void posSummarySyncKey;
       const posPaymentOperationalCards = [
@@ -4881,93 +4882,81 @@ function App() {
                         </button>
                       </div>
 
-                      <div className="pos-quantity-dialog__fields">
-                        <label>
-                          <span>Quantity as per Selling Unit</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={posSellingUnitQuantity}
-                            onChange={(event) =>
-                              setPosSellingUnitQuantity(event.target.value)
-                            }
-                          />
+                      <section className="pos-quantity-selling-unit-hero">
+                        <div>
+                          <span>Selling unit</span>
+                          <strong>{posQuantityProduct.sellingUnit}</strong>
                           <small>
                             1 {posQuantityProduct.sellingUnit} ={' '}
                             {posQuantityProduct.quantityPerSellingUnit.toLocaleString('en-RW')}{' '}
                             {posQuantityProduct.baseUnit}
                           </small>
-                        </label>
+                        </div>
 
                         <label>
-                          <span>Other Quantity</span>
+                          <span>Quantity</span>
                           <input
                             type="number"
-                            min="0"
-                            step="0.01"
-                            value={posOtherQuantity}
-                            disabled={!posQuantityProduct.allowOtherQuantity}
-                            onChange={(event) =>
-                              setPosOtherQuantity(event.target.value)
-                            }
+                            min="1"
+                            step="1"
+                            autoFocus
+                            inputMode="numeric"
+                            value={posSellingUnitQuantity}
+                            onChange={(event) => {
+                              setPosSellingUnitQuantity(event.target.value);
+                              setPosOtherQuantity('0');
+                            }}
+                            aria-label={`Quantity in ${posQuantityProduct.sellingUnit}`}
                           />
-                          <small>
-                            {posQuantityProduct.allowOtherQuantity
-                              ? `Enter additional ${posQuantityProduct.baseUnit} quantity.`
-                              : 'Other quantity is disabled for this product.'}
-                          </small>
+                          <small>Enter the number of {posQuantityProduct.sellingUnit} to sell.</small>
                         </label>
-                      </div>
+                      </section>
 
-                      <section className="pos-quantity-conversion-preview">
-                        <h4>Conversion preview</h4>
-
-                        <div>
-                          <span>Selling-unit conversion</span>
+                      <section className="pos-quantity-readonly-grid" aria-label="Selected product information">
+                        <article>
+                          <span>Available stock</span>
                           <strong>
-                            {quantityPreview.sellingUnitQuantity.toLocaleString('en-RW')} ×{' '}
-                            {quantityPreview.quantityPerSellingUnit.toLocaleString('en-RW')} ={' '}
-                            {quantityPreview.convertedSellingUnitQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.availableQuantity.toLocaleString('en-RW')}{' '}
                             {posQuantityProduct.baseUnit}
                           </strong>
-                        </div>
-
-                        <div>
-                          <span>Other quantity</span>
-                          <strong>
-                            {quantityPreview.otherQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </strong>
-                        </div>
-
-                        <div className="pos-quantity-conversion-preview__total">
-                          <span>Total cart quantity</span>
-                          <strong>
-                            {quantityPreview.totalBaseQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <span>Selling-unit price</span>
+                        </article>
+                        <article>
+                          <span>Unit price</span>
                           <strong>
                             RWF {posQuantityProduct.unitPrice.toLocaleString('en-RW')} /{' '}
                             {posQuantityProduct.sellingUnit}
                           </strong>
-                        </div>
-
-                        <div>
-                          <span>Proportional base-unit price</span>
+                        </article>
+                        <article>
+                          <span>Batch</span>
+                          <strong>{posQuantityProduct.batchNumber}</strong>
+                        </article>
+                        <article>
+                          <span>Expiry</span>
+                          <strong>{posQuantityProduct.expiryDate || 'Not recorded'}</strong>
+                        </article>
+                        <article>
+                          <span>Stock location</span>
+                          <strong>{posQuantityProduct.locationName}</strong>
+                        </article>
+                        <article>
+                          <span>Converted quantity</span>
                           <strong>
-                            RWF {quantityPreview.baseUnitPrice.toLocaleString('en-RW', {
-                              maximumFractionDigits: 4,
-                            })}{' '}
-                            / {posQuantityProduct.baseUnit}
+                            {quantityPreview.totalBaseQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.baseUnit}
+                          </strong>
+                        </article>
+                      </section>
+
+                      <section className="pos-quantity-total-strip">
+                        <div>
+                          <span>Quantity to add</span>
+                          <strong>
+                            {quantityPreview.sellingUnitQuantity.toLocaleString('en-RW')}{' '}
+                            {posQuantityProduct.sellingUnit}
                           </strong>
                         </div>
-
-                        <div className="pos-quantity-conversion-preview__total">
+                        <div>
                           <span>Calculated total</span>
                           <strong>
                             RWF {quantityPreview.totalPrice.toLocaleString('en-RW', {
@@ -5395,6 +5384,95 @@ function App() {
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
                 </section>
+
+                {posTransactionConfirmed && (
+                  <section className="pos-customer-receipt-shell">
+                    <div className="pos-receipt-toolbar">
+                      <div>
+                        <span>Customer receipt</span>
+                        <strong>{posReceiptReference}</strong>
+                      </div>
+                      <button type="button" onClick={() => window.print()}>
+                        Print receipt
+                      </button>
+                    </div>
+
+                    <article className="pos-customer-receipt" id="pos-customer-receipt">
+                      <header className="pos-customer-receipt__header">
+                        <strong>{profileInstitution}</strong>
+                        <span>Pharmacy sales receipt</span>
+                        <small>Powered by Ubuzima+</small>
+                      </header>
+
+                      <section className="pos-customer-receipt__meta">
+                        <div><span>Receipt</span><strong>{posReceiptReference}</strong></div>
+                        <div><span>Date / time</span><strong>{posSummaryTimestamp}</strong></div>
+                        <div><span>Cashier</span><strong>{profile!.user.name}</strong></div>
+                        <div><span>Customer</span><strong>{posCustomerType.replaceAll('-', ' ')}</strong></div>
+                        <div><span>Contact</span><strong>{posInvoiceContact.trim() || 'Not provided'}</strong></div>
+                        <div><span>Payment</span><strong>{posPaymentMethod.replaceAll('_', ' ')}</strong></div>
+                      </section>
+
+                      {posPaymentMethod === 'insurance' && (
+                        <section className="pos-customer-receipt__insurance">
+                          <div><span>Insurer</span><strong>{selectedInsurance.name}</strong></div>
+                          <div><span>Scheme / institution</span><strong>{selectedInsuranceInstitution?.name || 'Not selected'}</strong></div>
+                          <div><span>Customer share</span><strong>{posSummaryCustomerContributionPercent}%</strong></div>
+                          <div><span>Insurer share</span><strong>{posSummaryInsurerContributionPercent}%</strong></div>
+                        </section>
+                      )}
+
+                      <div className="pos-customer-receipt__table-wrap">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Item</th>
+                              <th>Qty / unit</th>
+                              <th>Price</th>
+                              <th>Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {posLiveCartItems.map((item) => (
+                              <tr key={`${item.code}-${item.batchId}`}>
+                                <td>
+                                  <strong>{item.name}</strong>
+                                  <small>Batch {item.batchNumber}</small>
+                                </td>
+                                <td>
+                                  {Number(item.sellingUnitQuantity || 0).toLocaleString('en-RW')}{' '}
+                                  {item.sellingUnit}
+                                </td>
+                                <td>RWF {(item.unitPrice * item.quantityPerSellingUnit).toLocaleString('en-RW')}</td>
+                                <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <section className="pos-customer-receipt__totals">
+                        <div><span>Subtotal</span><strong>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</strong></div>
+                        <div><span>Discount</span><strong>RWF {posSummaryAppliedDiscount.toLocaleString('en-RW')}</strong></div>
+                        <div><span>Tax</span><strong>RWF {posSummaryTaxAmount.toLocaleString('en-RW')}</strong></div>
+                        <div className="total"><span>Total</span><strong>RWF {posSummaryTotalAmount.toLocaleString('en-RW')}</strong></div>
+                        {posPaymentMethod === 'insurance' && (
+                          <>
+                            <div><span>Customer contribution</span><strong>RWF {posSummaryCustomerPayment.toLocaleString('en-RW')}</strong></div>
+                            <div><span>Insurer contribution</span><strong>RWF {posSummaryInsurerPayment.toLocaleString('en-RW')}</strong></div>
+                          </>
+                        )}
+                        <div><span>Balance</span><strong>RWF 0</strong></div>
+                      </section>
+
+                      <footer className="pos-customer-receipt__footer">
+                        <strong>Thank you for choosing {profileInstitution}.</strong>
+                        <span>Keep this receipt for returns, corrections, insurance follow-up, and audit verification.</span>
+                        <small>Verification code: {posReceiptReference}</small>
+                      </footer>
+                    </article>
+                  </section>
+                )}
 
                 
 
@@ -6688,8 +6766,15 @@ function App() {
               <span className="principal-menu-title">Dashboard</span>
             </button>
 
-            {principalMenuItems.map(({ group, item }) => {
-              const childSubmenus = leftMenuSubmenus[item.key] ?? [];
+            {[...principalMenuItems]
+              .sort((left, right) => {
+                if (left.item.key === right.item.key) return 0;
+                if (left.item.key === 'pos') return -1;
+                if (right.item.key === 'pos') return 1;
+                return 0;
+              })
+              .map(({ group, item }) => {
+              const childSubmenus = item.key === 'pos' ? [] : (leftMenuSubmenus[item.key] ?? []);
               const itemActive = isActiveMenuItem(item);
 
               return (

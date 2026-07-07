@@ -19208,3 +19208,316 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Package 3: POS module, quantity and receipt experience */
+.pos-overview-hero-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pos-quantity-dialog {
+  width: min(680px, 100%);
+}
+
+.pos-quantity-selling-unit-hero {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1.2fr);
+  gap: 18px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f0fdf4, #eff6ff);
+  border-bottom: 1px solid #dbe5ee;
+}
+
+.pos-quantity-selling-unit-hero > div,
+.pos-quantity-selling-unit-hero label {
+  display: grid;
+  gap: 7px;
+}
+
+.pos-quantity-selling-unit-hero > div > span,
+.pos-quantity-selling-unit-hero label > span {
+  color: #526174;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pos-quantity-selling-unit-hero > div > strong {
+  color: #0f5132;
+  font-size: clamp(1.5rem, 4vw, 2.35rem);
+  line-height: 1;
+}
+
+.pos-quantity-selling-unit-hero input {
+  width: 100%;
+  min-height: 66px;
+  border: 2px solid #0f766e;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 2rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.pos-quantity-selling-unit-hero small {
+  color: #526174;
+  line-height: 1.45;
+}
+
+.pos-quantity-readonly-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 20px 24px 8px;
+}
+
+.pos-quantity-readonly-grid article {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #dfe6ee;
+  border-radius: 13px;
+  background: #f8fafc;
+}
+
+.pos-quantity-readonly-grid span {
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.pos-quantity-readonly-grid strong {
+  overflow-wrap: anywhere;
+  color: #0f172a;
+}
+
+.pos-quantity-total-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 14px 24px 4px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.pos-quantity-total-strip div {
+  display: grid;
+  gap: 4px;
+}
+
+.pos-quantity-total-strip span {
+  color: #cbd5e1;
+  font-size: 0.78rem;
+}
+
+.pos-quantity-total-strip strong {
+  font-size: 1.15rem;
+}
+
+.pos-customer-receipt-shell {
+  margin-top: 20px;
+  border: 1px solid #dbe5ee;
+  border-radius: 20px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.pos-receipt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.pos-receipt-toolbar > div {
+  display: grid;
+  gap: 2px;
+}
+
+.pos-receipt-toolbar span {
+  color: #cbd5e1;
+  font-size: 0.78rem;
+}
+
+.pos-receipt-toolbar button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.pos-customer-receipt {
+  width: min(760px, calc(100% - 32px));
+  margin: 16px auto;
+  padding: 24px;
+  border: 1px solid #dbe5ee;
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09);
+}
+
+.pos-customer-receipt__header {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #0f172a;
+  text-align: center;
+}
+
+.pos-customer-receipt__header strong {
+  font-size: 1.45rem;
+}
+
+.pos-customer-receipt__meta,
+.pos-customer-receipt__insurance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+  padding: 16px 0;
+  border-bottom: 1px dashed #94a3b8;
+}
+
+.pos-customer-receipt__meta div,
+.pos-customer-receipt__insurance div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pos-customer-receipt__meta span,
+.pos-customer-receipt__insurance span {
+  color: #64748b;
+}
+
+.pos-customer-receipt__meta strong,
+.pos-customer-receipt__insurance strong {
+  text-align: right;
+  text-transform: capitalize;
+}
+
+.pos-customer-receipt__table-wrap {
+  overflow-x: auto;
+  padding: 14px 0;
+}
+
+.pos-customer-receipt table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pos-customer-receipt th,
+.pos-customer-receipt td {
+  padding: 9px 6px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: right;
+  vertical-align: top;
+}
+
+.pos-customer-receipt th:first-child,
+.pos-customer-receipt td:first-child {
+  text-align: left;
+}
+
+.pos-customer-receipt td:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.pos-customer-receipt td small {
+  color: #64748b;
+}
+
+.pos-customer-receipt__totals {
+  display: grid;
+  gap: 7px;
+  margin-left: auto;
+  padding-top: 12px;
+  width: min(360px, 100%);
+}
+
+.pos-customer-receipt__totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pos-customer-receipt__totals .total {
+  margin-top: 4px;
+  padding-top: 9px;
+  border-top: 2px solid #0f172a;
+  font-size: 1.15rem;
+}
+
+.pos-customer-receipt__footer {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed #94a3b8;
+  text-align: center;
+}
+
+.pos-customer-receipt__footer span,
+.pos-customer-receipt__footer small {
+  color: #64748b;
+}
+
+@media (max-width: 700px) {
+  .pos-quantity-selling-unit-hero,
+  .pos-quantity-readonly-grid,
+  .pos-quantity-total-strip,
+  .pos-customer-receipt__meta,
+  .pos-customer-receipt__insurance {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-customer-receipt {
+    width: calc(100% - 18px);
+    margin: 9px auto;
+    padding: 15px;
+  }
+
+  .pos-receipt-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #pos-customer-receipt,
+  #pos-customer-receipt * {
+    visibility: visible !important;
+  }
+
+  #pos-customer-receipt {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    margin: 0;
+    padding: 8mm;
+    border: 0;
+    box-shadow: none;
+  }
+
+  @page {
+    size: auto;
+    margin: 6mm;
+  }
+}
