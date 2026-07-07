@@ -4016,29 +4016,43 @@ function App() {
       }
     }
 
-    function normalizePosCartItems(cartItems = posCounterItems) {
-      return Array.isArray(cartItems) ? cartItems : [];
+    function normalizePosCartItems(cartItems: typeof posCartItems = []) {
+      const normalizedItems = (Array.isArray(cartItems) ? cartItems : [])
+        .filter((item) => item && item.code)
+        .reduce<typeof posCartItems>((items, item) => {
+          const quantity = Math.max(1, Number(item.quantity || 1));
+          const availableQuantity = Math.max(1, Number(item.availableQuantity || quantity));
+
+          const normalizedItem = {
+            ...item,
+            quantity: Math.min(quantity, availableQuantity),
+            unitPrice: Math.max(0, Number(item.unitPrice || 0)),
+            availableQuantity,
+            batchId: Number(item.batchId || 0),
+            productId: Number(item.productId || 0),
+            batchNumber: String(item.batchNumber || ''),
+          };
+
+          const existingIndex = items.findIndex(
+            (existing) =>
+              existing.code === normalizedItem.code &&
+              Number(existing.batchId || 0) === Number(normalizedItem.batchId || 0),
+          );
+
+          if (existingIndex >= 0) {
+            items[existingIndex] = normalizedItem;
+          } else {
+            items.push(normalizedItem);
+          }
+
+          return items;
+        }, []);
+
+      return normalizedItems;
     }
 
-    function buildPosCounterCartSnapshot(items: typeof posCartItems) {
-      const stableItems = items.reduce<typeof posCartItems>((cartItems, item) => {
-        const existingIndex = cartItems.findIndex((existingItem) => existingItem.code === item.code);
-
-        if (existingIndex >= 0) {
-          const existingItem = cartItems[existingIndex];
-          cartItems[existingIndex] = {
-            ...existingItem,
-            ...item,
-            quantity: Math.max(Number(existingItem.quantity || 0), Number(item.quantity || 0)),
-            unitPrice: Number(item.unitPrice || existingItem.unitPrice || 0),
-            availableQuantity: Number(item.availableQuantity || existingItem.availableQuantity || 0),
-          };
-        } else {
-          cartItems.push({ ...item });
-        }
-
-        return cartItems;
-      }, []);
+    function buildPosCounterCartSnapshot(items: typeof posCartItems = []) {
+      const stableItems = normalizePosCartItems(items);
 
       return {
         items: stableItems,
@@ -4051,161 +4065,24 @@ function App() {
       };
     }
 
-    function createStablePosCartSnapshot(sourceItems: typeof posCartItems) {
-      const normalizedItems = (Array.isArray(sourceItems) ? sourceItems : [])
-        .filter(Boolean)
-        .map((item) => {
-          const rawItem = item as typeof item & Record<string, unknown>;
-          const code = String(
-            rawItem.code
-              ?? rawItem.productCode
-              ?? rawItem.sku
-              ?? rawItem.productId
-              ?? rawItem.id
-              ?? rawItem.name
-              ?? `POS-${Date.now()}`,
-          ).trim();
-
-          const quantity = Math.max(1, Number(rawItem.quantity ?? 1) || 1);
-          const availableQuantity = Math.max(1, Number(rawItem.availableQuantity ?? rawItem.availableStock ?? rawItem.onHandQuantity ?? quantity) || quantity);
-          const unitPrice = Math.max(0, Number(rawItem.unitPrice ?? rawItem.sellingPrice ?? rawItem.price ?? 0) || 0);
-
-          return {
-            ...item,
-            code,
-            name: String(rawItem.name ?? 'Selected product'),
-            strength: String(rawItem.strength ?? ''),
-            quantity: Math.min(quantity, availableQuantity),
-            unitPrice,
-            batchId: String(rawItem.batchId ?? rawItem.inventoryBatchId ?? rawItem.batch_id ?? rawItem.id ?? code),
-            productId: String(rawItem.productId ?? rawItem.id ?? code),
-            batchNumber: String(rawItem.batchNumber ?? rawItem.batchNo ?? ''),
-            availableQuantity,
-            expiryDate: String(rawItem.expiryDate ?? rawItem.expiresAt ?? ''),
-            locationName: String(rawItem.locationName ?? rawItem.location ?? ''),
-          };
-        })
-        .filter((item) => item.code);
-
-      const uniqueItems = normalizedItems.reduce((items, item) => {
-        const existingIndex = items.findIndex((existingItem) => existingItem.code === item.code);
-
-        if (existingIndex >= 0) {
-          const existingItem = items[existingIndex];
-          items[existingIndex] = {
-            ...existingItem,
-            ...item,
-            quantity: Math.min(
-              Math.max(Number(existingItem.quantity || 0), Number(item.quantity || 1)),
-              Number(item.availableQuantity || existingItem.availableQuantity || item.quantity || 1),
-            ),
-          };
-        } else {
-          items.push(item);
-        }
-
-        return items;
-      }, [] as typeof normalizedItems);
-
-      const totalQuantity = uniqueItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
-      const subtotal = uniqueItems.reduce(
-        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
-        0,
-      );
-
-      return {
-        items: uniqueItems,
-        lineCount: uniqueItems.length,
-        totalQuantity,
-        subtotal,
-      };
+    function createStablePosCartSnapshot(sourceItems: typeof posCartItems = []) {
+      return normalizePosCartItems(sourceItems);
     }
 
-    function createStablePosCartSnapshot(sourceItems: typeof posCartItems) {
-      const normalizedItems = (Array.isArray(sourceItems) ? sourceItems : [])
-        .filter(Boolean)
-        .map((item) => {
-          const rawItem = item as typeof item & Record<string, unknown>;
-          const code = String(
-            rawItem.code
-              ?? rawItem.productCode
-              ?? rawItem.sku
-              ?? rawItem.productId
-              ?? rawItem.id
-              ?? rawItem.name
-              ?? `POS-${Date.now()}`,
-          ).trim();
-
-          const quantity = Math.max(1, Number(rawItem.quantity ?? 1) || 1);
-          const availableQuantity = Math.max(1, Number(rawItem.availableQuantity ?? rawItem.availableStock ?? rawItem.onHandQuantity ?? quantity) || quantity);
-          const unitPrice = Math.max(0, Number(rawItem.unitPrice ?? rawItem.sellingPrice ?? rawItem.price ?? 0) || 0);
-
-          return {
-            ...item,
-            code,
-            name: String(rawItem.name ?? 'Selected product'),
-            strength: String(rawItem.strength ?? ''),
-            quantity: Math.min(quantity, availableQuantity),
-            unitPrice,
-            batchId: String(rawItem.batchId ?? rawItem.inventoryBatchId ?? rawItem.batch_id ?? rawItem.id ?? code),
-            productId: String(rawItem.productId ?? rawItem.id ?? code),
-            batchNumber: String(rawItem.batchNumber ?? rawItem.batchNo ?? ''),
-            availableQuantity,
-            expiryDate: String(rawItem.expiryDate ?? rawItem.expiresAt ?? ''),
-            locationName: String(rawItem.locationName ?? rawItem.location ?? ''),
-          };
-        })
-        .filter((item) => item.code);
-
-      const uniqueItems = normalizedItems.reduce((items, item) => {
-        const existingIndex = items.findIndex((existingItem) => existingItem.code === item.code);
-
-        if (existingIndex >= 0) {
-          const existingItem = items[existingIndex];
-          items[existingIndex] = {
-            ...existingItem,
-            ...item,
-            quantity: Math.min(
-              Math.max(Number(existingItem.quantity || 0), Number(item.quantity || 1)),
-              Number(item.availableQuantity || existingItem.availableQuantity || item.quantity || 1),
-            ),
-          };
-        } else {
-          items.push(item);
-        }
-
-        return items;
-      }, [] as typeof normalizedItems);
-
-      const totalQuantity = uniqueItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
-      const subtotal = uniqueItems.reduce(
-        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
-        0,
-      );
-
-      return {
-        items: uniqueItems,
-        lineCount: uniqueItems.length,
-        totalQuantity,
-        subtotal,
-      };
+    function readActivePosCounterItems() {
+      return createStablePosCartSnapshot(posRenderedCartItems);
     }
 
-    function commitPosCounterItems(nextItems: typeof posCounterItems) {
-      const cartSnapshot = createStablePosCartSnapshot(nextItems);
+    function commitPosCounterItems(nextItems: typeof posCartItems) {
+      const snapshot = buildPosCounterCartSnapshot(nextItems);
 
-      setPosCounterCart(cartSnapshot);
-      setPosCounterItems(cartSnapshot.items);
-      setPosCartItems(cartSnapshot.items);
-      setPosRenderedCartItems(cartSnapshot.items);
-      setPosRenderedCartMetrics({
-        lineCount: Number(cartSnapshot.lineCount || cartSnapshot.items.length || 0),
-        totalQuantity: Number(cartSnapshot.totalQuantity || cartSnapshot.items.reduce((total, item) => total + Number(item.quantity || 0), 0)),
-        subtotal: Number(cartSnapshot.subtotal || cartSnapshot.items.reduce((total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0)),
-      });
+      setPosRenderedCartItems(snapshot.items);
+      setPosCartItems(snapshot.items);
+      setPosCounterItems(snapshot.items);
+      setPosCounterCart(snapshot);
       setPosSaleSummary(
         calculatePosSaleSummary({
-          cartItems: cartSnapshot.items,
+          cartItems: snapshot.items,
           discountAmount: posDiscountAmount,
           paymentMethod: posPaymentMethod,
           insuranceProviderId: posInsuranceProvider,
@@ -4217,97 +4094,94 @@ function App() {
     }
 
     function forceRefreshSaleSummary() {
-      const cartSnapshot = createStablePosCartSnapshot([
-        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
-        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
-        ...(Array.isArray(posCartItems) ? posCartItems : []),
-      ]);
+      const snapshot = buildPosCounterCartSnapshot(readActivePosCounterItems());
 
-      commitPosCounterItems(cartSnapshot.items);
-      setPosNotice('Payment summary refreshed from the active POS cart.');
-    }
-
-    function readActivePosCounterItems() {
-      return createStablePosCartSnapshot([
-        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
-        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
-        ...(Array.isArray(posCartItems) ? posCartItems : []),
-      ]).items;
-    }
-
-    function makePosCartItemFromProduct(product: typeof posProducts[number]) {
-      const rawProduct = product as typeof product & Record<string, unknown>;
-      const code = String(
-        rawProduct.code
-          ?? rawProduct.productCode
-          ?? rawProduct.sku
-          ?? rawProduct.productId
-          ?? rawProduct.id
-          ?? rawProduct.name
-          ?? `POS-${Date.now()}`,
-      ).trim();
-
-      const availableQuantity = Math.max(
-        1,
-        Number(rawProduct.availableQuantity ?? rawProduct.currentQuantity ?? rawProduct.stockQuantity ?? rawProduct.availableStock ?? rawProduct.onHandQuantity ?? 1) || 1,
+      setPosRenderedCartItems(snapshot.items);
+      setPosCartItems(snapshot.items);
+      setPosCounterItems(snapshot.items);
+      setPosCounterCart(snapshot);
+      setPosSaleSummary(
+        calculatePosSaleSummary({
+          cartItems: snapshot.items,
+          discountAmount: posDiscountAmount,
+          paymentMethod: posPaymentMethod,
+          insuranceProviderId: posInsuranceProvider,
+          insuranceInstitutionId: posInsuranceInstitution,
+        }),
       );
-
-      const unitPrice = Math.max(
-        0,
-        Number(rawProduct.unitPrice ?? rawProduct.sellingPrice ?? rawProduct.price ?? 0) || 0,
-      );
-
-      return {
-        code,
-        name: String(rawProduct.name ?? 'Selected product'),
-        strength: String(rawProduct.strength ?? ''),
-        quantity: 1,
-        unitPrice,
-        batchId: String(rawProduct.batchId ?? rawProduct.inventoryBatchId ?? rawProduct.batch_id ?? rawProduct.id ?? code),
-        productId: String(rawProduct.productId ?? rawProduct.id ?? code),
-        batchNumber: String(rawProduct.batchNumber ?? rawProduct.batchNo ?? ''),
-        availableQuantity,
-        expiryDate: String(rawProduct.expiryDate ?? rawProduct.expiresAt ?? ''),
-        locationName: String(rawProduct.locationName ?? rawProduct.location ?? ''),
-      };
+      setPosSummaryRefreshKey((current) => current + 1);
+      setPosTransactionConfirmed(false);
+      setPosNotice('Payment summary refreshed from the active cart.');
     }
 
     function addPosProductToCart(product: typeof posProducts[number]) {
-      const cartProduct = makePosCartItemFromProduct(product);
+      if (!product.batchId || product.availableQuantity <= 0) {
+        setPosNotice('This product is not available in current inventory and cannot be sold.');
+        return;
+      }
+
       const currentItems = readActivePosCounterItems();
-      const existingItem = currentItems.find((item) => item.code === cartProduct.code);
-
-      const nextItems = existingItem
-        ? currentItems.map((item) =>
-            item.code === cartProduct.code
-              ? {
-                  ...item,
-                  ...cartProduct,
-                  quantity: Math.min(Number(item.quantity || 0) + 1, cartProduct.availableQuantity),
-                }
-              : item,
-          )
-        : [...currentItems, cartProduct];
-
-      const nextSnapshot = createStablePosCartSnapshot(nextItems);
-      commitPosCounterItems(nextSnapshot.items);
-
-      setPosNotice(
-        `${cartProduct.name} added to cart. Cart now has ${nextSnapshot.lineCount} line${nextSnapshot.lineCount === 1 ? '' : 's'} and ${nextSnapshot.totalQuantity} unit${nextSnapshot.totalQuantity === 1 ? '' : 's'}.`,
+      const existing = currentItems.find(
+        (item) =>
+          item.code === product.code &&
+          Number(item.batchId || 0) === Number(product.batchId || 0),
       );
+
+      let nextItems: typeof posCartItems;
+
+      if (existing) {
+        const nextQuantity = Math.min(Number(existing.quantity || 0) + 1, product.availableQuantity);
+
+        nextItems = currentItems.map((item) =>
+          item.code === product.code && Number(item.batchId || 0) === Number(product.batchId || 0)
+            ? {
+                ...item,
+                quantity: nextQuantity,
+                availableQuantity: product.availableQuantity,
+                unitPrice: product.unitPrice,
+              }
+            : item,
+        );
+      } else {
+        nextItems = [
+          ...currentItems,
+          {
+            code: product.code,
+            name: product.name,
+            strength: product.strength,
+            quantity: 1,
+            unitPrice: product.unitPrice,
+            batchId: product.batchId,
+            productId: product.productId,
+            batchNumber: product.batchNumber,
+            availableQuantity: product.availableQuantity,
+            expiryDate: product.expiryDate,
+            locationName: product.locationName,
+          },
+        ];
+      }
+
+      const snapshot = buildPosCounterCartSnapshot(nextItems);
+      commitPosCounterItems(snapshot.items);
+      setPosNotice(`${product.name} added to cart. Cart now has ${snapshot.lineCount} line${snapshot.lineCount === 1 ? '' : 's'} and ${snapshot.totalQuantity} unit${snapshot.totalQuantity === 1 ? '' : 's'}.`);
     }
 
     function updateCartQuantity(code: string, quantity: number) {
-      const currentItems = readActivePosCounterItems();
-      const nextItems = currentItems.map((item) => {
+      const nextItems = readActivePosCounterItems().map((item) => {
         if (item.code !== code) return item;
+
+        const safeQuantity = Math.min(
+          Math.max(1, Number.isFinite(quantity) ? quantity : 1),
+          item.availableQuantity,
+        );
+
+        if (safeQuantity !== quantity) {
+          setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
+        }
 
         return {
           ...item,
-          quantity: Math.min(
-            Math.max(1, Number(quantity) || 1),
-            Number(item.availableQuantity || 1),
-          ),
+          quantity: safeQuantity,
         };
       });
 
@@ -4556,62 +4430,21 @@ function App() {
       const posSummaryInsurerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
-      const posLiveCartItems = createStablePosCartSnapshot([
-        ...(Array.isArray(posRenderedCartItems) ? posRenderedCartItems : []),
-        ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
-        ...(Array.isArray(posCounterItems) ? posCounterItems : []),
-        ...(Array.isArray(posCartItems) ? posCartItems : []),
-      ]).items;
-
-      const posVisibleCartItems = posLiveCartItems.map((item) => {
-        const rawQuantity = Number(item.quantity ?? 1);
-        const rawUnitPrice = Number(item.unitPrice ?? 0);
-        const rawAvailableQuantity = Number(item.availableQuantity ?? item.quantity ?? 1);
-
-        return {
-          ...item,
-          quantity: Math.max(1, Number.isFinite(rawQuantity) ? rawQuantity : 1),
-          unitPrice: Math.max(0, Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0),
-          availableQuantity: Math.max(1, Number.isFinite(rawAvailableQuantity) ? rawAvailableQuantity : 1),
-        };
-      });
-
-      const posCartDisplayItems = posVisibleCartItems.length > 0 ? posVisibleCartItems : posLiveCartItems;
-      const posCartDisplayLineCount = posCartDisplayItems.length;
-      const posCartDisplayUnitCount = posCartDisplayItems.reduce(
-        (total, item) => total + Math.max(1, Number(item.quantity || 1)),
+      const posLiveCartItems = readActivePosCounterItems();
+      const posVisibleCartItems = posLiveCartItems;
+      const posCartDisplayItems = posLiveCartItems;
+      const posFinancialLineCount = posLiveCartItems.length;
+      const posFinancialTotalQuantity = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0),
         0,
       );
-      const posCartDisplaySubtotal = posCartDisplayItems.reduce(
-        (total, item) => total + Math.max(1, Number(item.quantity || 1)) * Math.max(0, Number(item.unitPrice || 0)),
-        0,
-      );
-
-      const posCommittedLineCount = Math.max(
-        posCartDisplayLineCount,
-        Number(posRenderedCartMetrics.lineCount || 0),
-      );
-      const posCommittedUnitCount = Math.max(
-        posCartDisplayUnitCount,
-        Number(posRenderedCartMetrics.totalQuantity || 0),
-      );
-      const posCommittedSubtotal = Math.max(
-        posCartDisplaySubtotal,
-        Number(posRenderedCartMetrics.subtotal || 0),
-      );
-
-      const posFinancialLineCount = posCommittedLineCount;
-      const posFinancialTotalQuantity = posCommittedUnitCount;
-      const posCartOperatingUnits = posCommittedUnitCount;
+      const posCartOperatingUnits = posFinancialTotalQuantity;
       const posSummarySyncKey = posSummaryRefreshKey;
-      const posFinancialSubtotal = posCommittedSubtotal;
-
-      const posOperatingCart = {
-        items: posCartDisplayItems,
-        lineCount: posCommittedLineCount,
-        totalQuantity: posCommittedUnitCount,
-        subtotal: posCommittedSubtotal,
-      };
+      const posFinancialSubtotal = posLiveCartItems.reduce(
+        (total, item) => total + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+        0,
+      );
+      const posOperatingCart = buildPosCounterCartSnapshot(posLiveCartItems);
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
       const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
@@ -4862,18 +4695,7 @@ function App() {
                 </section>
 
 {(() => {
-                  const visibleCartRows = createStablePosCartSnapshot([
-                    ...(Array.isArray(posRenderedCartItems) ? posRenderedCartItems : []),
-                    ...(Array.isArray(posCounterCart.items) ? posCounterCart.items : []),
-                    ...(Array.isArray(posCounterItems) ? posCounterItems : []),
-                    ...(Array.isArray(posCartItems) ? posCartItems : []),
-                  ]).items.map((item) => ({
-                    ...item,
-                    quantity: Math.max(1, Number(item.quantity || 1)),
-                    unitPrice: Math.max(0, Number(item.unitPrice || 0)),
-                    availableQuantity: Math.max(1, Number(item.availableQuantity || item.quantity || 1)),
-                  }));
-
+                  const visibleCartRows = posLiveCartItems;
                   const visibleCartLineCount = visibleCartRows.length;
                   const visibleCartUnitCount = visibleCartRows.reduce(
                     (total, item) => total + Number(item.quantity || 0),
