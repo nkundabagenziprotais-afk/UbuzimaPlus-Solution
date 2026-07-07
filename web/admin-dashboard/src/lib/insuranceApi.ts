@@ -453,3 +453,172 @@ export async function createInsuranceContributionRule(
     { method: 'POST', body: payload },
   );
 }
+
+export type InsuranceClaimLine = {
+  id: number;
+  description?: string | null;
+  quantity?: number | string | null;
+  unit_price?: number | string | null;
+  claimed_amount?: number | string | null;
+  approved_amount?: number | string | null;
+  product?: { id: number; name: string; sku?: string | null } | null;
+};
+
+export type InsuranceClaim = {
+  id: number;
+  claim_number: string;
+  status: string;
+  service_date?: string | null;
+  claimed_amount?: number | string | null;
+  approved_amount?: number | string | null;
+  rejected_amount?: number | string | null;
+  paid_amount?: number | string | null;
+  partner?: Pick<InsurancePartner, 'id' | 'code' | 'name'> | null;
+  membership?: { id: number; member_number?: string | null } | null;
+  sale?: { id: number; sale_number?: string | null } | null;
+  lines?: InsuranceClaimLine[];
+};
+
+export type InsuranceReconciliationBatch = {
+  id: number;
+  batch_number: string;
+  status: string;
+  period_from: string;
+  period_to: string;
+  claim_count?: number;
+  approved_amount?: number | string | null;
+  paid_amount?: number | string | null;
+  partner?: Pick<InsurancePartner, 'id' | 'code' | 'name'> | null;
+};
+
+export async function getInsuranceClaims(
+  token: string,
+  tenantSlug: string,
+  options: InsuranceListOptions = {},
+): Promise<InsuranceListResponse<InsuranceClaim>> {
+  const response = await insuranceRequest<any>(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/claims${buildQuery(options)}`,
+  );
+  return {
+    tenant: response.tenant,
+    data: response.claims ?? [],
+    pagination: response.meta,
+  };
+}
+
+export async function getInsuranceClaim(
+  token: string,
+  tenantSlug: string,
+  claimId: number,
+): Promise<{ claim: InsuranceClaim }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/claims/${claimId}`,
+  );
+}
+
+export async function submitInsuranceClaim(
+  token: string,
+  tenantSlug: string,
+  claimId: number,
+  payload: Record<string, unknown>,
+): Promise<{ message?: string; claim: InsuranceClaim }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/claims/${claimId}/submit`,
+    { method: 'POST', body: payload },
+  );
+}
+
+export async function adjudicateInsuranceClaim(
+  token: string,
+  tenantSlug: string,
+  claimId: number,
+  payload: Record<string, unknown>,
+): Promise<{ message?: string; claim: InsuranceClaim }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/claims/${claimId}/adjudicate`,
+    { method: 'POST', body: payload },
+  );
+}
+
+export async function createInsuranceClaimPayment(
+  token: string,
+  tenantSlug: string,
+  claimId: number,
+  payload: Record<string, unknown>,
+): Promise<{ message?: string; payment: Record<string, unknown> }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/claims/${claimId}/payments`,
+    { method: 'POST', body: payload },
+  );
+}
+
+export async function getInsuranceReconciliationBatches(
+  token: string,
+  tenantSlug: string,
+  options: InsuranceListOptions = {},
+): Promise<InsuranceListResponse<InsuranceReconciliationBatch>> {
+  const response = await insuranceRequest<any>(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/reconciliation-batches${buildQuery(options)}`,
+  );
+  return {
+    tenant: response.tenant,
+    data:
+      response.data ??
+      response.batches ??
+      response.reconciliation_batches ??
+      [],
+    pagination: response.pagination ?? response.meta,
+  };
+}
+
+export async function createInsuranceReconciliationBatch(
+  token: string,
+  tenantSlug: string,
+  payload: Record<string, unknown>,
+): Promise<{ message?: string; batch: InsuranceReconciliationBatch }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    '/pharmaco/insurance/reconciliation-batches',
+    { method: 'POST', body: payload },
+  );
+}
+
+export async function submitInsuranceReconciliationBatch(
+  token: string,
+  tenantSlug: string,
+  batchId: number,
+): Promise<{ message?: string; batch: InsuranceReconciliationBatch }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/reconciliation-batches/${batchId}/submit`,
+    { method: 'POST', body: {} },
+  );
+}
+
+export async function reconcileInsuranceBatch(
+  token: string,
+  tenantSlug: string,
+  batchId: number,
+  payload: Record<string, unknown>,
+): Promise<{ message?: string; batch: InsuranceReconciliationBatch }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/reconciliation-batches/${batchId}/reconcile`,
+    { method: 'POST', body: payload },
+  );
+}

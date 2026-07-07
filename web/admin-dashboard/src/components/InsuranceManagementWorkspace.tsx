@@ -27,6 +27,7 @@ import {
   getInsuranceProductPrices,
   getInsuranceSchemes,
 } from '../lib/insuranceApi';
+import { InsuranceClaimsReconciliationWorkspace } from './InsuranceClaimsReconciliationWorkspace';
 
 export type InsuranceWorkspaceKey =
   | 'overview'
@@ -2316,52 +2317,22 @@ export function InsuranceManagementWorkspace({
   } else if (activeWorkspace === 'contribution-rules') {
     content = contributionRulesRegister();
   } else if (activeWorkspace === 'claims-readiness') {
-    content = readinessWorkspace(
-      'Claims management readiness',
-      'The data foundation already includes claims and claim-line records. The next controlled stage will connect eligible confirmed sales to claim preparation without changing stock during cart activity.',
-      [
-        [
-          'Eligibility validation',
-          'Validate membership, scheme, covered medicine and service date.',
-        ],
-        [
-          'Claim preparation',
-          'Create claim headers and claim lines from confirmed dispensing evidence.',
-        ],
-        [
-          'Submission control',
-          'Track draft, submitted, accepted, rejected and resubmission states.',
-        ],
-        [
-          'Exception review',
-          'Surface missing authorization, expired membership and tariff mismatch.',
-        ],
-      ],
+    content = (
+      <InsuranceClaimsReconciliationWorkspace
+        token={token}
+        tenantSlug={tenantSlug}
+        mode="claims"
+      />
     );
   } else if (
     activeWorkspace === 'reconciliation-readiness'
   ) {
-    content = readinessWorkspace(
-      'Reconciliation readiness',
-      'Reconciliation will match submitted claims, insurer remittances, rejected lines, adjustments and outstanding balances.',
-      [
-        [
-          'Batch preparation',
-          'Group claims by partner, scheme and billing period.',
-        ],
-        [
-          'Remittance matching',
-          'Match insurer payments to accepted claim lines.',
-        ],
-        [
-          'Variance review',
-          'Identify short payments, denied lines and unexplained adjustments.',
-        ],
-        [
-          'Finance handoff',
-          'Post reconciled insurer receipts into controlled receivable records.',
-        ],
-      ],
+    content = (
+      <InsuranceClaimsReconciliationWorkspace
+        token={token}
+        tenantSlug={tenantSlug}
+        mode="reconciliation"
+      />
     );
   } else if (activeWorkspace === 'audit-readiness') {
     content = readinessWorkspace(

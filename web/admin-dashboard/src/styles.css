@@ -19008,3 +19008,70 @@ table td:not(:first-child):not(.numeric) {
     justify-content: space-between;
   }
 }
+
+/* Insurance claims and reconciliation live workspace */
+.insurance-live-workspace { display: grid; gap: 1rem; }
+.insurance-live-toolbar,
+.insurance-live-filters,
+.insurance-live-layout { display: flex; gap: .85rem; }
+.insurance-live-toolbar { align-items: center; justify-content: space-between; }
+.insurance-live-toolbar span,
+.insurance-live-summary span,
+.insurance-live-table-wrap small,
+.insurance-claim-line span {
+  display: block;
+  color: var(--muted, #667085);
+  font-size: .78rem;
+}
+.insurance-live-filters { flex-wrap: wrap; }
+.insurance-live-filters > * { min-width: 210px; }
+.insurance-live-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .85rem;
+}
+.insurance-live-summary article,
+.insurance-live-detail,
+.insurance-live-form {
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  padding: 1rem;
+}
+.insurance-live-summary strong { display: block; margin-top: .35rem; }
+.insurance-live-layout { align-items: flex-start; }
+.insurance-live-layout > :first-child { flex: 1 1 auto; min-width: 0; }
+.insurance-live-detail { flex: 0 0 340px; position: sticky; top: 1rem; }
+.insurance-live-table-wrap { overflow-x: auto; }
+.insurance-live-table-wrap table { width: 100%; border-collapse: collapse; }
+.insurance-live-table-wrap th,
+.insurance-live-table-wrap td {
+  padding: .75rem;
+  border-bottom: 1px solid rgba(148, 163, 184, .22);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.insurance-live-detail dl { display: grid; gap: .55rem; }
+.insurance-live-detail dl div { display: flex; justify-content: space-between; gap: 1rem; }
+.insurance-live-form { display: grid; gap: .7rem; margin-top: 1rem; }
+.insurance-live-form--batch {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+.insurance-claim-line {
+  margin-top: .55rem;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, .1);
+  padding: .7rem;
+}
+@media (max-width: 1050px) {
+  .insurance-live-layout { display: grid; }
+  .insurance-live-detail { position: static; }
+  .insurance-live-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .insurance-live-form--batch { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .insurance-live-summary { grid-template-columns: 1fr; }
+  .insurance-live-filters > * { width: 100%; }
+}
