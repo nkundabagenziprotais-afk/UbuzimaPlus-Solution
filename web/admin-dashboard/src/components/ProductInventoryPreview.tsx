@@ -354,6 +354,68 @@ function expiryAction(days: number | null): string {
   return 'Normal FEFO';
 }
 
+function batchMetadataValue(batch: PharmaStockBatch, keys: string[]): unknown {
+  const metadata = (batch.metadata ?? {}) as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = metadata[key];
+
+    if (value !== null && value !== undefined && String(value).trim() !== '') {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function inventoryBatchSource(batch: PharmaStockBatch): 'manual' | 'purchase-code' | 'unknown' {
+  const apiSource = String(batch.receive_source ?? '').trim().toLowerCase();
+  const metadataSource = String(batchMetadataValue(batch, [
+    'receive_source',
+    'inventory_receive_source',
+    'transaction_source',
+    'source',
+    'created_from',
+  ]) ?? '').trim().toLowerCase();
+  const manualFlag = batch.is_manual_inventory_entry === true
+    || batchMetadataValue(batch, ['manual_product_master_entry']) === true;
+
+  if (manualFlag || apiSource === 'manual' || metadataSource.includes('manual')) {
+    return 'manual';
+  }
+
+  if (
+    apiSource === 'purchase-code'
+    || apiSource === 'purchase_order'
+    || metadataSource.includes('purchase')
+    || metadataSource.includes('procurement')
+  ) {
+    return 'purchase-code';
+  }
+
+  return 'unknown';
+}
+
+function inventoryBatchSourceLabel(batch: PharmaStockBatch): string {
+  const source = inventoryBatchSource(batch);
+
+  if (source === 'manual') return 'Manual Product Master Entry';
+  if (source === 'purchase-code') return 'Purchase Code / PO Receiving';
+
+  return 'Legacy record — source not classified';
+}
+
+function canEditInventoryBatch(batch: PharmaStockBatch): boolean {
+  if (batch.can_edit_inventory_record === true) return true;
+  if (batch.can_edit_inventory_record === false) return false;
+
+  return inventoryBatchSource(batch) === 'manual';
+}
+
+function inventoryBatchSourceClass(batch: PharmaStockBatch): string {
+  return `inventory-source-badge inventory-source-badge--${inventoryBatchSource(batch)}`;
+}
+
 function stockStatus(product: PharmaProduct): string {
   const available = product.stock_summary?.available_quantity ?? 0;
 
@@ -769,6 +831,8 @@ export function ProductInventoryPreview({
   const [batches, setBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
   const [nearExpiryBatches, setNearExpiryBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [inventoryRecordSearchTerm, setInventoryRecordSearchTerm] = useState('');
+  const [inventoryRecordAppliedSearch, setInventoryRecordAppliedSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [internalInventoryView, setInternalInventoryView] = useState<InventoryView>('overview');
   const [rowLimit, setRowLimit] = useState<RowLimit>('15');
@@ -1089,26 +1153,60 @@ export function ProductInventoryPreview({
   }, [allBatches, searchTerm]);
 
   const productInventoryRows = useMemo(
-    () =>
-      visibleBatches.map((batch) => {
-        const product = allProducts.find((item) => item.id === batch.product.id);
-        const defaultMargin = metadataNumber(product?.metadata, ['default_margin', 'margin_percent', 'allowed_margin'], 0);
-        const computedSellingPrice =
-          batch.selling_price ??
-          (batch.unit_cost === null || batch.unit_cost === undefined
-            ? null
-            : Math.round(batch.unit_cost * (1 + defaultMargin / 100)));
-        const days = remainingDays(batch.expiry_date);
+    () => {
+      const normalizedInventoryRecordSearch = inventoryRecordAppliedSearch.trim().toLowerCase();
 
-        return {
-          batch,
-          product,
-          defaultMargin,
-          computedSellingPrice,
-          days,
-        };
-      }),
-    [allProducts, visibleBatches],
+      return visibleBatches
+        .filter((batch) => {
+          if (!normalizedInventoryRecordSearch) return true;
+
+          const product = allProducts.find((item) => item.id === batch.product.id);
+          const searchableValues = [
+            batch.product.name,
+            batch.product.sku,
+            product?.generic_name,
+            product?.brand_name,
+            batch.batch_number,
+            batch.stock_location?.name,
+            batch.stock_location?.code,
+            batch.supplier_name,
+            batch.reference_number,
+            inventoryBatchSourceLabel(batch),
+            batchMetadataValue(batch, [
+              'reference_number',
+              'purchase_code',
+              'purchase_order_code',
+              'delivery_note',
+              'supplier_name',
+              'receive_source',
+              'created_from',
+            ]),
+          ];
+
+          return searchableValues
+            .filter((value) => value !== null && value !== undefined)
+            .some((value) => String(value).toLowerCase().includes(normalizedInventoryRecordSearch));
+        })
+        .map((batch) => {
+          const product = allProducts.find((item) => item.id === batch.product.id);
+          const defaultMargin = metadataNumber(product?.metadata, ['default_margin', 'margin_percent', 'allowed_margin'], 0);
+          const computedSellingPrice =
+            batch.selling_price ??
+            (batch.unit_cost === null || batch.unit_cost === undefined
+              ? null
+              : Math.round(batch.unit_cost * (1 + defaultMargin / 100)));
+          const days = remainingDays(batch.expiry_date);
+
+          return {
+            batch,
+            product,
+            defaultMargin,
+            computedSellingPrice,
+            days,
+          };
+        });
+    },
+    [allProducts, inventoryRecordAppliedSearch, visibleBatches],
   );
 
   const pagedProducts = visibleProducts.slice(0, rowLimitValue(rowLimit, visibleProducts.length));
@@ -1608,6 +1706,11 @@ export function ProductInventoryPreview({
       const sellingPrice = Number(inventoryCreateForm.selling_price || inventoryCalculatedSellingPrice || 0);
 
       if (editingInventoryBatch) {
+        if (!canEditInventoryBatch(editingInventoryBatch)) {
+          setInventoryNotice('This inventory record is linked to a purchase code or protected source. Use the correction workflow instead of direct editing.');
+          return;
+        }
+
         const response = await updatePharmaStockBatch(token, tenantSlug, editingInventoryBatch.id, {
           product_id: Number(inventoryCreateForm.product_id),
           stock_location_id: Number(inventoryCreateForm.stock_location_id),
@@ -1633,7 +1736,10 @@ export function ProductInventoryPreview({
           selling_price: sellingPrice > 0 ? sellingPrice : null,
           supplier_name: inventoryCreateForm.supplier_name || null,
           reference_number: inventoryCreateForm.reference_number || null,
-          reason: 'Product Inventory created from Product Master',
+          receive_source: inventoryReceiveSource,
+          reason: inventoryReceiveSource === 'purchase-code'
+            ? 'Product Inventory received from purchase code'
+            : 'Product Inventory created from manual Product Master entry',
         });
 
         setInventoryNotice(
@@ -2668,6 +2774,12 @@ export function ProductInventoryPreview({
   }
 
   function openInventoryBatchEdit(batch: PharmaStockBatch) {
+    if (!canEditInventoryBatch(batch)) {
+      setViewingInventoryBatch(batch);
+      setInventoryNotice('This record is purchase-linked and cannot be directly edited. Use the purchase correction workflow to keep supplier, PO, and audit records aligned.');
+      return;
+    }
+
     setEditingInventoryBatch(batch);
     setViewingInventoryBatch(null);
     setPendingDeleteInventoryBatch(null);
@@ -4814,9 +4926,27 @@ export function ProductInventoryPreview({
                       The receiving form is hidden to keep this page calm. Start the flow when you need to record stock against Product Master.
                     </span>
                   </div>
-                  <button type="button" onClick={() => startSimpleMightyInventoryFlow('receive-stock')}>
-                    Start Receive Stock
-                  </button>
+                  <div className="inventory-guided-flow-actions">
+                    <button
+                      type="button"
+                      className="primary"
+                      onClick={() => {
+                        setInventoryReceiveSource('purchase-code');
+                        startSimpleMightyInventoryFlow('receive-stock');
+                      }}
+                    >
+                      Receive from Purchase Code
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInventoryReceiveSource('manual');
+                        startSimpleMightyInventoryFlow('receive-stock');
+                      }}
+                    >
+                      Manual Product Master Entry
+                    </button>
+                  </div>
                 </section>
               )}
 
@@ -5111,6 +5241,7 @@ export function ProductInventoryPreview({
                       ['Selling price', formatRwf(viewingInventoryBatch.selling_price)],
                       ['Expiry date', formatDate(viewingInventoryBatch.expiry_date)],
                       ['Status', viewingInventoryBatch.status],
+                      ['Record source', inventoryBatchSourceLabel(viewingInventoryBatch)],
                     ].map(([label, value]) => (
                       <article key={label}>
                         <span>{label}</span>
@@ -5119,7 +5250,16 @@ export function ProductInventoryPreview({
                     ))}
                   </div>
                   <div className="inventory-form-actions">
-                    <button type="button" onClick={() => openInventoryBatchEdit(viewingInventoryBatch)}>Edit this batch</button>
+                    <button
+                      type="button"
+                      disabled={!canEditInventoryBatch(viewingInventoryBatch)}
+                      title={canEditInventoryBatch(viewingInventoryBatch)
+                        ? 'Edit manual inventory entry'
+                        : 'Purchase-linked inventory must be corrected through the purchase workflow'}
+                      onClick={() => openInventoryBatchEdit(viewingInventoryBatch)}
+                    >
+                      {canEditInventoryBatch(viewingInventoryBatch) ? 'Edit this batch' : 'Edit locked'}
+                    </button>
                     <button type="button" className="danger" onClick={() => setPendingDeleteInventoryBatch(viewingInventoryBatch)}>Delete this batch</button>
                   </div>
                 </section>
@@ -5217,6 +5357,49 @@ export function ProductInventoryPreview({
                 </div>
               </section>
 
+              <section className="inventory-record-search-panel">
+                <div>
+                  <p className="eyebrow">Inventory record search</p>
+                  <h3>Search recorded inventory transactions</h3>
+                  <span>
+                    Search by product, generic name, drug code, batch, location, supplier, purchase code, delivery note or source.
+                  </span>
+                </div>
+
+                <form
+                  className="inventory-record-search-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    setInventoryRecordAppliedSearch(inventoryRecordSearchTerm);
+                    setInventoryNotice(inventoryRecordSearchTerm.trim()
+                      ? `Inventory records filtered by "${inventoryRecordSearchTerm.trim()}".`
+                      : 'Inventory record search cleared.');
+                  }}
+                >
+                  <input
+                    value={inventoryRecordSearchTerm}
+                    onChange={(event) => setInventoryRecordSearchTerm(event.target.value)}
+                    placeholder="Search inventory records..."
+                    aria-label="Search inventory records"
+                  />
+                  <button type="submit">Search</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInventoryRecordSearchTerm('');
+                      setInventoryRecordAppliedSearch('');
+                      setInventoryNotice('Inventory record search cleared.');
+                    }}
+                  >
+                    Clear
+                  </button>
+                </form>
+
+                <small>
+                  Showing {formatNumber(pagedProductInventory.length)} of {formatNumber(productInventoryRows.length)} matching records.
+                </small>
+              </section>
+
               {renderAdminTableManagement('product-register', 'Product Inventory Register')}
 
               <div className={inventoryTableShellClass('product-register')} style={inventoryTableShellStyle('product-register') as any}>
@@ -5296,6 +5479,8 @@ export function ProductInventoryPreview({
                             <strong className="cell-strong">{batch.status}</strong>
                             <br />
                             <span className="cell-muted">{expiryStatus(days)}</span>
+                             <br />
+                             <span className={inventoryBatchSourceClass(batch)}>{inventoryBatchSourceLabel(batch)}</span>
                           </td>
                           <td className="table-cell-actions">{renderBatchActions(batch)}</td>
                         </tr>
