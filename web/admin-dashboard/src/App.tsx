@@ -2564,7 +2564,6 @@ function App() {
     locationName: string;
   }>>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
-  const [posVisualCartCounter, setPosVisualCartCounter] = useState({ lines: 0, units: 0 });
   const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
   const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
   const [posCounterCart, setPosCounterCart] = useState<{
@@ -4078,10 +4077,6 @@ function App() {
       const snapshot = buildPosCounterCartSnapshot(nextItems);
 
       setPosRenderedCartItems(snapshot.items);
-      setPosVisualCartCounter({
-        lines: snapshot.lineCount,
-        units: snapshot.totalQuantity,
-      });
       setPosCartItems(snapshot.items);
       setPosCounterItems(snapshot.items);
       setPosCounterCart(snapshot);
@@ -4701,8 +4696,11 @@ function App() {
 
 {(() => {
                   const visibleCartRows = posLiveCartItems;
-                  const visibleCartLineCount = posVisualCartCounter.lines;
-                  const visibleCartUnitCount = posVisualCartCounter.units;
+                  const visibleCartLineCount = visibleCartRows.length;
+                  const visibleCartUnitCount = visibleCartRows.reduce(
+                    (total, item) => total + Number(item.quantity || 0),
+                    0,
+                  );
 
                   return (
                     <section className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card">
