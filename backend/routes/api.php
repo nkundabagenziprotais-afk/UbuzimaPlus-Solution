@@ -159,8 +159,8 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
     Route::prefix('insurance')
         ->middleware([
-            'permission:pharmaco.sales.manage',
-            'tenant.module:pharmaco.sales',
+            'permission:pharmaco.insurance.manage',
+            'tenant.module:pharmaco.insurance',
         ])
         ->group(function () {
             Route::post('/bootstrap', [
