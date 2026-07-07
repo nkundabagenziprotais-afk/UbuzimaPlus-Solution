@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\PharmacistChatController;
 use App\Http\Controllers\Api\V1\SolutionController;
 use App\Http\Controllers\Api\V1\TenantPublicStatusController;
 use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceManagementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
@@ -155,6 +156,48 @@ Route::middleware(['auth:sanctum', 'permission:ai.manage', 'tenant.module:platfo
     });
 
 Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
+
+    Route::prefix('insurance')
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ])
+        ->group(function () {
+            Route::post('/bootstrap', [
+                InsuranceManagementController::class,
+                'bootstrap',
+            ]);
+
+            Route::get('/partners', [
+                InsuranceManagementController::class,
+                'partners',
+            ]);
+
+            Route::post('/partners', [
+                InsuranceManagementController::class,
+                'createPartner',
+            ]);
+
+            Route::patch('/partners/{insurancePartner}', [
+                InsuranceManagementController::class,
+                'updatePartner',
+            ]);
+
+            Route::get('/schemes', [
+                InsuranceManagementController::class,
+                'schemes',
+            ]);
+
+            Route::post('/schemes', [
+                InsuranceManagementController::class,
+                'createScheme',
+            ]);
+
+            Route::post('/pricing/resolve', [
+                InsuranceManagementController::class,
+                'resolvePricing',
+            ]);
+        });
 
     Route::get('/receivables', [ReceivablesController::class, 'receivables'])
         ->middleware([
