@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PharmacoSaleItem extends Model
@@ -64,5 +65,13 @@ class PharmacoSaleItem extends Model
     public function stockLocation(): BelongsTo
     {
         return $this->belongsTo(StockLocation::class);
+    }
+
+    public function insuranceClaimLines(): HasMany
+    {
+        return $this->hasMany(
+            InsuranceClaimLine::class,
+            'sale_item_id'
+        );
     }
 }

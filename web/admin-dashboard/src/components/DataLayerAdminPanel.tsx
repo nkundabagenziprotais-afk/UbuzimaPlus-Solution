@@ -21,6 +21,12 @@ export function DataLayerAdminPanel({ token }: DataLayerAdminPanelProps) {
     () => tables.find((table) => table.name === selectedTable) ?? null,
     [tables, selectedTable],
   );
+  const sqlLines = useMemo(() => sql.split('\n').map((_, index) => index + 1), [sql]);
+  const sampleQueries = [
+    ['Products', 'select id, name, sku, status from products limit 10'],
+    ['Tenants', 'select id, name, slug, status from tenants limit 10'],
+    ['Notifications', 'select id, title, status, published_at from system_notifications limit 10'],
+  ];
 
   async function loadSchema() {
     setIsLoading(true);
@@ -161,22 +167,44 @@ export function DataLayerAdminPanel({ token }: DataLayerAdminPanelProps) {
             </div>
           </div>
 
-          <form className="sql-runner" onSubmit={handleRunSql}>
-            <label htmlFor="data-layer-sql">
-              SQL runner
-              <textarea
-                id="data-layer-sql"
-                value={sql}
-                onChange={(event) => setSql(event.target.value)}
-                rows={5}
-              />
+          <form className="sql-runner sql-console" onSubmit={handleRunSql}>
+            <div className="sql-console-toolbar">
+              <div>
+                <strong>SQL Query Window</strong>
+                <span>SQLite/Laravel guarded console</span>
+              </div>
+              <div>
+                {sampleQueries.map(([label, query]) => (
+                  <button key={label} type="button" onClick={() => setSql(query)}>
+                    {label}
+                  </button>
+                ))}
+                <button type="submit" disabled={isRunningSql || !sql.trim()}>
+                  {isRunningSql ? 'Running...' : 'Run'}
+                </button>
+              </div>
+            </div>
+
+            <label className="sql-editor-label" htmlFor="data-layer-sql">
+              <span className="sr-only">SQL runner</span>
+              <div className="sql-editor-shell">
+                <div className="sql-line-numbers" aria-hidden="true">
+                  {sqlLines.map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
+                </div>
+                <textarea
+                  id="data-layer-sql"
+                  value={sql}
+                  onChange={(event) => setSql(event.target.value)}
+                  rows={Math.max(7, sqlLines.length)}
+                  spellCheck={false}
+                />
+              </div>
             </label>
             <p className="muted">
               Allowed: SELECT, INSERT, UPDATE, DELETE. Schema-destructive commands are blocked and audited.
             </p>
-            <button type="submit" disabled={isRunningSql || !sql.trim()}>
-              {isRunningSql ? 'Running...' : 'Run SQL'}
-            </button>
           </form>
 
           {sqlResults.length > 0 && (
@@ -186,7 +214,7 @@ export function DataLayerAdminPanel({ token }: DataLayerAdminPanelProps) {
                 <article key={`sql-result-${index}`}>
                   <strong>{result.type}</strong>
                   {result.rows ? (
-                    <pre>{JSON.stringify(result.rows.slice(0, 20), null, 2)}</pre>
+                    <ResultTable rows={result.rows.slice(0, 20)} />
                   ) : (
                     <span>{result.status}</span>
                   )}
@@ -204,4 +232,35 @@ function formatCell(value: unknown): string {
   if (value === null || value === undefined) return '';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+}
+
+function ResultTable({ rows }: { rows: Array<Record<string, unknown>> }) {
+  const columns = Object.keys(rows[0] ?? {});
+
+  if (rows.length === 0) {
+    return <span>No rows returned.</span>;
+  }
+
+  return (
+    <div className="responsive-table-scroll sql-result-table">
+      <table>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column}>{column}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={`sql-row-${index}`}>
+              {columns.map((column) => (
+                <td key={column}>{formatCell(row[column])}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }

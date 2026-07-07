@@ -12,6 +12,7 @@ use App\Models\StockLocation;
 use App\Models\StockMovement;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
+use App\Services\PharmaCo360\ProductSellingUnitSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,9 +30,29 @@ class ProductInventoryController extends Controller
         $products = Product::query()
             ->with('category')
             ->where('tenant_id', $tenant->id)
-            ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
+            ->when(
+                $request->query('status', 'active'),
+                fn ($query, $status) => $status === 'all' ? $query : $query->where('status', $status)
+            )
             ->when($request->query('product_type'), fn ($query, $type) => $query->where('product_type', $type))
+            ->when($request->query('search'), function ($query, $search) {
+                $term = '%' . trim((string) $search) . '%';
+
+                $query->where(function ($searchQuery) use ($term) {
+                    $searchQuery
+                        ->where('name', 'like', $term)
+                        ->orWhere('generic_name', 'like', $term)
+                        ->orWhere('brand_name', 'like', $term)
+                        ->orWhere('sku', 'like', $term)
+                        ->orWhere('barcode', 'like', $term)
+                        ->orWhere('registration_number', 'like', $term);
+                });
+            })
             ->when($request->query('category_code'), function ($query, $categoryCode) use ($tenant) {
+                if ($categoryCode === 'all') {
+                    return;
+                }
+
                 $query->whereHas('category', fn ($categoryQuery) => $categoryQuery
                     ->where('tenant_id', $tenant->id)
                     ->where('code', $categoryCode)
@@ -39,7 +60,17 @@ class ProductInventoryController extends Controller
             })
             ->withSum('stockBatches as total_quantity_on_hand', 'quantity_on_hand')
             ->withSum('stockBatches as total_quantity_reserved', 'quantity_reserved')
-            ->orderBy('name')
+            ->orderBy('sku')
+            ->orderBy('name');
+
+        $totalProducts = (clone $products)->count();
+        $perPage = min(max((int) $request->query('per_page', 0), 0), 500);
+
+        if ($perPage > 0) {
+            $products->limit($perPage);
+        }
+
+        $products = $products
             ->get()
             ->map(fn (Product $product) => $this->serializeProduct($product, includeStockSummary: true))
             ->values();
@@ -47,6 +78,12 @@ class ProductInventoryController extends Controller
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
             'products' => $products,
+            'meta' => [
+                'total' => $totalProducts,
+                'returned' => $products->count(),
+                'per_page' => $perPage > 0 ? $perPage : null,
+                'limited' => $perPage > 0 && $products->count() < $totalProducts,
+            ],
         ]);
     }
 
@@ -73,6 +110,138 @@ class ProductInventoryController extends Controller
             'tenant' => $this->tenantPayload($tenant),
             'product' => $this->serializeProduct($product, includeStockSummary: true),
             'stock_batches' => $batches,
+        ]);
+    }
+
+    public function productCategories(Request $request): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        $categories = ProductCategory::query()
+            ->where('tenant_id', $tenant->id)
+            ->withCount('products')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (ProductCategory $category) => $this->serializeCategory($category))
+            ->values();
+
+        return response()->json([
+            'tenant' => $this->tenantPayload($tenant),
+            'categories' => $categories,
+        ]);
+    }
+
+    public function createProductCategory(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:191'],
+            'code' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('product_categories', 'code')->where('tenant_id', $tenant->id),
+            ],
+            'category_type' => ['nullable', 'string', 'max:50'],
+            'status' => ['nullable', 'string', 'max:30'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $category = ProductCategory::create([
+            'uuid' => (string) Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'name' => $validated['name'],
+            'code' => strtoupper($validated['code']),
+            'category_type' => $validated['category_type'] ?? 'medicine',
+            'status' => $validated['status'] ?? 'active',
+            'description' => $validated['description'] ?? null,
+            'metadata' => [
+                'created_from' => 'pharmaco_inventory_setup_api',
+            ],
+        ]);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.product_category.created',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'category_code' => $category->code,
+                'category_name' => $category->name,
+            ],
+            dataClassification: 'internal',
+            auditableType: ProductCategory::class,
+            auditableId: $category->id
+        );
+
+        return response()->json([
+            'message' => 'Product category created successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'category' => $this->serializeCategory($category),
+        ], 201);
+    }
+
+    public function updateProductCategory(
+        Request $request,
+        ProductCategory $productCategory,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless((int) $productCategory->tenant_id === (int) $tenant->id, 404);
+
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:191'],
+            'code' => [
+                'sometimes',
+                'string',
+                'max:100',
+                Rule::unique('product_categories', 'code')
+                    ->where('tenant_id', $tenant->id)
+                    ->ignore($productCategory->id),
+            ],
+            'category_type' => ['sometimes', 'string', 'max:50'],
+            'status' => ['sometimes', 'string', 'max:30'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if (array_key_exists('code', $validated)) {
+            $validated['code'] = strtoupper($validated['code']);
+        }
+
+        $before = $productCategory->only(['name', 'code', 'category_type', 'status', 'description']);
+
+        $productCategory->fill($validated);
+        $productCategory->save();
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.product_category.updated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'category_code' => $productCategory->code,
+                'before' => $before,
+                'after' => $productCategory->only(['name', 'code', 'category_type', 'status', 'description']),
+            ],
+            dataClassification: 'internal',
+            auditableType: ProductCategory::class,
+            auditableId: $productCategory->id
+        );
+
+        return response()->json([
+            'message' => 'Product category updated successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'category' => $this->serializeCategory($productCategory),
         ]);
     }
 
@@ -111,6 +280,166 @@ class ProductInventoryController extends Controller
         ]);
     }
 
+    public function createStockLocation(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'branch_id' => [
+                'required',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'name' => ['required', 'string', 'max:191'],
+            'code' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('stock_locations', 'code')->where('branch_id', $request->input('branch_id')),
+            ],
+            'location_type' => ['nullable', 'string', 'max:50'],
+            'status' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $location = StockLocation::create([
+            'uuid' => (string) Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'branch_id' => $validated['branch_id'],
+            'name' => $validated['name'],
+            'code' => strtoupper($validated['code']),
+            'location_type' => $validated['location_type'] ?? 'store',
+            'status' => $validated['status'] ?? 'active',
+            'metadata' => [
+                'created_from' => 'pharmaco_inventory_setup_api',
+            ],
+        ]);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.stock_location.created',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'location_code' => $location->code,
+                'location_name' => $location->name,
+                'branch_id' => $location->branch_id,
+            ],
+            dataClassification: 'internal',
+            auditableType: StockLocation::class,
+            auditableId: $location->id
+        );
+
+        return response()->json([
+            'message' => 'Stock location created successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'location' => $this->serializeLocation($location->load('branch')),
+        ], 201);
+    }
+
+    public function updateStockLocation(
+        Request $request,
+        StockLocation $stockLocation,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless((int) $stockLocation->tenant_id === (int) $tenant->id, 404);
+
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:191'],
+            'code' => [
+                'sometimes',
+                'string',
+                'max:100',
+                Rule::unique('stock_locations', 'code')
+                    ->where('branch_id', $stockLocation->branch_id)
+                    ->ignore($stockLocation->id),
+            ],
+            'location_type' => ['sometimes', 'string', 'max:50'],
+            'status' => ['sometimes', 'string', 'max:30'],
+        ]);
+
+        if (array_key_exists('code', $validated)) {
+            $validated['code'] = strtoupper($validated['code']);
+        }
+
+        $before = $stockLocation->only(['name', 'code', 'location_type', 'status']);
+
+        $stockLocation->fill($validated);
+        $stockLocation->save();
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $auditLogService->record(
+            action: 'pharmaco.stock_location.updated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'location_code' => $stockLocation->code,
+                'before' => $before,
+                'after' => $stockLocation->only(['name', 'code', 'location_type', 'status']),
+            ],
+            dataClassification: 'internal',
+            auditableType: StockLocation::class,
+            auditableId: $stockLocation->id
+        );
+
+        return response()->json([
+            'message' => 'Stock location updated successfully.',
+            'tenant' => $this->tenantPayload($tenant),
+            'location' => $this->serializeLocation($stockLocation->load('branch')),
+        ]);
+    }
+
+    public function deleteStockLocation(
+        Request $request,
+        StockLocation $stockLocation,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse
+    {
+        $tenant = $request->attributes->get('tenant');
+
+        abort_unless((int) $stockLocation->tenant_id === (int) $tenant->id, 404);
+
+        $stockLocation->loadCount('stockBatches');
+
+        if ((int) $stockLocation->stock_batches_count > 0) {
+            throw ValidationException::withMessages([
+                'stock_location' => 'This stock location is linked to stock batches. Move or replace the batches before deleting it.',
+            ]);
+        }
+
+        $before = $stockLocation->only(['name', 'code', 'location_type', 'status', 'branch_id']);
+
+        $scope = $scopeResolver->resolveForUser($request->user());
+
+        $stockLocation->delete();
+
+        $auditLogService->record(
+            action: 'pharmaco.stock_location.deleted',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'before' => $before,
+            ],
+            dataClassification: 'internal',
+            auditableType: StockLocation::class,
+            auditableId: $stockLocation->id
+        );
+
+        return response()->json([
+            'message' => 'Stock location deleted successfully.',
+        ]);
+    }
+
     public function batches(Request $request): JsonResponse
     {
         $tenant = $request->attributes->get('tenant');
@@ -121,11 +450,46 @@ class ProductInventoryController extends Controller
             ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($request->query('product_id'), fn ($query, $productId) => $query->where('product_id', $productId))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
+            ->when($request->boolean('sellable_only'), function ($query) {
+                $query
+                    ->where('status', 'active')
+                    ->whereRaw('(quantity_on_hand - quantity_reserved) > 0')
+                    ->where(function ($expiryQuery) {
+                        $expiryQuery
+                            ->whereNull('expiry_date')
+                            ->orWhereDate('expiry_date', '>=', now()->toDateString());
+                    });
+            })
+            ->when($request->query('search'), function ($query, $search) {
+                $term = '%' . trim((string) $search) . '%';
+
+                $query->where(function ($searchQuery) use ($term) {
+                    $searchQuery
+                        ->where('batch_number', 'like', $term)
+                        ->orWhereHas('product', function ($productQuery) use ($term) {
+                            $productQuery
+                                ->where('name', 'like', $term)
+                                ->orWhere('generic_name', 'like', $term)
+                                ->orWhere('brand_name', 'like', $term)
+                                ->orWhere('sku', 'like', $term)
+                                ->orWhere('barcode', 'like', $term);
+                        });
+                });
+            })
             ->when($request->query('expiring_within_days'), function ($query, $days) {
                 $query->whereNotNull('expiry_date')
                     ->whereDate('expiry_date', '<=', now()->addDays((int) $days)->toDateString());
             })
-            ->orderBy('expiry_date')
+            ->orderBy('expiry_date');
+
+        $totalBatches = (clone $batches)->count();
+        $perPage = min(max((int) $request->query('per_page', 0), 0), 500);
+
+        if ($perPage > 0) {
+            $batches->limit($perPage);
+        }
+
+        $batches = $batches
             ->get()
             ->map(fn (StockBatch $batch) => $this->serializeBatch($batch))
             ->values();
@@ -133,6 +497,12 @@ class ProductInventoryController extends Controller
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
             'batches' => $batches,
+            'meta' => [
+                'total' => $totalBatches,
+                'returned' => $batches->count(),
+                'per_page' => $perPage > 0 ? $perPage : null,
+                'limited' => $perPage > 0 && $batches->count() < $totalBatches,
+            ],
         ]);
     }
 
@@ -149,10 +519,23 @@ class ProductInventoryController extends Controller
             ->filter(fn (Product $product) => (float) ($product->total_quantity_on_hand ?? 0) <= (float) $product->reorder_level)
             ->values();
 
-        $stockValue = StockBatch::query()
+        $stockCostValue = (float) StockBatch::query()
+            ->where('tenant_id', $tenant->id)
+            ->selectRaw('COALESCE(SUM(quantity_on_hand * COALESCE(unit_cost, 0)), 0) as value')
+            ->value('value');
+
+        $stockRetailValue = (float) StockBatch::query()
             ->where('tenant_id', $tenant->id)
             ->selectRaw('COALESCE(SUM(quantity_on_hand * COALESCE(selling_price, 0)), 0) as value')
             ->value('value');
+
+        $potentialMarginValue = max($stockRetailValue - $stockCostValue, 0);
+
+        $expiredBatchesCount = StockBatch::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereNotNull('expiry_date')
+            ->whereDate('expiry_date', '<', now()->toDateString())
+            ->count();
 
         $summary = [
             'product_categories_count' => ProductCategory::where('tenant_id', $tenant->id)->count(),
@@ -160,7 +543,11 @@ class ProductInventoryController extends Controller
             'stock_locations_count' => StockLocation::where('tenant_id', $tenant->id)->count(),
             'stock_batches_count' => StockBatch::where('tenant_id', $tenant->id)->count(),
             'total_quantity_on_hand' => (float) StockBatch::where('tenant_id', $tenant->id)->sum('quantity_on_hand'),
-            'estimated_stock_value' => (float) $stockValue,
+            'estimated_stock_value' => $stockRetailValue,
+            'estimated_stock_cost_value' => $stockCostValue,
+            'estimated_stock_retail_value' => $stockRetailValue,
+            'estimated_potential_margin_value' => $potentialMarginValue,
+            'expired_batches_count' => $expiredBatchesCount,
             'low_stock_products_count' => $lowStockProducts->count(),
             'near_expiry_batches_180_days_count' => StockBatch::where('tenant_id', $tenant->id)
                 ->whereNotNull('expiry_date')
@@ -205,6 +592,15 @@ class ProductInventoryController extends Controller
             'dosage_form' => ['nullable', 'string', 'max:120'],
             'strength' => ['nullable', 'string', 'max:120'],
             'unit' => ['required', 'string', 'max:80'],
+            'selling_unit' => ['nullable', 'string', 'max:80'],
+            'base_unit' => ['nullable', 'string', 'max:80'],
+            'quantity_per_selling_unit' => ['sometimes', 'numeric', 'min:0.0001'],
+            'allow_other_quantity' => ['sometimes', 'boolean'],
+            'default_pos_quantity_mode' => [
+                'sometimes',
+                Rule::in(['selling_unit', 'other_quantity', 'combined']),
+            ],
+            'selling_unit_notes' => ['nullable', 'string', 'max:2000'],
             'pack_size' => ['nullable', 'string', 'max:120'],
             'route_of_administration' => ['nullable', 'string', 'max:120'],
             'product_type' => ['required', Rule::in(['medicine', 'consumable', 'device', 'service'])],
@@ -215,21 +611,31 @@ class ProductInventoryController extends Controller
             'minimum_stock_level' => ['sometimes', 'numeric', 'min:0'],
             'maximum_stock_level' => ['nullable', 'numeric', 'min:0'],
             'status' => ['sometimes', Rule::in(['active', 'inactive', 'discontinued'])],
+            'metadata' => ['sometimes', 'array'],
         ]);
 
         $product = Product::query()->create([
             ...$validated,
             'uuid' => (string) Str::uuid(),
             'tenant_id' => $tenant->id,
+            'selling_unit' => $validated['selling_unit'] ?? $validated['unit'],
+            'base_unit' => $validated['base_unit'] ?? $validated['unit'],
+            'quantity_per_selling_unit' => $validated['quantity_per_selling_unit'] ?? 1,
+            'allow_other_quantity' => $validated['allow_other_quantity'] ?? true,
+            'default_pos_quantity_mode' => $validated['default_pos_quantity_mode'] ?? 'selling_unit',
             'requires_prescription' => $validated['requires_prescription'] ?? false,
             'is_controlled' => $validated['is_controlled'] ?? false,
             'reorder_level' => $validated['reorder_level'] ?? 0,
             'minimum_stock_level' => $validated['minimum_stock_level'] ?? 0,
             'maximum_stock_level' => $validated['maximum_stock_level'] ?? null,
             'status' => $validated['status'] ?? 'active',
-            'metadata' => [
-                'created_from' => 'pharmaco_product_inventory_api',
-            ],
+            'metadata' => array_merge(
+                [
+                    'created_from' => 'pharmaco_product_inventory_api',
+                    'manual_product_master_entry' => true,
+                ],
+                $validated['metadata'] ?? []
+            ),
         ]);
 
         $scope = $scopeResolver->resolveForUser($request->user());
@@ -286,6 +692,15 @@ class ProductInventoryController extends Controller
             'dosage_form' => ['nullable', 'string', 'max:120'],
             'strength' => ['nullable', 'string', 'max:120'],
             'unit' => ['sometimes', 'string', 'max:80'],
+            'selling_unit' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'base_unit' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'quantity_per_selling_unit' => ['sometimes', 'numeric', 'min:0.0001'],
+            'allow_other_quantity' => ['sometimes', 'boolean'],
+            'default_pos_quantity_mode' => [
+                'sometimes',
+                Rule::in(['selling_unit', 'other_quantity', 'combined']),
+            ],
+            'selling_unit_notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'pack_size' => ['nullable', 'string', 'max:120'],
             'route_of_administration' => ['nullable', 'string', 'max:120'],
             'product_type' => ['sometimes', Rule::in(['medicine', 'consumable', 'device', 'service'])],
@@ -296,7 +711,12 @@ class ProductInventoryController extends Controller
             'minimum_stock_level' => ['sometimes', 'numeric', 'min:0'],
             'maximum_stock_level' => ['nullable', 'numeric', 'min:0'],
             'status' => ['sometimes', Rule::in(['active', 'inactive', 'discontinued'])],
+            'metadata' => ['sometimes', 'array'],
         ]);
+
+        if (array_key_exists('metadata', $validated)) {
+            $validated['metadata'] = array_merge($product->metadata ?? [], $validated['metadata']);
+        }
 
         $before = $product->only(array_keys($validated));
 
@@ -322,6 +742,266 @@ class ProductInventoryController extends Controller
         return response()->json([
             'message' => 'Product updated successfully.',
             'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
+        ]);
+    }
+
+    public function generateSellingUnitSuggestion(
+        Request $request,
+        Product $product,
+        ProductSellingUnitSuggestionService $suggestionService,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'trusted_source' => ['nullable', 'string', 'max:1000'],
+            'trusted_reference' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $suggestion = $suggestionService->suggest($product);
+
+        if (! empty($validated['trusted_source'])) {
+            $suggestion['source'] = trim($validated['trusted_source']);
+        }
+
+        if (! empty($validated['trusted_reference'])) {
+            $suggestion['reference'] = trim($validated['trusted_reference']);
+        }
+
+        $before = [
+            'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+            'ai_suggested_quantity_per_unit' => $product->ai_suggested_quantity_per_unit,
+            'ai_suggestion_status' => $product->ai_suggestion_status,
+        ];
+
+        $product->forceFill([
+            'ai_suggested_quantity_per_unit' => $suggestion['proposed_value'],
+            'ai_suggestion_status' => 'pending_review',
+            'ai_suggestion_confidence' => $suggestion['confidence'],
+            'ai_suggestion_explanation' => $suggestion['explanation'],
+            'ai_suggestion_source' => $suggestion['source'],
+            'ai_suggestion_reference' => $suggestion['reference'],
+            'ai_suggestion_reviewed_by' => null,
+            'ai_suggestion_reviewed_at' => null,
+        ])->save();
+
+        $auditLogService->record(
+            action: 'pharmaco.product.selling_unit_ai_suggested',
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'before' => $before,
+                'proposal' => [
+                    'proposed_value' => $suggestion['proposed_value'],
+                    'confidence' => $suggestion['confidence'],
+                    'explanation' => $suggestion['explanation'],
+                    'source' => $suggestion['source'],
+                    'reference' => $suggestion['reference'],
+                ],
+                'auto_applied' => false,
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $product->id
+        );
+
+        return response()->json([
+            'message' => 'Selling-unit AI suggestion generated for human review.',
+            'auto_applied' => false,
+            'product' => $this->serializeProduct(
+                $product->fresh('category'),
+                includeStockSummary: true
+            ),
+        ]);
+    }
+
+    public function reviewSellingUnitSuggestion(
+        Request $request,
+        Product $product,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        if ($product->ai_suggestion_status !== 'pending_review') {
+            throw ValidationException::withMessages([
+                'ai_suggestion_status' => [
+                    'This product does not have a pending selling-unit AI suggestion.',
+                ],
+            ]);
+        }
+
+        $validated = $request->validate([
+            'action' => [
+                'required',
+                Rule::in(['approve', 'reject', 'edit_and_approve']),
+            ],
+            'approved_value' => [
+                'required_if:action,edit_and_approve',
+                'nullable',
+                'numeric',
+                'min:0.0001',
+            ],
+            'review_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $action = $validated['action'];
+        $suggestedValue = (float) $product->ai_suggested_quantity_per_unit;
+        $approvedValue = $action === 'edit_and_approve'
+            ? (float) $validated['approved_value']
+            : $suggestedValue;
+
+        if (
+            in_array($action, ['approve', 'edit_and_approve'], true)
+            && $suggestedValue <= 0
+        ) {
+            throw ValidationException::withMessages([
+                'ai_suggested_quantity_per_unit' => [
+                    'The pending suggestion does not contain a valid quantity.',
+                ],
+            ]);
+        }
+
+        $before = [
+            'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+            'ai_suggested_quantity_per_unit' => $suggestedValue,
+            'ai_suggestion_status' => $product->ai_suggestion_status,
+        ];
+
+        $updates = [
+            'ai_suggestion_status' => $action === 'reject'
+                ? 'rejected'
+                : 'approved',
+            'ai_suggestion_reviewed_by' => $request->user()->id,
+            'ai_suggestion_reviewed_at' => now(),
+        ];
+
+        if ($action !== 'reject') {
+            $updates['quantity_per_selling_unit'] = $approvedValue;
+        }
+
+        $metadata = is_array($product->metadata)
+            ? $product->metadata
+            : [];
+
+        $metadata['selling_unit_ai_review'] = [
+            'action' => $action,
+            'review_notes' => $validated['review_notes'] ?? null,
+            'proposed_value' => $suggestedValue,
+            'approved_value' => $action === 'reject'
+                ? null
+                : $approvedValue,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now()->toISOString(),
+        ];
+
+        $updates['metadata'] = $metadata;
+
+        $product->forceFill($updates)->save();
+
+        $auditLogService->record(
+            action: match ($action) {
+                'reject' => 'pharmaco.product.selling_unit_ai_rejected',
+                'edit_and_approve' => 'pharmaco.product.selling_unit_ai_edited_and_approved',
+                default => 'pharmaco.product.selling_unit_ai_approved',
+            },
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'product_sku' => $product->sku,
+                'review_action' => $action,
+                'review_notes' => $validated['review_notes'] ?? null,
+                'before' => $before,
+                'after' => [
+                    'quantity_per_selling_unit' => (float) $product->quantity_per_selling_unit,
+                    'ai_suggestion_status' => $product->ai_suggestion_status,
+                    'ai_suggestion_reviewed_by' => $product->ai_suggestion_reviewed_by,
+                    'ai_suggestion_reviewed_at' => optional(
+                        $product->ai_suggestion_reviewed_at
+                    )?->toISOString(),
+                ],
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $product->id
+        );
+
+        return response()->json([
+            'message' => match ($action) {
+                'reject' => 'Selling-unit AI suggestion rejected.',
+                'edit_and_approve' => 'Selling-unit AI suggestion edited and approved.',
+                default => 'Selling-unit AI suggestion approved.',
+            },
+            'product' => $this->serializeProduct(
+                $product->fresh('category'),
+                includeStockSummary: true
+            ),
+        ]);
+    }
+
+    public function deleteProduct(
+        Request $request,
+        Product $product,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $product->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $stockBatchCount = StockBatch::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('product_id', $product->id)
+            ->count();
+
+        $purchaseOrderItemCount = PharmacoPurchaseOrderItem::query()
+            ->where('product_id', $product->id)
+            ->count();
+
+        if ($stockBatchCount > 0 || $purchaseOrderItemCount > 0) {
+            throw ValidationException::withMessages([
+                'product' => [
+                    'This product has stock or purchase order history. Deactivate/discontinue it instead of deleting it.',
+                ],
+            ]);
+        }
+
+        $snapshot = [
+            'id' => $product->id,
+            'sku' => $product->sku,
+            'name' => $product->name,
+            'generic_name' => $product->generic_name,
+            'metadata' => $product->metadata ?? [],
+        ];
+
+        $product->delete();
+
+        $auditLogService->record(
+            action: 'pharmaco.product.deleted',
+            scope: $scopeResolver->resolveForUser($request->user()),
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'deleted_product' => $snapshot,
+            ],
+            dataClassification: 'internal',
+            auditableType: Product::class,
+            auditableId: $snapshot['id']
+        );
+
+        return response()->json([
+            'message' => 'Product deleted successfully.',
         ]);
     }
 
@@ -940,6 +1620,41 @@ class ProductInventoryController extends Controller
         ], 201);
     }
 
+    private function serializeCategory(ProductCategory $category): array
+    {
+        return [
+            'id' => $category->id,
+            'uuid' => $category->uuid,
+            'name' => $category->name,
+            'code' => $category->code,
+            'category_type' => $category->category_type,
+            'status' => $category->status,
+            'description' => $category->description,
+            'products_count' => $category->products_count ?? $category->products()->count(),
+        ];
+    }
+
+    private function serializeLocation(StockLocation $location): array
+    {
+        return [
+            'id' => $location->id,
+            'uuid' => $location->uuid,
+            'branch_id' => $location->branch_id,
+            'branch_name' => $location->branch?->name,
+            'branch' => $location->branch ? [
+                'id' => $location->branch->id,
+                'name' => $location->branch->name,
+                'code' => $location->branch->code,
+            ] : null,
+            'name' => $location->name,
+            'code' => $location->code,
+            'location_type' => $location->location_type,
+            'status' => $location->status,
+            'stock_batches_count' => $location->stock_batches_count ?? $location->stockBatches()->count(),
+            'metadata' => $location->metadata ?? [],
+        ];
+    }
+
     private function tenantPayload($tenant): array
     {
         return [
@@ -963,6 +1678,24 @@ class ProductInventoryController extends Controller
             'dosage_form' => $product->dosage_form,
             'strength' => $product->strength,
             'unit' => $product->unit,
+            'selling_unit' => $product->selling_unit ?? $product->unit,
+            'base_unit' => $product->base_unit ?? $product->unit,
+            'quantity_per_selling_unit' => (float) ($product->quantity_per_selling_unit ?? 1),
+            'allow_other_quantity' => (bool) $product->allow_other_quantity,
+            'default_pos_quantity_mode' => $product->default_pos_quantity_mode ?? 'selling_unit',
+            'selling_unit_notes' => $product->selling_unit_notes,
+            'ai_suggested_quantity_per_unit' => $product->ai_suggested_quantity_per_unit === null
+                ? null
+                : (float) $product->ai_suggested_quantity_per_unit,
+            'ai_suggestion_status' => $product->ai_suggestion_status ?? 'not_requested',
+            'ai_suggestion_confidence' => $product->ai_suggestion_confidence === null
+                ? null
+                : (float) $product->ai_suggestion_confidence,
+            'ai_suggestion_explanation' => $product->ai_suggestion_explanation,
+            'ai_suggestion_source' => $product->ai_suggestion_source,
+            'ai_suggestion_reference' => $product->ai_suggestion_reference,
+            'ai_suggestion_reviewed_by' => $product->ai_suggestion_reviewed_by,
+            'ai_suggestion_reviewed_at' => optional($product->ai_suggestion_reviewed_at)?->toISOString(),
             'pack_size' => $product->pack_size,
             'route_of_administration' => $product->route_of_administration,
             'product_type' => $product->product_type,
@@ -1012,6 +1745,80 @@ class ProductInventoryController extends Controller
             'occurred_at' => $movement->occurred_at?->toISOString(),
             'metadata' => $movement->metadata ?? [],
         ];
+    }
+
+
+    public function updateBatch(Request $request, StockBatch $batch)
+    {
+        $tenant = $this->resolveTenant($request);
+
+        if ((int) $batch->tenant_id !== (int) $tenant->id) {
+            abort(404, 'Inventory batch not found.');
+        }
+
+        $validated = $request->validate([
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'stock_location_id' => ['required', 'integer', 'exists:stock_locations,id'],
+            'batch_number' => ['required', 'string', 'max:100'],
+            'quantity' => ['required', 'numeric', 'min:0'],
+            'expiry_date' => ['nullable', 'date'],
+            'unit_cost' => ['nullable', 'numeric', 'min:0'],
+            'selling_price' => ['nullable', 'numeric', 'min:0'],
+            'supplier_name' => ['nullable', 'string', 'max:191'],
+            'reference_number' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $product = Product::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $validated['product_id'])
+            ->firstOrFail();
+
+        $location = StockLocation::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('id', $validated['stock_location_id'])
+            ->firstOrFail();
+
+        $batch->product_id = $product->id;
+        $batch->stock_location_id = $location->id;
+        $batch->batch_number = $validated['batch_number'];
+        $batch->quantity_on_hand = (float) $validated['quantity'];
+        $batch->expiry_date = $validated['expiry_date'] ?? null;
+        $batch->unit_cost = $validated['unit_cost'] ?? null;
+        $batch->selling_price = $validated['selling_price'] ?? null;
+        $batch->supplier_name = $validated['supplier_name'] ?? null;
+        $batch->status = ((float) $validated['quantity'] > 0) ? 'available' : 'depleted';
+        $batch->save();
+
+        $batch->load(['product', 'stockLocation', 'branch']);
+
+        return response()->json([
+            'message' => 'Inventory batch updated.',
+            'batch' => $this->serializeBatch($batch),
+        ]);
+    }
+
+    public function deleteBatch(Request $request, StockBatch $batch)
+    {
+        $tenant = $this->resolveTenant($request);
+
+        if ((int) $batch->tenant_id !== (int) $tenant->id) {
+            abort(404, 'Inventory batch not found.');
+        }
+
+        if ((float) ($batch->quantity_reserved ?? 0) > 0) {
+            abort(422, 'This batch has reserved quantity and cannot be deleted.');
+        }
+
+        \Illuminate\Support\Facades\DB::table('stock_movements')
+            ->where('stock_batch_id', $batch->id)
+            ->delete();
+
+        $batchNumber = $batch->batch_number;
+        $batch->delete();
+
+        return response()->json([
+            'message' => "Inventory batch {$batchNumber} deleted.",
+        ]);
     }
 
     private function serializeBatch(StockBatch $batch): array

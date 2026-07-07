@@ -22,7 +22,13 @@ class AuthRbacSeeder extends Seeder
             ['platform.manage', 'Manage Platform', 'platform'],
             ['platform.content.manage', 'Manage Platform Content', 'platform'],
             ['communications.email.use', 'Use Corporate Email', 'communications'],
+            ['notifications.view', 'View Notifications', 'communications'],
+            ['notifications.manage', 'Manage Notifications', 'communications'],
             ['data.layer.manage', 'Manage Data Layer', 'platform'],
+            ['markets.view', 'View Markets', 'market'],
+            ['markets.manage', 'Manage Markets', 'market'],
+            ['localization.use', 'Use Localization', 'market'],
+            ['localization.manage', 'Manage Localization', 'market'],
             ['solutions.manage', 'Manage Solutions', 'solutions'],
             ['tenants.manage', 'Manage Tenants', 'tenancy'],
             ['modules.manage', 'Manage Modules', 'modules'],
@@ -36,7 +42,9 @@ class AuthRbacSeeder extends Seeder
             ['pharmaco.branches.manage', 'Manage Pharmacy Branches', 'pharmaco'],
             ['pharmaco.products.manage', 'Manage Product Master', 'pharmaco'],
             ['pharmaco.inventory.manage', 'Manage Inventory', 'pharmaco'],
+            ['pharmaco.insurance.manage', 'Manage Insurance', 'pharmaco'],
             ['pharmaco.pos.use', 'Use POS and Sales', 'pharmaco'],
+            ['pharmaco.sales.manage', 'Manage Sales and Dispensing', 'pharmaco'],
             ['pharmaco.suppliers.manage', 'Manage Suppliers', 'pharmaco'],
             ['pharmaco.reports.view', 'View PharmaCo360 Reports', 'analytics'],
         ];
@@ -69,11 +77,18 @@ class AuthRbacSeeder extends Seeder
                     'audit.view',
                     'ai.manage',
                     'communications.email.use',
+                    'notifications.view',
+                    'notifications.manage',
+                    'markets.view',
+                    'markets.manage',
+                    'localization.manage',
                     'pharmaco.chat.manage',
                     'pharmaco.profile.manage',
                     'pharmaco.branches.manage',
                     'pharmaco.products.manage',
                     'pharmaco.inventory.manage',
+                    'pharmaco.insurance.manage',
+                    'pharmaco.sales.manage',
                     'pharmaco.suppliers.manage',
                     'pharmaco.reports.view',
                 ],
@@ -88,12 +103,18 @@ class AuthRbacSeeder extends Seeder
                     'ai.manage',
                     'ai.use',
                     'communications.email.use',
+                    'notifications.view',
+                    'notifications.manage',
+                    'markets.view',
+                    'localization.use',
                     'pharmaco.chat.manage',
                     'pharmaco.profile.manage',
                     'pharmaco.branches.manage',
                     'pharmaco.products.manage',
                     'pharmaco.inventory.manage',
+                    'pharmaco.insurance.manage',
                     'pharmaco.pos.use',
+                    'pharmaco.sales.manage',
                     'pharmaco.suppliers.manage',
                     'pharmaco.reports.view',
                 ],
@@ -104,8 +125,12 @@ class AuthRbacSeeder extends Seeder
                 'permissions' => [
                     'pharmaco.products.manage',
                     'pharmaco.inventory.manage',
+                    'pharmaco.insurance.manage',
                     'pharmaco.pos.use',
+                    'pharmaco.sales.manage',
                     'communications.email.use',
+                    'notifications.view',
+                    'localization.use',
                     'pharmaco.chat.manage',
                     'pharmaco.reports.view',
                 ],
@@ -117,7 +142,10 @@ class AuthRbacSeeder extends Seeder
                     'pharmaco.products.manage',
                     'pharmaco.inventory.manage',
                     'pharmaco.pos.use',
+                    'pharmaco.sales.manage',
                     'communications.email.use',
+                    'notifications.view',
+                    'localization.use',
                     'pharmaco.chat.manage',
                 ],
             ],
@@ -126,7 +154,10 @@ class AuthRbacSeeder extends Seeder
                 'scope_type' => 'branch',
                 'permissions' => [
                     'pharmaco.pos.use',
+                    'pharmaco.sales.manage',
                     'communications.email.use',
+                    'notifications.view',
+                    'localization.use',
                 ],
             ],
             'auditor' => [
@@ -135,6 +166,7 @@ class AuthRbacSeeder extends Seeder
                 'permissions' => [
                     'audit.view',
                     'pharmaco.reports.view',
+                    'notifications.view',
                 ],
             ],
         ];
@@ -164,25 +196,34 @@ class AuthRbacSeeder extends Seeder
             ->where('code', 'HQ')
             ->firstOrFail();
 
-        $defaultPassword = env('UBUZIMA_SEED_ADMIN_PASSWORD', 'ChangeThisPassword123!');
+        $defaultPassword = app()->environment('testing')
+            ? env('UBUZIMA_SEED_ADMIN_PASSWORD', 'ChangeThisPassword123!')
+            : env('UBUZIMA_SEED_ADMIN_PASSWORD');
+
+        if (! $defaultPassword) {
+            throw new \RuntimeException('UBUZIMA_SEED_ADMIN_PASSWORD must be configured before seeding admin users outside testing.');
+        }
+        $defaultPin = env('UBUZIMA_SEED_ADMIN_PIN', '1234');
 
         $platformAdmin = User::query()->updateOrCreate(
-            ['email' => 'admin@ubuzimaplus.local'],
+            ['email' => app()->environment('testing') ? 'admin@ubuzimaplus.local' : env('UBUZIMA_PLATFORM_ADMIN_EMAIL', 'admin@ubuzimaplus.com')],
             [
                 'name' => 'Ubuzima+ Super Admin',
-                'phone' => null,
+                'phone' => '+250780000001',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]
         );
 
         $solutionAdmin = User::query()->updateOrCreate(
-            ['email' => 'pharmaco.admin@ubuzimaplus.local'],
+            ['email' => app()->environment('testing') ? 'pharmaco.admin@ubuzimaplus.local' : env('UBUZIMA_PHARMACO_ADMIN_EMAIL', 'pharmaco.admin@ubuzimaplus.com')],
             [
                 'name' => 'PharmaCo360 Solution Admin',
-                'phone' => null,
+                'phone' => '+250780000002',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]
@@ -192,8 +233,9 @@ class AuthRbacSeeder extends Seeder
             ['email' => 'admin@vitapharmaafrica.com'],
             [
                 'name' => 'VitaPharma Tenant Admin',
-                'phone' => null,
+                'phone' => '+250780000003',
                 'password' => Hash::make($defaultPassword),
+                'login_pin' => Hash::make($defaultPin),
                 'status' => 'active',
                 'must_change_password' => true,
             ]

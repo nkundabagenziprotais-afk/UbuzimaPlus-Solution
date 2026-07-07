@@ -5,11 +5,15 @@ namespace Database\Seeders;
 use App\Models\AiAgent;
 use App\Models\AiProvider;
 use App\Models\Branch;
+use App\Models\Market;
 use App\Models\Module;
 use App\Models\PlatformContentPage;
 use App\Models\PlatformContentSection;
+use App\Models\ServiceProviderLocation;
 use App\Models\Solution;
+use App\Models\SystemNotification;
 use App\Models\Tenant;
+use App\Models\TenantMarketAssignment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -50,6 +54,10 @@ class PlatformFoundationSeeder extends Seeder
             ['code' => 'platform.auth', 'name' => 'Authentication', 'group' => 'platform', 'scope' => 'shared'],
             ['code' => 'platform.corporate_email', 'name' => 'Corporate Email', 'group' => 'communications', 'scope' => 'shared'],
             ['code' => 'platform.data_layer', 'name' => 'Admin Data Layer', 'group' => 'platform', 'scope' => 'shared'],
+            ['code' => 'platform.localization', 'name' => 'Localization', 'group' => 'market', 'scope' => 'shared'],
+            ['code' => 'platform.market_management', 'name' => 'Market Management', 'group' => 'market', 'scope' => 'shared'],
+            ['code' => 'platform.nearby_providers', 'name' => 'Nearby Providers', 'group' => 'market', 'scope' => 'shared'],
+            ['code' => 'platform.notification_center', 'name' => 'Notification Center', 'group' => 'communications', 'scope' => 'shared'],
             ['code' => 'platform.admin_scopes', 'name' => 'Admin Scopes', 'group' => 'security', 'scope' => 'shared'],
             ['code' => 'platform.tenancy', 'name' => 'Tenancy', 'group' => 'platform', 'scope' => 'shared'],
             ['code' => 'platform.rbac', 'name' => 'Roles and Permissions', 'group' => 'security', 'scope' => 'shared'],
@@ -60,6 +68,7 @@ class PlatformFoundationSeeder extends Seeder
             ['code' => 'pharmaco.products', 'name' => 'Product Master', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.inventory', 'name' => 'Inventory', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.pos', 'name' => 'POS and Sales', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
+            ['code' => 'pharmaco.sales', 'name' => 'Sales and Dispensing', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.pharmacist_chat', 'name' => 'Pharmacist Chat', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.suppliers', 'name' => 'Supplier Management', 'group' => 'pharmaco', 'scope' => 'pharmaco360'],
             ['code' => 'pharmaco.reports', 'name' => 'Reports', 'group' => 'analytics', 'scope' => 'pharmaco360'],
@@ -84,7 +93,9 @@ class PlatformFoundationSeeder extends Seeder
             DB::table('solution_modules')->updateOrInsert(
                 ['solution_id' => $pharma->id, 'module_id' => $module->id],
                 [
-                    'status' => in_array($item['code'], ['pharmaco.insurance', 'pharmaco.clinic_integration'], true) ? 'planned' : 'available',
+                    'status' => $item['code'] === 'pharmaco.clinic_integration'
+                        ? 'planned'
+                        : 'available',
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]
@@ -104,22 +115,113 @@ class PlatformFoundationSeeder extends Seeder
                 'branding' => [
                     'display_name' => 'VitaPharma',
                     'solution' => 'PharmaCo360',
+                    'logo_asset' => '/assets/vitapharma-logo.png',
+                    'brand_colors' => ['primary' => '#19753a', 'secondary' => '#91c653', 'neutral' => '#8f7e7b'],
                 ],
                 'settings' => [
                     'ai_activation' => 'controlled',
                     'data_separation' => 'tenant_only',
+                    'website_path' => '/vitapharma',
+                    'business_category' => 'retail_pharmacy',
                 ],
             ]
         );
 
-        Branch::query()->updateOrCreate(
+        $mainBranch = Branch::query()->updateOrCreate(
             ['tenant_id' => $vita->id, 'code' => 'HQ'],
             [
                 'name' => 'VitaPharma Main Branch',
                 'branch_type' => 'pharmacy',
                 'status' => 'active',
+                'phone' => '+250 788 000 000',
+                'email' => 'care@vitapharmaafrica.com',
+                'address' => 'Kigali, Rwanda',
                 'settings' => [
                     'phase' => 'pilot',
+                    'service_model' => 'retail_pharmacy',
+                ],
+            ]
+        );
+
+        $markets = [
+            ['code' => 'RW', 'name' => 'Rwanda', 'country_code' => 'RW', 'default_language' => 'en', 'currency_code' => 'RWF', 'timezone' => 'Africa/Kigali', 'radius' => 12],
+            ['code' => 'CD', 'name' => 'Democratic Republic of Congo', 'country_code' => 'CD', 'default_language' => 'fr', 'currency_code' => 'CDF', 'timezone' => 'Africa/Kinshasa', 'radius' => 15],
+            ['code' => 'MZ', 'name' => 'Mozambique', 'country_code' => 'MZ', 'default_language' => 'pt', 'currency_code' => 'MZN', 'timezone' => 'Africa/Maputo', 'radius' => 15],
+            ['code' => 'AO', 'name' => 'Angola', 'country_code' => 'AO', 'default_language' => 'pt', 'currency_code' => 'AOA', 'timezone' => 'Africa/Luanda', 'radius' => 15],
+        ];
+
+        foreach ($markets as $marketData) {
+            Market::query()->updateOrCreate(
+                ['code' => $marketData['code']],
+                [
+                    'uuid' => (string) Str::uuid(),
+                    'name' => $marketData['name'],
+                    'country_code' => $marketData['country_code'],
+                    'default_language' => $marketData['default_language'],
+                    'currency_code' => $marketData['currency_code'],
+                    'timezone' => $marketData['timezone'],
+                    'service_radius_km' => $marketData['radius'],
+                    'status' => 'active',
+                    'metadata' => [
+                        'language_options' => ['en', 'fr', 'pt'],
+                        'ip_policy' => 'country_code_maps_to_market',
+                    ],
+                ]
+            );
+        }
+
+        $rwandaMarket = Market::query()->where('code', 'RW')->firstOrFail();
+
+        TenantMarketAssignment::query()->updateOrCreate(
+            ['tenant_id' => $vita->id, 'market_id' => $rwandaMarket->id],
+            [
+                'status' => 'active',
+                'service_radius_km' => 12,
+                'assigned_at' => now(),
+                'metadata' => [
+                    'first_tenant' => true,
+                    'service_model' => 'retail_pharmacy',
+                ],
+            ]
+        );
+
+        ServiceProviderLocation::query()->updateOrCreate(
+            ['tenant_id' => $vita->id, 'branch_id' => $mainBranch->id, 'name' => 'VitaPharma Main Branch'],
+            [
+                'uuid' => (string) Str::uuid(),
+                'market_id' => $rwandaMarket->id,
+                'provider_type' => 'retail_pharmacy',
+                'service_channels' => ['in_store', 'phone', 'mobile_chat'],
+                'phone' => '+250 788 000 000',
+                'email' => 'care@vitapharmaafrica.com',
+                'address' => 'Kigali, Rwanda',
+                'latitude' => -1.9441000,
+                'longitude' => 30.0619000,
+                'service_radius_km' => 12,
+                'status' => 'active',
+                'metadata' => [
+                    'powered_by' => 'Ubuzima+ PharmaCo360',
+                    'launch_status' => 'first_tenant_ready',
+                ],
+            ]
+        );
+
+        SystemNotification::query()->updateOrCreate(
+            ['uuid' => '00000000-0000-4000-8000-000000000140'],
+            [
+                'tenant_id' => $vita->id,
+                'market_id' => $rwandaMarket->id,
+                'title' => 'VitaPharma onboarding workspace is active',
+                'body' => 'Your first tenant workspace is prepared with product inventory, POS, corporate email, pharmacist chat, notifications, localization, and governed AI readiness.',
+                'notification_type' => 'tenant_onboarding',
+                'channel' => 'in_app',
+                'audience_scope' => 'tenant_staff',
+                'status' => 'published',
+                'published_at' => now(),
+                'created_by' => null,
+                'metadata' => [
+                    'sms_ready_later' => true,
+                    'call_to_action' => 'Confirm users, products, opening stock, and daily POS workflow.',
                 ],
             ]
         );
@@ -129,6 +231,10 @@ class PlatformFoundationSeeder extends Seeder
             'platform.auth',
             'platform.corporate_email',
             'platform.data_layer',
+            'platform.localization',
+            'platform.market_management',
+            'platform.nearby_providers',
+            'platform.notification_center',
             'platform.admin_scopes',
             'platform.tenancy',
             'platform.rbac',
@@ -137,7 +243,9 @@ class PlatformFoundationSeeder extends Seeder
             'pharmaco.branches',
             'pharmaco.products',
             'pharmaco.inventory',
+            'pharmaco.insurance',
             'pharmaco.pos',
+            'pharmaco.sales',
             'pharmaco.pharmacist_chat',
             'pharmaco.suppliers',
             'pharmaco.reports',

@@ -1,9 +1,46 @@
 import { useEffect, useMemo, useState } from 'react';
+import { applyRuntimeLanguage } from './runtimeI18n';
 
 const brandLogoSrc = '/assets/ubuzima-logo.png';
-const staffLoginUrl = import.meta.env.VITE_STAFF_LOGIN_URL?.trim() || 'http://127.0.0.1:5175/';
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || 'http://127.0.0.1:8000/api/v1';
+const vitaPharmaLogoSrc = '/assets/vitapharma-logo.png';
+const staffLoginUrl = import.meta.env.VITE_STAFF_LOGIN_URL?.trim() || '/admin/';
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '/api/v1';
 const staffLoginRedirectPaths = new Set(['/login', '/staff', '/staff-login']);
+const languageStorageKey = 'ubuzima_public_language';
+
+type LanguageCode = 'en' | 'fr' | 'pt';
+
+const languageOptions: Array<{ code: LanguageCode; label: string }> = [
+  { code: 'en', label: 'English' },
+  { code: 'fr', label: 'Francais' },
+  { code: 'pt', label: 'Portugues' },
+];
+
+const localizedLabels: Record<LanguageCode, {
+  requestDemo: string;
+  staffLogin: string;
+  language: string;
+  contact: string;
+}> = {
+  en: {
+    requestDemo: 'Request Demo',
+    staffLogin: 'Staff Login',
+    language: 'Language',
+    contact: 'Contact',
+  },
+  fr: {
+    requestDemo: 'Demander une demo',
+    staffLogin: 'Connexion equipe',
+    language: 'Langue',
+    contact: 'Contact',
+  },
+  pt: {
+    requestDemo: 'Solicitar demo',
+    staffLogin: 'Entrar equipa',
+    language: 'Idioma',
+    contact: 'Contacto',
+  },
+};
 
 type ManagedSection = {
   section_key: string;
@@ -130,14 +167,6 @@ const audiences = [
   ['Health business groups', 'Control multiple tenants, branches, packages, staff roles, finance visibility, and AI governance.'],
 ];
 
-const platformChannels = [
-  ['Public website', 'Company profile, solution pages, resources, demo request, partners, tenant website strategy.'],
-  ['Admin dashboard', 'Role-based operations, configuration, reports, approval queues, support, security, and AI controls.'],
-  ['Tenant portal', 'Tenant identity, branch setup, local users, package modules, data imports, and onboarding progress.'],
-  ['Mobile app', 'Manager alerts, approvals, field tasks, delivery updates, stock alerts, and push notifications.'],
-  ['Desktop/PWA POS', 'Installable counter experience with barcode, receipts, fast sales, and offline-ready direction.'],
-];
-
 const trustControls = [
   'Tenant data separation',
   'Role and branch scope',
@@ -147,17 +176,416 @@ const trustControls = [
   'Human approval for sensitive AI',
 ];
 
-const roadmap = [
-  ['1', 'Assess', 'Confirm branches, users, existing stock data, sales flow, purchasing, reporting, and priority pain points.'],
-  ['2', 'Prepare', 'Configure business profile, roles, modules, products, suppliers, opening stock, payment, and tax settings.'],
-  ['3', 'Train', 'Practice sales, dispensing, receiving, transfers, reporting, approvals, and manager review routines.'],
-  ['4', 'Launch', 'Go live with monitored daily close, stock checks, support, issue tracking, and operational reports.'],
-  ['5+', 'Grow', 'Activate customer engagement, wholesale, delivery, insurance, clinic workflows, and governed AI insights.'],
+type VitaSectionKey =
+  | 'home'
+  | 'products'
+  | 'pharmacy-care'
+  | 'ncd-care'
+  | 'nutrition'
+  | 'baby-care'
+  | 'cosmetics'
+  | 'contact';
+
+const vitaSections: Array<{ key: VitaSectionKey; label: string }> = [
+  { key: 'home', label: 'Overview' },
+  { key: 'products', label: 'Products' },
+  { key: 'pharmacy-care', label: 'Pharmacy Care' },
+  { key: 'ncd-care', label: 'NCD Care' },
+  { key: 'nutrition', label: 'Nutrition' },
+  { key: 'baby-care', label: 'Baby Care' },
+  { key: 'cosmetics', label: 'Cosmetics' },
+  { key: 'contact', label: 'Contact' },
 ];
+
+const vitaServices = [
+  ['Prescription medicines', 'Dispensing support, refill assistance, medicine-use guidance, and prescription safety checks.'],
+  ['OTC and family health', 'Everyday medicines, first aid, hygiene, pain relief, cough and cold care, and home health essentials.'],
+  ['Cosmetics and personal care', 'Skin care, beauty, hygiene, hair care, oral care, and pharmacist-guided product selection.'],
+  ['Nutrition and supplements', 'Vitamins, minerals, wellness nutrition, dietary support, and supplement suitability guidance.'],
+  ['NCD care and advisory', 'Support for chronic routines including hypertension, diabetes, asthma, adherence, and monitoring essentials.'],
+  ['Baby care products', 'Mother and baby essentials, infant hygiene, feeding accessories, baby skin care, and family guidance.'],
+];
+
+const vitaCarePrinciples = [
+  'Clear medicine information',
+  'Respectful pharmacist support',
+  'Reliable product availability',
+  'Safe customer data handling',
+  'Simple family health guidance',
+  'Connected digital follow-up',
+];
+
+const vitaCustomerCategories = [
+  ['Pharmaceutical Drugs', 'Prescription and non-prescription medicines handled with professional pharmacy care.'],
+  ['Cosmetics', 'Beauty, skin, hair, hygiene, and personal-care products selected with safety in mind.'],
+  ['Nutrition', 'Vitamins, supplements, wellness nutrition, and practical dietary support.'],
+  ['NCD Care', 'Advisory support for chronic-care routines, refill planning, and monitoring essentials.'],
+  ['Baby Care', 'Mother and baby products, infant hygiene, feeding accessories, and gentle care essentials.'],
+  ['Advisory', 'Clear pharmacist guidance before, during, and after purchase.'],
+];
+
+const vitaProductCollections = [
+  ['Pharmaceutical Drugs', 'Prescription medicines, OTC care, pain relief, antibiotics by prescription, cough and cold, digestive care, allergy care, and first aid.'],
+  ['Cosmetics and Personal Care', 'Skin care, sun care, hair care, oral care, hygiene, beauty essentials, and sensitive-skin product guidance.'],
+  ['Nutrition and Wellness', 'Supplements, vitamins, minerals, immune support, sports nutrition, weight-management support, and healthy routine advice.'],
+  ['NCD Care and Advisory', 'Diabetes, hypertension, asthma, cholesterol, adherence reminders, refill planning, monitoring devices, and lifestyle guidance.'],
+  ['Baby and Mother Care', 'Baby hygiene, diapers, feeding accessories, infant skin care, maternity essentials, and family wellness products.'],
+  ['Diagnostics and Devices', 'Glucometers, BP monitors, thermometers, test strips, nebulizer support, and home-care devices.'],
+];
+
+const vitaNcdServices = [
+  ['Blood pressure support', 'Monitoring essentials, refill reminders, and practical adherence guidance.'],
+  ['Diabetes care', 'Glucometer support, test strips, lifestyle advice, and medicine routine support.'],
+  ['Asthma and respiratory care', 'Inhaler support, nebulizer accessories, and correct-use guidance.'],
+  ['Chronic refill planning', 'Customer history, refill follow-up, and pharmacist-led advisory conversations.'],
+];
+
+const vitaCustomerRoutes = [
+  ['Find product', 'Check availability for medicines, cosmetics, nutrition, NCD essentials, and baby care.'],
+  ['Ask pharmacist', 'Get practical guidance on safe use, alternatives, refills, and product suitability.'],
+  ['Plan follow-up', 'Use digital reminders and chat support when the Ubuzima+ customer app is activated.'],
+];
+
+const vitaContactChannels = [
+  ['Product availability', 'Confirm stock before visiting the pharmacy.'],
+  ['Prescription support', 'Ask what information is needed before dispensing.'],
+  ['Family care', 'Get help with baby care, nutrition, personal care, and NCD routines.'],
+];
+
+function readStoredLanguage(): LanguageCode {
+  const stored = localStorage.getItem(languageStorageKey);
+  return stored === 'fr' || stored === 'pt' || stored === 'en' ? stored : 'en';
+}
+
+function LanguageSelector({
+  value,
+  onChange,
+}: {
+  value: LanguageCode;
+  onChange: (language: LanguageCode) => void;
+}) {
+  return (
+    <label className="language-selector">
+      <span>{localizedLabels[value].language}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value as LanguageCode)}>
+        {languageOptions.map((language) => (
+          <option key={language.code} value={language.code}>
+            {language.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function VitaPharmaWebsite({
+  language,
+  onLanguageChange,
+}: {
+  language: LanguageCode;
+  onLanguageChange: (language: LanguageCode) => void;
+}) {
+  const [activeSection, setActiveSection] = useState<VitaSectionKey>('home');
+  const labels = localizedLabels[language];
+
+  function renderSection() {
+    switch (activeSection) {
+      case 'products':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">Products</p>
+            <h1>Everything customers expect from a modern retail pharmacy, organized clearly.</h1>
+            <p>
+              VitaPharma serves everyday medicine needs, family care, personal care, nutrition, chronic-care support,
+              and pharmacist-guided product selection through one connected retail pharmacy experience.
+            </p>
+            <div className="vita-service-grid">
+              {vitaProductCollections.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <p>{text}</p>
+                </article>
+              ))}
+            </div>
+            <div className="vita-product-note">
+              <strong>Customer-first product browsing</strong>
+              <span>Products are grouped by the way customers shop: medicine, wellness, chronic care, baby care, personal care, and devices.</span>
+            </div>
+          </section>
+        );
+      case 'pharmacy-care':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">Pharmacy care</p>
+            <h1>Designed for customers who need clarity before they buy.</h1>
+            <p>
+              Customers should be able to ask practical medicine questions, understand product options,
+              and receive respectful support without feeling rushed or overloaded with technical wording.
+            </p>
+            <div className="vita-route-grid">
+              {vitaCustomerRoutes.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </div>
+            <div className="trust-grid vita-care-grid">
+              {vitaCarePrinciples.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          </section>
+        );
+      case 'ncd-care':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">NCD care and advisory</p>
+            <h1>Practical support for customers managing long-term health routines.</h1>
+            <p>
+              Customers managing hypertension, diabetes, asthma, cholesterol, and other chronic needs should find
+              respectful guidance, consistent refill support, and the right monitoring essentials.
+            </p>
+            <div className="vita-service-grid vita-ncd-grid">
+              {vitaNcdServices.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <p>{text}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'nutrition':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">Nutrition</p>
+            <h1>Supplements and nutrition support selected with care.</h1>
+            <p>
+              VitaPharma helps customers choose vitamins, minerals, wellness nutrition, immune support,
+              and dietary products with practical guidance on suitability, safe use, and consistency.
+            </p>
+            <div className="managed-priority-strip vita-priority-strip">
+              {['Vitamins', 'Minerals', 'Immune support', 'Wellness nutrition', 'Dietary guidance', 'Supplement safety'].map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          </section>
+        );
+      case 'baby-care':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">Baby care products</p>
+            <h1>Gentle essentials for babies, mothers, and families.</h1>
+            <p>
+              From baby hygiene and skin care to feeding accessories and mother-care essentials, VitaPharma keeps
+              family shopping simple while giving parents access to respectful pharmacist support.
+            </p>
+            <div className="vita-category-grid vita-family-grid">
+              {['Baby hygiene', 'Feeding accessories', 'Infant skin care', 'Mother care', 'Family first aid', 'Gentle wellness'].map((item) => (
+                <article key={item}>
+                  <strong>{item}</strong>
+                  <span>Curated for safe, practical family care.</span>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'cosmetics':
+        return (
+          <section className="vita-focus-section">
+            <p className="eyebrow">Cosmetics and personal care</p>
+            <h1>Beauty and personal care with pharmacy-level attention.</h1>
+            <p>
+              Customers can shop skin care, hair care, oral care, hygiene, and beauty essentials with product guidance
+              that considers sensitivity, safe use, and everyday confidence.
+            </p>
+            <div className="vita-category-grid vita-family-grid">
+              {['Skin care', 'Hair care', 'Oral care', 'Hygiene', 'Beauty essentials', 'Sensitive-skin support'].map((item) => (
+                <article key={item}>
+                  <strong>{item}</strong>
+                  <span>Selected for daily care and customer confidence.</span>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'contact':
+        return (
+          <section className="vita-focus-section contact-focus-section">
+            <p className="eyebrow">{labels.contact}</p>
+            <h1>Talk to VitaPharma for pharmacy support and product availability.</h1>
+            <p>
+              Ask about product availability, prescription support, nutrition, cosmetics, baby care, or chronic-care
+              advisory. The customer chat and nearby-provider flow are ready to connect when live details are confirmed.
+            </p>
+            <div className="hero-actions">
+              <a className="primary-action" href="mailto:care@vitapharmaafrica.com">care@vitapharmaafrica.com</a>
+              <a className="secondary-action" href={staffLoginUrl}>{labels.staffLogin}</a>
+            </div>
+            <div className="vita-route-grid">
+              {vitaContactChannels.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      case 'home':
+      default:
+        return (
+          <section className="vita-focus-section vita-hero-section">
+            <p className="eyebrow">VitaPharma Africa</p>
+            <h1>Retail pharmacy care for medicines, cosmetics, nutrition, NCD support, and baby products.</h1>
+            <p>
+              VitaPharma brings practical pharmacy service closer to customers: pharmaceutical drugs, personal care,
+              nutrition and supplements, chronic-care advisory, baby care products, and clear pharmacist guidance.
+            </p>
+            <div className="hero-actions">
+              <button className="primary-action" type="button" onClick={() => setActiveSection('products')}>
+                Explore products
+              </button>
+              <button className="secondary-action" type="button" onClick={() => setActiveSection('contact')}>
+                {labels.contact}
+              </button>
+            </div>
+            <div className="vita-hero-brand-card">
+              <img src={vitaPharmaLogoSrc} alt="VitaPharma" />
+              <div>
+                <strong>Retail pharmacy and advisory care</strong>
+                <span>Medicines, cosmetics, nutrition, NCD support, and baby care products.</span>
+              </div>
+            </div>
+            <div className="vita-hero-assurance" aria-label="VitaPharma service highlights">
+              {['Pharmacist guidance', 'Prescription support', 'NCD advisory', 'Family essentials'].map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+            <div className="vita-route-grid">
+              {vitaCustomerRoutes.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </div>
+            <div className="vita-category-grid">
+              {vitaCustomerCategories.map(([title, text]) => (
+                <article key={title}>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+    }
+  }
+
+  return (
+    <main className="vita-website-shell website-top-shell">
+      <header className="website-top-header vita-top-header">
+        <a className="brand vita-brand" href="#top" aria-label="VitaPharma home" onClick={() => setActiveSection('home')}>
+          <img className="brand-logo vita-logo" src={vitaPharmaLogoSrc} alt="VitaPharma" />
+          <span className="brand-caption">Powered by Ubuzima+</span>
+        </a>
+
+        <nav className="website-top-nav vita-top-nav" aria-label="VitaPharma website sections">
+          {vitaSections.map((section) => (
+            <button
+              key={section.key}
+              type="button"
+              className={activeSection === section.key ? 'active' : ''}
+              onClick={() => setActiveSection(section.key)}
+            >
+              {section.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="website-top-actions">
+          <LanguageSelector value={language} onChange={onLanguageChange} />
+          <button type="button" onClick={() => setActiveSection('contact')}>{labels.contact}</button>
+          <a href={staffLoginUrl}>{labels.staffLogin}</a>
+        </div>
+      </header>
+
+      <section className="website-content-panel vita-content-panel">
+        <div className="vita-status-strip" aria-label="VitaPharma customer service summary">
+          <span>Retail pharmacy</span>
+          <span>Medicines, cosmetics, nutrition, NCD care, and baby products</span>
+          <button type="button" onClick={() => setActiveSection('contact')}>Ask about availability</button>
+        </div>
+        {renderSection()}
+      </section>
+    </main>
+  );
+}
 
 function App() {
   const [managedSections, setManagedSections] = useState<Record<string, ManagedSection>>({});
   const [activeWebsiteSection, setActiveWebsiteSection] = useState<SiteSectionKey>('home');
+  const [language, setLanguage] = useState<LanguageCode>(readStoredLanguage);
+  const isVitaPharmaSite =
+    window.location.hostname.includes('vitapharmaafrica.com') ||
+    window.location.pathname.toLowerCase().startsWith('/vitapharma');
+
+  useEffect(() => {
+    localStorage.setItem(languageStorageKey, language);
+  }, [language]);
+
+  useEffect(() => {
+    let frame = 0;
+    const applyLanguage = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => applyRuntimeLanguage(language));
+    };
+
+    applyLanguage();
+
+    const observer = new MutationObserver(applyLanguage);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [language]);
+
+  useEffect(() => {
+    if (localStorage.getItem(languageStorageKey)) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadLocalizationContext() {
+      try {
+        const response = await fetch(`${apiBaseUrl}/localization/context`, {
+          headers: { Accept: 'application/json' },
+        });
+        const data = await response.json();
+        const detected = data?.selected_language;
+
+        if (!cancelled && (detected === 'en' || detected === 'fr' || detected === 'pt')) {
+          setLanguage(detected);
+        }
+      } catch {
+        // English remains the default when localization context is unavailable.
+      }
+    }
+
+    void loadLocalizationContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const normalizedPath = window.location.pathname.replace(/\/$/, '') || '/';
@@ -203,8 +631,6 @@ function App() {
   const solutionsSection = managedSections.solutions;
   const modulesSection = managedSections.pharmaco_modules;
   const securitySection = managedSections.security;
-  const onboardingSection = managedSections.onboarding;
-
   const managedPriorityModules = useMemo(() => {
     const items = modulesSection?.content?.priority_modules;
 
@@ -212,6 +638,17 @@ function App() {
       ? items as string[]
       : [];
   }, [modulesSection]);
+
+  if (isVitaPharmaSite) {
+    return (
+      <VitaPharmaWebsite
+        language={language}
+        onLanguageChange={setLanguage}
+      />
+    );
+  }
+
+  const labels = localizedLabels[language];
 
   function renderWebsiteSection() {
     switch (activeWebsiteSection) {
@@ -378,333 +815,43 @@ function App() {
   }
 
   return (
-    <main className="website-app-shell">
-      <aside className="website-tree-panel">
+    <main className="website-app-shell website-top-shell">
+      <header className="website-top-header">
         <a className="brand" href="#top" aria-label="Ubuzima+ home" onClick={() => setActiveWebsiteSection('home')}>
           <img className="brand-logo" src={brandLogoSrc} alt="Ubuzima+" />
           <span className="brand-caption">Digital health operations</span>
         </a>
 
-        <nav className="website-tree-nav" aria-label="Website sections">
+        <nav className="website-top-nav" aria-label="Website sections">
           {websiteMenu.map((group) => (
-            <section key={group.label}>
-              <strong>{group.label}</strong>
-              {group.children.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={activeWebsiteSection === item.key ? 'active' : ''}
-                  onClick={() => setActiveWebsiteSection(item.key)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </section>
+            <div key={group.label} className="website-top-group">
+              <button type="button">{group.label}</button>
+              <div className="website-top-dropdown">
+                {group.children.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={activeWebsiteSection === item.key ? 'active' : ''}
+                    onClick={() => setActiveWebsiteSection(item.key)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
-        <a className="staff-login-card" href={staffLoginUrl}>
-          <strong>Staff login</strong>
-          <span>Open secure workspace</span>
-        </a>
-      </aside>
-
-      <section className="website-content-panel">
-        <header className="website-content-header">
-          <span>Ubuzima+ Digital Health Operations</span>
-          <div>
-            <button type="button" onClick={() => setActiveWebsiteSection('contact')}>Request Demo</button>
-            <a href={staffLoginUrl}>Staff Login</a>
-          </div>
-        </header>
-
-        {renderWebsiteSection()}
-      </section>
-    </main>
-  );
-
-  return (
-    <main>
-      <section className="utility-bar">
-        <span>Ubuzima+ Digital Health Operations</span>
-        <div>
-          <a href="#audiences">Customers</a>
-          <a href="#onboarding">Implementation</a>
-          <a href="#security">Security</a>
-          <a href={staffLoginUrl}>Staff login</a>
+        <div className="website-top-actions">
+          <LanguageSelector value={language} onChange={setLanguage} />
+          <button type="button" onClick={() => setActiveWebsiteSection('contact')}>{labels.requestDemo}</button>
+          <a href={staffLoginUrl}>{labels.staffLogin}</a>
         </div>
-      </section>
-
-      <header className="site-header">
-        <a className="brand" href="#top" aria-label="Ubuzima+ home">
-          <img className="brand-logo" src={brandLogoSrc} alt="Ubuzima+" />
-          <span className="brand-caption">Digital health operations</span>
-        </a>
-
-        <nav aria-label="Main navigation">
-          <a href="#solutions">Solutions</a>
-          <a href="#modules">PharmaCo360</a>
-          <a href="#audiences">Customers</a>
-          <a href="#platform">Platform</a>
-          <a href="#security">Security</a>
-        </nav>
-
-        <a className="header-action" href="#contact">Request Demo</a>
       </header>
 
-      <section id="top" className="hero">
-        <div className="hero-content">
-          <p className="eyebrow">{heroSection?.eyebrow ?? 'Digital health business platform'}</p>
-          <h1>{heroSection?.title ?? 'Ubuzima+ digital health operations platform.'}</h1>
-          <p className="hero-copy">
-            {heroSection?.body ??
-              'Run pharmacy branches, stock, sales, dispensing, procurement, finance visibility, reporting, customer follow-up, and AI-assisted decisions from a secure modular platform.'}
-          </p>
-
-          <div className="hero-actions">
-            <a className="primary-action" href="#contact">Request Demo</a>
-            <a className="secondary-action" href="#modules">Explore PharmaCo360</a>
-          </div>
-
-          <dl className="hero-proof">
-            <div>
-              <dt>3</dt>
-              <dd>Admin levels</dd>
-            </div>
-            <div>
-              <dt>14</dt>
-              <dd>Pharma modules</dd>
-            </div>
-            <div>
-              <dt>360</dt>
-              <dd>Role-based views</dd>
-            </div>
-          </dl>
-        </div>
+      <section className="website-content-panel">
+        {renderWebsiteSection()}
       </section>
-
-      <section className="quick-actions" aria-label="Quick actions">
-        {quickActions.map((action) => (
-          <a key={action.title} href={action.href}>
-            <span>{action.title}</span>
-            <p>{action.text}</p>
-          </a>
-        ))}
-      </section>
-
-      <section id="solutions" className="section section-white">
-        <div className="section-heading">
-          <p className="eyebrow">{solutionsSection?.eyebrow ?? 'Solution lines'}</p>
-          <h2>{solutionsSection?.title ?? 'One platform foundation, multiple health-sector solutions.'}</h2>
-          <p>
-            {solutionsSection?.body ??
-              'Ubuzima+ gives growing health businesses a clear path from daily operations to connected branch management, partner workflows, and controlled AI support.'}
-          </p>
-        </div>
-
-        <div className="solution-grid">
-          {solutionLines.map((solution) => (
-            <article key={solution.name} className="solution-card">
-              <span>{solution.status}</span>
-              <h3>{solution.name}</h3>
-              <p>{solution.summary}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="modules" className="section section-soft">
-        <div className="section-heading">
-          <p className="eyebrow">{modulesSection?.eyebrow ?? 'PharmaCo360 module framework'}</p>
-          <h2>{modulesSection?.title ?? 'A full pharmacy ecosystem, not only a POS.'}</h2>
-          <p>
-            {modulesSection?.body ??
-              'Start with the pharmacy workflows you need today, then activate advanced modules by package, role, branch, readiness, and business policy.'}
-          </p>
-        </div>
-
-        {managedPriorityModules.length > 0 && (
-          <div className="managed-priority-strip">
-            {managedPriorityModules.map((item) => (
-              <span key={item}>{item}</span>
-            ))}
-          </div>
-        )}
-
-        <div className="module-grid">
-          {pharmaModules.map(([title, description, status]) => (
-            <article key={title} className="module-card">
-              <div>
-                <h3>{title}</h3>
-                <span>{status}</span>
-              </div>
-              <p>{description}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="audiences" className="section audience-section">
-        <div className="section-heading">
-          <p className="eyebrow">Who it serves</p>
-          <h2>Routes for every commercial audience.</h2>
-          <p>
-            Whether you operate one pharmacy, manage branches, supply retailers, or coordinate care,
-            Ubuzima+ keeps the work understandable and controlled.
-          </p>
-        </div>
-
-        <div className="audience-grid">
-          {audiences.map(([title, text]) => (
-            <article key={title}>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="platform" className="section platform-section">
-        <div className="section-heading inverse">
-          <p className="eyebrow">Application channels</p>
-          <h2>Public, admin, tenant, mobile, and desktop channels from one operating model.</h2>
-          <p>
-            Teams can work from the right channel for the task: management dashboard, tenant portal,
-            counter POS, mobile approvals, or partner integrations.
-          </p>
-        </div>
-
-        <div className="channel-list">
-          {platformChannels.map(([title, text]) => (
-            <article key={title}>
-              <span>{title}</span>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="ai" className="section ai-section">
-        <div className="ai-copy">
-          <p className="eyebrow">Ubuzima AI Center</p>
-          <h2>AI is central, but never uncontrolled.</h2>
-          <p>
-            AI recommendations should show the reason, confidence, data signals, risk level, and next action.
-            Sensitive outputs move through human approval before they affect pharmacy operations.
-          </p>
-        </div>
-
-        <div className="ai-grid">
-          <article>
-            <span>AI governance</span>
-            <p>Provider approval, model registry, prompts, knowledge sources, usage controls, and risk policy.</p>
-          </article>
-          <article>
-            <span>Pharma agents</span>
-            <p>Demand forecasting, reorder, expiry risk, stock-out, supplier performance, pricing, and reports.</p>
-          </article>
-          <article>
-            <span>Approval center</span>
-            <p>Review reorder proposals, customer messages, permission suggestions, price changes, and risky actions.</p>
-          </article>
-        </div>
-      </section>
-
-      <section id="security" className="section section-white security-section">
-        <div className="section-heading">
-          <p className="eyebrow">{securitySection?.eyebrow ?? 'Security and trust'}</p>
-          <h2>{securitySection?.title ?? 'Commercial viability depends on confidence, not decoration.'}</h2>
-          <p>
-            {securitySection?.body ??
-              'Ubuzima+ is designed around tenant separation, permissioned access, auditability, and controlled AI so health businesses can grow without losing operational control.'}
-          </p>
-        </div>
-
-        <div className="trust-grid">
-          {trustControls.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      </section>
-
-      <section id="onboarding" className="section pilot-section">
-        <div>
-          <p className="eyebrow">{onboardingSection?.eyebrow ?? 'Implementation path'}</p>
-          <h2>{onboardingSection?.title ?? 'Go live in controlled, practical stages.'}</h2>
-          <p>
-            {onboardingSection?.body ??
-              'Begin with business setup, branches, users, products, stock, sales, suppliers, and reports. Add AI, wholesale, delivery, insurance, and clinic workflows when your team is ready.'}
-          </p>
-        </div>
-
-        <div className="pilot-stack">
-          <span>Business setup</span>
-          <span>Product and stock import</span>
-          <span>Sales and dispensing training</span>
-          <span>Controlled AI activation</span>
-        </div>
-      </section>
-
-      <section id="roadmap" className="section section-soft">
-        <div className="section-heading">
-          <p className="eyebrow">Roadmap</p>
-          <h2>Progressive activation keeps the system simple and safe.</h2>
-          <p>
-            Ubuzima+ keeps the first experience simple while making the full growth path visible for
-            pharmacy groups, partners, clinics, and connected health operations.
-          </p>
-        </div>
-
-        <div className="roadmap">
-          {roadmap.map(([phase, title, text]) => (
-            <article key={phase}>
-              <strong>{phase}</strong>
-              <div>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="contact" className="contact-band">
-        <div>
-          <p className="eyebrow">Talk to Ubuzima+</p>
-          <h2>Ready to simplify pharmacy and health business operations?</h2>
-          <p>
-            Share your branch structure, current workflows, and priority modules. The Ubuzima+ team can
-            map the right implementation path for your organization.
-          </p>
-        </div>
-
-        <a className="primary-action" href="mailto:info@ubuzimaplus.com">Contact Ubuzima+</a>
-      </section>
-
-      <footer>
-        <div>
-          <strong>Ubuzima+</strong>
-          <p>Secure modular digital operations for health-sector businesses.</p>
-        </div>
-        <div>
-          <strong>Solutions</strong>
-          <a href="#modules">PharmaCo360</a>
-          <a href="#solutions">ClinicCo360</a>
-          <a href="#solutions">VetCo360</a>
-        </div>
-        <div>
-          <strong>Platform</strong>
-          <a href={staffLoginUrl}>Staff login</a>
-          <a href="#platform">Tenant portal</a>
-          <a href="#ai">AI Center</a>
-        </div>
-        <div>
-          <strong>Trust</strong>
-          <a href="#security">Tenant isolation</a>
-          <a href="#security">Audit logs</a>
-          <a href="#security">Data protection</a>
-        </div>
-      </footer>
     </main>
   );
 }

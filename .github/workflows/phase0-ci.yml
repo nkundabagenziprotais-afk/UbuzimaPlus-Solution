@@ -11,6 +11,7 @@ on:
     branches:
       - development
       - main
+      - 'feature/**'
 
 jobs:
   backend-tests:
@@ -50,8 +51,22 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Prepare Laravel environment
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+          CACHE_STORE: array
+          SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
+          UBUZIMA_SEED_ADMIN_PASSWORD: "ChangeThisPassword123!"
+          UBUZIMA_SEED_ADMIN_PIN: "1234"
         run: |
           cp .env.example .env
+          echo APP_ENV=testing >> .env
+          echo DB_CONNECTION=sqlite >> .env
+          echo DB_DATABASE=database/database.sqlite >> .env
+          echo UBUZIMA_SEED_ADMIN_PASSWORD='ChangeThisPassword123!' >> .env
+          echo UBUZIMA_SEED_ADMIN_PIN=1234 >> .env
           touch database/database.sqlite
           php artisan key:generate
           php artisan migrate:fresh --seed

@@ -1,0 +1,12 @@
+---
+deployment:
+  tasks:
+    - export REPOPATH=/home/inzoeqqx/ubuzimaplus.com
+    - export PUBLICPATH=$REPOPATH/public_html
+    - /bin/mkdir -p $PUBLICPATH
+    - /bin/mkdir -p $PUBLICPATH/admin
+    - /bin/rm -rf $PUBLICPATH/assets
+    - /bin/rm -rf $PUBLICPATH/admin/assets
+    - /bin/cp -a $REPOPATH/web/public-website/dist/. $PUBLICPATH/
+    - /bin/cp -f $REPOPATH/infra/cpanel/api-front-controller.php $PUBLICPATH/index.php
+    - /bin/cp -a $REPOPATH/web/admin-dashboard/dist/. $PUBLICPATH/admin/

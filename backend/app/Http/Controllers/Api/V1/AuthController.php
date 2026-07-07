@@ -9,6 +9,7 @@ use App\Services\Auth\UserAccessProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -21,25 +22,55 @@ class AuthController extends Controller
     ): JsonResponse
     {
         $data = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
+            'login_method' => ['nullable', 'in:email,phone'],
+            'email' => ['nullable', 'email'],
+            'password' => ['nullable', 'string'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'pin' => ['nullable', 'digits_between:4,6'],
             'device_name' => ['nullable', 'string', 'max:100'],
             'trusted_device_token' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $user = User::query()
-            ->where('email', $data['email'])
-            ->first();
+        $loginMethod = $data['login_method']
+            ?? (((string) ($data['email'] ?? '')) !== '' ? 'email' : 'phone');
 
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if ($loginMethod === 'email') {
+            if (((string) ($data['email'] ?? '')) === '' || ((string) ($data['password'] ?? '')) === '') {
+                throw ValidationException::withMessages([
+                    'email' => ['Enter your staff email address and password.'],
+                ]);
+            }
+
+            $user = User::query()
+                ->where('email', $data['email'])
+                ->first();
+
+            $credentialIsValid = $user && Hash::check($data['password'], $user->password);
+            $credentialField = 'email';
+        } else {
+            if (((string) ($data['phone'] ?? '')) === '' || ((string) ($data['pin'] ?? '')) === '') {
+                throw ValidationException::withMessages([
+                    'phone' => ['Enter your staff phone number and PIN.'],
+                ]);
+            }
+
+            $user = User::query()
+                ->whereIn('phone', $this->phoneCandidates($data['phone']))
+                ->first();
+
+            $credentialIsValid = $user?->login_pin && Hash::check($data['pin'], $user->login_pin);
+            $credentialField = 'phone';
+        }
+
+        if (! $credentialIsValid) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are not valid.'],
+                $credentialField => ['The provided credentials are not valid.'],
             ]);
         }
 
         if ($user->status !== 'active') {
             throw ValidationException::withMessages([
-                'email' => ['This user account is not active.'],
+                $credentialField => ['This user account is not active.'],
             ]);
         }
 
@@ -86,6 +117,54 @@ class AuthController extends Controller
         ]);
     }
 
+
+    public function passwordResetRequest(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        try {
+            Password::sendResetLink([
+                'email' => $data['email'],
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => 'If this email is registered, password reset instructions will be processed. If email delivery is not configured yet, contact the platform administrator to reset access.',
+        ]);
+    }
+
+
+    public function changePassword(Request $request, UserAccessProfileService $profileService): JsonResponse
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is not correct.'],
+            ]);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($data['password']),
+            'must_change_password' => false,
+        ])->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully.',
+            'profile' => $profileService->build($user->fresh()),
+        ]);
+    }
+
     public function me(Request $request, UserAccessProfileService $profileService): JsonResponse
     {
         return response()->json([
@@ -107,5 +186,25 @@ class AuthController extends Controller
             'status' => 'ok',
             'message' => 'Signed out successfully.',
         ]);
+    }
+
+    /**
+     * Staff can type a local phone number with spaces, dashes, or a leading plus.
+     * Store lookups should accept both +250... and 250... formats.
+     *
+     * @return array<int, string>
+     */
+    private function phoneCandidates(string $phone): array
+    {
+        $trimmed = trim($phone);
+        $hasLeadingPlus = str_starts_with($trimmed, '+');
+        $digits = preg_replace('/\D+/', '', $trimmed) ?? '';
+        $normalized = $hasLeadingPlus ? '+' . $digits : $digits;
+
+        return array_values(array_unique(array_filter([
+            $normalized,
+            $digits,
+            $digits !== '' ? '+' . $digits : null,
+        ])));
     }
 }

@@ -11,3 +11,11 @@ backend/storage/logs/*
 !backend/storage/logs/.gitignore
 .idea/
 .vscode/
+public_html/
+
+# Local emergency backups - never commit
+*.before-*
+*.white-page-backup
+*.low-stock-broken-backup
+local-backups/
+FETCH_HEAD

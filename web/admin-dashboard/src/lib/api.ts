@@ -1,6 +1,9 @@
 export type LoginPayload = {
-  email: string;
-  password: string;
+  login_method: 'email' | 'phone';
+  email?: string;
+  phone?: string;
+  password?: string;
+  pin?: string;
   device_name?: string;
   trusted_device_token?: string | null;
 };
@@ -94,6 +97,11 @@ export type LoginResponse = {
   trust_device_available: boolean;
 };
 
+export type PasswordResetRequestResponse = {
+  status: 'ok';
+  message: string;
+};
+
 export type TwoFactorVerifyResponse = {
   status: 'two_factor_verified';
   token_type: 'Bearer';
@@ -124,7 +132,7 @@ export type TwoFactorStatusResponse = {
 };
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || 'http://127.0.0.1:8000/api/v1';
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '/api/v1';
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -142,12 +150,75 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     const message =
       data?.message ||
       data?.errors?.email?.[0] ||
+        data?.errors?.phone?.[0] ||
+      data?.errors?.email?.[0] ||
+      data?.errors?.pin?.[0] ||
       'Login failed. Please check your credentials and try again.';
 
     throw new Error(message);
   }
 
   return data as LoginResponse;
+}
+
+export async function requestPasswordReset(payload: { email: string }): Promise<PasswordResetRequestResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/password-reset-request`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      data?.errors?.email?.[0] ||
+        data?.message ||
+        'Unable to submit password reset request.',
+    );
+  }
+
+  return data as PasswordResetRequestResponse;
+}
+
+
+export type ChangePasswordResponse = {
+  message: string;
+  profile: AccessProfile;
+};
+
+export async function changePassword(
+  token: string,
+  payload: {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+  },
+): Promise<ChangePasswordResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors).flat().filter(Boolean).join(' ')
+      : '';
+
+    throw new Error(validationMessage || data?.message || 'Unable to change password.');
+  }
+
+  return data as ChangePasswordResponse;
 }
 
 export async function verifyTwoFactor(payload: {
@@ -579,9 +650,13 @@ export async function updatePharmaBranchDepartment(
 
 export type PharmaProductCategory = {
   id: number;
+  uuid?: string;
   name: string;
   code: string;
   category_type: string;
+  status?: string;
+  description?: string | null;
+  products_count?: number;
 };
 
 export type PharmaProductStockSummary = {
@@ -603,6 +678,20 @@ export type PharmaProduct = {
   dosage_form: string | null;
   strength: string | null;
   unit: string;
+  selling_unit: string;
+  base_unit: string;
+  quantity_per_selling_unit: number;
+  allow_other_quantity: boolean;
+  default_pos_quantity_mode: 'selling_unit' | 'other_quantity' | 'combined';
+  selling_unit_notes: string | null;
+  ai_suggested_quantity_per_unit: number | null;
+  ai_suggestion_status: string;
+  ai_suggestion_confidence: number | null;
+  ai_suggestion_explanation: string | null;
+  ai_suggestion_source: string | null;
+  ai_suggestion_reference: string | null;
+  ai_suggestion_reviewed_by: number | null;
+  ai_suggestion_reviewed_at: string | null;
   pack_size: string | null;
   route_of_administration: string | null;
   product_type: string;
@@ -621,6 +710,8 @@ export type PharmaProduct = {
 export type PharmaStockLocation = {
   id: number;
   uuid: string;
+  branch_id?: number;
+  branch_name?: string | null;
   name: string;
   code: string;
   location_type: string;
@@ -677,6 +768,24 @@ export type PharmaProductsResponse = {
     slug: string;
   };
   products: PharmaProduct[];
+  pagination?: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+  };
+};
+
+
+export type PharmaProductCategoriesResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  categories: PharmaProductCategory[];
 };
 
 export type PharmaInventoryLocationsResponse = {
@@ -710,6 +819,10 @@ export type PharmaInventorySummaryResponse = {
     stock_batches_count: number;
     total_quantity_on_hand: number;
     estimated_stock_value: number;
+    estimated_stock_cost_value?: number;
+    estimated_stock_retail_value?: number;
+    estimated_potential_margin_value?: number;
+    expired_batches_count?: number;
     low_stock_products_count: number;
     near_expiry_batches_180_days_count: number;
   };
@@ -719,8 +832,36 @@ export type PharmaInventorySummaryResponse = {
 export async function getPharmaProducts(
   token: string,
   tenantSlug: string,
+  options?: {
+    search?: string;
+    perPage?: number;
+    status?: string;
+  },
 ): Promise<PharmaProductsResponse> {
-  return getJsonWithTenant<PharmaProductsResponse>(token, '/pharmaco/products', tenantSlug);
+  const params = new URLSearchParams();
+
+  if (options?.search) params.set('search', options.search);
+  if (options?.perPage) params.set('per_page', String(options.perPage));
+  if (options?.status) params.set('status', options.status);
+
+  const query = params.toString();
+
+  return getJsonWithTenant<PharmaProductsResponse>(
+    token,
+    `/pharmaco/products${query ? `?${query}` : ''}`,
+    tenantSlug,
+  );
+}
+
+export async function getPharmaProductCategories(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaProductCategoriesResponse> {
+  return getJsonWithTenant<PharmaProductCategoriesResponse>(
+    token,
+    '/pharmaco/product-categories',
+    tenantSlug,
+  );
 }
 
 export async function getPharmaInventoryLocations(
@@ -738,12 +879,24 @@ export async function getPharmaInventoryBatches(
   token: string,
   tenantSlug: string,
   expiringWithinDays?: number,
+  options?: {
+    search?: string;
+    perPage?: number;
+    sellableOnly?: boolean;
+  },
 ): Promise<PharmaInventoryBatchesResponse> {
-  const query = expiringWithinDays ? `?expiring_within_days=${expiringWithinDays}` : '';
+  const params = new URLSearchParams();
+
+  if (expiringWithinDays) params.set('expiring_within_days', String(expiringWithinDays));
+  if (options?.search) params.set('search', options.search);
+  if (options?.perPage) params.set('per_page', String(options.perPage));
+  if (options?.sellableOnly) params.set('sellable_only', '1');
+
+  const query = params.toString();
 
   return getJsonWithTenant<PharmaInventoryBatchesResponse>(
     token,
-    `/pharmaco/inventory/batches${query}`,
+    `/pharmaco/inventory/batches${query ? `?${query}` : ''}`,
     tenantSlug,
   );
 }
@@ -784,6 +937,46 @@ export type CreatePharmaProductPayload = {
 };
 
 export type UpdatePharmaProductPayload = Partial<CreatePharmaProductPayload>;
+
+export type CreatePharmaProductCategoryPayload = {
+  name: string;
+  code: string;
+  category_type?: string;
+  status?: 'active' | 'inactive';
+  description?: string | null;
+};
+
+export type UpdatePharmaProductCategoryPayload = Partial<CreatePharmaProductCategoryPayload>;
+
+export type PharmaProductCategoryMutationResponse = {
+  message: string;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  category: PharmaProductCategory;
+};
+
+export type CreatePharmaStockLocationPayload = {
+  branch_id: number;
+  name: string;
+  code: string;
+  location_type?: string;
+  status?: 'active' | 'inactive';
+};
+
+export type UpdatePharmaStockLocationPayload = Partial<Omit<CreatePharmaStockLocationPayload, 'branch_id'>>;
+
+export type PharmaStockLocationMutationResponse = {
+  message: string;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  location: PharmaStockLocation;
+};
 
 export type PharmaProductMutationResponse = {
   message: string;
@@ -868,6 +1061,118 @@ export async function updatePharmaProduct(
   );
 }
 
+export async function deletePharmaProduct(
+  token: string,
+  tenantSlug: string,
+  productId: number,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/pharmaco/products/${productId}`, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-Slug': tenantSlug,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors).flat().join(' ')
+      : null;
+
+    throw new Error(validationMessage || data?.message || 'Unable to delete product.');
+  }
+
+  return data as { message: string };
+}
+
+export async function createPharmaProductCategory(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaProductCategoryPayload,
+): Promise<PharmaProductCategoryMutationResponse> {
+  return sendJsonWithTenant<PharmaProductCategoryMutationResponse>(
+    token,
+    '/pharmaco/product-categories',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function updatePharmaProductCategory(
+  token: string,
+  tenantSlug: string,
+  categoryId: number,
+  payload: UpdatePharmaProductCategoryPayload,
+): Promise<PharmaProductCategoryMutationResponse> {
+  return sendJsonWithTenant<PharmaProductCategoryMutationResponse>(
+    token,
+    `/pharmaco/product-categories/${categoryId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export async function createPharmaStockLocation(
+  token: string,
+  tenantSlug: string,
+  payload: CreatePharmaStockLocationPayload,
+): Promise<PharmaStockLocationMutationResponse> {
+  return sendJsonWithTenant<PharmaStockLocationMutationResponse>(
+    token,
+    '/pharmaco/inventory/locations',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function updatePharmaStockLocation(
+  token: string,
+  tenantSlug: string,
+  locationId: number,
+  payload: UpdatePharmaStockLocationPayload,
+): Promise<PharmaStockLocationMutationResponse> {
+  return sendJsonWithTenant<PharmaStockLocationMutationResponse>(
+    token,
+    `/pharmaco/inventory/locations/${locationId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export async function deletePharmaStockLocation(
+  token: string,
+  tenantSlug: string,
+  locationId: number,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/pharmaco/inventory/locations/${locationId}`, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-Slug': tenantSlug,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors).flat().join(' ')
+      : null;
+
+    throw new Error(validationMessage || data?.message || 'Unable to delete stock location.');
+  }
+
+  return data as { message: string };
+}
+
 export async function receivePharmaStock(
   token: string,
   tenantSlug: string,
@@ -898,6 +1203,52 @@ export type ProductBulkOperationResponse = {
 export type ProductBulkImportRow = Partial<CreatePharmaProductPayload> & {
   category_code?: string | null;
 };
+
+
+export async function updatePharmaStockBatch(
+  token: string,
+  tenantSlug: string,
+  batchId: number,
+  payload: {
+    product_id: number;
+    stock_location_id: number;
+    batch_number: string;
+    quantity: number;
+    expiry_date?: string | null;
+    unit_cost?: number | null;
+    selling_price?: number | null;
+    supplier_name?: string | null;
+    reference_number?: string | null;
+  },
+) {
+  return apiRequest<{
+    message: string;
+    batch: PharmaStockBatch;
+  }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deletePharmaStockBatch(
+  token: string,
+  tenantSlug: string,
+  batchId: number,
+) {
+  try {
+    return await apiRequest<{
+      message: string;
+    }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}`, {
+      method: 'DELETE',
+    });
+  } catch (err) {
+    return apiRequest<{
+      message: string;
+    }>(token, tenantSlug, `/pharmaco/inventory/batches/${batchId}/delete`, {
+      method: 'POST',
+    });
+  }
+}
 
 export async function bulkImportPharmaProducts(
   token: string,
@@ -1607,6 +1958,15 @@ export type PharmaSupplierInvoice = {
   created_at?: string | null;
 };
 
+export type TenantPayload = {
+  id: number;
+  uuid?: string | null;
+  name: string;
+  slug: string;
+  code?: string | null;
+  status?: string | null;
+};
+
 export type PharmaSupplierInvoicesResponse = {
   tenant: TenantPayload;
   supplier_invoices: PharmaSupplierInvoice[];
@@ -1985,12 +2345,10 @@ export async function getPharmaCustomerCreditExposureExport(
   token: string,
   tenantSlug: string,
 ): Promise<PharmaCustomerCreditExposureExportResponse> {
-  return apiRequest<PharmaCustomerCreditExposureExportResponse>(
-    "/api/v1/pharmaco/reports/customer-credit-exposure/export",
-    {
-      token,
-      tenantSlug,
-    },
+  return getJsonWithTenant<PharmaCustomerCreditExposureExportResponse>(
+    token,
+    '/pharmaco/reports/customer-credit-exposure/export',
+    tenantSlug,
   );
 }
 
@@ -2682,4 +3040,417 @@ export async function updateAiRecommendationStatus(
     'PATCH',
     { status },
   );
+}
+
+export type SupportedLanguage = {
+  code: 'en' | 'fr' | 'pt';
+  name: string;
+  native_name: string;
+};
+
+export type Market = {
+  id: number;
+  code: string;
+  name: string;
+  country_code: string;
+  default_language: 'en' | 'fr' | 'pt';
+  currency_code: string;
+  timezone: string;
+  service_radius_km: number;
+  status: string;
+  tenant_assignments_count?: number;
+  service_providers_count?: number;
+};
+
+export type LocalizationContext = {
+  supported_languages: SupportedLanguage[];
+  selected_language: 'en' | 'fr' | 'pt';
+  language_source: string;
+  market: Market | null;
+  ip_policy: {
+    ip_address: string;
+    country_code: string | null;
+    restricted_to_market: string | null;
+    allowed: boolean;
+    message: string;
+  };
+};
+
+export type TenantMarketAssignment = {
+  id: number;
+  status: string;
+  service_radius_km: number | null;
+  assigned_at: string | null;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+    tenant_type: string;
+    status: string;
+  } | null;
+  market: Market | null;
+};
+
+export type NearbyProvider = {
+  id: number;
+  uuid: string;
+  name: string;
+  provider_type: string;
+  service_channels: string[];
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  service_radius_km: number | null;
+  distance_km: number | null;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+    website_url: string | null;
+  } | null;
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  market: {
+    code: string;
+    name: string;
+  } | null;
+};
+
+export type SystemNotification = {
+  id: number;
+  uuid: string;
+  title: string;
+  body: string;
+  notification_type: string;
+  channel: string;
+  audience_scope: string;
+  status: string;
+  published_at: string | null;
+  read_at: string | null;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+  market: {
+    id: number;
+    code: string;
+    name: string;
+  } | null;
+};
+
+export async function getLocalizationContext(): Promise<LocalizationContext> {
+  const response = await fetch(`${API_BASE_URL}/localization/context`, {
+    headers: { Accept: 'application/json' },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load localization context.');
+  }
+
+  return data as LocalizationContext;
+}
+
+export async function saveLocalizationPreference(
+  token: string,
+  payload: { language: 'en' | 'fr' | 'pt'; market_code?: string | null },
+): Promise<{ message: string; preference: Record<string, unknown> }> {
+  const response = await fetch(`${API_BASE_URL}/localization/preference`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to save localization preference.');
+  }
+
+  return data as { message: string; preference: Record<string, unknown> };
+}
+
+export async function getMarketAdminOverview(
+  token: string,
+): Promise<{ markets: Market[]; assignments: TenantMarketAssignment[]; provider_types: string[] }> {
+  const response = await fetch(`${API_BASE_URL}/admin/markets`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load market management.');
+  }
+
+  return data as { markets: Market[]; assignments: TenantMarketAssignment[]; provider_types: string[] };
+}
+
+export async function assignTenantToMarket(
+  token: string,
+  payload: {
+    tenant_slug: string;
+    market_code: string;
+    status?: string;
+    service_radius_km?: number;
+  },
+): Promise<{ message: string; assignment: TenantMarketAssignment }> {
+  const response = await fetch(`${API_BASE_URL}/admin/markets/assign-tenant`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to assign tenant market.');
+  }
+
+  return data as { message: string; assignment: TenantMarketAssignment };
+}
+
+export async function getNearbyProviders(params: {
+  latitude?: number;
+  longitude?: number;
+  market_code?: string;
+  provider_type?: string;
+  limit?: number;
+}): Promise<{ market: Market | null; providers: NearbyProvider[] }> {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  const queryString = searchParams.toString();
+  const response = await fetch(`${API_BASE_URL}/nearby/providers${queryString ? `?${queryString}` : ''}`, {
+    headers: { Accept: 'application/json' },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load nearby providers.');
+  }
+
+  return data as { market: Market | null; providers: NearbyProvider[] };
+}
+
+export async function getNotifications(
+  token: string,
+): Promise<{ unread_count: number; notifications: SystemNotification[] }> {
+  const response = await fetch(`${API_BASE_URL}/notifications`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load notifications.');
+  }
+
+  return data as { unread_count: number; notifications: SystemNotification[] };
+}
+
+export async function createNotification(
+  token: string,
+  payload: {
+    title: string;
+    body: string;
+    tenant_slug?: string | null;
+    market_code?: string | null;
+    notification_type?: string;
+    audience_scope?: string;
+    status?: 'draft' | 'published';
+  },
+): Promise<{ message: string; notification: SystemNotification }> {
+  const response = await fetch(`${API_BASE_URL}/notifications`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors ? Object.values(data.errors).flat().join(' ') : null;
+    throw new Error(validationMessage || data?.message || 'Unable to create notification.');
+  }
+
+  return data as { message: string; notification: SystemNotification };
+}
+
+export async function markNotificationRead(token: string, notificationId: number): Promise<{ message: string; read_at: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to mark notification as read.');
+  }
+
+  return data as { message: string; read_at: string };
+}
+
+
+async function apiRequest<T>(
+  token: string,
+  tenantSlug: string,
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const headers = new Headers(options.headers);
+
+  headers.set('Accept', 'application/json');
+  headers.set('Authorization', `Bearer ${token}`);
+  headers.set('X-Tenant-Slug', tenantSlug);
+
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const validationMessage = payload?.errors
+      ? Object.values(payload.errors).flat().filter(Boolean).join(' ')
+      : '';
+
+    throw new Error(validationMessage || payload?.message || 'Request failed.');
+  }
+
+  return payload as T;
+}
+
+export type TenantUserRoleTemplate = {
+  code: string;
+  name: string;
+  description: string;
+  permissions: string[];
+};
+
+export type TenantSecurityUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  job_title?: string | null;
+  status?: string | null;
+  roles: Array<{
+    id: number;
+    name: string;
+    code: string;
+    permissions: string[];
+  }>;
+};
+
+export async function getTenantSecurityRoleTemplates(token: string, tenantSlug: string) {
+  return apiRequest<{
+    roles: TenantUserRoleTemplate[];
+  }>(token, tenantSlug, '/access-check/security/role-templates');
+}
+
+export async function getTenantSecurityUsers(token: string, tenantSlug: string) {
+  return apiRequest<{
+    tenant: { id: number; name: string; slug: string };
+    users: TenantSecurityUser[];
+  }>(token, tenantSlug, '/access-check/security/users');
+}
+
+export async function createTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  payload: {
+    tenant_slug: string;
+    name: string;
+    email: string;
+    phone?: string;
+    job_title?: string;
+    role_code: string;
+    permissions: string[];
+    password?: string;
+    status?: string;
+  },
+) {
+  return apiRequest<{
+    message: string;
+    temporary_password: string;
+    user: { id: number; name: string; email: string; phone?: string | null };
+  }>(token, tenantSlug, '/access-check/security/users', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+  payload: {
+    tenant_slug: string;
+    name: string;
+    phone?: string;
+    job_title?: string;
+    role_code: string;
+    permissions: string[];
+    status?: string;
+  },
+) {
+  return apiRequest<{
+    message: string;
+  }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteTenantSecurityUser(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+) {
+  return apiRequest<{
+    message: string;
+  }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
+    method: 'DELETE',
+  });
 }
