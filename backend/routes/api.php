@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\SolutionController;
 use App\Http\Controllers\Api\V1\TenantPublicStatusController;
 use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceManagementController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
@@ -263,6 +264,32 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 [
                     InsuranceManagementController::class,
                     'updateContributionRule',
+                ]
+            );
+
+            Route::get('/memberships', [
+                InsuranceMembershipController::class,
+                'memberships',
+            ]);
+
+            Route::post('/memberships', [
+                InsuranceMembershipController::class,
+                'createMembership',
+            ]);
+
+            Route::patch(
+                '/memberships/{customerInsuranceMembership}',
+                [
+                    InsuranceMembershipController::class,
+                    'updateMembership',
+                ]
+            );
+
+            Route::post(
+                '/memberships/{customerInsuranceMembership}/eligibility',
+                [
+                    InsuranceMembershipController::class,
+                    'checkEligibility',
                 ]
             );
 

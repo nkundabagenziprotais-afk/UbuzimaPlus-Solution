@@ -36,13 +36,40 @@ class CustomerInsuranceMembership extends Model
         'metadata' => 'array',
     ];
 
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoCustomer::class,
+            'customer_id'
+        );
+    }
+
     public function partner(): BelongsTo
     {
-        return $this->belongsTo(InsurancePartner::class, 'insurance_partner_id');
+        return $this->belongsTo(
+            InsurancePartner::class,
+            'insurance_partner_id'
+        );
     }
 
     public function scheme(): BelongsTo
     {
-        return $this->belongsTo(InsuranceScheme::class, 'insurance_scheme_id');
+        return $this->belongsTo(
+            InsuranceScheme::class,
+            'insurance_scheme_id'
+        );
+    }
+
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(
+            InsuranceInstitution::class,
+            'insurance_institution_id'
+        );
+    }
+
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
     }
 }
