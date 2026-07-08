@@ -826,6 +826,73 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.sales',
         ]);
 
+
+    Route::get(
+        '/sales/returns',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'index',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::get(
+        '/sales/returns/{saleReturn}',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'show',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/sales/{sale}/returns',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'store',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/sales/returns/{saleReturn}/approve',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'approve',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/sales/returns/{saleReturn}/reject',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'reject',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/sales/payments/{payment}/reconcile',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'reconcilePayment',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
     Route::get('/sales/{sale}', [SalesDispensingController::class, 'sale'])
         ->middleware([
             'permission:pharmaco.sales.manage',
