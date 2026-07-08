@@ -55,6 +55,10 @@ import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
 import './styles.css';
+import {
+  PosRecentTransactionsPanel,
+  PosSessionPanel,
+} from './components/PharmaPosOperationsPanel';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 import {
   InsuranceManagementWorkspace,
@@ -4549,37 +4553,12 @@ function App() {
             </article>
           </section>
 
-          <section className="pos-real-register-card">
-            <div className="section-heading">
-              <div>
-                <span>Real sales register</span>
-                <h3>Recent Session Transactions</h3>
-                <p className="muted">No dummy rows are shown here. Real sales will appear after they are created through the backend-connected POS and dispensing workflow.</p>
-              </div>
-              <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
-                Open Sales Register
-              </button>
-            </div>
-            <div className="system-table-wrap">
-              <table className="system-table">
-                <thead>
-                  <tr>
-                    <th>Date / Time</th>
-                    <th>Sale No.</th>
-                    <th>Customer</th>
-                    <th>Payment</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colSpan={6}>No real POS transactions loaded in this dashboard view yet.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <PosRecentTransactionsPanel
+            token={session!.token}
+            profile={profile!}
+            currentSession
+            title="Recent Session Transactions"
+          />
         </section>
       );
     }
@@ -4986,70 +4965,16 @@ function App() {
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
                 
-                <section className="pos-shift-control-section pos-session-control-card">
-                  <div className="section-heading">
-                    <div>
-                      <span>Section 2 · Teller session</span>
-                      <h3>POS Session</h3>
-                    </div>
-                  </div>
-
-                  <section className="pos-shift-control-grid pos-shift-strip-v16">
-                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
-                  <label className="pos-shift-field">
-                    <span>Opening mode</span>
-                    <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
-                      <option value="fresh-start">Fresh start day</option>
-                      <option value="handover">Handover from previous teller</option>
-                    </select>
-                  </label>
-
-                  <label className="pos-shift-field">
-                    <span>Starting cash balance</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={posStartingCashBalance}
-                      onChange={(event) => setPosStartingCashBalance(event.target.value)}
-                    />
-                  </label>
-
-                  <button type="button" onClick={openPosDay}>Open Day</button>
-                </article>
-
-                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--close">
-                  <label className="pos-shift-field">
-                    <span>Closing mode</span>
-                    <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
-                      <option value="handover">Handover to incoming staff</option>
-                      <option value="final-close">Final close with manager deposit proof</option>
-                    </select>
-                  </label>
-
-                  {posCloseMode === 'handover' ? (
-                    <label className="pos-shift-check">
-                      <input
-                        type="checkbox"
-                        checked={posTillZeroized}
-                        onChange={(event) => setPosTillZeroized(event.target.checked)}
-                      />
-                      <span>Till zeroized and incoming staff acknowledged</span>
-                    </label>
-                  ) : (
-                    <label className="pos-shift-field">
-                      <span>Deposit proof reference</span>
-                      <input
-                        value={posDepositProof}
-                        onChange={(event) => setPosDepositProof(event.target.value)}
-                        placeholder="Deposit slip, bank ref, MoMo ref"
-                      />
-                    </label>
-                  )}
-
-                  <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
-                </article>
-              </section>
-                </section>
+                {/* AQUILA_POS_SESSION_FRONTEND_START */}
+                <PosSessionPanel
+                  token={session!.token}
+                  profile={profile!}
+                  onSessionStateChange={(nextSession) => {
+                    setIsPosDayOpen(nextSession?.status === 'open');
+                    setPosTillZeroized(nextSession?.status === 'zeroized');
+                  }}
+                />
+                {/* AQUILA_POS_SESSION_FRONTEND_END */}
 
 {(() => {
                   const visibleCartRows = posLiveCartItems;
@@ -5375,6 +5300,12 @@ function App() {
                       </article>
                     </div>
                   </div>
+                  {!isPosDayOpen && (
+                    <div className="pos-session-sale-lock" role="status">
+                      <strong>Payment confirmation is locked</strong>
+                      <span>Open an active POS session before confirming this sale.</span>
+                    </div>
+                  )}
                   <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartOperatingUnits === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
@@ -5546,10 +5477,11 @@ function App() {
       return (
         <section className="section-page pos-unified-module-page">
           {renderPosWorkspaceTopMenu('sales-performance')}
-          <FocusRegisterPreview
+          <PosRecentTransactionsPanel
+            token={session!.token}
+            profile={profile!}
+            currentSession={false}
             title="Sales Performance"
-            description="Sales list with selected sale detail, export, review, and manager follow-up."
-            rows={previewRows}
           />
         </section>
       );

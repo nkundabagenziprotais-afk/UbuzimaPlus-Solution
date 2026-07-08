@@ -3454,3 +3454,154 @@ export async function deleteTenantSecurityUser(
     method: 'DELETE',
   });
 }
+
+// AQUILA_POS_SESSION_FRONTEND_START
+export type PharmaPosSession = {
+  id: number;
+  uuid: string;
+  sequence_number?: number;
+  session_number: string;
+  business_date: string;
+  status: 'open' | 'zeroized' | 'closed' | 'voided';
+  branch: { id: number; name: string } | null;
+  opening_float_amount: number;
+  expected_cash_amount: number;
+  declared_cash_amount: number | null;
+  cash_drop_amount: number;
+  balance_clearance_amount?: number;
+  variance_amount: number | null;
+  opened_at: string | null;
+  zeroized_at: string | null;
+  closed_at: string | null;
+  reset_authorized_at?: string | null;
+  reset_authorized_by?: number | null;
+  reset_reason?: string | null;
+  metadata: Record<string, unknown>;
+  events: Array<{
+    type: string;
+    amount: number | null;
+    notes: string | null;
+    created_at: string | null;
+  }>;
+};
+
+export type PharmaPosTransaction = {
+  id: number;
+  sale_number: string;
+  customer: string;
+  branch: string | null;
+  status: string;
+  payment_status: string;
+  payment_method: string | null;
+  receipt_number: string | null;
+  total_amount: number;
+  paid_amount: number;
+  created_at: string | null;
+};
+
+export async function getCurrentPharmaPosSession(
+  token: string,
+  tenantSlug: string,
+): Promise<{ session: PharmaPosSession | null }> {
+  return getJsonWithTenant<{ session: PharmaPosSession | null }>(
+    token,
+    '/pharmaco/pos/session/current',
+    tenantSlug,
+  );
+}
+
+export async function openPharmaPosSession(
+  token: string,
+  tenantSlug: string,
+  payload: {
+    branch_id: number;
+    opening_float_amount: number;
+    notes?: string | null;
+  },
+): Promise<{ message: string; session: PharmaPosSession }> {
+  return sendJsonWithTenant<{ message: string; session: PharmaPosSession }>(
+    token,
+    '/pharmaco/pos/session/open',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function recordPharmaPosCashDrop(
+  token: string,
+  tenantSlug: string,
+  sessionId: number,
+  payload: { amount: number; notes?: string | null },
+): Promise<{ message: string; session: PharmaPosSession }> {
+  return sendJsonWithTenant<{ message: string; session: PharmaPosSession }>(
+    token,
+    `/pharmaco/pos/sessions/${sessionId}/cash-drop`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function clearPharmaPosSessionBalance(
+  token: string,
+  tenantSlug: string,
+  sessionId: number,
+  payload: { declared_cash_amount: number; notes?: string | null },
+): Promise<{ message: string; session: PharmaPosSession }> {
+  return sendJsonWithTenant<{ message: string; session: PharmaPosSession }>(
+    token,
+    `/pharmaco/pos/sessions/${sessionId}/clear-balance`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function closePharmaPosSession(
+  token: string,
+  tenantSlug: string,
+  sessionId: number,
+  payload: { declared_cash_amount: number; notes?: string | null },
+): Promise<{ message: string; session: PharmaPosSession }> {
+  return sendJsonWithTenant<{ message: string; session: PharmaPosSession }>(
+    token,
+    `/pharmaco/pos/sessions/${sessionId}/close`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function adminResetPharmaPosSession(
+  token: string,
+  tenantSlug: string,
+  sessionId: number,
+  payload: { reason: string },
+): Promise<{ message: string; session?: PharmaPosSession }> {
+  return sendJsonWithTenant<{
+    message: string;
+    session?: PharmaPosSession;
+  }>(
+    token,
+    `/pharmaco/pos/sessions/${sessionId}/admin-reset`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function getPharmaPosRecentTransactions(
+  token: string,
+  tenantSlug: string,
+  currentSession = true,
+): Promise<{ transactions: PharmaPosTransaction[] }> {
+  return getJsonWithTenant<{ transactions: PharmaPosTransaction[] }>(
+    token,
+    `/pharmaco/pos/recent-transactions?current_session=${
+      currentSession ? '1' : '0'
+    }&limit=50`,
+    tenantSlug,
+  );
+}
+// AQUILA_POS_SESSION_FRONTEND_END

@@ -19105,3 +19105,343 @@ table td:not(:first-child):not(.numeric) {
   height: 1rem;
   min-width: 1rem;
 }
+
+/* AQUILA_POS_SESSION_FRONTEND_START */
+.pos-session-control-card--connected {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid #dfe6ea;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.pos-session-heading-row,
+.pos-session-heading-actions,
+.pos-session-step__heading,
+.pos-session-close-check {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pos-session-heading-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pos-session-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pos-session-status--open {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pos-session-status--zeroized {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.pos-session-status--closed,
+.pos-session-status--voided {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.pos-session-guidance {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-left: 4px solid #c2410c;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+.pos-session-guidance span {
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.pos-session-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pos-session-summary-grid article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.pos-session-summary-grid span,
+.pos-session-summary-grid small,
+.pos-session-step small,
+.pos-session-admin-reset small {
+  color: #64748b;
+}
+
+.pos-session-summary-grid strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+}
+
+.pos-session-workflow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pos-session-step {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #dbe3e8;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.pos-session-step__heading {
+  justify-content: flex-start;
+}
+
+.pos-session-step__heading > span {
+  display: inline-grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.pos-session-step__heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.pos-session-step__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pos-session-step label,
+.pos-session-admin-reset label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pos-session-step label > span,
+.pos-session-admin-reset label > span {
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pos-session-step input,
+.pos-session-step select,
+.pos-session-admin-reset textarea,
+.pos-current-session-table-toolbar input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.pos-session-step input:disabled,
+.pos-session-step select:disabled,
+.pos-session-admin-reset textarea:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.pos-session-step button,
+.pos-session-admin-reset button {
+  width: 100%;
+}
+
+.pos-session-close-check {
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.pos-session-close-check span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.pos-session-admin-reset {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(260px, 1.4fr) minmax(170px, 0.6fr);
+  align-items: end;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  background: #fff7f7;
+}
+
+.pos-session-admin-reset > div {
+  display: grid;
+  gap: 4px;
+}
+
+.pos-session-admin-reset > div > span {
+  color: #991b1b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pos-session-audit {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 14px;
+}
+
+.pos-session-audit summary {
+  cursor: pointer;
+  color: #334155;
+  font-weight: 800;
+}
+
+.pos-session-audit-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.pos-session-audit-list article {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.pos-session-audit-list strong {
+  text-transform: capitalize;
+}
+
+.pos-real-register-card--connected {
+  display: grid;
+  gap: 14px;
+}
+
+.pos-current-session-table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pos-current-session-table-toolbar input {
+  max-width: 380px;
+}
+
+.pos-session-sale-lock {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.pos-session-sale-lock span {
+  font-size: 0.84rem;
+}
+
+@media (max-width: 1100px) {
+  .pos-session-summary-grid,
+  .pos-session-audit-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-session-admin-reset {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pos-session-admin-reset > div {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .pos-session-control-card--connected {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .pos-session-heading-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pos-session-heading-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pos-session-workflow,
+  .pos-session-admin-reset {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-session-admin-reset > div {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .pos-session-summary-grid,
+  .pos-session-step__fields,
+  .pos-session-audit-list {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-session-heading-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pos-session-heading-actions button,
+  .pos-current-session-table-toolbar input {
+    max-width: none;
+    width: 100%;
+  }
+}
+/* AQUILA_POS_SESSION_FRONTEND_END */
