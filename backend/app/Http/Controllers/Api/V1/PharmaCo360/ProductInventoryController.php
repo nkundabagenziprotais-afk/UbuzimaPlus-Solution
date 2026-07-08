@@ -1312,7 +1312,12 @@ class ProductInventoryController extends Controller
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'reference_number' => ['nullable', 'string', 'max:120'],
             'reason' => ['nullable', 'string', 'max:1000'],
+
+            'receive_source' => ['nullable', Rule::in(['manual', 'purchase-code'])],
         ]);
+
+        $receiveSource = $validated['receive_source']
+            ?? (! empty($validated['reference_number'] ?? null) ? 'purchase-code' : 'manual');
 
         $product = Product::query()
             ->where('tenant_id', $tenant->id)
@@ -1381,8 +1386,8 @@ class ProductInventoryController extends Controller
             $product,
             $location,
             $quantityReceived,
-            $purchaseOrderItem
-        ) {
+            $purchaseOrderItem,
+            $receiveSource) {
             $lockedPurchaseOrderItem = null;
             $purchaseOrderReceipt = null;
             $purchaseOrderSupplierName = null;
@@ -1497,6 +1502,10 @@ class ProductInventoryController extends Controller
                     'supplier_name' => $supplierName,
                     'status' => 'active',
                     'metadata' => [
+                        'receive_source' => $receiveSource,
+                        'manual_product_master_entry' => $receiveSource === 'manual',
+                        'purchase_code_entry' => $receiveSource === 'purchase-code',
+                        'reference_number' => $validated['reference_number'] ?? null,
                         'created_from' => 'pharmaco_stock_receive_api',
                         'receiving_workflow' => $purchaseOrderReceipt ? 'phase_7_2_po_linked_receiving' : 'manual_receiving',
                         'purchase_order_id' => $purchaseOrderReceipt['purchase_order_id'] ?? null,
@@ -1750,6 +1759,26 @@ class ProductInventoryController extends Controller
 
     public function updateBatch(Request $request, StockBatch $batch)
     {
+        $metadata = is_array($batch->metadata) ? $batch->metadata : [];
+        $source = strtolower((string) (
+            $metadata['receive_source']
+            ?? $metadata['inventory_receive_source']
+            ?? $metadata['source']
+            ?? $metadata['created_from']
+            ?? ''
+        ));
+        $isManualInventoryEntry = ($metadata['manual_product_master_entry'] ?? false) === true
+            || str_contains($source, 'manual');
+
+        if (! $isManualInventoryEntry) {
+            throw ValidationException::withMessages([
+                'inventory_record' => [
+                    'This inventory record is purchase-linked and cannot be directly edited. Use the purchase correction workflow instead.',
+                ],
+            ]);
+        }
+
+
         $tenant = $this->resolveTenant($request);
 
         if ((int) $batch->tenant_id !== (int) $tenant->id) {
@@ -1823,6 +1852,36 @@ class ProductInventoryController extends Controller
 
     private function serializeBatch(StockBatch $batch): array
     {
+        $metadata = is_array($batch->metadata) ? $batch->metadata : [];
+        $source = strtolower((string) (
+            $metadata['receive_source']
+            ?? $metadata['inventory_receive_source']
+            ?? $metadata['source']
+            ?? $metadata['created_from']
+            ?? ''
+        ));
+        $isManualInventoryEntry = ($metadata['manual_product_master_entry'] ?? false) === true
+            || str_contains($source, 'manual');
+        $receiveSource = $isManualInventoryEntry
+            ? 'manual'
+            : (str_contains($source, 'purchase') || str_contains($source, 'procurement')
+                ? 'purchase-code'
+                : 'unknown');
+
+        $productMetadata = is_array($batch->product->metadata)
+            ? $batch->product->metadata
+            : [];
+        $masterSellingUnit = trim((string) (
+            $productMetadata['rhia_selling_unit']
+            ?? $batch->product->selling_unit
+            ?? $batch->product->unit
+            ?? 'unit'
+        ));
+
+        if ($masterSellingUnit === '') {
+            $masterSellingUnit = 'unit';
+        }
+
         return [
             'id' => $batch->id,
             'uuid' => $batch->uuid,
@@ -1840,6 +1899,16 @@ class ProductInventoryController extends Controller
                 'id' => $batch->product->id,
                 'name' => $batch->product->name,
                 'sku' => $batch->product->sku,
+                'unit' => $batch->product->unit,
+                'selling_unit' => $masterSellingUnit,
+                'selling_unit_source' => array_key_exists('rhia_selling_unit', $productMetadata)
+                    ? 'product_master.rhia_selling_unit'
+                    : 'product_master.selling_unit',
+                'base_unit' => $batch->product->base_unit ?? $batch->product->unit,
+                'quantity_per_selling_unit' => (float) ($batch->product->quantity_per_selling_unit ?? 1),
+                'allow_other_quantity' => (bool) $batch->product->allow_other_quantity,
+                'default_pos_quantity_mode' => $batch->product->default_pos_quantity_mode ?? 'selling_unit',
+                'metadata' => $productMetadata,
                 'category' => $batch->product->category ? [
                     'name' => $batch->product->category->name,
                     'code' => $batch->product->category->code,
@@ -1856,7 +1925,15 @@ class ProductInventoryController extends Controller
                 'code' => $batch->stockLocation->code,
                 'location_type' => $batch->stockLocation->location_type,
             ],
-            'metadata' => $batch->metadata ?? [],
+            'reference_number' => $metadata['reference_number'] ?? null,
+
+            'receive_source' => $receiveSource,
+
+            'is_manual_inventory_entry' => $isManualInventoryEntry,
+
+            'can_edit_inventory_record' => $isManualInventoryEntry,
+
+            'metadata' => $metadata,
         ];
     }
 
