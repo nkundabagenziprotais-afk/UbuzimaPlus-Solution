@@ -737,11 +737,23 @@ export type PharmaStockBatch = {
   unit_cost: number | null;
   selling_price: number | null;
   supplier_name: string | null;
+  reference_number?: string | null;
+  receive_source?: 'manual' | 'purchase-code' | 'unknown' | null;
+  is_manual_inventory_entry?: boolean;
+  can_edit_inventory_record?: boolean;
   status: string;
   product: {
     id: number;
     name: string;
     sku: string;
+    unit: string;
+    selling_unit: string;
+    selling_unit_source?: string;
+    base_unit: string;
+    quantity_per_selling_unit?: number;
+    allow_other_quantity?: boolean;
+    default_pos_quantity_mode?: 'selling_unit' | 'other_quantity' | 'combined';
+    metadata?: Record<string, unknown>;
     category: {
       name: string;
       code: string;
@@ -996,6 +1008,7 @@ export type ReceivePharmaStockPayload = {
   supplier_name?: string | null;
   reference_number?: string | null;
   reason?: string | null;
+  receive_source?: 'manual' | 'purchase-code';
 };
 
 export type PharmaStockMovement = {

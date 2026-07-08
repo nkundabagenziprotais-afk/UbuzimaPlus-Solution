@@ -231,6 +231,60 @@ const permissionMatrix: PermissionMatrixGroup[] = [
     ],
   },
   {
+    title: 'Insurance Management',
+    description: 'Insurance configuration, memberships, eligibility, claims, reconciliation and audit evidence.',
+    resources: [
+      {
+        label: 'Insurance dashboard',
+        description: 'View insurance operating summaries and readiness indicators.',
+        permissions: { view: 'insurance.dashboard.view' },
+      },
+      {
+        label: 'Partners, schemes and price rules',
+        description: 'Configure insurers, schemes, price lists, product prices and contribution rules.',
+        permissions: {
+          view: 'insurance.configuration.view',
+          add: 'insurance.configuration.manage',
+          edit: 'insurance.configuration.manage',
+          delete: 'insurance.configuration.manage',
+        },
+      },
+      {
+        label: 'Memberships and eligibility',
+        description: 'Review member coverage and perform eligibility checks.',
+        permissions: {
+          view: 'insurance.memberships.view',
+          add: 'insurance.memberships.manage',
+          edit: 'insurance.memberships.manage',
+        },
+      },
+      {
+        label: 'Claims',
+        description: 'Create, review, adjudicate and settle insurance claims.',
+        permissions: {
+          view: 'insurance.claims.view',
+          add: 'insurance.claims.create',
+          edit: 'insurance.claims.adjudicate',
+          delete: 'insurance.claims.payments',
+        },
+      },
+      {
+        label: 'Reconciliation',
+        description: 'Review and manage insurer reconciliation.',
+        permissions: {
+          view: 'insurance.reconciliation.view',
+          edit: 'insurance.reconciliation.manage',
+        },
+      },
+      {
+        label: 'Insurance audit',
+        description: 'View controlled insurance audit evidence.',
+        permissions: { view: 'insurance.audit.view' },
+      },
+    ],
+  },
+
+  {
     title: 'Finance',
     description: 'Payables, receivables, payments, reconciliation, and finance dashboard access.',
     resources: [
@@ -583,6 +637,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
   const [users, setUsers] = useState<TenantSecurityUser[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [temporaryPassword, setTemporaryPassword] = useState('');
@@ -697,6 +752,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
       || 'cashier';
 
     setEditingUserId(user.id);
+    setIsEditorOpen(true);
     setTemporaryPassword('');
     setForm({
       name: user.name,
@@ -779,6 +835,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
 
       setForm(emptyForm);
       setEditingUserId(null);
+      setIsEditorOpen(false);
       requestAppDataRefresh('security');
       await loadSecurityUsers();
     } catch (err) {
@@ -798,7 +855,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
           <p className="eyebrow">International user access standard</p>
           <h2>User management and permission assignment</h2>
           <span>
-            Create users, edit staff access, assign granular permissions, and deactivate access without losing audit history.
+            Review the staff directory below. Create or edit a user in a focused pop-up without crowding the landing page.
           </span>
         </div>
         <button
@@ -807,7 +864,9 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
             setEditingUserId(null);
             setForm(emptyForm);
             setTemporaryPassword('');
-            setNotice('New user form is ready.');
+            setError('');
+            setNotice('');
+            setIsEditorOpen(true);
           }}
         >
           New user
@@ -843,7 +902,43 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
         </div>
       )}
 
-      <form className="tenant-user-form-grid tenant-user-form-grid--professional" onSubmit={handleSubmit}>
+      {isEditorOpen && (
+        <div
+          className="tenant-user-editor-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isSaving) {
+              setIsEditorOpen(false);
+            }
+          }}
+        >
+          <section
+            className="tenant-user-editor-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tenant-user-editor-title"
+          >
+            <header className="tenant-user-editor-modal__header">
+              <div>
+                <p className="eyebrow">{editingUserId ? 'Modify user access' : 'Create user access'}</p>
+                <h3 id="tenant-user-editor-title">
+                  {editingUserId ? `Edit ${form.name || 'user'}` : 'Create a new staff user'}
+                </h3>
+                <span>
+                  Assign a role, then increase, reduce, or replace granular permissions before saving.
+                </span>
+              </div>
+              <button
+                type="button"
+                aria-label="Close user editor"
+                disabled={isSaving}
+                onClick={() => setIsEditorOpen(false)}
+              >
+                ×
+              </button>
+            </header>
+
+            <form className="tenant-user-form-grid tenant-user-form-grid--professional tenant-user-form-grid--modal" onSubmit={handleSubmit}>
         <div className="tenant-user-form-section tenant-user-form-section--identity">
           <div className="tenant-user-form-section-heading">
             <strong>Staff identity</strong>
@@ -882,6 +977,7 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
               <option value="active">Active</option>
               <option value="invited">Invited</option>
               <option value="suspended">Suspended</option>
+              <option value="inactive">Inactive</option>
             </select>
           </label>
 
@@ -1028,22 +1124,16 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
               setEditingUserId(null);
               setForm(emptyForm);
               setTemporaryPassword('');
+              setIsEditorOpen(false);
             }}
           >
             Cancel
           </button>
         </div>
-      </form>
-
-      <div className="tenant-user-role-cards">
-        {roles.map((role) => (
-          <article key={role.code}>
-            <strong>{role.name}</strong>
-            <span>{role.description}</span>
-            <small>{permissionCountLabel(normalizedRolePermissionMap.get(role.code)?.length ?? role.permissions.length)} normalized permissions</small>
-          </article>
-        ))}
-      </div>
+            </form>
+          </section>
+        </div>
+      )}
 
       <section className="tenant-user-directory-panel">
         <div className="tenant-user-directory-panel__header">
@@ -1092,11 +1182,13 @@ export function UserSecurityManagement({ token, tenantSlug = 'vitapharma' }: Pro
                       <td>
                         <span className="table-action-row tenant-user-list-actions">
                           <button type="button" onClick={() => editUser(user)}>
-                            Edit
+                            {user.status === 'inactive' ? 'Review / reactivate' : 'Edit access'}
                           </button>
-                          <button type="button" className="danger" onClick={() => requestDeleteUser(user)}>
-                            Deactivate
-                          </button>
+                          {user.status !== 'inactive' && (
+                            <button type="button" className="danger" onClick={() => requestDeleteUser(user)}>
+                              Deactivate
+                            </button>
+                          )}
                         </span>
                       </td>
                     </tr>
