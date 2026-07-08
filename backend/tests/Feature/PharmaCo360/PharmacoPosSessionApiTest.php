@@ -39,13 +39,15 @@ class PharmacoPosSessionApiTest extends TestCase
             ->assertJsonValidationErrors('session');
 
         $this->assertDatabaseCount('pharmaco_pos_sessions', 1);
-        $this->assertDatabaseHas('pharmaco_pos_sessions', [
-            'tenant_id' => $tenant->id,
-            'branch_id' => $branch->id,
-            'user_id' => $user->id,
-            'business_date' => now()->toDateString(),
-            'status' => 'open',
-        ]);
+        $this->assertTrue(
+            PharmacoPosSession::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('branch_id', $branch->id)
+                ->where('user_id', $user->id)
+                ->whereDate('business_date', now()->toDateString())
+                ->where('status', 'open')
+                ->exists()
+        );
     }
 
     public function test_till_cannot_close_until_zeroized_with_zero_closing_balance(): void
