@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/pos-inventory-procurement-enterprise-completion
+  pull_request:
+    branches:
+      - development
 
 jobs:
   pos-session-test:
