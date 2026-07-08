@@ -19105,3 +19105,303 @@ table td:not(:first-child):not(.numeric) {
   height: 1rem;
   min-width: 1rem;
 }
+
+/* AQUILA_POS_LIVE_SESSION_STYLES_START */
+.pos-session-live-control {
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+}
+
+.pos-session-live-heading {
+  align-items: flex-start !important;
+}
+
+.pos-session-live-heading > div:first-child {
+  min-width: 0 !important;
+}
+
+.pos-session-live-heading small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: #64748b !important;
+  font-size: 0.64rem !important;
+  line-height: 1.35 !important;
+}
+
+.pos-session-live-heading__actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+}
+
+.pos-session-live-heading__actions button {
+  min-height: 30px !important;
+  padding: 4px 10px !important;
+  border-radius: 9px !important;
+  font-size: 0.63rem !important;
+}
+
+.pos-session-live-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 26px !important;
+  padding: 4px 9px !important;
+  border-radius: 999px !important;
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+  font-size: 0.59rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+.pos-session-live-status--open {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.pos-session-live-status--zeroized {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.pos-session-live-status--closed {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.pos-session-live-message {
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border-radius: 10px !important;
+  font-size: 0.66rem !important;
+}
+
+.pos-session-live-summary {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+
+.pos-session-live-summary article {
+  display: grid !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+  padding: 8px 9px !important;
+  border: 1px solid rgba(15, 23, 42, 0.07) !important;
+  border-radius: 11px !important;
+  background: #f8fafc !important;
+}
+
+.pos-session-live-summary span {
+  color: #64748b !important;
+  font-size: 0.56rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+.pos-session-live-summary strong {
+  color: #0f172a !important;
+  font-size: 0.72rem !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-session-live-summary small {
+  color: #64748b !important;
+  font-size: 0.57rem !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.pos-session-live-combined-field {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.25fr) minmax(82px, 0.75fr) !important;
+  gap: 5px !important;
+}
+
+.pos-shift-control-grid .pos-shift-field textarea {
+  width: 100% !important;
+  min-height: 32px !important;
+  max-height: 54px !important;
+  padding: 5px 7px !important;
+  resize: vertical !important;
+  border-radius: 8px !important;
+  font-size: 0.62rem !important;
+  line-height: 1.25 !important;
+}
+
+.pos-session-live-readonly strong {
+  align-self: center !important;
+  color: #0f172a !important;
+  font-size: 0.63rem !important;
+  line-height: 1.25 !important;
+}
+
+.pos-shift-card--cash-drop .pos-shift-title {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.pos-shift-card--clear .pos-shift-title {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.pos-shift-card--close .pos-shift-title {
+  background: #e0e7ff !important;
+  color: #4338ca !important;
+}
+
+.pos-shift-card--admin-reset {
+  border-color: rgba(153, 27, 27, 0.18) !important;
+  background: #fff7f7 !important;
+}
+
+.pos-shift-card--admin-reset .pos-shift-title {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.pos-shift-card--admin-reset .danger-action {
+  background: #991b1b !important;
+  color: #ffffff !important;
+  border-color: #991b1b !important;
+}
+
+.pos-session-live-guidance {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  padding: 8px 10px !important;
+  border: 1px solid #fde68a !important;
+  border-radius: 10px !important;
+  background: #fffbeb !important;
+}
+
+.pos-session-live-guidance strong {
+  flex: 0 0 auto !important;
+  color: #92400e !important;
+  font-size: 0.63rem !important;
+}
+
+.pos-session-live-guidance span {
+  color: #78350f !important;
+  font-size: 0.61rem !important;
+  line-height: 1.3 !important;
+}
+
+.pos-session-live-audit {
+  border-top: 1px solid rgba(15, 23, 42, 0.08) !important;
+  padding-top: 7px !important;
+}
+
+.pos-session-live-audit summary {
+  cursor: pointer !important;
+  color: #334155 !important;
+  font-size: 0.63rem !important;
+  font-weight: 900 !important;
+}
+
+.pos-session-live-audit > div {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin-top: 7px !important;
+}
+
+.pos-session-live-audit article {
+  display: grid !important;
+  gap: 2px !important;
+  padding: 7px !important;
+  border-radius: 9px !important;
+  background: #f8fafc !important;
+}
+
+.pos-session-live-audit strong {
+  font-size: 0.61rem !important;
+  text-transform: capitalize !important;
+}
+
+.pos-session-live-audit span,
+.pos-session-live-audit small {
+  color: #64748b !important;
+  font-size: 0.56rem !important;
+}
+
+.pos-session-sale-lock-live {
+  display: grid !important;
+  gap: 2px !important;
+  margin-bottom: 7px !important;
+  padding: 8px 10px !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 10px !important;
+  background: #fff7f7 !important;
+}
+
+.pos-session-sale-lock-live strong {
+  color: #991b1b !important;
+  font-size: 0.66rem !important;
+}
+
+.pos-session-sale-lock-live span {
+  color: #7f1d1d !important;
+  font-size: 0.61rem !important;
+}
+
+@media (max-width: 1180px) {
+  .pos-session-live-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pos-session-live-audit > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .pos-session-live-heading {
+    display: grid !important;
+    gap: 7px !important;
+  }
+
+  .pos-session-live-heading__actions {
+    justify-content: flex-start !important;
+  }
+
+  .pos-session-live-summary {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-shift-control-grid .pos-shift-card-v16 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-shift-control-grid .pos-shift-title {
+    justify-content: start !important;
+    place-items: center start !important;
+    min-height: 30px !important;
+  }
+
+  .pos-session-live-combined-field {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-session-live-audit > div {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-session-live-guidance {
+    display: grid !important;
+  }
+}
+/* AQUILA_POS_LIVE_SESSION_STYLES_END */

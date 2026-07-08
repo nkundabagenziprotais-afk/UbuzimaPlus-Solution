@@ -31,7 +31,7 @@ function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderPr
   return null;
 }
 
-import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
+import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaPosTransaction, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
@@ -54,6 +54,7 @@ import { UserSecurityManagement } from './components/UserSecurityManagement';
 import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
+import { PharmaPosSessionControl } from './components/PharmaPosSessionControl';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 import {
@@ -2587,6 +2588,7 @@ function App() {
   const [activeInsuranceWorkspace, setActiveInsuranceWorkspace] = useState<InsuranceWorkspaceKey>('overview');
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
   const [isPosDayOpen, setIsPosDayOpen] = useState(false);
+  const [posRecentTransactions, setPosRecentTransactions] = useState<PharmaPosTransaction[]>([]);
   const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
   const [posStartingCashBalance, setPosStartingCashBalance] = useState('0');
   const [posCustomerType, setPosCustomerType] = useState<'walk-in' | 'existing-customer' | 'insurance-customer' | 'corporate-customer'>('walk-in');
@@ -4064,7 +4066,26 @@ function App() {
       method: string;
       status: string;
       amount: string;
-    }> = [];
+    }> = posRecentTransactions.map((transaction) => {
+      const createdAt = transaction.created_at
+        ? new Date(transaction.created_at)
+        : null;
+      const dateTime =
+        createdAt && !Number.isNaN(createdAt.getTime())
+          ? createdAt.toLocaleString('en-RW')
+          : transaction.created_at || '—';
+
+      return {
+        dateTime,
+        saleNumber: transaction.sale_number,
+        customer: transaction.customer || 'Walk-in',
+        method: transaction.payment_method || '—',
+        status: transaction.payment_status || transaction.status,
+        amount: `RWF ${Number(transaction.total_amount || 0).toLocaleString('en-RW', {
+          maximumFractionDigits: 2,
+        })}`,
+      };
+    });
 
     const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
 
@@ -4986,70 +5007,17 @@ function App() {
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
                 
-                <section className="pos-shift-control-section pos-session-control-card">
-                  <div className="section-heading">
-                    <div>
-                      <span>Section 2 · Teller session</span>
-                      <h3>POS Session</h3>
-                    </div>
-                  </div>
-
-                  <section className="pos-shift-control-grid pos-shift-strip-v16">
-                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
-                  <label className="pos-shift-field">
-                    <span>Opening mode</span>
-                    <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
-                      <option value="fresh-start">Fresh start day</option>
-                      <option value="handover">Handover from previous teller</option>
-                    </select>
-                  </label>
-
-                  <label className="pos-shift-field">
-                    <span>Starting cash balance</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={posStartingCashBalance}
-                      onChange={(event) => setPosStartingCashBalance(event.target.value)}
-                    />
-                  </label>
-
-                  <button type="button" onClick={openPosDay}>Open Day</button>
-                </article>
-
-                <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--close">
-                  <label className="pos-shift-field">
-                    <span>Closing mode</span>
-                    <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
-                      <option value="handover">Handover to incoming staff</option>
-                      <option value="final-close">Final close with manager deposit proof</option>
-                    </select>
-                  </label>
-
-                  {posCloseMode === 'handover' ? (
-                    <label className="pos-shift-check">
-                      <input
-                        type="checkbox"
-                        checked={posTillZeroized}
-                        onChange={(event) => setPosTillZeroized(event.target.checked)}
-                      />
-                      <span>Till zeroized and incoming staff acknowledged</span>
-                    </label>
-                  ) : (
-                    <label className="pos-shift-field">
-                      <span>Deposit proof reference</span>
-                      <input
-                        value={posDepositProof}
-                        onChange={(event) => setPosDepositProof(event.target.value)}
-                        placeholder="Deposit slip, bank ref, MoMo ref"
-                      />
-                    </label>
-                  )}
-
-                  <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
-                </article>
-              </section>
-                </section>
+                {/* AQUILA_POS_LIVE_SESSION_FRONTEND_START */}
+                <PharmaPosSessionControl
+                  token={session!.token}
+                  profile={profile!}
+                  onSessionStateChange={(nextSession) => {
+                    setIsPosDayOpen(nextSession?.status === 'open');
+                    setPosTransactionConfirmed(false);
+                  }}
+                  onTransactionsChange={setPosRecentTransactions}
+                />
+                {/* AQUILA_POS_LIVE_SESSION_FRONTEND_END */}
 
 {(() => {
                   const visibleCartRows = posLiveCartItems;
@@ -5375,6 +5343,12 @@ function App() {
                       </article>
                     </div>
                   </div>
+                  {!isPosDayOpen && (
+                    <div className="pos-session-sale-lock-live" role="status">
+                      <strong>Payment confirmation is locked</strong>
+                      <span>Open an active POS Session before confirming this transaction.</span>
+                    </div>
+                  )}
                   <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartOperatingUnits === 0}>
                     {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
                   </button>
@@ -5455,7 +5429,7 @@ function App() {
                     <option value="invoice">Invoice requested</option>
                   </select>
                   <button type="button" onClick={() => setPosNotice('Column manager is ready for the current session transaction table.')}>Columns</button>
-                  <button type="button" onClick={() => setPosNotice('Export will use current session transaction rows once backend session rows are connected.')}>Export</button>
+                  <button type="button" onClick={() => setPosNotice('Export uses the currently loaded backend session transaction rows.')}>Export</button>
                 </div>
 
 <div className="system-table-wrap">
