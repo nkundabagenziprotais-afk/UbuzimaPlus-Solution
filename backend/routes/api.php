@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReceivablesController;
 use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
+use App\Http\Controllers\Api\V1\PharmaCo360\PosOperationsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -159,6 +160,58 @@ Route::middleware(['auth:sanctum', 'permission:ai.manage', 'tenant.module:platfo
     });
 
 Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
+
+    Route::prefix('pos')
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ])
+        ->group(function () {
+            Route::get(
+                '/session/current',
+                [PosOperationsController::class, 'current']
+            );
+
+            Route::post(
+                '/session/open',
+                [PosOperationsController::class, 'open']
+            );
+
+            Route::post(
+                '/sessions/{session}/cash-drop',
+                [PosOperationsController::class, 'cashDrop']
+            );
+
+            Route::post(
+                '/sessions/{session}/zeroize',
+                [PosOperationsController::class, 'zeroize']
+            );
+
+            Route::post(
+                '/sessions/{session}/clear-balance',
+                [PosOperationsController::class, 'zeroize']
+            );
+
+            Route::post(
+                '/sessions/{session}/close',
+                [PosOperationsController::class, 'close']
+            );
+
+            Route::post(
+                '/sessions/{session}/admin-reset',
+                [PosOperationsController::class, 'adminReset']
+            )->middleware(
+                'permission:pharmaco.pos.session.reset'
+            );
+
+            Route::get(
+                '/recent-transactions',
+                [
+                    PosOperationsController::class,
+                    'recentTransactions',
+                ]
+            );
+        });
 
     Route::prefix('insurance')
         ->middleware([

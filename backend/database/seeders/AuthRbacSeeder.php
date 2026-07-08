@@ -330,7 +330,60 @@ class AuthRbacSeeder extends Seeder
                 'joined_at' => now(),
             ]
         );
-    }
+
+        // AQUILA_POS_SESSION_RESET_PERMISSION_START
+        /*
+         * POS Session Reset is restricted to platform and tenant
+         * administrators. Ordinary POS operators are deliberately excluded.
+         */
+        $posSessionResetPermission =
+            Permission::query()->firstOrCreate(
+                [
+                    'code' =>
+                        'pharmaco.pos.session.reset',
+                ],
+                [
+                    'name' =>
+                        'Reset POS Session',
+                    'permission_group' =>
+                        'pharmaco',
+                    'description' =>
+                        'Authorize an additional POS session '
+                        . 'after a completed daily closure.',
+                    'status' =>
+                        'active',
+                ]
+            );
+
+        Role::query()
+            ->where(function ($query) {
+                $query
+                    ->whereIn(
+                        'code',
+                        [
+                            'ubuzima_plus_super_admin',
+                            'tenant_admin',
+                        ]
+                    )
+                    ->orWhereHas(
+                        'permissions',
+                        fn ($permissionQuery) =>
+                            $permissionQuery->where(
+                                'permissions.code',
+                                'roles.manage'
+                            )
+                    );
+            })
+            ->get()
+            ->each(
+                fn (Role $role) =>
+                    $role->permissions()
+                        ->syncWithoutDetaching([
+                            $posSessionResetPermission->id,
+                        ])
+            );
+        // AQUILA_POS_SESSION_RESET_PERMISSION_END
+}
 
     private function assignRole(User $user, string $roleCode, ?int $solutionId = null, ?int $tenantId = null, ?int $branchId = null): void
     {
