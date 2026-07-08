@@ -32,6 +32,13 @@ function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderPr
 }
 
 import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
+import {
+  type PosSession,
+  closePosSession,
+  getCurrentPosSession,
+  openPosSession,
+  zeroizePosSession,
+} from './lib/posSessionApi';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
@@ -2660,6 +2667,10 @@ function App() {
   const [activeInsuranceWorkspace, setActiveInsuranceWorkspace] = useState<InsuranceWorkspaceKey>('overview');
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
   const [isPosDayOpen, setIsPosDayOpen] = useState(false);
+  const [posSession, setPosSession] = useState<PosSession | null>(null);
+  const [isLoadingPosSession, setIsLoadingPosSession] = useState(false);
+  const [isSavingPosSession, setIsSavingPosSession] = useState(false);
+  const [posDeclaredCashAmount, setPosDeclaredCashAmount] = useState('0');
   const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
   const [posStartingCashBalance, setPosStartingCashBalance] = useState('0');
   const [posCustomerType, setPosCustomerType] = useState<'walk-in' | 'existing-customer' | 'insurance-customer' | 'corporate-customer'>('walk-in');
@@ -2841,6 +2852,86 @@ function App() {
 
   const publicWebsiteUrl = isVitaPharmaContext ? vitaPharmaWebsiteUrl : ubuzimaPlusWebsiteUrl;
   const publicWebsiteLabel = isVitaPharmaContext ? 'Vita Pharma website' : 'Ubuzima+ website';
+
+  const posSessionTenantSlug =
+    profile?.tenant_assignments?.[0]?.tenant?.slug || '';
+
+  const posSessionBranchId =
+    profile?.scope.branch_id ??
+    profile?.tenant_assignments?.find(
+      (assignment) =>
+        assignment.status === 'active' &&
+        assignment.branch?.status === 'active',
+    )?.branch?.id ??
+    profile?.tenant_assignments?.find(
+      (assignment) => assignment.branch,
+    )?.branch?.id ??
+    pharmaCore.branches?.branches?.[0]?.id ??
+    null;
+
+  useEffect(() => {
+    if (
+      activeSection !== 'pos' ||
+      !session?.token ||
+      !posSessionTenantSlug
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    setIsLoadingPosSession(true);
+
+    void getCurrentPosSession({
+      token: session.token,
+      tenantSlug: posSessionTenantSlug,
+    })
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        const currentPosSession = response.session;
+
+        setPosSession(currentPosSession);
+        setIsPosDayOpen(currentPosSession?.status === 'open');
+        setPosTillZeroized(
+          currentPosSession?.balance_cleared ?? false,
+        );
+
+        if (currentPosSession?.status === 'open') {
+          setPosDeclaredCashAmount(
+            String(currentPosSession.expected_cash_amount),
+          );
+        } else {
+          setPosDeclaredCashAmount('0');
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
+
+        setPosNotice(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load the current POS session.',
+        );
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingPosSession(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeSection,
+    posSessionTenantSlug,
+    session?.token,
+  ]);
 
   useEffect(() => {
     const language = staffLanguageCode(staffLoginLanguage);
@@ -4448,33 +4539,175 @@ function App() {
       setPosNotice('Cart cleared.');
     }
 
-    function openPosDay() {
-      setIsPosDayOpen(true);
+    async function openPosDay() {
+      if (isSavingPosSession) {
+        return;
+      }
+
+      if (!session?.token || !posSessionTenantSlug) {
+        setPosNotice('The authenticated tenant context is unavailable.');
+        return;
+      }
+
+      if (!posSessionBranchId) {
+        setPosNotice('No active branch is available for this POS session.');
+        return;
+      }
+
+      const openingFloatAmount = Number(posStartingCashBalance);
+
+      if (
+        !Number.isFinite(openingFloatAmount) ||
+        openingFloatAmount < 0
+      ) {
+        setPosNotice('Enter a valid starting cash balance.');
+        return;
+      }
+
+      setIsSavingPosSession(true);
       setPosTransactionConfirmed(false);
-      setPosNotice(
-        posOpeningMode === 'fresh-start'
-          ? 'POS day opened. Starting cash balance requires manager confirmation for a fresh start day.'
-          : 'POS day opened from handover. Incoming staff acknowledgement becomes the next starting position.',
-      );
+
+      try {
+        const response = await openPosSession(
+          {
+            token: session.token,
+            tenantSlug: posSessionTenantSlug,
+          },
+          {
+            branch_id: posSessionBranchId,
+            opening_float_amount: openingFloatAmount,
+            opening_mode: posOpeningMode,
+          },
+        );
+
+        setPosSession(response.session);
+        setIsPosDayOpen(response.session.status === 'open');
+        setPosTillZeroized(response.session.balance_cleared);
+        setPosDeclaredCashAmount(
+          String(response.session.expected_cash_amount),
+        );
+        setPosNotice(response.message);
+      } catch (error: unknown) {
+        setPosNotice(
+          error instanceof Error
+            ? error.message
+            : 'Unable to open the POS session.',
+        );
+      } finally {
+        setIsSavingPosSession(false);
+      }
     }
 
-    function closePosDay() {
+    async function closePosDay() {
+      if (isSavingPosSession) {
+        return;
+      }
+
+      if (!session?.token || !posSessionTenantSlug) {
+        setPosNotice('The authenticated tenant context is unavailable.');
+        return;
+      }
+
+      if (!posSession || posSession.status === 'closed') {
+        setPosNotice('There is no active POS session to close.');
+        return;
+      }
+
       if (posCloseMode === 'handover' && !posTillZeroized) {
-        setPosNotice('Before handover close, the teller must zeroize the till account and incoming staff must acknowledge the cash.');
+        setPosNotice(
+          'Confirm the till count and incoming staff acknowledgement before handover.',
+        );
         return;
       }
 
-      if (posCloseMode === 'final-close' && !posDepositProof.trim()) {
-        setPosNotice('Final close requires proof of deposit for manager confirmation.');
+      if (
+        posCloseMode === 'final-close' &&
+        !posDepositProof.trim()
+      ) {
+        setPosNotice(
+          'Final close requires proof of deposit for manager confirmation.',
+        );
         return;
       }
 
-      setIsPosDayOpen(false);
-      setPosNotice(
-        posCloseMode === 'handover'
-          ? 'POS day closed through handover. Incoming staff acknowledgement is recorded as the next starting balance.'
-          : 'POS day closed for final deposit review. Manager confirmation is required.',
-      );
+      const declaredCashAmount = Number(posDeclaredCashAmount);
+
+      if (
+        !Number.isFinite(declaredCashAmount) ||
+        declaredCashAmount < 0
+      ) {
+        setPosNotice('Enter a valid declared closing cash amount.');
+        return;
+      }
+
+      setIsSavingPosSession(true);
+
+      try {
+        let workingSession = posSession;
+
+        if (workingSession.status === 'open') {
+          const zeroizeResponse = await zeroizePosSession(
+            {
+              token: session.token,
+              tenantSlug: posSessionTenantSlug,
+            },
+            workingSession.id,
+            {
+              declared_cash_amount: declaredCashAmount,
+              notes:
+                posCloseMode === 'handover'
+                  ? 'Till count confirmed for teller handover.'
+                  : 'Till count confirmed for final close.',
+            },
+          );
+
+          workingSession = zeroizeResponse.session;
+
+          setPosSession(workingSession);
+          setIsPosDayOpen(false);
+          setPosTillZeroized(workingSession.balance_cleared);
+          setPosDeclaredCashAmount('0');
+          setPosNotice(zeroizeResponse.message);
+        }
+
+        if (workingSession.status !== 'zeroized') {
+          setPosNotice(
+            'The till must be zeroized before the session can close.',
+          );
+          return;
+        }
+
+        const closeResponse = await closePosSession(
+          {
+            token: session.token,
+            tenantSlug: posSessionTenantSlug,
+          },
+          workingSession.id,
+          {
+            declared_cash_amount: 0,
+            closing_mode: posCloseMode,
+            deposit_proof:
+              posCloseMode === 'final-close'
+                ? posDepositProof.trim()
+                : undefined,
+          },
+        );
+
+        setPosSession(closeResponse.session);
+        setIsPosDayOpen(false);
+        setPosTillZeroized(false);
+        setPosDeclaredCashAmount('0');
+        setPosTransactionConfirmed(false);
+        setPosNotice(closeResponse.message);
+      } catch (error: unknown) {
+        setPosNotice(
+          error instanceof Error
+            ? error.message
+            : 'Unable to close the POS session.',
+        );
+      } finally {
+        setIsSavingPosSession(false);
+      }
     }
 
     function confirmTransaction() {
@@ -5066,13 +5299,33 @@ function App() {
                       <span>Section 2 · Teller session</span>
                       <h3>POS Session</h3>
                     </div>
+                    <small>
+                      {isLoadingPosSession
+                        ? 'Loading current session...'
+                        : posSession
+                          ? `${posSession.session_number} · ${posSession.status} · Expected RWF ${posSession.expected_cash_amount.toLocaleString('en-RW')}`
+                          : 'No POS session recorded for the current business day'}
+                    </small>
                   </div>
 
                   <section className="pos-shift-control-grid pos-shift-strip-v16">
                 <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--open">
                   <label className="pos-shift-field">
                     <span>Opening mode</span>
-                    <select value={posOpeningMode} onChange={(event) => setPosOpeningMode(event.target.value as typeof posOpeningMode)}>
+                    <select
+                      value={posOpeningMode}
+                      disabled={
+                        isLoadingPosSession ||
+                        isSavingPosSession ||
+                        (posSession !== null &&
+                          posSession.status !== 'closed')
+                      }
+                      onChange={(event) =>
+                        setPosOpeningMode(
+                          event.target.value as typeof posOpeningMode,
+                        )
+                      }
+                    >
                       <option value="fresh-start">Fresh start day</option>
                       <option value="handover">Handover from previous teller</option>
                     </select>
@@ -5084,20 +5337,69 @@ function App() {
                       type="number"
                       min="0"
                       value={posStartingCashBalance}
-                      onChange={(event) => setPosStartingCashBalance(event.target.value)}
+                      disabled={
+                        isLoadingPosSession ||
+                        isSavingPosSession ||
+                        (posSession !== null &&
+                          posSession.status !== 'closed')
+                      }
+                      onChange={(event) =>
+                        setPosStartingCashBalance(event.target.value)
+                      }
                     />
                   </label>
 
-                  <button type="button" onClick={openPosDay}>Open Day</button>
+                  <button
+                    type="button"
+                    onClick={openPosDay}
+                    disabled={
+                      isLoadingPosSession ||
+                      isSavingPosSession ||
+                      (posSession !== null &&
+                        posSession.status !== 'closed')
+                    }
+                  >
+                    {isSavingPosSession ? 'Processing...' : 'Open Day'}
+                  </button>
                 </article>
 
                 <article className="pos-shift-card pos-shift-card-v16 pos-shift-card--close">
                   <label className="pos-shift-field">
                     <span>Closing mode</span>
-                    <select value={posCloseMode} onChange={(event) => setPosCloseMode(event.target.value as typeof posCloseMode)}>
+                    <select
+                      value={posCloseMode}
+                      disabled={
+                        isSavingPosSession ||
+                        !posSession ||
+                        posSession.status === 'closed'
+                      }
+                      onChange={(event) =>
+                        setPosCloseMode(
+                          event.target.value as typeof posCloseMode,
+                        )
+                      }
+                    >
                       <option value="handover">Handover to incoming staff</option>
                       <option value="final-close">Final close with manager deposit proof</option>
                     </select>
+                  </label>
+
+                  <label className="pos-shift-field">
+                    <span>Declared closing cash</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={posDeclaredCashAmount}
+                      disabled={
+                        isSavingPosSession ||
+                        !posSession ||
+                        posSession.status === 'closed'
+                      }
+                      onChange={(event) =>
+                        setPosDeclaredCashAmount(event.target.value)
+                      }
+                    />
                   </label>
 
                   {posCloseMode === 'handover' ? (
@@ -5105,9 +5407,16 @@ function App() {
                       <input
                         type="checkbox"
                         checked={posTillZeroized}
-                        onChange={(event) => setPosTillZeroized(event.target.checked)}
+                        disabled={
+                          isSavingPosSession ||
+                          !posSession ||
+                          posSession.status === 'closed'
+                        }
+                        onChange={(event) =>
+                          setPosTillZeroized(event.target.checked)
+                        }
                       />
-                      <span>Till zeroized and incoming staff acknowledged</span>
+                      <span>Till count confirmed and incoming staff acknowledged</span>
                     </label>
                   ) : (
                     <label className="pos-shift-field">
@@ -5120,7 +5429,22 @@ function App() {
                     </label>
                   )}
 
-                  <button type="button" onClick={closePosDay} disabled={!isPosDayOpen}>Close Day</button>
+                  <button
+                    type="button"
+                    onClick={closePosDay}
+                    disabled={
+                      isLoadingPosSession ||
+                      isSavingPosSession ||
+                      !posSession ||
+                      posSession.status === 'closed'
+                    }
+                  >
+                    {isSavingPosSession
+                      ? 'Processing...'
+                      : posSession?.status === 'zeroized'
+                        ? 'Complete Close'
+                        : 'Zeroize & Close'}
+                  </button>
                 </article>
               </section>
                 </section>
