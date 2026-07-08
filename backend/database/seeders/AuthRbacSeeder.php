@@ -383,6 +383,59 @@ class AuthRbacSeeder extends Seeder
                         ])
             );
         // AQUILA_POS_SESSION_RESET_PERMISSION_END
+
+        // AQUILA_POS_REFUND_PERMISSION_START
+        /*
+         * POS Sale Refund approval is restricted to platform and tenant
+         * administrators. Ordinary POS operators are deliberately excluded.
+         */
+        $posRefundPermission =
+            Permission::query()->firstOrCreate(
+                [
+                    'code' =>
+                        'pharmaco.pos.refund',
+                ],
+                [
+                    'name' =>
+                        'Approve POS Sale Refund',
+                    'permission_group' =>
+                        'pharmaco',
+                    'description' =>
+                        'Approve controlled POS sale returns, refunds, '
+                        . 'credit notes, and payment reconciliation.',
+                    'status' =>
+                        'active',
+                ]
+            );
+
+        Role::query()
+            ->where(function ($query) {
+                $query
+                    ->whereIn(
+                        'code',
+                        [
+                            'ubuzima_plus_super_admin',
+                            'tenant_admin',
+                        ]
+                    )
+                    ->orWhereHas(
+                        'permissions',
+                        fn ($permissionQuery) =>
+                            $permissionQuery->where(
+                                'permissions.code',
+                                'roles.manage'
+                            )
+                    );
+            })
+            ->get()
+            ->each(
+                fn (Role $role) =>
+                    $role->permissions()
+                        ->syncWithoutDetaching([
+                            $posRefundPermission->id,
+                        ])
+            );
+        // AQUILA_POS_REFUND_PERMISSION_END
 }
 
     private function assignRole(User $user, string $roleCode, ?int $solutionId = null, ?int $tenantId = null, ?int $branchId = null): void

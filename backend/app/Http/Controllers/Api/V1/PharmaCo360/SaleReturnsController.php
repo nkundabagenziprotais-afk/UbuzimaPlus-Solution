@@ -563,18 +563,13 @@ class SaleReturnsController extends Controller
                             $batch->id,
                         'movement_type' =>
                             'sale_return_restock',
-                        'direction' => 'in',
                         'quantity' =>
                             (float)
                             $returnItem->quantity,
-                        'quantity_before' =>
-                            $beforeQuantity,
-                        'quantity_after' =>
+                        'running_balance' =>
                             $afterQuantity,
                         'reference_type' =>
                             PharmacoSaleReturn::class,
-                        'reference_id' =>
-                            $lockedReturn->id,
                         'reference_number' =>
                             $lockedReturn->return_number,
                         'reason' =>
