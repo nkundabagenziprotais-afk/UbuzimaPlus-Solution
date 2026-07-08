@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\PharmacoPayment;
 use App\Models\PharmacoPosSession;
 use App\Models\PharmacoSale;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -110,8 +111,14 @@ class PosSessionController extends Controller
             ->where('tenant_id', $tenant->id)
             ->where('branch_id', $session->branch_id)
             ->where('sold_by', $request->user()->id)
-            ->whereBetween(DB::raw('COALESCE(sold_at, created_at)'), [$session->opened_at, $end])
-            ->latest(DB::raw('COALESCE(sold_at, created_at)'))
+            ->where(function (Builder $query) use ($session, $end): void {
+                $query->whereBetween('sold_at', [$session->opened_at, $end])
+                    ->orWhere(function (Builder $fallback) use ($session, $end): void {
+                        $fallback->whereNull('sold_at')
+                            ->whereBetween('created_at', [$session->opened_at, $end]);
+                    });
+            })
+            ->orderByRaw('COALESCE(sold_at, created_at) DESC')
             ->limit(250)
             ->get();
 
@@ -186,13 +193,20 @@ class PosSessionController extends Controller
                 ->where('tenant_id', $tenant->id)
                 ->where('branch_id', $session->branch_id)
                 ->where('sold_by', $request->user()->id)
-                ->whereBetween(DB::raw('COALESCE(sold_at, created_at)'), [$session->opened_at, now()])
-                ->whereIn('payment_status', ['pending', 'partial'])
+                ->where('sale_type', '!=', 'credit_sale')
+                ->where(function (Builder $query) use ($session): void {
+                    $query->whereBetween('sold_at', [$session->opened_at, now()])
+                        ->orWhere(function (Builder $fallback) use ($session): void {
+                            $fallback->whereNull('sold_at')
+                                ->whereBetween('created_at', [$session->opened_at, now()]);
+                        });
+                })
+                ->whereIn('payment_status', ['unpaid', 'partially_paid'])
                 ->count();
 
             if ($pendingSales > 0) {
                 throw ValidationException::withMessages([
-                    'session' => ["Resolve {$pendingSales} pending or partially paid sale(s) before closing the till."],
+                    'session' => ["Resolve {$pendingSales} unpaid or partially paid non-credit sale(s) before closing the till."],
                 ]);
             }
 
