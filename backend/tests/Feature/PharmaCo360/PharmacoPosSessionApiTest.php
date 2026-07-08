@@ -30,7 +30,7 @@ class PharmacoPosSessionApiTest extends TestCase
             ->postJson('/api/v1/pharmaco/pos-sessions/open', $payload)
             ->assertCreated()
             ->assertJsonPath('session.status', 'open')
-            ->assertJsonPath('session.starting_cash', 25000)
+            ->assertJsonPath('session.starting_cash', 25000.0)
             ->assertJsonPath('session.branch.id', $branch->id);
 
         $this->withTenant()
@@ -92,8 +92,8 @@ class PharmacoPosSessionApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('session.status', 'closed')
             ->assertJsonPath('session.till_zeroized', true)
-            ->assertJsonPath('session.closing_cash_balance', 0)
-            ->assertJsonPath('session.cash_variance', 0);
+            ->assertJsonPath('session.closing_cash_balance', 0.0)
+            ->assertJsonPath('session.cash_variance', 0.0);
     }
 
     public function test_closed_session_cannot_close_twice_or_reopen_same_day(): void
