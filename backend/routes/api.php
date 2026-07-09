@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\ReceivablesController;
 use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\PosOperationsController;
 use App\Http\Controllers\Api\V1\PharmaCo360\HistoricalPosApprovalController;
+use App\Http\Controllers\Api\V1\PharmaCo360\HistoricalPosSessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -211,6 +212,26 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     PosOperationsController::class,
                     'recentTransactions',
                 ]
+            );
+
+            Route::get(
+                '/historical/session/current',
+                [
+                    HistoricalPosSessionController::class,
+                    'current',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.historical.view'
+            );
+
+            Route::post(
+                '/historical/session/open',
+                [
+                    HistoricalPosSessionController::class,
+                    'open',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.historical.open'
             );
 
             Route::get(
