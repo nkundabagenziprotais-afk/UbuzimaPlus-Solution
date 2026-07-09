@@ -14,6 +14,10 @@ class StockMovement extends Model
         'stock_location_id',
         'product_id',
         'stock_batch_id',
+        'pos_session_id',
+        'business_date',
+        'entry_mode',
+        'historical_approval_id',
         'movement_type',
         'quantity',
         'running_balance',
@@ -27,6 +31,7 @@ class StockMovement extends Model
 
     protected $casts = [
         'quantity' => 'decimal:2',
+        'business_date' => 'date',
         'running_balance' => 'decimal:2',
         'occurred_at' => 'datetime',
         'metadata' => 'array',
@@ -55,6 +60,22 @@ class StockMovement extends Model
     public function stockBatch(): BelongsTo
     {
         return $this->belongsTo(StockBatch::class);
+    }
+
+    public function posSession(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoPosSession::class,
+            'pos_session_id'
+        );
+    }
+
+    public function historicalApproval(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoHistoricalPosApproval::class,
+            'historical_approval_id'
+        );
     }
 
     public function performedBy(): BelongsTo
