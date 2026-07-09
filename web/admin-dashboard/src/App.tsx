@@ -43,6 +43,13 @@ import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
+import { SalesReturnsWorkspace } from './components/SalesReturnsWorkspace';
+import { MomoReconciliationWorkspace } from './components/MomoReconciliationWorkspace';
+import { PosSalesOverview } from './components/PosSalesOverview';
+import { ModulePageNavigation } from './components/ModulePageNavigation';
+import { PosModuleWorkspaceHeader } from './components/PosModuleWorkspaceHeader';
+import { CustomerPrescriptionManagementWorkspace } from './components/CustomerPrescriptionManagementWorkspace';
+import { WorkspacePopupFormManager } from './components/WorkspacePopupFormManager';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { ReportingDashboard } from './components/ReportingDashboard';
@@ -4740,161 +4747,59 @@ function App() {
     }
 
 
-    function renderPosWorkspaceTopMenu(activeKey: PosWorkspaceKey | 'main-dashboard' = activePosWorkspace) {
-      const posTerminalMenuItems = [
-        { key: 'main-dashboard', label: 'Main Dashboard', detail: 'Exit POS' },
-        { key: 'overview', label: 'POS Dashboard', detail: 'Control view' },
-        { key: 'pos', label: 'POS Counter', detail: 'Serve customer' },
-        { key: 'dispensing-review', label: 'Pharmacist Review', detail: 'Safety queue' },
-        { key: 'customers', label: 'Customers', detail: 'Patients' },
-        { key: 'prescriptions', label: 'Prescriptions', detail: 'Rx files' },
-        { key: 'sales-performance', label: 'Sales Register', detail: 'Real sales' },
-        { key: 'payment-receipt', label: 'Receipts & Payments', detail: 'Collection' },
-      ] as const;
+  const renderPosWorkspaceTopMenu = (
+    workspace: PosWorkspaceKey,
+  ) => (
+    <div className="module-page-sticky-header">
+      <ModulePageNavigation
+        platformDashboardLabel="POS & Sales Dashboard"
+        onExitToMainDashboard={() => {
+          setActivePosWorkspace('overview');
+          setActiveSection(
+            'overview' as typeof activeSection,
+          );
+        }}
+        onOpenPlatformDashboard={() => {
+          setActivePosWorkspace('overview');
+        }}
+        onBack={() => {
+          if (window.history.length > 1) {
+            window.history.back();
+            return;
+          }
 
-      return (
-        <nav className="pos-dedicated-command-bar pos-unified-terminal-menu" aria-label="POS workspace navigation">
-          {posTerminalMenuItems.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className={activeKey === item.key ? 'active' : ''}
-              onClick={() => {
-                if (item.key === 'main-dashboard') {
-                  navigateToSection('overview');
-                  return;
-                }
+          setActivePosWorkspace('overview');
+        }}
+      />
 
-                setActivePosWorkspace(item.key);
-              }}
-            >
-              <span>{item.label}</span>
-              <strong>{item.detail}</strong>
-            </button>
-          ))}
-        </nav>
-      );
-    }
+      <WorkspacePopupFormManager
+        workspace={workspace}
+      />
+    </div>
+  );
+
+  const renderPosWorkspaceIntelligence = (
+    workspace: PosWorkspaceKey,
+  ) => (
+    <PosModuleWorkspaceHeader
+      token={session!.token}
+      profile={profile!}
+      workspace={workspace}
+    />
+  );
 
     if (activePosWorkspace === 'overview') {
       return (
-        <section className="section-page pos-executive-overview pos-unified-module-page">
-          {renderPosWorkspaceTopMenu('overview')}
-          <section className="pos-executive-hero pos-international-hero">
-            <div>
-              <span>POS and sales operations</span>
-              <h2>Pharmacy POS Dashboard</h2>
-              <p>Counter readiness, sales flow, pharmacist review, customer queues, receipts, and daily close controls in one real-data POS workspace.</p>
-            </div>
-            <div className="pos-overview-hero-actions">
-              <button type="button" onClick={() => setActivePosWorkspace('pos')}>
-                Open Dedicated POS Counter
-              </button>
-              <button type="button" className="secondary-action" onClick={() => navigateToSection('overview')}>
-                Main Dashboard
-              </button>
-            </div>
-          </section>
-
-          <section className="pos-overview-analytics-grid executive pos-real-kpi-grid">
-            {[
-              ['POS session', isPosDayOpen ? 'Open' : 'Closed', isPosDayOpen ? 'Ready for counter work' : 'Open day before serving', 'Controlled by cashier day opening'],
-              ['Current cart lines', String(posCounterCart.lineCount), `${posSaleSummary.totalQuantity} unit${posSaleSummary.totalQuantity === 1 ? '' : 's'}`, 'Live from the active counter cart'],
-              ['Current cart total', `RWF ${posSaleSummary.total.toLocaleString('en-RW')}`, posPaymentMethod.replaceAll('_', ' '), 'Calculated from current cart only'],
-              ['Inventory loaded', posInventoryBatches.length ? String(posInventoryBatches.length) : '0', posInventoryLoadedAt || 'Not loaded', 'Stock readiness'],
-              ['Prescription state', posPrescriptionStatus.replaceAll('-', ' '), posPrescriptionStatus === 'manual-review' ? 'Needs review' : 'Counter selected', 'Used for pharmacist safety handoff'],
-              ['Receipt readiness', posCustomerInvoice === 'yes' ? 'Invoice requested' : 'Receipt only', posInvoiceDelivery.replaceAll('_', ' '), 'No fake transactions displayed'],
-            ].map(([title, value, signal, detail]) => (
-              <article key={title} className="pos-executive-card">
-                <span>{title}</span>
-                <strong>{value}</strong>
-                <em>{signal}</em>
-                <small>{detail}</small>
-              </article>
-            ))}
-          </section>
-
-          <section className="pos-overview-command-grid">
-            <article className="panel wide">
-              <div className="section-heading">
-                <div>
-                  <span>Real-data readiness</span>
-                  <h2>POS data quality and workflow readiness</h2>
-                </div>
-              </div>
-
-              <div className="pos-channel-bars pos-readiness-bars">
-                {[
-                  ['Current inventory', posInventoryBatches.length ? '100%' : '8%', posInventoryBatches.length ? `${posInventoryBatches.length} batches loaded` : 'Not loaded'],
-                  ['Active cart', posCounterCart.lineCount ? '72%' : '12%', posCounterCart.lineCount ? `${posCounterCart.lineCount} line(s)` : 'No active sale'],
-                  ['Payment setup', posPaymentMethod ? '88%' : '10%', posPaymentMethod.replaceAll('_', ' ')],
-                  ['Receipt setup', posCustomerInvoice === 'yes' ? '76%' : '35%', posCustomerInvoice === 'yes' ? posInvoiceDelivery : 'Standard receipt'],
-                ].map(([label, width, value]) => (
-                  <div key={label} className="pos-channel-row">
-                    <span>{label}</span>
-                    <div><i style={{ width }} /></div>
-                    <strong>{value}</strong>
-                  </div>
-                ))}
-              </div>
-            </article>
-
-            <article className="panel wide">
-              <div className="section-heading">
-                <div>
-                  <span>Counter guidance</span>
-                  <h2>What the cashier should check next</h2>
-                </div>
-              </div>
-
-              <div className="pos-alert-stack">
-                {[
-                  [isPosDayOpen ? 'Ready' : 'Start', isPosDayOpen ? 'POS day is open' : 'Open POS day', isPosDayOpen ? 'Counter can serve customers.' : 'Open the day before confirming payments.'],
-                  [posInventoryBatches.length ? 'Ready' : 'Load', posInventoryBatches.length ? 'Inventory available' : 'Refresh stock', posInventoryBatches.length ? 'Sellable stock ready for picking.' : 'Current sellable stock is used for cashier picking.'],
-                  [posCounterCart.lineCount ? 'Active' : 'Idle', posCounterCart.lineCount ? 'Cart in progress' : 'No active cart', posCounterCart.lineCount ? 'Review quantity, payer, and receipt before payment.' : 'Search or scan a product to begin.'],
-                  [posPrescriptionStatus === 'manual-review' ? 'Review' : 'Safe', posPrescriptionStatus === 'manual-review' ? 'Prescription needs manual review' : 'Prescription status selected', 'Pharmacist Review remains available for controlled dispensing.'],
-                ].map(([level, title, detail]) => (
-                  <div key={title}>
-                    <strong>{level}</strong>
-                    <span>{title}</span>
-                    <small>{detail}</small>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </section>
-
-          <section className="pos-real-register-card">
-            <div className="section-heading">
-              <div>
-                <span>Real sales register</span>
-                <h3>Recent Session Transactions</h3>
-                <p className="muted">No dummy rows are shown here. Real sales will appear after they are created through the backend-connected POS and dispensing workflow.</p>
-              </div>
-              <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
-                Open Sales Register
-              </button>
-            </div>
-            <div className="system-table-wrap">
-              <table className="system-table">
-                <thead>
-                  <tr>
-                    <th>Date / Time</th>
-                    <th>Sale No.</th>
-                    <th>Customer</th>
-                    <th>Payment</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colSpan={6}>No real POS transactions loaded in this dashboard view yet.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+        <section className="section-page pos-unified-module-page">
+          <PosSalesOverview
+            token={session!.token}
+            profile={profile!}
+            onOpenWorkspace={(workspace) =>
+              setActivePosWorkspace(
+                workspace as PosWorkspaceKey,
+              )
+            }
+          />
         </section>
       );
     }
@@ -5998,7 +5903,18 @@ function App() {
       return (
         <section className="section-page pos-unified-module-page">
           {renderPosWorkspaceTopMenu('dispensing-review')}
-          <SalesDispensingReview token={session!.token} profile={profile!} />
+
+          <div className="module-page-scroll-content">
+            {renderPosWorkspaceIntelligence('dispensing-review')}
+
+            <SalesDispensingReview
+              token={session!.token}
+              profile={profile!}
+              onOpenPos={() =>
+                setActivePosWorkspace('pos')
+              }
+            />
+          </div>
         </section>
       );
     }
@@ -6007,11 +5923,16 @@ function App() {
       return (
         <section className="section-page pos-unified-module-page">
           {renderPosWorkspaceTopMenu('customers')}
-          <FocusRegisterPreview
-            title="Customers and Patients"
-            description="Customer and patient register with default 15-row view, export, bulk edit, and controlled delete."
-            rows={previewRows}
-          />
+
+          <div className="module-page-scroll-content">
+            {renderPosWorkspaceIntelligence('customers')}
+
+            <CustomerPrescriptionManagementWorkspace
+              token={session!.token}
+              profile={profile!}
+              mode="customers"
+            />
+          </div>
         </section>
       );
     }
@@ -6020,11 +5941,16 @@ function App() {
       return (
         <section className="section-page pos-unified-module-page">
           {renderPosWorkspaceTopMenu('prescriptions')}
-          <FocusRegisterPreview
-            title="Prescriptions"
-            description="Prescription capture, camera readiness, AI text extraction, manual correction, and returning customer lookup."
-            rows={previewRows.map(([primary, secondary, status, amount]) => [primary, secondary.replace('sale', 'prescription'), status, amount])}
-          />
+
+          <div className="module-page-scroll-content">
+            {renderPosWorkspaceIntelligence('prescriptions')}
+
+            <CustomerPrescriptionManagementWorkspace
+              token={session!.token}
+              profile={profile!}
+              mode="prescriptions"
+            />
+          </div>
         </section>
       );
     }
@@ -6033,11 +5959,14 @@ function App() {
       return (
         <section className="section-page pos-unified-module-page">
           {renderPosWorkspaceTopMenu('sales-performance')}
-          <FocusRegisterPreview
-            title="Sales Performance"
-            description="Sales list with selected sale detail, export, review, and manager follow-up."
-            rows={previewRows}
-          />
+
+          <div className="module-page-scroll-content">
+            <SalesReturnsWorkspace
+              mode="sales"
+              token={session!.token}
+              profile={profile!}
+            />
+          </div>
         </section>
       );
     }
@@ -6045,11 +5974,18 @@ function App() {
     return (
       <section className="section-page pos-unified-module-page">
         {renderPosWorkspaceTopMenu('payment-receipt')}
-        <FocusRegisterPreview
-          title="Receipts & Payments"
-          description="Payment register with receipt print, Bluetooth readiness, WhatsApp, email, and corporate email delivery."
-          rows={previewRows}
-        />
+
+        <div className="module-page-scroll-content">
+          <SalesReturnsWorkspace
+            mode="payments"
+            token={session!.token}
+            profile={profile!}
+          />
+          <MomoReconciliationWorkspace
+            token={session!.token}
+            profile={profile!}
+          />
+        </div>
       </section>
     );
   }

@@ -26,6 +26,7 @@ import {
 type Props = {
   token: string;
   profile: AccessProfile;
+  onOpenPos?: () => void;
 };
 
 type SalesReviewState = {
@@ -213,7 +214,11 @@ function salesFiltersToApiFilters(filters: SalesFiltersState): PharmaSalesFilter
   };
 }
 
-export function SalesDispensingReview({ token, profile }: Props) {
+export function SalesDispensingReview({
+  token,
+  profile,
+  onOpenPos,
+}: Props) {
   const [state, setState] = useState<SalesReviewState>({
     branches: [],
     customers: [],
@@ -234,6 +239,8 @@ export function SalesDispensingReview({ token, profile }: Props) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [salesFilters, setSalesFilters] = useState<SalesFiltersState>(defaultSalesFilters());
+  const [saleDetailOpen, setSaleDetailOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const tenantSlug = useMemo(() => getTenantSlug(profile), [profile]);
   const canReadSales = (profile.permissions ?? []).includes('pharmaco.sales.manage');
@@ -368,6 +375,8 @@ export function SalesDispensingReview({ token, profile }: Props) {
       setPrescriptionChecks(buildPrescriptionChecks(response.sale));
       setPaymentForm(defaultPaymentForm(response.sale));
       setLastPayment(null);
+      setPaymentModalOpen(false);
+      setSaleDetailOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load sale detail.');
     } finally {
@@ -490,6 +499,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
       setLastPayment(response.payment);
       setPaymentForm(defaultPaymentForm(response.sale));
       setNotice(`${response.message} Receipt: ${response.payment.receipt_number ?? 'Not generated'}.`);
+      setPaymentModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to record payment.');
     } finally {
@@ -569,6 +579,84 @@ export function SalesDispensingReview({ token, profile }: Props) {
       ? 'Not required'
       : `${verifiedPrescriptionCount}/${requiredPrescriptionCount} verified`;
 
+  const customerPrescriptionRows = useMemo(() => {
+    const rows: Array<{
+      key: string;
+      customer: string;
+      contact: string;
+      prescription: string;
+      prescriber: string;
+      status: string;
+      expiry: string;
+    }> = [];
+
+    state.customers.forEach((customer) => {
+      const linkedPrescription =
+        state.prescriptions.find(
+          (prescription) =>
+            prescription.customer?.id === customer.id,
+        );
+
+      rows.push({
+        key: `customer-${customer.id}`,
+        customer: customer.full_name,
+        contact:
+          customer.phone ??
+          customer.email ??
+          'No contact captured',
+        prescription:
+          linkedPrescription?.prescription_number ??
+          'No linked prescription',
+        prescriber:
+          linkedPrescription?.prescriber_name ??
+          'Not applicable',
+        status:
+          linkedPrescription?.status ??
+          customer.status,
+        expiry:
+          linkedPrescription
+            ? formatDate(linkedPrescription.expires_at)
+            : 'Not applicable',
+      });
+    });
+
+    state.prescriptions
+      .filter(
+        (prescription) =>
+          !prescription.customer ||
+          !state.customers.some(
+            (customer) =>
+              customer.id ===
+              prescription.customer?.id,
+          ),
+      )
+      .forEach((prescription) => {
+        rows.push({
+          key: `prescription-${prescription.id}`,
+          customer:
+            prescription.customer?.full_name ??
+            'Walk-in / unlinked patient',
+          contact:
+            prescription.customer?.phone ??
+            'No contact captured',
+          prescription:
+            prescription.prescription_number,
+          prescriber:
+            prescription.prescriber_name ??
+            'No prescriber captured',
+          status: prescription.status,
+          expiry: formatDate(
+            prescription.expires_at,
+          ),
+        });
+      });
+
+    return rows.slice(0, 15);
+  }, [
+    state.customers,
+    state.prescriptions,
+  ]);
+
   return (
     <article className="panel wide sales-review-panel">
       <div className="panel-heading-row">
@@ -622,7 +710,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         </article>
       </div>
 
-      <section className="pharmaco-card sales-filter-panel">
+      <section className="pharmaco-card sales-filter-panel professional-sales-filter-panel">
         <div className="panel-heading-row">
           <div>
             <span className="section-label">Sales queues and filters</span>
@@ -702,7 +790,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
         </div>
 
         <div className="sales-filter-grid">
-          <label>
+          <label className="sales-filter-card">
             Sale status
             <select
               value={salesFilters.status}
@@ -720,7 +808,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
             </select>
           </label>
 
-          <label>
+          <label className="sales-filter-card">
             Payment status
             <select
               value={salesFilters.payment_status}
@@ -739,7 +827,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
             </select>
           </label>
 
-          <label>
+          <label className="sales-filter-card">
             Sale type
             <select
               value={salesFilters.sale_type}
@@ -758,7 +846,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
             </select>
           </label>
 
-          <label>
+          <label className="sales-filter-card">
             Branch
             <select
               value={salesFilters.branch_id}
@@ -792,54 +880,95 @@ export function SalesDispensingReview({ token, profile }: Props) {
         </p>
       </section>
 
-      <SalesCreationPanel
-        token={token}
-        tenantSlug={tenantSlug}
-        branches={state.branches}
-        customers={state.customers}
-        prescriptions={state.prescriptions}
-        products={state.products}
-        batches={state.batches}
-        onCustomerCreated={handleCustomerCreated}
-        onPrescriptionCreated={handlePrescriptionCreated}
-        onSaleCreated={handleSaleCreated}
-      />
+      <section className="pharmaco-card pharmacist-pos-launch-card">
+        <div>
+          <span className="section-label">
+            Dedicated transaction workspace
+          </span>
+          <h3>Pharmacy POS Counter</h3>
+          <p className="muted">
+            Sale creation, product search, customer capture,
+            prescription capture, cart preparation, payment,
+            and invoice handling are maintained in the
+            dedicated POS page to avoid duplicate workflows.
+          </p>
+        </div>
 
-      <div className="sales-review-grid">
-        <section className="pharmaco-card">
-          <span className="section-label">Customers / patients</span>
-          {state.customers.length === 0 ? (
-            <p className="muted">No customers loaded yet.</p>
-          ) : (
-            <div className="compact-list">
-              {state.customers.slice(0, 5).map((customer) => (
-                <div key={customer.id}>
-                  <strong>{customer.full_name}</strong>
-                  <span>{customer.phone ?? 'No phone'} · {customer.insurance_provider ?? 'No insurer'}</span>
-                  <small>{customer.status}</small>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <button
+          type="button"
+          onClick={onOpenPos}
+          disabled={!onOpenPos}
+        >
+          Open dedicated POS Counter
+        </button>
+      </section>
 
-        <section className="pharmaco-card">
-          <span className="section-label">Prescriptions</span>
-          {state.prescriptions.length === 0 ? (
-            <p className="muted">No prescriptions loaded yet.</p>
-          ) : (
-            <div className="compact-list">
-              {state.prescriptions.slice(0, 5).map((prescription) => (
-                <div key={prescription.id}>
-                  <strong>{prescription.prescription_number}</strong>
-                  <span>{prescription.prescriber_name ?? 'No prescriber'} · {prescription.prescriber_facility ?? 'No facility'}</span>
-                  <small>{prescription.status} · expires {formatDate(prescription.expires_at)}</small>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+      <section className="pharmaco-card customer-prescription-register">
+        <div className="panel-heading-row">
+          <div>
+            <span className="section-label">
+              Customer, patient and prescription register
+            </span>
+            <h3>Customer and prescription relationships</h3>
+            <p className="muted">
+              Review patient identity, contact information,
+              linked prescription, prescriber, lifecycle
+              status, and expiry in one operational table.
+            </p>
+          </div>
+
+          <div className="sale-total-box">
+            <span>Loaded relationships</span>
+            <strong>{customerPrescriptionRows.length}</strong>
+            <small>
+              Customers and prescriptions combined
+            </small>
+          </div>
+        </div>
+
+        <div className="responsive-register-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer / Patient</th>
+                <th>Contact</th>
+                <th>Prescription</th>
+                <th>Prescriber</th>
+                <th>Status</th>
+                <th>Expiry</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {customerPrescriptionRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    No customer or prescription records
+                    are currently loaded.
+                  </td>
+                </tr>
+              ) : (
+                customerPrescriptionRows.map((row) => (
+                  <tr key={row.key}>
+                    <td>
+                      <strong>{row.customer}</strong>
+                    </td>
+                    <td>{row.contact}</td>
+                    <td>{row.prescription}</td>
+                    <td>{row.prescriber}</td>
+                    <td>
+                      <span className="status-pill">
+                        {labelize(row.status)}
+                      </span>
+                    </td>
+                    <td>{row.expiry}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <div className="sales-table">
         <div className="sales-table-header">
@@ -847,7 +976,7 @@ export function SalesDispensingReview({ token, profile }: Props) {
           <strong>Customer</strong>
           <strong>Status</strong>
           <strong>Total</strong>
-          <strong>Action</strong>
+          <strong>Actions</strong>
         </div>
 
         {state.sales.length === 0 ? (
@@ -865,16 +994,60 @@ export function SalesDispensingReview({ token, profile }: Props) {
                 <small>{sale.payment_status}</small>
               </span>
               <span>{money(sale.total_amount)}</span>
-              <button type="button" onClick={() => selectSale(sale.id)} disabled={isLoadingSale}>
-                Review
-              </button>
+              <div className="sales-table-action-buttons">
+                <button
+                  type="button"
+                  onClick={() => selectSale(sale.id)}
+                  disabled={isLoadingSale}
+                >
+                  View
+                </button>
+
+                {sale.status === 'draft' && (
+                  <button
+                    type="button"
+                    className="secondary-action"
+                    onClick={() => selectSale(sale.id)}
+                    disabled={isLoadingSale}
+                  >
+                    Review / Update
+                  </button>
+                )}
+              </div>
             </div>
           ))
         )}
       </div>
 
-      {selectedSale && (
-        <section className="sale-detail-card">
+      {selectedSale && saleDetailOpen && (
+        <div
+          className="workspace-explicit-modal-backdrop is-open"
+          role="presentation"
+          onMouseDown={() => {
+            setSaleDetailOpen(false);
+            setPaymentModalOpen(false);
+          }}
+        >
+          <section
+            className="sale-detail-card workspace-explicit-modal workspace-sale-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Sale ${selectedSale.sale_number}`}
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <button
+              type="button"
+              className="workspace-explicit-modal-close"
+              aria-label="Close sale detail"
+              onClick={() => {
+                setSaleDetailOpen(false);
+                setPaymentModalOpen(false);
+              }}
+            >
+              ×
+            </button>
           <div className="panel-heading-row">
             <div>
               <span className="section-label">Selected sale detail</span>
@@ -963,84 +1136,150 @@ export function SalesDispensingReview({ token, profile }: Props) {
 
             {selectedSale.status === 'draft' ? (
               <div className="form-error">
-                Confirm and dispense this sale before recording payment.
+                Confirm and dispense this sale before
+                recording payment.
               </div>
-            ) : selectedSale.payment_status === 'paid' || Number(selectedSale.balance_amount) <= 0 ? (
+            ) : selectedSale.payment_status === 'paid' ||
+              Number(selectedSale.balance_amount) <= 0 ? (
               <div className="form-success">
                 This sale is fully paid.
               </div>
             ) : (
-              <div className="payment-form-grid">
-                <label>
-                  Amount
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={paymentForm.amount}
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({
-                        ...current,
-                        amount: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
+              <button
+                type="button"
+                className="open-record-payment-button"
+                onClick={() =>
+                  setPaymentModalOpen(true)
+                }
+              >
+                Record customer payment
+              </button>
+            )}
 
-                <label>
-                  Payment method
-                  <select
-                    value={paymentForm.payment_method}
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({
-                        ...current,
-                        payment_method: event.target.value as PaymentMethod,
-                      }))
+            {paymentModalOpen && (
+              <div
+                className="workspace-explicit-modal-backdrop payment-modal-layer is-open"
+                role="presentation"
+                onMouseDown={() =>
+                  setPaymentModalOpen(false)
+                }
+              >
+                <section
+                  className="workspace-explicit-modal workspace-payment-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Record customer payment"
+                  onMouseDown={(event) =>
+                    event.stopPropagation()
+                  }
+                >
+                  <button
+                    type="button"
+                    className="workspace-explicit-modal-close"
+                    aria-label="Close payment form"
+                    onClick={() =>
+                      setPaymentModalOpen(false)
                     }
                   >
-                    <option value="cash">Cash</option>
-                    <option value="momo">Mobile Money</option>
-                    <option value="card">Card</option>
-                    <option value="insurance">Insurance</option>
-                    <option value="credit">Credit</option>
-                    <option value="bank_transfer">Bank transfer</option>
-                  </select>
-                </label>
-
-                <label>
-                  Reference number
-                  <input
-                    type="text"
-                    value={paymentForm.reference_number}
-                    placeholder="MoMo, card, bank or insurance reference"
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({
-                        ...current,
-                        reference_number: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label>
-                  Notes
-                  <textarea
-                    value={paymentForm.notes}
-                    placeholder="Optional payment note"
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({
-                        ...current,
-                        notes: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <div className="payment-action-row">
-                  <button type="button" onClick={handleRecordPayment} disabled={isRecordingPayment}>
-                    {isRecordingPayment ? 'Recording payment…' : 'Record payment and generate receipt'}
+                    ×
                   </button>
-                </div>
+
+                  <div className="popup-form-heading">
+                    <span className="section-label">
+                      Payment and receipt
+                    </span>
+                    <h3>Record customer payment</h3>
+                    <p className="muted">
+                      The payment is recorded against
+                      {` ${selectedSale.sale_number}`} and
+                      the backend generates the receipt
+                      reference.
+                    </p>
+                  </div>
+
+                  <div className="payment-form-grid payment-popup-grid">
+                    <label>
+                      Amount
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={paymentForm.amount}
+                        onChange={(event) =>
+                          setPaymentForm((current) => ({
+                            ...current,
+                            amount: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Payment method
+                      <select
+                        value={paymentForm.payment_method}
+                        onChange={(event) =>
+                          setPaymentForm((current) => ({
+                            ...current,
+                            payment_method:
+                              event.target.value as PaymentMethod,
+                          }))
+                        }
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="momo">Mobile Money</option>
+                        <option value="card">Card</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="credit">Credit</option>
+                        <option value="bank_transfer">
+                          Bank transfer
+                        </option>
+                      </select>
+                    </label>
+
+                    <label>
+                      Reference number
+                      <input
+                        type="text"
+                        value={paymentForm.reference_number}
+                        placeholder="MoMo, card, bank or insurance reference"
+                        onChange={(event) =>
+                          setPaymentForm((current) => ({
+                            ...current,
+                            reference_number:
+                              event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Notes
+                      <textarea
+                        value={paymentForm.notes}
+                        placeholder="Optional payment note"
+                        onChange={(event) =>
+                          setPaymentForm((current) => ({
+                            ...current,
+                            notes: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+
+                    <div className="payment-action-row">
+                      <button
+                        type="button"
+                        onClick={handleRecordPayment}
+                        disabled={isRecordingPayment}
+                      >
+                        {isRecordingPayment
+                          ? 'Recording payment…'
+                          : 'Record payment and generate receipt'}
+                      </button>
+                    </div>
+                  </div>
+                </section>
               </div>
             )}
 
@@ -1167,7 +1406,8 @@ export function SalesDispensingReview({ token, profile }: Props) {
               {isConfirming ? 'Confirming…' : selectedSale.status === 'draft' ? 'Confirm and dispense stock' : 'Sale already dispensed'}
             </button>
           </div>
-        </section>
+          </section>
+        </div>
       )}
     </article>
   );

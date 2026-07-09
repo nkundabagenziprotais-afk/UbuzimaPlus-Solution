@@ -9,6 +9,7 @@ import {
   createPharmaCustomer,
   createPharmaPrescription,
   createPharmaSale,
+  uploadPharmaPrescriptionAttachment,
 } from '../lib/api';
 
 
@@ -166,6 +167,9 @@ export function SalesCreationPanel({
   const [isSavingSale, setIsSavingSale] = useState(false);
   const [creationNotice, setCreationNotice] = useState('');
   const [creationError, setCreationError] = useState('');
+  const [isCustomerCaptureOpen, setIsCustomerCaptureOpen] = useState(false);
+  const [isPrescriptionCaptureOpen, setIsPrescriptionCaptureOpen] = useState(false);
+  const [prescriptionAttachment, setPrescriptionAttachment] = useState<File | null>(null);
 
   useEffect(() => {
     if (!saleForm.branch_id && activeBranches[0]?.id) {
@@ -280,6 +284,16 @@ export function SalesCreationPanel({
   }
 
   function addProductToCart(product: PharmaProduct, stockBatch = bestBatch(product.id)) {
+    if (
+      product.requires_prescription &&
+      !saleForm.pharmaco_prescription_id
+    ) {
+      setIsPrescriptionCaptureOpen(true);
+      setCreationNotice(
+        'This medicine requires a prescription. Capture or select the prescription before completing the sale.',
+      );
+    }
+
     const selectedBatchId = stockBatch ? String(stockBatch.id) : '';
     const selectedUnitPrice = batchSellingPrice(stockBatch);
 
@@ -350,6 +364,7 @@ export function SalesCreationPanel({
         pharmaco_customer_id: String(response.customer.id),
       }));
       setCreationNotice(response.message);
+      setIsCustomerCaptureOpen(false);
     } catch (err) {
       setCreationError(err instanceof Error ? err.message : 'Unable to create customer.');
     } finally {
@@ -375,15 +390,45 @@ export function SalesCreationPanel({
         notes: prescriptionForm.notes.trim() || null,
       });
 
-      onPrescriptionCreated(response.prescription);
+      let savedPrescription = response.prescription;
+      let attachmentNotice = '';
+
+      if (prescriptionAttachment) {
+        try {
+          const attachmentResponse =
+            await uploadPharmaPrescriptionAttachment(
+              token,
+              tenantSlug,
+              response.prescription.id,
+              prescriptionAttachment,
+            );
+
+          savedPrescription =
+            attachmentResponse.prescription;
+
+          attachmentNotice =
+            ' Prescription attachment uploaded.';
+        } catch (attachmentError) {
+          attachmentNotice =
+            attachmentError instanceof Error
+              ? ` Prescription created, but attachment upload needs attention: ${attachmentError.message}`
+              : ' Prescription created, but the attachment could not be uploaded.';
+        }
+      }
+
+      onPrescriptionCreated(savedPrescription);
       setPrescriptionForm(blankPrescriptionForm(prescriptionForm.pharmaco_customer_id));
+      setPrescriptionAttachment(null);
       setSaleForm((current) => ({
         ...current,
-        pharmaco_customer_id: String(response.prescription.customer?.id ?? current.pharmaco_customer_id),
-        pharmaco_prescription_id: String(response.prescription.id),
+        pharmaco_customer_id: String(savedPrescription.customer?.id ?? current.pharmaco_customer_id),
+        pharmaco_prescription_id: String(savedPrescription.id),
         sale_type: 'prescription_sale',
       }));
-      setCreationNotice(response.message);
+      setCreationNotice(
+        `${response.message}${attachmentNotice}`,
+      );
+      setIsPrescriptionCaptureOpen(false);
     } catch (err) {
       setCreationError(err instanceof Error ? err.message : 'Unable to create prescription.');
     } finally {
@@ -861,161 +906,433 @@ export function SalesCreationPanel({
         </section>
       </div>
 
-      <div className="pos-support-grid">
-        {invoiceRequested ? (
-          <section className="quick-customer-panel">
+      <div className="pos-support-action-grid">
+        <section className="quick-customer-panel pos-capture-action-card">
+          <div>
+            <span className="section-label">
+              Customer information
+            </span>
             <h4>Customer capture</h4>
-            <p className="muted">Use for patients who need receipts, insurance, refill follow-up, or pharmacist chat.</p>
+            <p className="muted">
+              Capture identity, contact, insurance,
+              invoice, credit, or follow-up information
+              only when it is needed.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setIsCustomerCaptureOpen(true)
+            }
+          >
+            Open customer form
+          </button>
+        </section>
+
+        <section
+          className={`quick-customer-panel pos-capture-action-card ${
+            prescriptionRequiredWithoutPrescription
+              ? 'requires-attention'
+              : ''
+          }`}
+        >
+          <div>
+            <span className="section-label">
+              Prescription information
+            </span>
+            <h4>Prescription capture</h4>
+            <p className="muted">
+              {prescriptionRequiredWithoutPrescription
+                ? 'A selected medicine requires a prescription before the draft sale can be completed.'
+                : 'Attach a prescription now or capture it later through Prescription Management.'}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setIsPrescriptionCaptureOpen(true)
+            }
+          >
+            {prescriptionRequiredWithoutPrescription
+              ? 'Capture required prescription'
+              : 'Open prescription form'}
+          </button>
+        </section>
+      </div>
+
+      {isCustomerCaptureOpen && (
+        <div
+          className="workspace-explicit-modal-backdrop is-open"
+          role="presentation"
+          onMouseDown={() =>
+            setIsCustomerCaptureOpen(false)
+          }
+        >
+          <section
+            className="workspace-explicit-modal pos-capture-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Customer capture"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <button
+              type="button"
+              className="workspace-explicit-modal-close"
+              onClick={() =>
+                setIsCustomerCaptureOpen(false)
+              }
+              aria-label="Close customer form"
+            >
+              ×
+            </button>
+
+            <div className="popup-form-heading">
+              <span className="section-label">
+                POS customer record
+              </span>
+              <h3>Customer capture</h3>
+              <p className="muted">
+                Record only the information needed
+                for this sale, invoice, insurance,
+                credit, or patient follow-up.
+              </p>
+            </div>
+
             <div className="creation-form-grid">
               <label>
                 First name
                 <input
                   value={customerForm.first_name}
-                  onChange={(event) => setCustomerForm((current) => ({ ...current, first_name: event.target.value }))}
+                  onChange={(event) =>
+                    setCustomerForm((current) => ({
+                      ...current,
+                      first_name:
+                        event.target.value,
+                    }))
+                  }
                 />
               </label>
+
               <label>
                 Last name
                 <input
                   value={customerForm.last_name}
-                  onChange={(event) => setCustomerForm((current) => ({ ...current, last_name: event.target.value }))}
+                  onChange={(event) =>
+                    setCustomerForm((current) => ({
+                      ...current,
+                      last_name:
+                        event.target.value,
+                    }))
+                  }
                 />
               </label>
+
               <label>
                 Phone
                 <input
                   value={customerForm.phone}
-                  onChange={(event) => setCustomerForm((current) => ({ ...current, phone: event.target.value }))}
+                  onChange={(event) =>
+                    setCustomerForm((current) => ({
+                      ...current,
+                      phone:
+                        event.target.value,
+                    }))
+                  }
                 />
               </label>
+
               <label>
                 Email
                 <input
                   type="email"
                   value={customerForm.email}
-                  onChange={(event) => setCustomerForm((current) => ({ ...current, email: event.target.value }))}
+                  onChange={(event) =>
+                    setCustomerForm((current) => ({
+                      ...current,
+                      email:
+                        event.target.value,
+                    }))
+                  }
                 />
               </label>
+
               <label>
                 Gender
                 <input
                   value={customerForm.gender}
-                  onChange={(event) => setCustomerForm((current) => ({ ...current, gender: event.target.value }))}
-                />
-              </label>
-              <label>
-                Insurer
-                <input
-                  value={customerForm.insurance_provider}
-                  onChange={(event) => setCustomerForm((current) => ({ ...current, insurance_provider: event.target.value }))}
-                />
-              </label>
-              <label>
-                Insurance number
-                <input
-                  value={customerForm.insurance_membership_number}
                   onChange={(event) =>
                     setCustomerForm((current) => ({
                       ...current,
-                      insurance_membership_number: event.target.value,
+                      gender:
+                        event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                Insurance provider
+                <input
+                  value={
+                    customerForm
+                      .insurance_provider
+                  }
+                  onChange={(event) =>
+                    setCustomerForm((current) => ({
+                      ...current,
+                      insurance_provider:
+                        event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                Insurance number
+                <input
+                  value={
+                    customerForm
+                      .insurance_membership_number
+                  }
+                  onChange={(event) =>
+                    setCustomerForm((current) => ({
+                      ...current,
+                      insurance_membership_number:
+                        event.target.value,
                     }))
                   }
                 />
               </label>
             </div>
-            <button type="button" onClick={handleCreateCustomer} disabled={isSavingCustomer}>
-              {isSavingCustomer ? 'Creating customer...' : 'Create customer'}
-            </button>
-          </section>
-        ) : (
-          <section className="quick-customer-panel customer-capture-gate">
-            <h4>Customer capture</h4>
-            <p className="muted">
-              Keep walk-in checkout fast. Turn on “Customer wants invoice” in the cart when the customer needs
-              invoice details, insurance support, refill follow-up, or a pharmacist chat record.
-            </p>
-            <button type="button" onClick={() => setInvoiceRequested(true)}>
-              Capture customer now
-            </button>
-          </section>
-        )}
 
-        <section className="quick-customer-panel">
-          <h4>Prescription capture</h4>
-          <p className="muted">Required before a prescription-only product can become a draft sale.</p>
-          <div className="creation-form-grid">
-            <label>
-              Customer
-              <select
-                value={prescriptionForm.pharmaco_customer_id}
-                onChange={(event) =>
-                  setPrescriptionForm((current) => ({
-                    ...current,
-                    pharmaco_customer_id: event.target.value,
-                  }))
+            <div className="managed-detail-actions">
+              <button
+                type="button"
+                onClick={() =>
+                  setIsCustomerCaptureOpen(false)
                 }
               >
-                <option value="">Walk-in / no customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.full_name}
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCreateCustomer}
+                disabled={isSavingCustomer}
+              >
+                {isSavingCustomer
+                  ? 'Creating customer…'
+                  : 'Create customer'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {isPrescriptionCaptureOpen && (
+        <div
+          className="workspace-explicit-modal-backdrop is-open"
+          role="presentation"
+          onMouseDown={() =>
+            setIsPrescriptionCaptureOpen(false)
+          }
+        >
+          <section
+            className="workspace-explicit-modal pos-capture-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Prescription capture"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <button
+              type="button"
+              className="workspace-explicit-modal-close"
+              onClick={() =>
+                setIsPrescriptionCaptureOpen(false)
+              }
+              aria-label="Close prescription form"
+            >
+              ×
+            </button>
+
+            <div className="popup-form-heading">
+              <span className="section-label">
+                Required clinical record
+              </span>
+              <h3>Prescription capture</h3>
+              <p className="muted">
+                Capture the prescription information
+                and optionally attach a copy now.
+                The attachment can also be added later
+                from Prescription Management.
+              </p>
+            </div>
+
+            <div className="creation-form-grid">
+              <label>
+                Customer / Patient
+                <select
+                  value={
+                    prescriptionForm
+                      .pharmaco_customer_id
+                  }
+                  onChange={(event) =>
+                    setPrescriptionForm((current) => ({
+                      ...current,
+                      pharmaco_customer_id:
+                        event.target.value,
+                    }))
+                  }
+                >
+                  <option value="">
+                    Walk-in / no customer
                   </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Prescriber
-              <input
-                value={prescriptionForm.prescriber_name}
-                onChange={(event) =>
-                  setPrescriptionForm((current) => ({ ...current, prescriber_name: event.target.value }))
+
+                  {customers.map((customer) => (
+                    <option
+                      key={customer.id}
+                      value={customer.id}
+                    >
+                      {customer.full_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Prescriber
+                <input
+                  value={
+                    prescriptionForm
+                      .prescriber_name
+                  }
+                  onChange={(event) =>
+                    setPrescriptionForm((current) => ({
+                      ...current,
+                      prescriber_name:
+                        event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                Facility
+                <input
+                  value={
+                    prescriptionForm
+                      .prescriber_facility
+                  }
+                  onChange={(event) =>
+                    setPrescriptionForm((current) => ({
+                      ...current,
+                      prescriber_facility:
+                        event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                Prescriber phone
+                <input
+                  value={
+                    prescriptionForm
+                      .prescriber_phone
+                  }
+                  onChange={(event) =>
+                    setPrescriptionForm((current) => ({
+                      ...current,
+                      prescriber_phone:
+                        event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                Issued date
+                <input
+                  type="date"
+                  value={
+                    prescriptionForm.issued_at
+                  }
+                  onChange={(event) =>
+                    setPrescriptionForm((current) => ({
+                      ...current,
+                      issued_at:
+                        event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                Expiry date
+                <input
+                  type="date"
+                  value={
+                    prescriptionForm.expires_at
+                  }
+                  onChange={(event) =>
+                    setPrescriptionForm((current) => ({
+                      ...current,
+                      expires_at:
+                        event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="managed-detail-wide">
+                Prescription attachment
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+                  onChange={(event) =>
+                    setPrescriptionAttachment(
+                      event.target.files?.[0] ??
+                      null,
+                    )
+                  }
+                />
+
+                <small>
+                  Optional now. PDF, JPG, PNG, or WebP;
+                  maximum 10 MB.
+                </small>
+              </label>
+            </div>
+
+            <div className="managed-detail-actions">
+              <button
+                type="button"
+                onClick={() =>
+                  setIsPrescriptionCaptureOpen(false)
                 }
-              />
-            </label>
-            <label>
-              Facility
-              <input
-                value={prescriptionForm.prescriber_facility}
-                onChange={(event) =>
-                  setPrescriptionForm((current) => ({ ...current, prescriber_facility: event.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Prescriber phone
-              <input
-                value={prescriptionForm.prescriber_phone}
-                onChange={(event) =>
-                  setPrescriptionForm((current) => ({ ...current, prescriber_phone: event.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Issued at
-              <input
-                type="date"
-                value={prescriptionForm.issued_at}
-                onChange={(event) =>
-                  setPrescriptionForm((current) => ({ ...current, issued_at: event.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Expires at
-              <input
-                type="date"
-                value={prescriptionForm.expires_at}
-                onChange={(event) =>
-                  setPrescriptionForm((current) => ({ ...current, expires_at: event.target.value }))
-                }
-              />
-            </label>
-          </div>
-          <button type="button" onClick={handleCreatePrescription} disabled={isSavingPrescription}>
-            {isSavingPrescription ? 'Creating prescription...' : 'Create prescription'}
-          </button>
-        </section>
-      </div>
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCreatePrescription}
+                disabled={isSavingPrescription}
+              >
+                {isSavingPrescription
+                  ? 'Creating prescription…'
+                  : 'Create and link prescription'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

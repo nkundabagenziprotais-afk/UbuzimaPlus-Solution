@@ -37,6 +37,7 @@ class PharmacoCustomer extends Model
         'credit_terms_days' => 'integer',
         'date_of_birth' => 'date',
         'metadata' => 'array',
+        'credit_terms_days' => 'integer',
     ];
 
     public function tenant(): BelongsTo

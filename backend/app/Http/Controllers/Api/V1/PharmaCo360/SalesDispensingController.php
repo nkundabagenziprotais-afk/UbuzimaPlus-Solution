@@ -17,6 +17,7 @@ use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -281,6 +282,407 @@ class SalesDispensingController extends Controller
             'message' => 'Prescription created successfully.',
             'prescription' => $this->serializePrescription($prescription, includeCustomer: true),
         ], 201);
+    }
+
+    public function updateCustomer(
+        Request $request,
+        PharmacoCustomer $customer,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $customer->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'first_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'last_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:255'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date'],
+            'gender' => ['sometimes', 'nullable', 'string', 'max:40'],
+            'customer_type' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'insurance_provider' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'insurance_membership_number' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'status' => ['sometimes', 'string', 'in:active,inactive'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],
+        ]);
+
+        if (
+            array_key_exists('phone', $validated) &&
+            ! empty($validated['phone'])
+        ) {
+            $phoneExists = PharmacoCustomer::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('phone', $validated['phone'])
+                ->whereKeyNot($customer->id)
+                ->exists();
+
+            if ($phoneExists) {
+                throw ValidationException::withMessages([
+                    'phone' => [
+                        'A customer with this phone number already exists for this tenant.',
+                    ],
+                ]);
+            }
+        }
+
+        $updates = [];
+
+        foreach ([
+            'first_name',
+            'last_name',
+            'phone',
+            'email',
+            'date_of_birth',
+            'gender',
+            'customer_type',
+            'insurance_provider',
+            'insurance_membership_number',
+            'status',
+        ] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $updates[$field] = $validated[$field];
+            }
+        }
+
+        $metadata = is_array($customer->metadata)
+            ? $customer->metadata
+            : [];
+
+        if (array_key_exists('notes', $validated)) {
+            $metadata['notes'] = $validated['notes'];
+        }
+
+        $metadata['last_management_workflow'] =
+            'customer_profile_update';
+
+        $updates['metadata'] = $metadata;
+
+        $customer->fill($updates);
+        $customer->save();
+
+        $scope = $scopeResolver->resolveForUser(
+            $request->user()
+        );
+
+        $auditLogService->record(
+            action: 'pharmaco.customer.updated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'customer_id' => $customer->id,
+                'changed_fields' => array_keys($updates),
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoCustomer::class,
+            auditableId: $customer->id
+        );
+
+        return response()->json([
+            'message' => 'Customer updated successfully.',
+            'customer' => $this->serializeCustomer($customer),
+        ]);
+    }
+
+    public function updatePrescription(
+        Request $request,
+        PharmacoPrescription $prescription,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $prescription->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'pharmaco_customer_id' => ['sometimes', 'nullable', 'integer'],
+            'prescription_number' => ['sometimes', 'required', 'string', 'max:120'],
+            'prescriber_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'prescriber_facility' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'prescriber_phone' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'issued_at' => ['sometimes', 'nullable', 'date'],
+            'expires_at' => [
+                'sometimes',
+                'nullable',
+                'date',
+                'after_or_equal:issued_at',
+            ],
+            'status' => [
+                'sometimes',
+                'string',
+                'in:active,used,expired,cancelled',
+            ],
+            'notes' => ['sometimes', 'nullable', 'string'],
+        ]);
+
+        if (
+            array_key_exists(
+                'pharmaco_customer_id',
+                $validated
+            ) &&
+            $validated['pharmaco_customer_id'] !== null
+        ) {
+            $customerExists = PharmacoCustomer::query()
+                ->where('tenant_id', $tenant->id)
+                ->whereKey(
+                    $validated['pharmaco_customer_id']
+                )
+                ->exists();
+
+            if (! $customerExists) {
+                throw ValidationException::withMessages([
+                    'pharmaco_customer_id' => [
+                        'Selected customer does not belong to the current tenant.',
+                    ],
+                ]);
+            }
+        }
+
+        if (
+            array_key_exists(
+                'prescription_number',
+                $validated
+            )
+        ) {
+            $numberExists = PharmacoPrescription::query()
+                ->where('tenant_id', $tenant->id)
+                ->where(
+                    'prescription_number',
+                    $validated['prescription_number']
+                )
+                ->whereKeyNot($prescription->id)
+                ->exists();
+
+            if ($numberExists) {
+                throw ValidationException::withMessages([
+                    'prescription_number' => [
+                        'This prescription number already exists for this tenant.',
+                    ],
+                ]);
+            }
+        }
+
+        $updates = [];
+
+        foreach ([
+            'pharmaco_customer_id',
+            'prescription_number',
+            'prescriber_name',
+            'prescriber_facility',
+            'prescriber_phone',
+            'issued_at',
+            'expires_at',
+            'status',
+            'notes',
+        ] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $updates[$field] = $validated[$field];
+            }
+        }
+
+        $metadata = is_array($prescription->metadata)
+            ? $prescription->metadata
+            : [];
+
+        $metadata['last_management_workflow'] =
+            'prescription_record_update';
+
+        $updates['metadata'] = $metadata;
+
+        $prescription->fill($updates);
+        $prescription->save();
+        $prescription->load('customer');
+
+        $scope = $scopeResolver->resolveForUser(
+            $request->user()
+        );
+
+        $auditLogService->record(
+            action: 'pharmaco.prescription.updated',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'prescription_id' => $prescription->id,
+                'prescription_number' =>
+                    $prescription->prescription_number,
+                'changed_fields' => array_keys($updates),
+            ],
+            dataClassification: 'internal',
+            auditableType: PharmacoPrescription::class,
+            auditableId: $prescription->id
+        );
+
+        return response()->json([
+            'message' => 'Prescription updated successfully.',
+            'prescription' => $this->serializePrescription(
+                $prescription,
+                includeCustomer: true
+            ),
+        ]);
+    }
+
+    public function uploadPrescriptionAttachment(
+        Request $request,
+        PharmacoPrescription $prescription,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $prescription->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'attachment' => [
+                'required',
+                'file',
+                'mimes:pdf,jpg,jpeg,png,webp',
+                'max:10240',
+            ],
+        ]);
+
+        $file = $validated['attachment'];
+        $disk = 'local';
+
+        $extension = strtolower(
+            $file->getClientOriginalExtension()
+                ?: $file->extension()
+                ?: 'bin'
+        );
+
+        $directory = implode('/', [
+            'pharmaco',
+            'prescriptions',
+            (string) $tenant->id,
+            $prescription->uuid,
+        ]);
+
+        $filename = (string) Str::uuid()
+            . '.'
+            . $extension;
+
+        $storedPath = $file->storeAs(
+            $directory,
+            $filename,
+            $disk
+        );
+
+        if (! $storedPath) {
+            throw ValidationException::withMessages([
+                'attachment' => [
+                    'The prescription attachment could not be stored.',
+                ],
+            ]);
+        }
+
+        $previousDisk =
+            $prescription->attachment_disk;
+
+        $previousPath =
+            $prescription->attachment_path;
+
+        $prescription->fill([
+            'attachment_disk' => $disk,
+            'attachment_path' => $storedPath,
+            'attachment_original_name' =>
+                mb_substr(
+                    $file->getClientOriginalName(),
+                    0,
+                    191
+                ),
+            'attachment_mime_type' =>
+                mb_substr(
+                    (string) $file->getMimeType(),
+                    0,
+                    100
+                ),
+            'attachment_size' => $file->getSize(),
+            'attachment_uploaded_by' =>
+                $request->user()?->id,
+            'attachment_uploaded_at' => now(),
+        ]);
+
+        $prescription->save();
+
+        if (
+            $previousPath &&
+            $previousPath !== $storedPath
+        ) {
+            Storage::disk(
+                $previousDisk ?: 'local'
+            )->delete($previousPath);
+        }
+
+        $prescription->load('customer');
+
+        $scope = $scopeResolver->resolveForUser(
+            $request->user()
+        );
+
+        $auditLogService->record(
+            action: 'pharmaco.prescription.attachment_uploaded',
+            scope: $scope,
+            metadata: [
+                'tenant_slug' => $tenant->slug,
+                'prescription_id' => $prescription->id,
+                'prescription_number' =>
+                    $prescription->prescription_number,
+                'mime_type' =>
+                    $prescription->attachment_mime_type,
+                'size' =>
+                    $prescription->attachment_size,
+            ],
+            dataClassification: 'confidential',
+            auditableType: PharmacoPrescription::class,
+            auditableId: $prescription->id
+        );
+
+        return response()->json([
+            'message' =>
+                'Prescription attachment uploaded successfully.',
+            'prescription' =>
+                $this->serializePrescription(
+                    $prescription,
+                    includeCustomer: true
+                ),
+        ]);
+    }
+
+    public function prescriptionAttachment(
+        Request $request,
+        PharmacoPrescription $prescription
+    ) {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $prescription->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        if (! $prescription->attachment_path) {
+            abort(404);
+        }
+
+        $disk = $prescription->attachment_disk ?: 'local';
+
+        if (
+            ! Storage::disk($disk)->exists(
+                $prescription->attachment_path
+            )
+        ) {
+            abort(404);
+        }
+
+        return Storage::disk($disk)->download(
+            $prescription->attachment_path,
+            $prescription->attachment_original_name
+                ?: 'prescription-attachment'
+        );
     }
 
     public function createSale(
@@ -847,6 +1249,23 @@ class SalesDispensingController extends Controller
             'expires_at' => $prescription->expires_at?->toDateString(),
             'status' => $prescription->status,
             'notes' => $prescription->notes,
+            'attachment' => $prescription->attachment_path
+                ? [
+                    'original_name' =>
+                        $prescription->attachment_original_name,
+                    'mime_type' =>
+                        $prescription->attachment_mime_type,
+                    'size' =>
+                        $prescription->attachment_size,
+                    'uploaded_at' =>
+                        $prescription->attachment_uploaded_at
+                            ?->toISOString(),
+                    'download_path' => sprintf(
+                        '/api/v1/pharmaco/prescriptions/%d/attachment',
+                        $prescription->id
+                    ),
+                ]
+                : null,
         ];
 
         if ($includeCustomer) {

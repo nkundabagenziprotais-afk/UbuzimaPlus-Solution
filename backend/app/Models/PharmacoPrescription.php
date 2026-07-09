@@ -22,12 +22,21 @@ class PharmacoPrescription extends Model
         'expires_at',
         'status',
         'notes',
+        'attachment_disk',
+        'attachment_path',
+        'attachment_original_name',
+        'attachment_mime_type',
+        'attachment_size',
+        'attachment_uploaded_by',
+        'attachment_uploaded_at',
         'metadata',
     ];
 
     protected $casts = [
         'issued_at' => 'date',
         'expires_at' => 'date',
+        'attachment_size' => 'integer',
+        'attachment_uploaded_at' => 'datetime',
         'metadata' => 'array',
     ];
 
