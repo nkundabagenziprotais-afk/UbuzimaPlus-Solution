@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReceivablesController;
 use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\PosOperationsController;
+use App\Http\Controllers\Api\V1\PharmaCo360\HistoricalPosApprovalController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -210,6 +211,56 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     PosOperationsController::class,
                     'recentTransactions',
                 ]
+            );
+
+            Route::get(
+                '/historical/availability',
+                [
+                    HistoricalPosApprovalController::class,
+                    'availability',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.historical.open'
+            );
+
+            Route::post(
+                '/historical/approvals',
+                [
+                    HistoricalPosApprovalController::class,
+                    'requestApproval',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.historical.open'
+            );
+
+            Route::get(
+                '/historical/approvals',
+                [
+                    HistoricalPosApprovalController::class,
+                    'index',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.historical.approve'
+            );
+
+            Route::post(
+                '/historical/approvals/{approval}/approve',
+                [
+                    HistoricalPosApprovalController::class,
+                    'approve',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.historical.approve'
+            );
+
+            Route::post(
+                '/historical/approvals/{approval}/reject',
+                [
+                    HistoricalPosApprovalController::class,
+                    'reject',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.historical.approve'
             );
         });
 
