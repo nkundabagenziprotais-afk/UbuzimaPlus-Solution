@@ -10,6 +10,7 @@ use App\Models\PharmacoPrescription;
 use App\Models\PharmacoSale;
 use App\Models\PharmacoSaleItem;
 use App\Models\PharmacoPayment;
+use App\Models\PharmacoPosSession;
 use App\Models\StockBatch;
 use App\Models\StockMovement;
 use App\Services\Access\ScopeResolver;
@@ -783,6 +784,12 @@ class SalesDispensingController extends Controller
         }
 
         $result = DB::transaction(function () use ($request, $tenant, $validated, $branch, $customer, $prescription, $products) {
+            $historicalSession = $this->lockActiveHistoricalSessionForBranch(
+                $request,
+                (int) $tenant->id,
+                (int) $branch->id
+            );
+
             $saleNumber = $this->nextSaleNumber($tenant->id);
 
             $lineItems = collect($validated['items'])->map(function (array $item) use ($tenant, $products) {
@@ -837,6 +844,15 @@ class SalesDispensingController extends Controller
                 'uuid' => (string) Str::uuid(),
                 'tenant_id' => $tenant->id,
                 'branch_id' => $branch->id,
+                ...($historicalSession ? [
+                    'pos_session_id' => $historicalSession->id,
+                    'entry_mode' => 'historical',
+                    'business_date' => $historicalSession->business_date
+                        ->toDateString(),
+                    'historical_reason' => $historicalSession->historical_reason,
+                    'historical_reference' => $historicalSession->historical_reference,
+                    'historical_approval_id' => $historicalSession->historical_approval_id,
+                ] : []),
                 'pharmaco_customer_id' => $customer?->id,
                 'pharmaco_prescription_id' => $prescription?->id,
                 'sale_number' => $saleNumber,
@@ -855,6 +871,15 @@ class SalesDispensingController extends Controller
                 'metadata' => [
                     'creation_workflow' => 'phase_6_1_create_sale',
                     'stock_deducted' => false,
+                    ...($historicalSession ? [
+                        'entry_mode' => 'historical',
+                        'business_date' => $historicalSession->business_date
+                            ->toDateString(),
+                        'pos_session_id' => $historicalSession->id,
+                        'historical_approval_id' => $historicalSession
+                            ->historical_approval_id,
+                        'recorded_at' => now()->toISOString(),
+                    ] : []),
                 ],
             ]);
 
@@ -884,6 +909,9 @@ class SalesDispensingController extends Controller
                 'sale_number' => $result->sale_number,
                 'items_count' => $result->items->count(),
                 'total_amount' => (float) $result->total_amount,
+                'entry_mode' => $result->entry_mode ?? 'live',
+                'business_date' => $result->business_date?->toDateString(),
+                'pos_session_id' => $result->pos_session_id,
             ],
             dataClassification: 'internal',
             auditableType: PharmacoSale::class,
@@ -928,6 +956,11 @@ class SalesDispensingController extends Controller
             if ($lockedSale->status !== 'draft' || (bool) ($lockedSale->metadata['stock_deducted'] ?? false)) {
                 abort(409, 'Sale has already been confirmed or dispensed.');
             }
+
+            $historicalSession = $this->lockHistoricalSessionForSale(
+                $request,
+                $lockedSale
+            );
 
             $lockedSale->load(['items.product']);
 
@@ -1011,6 +1044,14 @@ class SalesDispensingController extends Controller
                     'stock_location_id' => $batch->stock_location_id,
                     'product_id' => $item->product_id,
                     'stock_batch_id' => $batch->id,
+                    ...($historicalSession ? [
+                        'pos_session_id' => $historicalSession->id,
+                        'business_date' => $historicalSession->business_date
+                            ->toDateString(),
+                        'entry_mode' => 'historical',
+                        'historical_approval_id' => $historicalSession
+                            ->historical_approval_id,
+                    ] : []),
                     'movement_type' => 'sale_dispensed',
                     'quantity' => -1 * $quantity,
                     'running_balance' => $afterQuantity,
@@ -1025,6 +1066,15 @@ class SalesDispensingController extends Controller
                         'batch_number' => $batch->batch_number,
                         'before_quantity' => $beforeQuantity,
                         'after_quantity' => $afterQuantity,
+                        ...($historicalSession ? [
+                            'entry_mode' => 'historical',
+                            'business_date' => $historicalSession->business_date
+                                ->toDateString(),
+                            'pos_session_id' => $historicalSession->id,
+                            'historical_approval_id' => $historicalSession
+                                ->historical_approval_id,
+                            'recorded_at' => now()->toISOString(),
+                        ] : []),
                     ],
                 ]);
             }
@@ -1037,6 +1087,13 @@ class SalesDispensingController extends Controller
                 'stock_deducted' => true,
                 'stock_deducted_at' => now()->toISOString(),
                 'dispensing_workflow' => 'phase_4_3_confirm_sale',
+                ...($historicalSession ? [
+                    'entry_mode' => 'historical',
+                    'business_date' => $historicalSession->business_date
+                        ->toDateString(),
+                    'pos_session_id' => $historicalSession->id,
+                    'recorded_at' => now()->toISOString(),
+                ] : []),
             ];
             $lockedSale->save();
 
@@ -1062,6 +1119,9 @@ class SalesDispensingController extends Controller
                 'sale_id' => $confirmedSale->id,
                 'items_count' => $confirmedSale->items->count(),
                 'stock_deducted' => true,
+                'entry_mode' => $confirmedSale->entry_mode ?? 'live',
+                'business_date' => $confirmedSale->business_date?->toDateString(),
+                'pos_session_id' => $confirmedSale->pos_session_id,
             ],
             dataClassification: 'internal',
             auditableType: PharmacoSale::class,
@@ -1113,6 +1173,11 @@ class SalesDispensingController extends Controller
                 ]);
             }
 
+            $historicalSession = $this->lockHistoricalSessionForSale(
+                $request,
+                $lockedSale
+            );
+
             $amount = round((float) $validated['amount'], 2);
             $currentPaid = round((float) $lockedSale->paid_amount, 2);
             $totalAmount = round((float) $lockedSale->total_amount, 2);
@@ -1138,13 +1203,23 @@ class SalesDispensingController extends Controller
                 'uuid' => (string) Str::uuid(),
                 'tenant_id' => $tenant->id,
                 'pharmaco_sale_id' => $lockedSale->id,
+                ...($historicalSession ? [
+                    'pos_session_id' => $historicalSession->id,
+                    'business_date' => $historicalSession->business_date
+                        ->toDateString(),
+                    'entry_mode' => 'historical',
+                    'historical_approval_id' => $historicalSession
+                        ->historical_approval_id,
+                ] : []),
                 'amount' => $amount,
                 'payment_method' => $validated['payment_method'],
                 'status' => 'completed',
                 'reference_number' => $validated['reference_number'] ?? null,
                 'receipt_number' => $receiptNumber,
                 'received_by' => $request->user()?->id,
-                'received_at' => $validated['received_at'] ?? now(),
+                'received_at' => $historicalSession
+                    ? now()
+                    : ($validated['received_at'] ?? now()),
                 'metadata' => [
                     'notes' => $validated['notes'] ?? null,
                     'previous_paid_amount' => $currentPaid,
@@ -1152,6 +1227,16 @@ class SalesDispensingController extends Controller
                     'new_paid_amount' => $newPaid,
                     'new_balance_amount' => $newBalance,
                     'payment_workflow' => 'phase_5_1_record_payment',
+                    ...($historicalSession ? [
+                        'entry_mode' => 'historical',
+                        'business_date' => $historicalSession->business_date
+                            ->toDateString(),
+                        'pos_session_id' => $historicalSession->id,
+                        'historical_approval_id' => $historicalSession
+                            ->historical_approval_id,
+                        'requested_received_at' => $validated['received_at'] ?? null,
+                        'recorded_at' => now()->toISOString(),
+                    ] : []),
                 ],
             ]);
 
@@ -1194,6 +1279,9 @@ class SalesDispensingController extends Controller
                 'payment_method' => $result['payment']->payment_method,
                 'amount' => (float) $result['payment']->amount,
                 'payment_status' => $result['sale']->payment_status,
+                'entry_mode' => $result['payment']->entry_mode ?? 'live',
+                'business_date' => $result['payment']->business_date?->toDateString(),
+                'pos_session_id' => $result['payment']->pos_session_id,
             ],
             dataClassification: 'internal',
             auditableType: PharmacoPayment::class,
@@ -1205,6 +1293,102 @@ class SalesDispensingController extends Controller
             'payment' => $this->serializePayment($result['payment']),
             'sale' => $this->serializeSale($result['sale'], includeDetails: true),
         ], 201);
+    }
+
+    private function lockActiveHistoricalSessionForBranch(
+        Request $request,
+        int $tenantId,
+        int $branchId
+    ): ?PharmacoPosSession {
+        $session = PharmacoPosSession::query()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $request->user()->id)
+            ->where('session_mode', 'historical')
+            ->where('status', 'open')
+            ->latest('id')
+            ->lockForUpdate()
+            ->first();
+
+        if (! $session) {
+            return null;
+        }
+
+        if ((int) $session->branch_id !== $branchId) {
+            throw ValidationException::withMessages([
+                'branch_id' => [
+                    'The active historical POS session belongs '
+                    . 'to a different branch.',
+                ],
+            ]);
+        }
+
+        return $session;
+    }
+
+    private function lockHistoricalSessionForSale(
+        Request $request,
+        PharmacoSale $sale
+    ): ?PharmacoPosSession {
+        if ($sale->entry_mode !== 'historical') {
+            return null;
+        }
+
+        if (! $sale->pos_session_id) {
+            throw ValidationException::withMessages([
+                'session' => [
+                    'The historical sale is not linked to a '
+                    . 'valid POS session.',
+                ],
+            ]);
+        }
+
+        $session = PharmacoPosSession::query()
+            ->whereKey($sale->pos_session_id)
+            ->where('tenant_id', $sale->tenant_id)
+            ->where('branch_id', $sale->branch_id)
+            ->where('user_id', $request->user()->id)
+            ->where('session_mode', 'historical')
+            ->where('status', 'open')
+            ->lockForUpdate()
+            ->first();
+
+        if (! $session) {
+            throw ValidationException::withMessages([
+                'session' => [
+                    'Reopen the original historical POS session '
+                    . 'before changing this sale.',
+                ],
+            ]);
+        }
+
+        if (
+            ! $sale->business_date
+            || ! $session->business_date
+            || ! $sale->business_date->isSameDay(
+                $session->business_date
+            )
+        ) {
+            throw ValidationException::withMessages([
+                'business_date' => [
+                    'The sale business date does not match the '
+                    . 'active historical POS session.',
+                ],
+            ]);
+        }
+
+        if (
+            (int) $sale->historical_approval_id
+            !== (int) $session->historical_approval_id
+        ) {
+            throw ValidationException::withMessages([
+                'session' => [
+                    'The historical approval context no longer '
+                    . 'matches the active POS session.',
+                ],
+            ]);
+        }
+
+        return $session;
     }
 
     private function tenantPayload($tenant): array
@@ -1285,6 +1469,13 @@ class SalesDispensingController extends Controller
             'sale_number' => $sale->sale_number,
             'sale_type' => $sale->sale_type,
             'status' => $sale->status,
+            'entry_mode' => $sale->entry_mode ?? 'live',
+            'business_date' => $sale->business_date?->toDateString(),
+            'pos_session_id' => $sale->pos_session_id,
+            'historical_reason' => $sale->historical_reason,
+            'historical_reference' => $sale->historical_reference,
+            'historical_approval_id' => $sale->historical_approval_id,
+            'is_historical' => $sale->entry_mode === 'historical',
             'subtotal_amount' => (float) $sale->subtotal_amount,
             'discount_amount' => (float) $sale->discount_amount,
             'tax_amount' => (float) $sale->tax_amount,
@@ -1396,6 +1587,11 @@ class SalesDispensingController extends Controller
             'amount' => (float) $payment->amount,
             'payment_method' => $payment->payment_method,
             'status' => $payment->status,
+            'entry_mode' => $payment->entry_mode ?? 'live',
+            'business_date' => $payment->business_date?->toDateString(),
+            'pos_session_id' => $payment->pos_session_id,
+            'historical_approval_id' => $payment->historical_approval_id,
+            'is_historical' => $payment->entry_mode === 'historical',
             'reference_number' => $payment->reference_number,
             'receipt_number' => $payment->receipt_number,
             'received_at' => $payment->received_at?->toISOString(),
