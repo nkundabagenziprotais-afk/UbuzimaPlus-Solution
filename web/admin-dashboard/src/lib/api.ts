@@ -737,11 +737,23 @@ export type PharmaStockBatch = {
   unit_cost: number | null;
   selling_price: number | null;
   supplier_name: string | null;
+  reference_number?: string | null;
+  receive_source?: 'manual' | 'purchase-code' | 'unknown' | null;
+  is_manual_inventory_entry?: boolean;
+  can_edit_inventory_record?: boolean;
   status: string;
   product: {
     id: number;
     name: string;
     sku: string;
+    unit: string;
+    selling_unit: string;
+    selling_unit_source?: string;
+    base_unit: string;
+    quantity_per_selling_unit?: number;
+    allow_other_quantity?: boolean;
+    default_pos_quantity_mode?: 'selling_unit' | 'other_quantity' | 'combined';
+    metadata?: Record<string, unknown>;
     category: {
       name: string;
       code: string;
@@ -996,6 +1008,7 @@ export type ReceivePharmaStockPayload = {
   supplier_name?: string | null;
   reference_number?: string | null;
   reason?: string | null;
+  receive_source?: 'manual' | 'purchase-code';
 };
 
 export type PharmaStockMovement = {
@@ -1300,6 +1313,14 @@ export type PharmaCustomer = {
   status: string;
 };
 
+export type PharmaPrescriptionAttachment = {
+  original_name: string | null;
+  mime_type: string | null;
+  size: number | null;
+  uploaded_at: string | null;
+  download_path: string;
+};
+
 export type PharmaPrescription = {
   id: number;
   uuid: string;
@@ -1311,6 +1332,7 @@ export type PharmaPrescription = {
   expires_at: string | null;
   status: string;
   notes: string | null;
+  attachment?: PharmaPrescriptionAttachment | null;
   customer?: PharmaCustomer | null;
 };
 
@@ -1607,6 +1629,125 @@ export async function createPharmaPrescription(
     'POST',
     payload,
   );
+}
+
+
+export type UpdatePharmaCustomerPayload =
+  Partial<CreatePharmaCustomerPayload>;
+
+export type UpdatePharmaPrescriptionPayload =
+  Partial<CreatePharmaPrescriptionPayload>;
+
+export type UpdatePharmaCustomerResponse = {
+  message: string;
+  customer: PharmaCustomer;
+};
+
+export type UpdatePharmaPrescriptionResponse = {
+  message: string;
+  prescription: PharmaPrescription;
+};
+
+export async function updatePharmaCustomer(
+  token: string,
+  tenantSlug: string,
+  customerId: number,
+  payload: UpdatePharmaCustomerPayload,
+): Promise<UpdatePharmaCustomerResponse> {
+  return sendJsonWithTenant<UpdatePharmaCustomerResponse>(
+    token,
+    `/pharmaco/customers/${customerId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export async function updatePharmaPrescription(
+  token: string,
+  tenantSlug: string,
+  prescriptionId: number,
+  payload: UpdatePharmaPrescriptionPayload,
+): Promise<UpdatePharmaPrescriptionResponse> {
+  return sendJsonWithTenant<UpdatePharmaPrescriptionResponse>(
+    token,
+    `/pharmaco/prescriptions/${prescriptionId}`,
+    tenantSlug,
+    'PATCH',
+    payload,
+  );
+}
+
+export async function uploadPharmaPrescriptionAttachment(
+  token: string,
+  tenantSlug: string,
+  prescriptionId: number,
+  attachment: File,
+): Promise<UpdatePharmaPrescriptionResponse> {
+  const body = new FormData();
+
+  body.append('attachment', attachment);
+
+  const response = await fetch(
+    `${API_BASE_URL}/pharmaco/prescriptions/${prescriptionId}/attachment`,
+    {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        'X-Tenant-Slug': tenantSlug,
+      },
+      body,
+    },
+  );
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const validationMessage = data?.errors
+      ? Object.values(data.errors)
+          .flat()
+          .filter(Boolean)
+          .join(' ')
+      : '';
+
+    throw new Error(
+      validationMessage ||
+        data?.message ||
+        'Unable to upload the prescription attachment.',
+    );
+  }
+
+  return data as UpdatePharmaPrescriptionResponse;
+}
+
+export async function downloadPharmaPrescriptionAttachment(
+  token: string,
+  tenantSlug: string,
+  prescriptionId: number,
+): Promise<Blob> {
+  const response = await fetch(
+    `${API_BASE_URL}/pharmaco/prescriptions/${prescriptionId}/attachment`,
+    {
+      method: 'GET',
+      headers: {
+        Accept: 'application/octet-stream',
+        Authorization: `Bearer ${token}`,
+        'X-Tenant-Slug': tenantSlug,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+
+    throw new Error(
+      data?.message ||
+        'Unable to download the prescription attachment.',
+    );
+  }
+
+  return response.blob();
 }
 
 export type CreatePharmaSalePayload = {

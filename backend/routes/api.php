@@ -780,6 +780,12 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.sales',
         ]);
 
+    Route::patch('/customers/{customer}', [SalesDispensingController::class, 'updateCustomer'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
     Route::get('/customers', [SalesDispensingController::class, 'customers'])
         ->middleware([
             'permission:pharmaco.sales.manage',
@@ -788,6 +794,24 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
 
     Route::post('/prescriptions', [SalesDispensingController::class, 'createPrescription'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::patch('/prescriptions/{prescription}', [SalesDispensingController::class, 'updatePrescription'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::post('/prescriptions/{prescription}/attachment', [SalesDispensingController::class, 'uploadPrescriptionAttachment'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::get('/prescriptions/{prescription}/attachment', [SalesDispensingController::class, 'prescriptionAttachment'])
         ->middleware([
             'permission:pharmaco.sales.manage',
             'tenant.module:pharmaco.sales',
@@ -825,6 +849,150 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'permission:pharmaco.sales.manage',
             'tenant.module:pharmaco.sales',
         ]);
+
+
+    Route::get(
+        '/sales/returns',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'index',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::get(
+        '/sales/returns/{saleReturn}',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'show',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/sales/{sale}/returns',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'store',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/sales/returns/{saleReturn}/approve',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'approve',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/sales/returns/{saleReturn}/reject',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'reject',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/sales/payments/{payment}/reconcile',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'reconcilePayment',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::get(
+        '/momo/parser-templates',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\MomoReconciliationController::class,
+            'templates',
+        ]
+    )->middleware([
+        'permission:pharmaco.sales.manage',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/momo/parser-templates',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\MomoReconciliationController::class,
+            'storeTemplate',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::get(
+        '/momo/messages',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\MomoReconciliationController::class,
+            'messages',
+        ]
+    )->middleware([
+        'permission:pharmaco.sales.manage',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/momo/messages/ingest',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\MomoReconciliationController::class,
+            'ingest',
+        ]
+    )->middleware([
+        'permission:pharmaco.sales.manage',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::get(
+        '/momo/reconciliations',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\MomoReconciliationController::class,
+            'reconciliations',
+        ]
+    )->middleware([
+        'permission:pharmaco.sales.manage',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/momo/reconciliations/{reconciliation}/approve',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\MomoReconciliationController::class,
+            'approve',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
+    Route::post(
+        '/momo/reconciliations/{reconciliation}/reject',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\MomoReconciliationController::class,
+            'reject',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
 
     Route::get('/sales/{sale}', [SalesDispensingController::class, 'sale'])
         ->middleware([
