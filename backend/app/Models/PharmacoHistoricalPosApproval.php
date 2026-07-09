@@ -11,6 +11,8 @@ class PharmacoHistoricalPosApproval extends Model
 {
     use HasFactory;
 
+    protected $table = 'pharmaco_pos_historical_approvals';
+
     protected $fillable = [
         'uuid',
         'tenant_id',
