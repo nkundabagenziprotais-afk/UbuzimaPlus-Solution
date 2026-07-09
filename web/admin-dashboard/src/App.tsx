@@ -1,3 +1,4 @@
+import { InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 
@@ -34,6 +35,7 @@ function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderPr
 import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
+import { InventoryModuleHome } from './components/InventoryModuleHome';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
@@ -2675,7 +2677,30 @@ function App() {
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
   const [activeNotificationWorkspace, setActiveNotificationWorkspace] = useState<'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center'>('overview');
   const [activePharmacistChatWorkspace, setActivePharmacistChatWorkspace] = useState<'in-app-chat' | 'whatsapp-chat'>('in-app-chat');
-  const [activeInventoryView, setActiveInventoryView] = useState<InventoryView>('overview');
+  const [activeInventoryView, setActiveInventoryView] =
+    useState<InventoryView>(() => {
+      const requestedView =
+        new URLSearchParams(window.location.search)
+          .get('inventoryView');
+
+      const supportedViews: InventoryView[] = [
+        'overview',
+        'low-stock',
+        'shelf',
+        'batches',
+        'near-expiry',
+        'product-master',
+        'product-inventory',
+        'locations',
+      ];
+
+      return requestedView &&
+        supportedViews.includes(
+          requestedView as InventoryView,
+        )
+        ? requestedView as InventoryView
+        : 'overview';
+    });
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [changePasswordForm, setChangePasswordForm] = useState({ current_password: '', password: '', password_confirmation: '' });
@@ -3809,26 +3834,12 @@ function App() {
           </>
         )}
 
-        {selectedFeature.key === 'inventory' && (
-          <>
-<ProductInventoryPreview
-              token={session!.token}
-              profile={profile!}
-              activeView={activeInventoryView}
-              onActiveViewChange={setActiveInventoryView}
-              showInternalNavigation={false}
-            />
-            {activeInventoryView === 'product-master' && (
-              <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
 
-                <ProductInventoryActions token={session!.token} profile={profile!} />
-
-              </div>
-            )}
-          </>
-        )}
+        {selectedFeature.key === 'inventory' &&
+          renderInventoryWorkspace()}
 
         {selectedFeature.key === 'pos' && (
+
           <>
 <SalesDispensingReview token={session!.token} profile={profile!} />
           </>
@@ -3982,6 +3993,57 @@ function App() {
 
             {tenantOperationsPanel}
           </>
+        )}
+      </section>
+    );
+  }
+
+  function renderInventoryWorkspace() {
+    return (
+      <section
+        className="section-page inventory-route-page"
+        data-inventory-page={activeInventoryView}
+        data-foundation-correction="AQUILA_INVENTORY_WORK_PACKAGE_2F_FOUNDATION_CORRECTION"
+      >
+        {/* AQUILA_INVENTORY_WORK_PACKAGE_2B_MODULE_HOME */}
+        {/* AQUILA_INVENTORY_WORK_PACKAGE_2C_TABLE_POPUP_ALIGNMENT */}
+        {/* AQUILA_INVENTORY_WORK_PACKAGE_2E_PROFESSIONAL_UPGRADE */}
+        {/* AQUILA_INVENTORY_WORK_PACKAGE_2F_FOUNDATION_CORRECTION */}
+
+        {activeInventoryView === 'overview' ? (
+          <InventoryModuleHome
+            token={session!.token}
+            profile={profile!}
+            onOpenWorkspace={setActiveInventoryView}
+          />
+        ) : (
+          <InventoryWorkspaceFrame
+            activeView={activeInventoryView}
+            onOpenHome={() =>
+              setActiveInventoryView('overview')
+            }
+          >
+            <ProductInventoryPreview
+              key={activeInventoryView}
+              token={session!.token}
+              profile={profile!}
+              activeView={activeInventoryView}
+              onActiveViewChange={setActiveInventoryView}
+              showInternalNavigation={false}
+            />
+          </InventoryWorkspaceFrame>
+        )}
+
+        {activeInventoryView === 'product-master' && (
+          <div
+            className="product-inventory-actions-legacy-hidden"
+            aria-hidden="true"
+          >
+            <ProductInventoryActions
+              token={session!.token}
+              profile={profile!}
+            />
+          </div>
         )}
       </section>
     );
@@ -4985,7 +5047,7 @@ function App() {
               })()}
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
-                
+
                 <section className="pos-shift-control-section pos-session-control-card">
                   <div className="section-heading">
                     <div>
@@ -5436,7 +5498,15 @@ function App() {
                   <span>Current POS session</span>
                   <h3>Recent transactions in this session</h3>
                 </div>
-                <div className="pos-table-management-actions">
+                {profileHasAdminAuthority(profile) && (
+                <details className="admin-table-settings-panel">
+          <summary className="admin-table-settings-panel__summary">
+            <span>Table Management and Labelling</span>
+            <small>Admin settings</small>
+          </summary>
+
+          <div className="admin-table-settings-panel__content">
+            <div className="pos-table-management-actions">
                   <button type="button" onClick={() => setActivePosWorkspace('sales-performance')}>
                     Open Sales Register
                   </button>
@@ -5444,6 +5514,9 @@ function App() {
                     Table Management
                   </button>
                 </div>
+          </div>
+        </details>
+                )}
               </div>
 
                               <div className="pos-current-session-table-toolbar" aria-label="Current session transaction table controls">
@@ -6322,30 +6395,8 @@ function App() {
         return renderAiCenter();
       case 'admin-panel':
         return renderAdminPanel();
-      case 'inventory':
-        return (
-          <section
-            className="section-page inventory-route-page"
-            data-inventory-page={activeInventoryView}
-          >
-            <ProductInventoryPreview
-              key={activeInventoryView}
-              token={session!.token}
-              profile={profile!}
-              activeView={activeInventoryView}
-              onActiveViewChange={setActiveInventoryView}
-              showInternalNavigation={false}
-            />
-
-            {activeInventoryView === 'product-master' && (
-              <div className="product-inventory-actions-legacy-hidden" aria-hidden="true">
-
-                <ProductInventoryActions token={session!.token} profile={profile!} />
-
-              </div>
-            )}
-          </section>
-        );
+            case 'inventory':
+        return renderInventoryWorkspace();
       case 'insurance': {
         const tenantSlug =
           profile?.tenant_assignments?.[0]?.tenant?.slug ||

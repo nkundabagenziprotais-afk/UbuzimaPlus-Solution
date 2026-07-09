@@ -1,3 +1,5 @@
+/* AQUILA_INVENTORY_WORK_PACKAGE_2C_TABLE_POPUP_ALIGNMENT */
+import { InventoryPopupForm } from './InventoryPopupForm';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   AccessProfile,
@@ -445,7 +447,7 @@ function nearestBatchForProduct(productId: number, batches: PharmaStockBatch[]):
   );
 }
 
-export 
+export
 type InventoryTableKey =
   | 'low-stock'
   | 'batch-expiry'
@@ -2328,7 +2330,13 @@ export function ProductInventoryPreview({
             <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
           </div>
 
-          <form
+          <InventoryPopupForm
+                  id="inventory-popup-action-1"
+                  title="Product master record"
+                  description="Maintain pharmaceutical identity, commercial and replenishment information."
+                  triggerLabel="Open form"
+                >
+<form
             onSubmit={(event) => void handleCreateProductMaster(event, false)}
           >
             {renderProductMasterAiAssistant('create')}
@@ -2344,6 +2352,7 @@ export function ProductInventoryPreview({
               <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
             </div>
           </form>
+                </InventoryPopupForm>
         </section>
       );
     }
@@ -2359,7 +2368,13 @@ export function ProductInventoryPreview({
             <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
           </div>
 
-          <form onSubmit={(event) => void handleUpdateProductMaster(event)}>
+          <InventoryPopupForm
+                  id="inventory-popup-action-2"
+                  title="Product master record"
+                  description="Maintain pharmaceutical identity, commercial and replenishment information."
+                  triggerLabel="Open form"
+                >
+<form onSubmit={(event) => void handleUpdateProductMaster(event)}>
             {renderProductMasterAiAssistant('edit')}
             <label className="product-master-search-select product-master-combo-select">
               Select Product
@@ -2408,6 +2423,7 @@ export function ProductInventoryPreview({
               <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
             </div>
           </form>
+                </InventoryPopupForm>
         </section>
       );
     }
@@ -3027,7 +3043,13 @@ export function ProductInventoryPreview({
           <button type="button" onClick={() => setActiveStockLocationAction(null)}>Cancel</button>
         </div>
 
-        <form className="stock-location-form-grid" onSubmit={(event) => void handleSaveStockLocation(event)}>
+        <InventoryPopupForm
+                  id="inventory-popup-action-3"
+                  title="Stock location"
+                  description="Create or update an accountable storage location using the existing validation rules."
+                  triggerLabel="Open form"
+                >
+<form className="stock-location-form-grid" onSubmit={(event) => void handleSaveStockLocation(event)}>
           <label>
             Branch
             {stockLocationBranchOptions.length > 0 ? (
@@ -3115,6 +3137,7 @@ export function ProductInventoryPreview({
             <button type="button" onClick={() => setActiveStockLocationAction(null)}>Cancel</button>
           </div>
         </form>
+                </InventoryPopupForm>
       </section>
     );
   }
@@ -3290,7 +3313,14 @@ export function ProductInventoryPreview({
     const settings = resolveInventoryTableSettings(tableKey);
 
     return (
-      <div className="inventory-table-management-panel">
+      <details className="admin-table-settings-panel">
+          <summary className="admin-table-settings-panel__summary">
+            <span>Table Management and Labelling</span>
+            <small>Admin settings</small>
+          </summary>
+
+          <div className="admin-table-settings-panel__content">
+            <div className="inventory-table-management-panel">
         <div>
           <strong>Table Management</strong>
           <span>{title} layout controls for Admin.</span>
@@ -3388,6 +3418,8 @@ export function ProductInventoryPreview({
           </button>
         </div>
       </div>
+          </div>
+        </details>
     );
   }
 
@@ -3514,7 +3546,14 @@ export function ProductInventoryPreview({
     };
 
     return (
-      <section className="inventory-settings-surface inventory-settings-surface--labelling">
+      <details className="admin-table-settings-panel">
+          <summary className="admin-table-settings-panel__summary">
+            <span>Table Management and Labelling</span>
+            <small>Admin settings</small>
+          </summary>
+
+          <div className="admin-table-settings-panel__content">
+            <section className="inventory-settings-surface inventory-settings-surface--labelling">
         <div className="inventory-settings-surface__header">
           <div>
             <p className="eyebrow">Admin configuration</p>
@@ -3665,6 +3704,8 @@ export function ProductInventoryPreview({
           </button>
         </div>
       </section>
+          </div>
+        </details>
     );
 
   }
@@ -3826,7 +3867,88 @@ export function ProductInventoryPreview({
                     })}
               </section>
 
-              <section className="inventory-ai-analytics">
+              {/* AQUILA_INVENTORY_WORK_PACKAGE_1_OPERATIONAL_OVERVIEW_START */}
+              <section
+                className="inventory-operational-overview"
+                aria-label="Inventory operational controls"
+              >
+                <div className="inventory-operational-overview__heading">
+                  <div>
+                    <span>Live inventory control</span>
+                    <h3>Operational stock priorities</h3>
+                    <p>
+                      Review tenant stock, replenishment needs, batches, expiry
+                      exposure and physical placement using verified inventory records.
+                    </p>
+                  </div>
+
+                  <div className="inventory-operational-overview__scope">
+                    <strong>Tenant-scoped workflow</strong>
+                    <small>
+                      Procurement receives stock, Inventory controls batches and
+                      availability, and POS consumes approved sellable quantities.
+                    </small>
+                  </div>
+                </div>
+
+                <div className="inventory-operational-action-grid">
+                  <button
+                    type="button"
+                    onClick={() => onActiveViewChange?.('low-stock')}
+                  >
+                    <span>Replenishment</span>
+                    <strong>Review low stock</strong>
+                    <small>
+                      Compare available quantity with the approved reorder level.
+                    </small>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onActiveViewChange?.('batches')}
+                  >
+                    <span>Batch control</span>
+                    <strong>Review batches and expiry</strong>
+                    <small>
+                      Inspect FEFO order, batch quantities and expiry dates.
+                    </small>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onActiveViewChange?.('product-inventory')}
+                  >
+                    <span>Stock register</span>
+                    <strong>Open Product Inventory</strong>
+                    <small>
+                      Review received, reserved, sold and available quantities.
+                    </small>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onActiveViewChange?.('locations')}
+                  >
+                    <span>Physical control</span>
+                    <strong>Review stock locations</strong>
+                    <small>
+                      Confirm branch, room, shelf and controlled-storage placement.
+                    </small>
+                  </button>
+                </div>
+
+                <div className="inventory-operational-integrity-note" role="note">
+                  <strong>Stock integrity</strong>
+                  <span>
+                    Inventory balances change only through approved receiving, POS,
+                    adjustment or transfer workflows. No demo transactions or
+                    estimated activity are created here.
+                  </span>
+                </div>
+              </section>
+              {/* AQUILA_INVENTORY_WORK_PACKAGE_1_OPERATIONAL_OVERVIEW_END */}
+
+              <section className="inventory-ai-analytics inventory-ai-analytics--withheld" aria-hidden="true">
                 <div className="section-heading">
                   <div>
                     <h3>AI inventory analytics</h3>
@@ -4204,7 +4326,13 @@ export function ProductInventoryPreview({
                 </div>
               </div>
 
-              <form
+              <InventoryPopupForm
+                  id="inventory-popup-action-4"
+                  title="Bulk Inventory operation"
+                  description="Complete this controlled bulk action using the existing import and validation workflow."
+                  triggerLabel="Create shelf"
+                >
+<form
                 className="inventory-inline-form"
                 onSubmit={(event) => {
                   event.preventDefault();
@@ -4219,6 +4347,7 @@ export function ProductInventoryPreview({
                 </label>
                 <button type="submit">Create shelf</button>
               </form>
+                </InventoryPopupForm>
 
               {shelfViewMode === 'grid' ? (
                 <div className="product-shelf-grid product-shelf-grid--fixed">
@@ -4439,11 +4568,20 @@ export function ProductInventoryPreview({
                 {renderExpiryLabelTools()}
 
                 {isExpiryLabelManagerOpen && (
-                  <div className="expiry-label-manager-actions">
+                  <details className="admin-table-settings-panel">
+          <summary className="admin-table-settings-panel__summary">
+            <span>Table Management and Labelling</span>
+            <small>Admin settings</small>
+          </summary>
+
+          <div className="admin-table-settings-panel__content">
+            <div className="expiry-label-manager-actions">
                     <button type="button" className="primary" onClick={handleSaveExpiryLabelRules}>
                       Save labelling changes
                     </button>
                   </div>
+          </div>
+        </details>
                 )}
 
                 {renderAdminTableManagement('batch-expiry', 'Batch and Expiry Review')}
@@ -4567,11 +4705,20 @@ export function ProductInventoryPreview({
                 {renderExpiryLabelTools()}
 
                 {isExpiryLabelManagerOpen && (
-                  <div className="expiry-label-manager-actions">
+                  <details className="admin-table-settings-panel">
+          <summary className="admin-table-settings-panel__summary">
+            <span>Table Management and Labelling</span>
+            <small>Admin settings</small>
+          </summary>
+
+          <div className="admin-table-settings-panel__content">
+            <div className="expiry-label-manager-actions">
                     <button type="button" className="primary" onClick={handleSaveExpiryLabelRules}>
                       Save labelling changes
                     </button>
                   </div>
+          </div>
+        </details>
                 )}
 
                 {renderAdminTableManagement('near-expiry', 'Near Expiry Watch List')}
@@ -4828,7 +4975,13 @@ export function ProductInventoryPreview({
                   </div>
                 </div>
 
-                <form className="inventory-creation-grid" onSubmit={handleCreateInventoryFromProductMaster}>
+                <InventoryPopupForm
+                  id="inventory-popup-action-5"
+                  title="Stock location"
+                  description="Create or update an accountable storage location using the existing validation rules."
+                  triggerLabel="Open form"
+                >
+<form className="inventory-creation-grid" onSubmit={handleCreateInventoryFromProductMaster}>
                   <div className={`inventory-receive-source-selector inventory-receive-source-selector--${inventoryReceiveSource}`}>
                     <button
                       type="button"
@@ -5088,6 +5241,7 @@ export function ProductInventoryPreview({
                     </button>
                   </div>
                 </form>
+                </InventoryPopupForm>
               </section>
 
               {viewingInventoryBatch && (
@@ -5142,82 +5296,147 @@ export function ProductInventoryPreview({
                 </section>
               )}
 
-              <section className="inventory-ai-opportunity-panel">
-                <div className="section-heading">
-                  <div>
-                    <h3>AI inventory opportunity model</h3>
-                    <span>Connects Product Master, stock movement, margin, and expiry pressure.</span>
-                  </div>
+                            <section
+                className="inventory-ai-opportunity-panel inventory-ai-opportunity-panel--refined inventory-ai-opportunity-panel--title-only"
+                data-visual-fine-tuning="AQUILA_INVENTORY_WORK_PACKAGE_2G_VISUAL_FINE_TUNING"
+                data-chart-title-refinement="AQUILA_INVENTORY_WORK_PACKAGE_2H_CHART_AND_TITLE_REFINEMENT"
+              >
+                <div className="inventory-section-title-card platform-heading-card">
+                  <h3>AI Inventory Opportunity Model</h3>
                 </div>
 
-                <div className="inventory-opportunity-grid">
+                <div className="inventory-opportunity-grid inventory-opportunity-grid--creative">
                   {[
                     {
+                      icon: 'RX',
                       title: 'Missing reimbursable products',
-                      helper: `${formatNumber(Math.max(0, allProducts.length - productInventoryRows.length))} Product Master items may not yet have inventory stock.`,
+                      tone: 'is-primary',
                     },
                     {
+                      icon: 'SO',
                       title: 'Stock-out opportunity',
-                      helper: `${formatNumber(productInventoryRows.filter(({ batch }) => Number(batch.available_quantity || 0) <= 0).length)} stock rows need attention.`,
+                      tone: 'is-risk',
                     },
                     {
+                      icon: 'MD',
                       title: 'Market dynamics',
-                      helper: 'Review fast-moving items, supplier availability and patient demand before purchasing.',
+                      tone: 'is-market',
                     },
                     {
+                      icon: 'MP',
                       title: 'Margin and pricing opportunity',
-                      helper: `${formatNumber(productInventoryRows.filter(({ computedSellingPrice, batch }) => Number(computedSellingPrice || 0) <= Number(batch.unit_cost || 0)).length)} rows may need pricing review.`,
+                      tone: 'is-value',
                     },
                     {
+                      icon: 'EX',
                       title: 'Near-expiry pressure',
-                      helper: `${formatNumber(productInventoryRows.filter(({ days }) => days !== null && days <= 180).length)} batches are within 180 days.`,
+                      tone: 'is-warning',
                     },
                     {
+                      icon: 'PO',
                       title: 'Purchase planning',
-                      helper: 'Use Product Master, current stock and expiry risk to guide replenishment.',
+                      tone: 'is-planning',
                     },
-                  ].map((item) => (
+                  ].map((opportunity) => (
                     <button
-                      key={item.title}
+                      key={opportunity.title}
                       type="button"
-                      className={`inventory-ai-opportunity-card ${activeInventoryOpportunity === item.title ? 'active' : ''}`}
-                      aria-pressed={activeInventoryOpportunity === item.title}
+                      className={`inventory-ai-opportunity-card ${opportunity.tone} ${
+                        activeInventoryOpportunity ===
+                        opportunity.title
+                          ? 'active'
+                          : ''
+                      }`}
+                      aria-pressed={
+                        activeInventoryOpportunity ===
+                        opportunity.title
+                      }
                       onClick={() => {
-                        setActiveInventoryOpportunity(item.title);
-                        setInventoryNotice(`${item.title} opened in the AI inventory opportunity model.`);
+                        setActiveInventoryOpportunity(
+                          opportunity.title,
+                        );
+
+                        setInventoryNotice(
+                          `${opportunity.title} selected for operational review.`,
+                        );
                       }}
                     >
-                      <strong>{item.title}</strong>
-                      <span>{item.helper}</span>
-                      <small>Open opportunity</small>
+                      <span
+                        className="inventory-ai-opportunity-icon"
+                        aria-hidden="true"
+                      >
+                        {opportunity.icon}
+                      </span>
+
+                      <strong>{opportunity.title}</strong>
                     </button>
                   ))}
                 </div>
+              </section>
 
-                <div className="inventory-ai-opportunity-detail">
-                  <strong>{activeInventoryOpportunity}</strong>
-                  <span>
-                    {activeInventoryOpportunity === 'Missing reimbursable products'
-                      ? 'Compare Product Master against Product Inventory and prioritize approved reimbursable items without stock.'
-                      : activeInventoryOpportunity === 'Stock-out opportunity'
-                        ? 'Identify zero-stock or low-availability products and prepare restocking actions before sales are lost.'
-                        : activeInventoryOpportunity === 'Market dynamics'
-                          ? 'Use supplier availability, patient demand, reimbursement trends and seasonal patterns before purchase decisions.'
-                          : activeInventoryOpportunity === 'Margin and pricing opportunity'
-                            ? 'Review items where selling price is missing, below cost, or below the configured Product Master margin.'
-                            : activeInventoryOpportunity === 'Near-expiry pressure'
-                              ? 'Prioritize FEFO selling, transfer, supplier return or promotion for batches nearing expiry.'
-                              : 'Build a purchase plan from Product Master demand, available quantity, expiry risk and supplier lead time.'}
-                  </span>
-                  <div className="inventory-ai-opportunity-actions">
-                    <button type="button" onClick={() => selectInventoryView('product-master')}>Review Product Master</button>
-                    <button type="button" onClick={() => selectInventoryView('product-inventory')}>Review Product Inventory</button>
-                    <button type="button" onClick={() => selectInventoryView('batches')}>Review Batch & Expiry</button>
+              <section
+                className="inventory-record-search-panel inventory-record-search-panel--refined"
+                data-visual-fine-tuning="AQUILA_INVENTORY_WORK_PACKAGE_2G_VISUAL_FINE_TUNING"
+              >
+                <div className="inventory-record-search-card">
+                  <div className="inventory-section-title-card platform-heading-card">
+                    <h3>Inventory Record Search</h3>
                   </div>
+
+                  <form
+                    className="inventory-record-search-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+
+
+                      setInventoryNotice(
+                        inventoryProductSearchTerm.trim()
+                          ? `Inventory records filtered by "${inventoryProductSearchTerm.trim()}".`
+                          : 'Inventory record search cleared.',
+                      );
+                    }}
+                  >
+                    <input
+                      value={inventoryProductSearchTerm}
+                      onChange={(event) =>
+                        setInventoryProductSearchTerm(
+                          event.target.value,
+                        )
+                      }
+                      placeholder="Search product, drug code, batch, location or supplier"
+                      aria-label="Search Inventory records"
+                    />
+
+                    <button type="submit">
+                      Search
+                    </button>
+
+                    <button
+                      type="button"
+                      className="inventory-record-search-clear"
+                      onClick={() => {
+                        setInventoryProductSearchTerm('');
+
+                        setInventoryNotice(
+                          'Inventory record search cleared.',
+                        );
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </form>
+
+                  <small className="inventory-record-search-result">
+                    Showing {formatNumber(
+                      pagedProductInventory.length,
+                    )} of {formatNumber(
+                      productInventoryRows.length,
+                    )} matching records
+                  </small>
                 </div>
               </section>
 
-              {renderAdminTableManagement('product-register', 'Product Inventory Register')}
+{renderAdminTableManagement('product-register', 'Product Inventory Register')}
 
               <div className={inventoryTableShellClass('product-register')} style={inventoryTableShellStyle('product-register') as any}>
                 <table className="inventory-data-table inventory-data-table--product-register">
@@ -5575,7 +5794,14 @@ function ManagedInventoryTableBlock({
 
   return (
     <>
-      <div className="inventory-table-management-panel">
+      <details className="admin-table-settings-panel">
+          <summary className="admin-table-settings-panel__summary">
+            <span>Table Management and Labelling</span>
+            <small>Admin settings</small>
+          </summary>
+
+          <div className="admin-table-settings-panel__content">
+            <div className="inventory-table-management-panel">
         <div>
           <strong>Table Management</strong>
           <span>{title} layout controls for Admin.</span>
@@ -5638,6 +5864,8 @@ function ManagedInventoryTableBlock({
           </button>
         </div>
       </div>
+          </div>
+        </details>
 
       <div className={shellClassName} style={shellStyle}>
         {children}
