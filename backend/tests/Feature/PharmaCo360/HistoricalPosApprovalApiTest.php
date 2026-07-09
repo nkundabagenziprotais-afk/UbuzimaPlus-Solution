@@ -27,7 +27,7 @@ class HistoricalPosApprovalApiTest extends TestCase
 
         $businessDate = CarbonImmutable::now(
             'Africa/Kigali'
-        )->subDay()->toDateString();
+        )->subDays(2)->toDateString();
 
         $this->tenantRequest($token)
             ->getJson(
