@@ -1,0 +1,477 @@
+/* Enterprise operations layer: shared professional layout, status, forms and POS controls. */
+:root {
+  --enterprise-ink: #17231f;
+  --enterprise-muted: #61706a;
+  --enterprise-border: #d9e2dd;
+  --enterprise-surface: #ffffff;
+  --enterprise-soft: #f4f8f6;
+  --enterprise-green: #176b4d;
+  --enterprise-green-dark: #0e4d37;
+  --enterprise-teal: #0f766e;
+  --enterprise-blue: #2457a7;
+  --enterprise-amber: #a45b06;
+  --enterprise-red: #a51d2d;
+  --enterprise-radius: 14px;
+  --enterprise-shadow: 0 12px 34px rgba(27, 50, 41, 0.09);
+}
+
+.enterprise-module-shell {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.enterprise-module-shell > :first-child:not(.pos-dedicated-command-bar),
+.enterprise-module-header:not(.pos-dedicated-command-bar) {
+  border: 1px solid color-mix(in srgb, var(--enterprise-green) 18%, white);
+  border-radius: var(--enterprise-radius);
+  background:
+    radial-gradient(circle at 92% 15%, rgba(255, 255, 255, 0.32), transparent 32%),
+    linear-gradient(125deg, var(--enterprise-green-dark), var(--enterprise-teal));
+  color: #fff;
+  box-shadow: var(--enterprise-shadow);
+}
+
+.enterprise-module-shell > :first-child:not(.pos-dedicated-command-bar) h1,
+.enterprise-module-shell > :first-child:not(.pos-dedicated-command-bar) h2,
+.enterprise-module-shell > :first-child:not(.pos-dedicated-command-bar) h3,
+.enterprise-module-shell > :first-child:not(.pos-dedicated-command-bar) p,
+.enterprise-module-shell > :first-child:not(.pos-dedicated-command-bar) span,
+.enterprise-module-header:not(.pos-dedicated-command-bar) h1,
+.enterprise-module-header:not(.pos-dedicated-command-bar) h2,
+.enterprise-module-header:not(.pos-dedicated-command-bar) h3,
+.enterprise-module-header:not(.pos-dedicated-command-bar) p,
+.enterprise-module-header:not(.pos-dedicated-command-bar) span {
+  color: inherit;
+}
+
+/* Consistent top command bar shared by operational modules. */
+.pos-dedicated-command-bar,
+.enterprise-module-shell .inventory-workspace-nav,
+.enterprise-module-shell .procurement-workspace-nav,
+.enterprise-module-shell [class*="workspace-tabs"],
+.enterprise-module-shell [class*="module-nav"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 0.55rem;
+  padding: 0.65rem;
+  border: 1px solid var(--enterprise-border);
+  border-radius: var(--enterprise-radius);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(28, 52, 43, 0.07);
+  position: sticky;
+  top: 0;
+  z-index: 8;
+}
+
+.pos-dedicated-command-bar button,
+.enterprise-module-shell [class*="workspace-tabs"] button,
+.enterprise-module-shell [class*="module-nav"] button {
+  min-height: 52px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--enterprise-soft);
+  color: var(--enterprise-ink);
+  text-align: left;
+  padding: 0.62rem 0.72rem;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.pos-dedicated-command-bar button:hover,
+.enterprise-module-shell [class*="workspace-tabs"] button:hover,
+.enterprise-module-shell [class*="module-nav"] button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(23, 107, 77, 0.35);
+  box-shadow: 0 6px 16px rgba(23, 107, 77, 0.09);
+}
+
+.pos-dedicated-command-bar button.active,
+.enterprise-module-shell [class*="workspace-tabs"] button.active,
+.enterprise-module-shell [class*="module-nav"] button.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--enterprise-green), var(--enterprise-teal));
+  box-shadow: 0 7px 18px rgba(15, 118, 110, 0.23);
+}
+
+/* POS session: reconciliation-first layout. */
+.pos-shift-control-grid {
+  align-items: stretch;
+}
+
+.pos-shift-card {
+  border: 1px solid var(--enterprise-border) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(180deg, #fff, #f8fbf9) !important;
+  box-shadow: 0 8px 22px rgba(28, 52, 43, 0.06);
+}
+
+.pos-shift-card--open {
+  border-top: 4px solid var(--enterprise-blue) !important;
+}
+
+.pos-shift-card--close {
+  border-top: 4px solid var(--enterprise-amber) !important;
+}
+
+.enterprise-close-reconciliation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0.55rem 0;
+  padding: 0.72rem;
+  border-radius: 10px;
+  background: #fff9ed;
+  border: 1px solid #f0d5a8;
+}
+
+.enterprise-zeroization-check {
+  padding: 0.68rem;
+  border: 1px solid #e8c88e;
+  border-radius: 10px;
+  background: #fffaf0;
+  font-weight: 700;
+}
+
+.enterprise-zeroization-check input {
+  accent-color: var(--enterprise-green);
+}
+
+.pos-shift-card button,
+.pos-summary-confirmation-card > button,
+.enterprise-receipt-button {
+  min-height: 42px;
+  border-radius: 9px !important;
+  font-weight: 750;
+}
+
+.enterprise-receipt-button {
+  margin-top: 0.62rem;
+  border: 1px solid var(--enterprise-green) !important;
+  color: var(--enterprise-green-dark) !important;
+  background: #eef8f3 !important;
+}
+
+/* Operational transaction register. */
+.enterprise-transaction-register {
+  border: 1px solid var(--enterprise-border) !important;
+  border-radius: var(--enterprise-radius) !important;
+  background: var(--enterprise-surface) !important;
+  box-shadow: var(--enterprise-shadow);
+  overflow: hidden;
+}
+
+.enterprise-transaction-register .section-heading {
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--enterprise-border);
+  background: linear-gradient(90deg, #f4faf7, #fff);
+}
+
+.enterprise-transaction-register .pos-current-session-table-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, 240px) auto auto;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  background: #fbfdfc;
+}
+
+.enterprise-transaction-register table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.enterprise-transaction-register thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #edf5f1;
+  color: #2c443a;
+  font-size: 0.73rem;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #cfded6;
+}
+
+.enterprise-transaction-register tbody tr:nth-child(even) {
+  background: #fafcfb;
+}
+
+.enterprise-transaction-register tbody tr:hover {
+  background: #eef8f3;
+}
+
+.enterprise-transaction-register th,
+.enterprise-transaction-register td {
+  padding: 0.72rem 0.8rem;
+  vertical-align: middle;
+}
+
+.enterprise-empty-table-cell {
+  padding: 1.5rem !important;
+  color: var(--enterprise-muted);
+  text-align: center;
+}
+
+/* Clear and accessible inventory status column. */
+.enterprise-status-column-heading {
+  min-width: 132px;
+}
+
+.enterprise-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  min-width: 96px;
+  max-width: 100%;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.1;
+  text-transform: capitalize;
+  white-space: normal;
+}
+
+.enterprise-status-badge i {
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.enterprise-status-badge.status--success {
+  color: #12613f;
+  background: #eaf8f0;
+}
+
+.enterprise-status-badge.status--warning {
+  color: #8a4a00;
+  background: #fff5df;
+}
+
+.enterprise-status-badge.status--danger {
+  color: #97192a;
+  background: #fff0f2;
+}
+
+.enterprise-status-badge.status--neutral {
+  color: #53605b;
+  background: #f0f3f2;
+}
+
+/* Professional shared form standard. */
+.enterprise-record-form {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.enterprise-record-form label {
+  display: grid;
+  gap: 0.36rem;
+  color: #263a32;
+  font-size: 0.78rem;
+  font-weight: 680;
+}
+
+.enterprise-record-form input,
+.enterprise-record-form select,
+.enterprise-record-form textarea {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #cbd8d1;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--enterprise-ink);
+  padding: 0.62rem 0.72rem;
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.enterprise-record-form textarea {
+  min-height: 94px;
+  resize: vertical;
+}
+
+.enterprise-record-form input:focus,
+.enterprise-record-form select:focus,
+.enterprise-record-form textarea:focus {
+  border-color: var(--enterprise-teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.enterprise-record-form :is(input, select, textarea):invalid:not(:placeholder-shown) {
+  border-color: #b32a3d;
+}
+
+.enterprise-form-actions,
+.enterprise-record-form [class*="actions"] {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  padding-top: 0.85rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid var(--enterprise-border);
+}
+
+.enterprise-form-actions button,
+.enterprise-record-form [class*="actions"] button {
+  min-height: 40px;
+  padding: 0.58rem 0.9rem;
+  border-radius: 9px;
+}
+
+.enterprise-form-actions button[type="submit"],
+.enterprise-record-form [class*="actions"] button.primary,
+.enterprise-record-form [class*="actions"] button[type="submit"] {
+  color: #fff;
+  background: linear-gradient(135deg, var(--enterprise-green), var(--enterprise-teal));
+  border-color: transparent;
+}
+
+.enterprise-form-dialog,
+.enterprise-form-dialog > section,
+.enterprise-form-dialog > article {
+  border-radius: var(--enterprise-radius) !important;
+}
+
+.enterprise-form-dialog {
+  backdrop-filter: blur(6px);
+}
+
+.enterprise-form-dialog > section,
+.enterprise-form-dialog > article {
+  width: min(760px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: 1px solid var(--enterprise-border);
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(9, 28, 21, 0.28);
+}
+
+/* Inventory and procurement table alignment. */
+.inventory-route-page table,
+.enterprise-module-shell table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.inventory-route-page th,
+.inventory-route-page td,
+.enterprise-module-shell th,
+.enterprise-module-shell td {
+  text-align: left;
+  vertical-align: middle;
+}
+
+.inventory-route-page th:last-child,
+.inventory-route-page td:last-child,
+.enterprise-module-shell th:last-child,
+.enterprise-module-shell td:last-child {
+  text-align: right;
+}
+
+.inventory-route-page .system-table-wrap,
+.enterprise-module-shell .system-table-wrap,
+.enterprise-module-shell [class*="table-wrap"] {
+  overflow: auto;
+  border: 1px solid var(--enterprise-border);
+  border-radius: 11px;
+  background: #fff;
+}
+
+.inventory-route-page thead th,
+.enterprise-module-shell thead th {
+  background: #edf4f0;
+  color: #32483f;
+  border-bottom: 1px solid #cddbd4;
+  font-weight: 760;
+}
+
+.inventory-route-page tbody td,
+.enterprise-module-shell tbody td {
+  border-bottom: 1px solid #e8eeeb;
+}
+
+.inventory-route-page tbody tr:last-child td,
+.enterprise-module-shell tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Direct menu items: no misleading submenu indicator for Chat and Notifications. */
+.principal-menu-section--direct .principal-menu-toggle-sign,
+.principal-menu-section--direct .tree-child-submenu {
+  display: none !important;
+}
+
+.principal-menu-section--direct .principal-menu-button::after {
+  content: '→';
+  margin-left: auto;
+  color: currentColor;
+  opacity: 0.66;
+}
+
+/* Feedback surface. */
+.enterprise-operation-toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10000;
+  max-width: min(440px, calc(100vw - 2rem));
+  padding: 0.82rem 1rem;
+  border-radius: 11px;
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.22);
+}
+
+.enterprise-operation-toast--success { background: #12613f; }
+.enterprise-operation-toast--error { background: #9c1c2e; }
+.enterprise-operation-toast--info { background: #24527f; }
+
+@media (max-width: 980px) {
+  .enterprise-transaction-register .pos-current-session-table-toolbar,
+  .enterprise-close-reconciliation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-dedicated-command-bar,
+  .enterprise-module-shell [class*="workspace-tabs"],
+  .enterprise-module-shell [class*="module-nav"] {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .pos-dedicated-command-bar,
+  .enterprise-module-shell [class*="workspace-tabs"],
+  .enterprise-module-shell [class*="module-nav"] {
+    grid-template-columns: 1fr;
+  }
+
+  .enterprise-form-actions,
+  .enterprise-record-form [class*="actions"] {
+    flex-direction: column-reverse;
+  }
+
+  .enterprise-form-actions button,
+  .enterprise-record-form [class*="actions"] button {
+    width: 100%;
+  }
+}
+
+@media print {
+  .dashboard-header,
+  .sidebar,
+  .pos-dedicated-command-bar,
+  .enterprise-operation-toast {
+    display: none !important;
+  }
+}
