@@ -725,25 +725,7 @@ export function HistoricalPosWorkflow({
         </div>
       ) : (
         <>
-          <div className="historical-pos-heading">
-            <div>
-              <span>
-                Controlled historical entry
-              </span>
-
-              <h3>
-                Record transactions for an earlier
-                business date
-              </h3>
-
-              <p>
-                Use this workflow only for genuine
-                paper records or delayed entries.
-                Actual recording timestamps remain
-                unchanged for auditability.
-              </p>
-            </div>
-
+          <div className="historical-pos-launch">
             <button
               type="button"
               className="historical-pos-toggle"
@@ -754,7 +736,7 @@ export function HistoricalPosWorkflow({
             >
               {isExpanded
                 ? "Close historical setup"
-                : "Open historical setup"}
+                : "Open historical POS session"}
             </button>
           </div>
 
@@ -1183,18 +1165,9 @@ export function HistoricalPosWorkflow({
               ) : null}
 
               <div className="historical-pos-open-row">
-                <div>
-                  <strong>
-                    Open historical POS session
-                  </strong>
-
-                  <small>
-                    Sales and receipts will display
-                    the historical business date
-                    while retaining their actual
-                    recording timestamps.
-                  </small>
-                </div>
+                <strong>
+                  Open historical POS session
+                </strong>
 
                 <button
                   type="button"

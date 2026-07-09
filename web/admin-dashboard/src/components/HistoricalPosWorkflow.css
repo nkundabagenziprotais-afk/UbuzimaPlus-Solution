@@ -12,7 +12,12 @@
   background: #fffaf0;
 }
 
-.historical-pos-heading,
+.historical-pos-launch {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem;
+}
+
 .historical-pos-banner {
   display: flex;
   align-items: flex-start;
@@ -21,11 +26,6 @@
   padding: 1.1rem 1.2rem;
 }
 
-.historical-pos-heading > div {
-  max-width: 760px;
-}
-
-.historical-pos-heading span,
 .historical-pos-queue__heading span,
 .historical-pos-approval-card > div:first-child > span {
   display: block;
@@ -37,14 +37,12 @@
   text-transform: uppercase;
 }
 
-.historical-pos-heading h3,
 .historical-pos-queue__heading h4,
 .historical-pos-approval-card h4 {
   margin: 0;
   color: #172a38;
 }
 
-.historical-pos-heading p,
 .historical-pos-approval-card p {
   margin: 0.45rem 0 0;
   color: #586b78;
@@ -387,7 +385,6 @@
 }
 
 @media (max-width: 768px) {
-  .historical-pos-heading,
   .historical-pos-banner,
   .historical-pos-open-row,
   .historical-pos-queue__items article {
@@ -415,7 +412,7 @@
 }
 
 @media (max-width: 430px) {
-  .historical-pos-heading,
+  .historical-pos-launch,
   .historical-pos-banner {
     padding: 0.9rem;
   }
@@ -440,10 +437,6 @@
 }
 
 @media (max-width: 360px) {
-  .historical-pos-heading h3 {
-    font-size: 1rem;
-  }
-
   .historical-pos-conflict-card,
   .historical-pos-approval-card,
   .historical-pos-queue {
