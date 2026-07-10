@@ -169,7 +169,25 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   const [error, setError] = useState('');
 
   const tenantSlug = useMemo(() => tenantSlugFrom(profile), [profile]);
-  const canManageProcurement = (profile.permissions ?? []).includes('pharmaco.suppliers.manage');
+  const permissions = profile.permissions ?? [];
+  const canViewProcurement = permissions.includes('pharmaco.procurement.view');
+  const canLoadProcurement =
+    canViewProcurement &&
+    permissions.includes('branches.view') &&
+    permissions.includes('pharmaco.product_master.view') &&
+    permissions.includes('pharmaco.inventory.view');
+  const canManageSuppliers = permissions.includes(
+    'pharmaco.procurement.suppliers.manage',
+  );
+  const canCreatePurchaseOrders = permissions.includes(
+    'pharmaco.procurement.purchase_order.create',
+  );
+  const canApprovePurchaseOrders = permissions.includes(
+    'pharmaco.procurement.purchase_order.approve',
+  );
+  const canReceivePurchaseOrders =
+    permissions.includes('pharmaco.product_inventory.receive') &&
+    permissions.includes('pharmaco.procurement.purchase_order.receive');
 
   const activeBranches = state.branches.filter((branch) => branch.status === 'active');
   const activeProducts = state.products.filter((product) => product.status === 'active');
@@ -209,8 +227,10 @@ export function ProcurementWorkflow({ token, profile }: Props) {
       return;
     }
 
-    if (!canManageProcurement) {
-      setError('Your account does not have pharmaco.suppliers.manage.');
+    if (!canLoadProcurement) {
+      setError(
+        'Your role does not include all read permissions required for the Procurement workspace.',
+      );
       return;
     }
 
@@ -258,6 +278,11 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   }
 
   async function createSupplier() {
+    if (!canManageSuppliers) {
+      setError('Supplier management permission is required.');
+      return;
+    }
+
     if (!supplierForm.name.trim()) {
       setError('Supplier name is required.');
       return;
@@ -299,6 +324,11 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   }
 
   async function createPurchaseOrder() {
+    if (!canCreatePurchaseOrders) {
+      setError('Purchase-order creation permission is required.');
+      return;
+    }
+
     const items = purchaseOrderForm.items
       .filter((item) => item.product_id && numberFrom(item.quantity_ordered) > 0)
       .map((item) => ({
@@ -381,6 +411,13 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   }
 
   async function receiveAgainstPurchaseOrder() {
+    if (!canReceivePurchaseOrders) {
+      setError(
+        'Product receiving and Procurement receiving permissions are required.',
+      );
+      return;
+    }
+
     if (!selectedReceiveItem?.product?.id) {
       setError('Select a purchase order item.');
       return;
@@ -435,6 +472,11 @@ export function ProcurementWorkflow({ token, profile }: Props) {
 
 
   async function approveSelectedPurchaseOrder() {
+    if (!canApprovePurchaseOrders) {
+      setError('Purchase-order approval permission is required.');
+      return;
+    }
+
     if (!state.selectedPurchaseOrder) {
       setError('Select a purchase order first.');
       return;
@@ -463,6 +505,11 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   }
 
   async function cancelSelectedPurchaseOrder() {
+    if (!canApprovePurchaseOrders) {
+      setError('Purchase-order approval permission is required.');
+      return;
+    }
+
     if (!state.selectedPurchaseOrder) {
       setError('Select a purchase order first.');
       return;
@@ -505,6 +552,10 @@ export function ProcurementWorkflow({ token, profile }: Props) {
     }));
   }
 
+  if (!canViewProcurement) {
+    return null;
+  }
+
   return (
     <article className="panel wide procurement-panel">
       <div className="panel-heading-row">
@@ -515,7 +566,16 @@ export function ProcurementWorkflow({ token, profile }: Props) {
           </p>
         </div>
 
-        <button type="button" onClick={loadProcurement} disabled={isLoading}>
+        <button
+          type="button"
+          onClick={loadProcurement}
+          disabled={isLoading || !canLoadProcurement}
+          title={
+            !canLoadProcurement
+              ? 'Additional branch, product and inventory read permissions are required'
+              : undefined
+          }
+        >
           {isLoading ? 'Loading…' : 'Load procurement'}
         </button>
       </div>
@@ -621,7 +681,16 @@ export function ProcurementWorkflow({ token, profile }: Props) {
             </label>
           </div>
 
-          <button type="button" onClick={createSupplier} disabled={isSavingSupplier}>
+          <button
+            type="button"
+            onClick={createSupplier}
+            disabled={isSavingSupplier || !canManageSuppliers}
+            title={
+              !canManageSuppliers
+                ? 'Supplier management permission is required'
+                : undefined
+            }
+          >
             {isSavingSupplier ? 'Creating supplier…' : 'Create supplier'}
           </button>
         </section>
@@ -815,7 +884,16 @@ export function ProcurementWorkflow({ token, profile }: Props) {
             Add PO line
           </button>
 
-          <button type="button" onClick={createPurchaseOrder} disabled={isSavingPurchaseOrder}>
+          <button
+            type="button"
+            onClick={createPurchaseOrder}
+            disabled={isSavingPurchaseOrder || !canCreatePurchaseOrders}
+            title={
+              !canCreatePurchaseOrders
+                ? 'Purchase-order creation permission is required'
+                : undefined
+            }
+          >
             {isSavingPurchaseOrder ? 'Creating PO…' : 'Create purchase order'}
           </button>
         </div>
@@ -867,7 +945,11 @@ export function ProcurementWorkflow({ token, profile }: Props) {
                   <button
                     type="button"
                     onClick={approveSelectedPurchaseOrder}
-                    disabled={isApprovingPurchaseOrder || state.selectedPurchaseOrder.status !== 'draft'}
+                    disabled={
+                      !canApprovePurchaseOrders ||
+                      isApprovingPurchaseOrder ||
+                      state.selectedPurchaseOrder.status !== 'draft'
+                    }
                   >
                     {isApprovingPurchaseOrder ? 'Approving…' : 'Approve PO'}
                   </button>
@@ -876,6 +958,7 @@ export function ProcurementWorkflow({ token, profile }: Props) {
                     type="button"
                     onClick={cancelSelectedPurchaseOrder}
                     disabled={
+                      !canApprovePurchaseOrders ||
                       isCancellingPurchaseOrder ||
                       ['received', 'cancelled'].includes(state.selectedPurchaseOrder.status)
                     }
@@ -996,7 +1079,16 @@ export function ProcurementWorkflow({ token, profile }: Props) {
                 <span>remaining quantity for selected item</span>
               </div>
 
-              <button type="button" onClick={receiveAgainstPurchaseOrder} disabled={isReceivingStock}>
+              <button
+                type="button"
+                onClick={receiveAgainstPurchaseOrder}
+                disabled={isReceivingStock || !canReceivePurchaseOrders}
+                title={
+                  !canReceivePurchaseOrders
+                    ? 'Product receiving and Procurement receiving permissions are required'
+                    : undefined
+                }
+              >
                 {isReceivingStock ? 'Receiving stock…' : 'Receive stock against PO'}
               </button>
             </>

@@ -80,7 +80,9 @@ class TenantUserManagementController extends Controller
             'pharmaco.procurement.purchase_order.approve',
             'pharmaco.procurement.purchase_order.receive',
             'pharmaco.procurement.invoice.manage',
+            'pharmaco.procurement.invoice.approve',
             'pharmaco.procurement.payment.view',
+            'pharmaco.procurement.payment.manage',
             'pharmaco.procurement.supplier_performance.view',
 
             'pharmaco.finance.view',
@@ -204,6 +206,7 @@ class TenantUserManagementController extends Controller
                 'description' => 'Supplier records, purchase orders, receiving, procurement invoices and supplier performance follow-up.',
                 'permissions' => [
                     'tenant.dashboard.view',
+                    'branches.view',
                     'pharmaco.inventory.view',
                     'pharmaco.product_master.view',
                     'pharmaco.product_inventory.receive',
@@ -255,7 +258,9 @@ class TenantUserManagementController extends Controller
                     'pharmaco.sales.view',
                     'pharmaco.procurement.view',
                     'pharmaco.procurement.invoice.manage',
+                    'pharmaco.procurement.invoice.approve',
                     'pharmaco.procurement.payment.view',
+                    'pharmaco.procurement.payment.manage',
                     'pharmaco.finance.view',
                     'pharmaco.finance.cash.view',
                     'pharmaco.finance.receivables.manage',

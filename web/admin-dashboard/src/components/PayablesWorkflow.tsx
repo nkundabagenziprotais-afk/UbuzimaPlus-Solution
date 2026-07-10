@@ -127,7 +127,18 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
   const token = deriveToken(props);
   const tenantSlug = deriveTenantSlug(props);
   const permissions = props.permissions ?? props.profile?.permissions ?? [];
-  const hasProcurementAccess = permissions.length === 0 || permissions.includes('pharmaco.suppliers.manage');
+  const hasProcurementAccess = permissions.includes(
+    'pharmaco.procurement.view',
+  );
+  const canManageInvoices = permissions.includes(
+    'pharmaco.procurement.invoice.manage',
+  );
+  const canApproveInvoices = permissions.includes(
+    'pharmaco.procurement.invoice.approve',
+  );
+  const canManagePayments = permissions.includes(
+    'pharmaco.procurement.payment.manage',
+  );
 
   const [state, setState] = useState<PayablesState>({
     suppliers: [],
@@ -294,6 +305,11 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
   }
 
   async function createInvoice() {
+    if (!canManageInvoices) {
+      setError('Supplier-invoice management permission is required.');
+      return;
+    }
+
     if (!invoiceForm.supplier_id) {
       setError('Select a supplier first.');
       return;
@@ -352,6 +368,11 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
   }
 
   async function approveSelectedInvoice() {
+    if (!canApproveInvoices) {
+      setError('Supplier-invoice approval permission is required.');
+      return;
+    }
+
     if (!state.selectedInvoice) {
       setError('Select a supplier invoice first.');
       return;
@@ -380,6 +401,11 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
   }
 
   async function recordPayment() {
+    if (!canManagePayments) {
+      setError('Supplier-payment execution permission is required.');
+      return;
+    }
+
     if (!state.selectedInvoice) {
       setError('Select a supplier invoice first.');
       return;
@@ -496,6 +522,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
           type="button"
           className={activePayablesView === 'create-payable' ? 'active' : ''}
           onClick={() => setActivePayablesView('create-payable')}
+          disabled={!canManageInvoices}
         >
           <span>Create payable</span>
           <strong>{approvedPurchaseOrders.length}</strong>
@@ -512,6 +539,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
           type="button"
           className={activePayablesView === 'approval-queue' ? 'active' : ''}
           onClick={() => setActivePayablesView('approval-queue')}
+          disabled={!canApproveInvoices}
         >
           <span>Approval queue</span>
           <strong>{invoiceQueues.draft.length}</strong>
@@ -520,6 +548,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
           type="button"
           className={activePayablesView === 'record-payment' ? 'active' : ''}
           onClick={() => setActivePayablesView('record-payment')}
+          disabled={!canManagePayments}
         >
           <span>Record payment</span>
           <strong>{invoiceQueues.payable.length}</strong>
@@ -581,7 +610,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
         </section>
       )}
 
-      {activePayablesView === 'create-payable' && (
+      {canManageInvoices && activePayablesView === 'create-payable' && (
         <section className="payables-child-page">
           <section className="draft-sale-builder payables-builder payables-focused-card">
             <div className="form-header">
@@ -778,7 +807,15 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
               <strong>{money.format(invoicePreviewTotal)}</strong>
             </div>
 
-            <button type="button" onClick={createInvoice} disabled={isCreatingInvoice || invoiceForm.items.length === 0}>
+            <button
+              type="button"
+              onClick={createInvoice}
+              disabled={
+                !canManageInvoices ||
+                isCreatingInvoice ||
+                invoiceForm.items.length === 0
+              }
+            >
               {isCreatingInvoice ? 'Creating invoice…' : 'Create supplier invoice'}
             </button>
           </section>
@@ -833,7 +870,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
         </section>
       )}
 
-      {activePayablesView === 'approval-queue' && (
+      {canApproveInvoices && activePayablesView === 'approval-queue' && (
         <section className="payables-child-page payables-approval-page">
           <article className="payables-workflow-card">
             <div className="mini-section-heading">
@@ -892,7 +929,11 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
                 <button
                   type="button"
                   onClick={approveSelectedInvoice}
-                  disabled={isApprovingInvoice || state.selectedInvoice.status !== 'draft'}
+                  disabled={
+                    !canApproveInvoices ||
+                    isApprovingInvoice ||
+                    state.selectedInvoice.status !== 'draft'
+                  }
                 >
                   {isApprovingInvoice ? 'Approving…' : 'Approve invoice'}
                 </button>
@@ -950,7 +991,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
         </section>
       )}
 
-      {activePayablesView === 'record-payment' && (
+      {canManagePayments && activePayablesView === 'record-payment' && (
         <section className="payables-child-page payables-payment-page">
           <article className="payables-workflow-card">
             <div className="mini-section-heading">
@@ -1072,6 +1113,7 @@ export function PayablesWorkflow(props: PayablesWorkflowProps) {
                 type="button"
                 onClick={recordPayment}
                 disabled={
+                  !canManagePayments ||
                   isRecordingPayment ||
                   state.selectedInvoice.balance_amount <= 0 ||
                   !['approved', 'partially_paid'].includes(state.selectedInvoice.status)

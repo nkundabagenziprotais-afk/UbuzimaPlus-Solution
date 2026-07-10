@@ -6713,7 +6713,7 @@ function App() {
                   <div className="dashboard-card-metrics">
                     {dashboardCardFieldVisibility.suppliers.pages && <span><b>7</b><small>Supplier pages</small></span>}
                     {dashboardCardFieldVisibility.suppliers.po && <span><b>PO</b><small>Open orders</small></span>}
-                    {dashboardCardFieldVisibility.suppliers.permission && <span><b>{profile!.permissions.includes('pharmaco.suppliers.manage') ? 'On' : 'Off'}</b><small>Permission</small></span>}
+                    {dashboardCardFieldVisibility.suppliers.permission && <span><b>{profile!.permissions.includes('pharmaco.procurement.view') ? 'On' : 'Off'}</b><small>Permission</small></span>}
                   </div>
                 </button>
               )}

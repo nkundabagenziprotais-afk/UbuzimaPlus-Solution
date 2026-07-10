@@ -11,6 +11,7 @@ use App\Models\StockBatch;
 use App\Models\StockLocation;
 use App\Models\StockMovement;
 use App\Services\Access\ScopeResolver;
+use App\Services\Auth\UserAccessProfileService;
 use App\Services\Audit\AuditLogService;
 use App\Services\PharmaCo360\ProductSellingUnitSuggestionService;
 use Illuminate\Http\JsonResponse;
@@ -1287,7 +1288,8 @@ class ProductInventoryController extends Controller
     public function receiveStock(
         Request $request,
         AuditLogService $auditLogService,
-        ScopeResolver $scopeResolver
+        ScopeResolver $scopeResolver,
+        UserAccessProfileService $userAccessProfileService
     ): JsonResponse {
         $tenant = $request->attributes->get('tenant');
 
@@ -1315,6 +1317,26 @@ class ProductInventoryController extends Controller
 
             'receive_source' => ['nullable', Rule::in(['manual', 'purchase-code'])],
         ]);
+
+        if (! empty($validated['pharmaco_purchase_order_item_id'])) {
+            $user = $request->user();
+            $activePermissions = $user
+                ? $userAccessProfileService->permissionCodes($user)
+                : [];
+
+            if (! in_array(
+                'pharmaco.procurement.purchase_order.receive',
+                $activePermissions,
+                true
+            )) {
+                return response()->json([
+                    'message' => 'You do not have permission to receive stock against a purchase order.',
+                    'missing_permissions' => [
+                        'pharmaco.procurement.purchase_order.receive',
+                    ],
+                ], 403);
+            }
+        }
 
         $receiveSource = $validated['receive_source']
             ?? (! empty($validated['reference_number'] ?? null) ? 'purchase-code' : 'manual');
