@@ -25740,3 +25740,96 @@ section >
 }
 
 /* AQUILA_POS_PRODUCT_PANEL_STABILITY_END */
+
+/* AQUILA_PRODUCT_INVENTORY_LOCATION_WIDTH_20260710 */
+.inventory-create-from-master-panel .inventory-creation-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 14px;
+  width: 100%;
+}
+
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> label:not(.inventory-product-master-combobox-label) {
+  grid-column: span 1;
+  display: grid;
+  grid-template-rows: auto minmax(48px, auto);
+  align-content: start;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> label:not(.inventory-product-master-combobox-label)
+> input,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> label:not(.inventory-product-master-combobox-label)
+> select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-receiving-field--stock-location {
+  grid-column: span 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-product-master-combobox-label,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-receive-source-selector,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-receive-mode-banner,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-create-summary,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-form-actions {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1180px) {
+  .inventory-create-from-master-panel .inventory-creation-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .inventory-create-from-master-panel .inventory-creation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .inventory-create-from-master-panel .inventory-creation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-create-from-master-panel
+  .inventory-creation-grid
+  > label:not(.inventory-product-master-combobox-label),
+  .inventory-create-from-master-panel
+  .inventory-creation-grid
+  > .inventory-receiving-field--stock-location {
+    grid-column: 1 / -1;
+  }
+}
+/* AQUILA_PRODUCT_INVENTORY_LOCATION_WIDTH_20260710_END */

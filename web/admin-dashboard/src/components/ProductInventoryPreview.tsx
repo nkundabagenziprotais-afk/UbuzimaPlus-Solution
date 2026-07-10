@@ -771,36 +771,139 @@ function canCurrentSessionManageInventoryCustomization(): boolean {
       ...readInventoryAccessList(user.scopes),
     ];
 
-    const adminRoles = new Set([
-      'admin',
-      'super_admin',
-      'system_admin',
-      'platform_admin',
-      'solution_admin',
-      'tenant_admin',
-      'owner',
-      'administrator',
-    ]);
-
-    const adminPermissions = new Set([
-      'admin',
-      'inventory.customize',
-      'inventory_customize',
-      'inventory.manage_settings',
-      'inventory_manage_settings',
-      'inventory.settings.manage',
-      'inventory_settings_manage',
-      'settings.manage',
-      'settings_manage',
-    ]);
-
-    return roles.some((role) => adminRoles.has(role)) ||
-      permissions.some((permission) => adminPermissions.has(permission));
+    return (
+      roles.some(inventoryRoleIsAdministrative) ||
+      permissions.some(
+        inventoryPermissionAllowsAdministration,
+      )
+    );
   } catch {
     return false;
   }
 }
 
+
+
+
+function inventoryRoleIsAdministrative(value: string): boolean {
+  const role = normalizeInventoryAccessValue(value);
+
+  if (!role) {
+    return false;
+  }
+
+  const administrativeRoles = new Set([
+    'admin',
+    'super_admin',
+    'system_admin',
+    'platform_admin',
+    'solution_admin',
+    'tenant_admin',
+    'tenant_administrator',
+    'owner',
+    'administrator',
+  ]);
+
+  return (
+    administrativeRoles.has(role) ||
+    role.endsWith('_admin') ||
+    role.endsWith('_administrator') ||
+    role.includes('_admin_') ||
+    role.includes('_administrator_')
+  );
+}
+
+function inventoryPermissionAllowsAdministration(
+  value: string,
+): boolean {
+  const permission = normalizeInventoryAccessValue(value);
+
+  if (!permission) {
+    return false;
+  }
+
+  const administrativePermissions = new Set([
+    'admin',
+    'inventory.customize',
+    'inventory_customize',
+    'inventory.manage',
+    'inventory_manage',
+    'inventory.manage_settings',
+    'inventory_manage_settings',
+    'inventory.settings.manage',
+    'inventory_settings_manage',
+    'settings.manage',
+    'settings_manage',
+  ]);
+
+  if (administrativePermissions.has(permission)) {
+    return true;
+  }
+
+  if (!permission.includes('inventory')) {
+    return false;
+  }
+
+  const managementSuffixes = [
+    '.manage',
+    '_manage',
+    '.create',
+    '_create',
+    '.add',
+    '_add',
+    '.edit',
+    '_edit',
+    '.update',
+    '_update',
+    '.delete',
+    '_delete',
+  ];
+
+  return managementSuffixes.some(
+    (suffix) => permission.endsWith(suffix),
+  );
+}
+
+function canInventoryProfileManageAdministration(
+  profile: unknown,
+): boolean {
+  if (!profile || typeof profile !== 'object') {
+    return false;
+  }
+
+  const profileRecord =
+    profile as Record<string, unknown>;
+
+  const scopeRecord =
+    profileRecord.scope &&
+    typeof profileRecord.scope === 'object'
+      ? profileRecord.scope as Record<string, unknown>
+      : {};
+
+  const roles = [
+    ...readInventoryAccessList(profileRecord.role),
+    ...readInventoryAccessList(profileRecord.role_name),
+    ...readInventoryAccessList(profileRecord.user_role),
+    ...readInventoryAccessList(profileRecord.roles),
+    ...readInventoryAccessList(scopeRecord.role),
+    ...readInventoryAccessList(scopeRecord.roles),
+  ];
+
+  const permissions = [
+    ...readInventoryAccessList(profileRecord.permission),
+    ...readInventoryAccessList(profileRecord.permissions),
+    ...readInventoryAccessList(profileRecord.scopes),
+    ...readInventoryAccessList(scopeRecord.permission),
+    ...readInventoryAccessList(scopeRecord.permissions),
+  ];
+
+  return (
+    roles.some(inventoryRoleIsAdministrative) ||
+    permissions.some(
+      inventoryPermissionAllowsAdministration,
+    )
+  );
+}
 
 export function ProductInventoryPreview({
   token,
@@ -809,6 +912,10 @@ export function ProductInventoryPreview({
   onActiveViewChange,
   showInternalNavigation = true,
 }: ProductInventoryPreviewProps) {
+
+  const hasInventoryAdminAccess =
+    canCurrentSessionManageInventoryCustomization() ||
+    canInventoryProfileManageAdministration(profile);
   const [summary, setSummary] = useState<PharmaInventorySummaryResponse | null>(null);
 
   const summaryPayload = (summary?.summary ?? {}) as Record<string, unknown>;
@@ -1708,7 +1815,7 @@ export function ProductInventoryPreview({
       const sellingPrice = Number(inventoryCreateForm.selling_price || inventoryCalculatedSellingPrice || 0);
 
       if (editingInventoryBatch) {
-        if (!canEditInventoryBatch(editingInventoryBatch)) {
+        if (!hasInventoryAdminAccess && !canEditInventoryBatch(editingInventoryBatch)) {
           setInventoryNotice('This inventory record is linked to a purchase code or protected source. Use the correction workflow instead of direct editing.');
           return;
         }
@@ -2807,7 +2914,7 @@ export function ProductInventoryPreview({
   }
 
   function openInventoryBatchEdit(batch: PharmaStockBatch) {
-    if (!canEditInventoryBatch(batch)) {
+    if (!hasInventoryAdminAccess && !canEditInventoryBatch(batch)) {
       setViewingInventoryBatch(batch);
       setInventoryNotice('This record is purchase-linked and cannot be directly edited. Use the purchase correction workflow to keep supplier, PO, and audit records aligned.');
       return;
@@ -3439,7 +3546,7 @@ export function ProductInventoryPreview({
   }
 
   function renderAdminTableManagement(tableKey: InventoryTableKey, title: string) {
-    if (!canCurrentSessionManageInventoryCustomization()) {
+    if (!hasInventoryAdminAccess) {
       return null;
     }
 
@@ -3579,7 +3686,7 @@ export function ProductInventoryPreview({
   }
 
   function renderExpiryLabelTools() {
-    if (!canCurrentSessionManageInventoryCustomization()) {
+    if (!hasInventoryAdminAccess) {
       return null;
     }
 
@@ -5259,21 +5366,7 @@ export function ProductInventoryPreview({
                     </div>
                   </label>
 
-                  <label>
-                    Stock location
-                    <select
-                      value={inventoryCreateForm.stock_location_id}
-                      onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, stock_location_id: event.target.value })}
-                      required
-                    >
-                      <option value="">Select location</option>
-                      {(locations?.locations ?? []).map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.name} ({location.code})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+
 
                   <label>
                     Batch number
@@ -5356,6 +5449,22 @@ export function ProductInventoryPreview({
                     />
                   </label>
 
+<label className="inventory-receiving-field inventory-receiving-field--stock-location">
+                    Stock location
+                    <select
+                      value={inventoryCreateForm.stock_location_id}
+                      onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, stock_location_id: event.target.value })}
+                      required
+                    >
+                      <option value="">Select location</option>
+                      {(locations?.locations ?? []).map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name} ({location.code})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
                   <div className="inventory-create-summary">
                     <strong>{selectedInventoryProduct?.name ?? 'No product selected'}</strong>
                     <span>Default margin: {formatNumber(selectedInventoryDefaultMargin)}%</span>
@@ -5435,13 +5544,13 @@ export function ProductInventoryPreview({
                   <div className="inventory-form-actions">
                     <button
                       type="button"
-                      disabled={!canEditInventoryBatch(viewingInventoryBatch)}
-                      title={canEditInventoryBatch(viewingInventoryBatch)
+                      disabled={!hasInventoryAdminAccess && !canEditInventoryBatch(viewingInventoryBatch)}
+                      title={hasInventoryAdminAccess || canEditInventoryBatch(viewingInventoryBatch)
                         ? 'Edit manual inventory entry'
                         : 'Purchase-linked inventory must be corrected through the purchase workflow'}
                       onClick={() => openInventoryBatchEdit(viewingInventoryBatch)}
                     >
-                      {canEditInventoryBatch(viewingInventoryBatch) ? 'Edit this batch' : 'Edit locked'}
+                      {hasInventoryAdminAccess || canEditInventoryBatch(viewingInventoryBatch) ? 'Edit this batch' : 'Edit locked'}
                     </button>
                     <button type="button" className="danger" onClick={() => setPendingDeleteInventoryBatch(viewingInventoryBatch)}>Delete this batch</button>
                   </div>
