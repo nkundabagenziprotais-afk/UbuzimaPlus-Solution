@@ -1364,9 +1364,11 @@ class ProductInventoryController extends Controller
                 ]);
             }
 
-            if (in_array($purchaseOrder->status, ['cancelled', 'voided', 'closed'], true)) {
+            if (! in_array($purchaseOrder->status, ['approved', 'partially_received'], true)) {
                 throw ValidationException::withMessages([
-                    'pharmaco_purchase_order_item_id' => ['Stock cannot be received against a closed or cancelled purchase order.'],
+                    'pharmaco_purchase_order_item_id' => [
+                        'Stock can only be received against an approved or partially received purchase order.',
+                    ],
                 ]);
             }
 
@@ -1398,9 +1400,20 @@ class ProductInventoryController extends Controller
                     ->lockForUpdate()
                     ->findOrFail($purchaseOrderItem->id);
 
-                $lockedPurchaseOrderItem->load(['purchaseOrder.supplier', 'purchaseOrder.items']);
+                $purchaseOrder = $lockedPurchaseOrderItem->purchaseOrder()
+                    ->where('tenant_id', $tenant->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-                $purchaseOrder = $lockedPurchaseOrderItem->purchaseOrder;
+                $purchaseOrder->load(['supplier', 'items']);
+
+                if (! in_array($purchaseOrder->status, ['approved', 'partially_received'], true)) {
+                    throw ValidationException::withMessages([
+                        'pharmaco_purchase_order_item_id' => [
+                            'Stock can only be received against an approved or partially received purchase order.',
+                        ],
+                    ]);
+                }
 
                 if ((int) $lockedPurchaseOrderItem->product_id !== (int) $product->id) {
                     throw ValidationException::withMessages([
