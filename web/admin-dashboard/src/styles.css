@@ -25617,104 +25617,95 @@ section >
 }
 /* AQUILA_INVENTORY_POPUP_ACTIONS_20260710_END */
 
-/* AQUILA_STOCK_LOCATION_FIELD_FITNESS_20260710 */
-.stock-location-action-panel {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.stock-location-action-panel .inventory-popup-form__content {
-  padding: 22px;
-}
-
-.stock-location-form-grid {
+/* AQUILA_PRODUCT_INVENTORY_LOCATION_WIDTH_20260710 */
+.inventory-create-from-master-panel .inventory-creation-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: stretch;
   gap: 14px;
   width: 100%;
 }
 
-.stock-location-form-grid > label,
-.stock-location-form-grid > .inventory-create-summary {
-  min-width: 0;
-  min-height: 126px;
-  height: 100%;
-  box-sizing: border-box;
-  padding: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 16px;
-  background: #f8fafc;
-}
-
-.stock-location-form-grid > label {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> label:not(.inventory-product-master-combobox-label) {
+  grid-column: span 1;
+  display: grid;
+  grid-template-rows: auto minmax(48px, auto);
+  align-content: start;
   gap: 8px;
-  color: #334155;
-  font-weight: 750;
-}
-
-.stock-location-form-grid > label input,
-.stock-location-form-grid > label select {
   width: 100%;
   min-width: 0;
-  min-height: 44px;
-  margin-top: auto;
+  max-width: 100%;
   box-sizing: border-box;
 }
 
-.stock-location-form-grid > .inventory-create-summary {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 7px;
-  margin: 0;
-}
-
-.stock-location-form-grid > .inventory-form-actions {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> label:not(.inventory-product-master-combobox-label)
+> input,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> label:not(.inventory-product-master-combobox-label)
+> select {
   width: 100%;
-  margin: 2px 0 0;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
-.stock-location-form-grid > .inventory-form-actions button {
-  min-height: 44px;
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-receiving-field--stock-location {
+  grid-column: span 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-product-master-combobox-label,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-receive-source-selector,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-receive-mode-banner,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-create-summary,
+.inventory-create-from-master-panel
+.inventory-creation-grid
+> .inventory-form-actions {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 1180px) {
-  .stock-location-form-grid {
+  .inventory-create-from-master-panel .inventory-creation-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .inventory-create-from-master-panel .inventory-creation-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 680px) {
-  .stock-location-action-panel .inventory-popup-form__content {
-    padding: 16px;
-  }
-
-  .stock-location-form-grid {
+@media (max-width: 560px) {
+  .inventory-create-from-master-panel .inventory-creation-grid {
     grid-template-columns: 1fr;
   }
 
-  .stock-location-form-grid > label,
-  .stock-location-form-grid > .inventory-create-summary {
-    min-height: auto;
-  }
-
-  .stock-location-form-grid > .inventory-form-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .stock-location-form-grid > .inventory-form-actions button {
-    width: 100%;
+  .inventory-create-from-master-panel
+  .inventory-creation-grid
+  > label:not(.inventory-product-master-combobox-label),
+  .inventory-create-from-master-panel
+  .inventory-creation-grid
+  > .inventory-receiving-field--stock-location {
+    grid-column: 1 / -1;
   }
 }
-/* AQUILA_STOCK_LOCATION_FIELD_FITNESS_20260710_END */
+/* AQUILA_PRODUCT_INVENTORY_LOCATION_WIDTH_20260710_END */

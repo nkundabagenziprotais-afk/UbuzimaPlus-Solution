@@ -1815,7 +1815,7 @@ export function ProductInventoryPreview({
       const sellingPrice = Number(inventoryCreateForm.selling_price || inventoryCalculatedSellingPrice || 0);
 
       if (editingInventoryBatch) {
-        if (!canEditInventoryBatch(editingInventoryBatch)) {
+        if (!hasInventoryAdminAccess && !canEditInventoryBatch(editingInventoryBatch)) {
           setInventoryNotice('This inventory record is linked to a purchase code or protected source. Use the correction workflow instead of direct editing.');
           return;
         }
@@ -2914,7 +2914,7 @@ export function ProductInventoryPreview({
   }
 
   function openInventoryBatchEdit(batch: PharmaStockBatch) {
-    if (!canEditInventoryBatch(batch)) {
+    if (!hasInventoryAdminAccess && !canEditInventoryBatch(batch)) {
       setViewingInventoryBatch(batch);
       setInventoryNotice('This record is purchase-linked and cannot be directly edited. Use the purchase correction workflow to keep supplier, PO, and audit records aligned.');
       return;
@@ -5366,7 +5366,7 @@ export function ProductInventoryPreview({
                     </div>
                   </label>
 
-                  <label>
+                  <label className="inventory-receiving-field inventory-receiving-field--stock-location">
                     Stock location
                     <select
                       value={inventoryCreateForm.stock_location_id}
@@ -5542,13 +5542,13 @@ export function ProductInventoryPreview({
                   <div className="inventory-form-actions">
                     <button
                       type="button"
-                      disabled={!canEditInventoryBatch(viewingInventoryBatch)}
-                      title={canEditInventoryBatch(viewingInventoryBatch)
+                      disabled={!hasInventoryAdminAccess && !canEditInventoryBatch(viewingInventoryBatch)}
+                      title={hasInventoryAdminAccess || canEditInventoryBatch(viewingInventoryBatch)
                         ? 'Edit manual inventory entry'
                         : 'Purchase-linked inventory must be corrected through the purchase workflow'}
                       onClick={() => openInventoryBatchEdit(viewingInventoryBatch)}
                     >
-                      {canEditInventoryBatch(viewingInventoryBatch) ? 'Edit this batch' : 'Edit locked'}
+                      {hasInventoryAdminAccess || canEditInventoryBatch(viewingInventoryBatch) ? 'Edit this batch' : 'Edit locked'}
                     </button>
                     <button type="button" className="danger" onClick={() => setPendingDeleteInventoryBatch(viewingInventoryBatch)}>Delete this batch</button>
                   </div>
