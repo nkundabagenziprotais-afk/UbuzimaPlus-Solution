@@ -410,10 +410,17 @@ class TenantUserManagementController extends Controller
 
         $user = DB::transaction(function () use ($tenant, $validated, $temporaryPassword, $request) {
             $email = strtolower($validated['email']);
-            $user = User::query()->where('email', $email)->first() ?? new User();
+
+            abort_if(
+                User::query()->where('email', $email)->exists(),
+                422,
+                'A user with this email address already exists.',
+            );
+
+            $user = new User();
             $user->email = $email;
             $user->name = $validated['name'];
-            $user->phone = $validated['phone'] ?? $user->phone;
+            $user->phone = $validated['phone'] ?? null;
             $user->password = Hash::make($temporaryPassword);
             $user->forceFill([
                 'must_change_password' => true,
@@ -421,19 +428,15 @@ class TenantUserManagementController extends Controller
             ]);
             $user->save();
 
-            TenantUser::query()->updateOrCreate(
-                [
-                    'tenant_id' => $tenant->id,
-                    'user_id' => $user->id,
-                ],
-                [
-                    'branch_id' => $validated['branch_id'] ?? null,
-                    'job_title' => $validated['job_title'] ?? null,
-                    'status' => $validated['status'] ?? 'active',
-                    'invited_by' => $request->user()?->id,
-                    'joined_at' => now(),
-                ],
-            );
+            $assignment = TenantUser::query()->create([
+                'tenant_id' => $tenant->id,
+                'user_id' => $user->id,
+                'branch_id' => $validated['branch_id'] ?? null,
+                'job_title' => $validated['job_title'] ?? null,
+                'status' => $validated['status'] ?? 'active',
+                'invited_by' => $request->user()?->id,
+                'joined_at' => now(),
+            ]);
 
             $role = $this->ensureTenantRole(
                 $tenant,
@@ -465,14 +468,27 @@ class TenantUserManagementController extends Controller
             return $user->fresh(['roles.permissions', 'tenantAssignments']);
         });
 
+        $assignment = TenantUser::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
         return response()->json([
-            'message' => 'User created for Vita Pharma.',
+            'message' => 'User created successfully for ' . $tenant->name . '.',
             'temporary_password' => $temporaryPassword,
+            'tenant' => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'slug' => $tenant->slug,
+            ],
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
+                'status' => $assignment->status,
+                'branch_id' => $assignment->branch_id,
+                'job_title' => $assignment->job_title,
             ],
         ], 201);
     }
@@ -585,14 +601,19 @@ class TenantUserManagementController extends Controller
 
     private function resolveTenant(Request $request): Tenant
     {
-        $slug = $request->input('tenant_slug')
-            ?? $request->header('X-Tenant')
-            ?? $request->header('X-Tenant-Slug')
-            ?? 'vitapharma';
+        $slug = $request->header('X-Tenant-Slug')
+            ?: $request->header('X-Tenant')
+            ?: $request->input('tenant_slug');
+
+        abort_if(
+            ! is_string($slug) || trim($slug) === '',
+            422,
+            'Tenant context is required.',
+        );
 
         return Tenant::query()
-            ->where('slug', $slug)
-            ->orWhere('name', 'like', '%Vita%Pharma%')
+            ->where('slug', trim($slug))
+            ->where('status', 'active')
             ->firstOrFail();
     }
     private function ensureTenantRole(
