@@ -5366,21 +5366,7 @@ export function ProductInventoryPreview({
                     </div>
                   </label>
 
-                  <label className="inventory-receiving-field inventory-receiving-field--stock-location">
-                    Stock location
-                    <select
-                      value={inventoryCreateForm.stock_location_id}
-                      onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, stock_location_id: event.target.value })}
-                      required
-                    >
-                      <option value="">Select location</option>
-                      {(locations?.locations ?? []).map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.name} ({location.code})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+
 
                   <label>
                     Batch number
@@ -5461,6 +5447,22 @@ export function ProductInventoryPreview({
                       onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, reference_number: event.target.value })}
                       placeholder="PO or delivery note"
                     />
+                  </label>
+
+<label className="inventory-receiving-field inventory-receiving-field--stock-location">
+                    Stock location
+                    <select
+                      value={inventoryCreateForm.stock_location_id}
+                      onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, stock_location_id: event.target.value })}
+                      required
+                    >
+                      <option value="">Select location</option>
+                      {(locations?.locations ?? []).map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name} ({location.code})
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <div className="inventory-create-summary">
