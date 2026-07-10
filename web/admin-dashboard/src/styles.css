@@ -25426,3 +25426,193 @@ table td:not(:first-child):not(.numeric) {
     min-height: 70px !important;
   }
 }
+
+/* AQUILA_INVENTORY_POPUP_ACTIONS_20260710 */
+[data-inventory-popup-host] {
+  display: contents;
+}
+
+[data-inventory-popup-host] > .section-heading {
+  display: none !important;
+}
+
+.inventory-popup-form {
+  display: contents;
+}
+
+.inventory-popup-form__trigger {
+  min-height: 44px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inventory-popup-form__backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  display: grid !important;
+  place-items: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(7px);
+}
+
+.inventory-popup-form__dialog {
+  position: relative;
+  width: min(1180px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+}
+
+.inventory-popup-form__header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+}
+
+.inventory-popup-form__header h2 {
+  margin: 0;
+}
+
+.inventory-popup-form__header p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.inventory-popup-form__eyebrow {
+  margin: 0 0 6px !important;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inventory-popup-form__close {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 13px;
+  background: #ffffff;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.inventory-popup-form__content {
+  padding: 22px;
+}
+
+.inventory-popup-form__content > section {
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.inventory-popup-form__content >
+section >
+.section-heading:first-child {
+  display: none;
+}
+
+.inventory-popup-form__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 22px;
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+}
+
+.inventory-popup-form__footer span {
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.inventory-popup-form__footer button {
+  min-height: 42px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 13px;
+  padding: 0.65rem 1rem;
+  background: #f8fafc;
+  color: #1e293b;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .inventory-popup-form__backdrop {
+    place-items: end center;
+    padding: 12px;
+  }
+
+  .inventory-popup-form__dialog {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    border-radius: 22px 22px 16px 16px;
+  }
+
+  .inventory-popup-form__header,
+  .inventory-popup-form__content,
+  .inventory-popup-form__footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .inventory-popup-form__footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 430px) {
+  .inventory-popup-form__backdrop {
+    padding: 0;
+  }
+
+  .inventory-popup-form__dialog {
+    max-height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .inventory-popup-form__header {
+    padding-top: max(
+      16px,
+      env(safe-area-inset-top)
+    );
+  }
+
+  .inventory-popup-form__footer {
+    padding-bottom: max(
+      14px,
+      env(safe-area-inset-bottom)
+    );
+  }
+}
+/* AQUILA_INVENTORY_POPUP_ACTIONS_20260710_END */

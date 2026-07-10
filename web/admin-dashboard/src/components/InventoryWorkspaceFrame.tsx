@@ -50,7 +50,7 @@ export function InventoryWorkspaceFrame({
       setHasPopupAction(
         Boolean(
           contentRef.current?.querySelector(
-            'details[data-inventory-popup]',
+            '[data-inventory-popup] > .inventory-popup-form__trigger',
           ),
         ),
       );
@@ -63,7 +63,7 @@ export function InventoryWorkspaceFrame({
   function openFirstPopup() {
     const trigger =
       contentRef.current?.querySelector<HTMLElement>(
-        'details[data-inventory-popup] > summary',
+        '[data-inventory-popup] > .inventory-popup-form__trigger',
       );
 
     trigger?.click();

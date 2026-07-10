@@ -404,7 +404,7 @@ function inventoryBatchSourceLabel(batch: PharmaStockBatch): string {
   if (source === 'manual') return 'Manual Product Master Entry';
   if (source === 'purchase-code') return 'Purchase Code / PO Receiving';
 
-  return 'Legacy record — source not classified';
+  return '';
 }
 
 function canEditInventoryBatch(batch: PharmaStockBatch): boolean {
@@ -1750,6 +1750,8 @@ export function ProductInventoryPreview({
       }
 
       setInventoryCreateForm(emptyInventoryCreateForm);
+      setIsInventoryReceiveFlowOpen(false);
+      setEditingInventoryBatch(null);
       setInventoryProductSearchTerm('');
       setInventoryProductOptions([]);
       setIsInventoryProductSearchOpen(false);
@@ -2378,7 +2380,17 @@ export function ProductInventoryPreview({
 
     if (activeProductMasterAction === 'view' && viewingProductMasterProduct) {
       return (
-        <section className="product-master-action-panel product-master-view-panel">
+        <InventoryPopupForm
+        id="inventory-popup-product-master-view"
+        title="View Product"
+        description="Review Product Master information without leaving your current table position."
+        open
+        onClose={() => {
+          setActiveProductMasterAction(null);
+          setViewingProductMasterProduct(null);
+        }}
+      >
+<section className="product-master-action-panel product-master-view-panel">
           <div className="section-heading">
             <div>
               <h3>View Product</h3>
@@ -2420,6 +2432,7 @@ export function ProductInventoryPreview({
             <button type="button" className="danger" onClick={() => requestDeleteProductMaster(viewingProductMasterProduct)}>Delete Product</button>
           </div>
         </section>
+      </InventoryPopupForm>
       );
     }
 
@@ -2427,7 +2440,7 @@ export function ProductInventoryPreview({
 
     if (activeProductMasterAction === 'create' || activeProductMasterAction === 'replicate') {
       return (
-        <section className="product-master-action-panel">
+        <section className="product-master-action-panel" data-inventory-popup-host>
           <div className="section-heading">
             <div>
               <h3>{activeProductMasterAction === 'replicate' ? 'Replicate Product' : 'Create New Product'}</h3>
@@ -2440,8 +2453,9 @@ export function ProductInventoryPreview({
                   id="inventory-popup-action-1"
                   title="Product master record"
                   description="Maintain pharmaceutical identity, commercial and replenishment information."
-                  triggerLabel="Open form"
-                >
+                  open
+                  onClose={() => { setActiveProductMasterAction(null); setSelectedProductMasterEditId(''); }}
+>
 <form
             onSubmit={(event) => void handleCreateProductMaster(event, false)}
           >
@@ -2465,7 +2479,7 @@ export function ProductInventoryPreview({
 
     if (activeProductMasterAction === 'edit') {
       return (
-        <section className="product-master-action-panel">
+        <section className="product-master-action-panel" data-inventory-popup-host>
           <div className="section-heading">
             <div>
               <h3>Edit Product</h3>
@@ -2478,8 +2492,9 @@ export function ProductInventoryPreview({
                   id="inventory-popup-action-2"
                   title="Product master record"
                   description="Maintain pharmaceutical identity, commercial and replenishment information."
-                  triggerLabel="Open form"
-                >
+                  open
+                  onClose={() => { setActiveProductMasterAction(null); setSelectedProductMasterEditId(''); }}
+>
 <form onSubmit={(event) => void handleUpdateProductMaster(event)}>
             {renderProductMasterAiAssistant('edit')}
             <label className="product-master-search-select product-master-combo-select">
@@ -2785,6 +2800,8 @@ export function ProductInventoryPreview({
   }
 
   function openInventoryBatchView(batch: PharmaStockBatch) {
+    setIsInventoryReceiveFlowOpen(false);
+    setEditingInventoryBatch(null);
     setViewingInventoryBatch(batch);
     setInventoryNotice(`Viewing inventory batch ${batch.batch_number}.`);
   }
@@ -2800,6 +2817,8 @@ export function ProductInventoryPreview({
     setViewingInventoryBatch(null);
     setPendingDeleteInventoryBatch(null);
 
+    setViewingInventoryBatch(null);
+    setIsInventoryReceiveFlowOpen(true);
     setInventoryCreateForm({
       product_id: String(batch.product.id),
       stock_location_id: String(batch.stock_location.id),
@@ -2846,6 +2865,8 @@ export function ProductInventoryPreview({
     setViewingInventoryBatch(null);
     setPendingDeleteInventoryBatch(null);
 
+    setViewingInventoryBatch(null);
+    setIsInventoryReceiveFlowOpen(true);
     setInventoryCreateForm({
       product_id: String(batch.product.id),
       stock_location_id: String(batch.stock_location.id),
@@ -5097,7 +5118,7 @@ export function ProductInventoryPreview({
                 </section>
               )}
 
-              <section className={`inventory-create-from-master-panel inventory-guided-flow-panel ${(isInventoryReceiveFlowOpen || editingInventoryBatch) ? 'is-open' : 'is-hidden'}`}>
+              <section className={`inventory-create-from-master-panel inventory-guided-flow-panel ${(isInventoryReceiveFlowOpen || editingInventoryBatch) ? 'is-open' : 'is-hidden'}`} data-inventory-popup-host>
                 <div className="section-heading">
                   <div>
                     <h3>{editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Product Master'}</h3>
@@ -5107,10 +5128,11 @@ export function ProductInventoryPreview({
 
                 <InventoryPopupForm
                   id="inventory-popup-action-5"
-                  title="Stock location"
-                  description="Create or update an accountable storage location using the existing validation rules."
-                  triggerLabel="Open form"
-                >
+                  title={editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Product Master'}
+                  description="Record or update quantity, batch, expiry, location, supplier, cost, margin and selling price."
+                  open={isInventoryReceiveFlowOpen || Boolean(editingInventoryBatch)}
+                  onClose={() => { setIsInventoryReceiveFlowOpen(false); setEditingInventoryBatch(null); setInventoryCreateForm(emptyInventoryCreateForm); setInventoryProductSearchTerm(''); setInventoryProductOptions([]); setIsInventoryProductSearchOpen(false); }}
+>
 <form className="inventory-creation-grid" onSubmit={handleCreateInventoryFromProductMaster}>
                   <div className={`inventory-receive-source-selector inventory-receive-source-selector--${inventoryReceiveSource}`}>
                     <button
@@ -5375,7 +5397,14 @@ export function ProductInventoryPreview({
               </section>
 
               {viewingInventoryBatch && (
-                <section className="inventory-batch-detail-panel">
+                <InventoryPopupForm
+                  id="inventory-popup-batch-view"
+                  title={`Inventory batch ${viewingInventoryBatch.batch_number}`}
+                  description="Review the selected inventory batch without leaving your current table position."
+                  open
+                  onClose={() => setViewingInventoryBatch(null)}
+                >
+<section className="inventory-batch-detail-panel">
                   <div className="section-heading">
                     <div>
                       <h3>Inventory batch details</h3>
@@ -5417,6 +5446,7 @@ export function ProductInventoryPreview({
                     <button type="button" className="danger" onClick={() => setPendingDeleteInventoryBatch(viewingInventoryBatch)}>Delete this batch</button>
                   </div>
                 </section>
+                </InventoryPopupForm>
               )}
 
               {pendingDeleteInventoryBatch && (
