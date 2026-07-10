@@ -15,6 +15,12 @@ class PharmacoSale extends Model
         'uuid',
         'tenant_id',
         'branch_id',
+        'pos_session_id',
+        'entry_mode',
+        'business_date',
+        'historical_reason',
+        'historical_reference',
+        'historical_approval_id',
         'pharmaco_customer_id',
         'pharmaco_prescription_id',
         'sale_number',
@@ -40,6 +46,7 @@ class PharmacoSale extends Model
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'balance_amount' => 'decimal:2',
+        'business_date' => 'date',
         'sold_at' => 'datetime',
         'metadata' => 'array',
     ];
@@ -52,6 +59,22 @@ class PharmacoSale extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function posSession(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoPosSession::class,
+            'pos_session_id'
+        );
+    }
+
+    public function historicalApproval(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoHistoricalPosApproval::class,
+            'historical_approval_id'
+        );
     }
 
     public function customer(): BelongsTo

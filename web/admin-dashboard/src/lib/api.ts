@@ -1378,6 +1378,11 @@ export type PharmaPayment = {
   amount: number;
   payment_method: string;
   status: string;
+  entry_mode?: "live" | "historical" | string;
+  business_date?: string | null;
+  pos_session_id?: number | null;
+  historical_approval_id?: number | null;
+  is_historical?: boolean;
   reference_number: string | null;
   receipt_number: string | null;
   received_at: string | null;
@@ -1390,6 +1395,13 @@ export type PharmaSale = {
   sale_number: string;
   sale_type: string;
   status: string;
+  entry_mode?: "live" | "historical" | string;
+  business_date?: string | null;
+  pos_session_id?: number | null;
+  historical_reason?: string | null;
+  historical_reference?: string | null;
+  historical_approval_id?: number | null;
+  is_historical?: boolean;
   subtotal_amount: number;
   discount_amount: number;
   tax_amount: number;
