@@ -106,11 +106,17 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
   const tenantName = useMemo(() => tenantNameFromProfile(profile), [profile]);
   const canUseSales = profile.permissions.includes('pharmaco.sales.manage');
   const canUseInventory = profile.permissions.includes('pharmaco.inventory.manage');
-  const canUseSuppliers = profile.permissions.includes('pharmaco.suppliers.manage');
+  const canUseSuppliers =
+    profile.permissions.includes('pharmaco.procurement.view') &&
+    profile.permissions.includes('branches.view') &&
+    profile.permissions.includes('pharmaco.product_master.view') &&
+    profile.permissions.includes('pharmaco.inventory.view');
   const canUseReports =
     profile.permissions.includes('pharmaco.reports.view') ||
     profile.permissions.includes('pharmaco.sales.manage') ||
-    profile.permissions.includes('pharmaco.inventory.manage');
+    profile.permissions.includes('pharmaco.inventory.manage') ||
+    profile.permissions.includes('pharmaco.procurement.view') ||
+    profile.permissions.includes('pharmaco.procurement.payment.view');
 
   useEffect(() => {
     let cancelled = false;

@@ -110,11 +110,23 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
   const tenantSlug = deriveTenantSlug(props);
   const permissions = props.permissions ?? props.profile?.permissions ?? [];
 
+  const canViewSalesReports = permissions.includes(
+    'pharmaco.sales.manage',
+  );
+  const canViewInventoryReports = permissions.includes(
+    'pharmaco.inventory.manage',
+  );
+  const canViewProcurementReports = permissions.includes(
+    'pharmaco.procurement.view',
+  );
+  const canViewPayablesReports = permissions.includes(
+    'pharmaco.procurement.payment.view',
+  );
   const canViewReports =
-    permissions.length === 0 ||
-    permissions.includes('pharmaco.sales.manage') ||
-    permissions.includes('pharmaco.inventory.manage') ||
-    permissions.includes('pharmaco.suppliers.manage');
+    canViewSalesReports ||
+    canViewInventoryReports ||
+    canViewProcurementReports ||
+    canViewPayablesReports;
 
   const [filters, setFilters] = useState<Required<PharmaReportDateFilters>>({
     start_date: daysAgoIso(30),
@@ -182,33 +194,65 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
     setCustomerCreditExportNotice('');
 
     try {
-      const overview = await getPharmaReportingOverview(token, tenantSlug, filters);
-      const [inventory, sales, procurement, payables, customerCredit] = await Promise.all([
-        getPharmaInventoryValuationReport(token, tenantSlug),
-        getPharmaSalesSummaryReport(token, tenantSlug, filters),
-        getPharmaProcurementSummaryReport(token, tenantSlug, filters),
-        getPharmaPayablesSummaryReport(token, tenantSlug, filters),
-        getPharmaCustomerCreditExposureReport(token, tenantSlug),
+      const [
+        overview,
+        inventory,
+        sales,
+        procurement,
+        payables,
+        customerCredit,
+      ] = await Promise.all([
+        canViewSalesReports
+          ? getPharmaReportingOverview(token, tenantSlug, filters)
+          : Promise.resolve(null),
+        canViewInventoryReports
+          ? getPharmaInventoryValuationReport(token, tenantSlug)
+          : Promise.resolve(null),
+        canViewSalesReports
+          ? getPharmaSalesSummaryReport(token, tenantSlug, filters)
+          : Promise.resolve(null),
+        canViewProcurementReports
+          ? getPharmaProcurementSummaryReport(token, tenantSlug, filters)
+          : Promise.resolve(null),
+        canViewPayablesReports
+          ? getPharmaPayablesSummaryReport(token, tenantSlug, filters)
+          : Promise.resolve(null),
+        canViewSalesReports
+          ? getPharmaCustomerCreditExposureReport(token, tenantSlug)
+          : Promise.resolve(null),
       ]);
 
       setState({
-        period: overview.period,
-        inventory: inventory.inventory,
-        sales: sales.sales,
-        procurement: procurement.procurement,
-        payables: payables.payables,
-        customerCredit: customerCredit.customer_credit_exposure,
+        period: overview?.period ?? null,
+        inventory: inventory?.inventory ?? null,
+        sales: sales?.sales ?? null,
+        procurement: procurement?.procurement ?? null,
+        payables: payables?.payables ?? null,
+        customerCredit:
+          customerCredit?.customer_credit_exposure ?? null,
       });
 
-      setNotice('Reporting view refreshed with the latest tenant-safe figures.');
+      setNotice(
+        'Available reporting views refreshed for your assigned role.',
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load PharmaCo360 reports.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to load the reports available to this role.',
+      );
     } finally {
       setIsLoading(false);
     }
   }
-
   async function downloadCustomerCreditCsv() {
+    if (!canViewSalesReports) {
+      setError(
+        'Sales reporting permission is required for customer-credit exports.',
+      );
+      return;
+    }
+
     if (!token || !tenantSlug) {
       setError('Tenant context is required before downloading the customer credit export.');
       return;
@@ -297,7 +341,11 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
           />
         </label>
 
-        <button type="button" onClick={loadReports} disabled={isLoading || !hasTenantContext}>
+        <button
+          type="button"
+          onClick={loadReports}
+          disabled={isLoading || !hasTenantContext || !canViewReports}
+        >
           {isLoading ? 'Refreshing…' : 'Refresh reports'}
         </button>
 
@@ -322,7 +370,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
 
       {!isLoading && hasTenantContext && !hasLoadedReports && (
         <div className="reporting-empty-overview">
-          Choose a reporting period and refresh to load stock, sales, procurement, credit, and payable figures.
+          Choose a reporting period and refresh to load the report sections available to your role.
         </div>
       )}
 
@@ -330,38 +378,49 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="reporting-kpi-grid">
+        {canViewInventoryReports && (
         <article>
           <span>Stock at cost</span>
           <strong>{formatMoney(state.inventory?.total_cost_value)}</strong>
           <small>{formatNumber(state.inventory?.total_quantity_on_hand)} units on hand</small>
         </article>
+        )}
 
+        {canViewInventoryReports && (
         <article>
           <span>Estimated sale value</span>
           <strong>{formatMoney(state.inventory?.total_retail_value)}</strong>
           <small>Estimated margin {formatMoney(state.inventory?.estimated_margin_value)}</small>
         </article>
+        )}
 
+        {canViewSalesReports && (
         <article>
           <span>Sales generated</span>
           <strong>{formatMoney(state.sales?.total_sales_amount)}</strong>
           <small>{salesCollectionRate}% collected</small>
         </article>
+        )}
 
+        {canViewProcurementReports && (
         <article>
           <span>Purchase orders value</span>
           <strong>{formatMoney(state.procurement?.total_purchase_order_amount)}</strong>
           <small>{state.procurement?.purchase_order_count ?? 0} purchase orders</small>
         </article>
+        )}
 
+        {canViewPayablesReports && (
         <article>
           <span>Supplier balance</span>
           <strong>{formatMoney(state.payables?.balance_amount)}</strong>
           <small>{payableSettlementRate}% settled</small>
         </article>
+        )}
       </div>
 
       <div className="reporting-grid">
+        {canViewInventoryReports && (
         <section className="report-card">
           <div className="mini-section-heading">
             <strong>Stock valuation</strong>
@@ -412,7 +471,9 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             )}
           </div>
         </section>
+        )}
 
+        {canViewSalesReports && (
         <section className="report-card">
           <div className="mini-section-heading">
             <strong>Sales and collection</strong>
@@ -460,7 +521,9 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             )}
           </div>
         </section>
+        )}
 
+        {canViewProcurementReports && (
         <section className="report-card">
           <div className="mini-section-heading">
             <strong>Purchase orders</strong>
@@ -508,8 +571,10 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             )}
           </div>
         </section>
+        )}
 
 
+        {canViewSalesReports && (
         <section className="report-card">
           <div className="mini-section-heading">
             <strong>Customer credit risk</strong>
@@ -575,7 +640,9 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             ))}
           </div>
         </section>
+        )}
 
+        {canViewPayablesReports && (
         <section className="report-card">
           <div className="mini-section-heading">
             <strong>Supplier payables</strong>
@@ -623,6 +690,7 @@ export function ReportingDashboard(props: ReportingDashboardProps) {
             )}
           </div>
         </section>
+        )}
       </div>
     </section>
   );
