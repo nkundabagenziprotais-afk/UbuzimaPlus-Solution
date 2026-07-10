@@ -18,6 +18,7 @@ export type PosSessionEventType =
 export interface PosSessionBranch {
   id: number;
   name: string;
+  code?: string | null;
 }
 
 export interface PosSessionEvent {
@@ -33,6 +34,10 @@ export interface PosSession {
   session_number: string;
   sequence_number: number;
   business_date: string | null;
+  session_mode?: "live" | "historical" | string;
+  historical_reason?: string | null;
+  historical_reference?: string | null;
+  historical_approval_id?: number | null;
   status: PosSessionStatus;
   branch: PosSessionBranch | null;
   opening_float_amount: number;
@@ -294,6 +299,263 @@ export function authorizePosSessionReset(
   return requestPosSession<PosSessionMutationResponse>(
     context,
     sessionPath(sessionId, "admin-reset"),
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export interface HistoricalPosAvailabilityResponse {
+  branch: PosSessionBranch;
+  business_date: string;
+  live_activity_exists: boolean;
+  live_activity_count: number;
+  live_activity_total: number;
+  approval_required: boolean;
+  approval_rule:
+    | "admin_or_owner_code_required"
+    | "historical_permission_only"
+    | string;
+}
+
+export interface HistoricalPosApprovalUser {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface HistoricalPosApproval {
+  id: number;
+  uuid: string;
+  branch_id: number;
+  business_date: string;
+  requested_by: number;
+  approved_by: number | null;
+  status:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "used"
+    | "expired"
+    | string;
+  requires_code: boolean;
+  failed_attempts: number;
+  live_activity_count: number;
+  live_activity_total: number;
+  request_reason: string;
+  historical_reference: string | null;
+  decision_notes: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  expires_at: string | null;
+  used_at: string | null;
+  created_at: string | null;
+  branch: PosSessionBranch | null;
+  requester: HistoricalPosApprovalUser | null;
+  approver: HistoricalPosApprovalUser | null;
+}
+
+export interface HistoricalApprovalResponse {
+  message: string;
+  approval: HistoricalPosApproval;
+}
+
+export interface HistoricalApprovalDecisionResponse
+  extends HistoricalApprovalResponse {
+  approval_code?: string;
+}
+
+export interface HistoricalApprovalsResponse {
+  approvals: HistoricalPosApproval[];
+}
+
+export interface HistoricalPosSessionEvent {
+  id: number;
+  event_type: PosSessionEventType;
+  amount: number | null;
+  notes: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string | null;
+}
+
+export interface HistoricalPosSessionRecord {
+  id: number;
+  uuid: string;
+  session_number: string;
+  sequence_number: number;
+  session_mode: "historical";
+  status: PosSessionStatus;
+  business_date: string;
+  historical_reason: string | null;
+  historical_reference: string | null;
+  historical_approval_id: number | null;
+  opening_float_amount: number;
+  expected_cash_amount: number;
+  declared_cash_amount: number | null;
+  cash_drop_amount: number;
+  balance_clearance_amount: number;
+  variance_amount: number | null;
+  opened_at: string | null;
+  zeroized_at: string | null;
+  closed_at: string | null;
+  metadata: Record<string, unknown>;
+  branch: PosSessionBranch | null;
+  events: HistoricalPosSessionEvent[];
+}
+
+export interface HistoricalCurrentSessionResponse {
+  business_date: string;
+  session_mode: "historical";
+  session: HistoricalPosSessionRecord | null;
+}
+
+export interface HistoricalOpenSessionPayload {
+  branch_id: number;
+  business_date: string;
+  opening_float_amount: number;
+  opening_mode?: "fresh-start" | "handover";
+  historical_reason: string;
+  historical_reference?: string;
+  approval_id?: number;
+  approval_code?: string;
+  notes?: string;
+}
+
+export interface HistoricalOpenSessionResponse {
+  message: string;
+  historical_entry_warning: string;
+  session: HistoricalPosSessionRecord;
+}
+
+function historicalQuery(
+  values: Record<string, string | number | undefined>,
+): string {
+  const query = new URLSearchParams();
+
+  Object.entries(values).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") {
+      query.set(key, String(value));
+    }
+  });
+
+  const encoded = query.toString();
+
+  return encoded ? `?${encoded}` : "";
+}
+
+export function getHistoricalPosAvailability(
+  context: PosSessionRequestContext,
+  branchId: number,
+  businessDate: string,
+): Promise<HistoricalPosAvailabilityResponse> {
+  return requestPosSession<HistoricalPosAvailabilityResponse>(
+    context,
+    `/pharmaco/pos/historical/availability${historicalQuery({
+      branch_id: branchId,
+      business_date: businessDate,
+    })}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+}
+
+export function getHistoricalPosSession(
+  context: PosSessionRequestContext,
+  businessDate: string,
+): Promise<HistoricalCurrentSessionResponse> {
+  return requestPosSession<HistoricalCurrentSessionResponse>(
+    context,
+    `/pharmaco/pos/historical/session/current${historicalQuery({
+      business_date: businessDate,
+    })}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+}
+
+export function requestHistoricalPosApproval(
+  context: PosSessionRequestContext,
+  payload: {
+    branch_id: number;
+    business_date: string;
+    request_reason: string;
+    historical_reference?: string;
+  },
+): Promise<HistoricalApprovalResponse> {
+  return requestPosSession<HistoricalApprovalResponse>(
+    context,
+    "/pharmaco/pos/historical/approvals",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function getHistoricalPosApprovals(
+  context: PosSessionRequestContext,
+  filters: {
+    status?: string;
+    branch_id?: number;
+    business_date?: string;
+  } = {},
+): Promise<HistoricalApprovalsResponse> {
+  return requestPosSession<HistoricalApprovalsResponse>(
+    context,
+    `/pharmaco/pos/historical/approvals${historicalQuery(filters)}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+}
+
+export function approveHistoricalPosApproval(
+  context: PosSessionRequestContext,
+  approvalId: number,
+  decisionNotes?: string,
+): Promise<HistoricalApprovalDecisionResponse> {
+  return requestPosSession<HistoricalApprovalDecisionResponse>(
+    context,
+    `/pharmaco/pos/historical/approvals/${approvalId}/approve`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        decision_notes: decisionNotes || undefined,
+      }),
+    },
+  );
+}
+
+export function rejectHistoricalPosApproval(
+  context: PosSessionRequestContext,
+  approvalId: number,
+  decisionNotes: string,
+): Promise<HistoricalApprovalResponse> {
+  return requestPosSession<HistoricalApprovalResponse>(
+    context,
+    `/pharmaco/pos/historical/approvals/${approvalId}/reject`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        decision_notes: decisionNotes,
+      }),
+    },
+  );
+}
+
+export function openHistoricalPosSession(
+  context: PosSessionRequestContext,
+  payload: HistoricalOpenSessionPayload,
+): Promise<HistoricalOpenSessionResponse> {
+  return requestPosSession<HistoricalOpenSessionResponse>(
+    context,
+    "/pharmaco/pos/historical/session/open",
     {
       method: "POST",
       body: JSON.stringify(payload),

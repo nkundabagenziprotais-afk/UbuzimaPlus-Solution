@@ -69,11 +69,7 @@ public function ensureCanClose(
 public function expectedCash(
         PharmacoPosSession $session
     ): float {
-        $endingTime = $session->closed_at
-            ?? $session->zeroized_at
-            ?? now();
-
-        $cashPayments = PharmacoPayment::query()
+        $paymentQuery = PharmacoPayment::query()
             ->where(
                 'tenant_id',
                 $session->tenant_id
@@ -89,48 +85,54 @@ public function expectedCash(
             ->where(
                 'status',
                 'completed'
-            )
-            ->where(
-                'received_at',
-                '>=',
-                $session->opened_at
-            )
-            ->where(
-                'received_at',
-                '<=',
-                $endingTime
-            )
-            ->whereHas(
-                'sale',
-                function ($query) use ($session) {
-                    $query
-                        ->where(
-                            'tenant_id',
-                            $session->tenant_id
-                        )
-                        ->where(
-                            'branch_id',
-                            $session->branch_id
-                        )
-                        ->whereNotIn(
-                            'status',
-                            [
-                                'cancelled',
-                                'voided',
-                            ]
-                        );
-                }
-            )
-            ->sum('amount');
+            );
 
-        /*
-         * Outstanding till cash:
-         *
-         * opening float
-         * + completed cash sales
-         * - ordinary cash drops
-         * - final balance clearance
-         */
+        if ($session->session_mode === 'historical') {
+            $paymentQuery->where(
+                'pos_session_id',
+                $session->id
+            );
+        } else {
+            $endingTime = $session->closed_at
+                ?? $session->zeroized_at
+                ?? now();
+
+            $paymentQuery
+                ->where(
+                    'received_at',
+                    '>=',
+                    $session->opened_at
+                )
+                ->where(
+                    'received_at',
+                    '<=',
+                    $endingTime
+                )
+                ->whereHas(
+                    'sale',
+                    function ($query) use ($session) {
+                        $query
+                            ->where(
+                                'tenant_id',
+                                $session->tenant_id
+                            )
+                            ->where(
+                                'branch_id',
+                                $session->branch_id
+                            )
+                            ->whereNotIn(
+                                'status',
+                                [
+                                    'cancelled',
+                                    'voided',
+                                ]
+                            );
+                    }
+                );
+        }
+
+        $cashPayments = $paymentQuery->sum('amount');
+
         return round(
             (float) $session->opening_float_amount
             + (float) $cashPayments

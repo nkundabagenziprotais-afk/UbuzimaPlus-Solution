@@ -17,6 +17,10 @@ class PharmacoPosSession extends Model
         'branch_id',
         'user_id',
         'business_date',
+        'session_mode',
+        'historical_reason',
+        'historical_reference',
+        'historical_approval_id',
         'sequence_number',
         'session_number',
         'status',
@@ -66,6 +70,30 @@ class PharmacoPosSession extends Model
         return $this->belongsTo(
             User::class,
             'reset_authorized_by'
+        );
+    }
+
+    public function historicalApproval(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoHistoricalPosApproval::class,
+            'historical_approval_id'
+        );
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(
+            PharmacoSale::class,
+            'pos_session_id'
+        );
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(
+            PharmacoPayment::class,
+            'pos_session_id'
         );
     }
 

@@ -14,6 +14,10 @@ class PharmacoPayment extends Model
         'uuid',
         'tenant_id',
         'pharmaco_sale_id',
+        'pos_session_id',
+        'business_date',
+        'entry_mode',
+        'historical_approval_id',
         'amount',
         'payment_method',
         'status',
@@ -26,6 +30,7 @@ class PharmacoPayment extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'business_date' => 'date',
         'received_at' => 'datetime',
         'metadata' => 'array',
     ];
@@ -33,6 +38,22 @@ class PharmacoPayment extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function posSession(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoPosSession::class,
+            'pos_session_id'
+        );
+    }
+
+    public function historicalApproval(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoHistoricalPosApproval::class,
+            'historical_approval_id'
+        );
     }
 
     public function sale(): BelongsTo

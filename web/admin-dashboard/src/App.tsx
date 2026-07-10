@@ -45,6 +45,7 @@ import { ProductInventoryPreview, type InventoryView } from './components/Produc
 import { InventoryModuleHome } from './components/InventoryModuleHome';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
+import { HistoricalPosWorkflow } from './components/HistoricalPosWorkflow';
 import { SalesReturnsWorkspace } from './components/SalesReturnsWorkspace';
 import { MomoReconciliationWorkspace } from './components/MomoReconciliationWorkspace';
 import { PosSalesOverview } from './components/PosSalesOverview';
@@ -5252,6 +5253,37 @@ function App() {
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
 
+                <HistoricalPosWorkflow
+                  token={session!.token}
+                  tenantSlug={posSessionTenantSlug}
+                  branchId={posSessionBranchId}
+                  permissions={profile?.permissions ?? []}
+                  currentSession={posSession}
+                  openingFloatAmount={
+                    Number(posStartingCashBalance) || 0
+                  }
+                  openingMode={posOpeningMode}
+                  onSessionChanged={(
+                    nextSession,
+                    message,
+                  ) => {
+                    setPosSession(nextSession);
+                    setIsPosDayOpen(
+                      nextSession.status === 'open',
+                    );
+                    setPosTillZeroized(
+                      nextSession.balance_cleared,
+                    );
+                    setPosDeclaredCashAmount(
+                      String(
+                        nextSession.expected_cash_amount,
+                      ),
+                    );
+                    setPosNotice(message);
+                  }}
+                  onNotice={setPosNotice}
+                />
+
                 <section className="pos-shift-control-section pos-session-control-card">
                   <div className="section-heading">
                     <div>
@@ -5826,7 +5858,7 @@ function App() {
                   </section>
                 )}
 
-                
+
 
 
 
