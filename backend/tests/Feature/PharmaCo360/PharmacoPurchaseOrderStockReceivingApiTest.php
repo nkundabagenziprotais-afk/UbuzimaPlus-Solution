@@ -117,7 +117,7 @@ class PharmacoPurchaseOrderStockReceivingApiTest extends TestCase
 
         $this->assertSame(0.0, (float) $purchaseOrderItem->quantity_received);
         $this->assertSame('pending', $purchaseOrderItem->status);
-        $this->assertSame('draft', $purchaseOrder->status);
+        $this->assertSame('approved', $purchaseOrder->status);
     }
 
     public function test_purchase_order_linked_receiving_requires_matching_product(): void
@@ -167,6 +167,104 @@ class PharmacoPurchaseOrderStockReceivingApiTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('pharmaco_purchase_order_item_id');
+    }
+
+    public function test_draft_purchase_order_cannot_receive_stock(): void
+    {
+        $this->seed();
+
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+        [$purchaseOrder, $purchaseOrderItem, $product, $location] = $this->createPurchaseOrderItem(
+            quantityOrdered: 3,
+            purchaseOrderStatus: 'draft'
+        );
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/inventory/receive', [
+                'product_id' => $product->id,
+                'stock_location_id' => $location->id,
+                'pharmaco_purchase_order_item_id' => $purchaseOrderItem->id,
+                'batch_number' => 'PO-DRAFT-BLOCKED',
+                'quantity' => 1,
+                'unit_cost' => 700,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('pharmaco_purchase_order_item_id');
+
+        $purchaseOrderItem->refresh();
+        $purchaseOrder->refresh();
+
+        $this->assertSame(0.0, (float) $purchaseOrderItem->quantity_received);
+        $this->assertSame('pending', $purchaseOrderItem->status);
+        $this->assertSame('draft', $purchaseOrder->status);
+
+        $this->assertDatabaseMissing('stock_batches', [
+            'tenant_id' => $this->tenant()->id,
+            'batch_number' => 'PO-DRAFT-BLOCKED',
+        ]);
+
+        $this->assertDatabaseMissing('stock_movements', [
+            'tenant_id' => $this->tenant()->id,
+            'reference_type' => 'pharmaco_purchase_order',
+            'reference_number' => $purchaseOrder->po_number,
+        ]);
+    }
+
+    public function test_partially_received_purchase_order_can_receive_remaining_stock(): void
+    {
+        $this->seed();
+
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+        [$purchaseOrder, $purchaseOrderItem, $product, $location] =
+            $this->createPurchaseOrderItem(quantityOrdered: 5);
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/inventory/receive', [
+                'product_id' => $product->id,
+                'stock_location_id' => $location->id,
+                'pharmaco_purchase_order_item_id' => $purchaseOrderItem->id,
+                'batch_number' => 'PO-PARTIAL-B001',
+                'quantity' => 2,
+                'unit_cost' => 700,
+            ])
+            ->assertCreated()
+            ->assertJsonPath(
+                'purchase_order_receipt.purchase_order_status',
+                'partially_received'
+            );
+
+        $purchaseOrder->refresh();
+
+        $this->assertSame('partially_received', $purchaseOrder->status);
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson('/api/v1/pharmaco/inventory/receive', [
+                'product_id' => $product->id,
+                'stock_location_id' => $location->id,
+                'pharmaco_purchase_order_item_id' => $purchaseOrderItem->id,
+                'batch_number' => 'PO-PARTIAL-B002',
+                'quantity' => 3,
+                'unit_cost' => 700,
+            ])
+            ->assertCreated()
+            ->assertJsonPath(
+                'purchase_order_receipt.purchase_order_status',
+                'received'
+            )
+            ->assertJsonPath(
+                'purchase_order_receipt.remaining_quantity_after',
+                0
+            );
+
+        $purchaseOrderItem->refresh();
+        $purchaseOrder->refresh();
+
+        $this->assertSame(5.0, (float) $purchaseOrderItem->quantity_received);
+        $this->assertSame('received', $purchaseOrderItem->status);
+        $this->assertSame('received', $purchaseOrder->status);
     }
 
     public function test_manual_stock_receiving_still_works_without_purchase_order_item(): void
@@ -222,7 +320,10 @@ class PharmacoPurchaseOrderStockReceivingApiTest extends TestCase
         return $response->json('access_token');
     }
 
-    private function createPurchaseOrderItem(float $quantityOrdered): array
+    private function createPurchaseOrderItem(
+        float $quantityOrdered,
+        string $purchaseOrderStatus = 'approved'
+    ): array
     {
         $tenant = $this->tenant();
         $branch = Branch::where('tenant_id', $tenant->id)->firstOrFail();
@@ -245,7 +346,7 @@ class PharmacoPurchaseOrderStockReceivingApiTest extends TestCase
             'branch_id' => $branch->id,
             'pharmaco_supplier_id' => $supplier->id,
             'po_number' => 'PO-RCV-' . Str::upper(Str::random(6)),
-            'status' => 'draft',
+            'status' => $purchaseOrderStatus,
             'order_date' => now()->toDateString(),
             'subtotal_amount' => $quantityOrdered * 1000,
             'discount_amount' => 0,
