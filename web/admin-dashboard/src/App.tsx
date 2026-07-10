@@ -3121,6 +3121,7 @@ function App() {
   }, [activeSection, profile, visibleSectionKeys]);
 
   function navigateToSection(section: AdminSectionKey) {
+    setIsProfileMenuOpen(false);
     if (section === activeSection) {
       return;
     }

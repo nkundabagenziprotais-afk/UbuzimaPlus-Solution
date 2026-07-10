@@ -3677,10 +3677,11 @@ h3,
 .dashboard-header--fixed {
   position: sticky;
   top: 0;
-  z-index: 12;
+  z-index: 220;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto minmax(240px, 300px);
   align-items: center;
+  overflow: visible;
 }
 
 .dashboard-header--fixed h1 {
@@ -6305,6 +6306,7 @@ h3,
 
 .profile-avatar-shell {
   position: relative;
+  z-index: 1;
 }
 
 .profile-avatar-button {
@@ -6339,7 +6341,7 @@ h3,
   right: 0;
   top: calc(100% + 0.6rem);
   width: min(320px, 86vw);
-  z-index: 40;
+  z-index: 240;
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.98);
