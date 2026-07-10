@@ -6940,7 +6940,38 @@ function App() {
             <PharmaCoreEditor token={session!.token} profile={profile!} />
           </section>
         );
-      case 'security':
+      case 'security': {
+        const tenantSlug =
+          profile?.tenant_assignments?.find(
+            (assignment) => assignment.status === 'active' && assignment.tenant?.slug,
+          )?.tenant?.slug ||
+          profile?.tenant_assignments?.find(
+            (assignment) => assignment.tenant?.slug,
+          )?.tenant?.slug ||
+          '';
+
+        if (!tenantSlug) {
+          return (
+            <section className="section-page">
+              <section className="dedicated-module-page">
+                <DedicatedModuleHeader
+                  eyebrow="Administration and access control"
+                  title="User and Security Workspace"
+                  description="Review staff identity, tenant scope, roles, permissions, and security controls."
+                  onDashboard={() => navigateToSection('overview')}
+                />
+                <article className="panel wide">
+                  <h2>Tenant access is required</h2>
+                  <p className="form-error">
+                    No tenant assignment is available for this account. User Management cannot load
+                    or change staff records until an authorized tenant assignment is restored.
+                  </p>
+                </article>
+              </section>
+            </section>
+          );
+        }
+
         return (
           <section className="section-page">
 <section className="content-grid security-content-grid">
@@ -6951,7 +6982,7 @@ function App() {
                 description="Review the staff directory, create or modify users through pop-ups, and manage role-based access without an overloaded landing page."
                 onDashboard={() => navigateToSection('overview')}
               />
-              <UserSecurityManagement token={session!.token} tenantSlug="vitapharma" />
+              <UserSecurityManagement token={session!.token} tenantSlug={tenantSlug} />
             </section>
               <article className="panel">
                 <h2>Resolved access profile</h2>
@@ -6990,6 +7021,7 @@ function App() {
             </section>
           </section>
         );
+      }
       case 'corporate-email':
         return (
           <section className="section-page">
