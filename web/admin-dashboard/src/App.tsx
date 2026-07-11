@@ -1193,6 +1193,14 @@ const adhocReportWorkspaceItems: Array<{ key: AdhocReportWorkspaceKey; label: st
   { key: 'priority-follow-up', label: 'Priority Follow-up', description: 'Manager review notes and follow-up list' },
 ];
 
+const homeWidgetOptions: Array<{ key: HomeWidgetKey; label: string; description: string }> = [
+  { key: 'summary', label: 'Access summary', description: 'Roles, permissions, assignments, scopes' },
+  { key: 'tenant-dashboard', label: 'Tenant dashboard', description: 'Daily pharmacy control for tenant users' },
+  { key: 'quick-actions', label: 'Quick actions', description: 'Open the most-used operating pages' },
+  { key: 'system-experience', label: 'System experience', description: 'Commercial framework and module direction' },
+  { key: 'role-workspaces', label: 'Role workspaces', description: 'Recommended dashboard by user type' },
+];
+
 const adminUserActions = [
   ['Create User', 'Add staff with phone/email identity, role, tenant, branch, language, and 2FA requirement.'],
   ['Edit User', 'Update profile, job title, branch, role, market, contact details, and notification preferences.'],
@@ -1418,6 +1426,22 @@ function App() {
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
   const [chatMePrompt, setChatMePrompt] = useState('');
+  const [homeWidgets, setHomeWidgets] = useState<Record<HomeWidgetKey, boolean>>({
+    summary: true,
+    'tenant-dashboard': true,
+    'quick-actions': true,
+    'system-experience': true,
+    'role-workspaces': true,
+  });
+  const [openMenuGroups, setOpenMenuGroups] = useState<Record<MenuGroupKey, boolean>>({
+    erp: false,
+    solutions: false,
+    ai: false,
+    admin: false,
+    'tenant-ops': false,
+    'tenant-admin': false,
+    market: false,
+  });
 
   const profile = session?.profile;
   const visibleMenuGroups = useMemo(() => buildVisibleMenuGroups(profile), [profile]);
@@ -1688,6 +1712,234 @@ function App() {
 
     setNavigationStack(rest);
     setActiveSection(previous);
+  }
+
+  function toggleMenuGroup(group: MenuGroupKey) {
+    setOpenMenuGroups((current) => ({
+      ...current,
+      [group]: !current[group],
+    }));
+  }
+
+  function renderSidebarSubmenu(item: MenuItem) {
+    if (activeSection !== item.key) return null;
+
+    const renderButtons = <K extends string,>(
+      items: Array<{ key: K; label: string; description: string }>,
+      activeKey: K,
+      onSelect: (key: K) => void,
+    ) => (
+      <div className="sidebar-module-submenu">
+        {items.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            className={activeKey === entry.key ? 'active' : ''}
+            onClick={() => {
+              onSelect(entry.key);
+              if (activeSection !== item.key) {
+                navigateToSection(item.key);
+              }
+            }}
+          >
+            <strong>{entry.label}</strong>
+            <small>{entry.description}</small>
+          </button>
+        ))}
+      </div>
+    );
+
+    if (item.key === 'inventory') {
+      return renderButtons(inventoryWorkspaceItems, activeInventoryWorkspace, setActiveInventoryWorkspace);
+    }
+
+    if (item.key === 'pos') {
+      return renderButtons(posWorkspaceItems, activePosWorkspace, setActivePosWorkspace);
+    }
+
+    if (item.key === 'suppliers') {
+      return renderButtons(supplierWorkspaceItems, activeSupplierWorkspace, setActiveSupplierWorkspace);
+    }
+
+    if (item.key === 'finance') {
+      return renderButtons(financeWorkspaceItems, activeFinanceWorkspace, setActiveFinanceWorkspace);
+    }
+
+    if (item.key === 'reports') {
+      return renderButtons(adhocReportWorkspaceItems, activeAdhocReportWorkspace, setActiveAdhocReportWorkspace);
+    }
+
+    if (item.key === 'ai-center') {
+      return (
+        <div className="sidebar-module-submenu sidebar-module-submenu--dense">
+          {aiCenterModules.map((module) => (
+            <button
+              key={module.key}
+              type="button"
+              className={activeAiWorkspace === module.key ? 'active' : ''}
+              onClick={() => setActiveAiWorkspace(module.key)}
+            >
+              <strong>{module.title}</strong>
+              <small>{module.status}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
+  }
+
+  function toggleMenuGroup(group: MenuGroupKey) {
+    setOpenMenuGroups((current) => ({
+      ...current,
+      [group]: !current[group],
+    }));
+  }
+
+  function renderSidebarSubmenu(item: MenuItem) {
+    if (activeSection !== item.key) return null;
+
+    const renderButtons = <K extends string,>(
+      items: Array<{ key: K; label: string; description: string }>,
+      activeKey: K,
+      onSelect: (key: K) => void,
+    ) => (
+      <div className="sidebar-module-submenu">
+        {items.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            className={activeKey === entry.key ? 'active' : ''}
+            onClick={() => {
+              onSelect(entry.key);
+              if (activeSection !== item.key) {
+                navigateToSection(item.key);
+              }
+            }}
+          >
+            <strong>{entry.label}</strong>
+            <small>{entry.description}</small>
+          </button>
+        ))}
+      </div>
+    );
+
+    if (item.key === 'inventory') {
+      return renderButtons(inventoryWorkspaceItems, activeInventoryWorkspace, setActiveInventoryWorkspace);
+    }
+
+    if (item.key === 'pos') {
+      return renderButtons(posWorkspaceItems, activePosWorkspace, setActivePosWorkspace);
+    }
+
+    if (item.key === 'suppliers') {
+      return renderButtons(supplierWorkspaceItems, activeSupplierWorkspace, setActiveSupplierWorkspace);
+    }
+
+    if (item.key === 'finance') {
+      return renderButtons(financeWorkspaceItems, activeFinanceWorkspace, setActiveFinanceWorkspace);
+    }
+
+    if (item.key === 'reports') {
+      return renderButtons(adhocReportWorkspaceItems, activeAdhocReportWorkspace, setActiveAdhocReportWorkspace);
+    }
+
+    if (item.key === 'ai-center') {
+      return (
+        <div className="sidebar-module-submenu sidebar-module-submenu--dense">
+          {aiCenterModules.map((module) => (
+            <button
+              key={module.key}
+              type="button"
+              className={activeAiWorkspace === module.key ? 'active' : ''}
+              onClick={() => setActiveAiWorkspace(module.key)}
+            >
+              <strong>{module.title}</strong>
+              <small>{module.status}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
+  }
+
+  function toggleMenuGroup(group: MenuGroupKey) {
+    setOpenMenuGroups((current) => ({
+      ...current,
+      [group]: !current[group],
+    }));
+  }
+
+  function renderSidebarSubmenu(item: MenuItem) {
+    if (activeSection !== item.key) return null;
+
+    const renderButtons = <K extends string,>(
+      items: Array<{ key: K; label: string; description: string }>,
+      activeKey: K,
+      onSelect: (key: K) => void,
+    ) => (
+      <div className="sidebar-module-submenu">
+        {items.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            className={activeKey === entry.key ? 'active' : ''}
+            onClick={() => {
+              onSelect(entry.key);
+              if (activeSection !== item.key) {
+                navigateToSection(item.key);
+              }
+            }}
+          >
+            <strong>{entry.label}</strong>
+            <small>{entry.description}</small>
+          </button>
+        ))}
+      </div>
+    );
+
+    if (item.key === 'inventory') {
+      return renderButtons(inventoryWorkspaceItems, activeInventoryWorkspace, setActiveInventoryWorkspace);
+    }
+
+    if (item.key === 'pos') {
+      return renderButtons(posWorkspaceItems, activePosWorkspace, setActivePosWorkspace);
+    }
+
+    if (item.key === 'suppliers') {
+      return renderButtons(supplierWorkspaceItems, activeSupplierWorkspace, setActiveSupplierWorkspace);
+    }
+
+    if (item.key === 'finance') {
+      return renderButtons(financeWorkspaceItems, activeFinanceWorkspace, setActiveFinanceWorkspace);
+    }
+
+    if (item.key === 'reports') {
+      return renderButtons(adhocReportWorkspaceItems, activeAdhocReportWorkspace, setActiveAdhocReportWorkspace);
+    }
+
+    if (item.key === 'ai-center') {
+      return (
+        <div className="sidebar-module-submenu sidebar-module-submenu--dense">
+          {aiCenterModules.map((module) => (
+            <button
+              key={module.key}
+              type="button"
+              className={activeAiWorkspace === module.key ? 'active' : ''}
+              onClick={() => setActiveAiWorkspace(module.key)}
+            >
+              <strong>{module.title}</strong>
+              <small>{module.status}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
   }
 
   function persistSession(nextSession: StoredSession, trustedDeviceToken?: string) {
@@ -2078,6 +2330,27 @@ function App() {
       </main>
     );
   }
+
+  const summaryGrid = (
+    <section className="summary-grid compact-summary-grid">
+      <article>
+        <span>Active roles</span>
+        <strong>{profile.roles.length}</strong>
+      </article>
+      <article>
+        <span>Permissions</span>
+        <strong>{profile.permissions.length}</strong>
+      </article>
+      <article>
+        <span>Tenant assignments</span>
+        <strong>{profile.tenant_assignments.length}</strong>
+      </article>
+      <article>
+        <span>Admin scopes</span>
+        <strong>{profile.admin_scopes.length}</strong>
+      </article>
+    </section>
+  );
 
   const tenantOperationsPanel = (
     <article className="panel wide pharmaco-panel">
