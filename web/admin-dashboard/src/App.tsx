@@ -54,6 +54,13 @@ import { PosModuleWorkspaceHeader } from './components/PosModuleWorkspaceHeader'
 import { CustomerPrescriptionManagementWorkspace } from './components/CustomerPrescriptionManagementWorkspace';
 import { WorkspacePopupFormManager } from './components/WorkspacePopupFormManager';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
+import { ProcurementModuleHome } from './components/ProcurementModuleHome';
+import { ProcurementSupplierWorkspace } from './components/ProcurementSupplierWorkspace';
+import { ProcurementPurchaseOrderWorkspace } from './components/ProcurementPurchaseOrderWorkspace';
+import { ProcurementReceivingWorkspace } from './components/ProcurementReceivingWorkspace';
+import {
+  GeneralItemsManagementWorkspace,
+} from './components/GeneralItemsManagementWorkspace';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
@@ -197,7 +204,13 @@ type SupplierWorkspaceKey =
   | 'create-purchase-order'
   | 'outstanding-purchase-orders'
   | 'receive-purchase-order'
-  | 'received-purchase-orders';
+  | 'received-purchase-orders'
+  | 'general-items-overview'
+  | 'general-item-categories'
+  | 'general-item-master'
+  | 'general-item-stock'
+  | 'general-item-receiving'
+  | 'general-item-usage';
 type FinanceWorkspaceKey =
   | 'overview'
   | 'finance-flow'
@@ -539,6 +552,12 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'supplier-outstanding-po', label: 'Outstanding Purchase Order List', target: 'outstanding-purchase-orders' },
     { key: 'supplier-receive-po', label: 'Receive Purchase Order', target: 'receive-purchase-order' },
     { key: 'supplier-received-po', label: 'Received Purchase Order List', target: 'received-purchase-orders' },
+    { key: 'general-items-overview', label: 'General Items Overview', target: 'general-items-overview' },
+    { key: 'general-item-categories', label: 'General Item Categories', target: 'general-item-categories' },
+    { key: 'general-item-master', label: 'General Item Master', target: 'general-item-master' },
+    { key: 'general-item-stock', label: 'General Item Stock', target: 'general-item-stock' },
+    { key: 'general-item-receiving', label: 'General Item Receiving', target: 'general-item-receiving' },
+    { key: 'general-item-usage', label: 'General Item Issues and Usage', target: 'general-item-usage' },
   ],
   finance: [
     { key: 'finance-overview', label: 'Finance Overview', target: 'overview' },
@@ -2396,6 +2415,12 @@ const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; 
   { key: 'outstanding-purchase-orders', label: 'Outstanding PO List', description: 'Draft, approved, partial, and delayed POs' },
   { key: 'receive-purchase-order', label: 'Receive Purchase Order', description: 'PO-linked stock receiving and batch capture' },
   { key: 'received-purchase-orders', label: 'Received PO List', description: 'Received register and export tools' },
+  { key: 'general-items-overview', label: 'General Items Management', description: 'Non-sale operational stock overview and controls' },
+  { key: 'general-item-categories', label: 'General Item Categories', description: 'Admin-controlled categories for consistent analytics' },
+  { key: 'general-item-master', label: 'General Item Master', description: 'Reusable non-pharmaceutical purchasing records' },
+  { key: 'general-item-stock', label: 'General Item Stock', description: 'Locations, balances, valuation, and low-stock control' },
+  { key: 'general-item-receiving', label: 'General Item Receiving', description: 'Receive non-sale operational stock separately' },
+  { key: 'general-item-usage', label: 'General Item Issues and Usage', description: 'Record department usage and stock issues' },
 ];
 
 const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; description: string }> = [
@@ -6090,55 +6115,99 @@ function App() {
 
 
   function renderSupplierWorkspace() {
-    const selected = supplierWorkspaceItems.find((item) => item.key === activeSupplierWorkspace) ?? supplierWorkspaceItems[0];
-    const supplierRows: Array<[string, string, string, string]> = [
-      ['Wholesale distributor', 'Medicines and hospital consumables', 'Approved', 'Net 30'],
-      ['Manufacturer partner', 'Direct import product line', 'Review', 'Net 45'],
-      ['Local supplier', 'Fast-moving OTC and cosmetics', 'Active', 'Cash / MoMo'],
-      ['Service provider', 'Delivery and maintenance partner', 'Active', 'Contract'],
-    ];
 
     return (
       <section className="section-page dedicated-module-page">
-        <DedicatedModuleHeader
-          eyebrow="Procurement and supplier operations"
-          title="Procurement Workspace"
-          description="Open a focused supplier, purchase order, receiving, or received-order page without carrying every workflow on one screen."
-          onDashboard={() => navigateToSection('overview')}
-        />
-
-        {activeSupplierWorkspace === 'overview' && (
-          <ModuleLandingCards
-            moduleName="Procurement"
-            items={supplierWorkspaceItems.filter((item) => item.key !== 'overview')}
-            activeKey={activeSupplierWorkspace}
-            onOpen={setActiveSupplierWorkspace}
+        <div className="module-page-sticky-header">
+          <ModulePageNavigation
+            platformDashboardLabel="Procurement Home"
+            onExitToMainDashboard={() => navigateToSection('overview')}
+            onOpenPlatformDashboard={() => setActiveSupplierWorkspace('overview')}
+            onBack={() => setActiveSupplierWorkspace('overview')}
           />
-        )}
+        </div>
 
-        <div className="module-section-stage">
+        <div className="module-section-stage procurement-module-stage">
           {activeSupplierWorkspace === 'overview' && (
-            <FocusRegisterPreview
-              title="Procurement attention"
-              description="Supplier performance, open purchase-order status, receiving readiness, and procurement attention."
-              rows={supplierRows}
+            <ProcurementModuleHome
+              token={session!.token}
+              profile={profile!}
+              workspaceItems={supplierWorkspaceItems.filter(
+                (item) => item.key !== 'overview',
+              )}
+              onOpen={setActiveSupplierWorkspace}
             />
           )}
 
-          {activeSupplierWorkspace === 'create-supplier' && (
-            <ProcurementWorkflow token={session!.token} profile={profile!} />
-          )}
-
-          {['supplier-list', 'outstanding-purchase-orders', 'received-purchase-orders'].includes(activeSupplierWorkspace) && (
-            <FocusRegisterPreview
-              title={selected.label}
-              description="This page keeps its own focused register with 15-row default view, export, bulk edit, and controlled delete where allowed."
-              rows={supplierRows}
+          {['create-supplier', 'supplier-list'].includes(
+            activeSupplierWorkspace,
+          ) && (
+            <ProcurementSupplierWorkspace
+              token={session!.token}
+              profile={profile!}
+              initialMode={
+                activeSupplierWorkspace === 'create-supplier'
+                  ? 'create'
+                  : 'list'
+              }
             />
           )}
 
-          {['create-purchase-order', 'receive-purchase-order'].includes(activeSupplierWorkspace) && (
-            <ProcurementWorkflow token={session!.token} profile={profile!} />
+          {[
+            'create-purchase-order',
+            'outstanding-purchase-orders',
+            'received-purchase-orders',
+          ].includes(activeSupplierWorkspace) && (
+            <ProcurementPurchaseOrderWorkspace
+              token={session!.token}
+              profile={profile!}
+              initialMode={
+                activeSupplierWorkspace === 'create-purchase-order'
+                  ? 'create'
+                  : activeSupplierWorkspace === 'received-purchase-orders'
+                    ? 'received'
+                    : 'outstanding'
+              }
+            />
+          )}
+
+          {activeSupplierWorkspace === 'receive-purchase-order' && (
+            <ProcurementReceivingWorkspace
+              token={session!.token}
+              profile={profile!}
+            />
+          )}
+
+          {[
+            'general-items-overview',
+            'general-item-categories',
+            'general-item-master',
+            'general-item-stock',
+            'general-item-receiving',
+            'general-item-usage',
+          ].includes(activeSupplierWorkspace) && (
+            <GeneralItemsManagementWorkspace
+              token={session!.token}
+              profile={profile!}
+              initialMode={
+                activeSupplierWorkspace ===
+                'general-item-categories'
+                  ? 'categories'
+                  : activeSupplierWorkspace ===
+                      'general-item-master'
+                    ? 'master'
+                    : activeSupplierWorkspace ===
+                        'general-item-stock'
+                      ? 'stock'
+                      : activeSupplierWorkspace ===
+                          'general-item-receiving'
+                        ? 'receiving'
+                        : activeSupplierWorkspace ===
+                            'general-item-usage'
+                          ? 'usage'
+                          : 'overview'
+              }
+            />
           )}
         </div>
       </section>

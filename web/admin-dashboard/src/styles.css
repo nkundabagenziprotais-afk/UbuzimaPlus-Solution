@@ -25835,3 +25835,2839 @@ section >
   }
 }
 /* AQUILA_PRODUCT_INVENTORY_LOCATION_WIDTH_20260710_END */
+
+/* ============================================================
+   AQUILA PROCUREMENT PACKAGE 3A
+   Professional module home, shared header and AI analytics
+   ============================================================ */
+
+.procurement-module-stage {
+  min-width: 0;
+}
+
+.procurement-module-home {
+  display: grid;
+  gap: 1.35rem;
+  min-width: 0;
+}
+
+.procurement-home-title-card,
+.procurement-home-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-home-title-card {
+  padding: 1.25rem 1.35rem;
+}
+
+.procurement-home-title-card > div,
+.procurement-home-section-heading > div {
+  min-width: 0;
+}
+
+.procurement-home-title-card h1,
+.procurement-home-section-heading h2,
+.procurement-home-chart-card h3 {
+  margin: 0;
+}
+
+.procurement-home-title-card p,
+.procurement-home-section-heading p {
+  max-width: 760px;
+  margin: 0.35rem 0 0;
+}
+
+.procurement-home-eyebrow {
+  display: block;
+  margin-bottom: 0.28rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-blue, #174f78);
+}
+
+.procurement-home-menu-section,
+.procurement-home-analytics {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-home-menu-grid {
+  align-items: stretch;
+}
+
+.procurement-home-menu-card {
+  min-height: 104px;
+  height: 100%;
+}
+
+.procurement-home-menu-title {
+  min-width: 0;
+}
+
+.procurement-home-menu-title strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.procurement-home-menu-icon {
+  flex: 0 0 auto;
+}
+
+.procurement-home-state,
+.procurement-home-loading {
+  margin: 0;
+}
+
+.procurement-home-loading,
+.procurement-home-empty-chart {
+  display: grid;
+  place-items: center;
+  min-height: 170px;
+  padding: 1.25rem;
+  border: 1px dashed rgba(77, 102, 126, 0.28);
+  border-radius: 16px;
+  text-align: center;
+  color: var(--muted-text, #66778a);
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.procurement-home-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.procurement-home-kpi {
+  display: grid;
+  align-content: start;
+  gap: 0.34rem;
+  min-width: 0;
+  min-height: 128px;
+  padding: 1rem;
+  border: 1px solid rgba(89, 109, 128, 0.18);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(35, 57, 79, 0.06);
+}
+
+.procurement-home-kpi.primary {
+  border-color: rgba(28, 105, 157, 0.3);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(233, 246, 255, 0.94),
+      rgba(255, 255, 255, 0.98)
+    );
+}
+
+.procurement-home-kpi.attention {
+  border-color: rgba(196, 131, 31, 0.32);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 247, 226, 0.94),
+      rgba(255, 255, 255, 0.98)
+    );
+}
+
+.procurement-home-kpi.financial {
+  border-color: rgba(53, 122, 91, 0.25);
+}
+
+.procurement-home-kpi span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted-text, #66778a);
+}
+
+.procurement-home-kpi strong {
+  min-width: 0;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.procurement-home-kpi small {
+  line-height: 1.45;
+  color: var(--muted-text, #66778a);
+}
+
+.procurement-home-chart-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-home-chart-card {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 320px;
+  padding: 1.1rem;
+  border: 1px solid rgba(89, 109, 128, 0.18);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(35, 57, 79, 0.06);
+}
+
+.procurement-home-chart-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.procurement-home-chart-card > header > div {
+  min-width: 0;
+}
+
+.procurement-home-chart-card > header > strong {
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+}
+
+.procurement-status-chart,
+.procurement-supplier-chart,
+.procurement-insight-list {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.procurement-status-row {
+  display: grid;
+  grid-template-columns:
+    minmax(130px, 1fr)
+    minmax(120px, 1.3fr)
+    auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.procurement-status-row > div:first-child {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.5rem;
+  min-width: 0;
+}
+
+.procurement-status-row > div:first-child small {
+  grid-column: 2;
+  color: var(--muted-text, #66778a);
+}
+
+.procurement-status-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+}
+
+.procurement-status-dot.draft,
+.procurement-status-track i.draft {
+  background: #a36c16;
+}
+
+.procurement-status-dot.approved,
+.procurement-status-track i.approved {
+  background: #246c9d;
+}
+
+.procurement-status-dot.partial,
+.procurement-status-track i.partial {
+  background: #7559a8;
+}
+
+.procurement-status-dot.received,
+.procurement-status-track i.received {
+  background: #2f7b58;
+}
+
+.procurement-status-dot.cancelled,
+.procurement-status-track i.cancelled {
+  background: #9a4f54;
+}
+
+.procurement-status-track,
+.procurement-supplier-bar {
+  height: 0.58rem;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(113, 132, 151, 0.15);
+}
+
+.procurement-status-track i,
+.procurement-supplier-bar i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+}
+
+.procurement-supplier-row {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 1.25fr)
+    minmax(120px, 1fr)
+    minmax(90px, auto);
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.procurement-supplier-row > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.procurement-supplier-row strong,
+.procurement-supplier-row small {
+  overflow-wrap: anywhere;
+}
+
+.procurement-supplier-row small {
+  color: var(--muted-text, #66778a);
+}
+
+.procurement-supplier-row > b {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.procurement-supplier-bar i {
+  background:
+    linear-gradient(
+      90deg,
+      #1d668f,
+      #45a085
+    );
+}
+
+.procurement-home-insight-card {
+  grid-column: 1 / -1;
+  min-height: auto;
+}
+
+.procurement-insight-list {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.procurement-insight-list > div {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border-radius: 14px;
+  background: rgba(245, 248, 251, 0.9);
+}
+
+.procurement-insight-list span {
+  line-height: 1.5;
+  color: var(--muted-text, #66778a);
+}
+
+@media (max-width: 1100px) {
+  .procurement-home-kpi-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-home-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-home-insight-card {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-home-title-card,
+  .procurement-home-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .procurement-home-title-card > button {
+    width: 100%;
+  }
+
+  .procurement-home-kpi-grid,
+  .procurement-insight-list {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-status-row,
+  .procurement-supplier-row {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-status-row > b,
+  .procurement-supplier-row > b {
+    text-align: left;
+  }
+
+  .procurement-home-chart-card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-module-home {
+    gap: 1rem;
+  }
+
+  .procurement-home-title-card,
+  .procurement-home-section-heading,
+  .procurement-home-chart-card {
+    padding: 0.9rem;
+  }
+
+  .procurement-home-menu-card {
+    min-height: 92px;
+  }
+
+  .procurement-home-kpi {
+    min-height: 112px;
+  }
+
+  .procurement-home-kpi strong {
+    font-size: 1.35rem;
+  }
+}
+
+/* ============================================================
+   AQUILA_HISTORICAL_POS_CARD_FITNESS_20260710
+   Balanced Historical POS setup cards
+   ============================================================ */
+
+.historical-pos-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.historical-pos-form-grid > label {
+  display: grid;
+  grid-template-rows:
+    auto
+    minmax(42px, auto)
+    auto;
+  align-content: start;
+  gap: 0.5rem;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  min-height: 118px;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(70, 96, 85, 0.16);
+  border-radius: 14px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.historical-pos-form-grid > label > span {
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.historical-pos-form-grid > label > small {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: #65756d;
+  overflow-wrap: anywhere;
+}
+
+.historical-pos-form-grid > label input,
+.historical-pos-form-grid > label select,
+.historical-pos-form-grid > label textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.historical-pos-form-grid > label input,
+.historical-pos-form-grid > label select {
+  min-height: 42px;
+}
+
+.historical-pos-form-grid
+  > .historical-pos-form-grid__wide {
+  grid-column: 1 / -1;
+  min-height: auto;
+}
+
+.historical-pos-form-grid
+  > .historical-pos-form-grid__wide
+  textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.historical-pos-body,
+.historical-pos-workflow,
+.historical-pos-launch {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.historical-pos-conflict-card,
+.historical-pos-approval-card,
+.historical-pos-queue,
+.historical-pos-open-row {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1180px) {
+  .historical-pos-form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .historical-pos-form-grid
+    > .historical-pos-form-grid__wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .historical-pos-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .historical-pos-form-grid
+    > .historical-pos-form-grid__wide {
+    grid-column: auto;
+  }
+
+  .historical-pos-form-grid > label {
+    min-height: auto;
+    padding: 0.78rem;
+  }
+}
+
+/* ============================================================
+   AQUILA_PROCUREMENT_PACKAGE_3B1_SUPPLIER_REGISTER
+   Table-first Supplier workspace and popup operations
+   ============================================================ */
+
+.procurement-register-workspace {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-register-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid rgba(75, 99, 89, 0.15);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.procurement-register-header > div:first-child {
+  min-width: 0;
+}
+
+.procurement-register-header h1 {
+  margin: 0;
+}
+
+.procurement-register-header p {
+  max-width: 760px;
+  margin: 0.35rem 0 0;
+  color: #63736b;
+}
+
+.procurement-register-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.procurement-register-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.5fr)
+    minmax(150px, 0.55fr)
+    minmax(170px, 0.65fr)
+    auto;
+  align-items: end;
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.procurement-register-toolbar label {
+  display: grid;
+  gap: 0.42rem;
+  min-width: 0;
+  color: #344840;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.procurement-register-toolbar input,
+.procurement-register-toolbar select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.procurement-register-result-count {
+  display: grid;
+  min-width: 110px;
+  padding: 0.7rem 0.82rem;
+  border-radius: 12px;
+  background: #f2f7f4;
+}
+
+.procurement-register-result-count strong {
+  font-size: 1.2rem;
+}
+
+.procurement-register-result-count span {
+  color: #64746c;
+  font-size: 0.72rem;
+}
+
+.procurement-table-management {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(150px, 1fr))
+    repeat(2, minmax(145px, auto))
+    auto;
+  align-items: end;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.procurement-table-management label {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.procurement-table-management input,
+.procurement-table-management select {
+  min-width: 0;
+}
+
+.procurement-table-toggle {
+  display: flex !important;
+  align-items: center;
+  align-self: center;
+  gap: 0.5rem !important;
+}
+
+.procurement-table-toggle input {
+  width: auto;
+}
+
+.procurement-register-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.procurement-register-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.procurement-register-table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(
+    --procurement-table-font-size,
+    13px
+  );
+}
+
+.procurement-register-width--compact {
+  min-width: 980px;
+}
+
+.procurement-register-width--balanced {
+  min-width: 1120px;
+}
+
+.procurement-register-width--wide {
+  min-width: 1320px;
+}
+
+.procurement-register-table th,
+.procurement-register-table td {
+  padding:
+    var(
+      --procurement-table-padding-y,
+      0.78rem
+    )
+    0.78rem;
+  border-bottom: 1px solid rgba(92, 111, 102, 0.12);
+  text-align: left;
+  vertical-align: top;
+  background: #ffffff;
+}
+
+.procurement-register-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  color: #33463d;
+  font-size: 0.74em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #eef5f1;
+}
+
+.procurement-register-table tbody tr:hover td {
+  background: #f8fbf9;
+}
+
+.procurement-register-density--compact {
+  --procurement-table-padding-y: 0.52rem;
+}
+
+.procurement-register-density--comfortable {
+  --procurement-table-padding-y: 0.78rem;
+}
+
+.procurement-register-density--tall {
+  --procurement-table-padding-y: 1.05rem;
+}
+
+.procurement-register-wrap--off th,
+.procurement-register-wrap--off td {
+  white-space: nowrap;
+}
+
+.procurement-register-wrap--on th,
+.procurement-register-wrap--on td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.procurement-register-table td strong,
+.procurement-register-table td span,
+.procurement-register-table td small {
+  display: block;
+}
+
+.procurement-register-table td small {
+  margin-top: 0.2rem;
+  color: #687870;
+}
+
+.procurement-register-actions-column {
+  min-width: 285px;
+}
+
+.procurement-register-sticky-actions
+.procurement-register-actions-column {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  box-shadow: -8px 0 14px rgba(43, 64, 54, 0.06);
+}
+
+.procurement-register-sticky-actions
+thead
+.procurement-register-actions-column {
+  z-index: 4;
+  background: #eaf3ee;
+}
+
+.procurement-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.procurement-row-actions button {
+  min-height: 32px;
+  padding: 0.38rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+.procurement-row-actions .warning {
+  border-color: rgba(170, 107, 17, 0.32);
+  color: #8a570e;
+}
+
+.procurement-row-actions .success {
+  border-color: rgba(38, 117, 81, 0.32);
+  color: #246f4e;
+}
+
+.procurement-status-badge {
+  width: max-content;
+  padding: 0.28rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.procurement-status-badge.status-active {
+  color: #1f6948;
+  background: #e7f6ed;
+}
+
+.procurement-status-badge.status-inactive {
+  color: #6c5c38;
+  background: #f4efe2;
+}
+
+.procurement-status-badge.status-suspended {
+  color: #8a3d43;
+  background: #f9e8ea;
+}
+
+.procurement-register-empty {
+  padding: 2rem !important;
+  text-align: center !important;
+  white-space: normal !important;
+  color: #67776f;
+}
+
+.procurement-popup-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.procurement-popup-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.procurement-popup-form-grid label {
+  display: grid;
+  gap: 0.42rem;
+  min-width: 0;
+  color: #344840;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.procurement-popup-form-grid input,
+.procurement-popup-form-grid select,
+.procurement-popup-form-grid textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.procurement-popup-form-wide {
+  grid-column: 1 / -1;
+}
+
+.procurement-popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.procurement-detail-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.procurement-detail-grid > div {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+  padding: 0.78rem;
+  border-radius: 12px;
+  background: #f5f9f7;
+}
+
+.procurement-detail-grid span {
+  color: #66766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.procurement-detail-grid strong {
+  overflow-wrap: anywhere;
+}
+
+.procurement-detail-wide {
+  grid-column: 1 / -1;
+}
+
+.procurement-confirmation {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.procurement-confirmation p {
+  margin: 0;
+  line-height: 1.55;
+  color: #5f7067;
+}
+
+@media (max-width: 1180px) {
+  .procurement-register-toolbar {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-register-search {
+    grid-column: 1 / -1;
+  }
+
+  .procurement-table-management {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-register-header {
+    flex-direction: column;
+  }
+
+  .procurement-register-header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .procurement-register-header-actions button {
+    flex: 1 1 160px;
+  }
+
+  .procurement-register-toolbar,
+  .procurement-table-management,
+  .procurement-popup-form-grid,
+  .procurement-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-register-search,
+  .procurement-popup-form-wide,
+  .procurement-detail-wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-register-header,
+  .procurement-register-toolbar {
+    padding: 0.82rem;
+  }
+
+  .procurement-register-header-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-popup-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-popup-actions button {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   AQUILA_PROCUREMENT_PACKAGE_3B2_PURCHASE_ORDER_REGISTER
+   Table-first Purchase Order workspace and popup operations
+   ============================================================ */
+
+.procurement-purchase-order-table {
+  min-width: 1240px;
+}
+
+.procurement-purchase-order-table.procurement-register-width--compact {
+  min-width: 1100px;
+}
+
+.procurement-purchase-order-table.procurement-register-width--balanced {
+  min-width: 1240px;
+}
+
+.procurement-purchase-order-table.procurement-register-width--wide {
+  min-width: 1440px;
+}
+
+.procurement-status-badge.status-draft {
+  color: #81560f;
+  background: #fff3d8;
+}
+
+.procurement-status-badge.status-approved {
+  color: #235f8a;
+  background: #e7f2fa;
+}
+
+.procurement-status-badge.status-partially_received {
+  color: #674b96;
+  background: #f0eafa;
+}
+
+.procurement-status-badge.status-received,
+.procurement-status-badge.status-fully_received {
+  color: #216846;
+  background: #e5f5eb;
+}
+
+.procurement-status-badge.status-cancelled {
+  color: #8b3e45;
+  background: #f9e7e9;
+}
+
+.procurement-po-popup-form {
+  min-width: 0;
+}
+
+.procurement-po-preview {
+  display: grid;
+  align-content: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.78rem;
+  border: 1px solid rgba(35, 101, 73, 0.18);
+  border-radius: 12px;
+  background: #edf7f1;
+}
+
+.procurement-po-preview span {
+  color: #5e7067;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.procurement-po-preview strong {
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.procurement-po-line-section {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.procurement-po-line-section > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.procurement-po-line-section h3 {
+  margin: 0;
+}
+
+.procurement-po-line-list {
+  display: grid;
+  gap: 0.72rem;
+  min-width: 0;
+}
+
+.procurement-po-line-card {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1.8fr)
+    repeat(4, minmax(105px, 0.65fr))
+    auto;
+  align-items: end;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.78rem;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.procurement-po-line-card label {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.procurement-po-line-card input,
+.procurement-po-line-card select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.procurement-po-remove-line {
+  min-height: 42px;
+}
+
+.procurement-po-detail {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-po-detail-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 12px;
+}
+
+.procurement-po-detail-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.procurement-po-detail-table th,
+.procurement-po-detail-table td {
+  padding: 0.7rem;
+  border-bottom: 1px solid rgba(75, 99, 89, 0.12);
+  text-align: left;
+  vertical-align: top;
+}
+
+.procurement-po-detail-table th {
+  background: #eef5f1;
+  color: #344840;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.procurement-po-detail-table td strong,
+.procurement-po-detail-table td small {
+  display: block;
+}
+
+.procurement-po-detail-table td small {
+  margin-top: 0.2rem;
+  color: #687870;
+}
+
+.procurement-confirmation-reason {
+  display: grid;
+  gap: 0.42rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.procurement-confirmation-reason textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1180px) {
+  .procurement-po-line-card {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .procurement-po-product-field {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-po-line-section > header {
+    flex-direction: column;
+  }
+
+  .procurement-po-line-section > header button {
+    width: 100%;
+  }
+
+  .procurement-po-line-card {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-po-product-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-po-line-card {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-po-product-field {
+    grid-column: auto;
+  }
+
+  .procurement-po-remove-line {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   AQUILA_PROCUREMENT_PACKAGE_3C1_RECEIVING_REGISTER
+   Focused Purchase Order receiving workspace
+   ============================================================ */
+
+.procurement-receiving-table {
+  min-width: 1320px;
+}
+
+.procurement-receiving-table.procurement-register-width--compact {
+  min-width: 1160px;
+}
+
+.procurement-receiving-table.procurement-register-width--balanced {
+  min-width: 1320px;
+}
+
+.procurement-receiving-table.procurement-register-width--wide {
+  min-width: 1480px;
+}
+
+.procurement-receiving-readiness {
+  width: max-content;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  color: #245f48;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #e7f5ed;
+}
+
+.procurement-receiving-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.procurement-receiving-summary > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border-radius: 12px;
+  background: #f1f7f4;
+}
+
+.procurement-receiving-summary span {
+  color: #66776f;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.procurement-receiving-summary strong {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .procurement-receiving-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-receiving-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* AQUILA_PRODUCT_MASTER_COMPACT_ACTION_CARDS_20260710_START
+   Focused Product Master action-card height correction.
+   This intentionally does not modify Inventory analytics,
+   Product Inventory, Shelf, Procurement or global card rules. */
+
+.inventory-route-page .product-master-action-cards {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0.7rem 0 0.9rem;
+}
+
+.inventory-route-page
+  .product-master-action-cards > button {
+  display: flex;
+  min-width: 0;
+  min-height: 66px !important;
+  height: 66px !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.75rem !important;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.inventory-route-page
+  .product-master-action-cards > button strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+@media (max-width: 900px) {
+  .inventory-route-page
+    .product-master-action-cards {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .inventory-route-page
+    .product-master-action-cards > button {
+    min-height: 62px !important;
+    height: 62px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .inventory-route-page
+    .product-master-action-cards {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .inventory-route-page
+    .product-master-action-cards > button {
+    min-height: 58px !important;
+    height: 58px !important;
+    padding: 0.45rem 0.55rem !important;
+  }
+
+  .inventory-route-page
+    .product-master-action-cards > button strong {
+    font-size: 0.76rem;
+  }
+}
+
+/* AQUILA_PRODUCT_MASTER_COMPACT_ACTION_CARDS_20260710_END */
+
+
+/* AQUILA_PURCHASE_TYPE_FRONTEND_20260710
+   Core Product and General Item purchasing with controlled
+   Product Master quick creation. */
+
+.procurement-purchase-type-selector {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.procurement-purchase-type-selector > button {
+  display: grid;
+  min-width: 0;
+  min-height: 88px;
+  gap: 0.35rem;
+  align-content: center;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+
+.procurement-purchase-type-selector > button strong {
+  color: #17211c;
+  font-size: 0.9rem;
+}
+
+.procurement-purchase-type-selector > button span {
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.procurement-purchase-type-selector > button.active {
+  border-color:
+    var(--left-menu-accent, #4b5320);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(244, 247, 235, 0.98),
+      rgba(255, 255, 255, 0.98)
+    );
+  box-shadow:
+    0 0 0 2px rgba(75, 83, 32, 0.1);
+}
+
+.procurement-core-product-line {
+  position: relative;
+}
+
+.procurement-po-product-field {
+  position: relative;
+}
+
+.procurement-product-search-results {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  width: min(520px, 100%);
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.4rem;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+.procurement-product-search-results > button {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.procurement-product-search-results > button:hover,
+.procurement-product-search-results > button:focus-visible {
+  background: #f3f6ef;
+}
+
+.procurement-product-search-results strong,
+.procurement-selected-product strong {
+  color: #17211c;
+  font-size: 0.78rem;
+}
+
+.procurement-product-search-results span,
+.procurement-selected-product span {
+  color: #526174;
+  font-size: 0.7rem;
+}
+
+.procurement-product-search-results small,
+.procurement-selected-product small {
+  color: #77837c;
+  font-size: 0.65rem;
+}
+
+.procurement-selected-product {
+  display: grid;
+  gap: 0.12rem;
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(75, 83, 32, 0.24);
+  border-radius: 12px;
+  background: rgba(75, 83, 32, 0.06);
+}
+
+.procurement-product-missing {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 12px;
+  background: #fffbeb;
+}
+
+.procurement-product-missing strong {
+  color: #92400e;
+  font-size: 0.76rem;
+}
+
+.procurement-product-missing span,
+.procurement-product-missing small {
+  color: #785116;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.procurement-product-missing button {
+  width: fit-content;
+  min-height: 36px;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(146, 64, 14, 0.24);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.procurement-general-item-line {
+  grid-template-columns:
+    minmax(220px, 1.5fr)
+    repeat(4, minmax(105px, 0.75fr))
+    minmax(115px, 0.8fr)
+    minmax(100px, 0.7fr)
+    minmax(100px, 0.7fr)
+    minmax(180px, 1fr)
+    auto;
+}
+
+.procurement-po-line-notes {
+  min-width: 0;
+}
+
+.procurement-quick-product-form {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.procurement-quick-product-form > label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.procurement-quick-product-form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.procurement-quick-product-actions {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1180px) {
+  .procurement-general-item-line {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .procurement-general-item-line
+    .procurement-po-product-field,
+  .procurement-general-item-line
+    .procurement-po-line-notes {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-purchase-type-selector,
+  .procurement-quick-product-form {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-purchase-type-selector > button {
+    min-height: 76px;
+  }
+
+  .procurement-general-item-line {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-general-item-line
+    .procurement-po-product-field,
+  .procurement-general-item-line
+    .procurement-po-line-notes {
+    grid-column: 1 / -1;
+  }
+
+  .procurement-quick-product-actions {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-general-item-line {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-general-item-line
+    .procurement-po-product-field,
+  .procurement-general-item-line
+    .procurement-po-line-notes {
+    grid-column: auto;
+  }
+
+  .procurement-purchase-type-selector > button {
+    min-height: 68px;
+    padding: 0.7rem;
+  }
+
+  .procurement-product-search-results {
+    position: static;
+    width: 100%;
+    margin-top: 0.4rem;
+    box-shadow: none;
+  }
+}
+
+/* AQUILA_PURCHASE_TYPE_FRONTEND_20260710_END */
+
+
+/* AQUILA_INVENTORY_PRODUCT_MASTER_QUICK_CREATE_20260710
+   Guided Product Master creation from Inventory receiving.
+   Inventory receiving draft values remain in component state
+   until the missing pharmaceutical product is created. */
+
+.inventory-product-master-missing-result {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(217, 119, 6, 0.32);
+  border-radius: 12px;
+  background: #fffbeb;
+  text-align: left;
+}
+
+.inventory-product-master-missing-result strong {
+  color: #92400e;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.inventory-product-master-missing-result span,
+.inventory-product-master-missing-result small {
+  color: #785116;
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+.inventory-product-master-missing-result > button {
+  width: fit-content;
+  min-height: 36px;
+  padding: 0.48rem 0.68rem;
+  border: 1px solid rgba(146, 64, 14, 0.26);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.inventory-product-master-missing-result > button:hover,
+.inventory-product-master-missing-result > button:focus-visible {
+  border-color: rgba(146, 64, 14, 0.52);
+  background: #fff7ed;
+}
+
+.product-master-inventory-return-context {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(75, 83, 32, 0.26);
+  border-radius: 13px;
+  background: rgba(75, 83, 32, 0.07);
+}
+
+.product-master-inventory-return-context strong {
+  color: #343b18;
+  font-size: 0.78rem;
+}
+
+.product-master-inventory-return-context span {
+  color: #59612f;
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 430px) {
+  .inventory-product-master-missing-result,
+  .product-master-inventory-return-context {
+    padding: 0.65rem;
+  }
+
+  .inventory-product-master-missing-result > button {
+    width: 100%;
+  }
+}
+
+/* AQUILA_INVENTORY_PRODUCT_MASTER_QUICK_CREATE_20260710_END */
+
+/* AQUILA_REAL_INVENTORY_VALUE_TREND_20260710
+   Four compact Inventory analytics cards with a real,
+   movement-backed Sunday-to-Saturday RWF value trend. */
+
+.inventory-home-chart-grid--four {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.inventory-home-chart-grid--four
+  .inventory-home-chart-panel {
+  grid-column: auto;
+  min-width: 0;
+  min-height: 218px;
+  padding: 0.9rem;
+}
+
+.inventory-home-chart-grid--four
+  .inventory-home-chart-panel > header {
+  margin-bottom: 0.65rem;
+}
+
+.inventory-home-chart-grid--four
+  .inventory-home-chart-panel > header small {
+  font-size: 0.64rem;
+}
+
+.inventory-home-chart-grid--four
+  .inventory-home-chart-panel > header strong {
+  font-size: 0.88rem;
+}
+
+.inventory-home-chart-panel--compact {
+  min-height: 190px !important;
+}
+
+.inventory-horizontal-chart--compact {
+  gap: 0.58rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-row {
+  gap: 0.3rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-row > div:first-child {
+  gap: 0.3rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-row span {
+  font-size: 0.63rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-row strong {
+  font-size: 0.74rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-track {
+  height: 5px;
+}
+
+.inventory-risk-chart-layout--compact {
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+}
+
+.inventory-risk-donut--compact {
+  width: 84px;
+  height: 84px;
+}
+
+.inventory-risk-donut--compact > span {
+  width: 54px;
+  height: 54px;
+}
+
+.inventory-risk-donut--compact > span strong {
+  font-size: 0.82rem;
+}
+
+.inventory-risk-donut--compact > span small {
+  font-size: 0.56rem;
+}
+
+.inventory-risk-chart-legend--compact {
+  gap: 0.42rem;
+}
+
+.inventory-risk-chart-legend--compact > span {
+  gap: 0.28rem;
+  font-size: 0.62rem;
+}
+
+.inventory-risk-chart-legend--compact > span strong {
+  margin-left: auto;
+  font-size: 0.66rem;
+}
+
+.inventory-home-chart-panel--currency {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(249, 250, 246, 0.98),
+      rgba(255, 255, 255, 0.98)
+    );
+}
+
+.inventory-currency-value {
+  display: grid;
+  gap: 0.45rem;
+  align-content: center;
+  min-height: 138px;
+}
+
+.inventory-currency-value > span {
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.inventory-currency-value > strong {
+  color: #27310e;
+  font-size: clamp(1.15rem, 1.65vw, 1.65rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.inventory-currency-value > small {
+  color: #718096;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.inventory-weekly-value-summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+
+.inventory-weekly-value-summary > strong {
+  color: #27310e;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.inventory-value-direction {
+  display: inline-grid;
+  gap: 0.12rem;
+  justify-items: end;
+  padding: 0.3rem 0.42rem;
+  border-radius: 9px;
+  font-size: 0.62rem;
+  font-weight: 850;
+}
+
+.inventory-value-direction small {
+  font-size: 0.55rem;
+  font-weight: 750;
+}
+
+.inventory-value-direction.is-growing {
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.inventory-value-direction.is-reducing {
+  background: #fff1f2;
+  color: #b42318;
+}
+
+.inventory-value-direction.is-stable {
+  background: #f2f4f7;
+  color: #475467;
+}
+
+.inventory-weekly-value-chart {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.inventory-weekly-value-chart svg {
+  display: block;
+  width: 100%;
+  height: 88px;
+  overflow: visible;
+}
+
+.inventory-weekly-value-chart polyline {
+  fill: none;
+  stroke: #4b5320;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.inventory-weekly-value-chart circle {
+  fill: #ffffff;
+  stroke: #4b5320;
+  stroke-width: 1.8;
+}
+
+.inventory-weekly-value-labels {
+  display: grid;
+  grid-template-columns:
+    repeat(7, minmax(0, 1fr));
+  gap: 0.12rem;
+}
+
+.inventory-weekly-value-labels small {
+  color: #667085;
+  font-size: 0.57rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.inventory-weekly-value-note {
+  color: #9a6700;
+  font-size: 0.58rem;
+  line-height: 1.35;
+}
+
+.inventory-weekly-value-empty {
+  display: grid;
+  gap: 0.48rem;
+  min-height: 132px;
+  align-content: center;
+  padding: 0.7rem;
+  border: 1px dashed rgba(102, 112, 133, 0.32);
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.inventory-weekly-value-empty > strong {
+  color: #344054;
+  font-size: 0.7rem;
+}
+
+.inventory-weekly-value-empty > span {
+  color: #667085;
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1180px) {
+  .inventory-home-chart-grid--four {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-home-chart-grid--four
+    .inventory-home-chart-panel--bars {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .inventory-home-chart-grid--four {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-home-chart-grid--four
+    .inventory-home-chart-panel {
+    min-height: 0;
+  }
+
+  .inventory-risk-chart-layout--compact {
+    grid-template-columns: auto 1fr;
+    justify-items: stretch;
+  }
+}
+
+@media (max-width: 430px) {
+  .inventory-home-chart-grid--four
+    .inventory-home-chart-panel {
+    padding: 0.78rem;
+  }
+
+  .inventory-risk-chart-layout--compact {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .inventory-risk-chart-legend--compact {
+    width: 100%;
+  }
+
+  .inventory-weekly-value-chart svg {
+    height: 78px;
+  }
+
+  .inventory-weekly-value-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inventory-value-direction {
+    width: fit-content;
+    justify-items: start;
+  }
+}
+
+/* AQUILA_REAL_INVENTORY_VALUE_TREND_20260710_END */
+
+/* AQUILA_GENERAL_ITEMS_MANAGEMENT_20260710_START
+   Dedicated non-sale operational stock domain under Procurement. */
+
+.general-items-workspace {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.general-items-workspace-header,
+.general-items-panel,
+.general-items-summary-grid article {
+  border: 1px solid rgba(79, 91, 56, 0.14);
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(35, 47, 29, 0.06);
+}
+
+.general-items-workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 18px;
+  padding: 1.1rem 1.2rem;
+}
+
+.general-items-workspace-header h2,
+.general-items-panel h3 {
+  margin: 0.2rem 0 0;
+}
+
+.general-items-workspace-header p {
+  max-width: 780px;
+  margin: 0.45rem 0 0;
+  color: var(--muted-text, #65705f);
+  line-height: 1.55;
+}
+
+.general-items-workspace-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.25rem 0;
+}
+
+.general-items-workspace-navigation button {
+  min-height: 38px;
+  border: 1px solid rgba(79, 91, 56, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.55rem 0.9rem;
+  color: #35402d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.general-items-workspace-navigation button.active {
+  border-color: #4b5320;
+  background: #4b5320;
+  color: #fff;
+}
+
+.general-items-message {
+  border-radius: 12px;
+  padding: 0.8rem 0.95rem;
+  font-weight: 700;
+}
+
+.general-items-message.success {
+  border: 1px solid rgba(28, 126, 73, 0.25);
+  background: rgba(28, 126, 73, 0.08);
+  color: #17633c;
+}
+
+.general-items-message.error {
+  border: 1px solid rgba(171, 47, 47, 0.25);
+  background: rgba(171, 47, 47, 0.08);
+  color: #8d2727;
+}
+
+.general-items-summary-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.general-items-summary-grid article {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  min-height: 118px;
+  border-radius: 15px;
+  padding: 0.9rem;
+}
+
+.general-items-summary-grid span {
+  color: #687260;
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.general-items-summary-grid strong {
+  margin-top: 0.4rem;
+  color: #283120;
+  font-size: 1.45rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.general-items-summary-grid small {
+  margin-top: 0.45rem;
+  color: #7b8475;
+  line-height: 1.35;
+}
+
+.general-items-overview-grid,
+.general-items-two-column {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.general-items-panel {
+  min-width: 0;
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.general-items-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-bottom: 0.9rem;
+}
+
+.general-items-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(75, 83, 32, 0.09);
+  color: #4b5320;
+  font-weight: 800;
+}
+
+.general-items-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.general-items-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.general-items-form label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  color: #43503b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.general-items-form input,
+.general-items-form select,
+.general-items-form textarea,
+.general-items-register-filters input,
+.general-items-register-filters select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(79, 91, 56, 0.2);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.68rem 0.72rem;
+  color: #263021;
+  font: inherit;
+}
+
+.general-items-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.general-items-checkbox {
+  display: flex !important;
+  align-items: center;
+  align-self: end;
+  min-height: 42px;
+  border: 1px solid rgba(79, 91, 56, 0.14);
+  border-radius: 10px;
+  padding: 0.65rem;
+  background: rgba(75, 83, 32, 0.035);
+}
+
+.general-items-checkbox input {
+  width: auto;
+  margin: 0;
+}
+
+.general-items-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.general-items-form-actions button {
+  min-height: 40px;
+}
+
+.general-items-register-header {
+  align-items: end !important;
+}
+
+.general-items-register-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(190px, 1fr)
+    minmax(160px, 0.7fr);
+  gap: 0.6rem;
+  width: min(520px, 100%);
+}
+
+.general-items-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(79, 91, 56, 0.11);
+  border-radius: 13px;
+}
+
+.general-items-table-scroll table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+}
+
+.general-items-table-scroll th,
+.general-items-table-scroll td {
+  padding: 0.72rem 0.78rem;
+  border-bottom: 1px solid rgba(79, 91, 56, 0.09);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.general-items-table-scroll th {
+  background: rgba(75, 83, 32, 0.045);
+  color: #65705d;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.general-items-table-scroll td {
+  color: #35402e;
+  font-size: 0.79rem;
+}
+
+.general-items-table-scroll td strong,
+.general-items-table-scroll td small {
+  display: block;
+}
+
+.general-items-table-scroll td small {
+  max-width: 260px;
+  margin-top: 0.2rem;
+  overflow: hidden;
+  color: #7b8475;
+  text-overflow: ellipsis;
+}
+
+.general-items-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  background: rgba(75, 83, 32, 0.09);
+  color: #4b5320;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: capitalize;
+}
+
+.general-items-status.is-active {
+  background: rgba(28, 126, 73, 0.1);
+  color: #17633c;
+}
+
+.general-items-status.is-inactive,
+.general-items-status.is-discontinued {
+  background: rgba(126, 126, 126, 0.1);
+  color: #60655d;
+}
+
+.general-items-compact-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.general-items-compact-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-width: 0;
+  border: 1px solid rgba(79, 91, 56, 0.1);
+  border-radius: 12px;
+  padding: 0.7rem 0.75rem;
+  background: rgba(75, 83, 32, 0.025);
+}
+
+.general-items-compact-list span {
+  display: grid;
+  min-width: 0;
+}
+
+.general-items-compact-list strong,
+.general-items-compact-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.general-items-compact-list small {
+  margin-top: 0.18rem;
+  color: #778170;
+}
+
+.general-items-compact-list b {
+  flex: 0 0 auto;
+  color: #4b5320;
+}
+
+@media (max-width: 1280px) {
+  .general-items-summary-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .general-items-form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .general-items-workspace-header {
+    display: grid;
+  }
+
+  .general-items-overview-grid,
+  .general-items-two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .general-items-register-header {
+    align-items: stretch !important;
+    display: grid !important;
+  }
+
+  .general-items-register-filters {
+    width: 100%;
+  }
+}
+
+@media (max-width: 620px) {
+  .general-items-summary-grid,
+  .general-items-form-grid,
+  .general-items-register-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .general-items-workspace-navigation {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .general-items-workspace-navigation button {
+    border-radius: 10px;
+  }
+
+  .general-items-panel,
+  .general-items-workspace-header {
+    padding: 0.82rem;
+  }
+}
+
+/* AQUILA_GENERAL_ITEMS_MANAGEMENT_20260710_END */
+
+/* AQUILA_GENERAL_ITEM_MASTER_PO_20260710_START
+   General Items Purchase Orders use controlled General Item Master
+   records instead of free-text item definitions. */
+
+.procurement-general-master-line {
+  grid-template-columns:
+    minmax(280px, 2fr)
+    minmax(270px, 1.45fr)
+    repeat(4, minmax(110px, 0.72fr))
+    minmax(180px, 1fr)
+    auto;
+}
+
+.procurement-general-item-search-results {
+  z-index: 18;
+}
+
+.procurement-selected-general-item {
+  border-color: rgba(75, 83, 32, 0.2);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(75, 83, 32, 0.08),
+      rgba(75, 83, 32, 0.025)
+    );
+}
+
+.procurement-general-item-master-facts {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-self: end;
+}
+
+.procurement-general-item-master-facts > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  min-height: 58px;
+  border: 1px solid rgba(79, 91, 56, 0.13);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(75, 83, 32, 0.035);
+}
+
+.procurement-general-item-master-facts span {
+  color: #75806d;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.procurement-general-item-master-facts strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #34402d;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1440px) {
+  .procurement-general-master-line {
+    grid-template-columns:
+      minmax(260px, 1.8fr)
+      minmax(230px, 1.3fr)
+      repeat(2, minmax(110px, 0.7fr));
+  }
+
+  .procurement-general-master-line
+    .procurement-po-line-notes {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 900px) {
+  .procurement-general-master-line {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-general-master-line
+    .procurement-po-product-field,
+  .procurement-general-item-master-facts {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .procurement-general-master-line,
+  .procurement-general-item-master-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-general-master-line
+    .procurement-po-line-notes {
+    grid-column: auto;
+  }
+}
+
+/* AQUILA_GENERAL_ITEM_MASTER_PO_20260710_END */
+
+/* AQUILA_INVENTORY_VALUE_BY_CATEGORY_20260711_START
+   Category valuation is added inside the existing Inventory Risk Mix
+   card without removing low-stock, near-expiry, or healthy-share data. */
+
+.inventory-risk-category-values {
+  display: grid;
+  gap: 0.48rem;
+  margin-top: 0.72rem;
+  padding-top: 0.68rem;
+  border-top: 1px solid rgba(79, 91, 56, 0.12);
+}
+
+.inventory-risk-category-values > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.inventory-risk-category-values > header > div {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.inventory-risk-category-values > header span {
+  color: #3d4935;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.inventory-risk-category-values > header small {
+  color: #7a8474;
+  font-size: 0.62rem;
+}
+
+.inventory-risk-category-values > header > strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 23px;
+  border-radius: 999px;
+  background: rgba(75, 83, 32, 0.09);
+  color: #4b5320;
+  font-size: 0.68rem;
+}
+
+.inventory-risk-category-list {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.inventory-risk-category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+  border-radius: 9px;
+  padding: 0.43rem 0.52rem;
+  background: rgba(75, 83, 32, 0.035);
+}
+
+.inventory-risk-category-row > span {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.inventory-risk-category-row strong,
+.inventory-risk-category-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-risk-category-row strong {
+  color: #394432;
+  font-size: 0.68rem;
+}
+
+.inventory-risk-category-row small {
+  color: #7b8475;
+  font-size: 0.59rem;
+}
+
+.inventory-risk-category-row > b {
+  flex: 0 0 auto;
+  color: #4b5320;
+  font-size: 0.69rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.inventory-risk-category-empty {
+  margin: 0;
+  border-radius: 9px;
+  padding: 0.52rem;
+  background: rgba(75, 83, 32, 0.035);
+  color: #737d6b;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.inventory-risk-category-more,
+.inventory-risk-category-warning {
+  display: block;
+  color: #7a8474;
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.inventory-risk-category-warning {
+  color: #886b25;
+}
+
+@media (max-width: 560px) {
+  .inventory-risk-category-row {
+    align-items: flex-start;
+  }
+
+  .inventory-risk-category-row > b {
+    max-width: 44%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* AQUILA_INVENTORY_VALUE_BY_CATEGORY_20260711_END */
+
+/* AQUILA_GENERAL_ITEM_PO_RECEIVING_UI_20260711_START
+   Dedicated receiving for General Item Stock. */
+
+.general-po-receiving-workspace {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+  border: 1px solid rgba(75, 83, 32, 0.14);
+  border-radius: 16px;
+  padding: 1rem;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(75, 83, 32, 0.055),
+      rgba(255, 255, 255, 0.96)
+    );
+}
+
+.general-po-receiving-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.general-po-receiving-header > div:first-child {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.general-po-receiving-header span {
+  color: #727c68;
+  font-size: 0.69rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.general-po-receiving-header h2 {
+  margin: 0;
+  color: #34402e;
+  font-size: 1.08rem;
+}
+
+.general-po-receiving-header p {
+  max-width: 720px;
+  margin: 0;
+  color: #697263;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.general-po-receiving-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+}
+
+.general-po-latest-receipt,
+.general-po-receiving-context,
+.general-po-line-quantities {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.general-po-latest-receipt > div,
+.general-po-receiving-context > div,
+.general-po-line-quantities > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  border: 1px solid rgba(75, 83, 32, 0.11);
+  border-radius: 10px;
+  padding: 0.58rem 0.65rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.general-po-latest-receipt span,
+.general-po-receiving-context span,
+.general-po-line-quantities span {
+  color: #798272;
+  font-size: 0.63rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.general-po-latest-receipt strong,
+.general-po-receiving-context strong,
+.general-po-line-quantities strong {
+  overflow: hidden;
+  color: #384332;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.general-po-receiving-table-scroll {
+  overflow-x: auto;
+  border: 1px solid rgba(75, 83, 32, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.general-po-receiving-table-scroll table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+.general-po-receiving-table-scroll th,
+.general-po-receiving-table-scroll td {
+  padding: 0.62rem 0.7rem;
+  border-bottom: 1px solid rgba(75, 83, 32, 0.08);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.general-po-receiving-table-scroll th {
+  color: #687261;
+  font-size: 0.65rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.general-po-receiving-table-scroll td {
+  color: #485242;
+  font-size: 0.73rem;
+}
+
+.general-po-receiving-table-scroll td strong,
+.general-po-receiving-table-scroll td small {
+  display: block;
+}
+
+.general-po-receiving-table-scroll td small {
+  margin-top: 0.14rem;
+  color: #7b8475;
+  font-size: 0.62rem;
+}
+
+@media (max-width: 900px) {
+  .general-po-receiving-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .general-po-latest-receipt,
+  .general-po-receiving-context,
+  .general-po-line-quantities {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .general-po-receiving-workspace {
+    padding: 0.78rem;
+  }
+
+  .general-po-latest-receipt,
+  .general-po-receiving-context,
+  .general-po-line-quantities {
+    grid-template-columns: 1fr;
+  }
+
+  .general-po-receiving-actions,
+  .general-po-receiving-actions button {
+    width: 100%;
+  }
+}
+
+/* AQUILA_GENERAL_ITEM_PO_RECEIVING_UI_20260711_END */

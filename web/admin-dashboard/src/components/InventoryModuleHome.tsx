@@ -7,8 +7,8 @@ import {
 
 import {
   getPharmaInventorySummary,
-  getPharmaInventoryValuationReport,
   type AccessProfile,
+  type PharmaInventorySummaryResponse,
 } from '../lib/api';
 
 import type {
@@ -337,16 +337,26 @@ function formatRwf(value: number | null): string {
       ).format(value)}`;
 }
 
+
+function formatInventoryCategoryValue(
+  value: number,
+): string {
+  return new Intl.NumberFormat('en-RW', {
+    style: 'currency',
+    currency: 'RWF',
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
+
 export function InventoryModuleHome({
   token,
   profile,
   onOpenWorkspace,
 }: InventoryModuleHomeProps) {
   const [summary, setSummary] =
-    useState<unknown>(null);
-
-  const [valuation, setValuation] =
-    useState<unknown>(null);
+    useState<PharmaInventorySummaryResponse | null>(
+      null,
+    );
 
   const [analyticsLoading, setAnalyticsLoading] =
     useState(true);
@@ -423,7 +433,6 @@ export function InventoryModuleHome({
 
       if (!tenantSlug) {
         setSummary(null);
-        setValuation(null);
         setAnalyticsError(
           'Inventory analytics require an assigned tenant.',
         );
@@ -431,44 +440,30 @@ export function InventoryModuleHome({
         return;
       }
 
-      const [summaryResult, valuationResult] =
-        await Promise.allSettled([
-          getPharmaInventorySummary(
+      try {
+        const response =
+          await getPharmaInventorySummary(
             token,
             tenantSlug,
-          ),
-          getPharmaInventoryValuationReport(
-            token,
-            tenantSlug,
-          ),
-        ]);
+          );
 
-      if (cancelled) {
-        return;
+        if (!cancelled) {
+          setSummary(response);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setSummary(null);
+          setAnalyticsError(
+            loadError instanceof Error
+              ? loadError.message
+              : 'Inventory analytics are temporarily unavailable.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setAnalyticsLoading(false);
+        }
       }
-
-      if (summaryResult.status === 'fulfilled') {
-        setSummary(summaryResult.value);
-      } else {
-        setSummary(null);
-      }
-
-      if (valuationResult.status === 'fulfilled') {
-        setValuation(valuationResult.value);
-      } else {
-        setValuation(null);
-      }
-
-      if (
-        summaryResult.status === 'rejected' &&
-        valuationResult.status === 'rejected'
-      ) {
-        setAnalyticsError(
-          'Inventory analytics are temporarily unavailable.',
-        );
-      }
-
-      setAnalyticsLoading(false);
     }
 
     void loadAnalytics();
@@ -508,12 +503,13 @@ export function InventoryModuleHome({
       ) ?? 0;
 
       const stockValue = findNumericSignal(
-        valuation,
+        summary,
         [
+          'estimated_stock_retail_value',
+          'estimated_stock_value',
           'total_inventory_value',
           'inventory_value',
           'total_stock_value',
-          'estimated_stock_value',
           'total_value',
         ],
       ) ?? 0;
@@ -548,7 +544,7 @@ export function InventoryModuleHome({
           detail: 'Current estimated stock value',
         },
       ];
-    }, [summary, valuation]);
+    }, [summary]);
 
   const visibleAnalyticsMetrics =
     analyticsMetrics.filter(
@@ -615,6 +611,96 @@ export function InventoryModuleHome({
     0,
     100 - lowStockShare - nearExpiryShare,
   );
+
+  // AQUILA_REAL_INVENTORY_VALUE_TREND_20260710
+  const weeklyValueTrend =
+    summary?.summary
+      .inventory_value_weekly_trend ??
+    null;
+
+  const weeklyValuePoints =
+    weeklyValueTrend?.points ?? [];
+
+  const weeklyLabels =
+    weeklyValuePoints.length === 7
+      ? weeklyValuePoints.map(
+          (point) => point.label,
+        )
+      : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  const numericWeeklyValues =
+    weeklyValuePoints
+      .map((point) => point.value)
+      .filter(
+        (value): value is number =>
+          typeof value === 'number' &&
+          Number.isFinite(value),
+      );
+
+  const weeklyValueMinimum =
+    numericWeeklyValues.length > 0
+      ? Math.min(...numericWeeklyValues)
+      : 0;
+
+  const weeklyValueMaximum =
+    numericWeeklyValues.length > 0
+      ? Math.max(...numericWeeklyValues)
+      : 0;
+
+  const weeklyValueRange = Math.max(
+    weeklyValueMaximum -
+      weeklyValueMinimum,
+    1,
+  );
+
+  const weeklyPolylinePoints =
+    weeklyValuePoints
+      .map((point, index) => {
+        if (point.value === null) {
+          return null;
+        }
+
+        const x = 8 + index * 17;
+        const y =
+          54 -
+          (
+            (
+              point.value -
+              weeklyValueMinimum
+            ) /
+            weeklyValueRange
+          ) *
+            42;
+
+        return `${x},${y}`;
+      })
+      .filter(
+        (point): point is string =>
+          point !== null,
+      )
+      .join(' ');
+
+  const trendDirection =
+    weeklyValueTrend?.direction ??
+    'stable';
+
+  const trendDirectionLabel =
+    trendDirection === 'growing'
+      ? 'Growing'
+      : trendDirection === 'reducing'
+        ? 'Reducing'
+        : 'Stable';
+
+  const trendDelta =
+    weeklyValueTrend?.delta_value ?? 0;
+
+  const inventoryValueByCategory =
+    summary?.summary
+      .inventory_value_by_category ?? [];
+
+  const displayedInventoryCategoryValues =
+    inventoryValueByCategory.slice(0, 6);
+
 
   return (
     <section
@@ -806,15 +892,15 @@ export function InventoryModuleHome({
           )}
 
           {!analyticsLoading && (
-            <div className="inventory-home-chart-grid">
+            <div className="inventory-home-chart-grid inventory-home-chart-grid--four">
               {visibleCountMetrics.length > 0 && (
-                <article className="inventory-home-chart-panel inventory-home-chart-panel--bars">
+                <article className="inventory-home-chart-panel inventory-home-chart-panel--bars inventory-home-chart-panel--compact">
                   <header>
                     <small>Live stock profile</small>
                     <strong>Inventory Coverage</strong>
                   </header>
 
-                  <div className="inventory-horizontal-chart">
+                  <div className="inventory-horizontal-chart inventory-horizontal-chart--compact">
                     {visibleCountMetrics.map((metric) => (
                       <div
                         key={metric.key}
@@ -854,9 +940,9 @@ export function InventoryModuleHome({
                     <strong>Inventory Risk Mix</strong>
                   </header>
 
-                  <div className="inventory-risk-chart-layout">
+                  <div className="inventory-risk-chart-layout inventory-risk-chart-layout--compact">
                     <div
-                      className="inventory-risk-donut"
+                      className="inventory-risk-donut inventory-risk-donut--compact"
                       style={{
                         '--inventory-low-stock-share':
                           `${lowStockShare}%`,
@@ -876,13 +962,15 @@ export function InventoryModuleHome({
                       </span>
                     </div>
 
-                    <div className="inventory-risk-chart-legend">
+                    <div className="inventory-risk-chart-legend inventory-risk-chart-legend--compact">
                       {metricVisibility['low-stock'] && (
                         <span className="is-low-stock">
                           <i />
                           Low stock
                           <strong>
-                            {formatNumber(lowStockAmount)}
+                            {formatNumber(
+                              lowStockAmount,
+                            )}
                           </strong>
                         </span>
                       )}
@@ -892,7 +980,9 @@ export function InventoryModuleHome({
                           <i />
                           Near expiry
                           <strong>
-                            {formatNumber(nearExpiryAmount)}
+                            {formatNumber(
+                              nearExpiryAmount,
+                            )}
                           </strong>
                         </span>
                       )}
@@ -906,28 +996,244 @@ export function InventoryModuleHome({
                       </span>
                     </div>
                   </div>
+
+
+                  {/* AQUILA_INVENTORY_VALUE_BY_CATEGORY_20260711
+                      Existing Risk Mix information remains above. */}
+                  <div className="inventory-risk-category-values">
+                    <header>
+                      <div>
+                        <span>
+                          Inventory value by category
+                        </span>
+
+                        <small>
+                          Retail selling-price basis
+                        </small>
+                      </div>
+
+                      <strong>
+                        {inventoryValueByCategory.length}
+                      </strong>
+                    </header>
+
+                    {displayedInventoryCategoryValues.length ===
+                    0 ? (
+                      <p className="inventory-risk-category-empty">
+                        Category values will appear when
+                        categorized stock with selling prices
+                        is available.
+                      </p>
+                    ) : (
+                      <div className="inventory-risk-category-list">
+                        {displayedInventoryCategoryValues.map(
+                          (category) => (
+                            <div
+                              key={category.category_name}
+                              className="inventory-risk-category-row"
+                            >
+                              <span>
+                                <strong>
+                                  {category.category_name}
+                                </strong>
+
+                                <small>
+                                  {category.quantity_on_hand.toLocaleString(
+                                    'en-RW',
+                                    {
+                                      maximumFractionDigits: 3,
+                                    },
+                                  )}{' '}
+                                  units ·{' '}
+                                  {category.priced_batches_count}/
+                                  {category.stock_batches_count}{' '}
+                                  batches priced
+                                </small>
+                              </span>
+
+                              <b>
+                                {formatInventoryCategoryValue(
+                                  category.inventory_value,
+                                )}
+                              </b>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    )}
+
+                    {inventoryValueByCategory.length > 6 && (
+                      <small className="inventory-risk-category-more">
+                        Showing the six highest-value
+                        categories.
+                      </small>
+                    )}
+
+                    {inventoryValueByCategory.some(
+                      (category) =>
+                        category.missing_price_batches_count >
+                        0,
+                    ) && (
+                      <small className="inventory-risk-category-warning">
+                        Batches without selling prices are
+                        excluded from category value totals.
+                      </small>
+                    )}
+                  </div>
+</article>
+              )}
+
+              {valuationMetric && (
+                <article className="inventory-home-chart-panel inventory-home-chart-panel--currency">
+                  <header>
+                    <small>Current financial position</small>
+                    <strong>Inventory Currency Value</strong>
+                  </header>
+
+                  <div className="inventory-currency-value">
+                    <span>Retail valuation</span>
+
+                    <strong>
+                      {valuationMetric.value}
+                    </strong>
+
+                    <small>
+                      Live quantity on hand multiplied by recorded batch selling prices.
+                    </small>
+                  </div>
                 </article>
               )}
 
               {valuationMetric && (
-                <article className="inventory-home-chart-panel inventory-home-chart-panel--value">
+                <article className="inventory-home-chart-panel inventory-home-chart-panel--weekly-trend">
                   <header>
-                    <small>Current financial position</small>
-                    <strong>Stock Value Gauge</strong>
+                    <small>Recorded movement history</small>
+                    <strong>Weekly Inventory Value</strong>
                   </header>
 
-                  <div className="inventory-value-chart">
-                    <div
-                      className="inventory-value-plot"
-                      aria-label="Inventory value trend presentation"
-                    >
-                      <span />
-                      <i />
-                    </div>
+                  <div className="inventory-weekly-value-summary">
+                    <strong>
+                      {valuationMetric.value}
+                    </strong>
 
-                    <strong>{valuationMetric.value}</strong>
-                    <small>{valuationMetric.detail}</small>
+                    <span
+                      className={`inventory-value-direction is-${trendDirection}`}
+                    >
+                      {trendDirectionLabel}
+
+                      <small>
+                        {trendDelta === 0
+                          ? 'No net value change'
+                          : `${trendDelta > 0 ? '+' : ''}${formatRwf(
+                              trendDelta,
+                            )}`}
+                      </small>
+                    </span>
                   </div>
+
+                  {weeklyValueTrend?.history_available ? (
+                    <div
+                      className="inventory-weekly-value-chart"
+                      aria-label="Sunday to Saturday Inventory currency-value trend"
+                    >
+                      <svg
+                        viewBox="0 0 116 64"
+                        role="img"
+                      >
+                        <polyline
+                          points={
+                            weeklyPolylinePoints
+                          }
+                        />
+
+                        {weeklyValuePoints.map(
+                          (point, index) => {
+                            if (
+                              point.value === null
+                            ) {
+                              return null;
+                            }
+
+                            const x =
+                              8 + index * 17;
+
+                            const y =
+                              54 -
+                              (
+                                (
+                                  point.value -
+                                  weeklyValueMinimum
+                                ) /
+                                weeklyValueRange
+                              ) *
+                                42;
+
+                            return (
+                              <circle
+                                key={point.date}
+                                cx={x}
+                                cy={y}
+                                r="2.5"
+                              />
+                            );
+                          },
+                        )}
+                      </svg>
+
+                      <div className="inventory-weekly-value-labels">
+                        {weeklyLabels.map(
+                          (label, index) => (
+                            <small
+                              key={`${label}-${index}`}
+                            >
+                              {label}
+                            </small>
+                          ),
+                        )}
+                      </div>
+
+                      {(
+                        weeklyValueTrend
+                          .unmapped_movement_count >
+                        0
+                      ) && (
+                        <small className="inventory-weekly-value-note">
+                          {
+                            weeklyValueTrend
+                              .unmapped_movement_count
+                          } movement
+                          {weeklyValueTrend
+                            .unmapped_movement_count ===
+                          1
+                            ? ''
+                            : 's'}{' '}
+                          had no usable batch price.
+                        </small>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="inventory-weekly-value-empty">
+                      <strong>
+                        No dated stock movement history this week.
+                      </strong>
+
+                      <span>
+                        The current Inventory value is real, but no line is drawn until receiving, dispensing or approved return movements are recorded.
+                      </span>
+
+                      <div className="inventory-weekly-value-labels">
+                        {weeklyLabels.map(
+                          (label, index) => (
+                            <small
+                              key={`${label}-${index}`}
+                            >
+                              {label}
+                            </small>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </article>
               )}
             </div>
