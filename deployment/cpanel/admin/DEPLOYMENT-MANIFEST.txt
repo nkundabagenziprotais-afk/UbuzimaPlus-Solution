@@ -1,0 +1,46 @@
+============================================================
+UBUZIMA+ CPANEL PRECOMPILED ADMIN RELEASE
+============================================================
+
+Source branch:
+ui/procurement-professional-customization-20260710
+
+Source commit:
+78157e9a2a6e153c102e00f6668f03a20491a076
+
+Deployment branch:
+deploy/procurement-general-items-20260711
+
+Build timestamp:
+2026-07-11T14:06:14Z
+
+Build platform:
+Darwin arm64
+
+Node:
+v26.3.1
+
+npm:
+11.16.0
+
+Frontend base path:
+/admin/
+
+Production destination:
+/home/inzoeqqx/ubuzimaplus.com/backend/public/admin
+
+Artifact files:
+6
+
+Artifact size:
+2.4M
+
+Production dependency handling:
+- Existing backend/vendor retained
+- Composer is not required on cPanel
+- Node.js is not required on cPanel
+- Precompiled assets must pass SHA-256 validation
+
+Required migrations:
+2026_07_10_000002_add_purchase_types_and_general_items
+2026_07_10_000003_create_general_items_management_foundation
