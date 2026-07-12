@@ -78,10 +78,20 @@ export type AccessProfile = {
   }>;
 };
 
+export type LoginExperience = {
+  first_login: boolean;
+  title: 'Welcome' | 'Welcome Back';
+  user_name: string;
+  message: string;
+  trusted_device_used: boolean;
+  authenticated_at: string;
+};
+
 export type LoginResponse = {
   token_type: 'Bearer';
   access_token: string;
   profile: AccessProfile;
+  login_experience: LoginExperience;
 } | {
   status: 'two_factor_setup_required';
   message: string;
@@ -112,6 +122,7 @@ export type TwoFactorVerifyResponse = {
     trusted_device_token: string;
     trusted_until: string;
   } | null;
+  login_experience: LoginExperience;
 };
 
 export type TwoFactorStatusResponse = {
@@ -3528,10 +3539,22 @@ export type TenantSecurityUser = {
   phone?: string | null;
   job_title?: string | null;
   status?: string | null;
+  security?: {
+    two_factor_required: boolean;
+    two_factor_enabled: boolean;
+    must_change_password: boolean;
+    last_login_at: string | null;
+    trusted_devices_count: number;
+    active_sessions_count: number;
+  };
   roles: Array<{
     id: number;
     name: string;
     code: string;
+    stored_code?: string;
+    access_assignment_mode?:
+      | 'predefined_role'
+      | 'granular_permissions';
     permissions: string[];
   }>;
 };
@@ -3558,10 +3581,14 @@ export async function createTenantSecurityUser(
     email: string;
     phone?: string;
     job_title?: string;
+    access_assignment_mode:
+      | 'predefined_role'
+      | 'granular_permissions';
     role_code: string;
-    permissions: string[];
+    permissions?: string[];
     password?: string;
     status?: string;
+    two_factor_required?: boolean;
   },
 ) {
   return apiRequest<{
@@ -3583,9 +3610,13 @@ export async function updateTenantSecurityUser(
     name: string;
     phone?: string;
     job_title?: string;
+    access_assignment_mode:
+      | 'predefined_role'
+      | 'granular_permissions';
     role_code: string;
-    permissions: string[];
+    permissions?: string[];
     status?: string;
+    two_factor_required?: boolean;
   },
 ) {
   return apiRequest<{
@@ -3606,4 +3637,394 @@ export async function deleteTenantSecurityUser(
   }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
     method: 'DELETE',
   });
+}
+
+
+export type SecurityRiskLevel =
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'blocked';
+
+export type SecurityOperationsUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  job_title: string | null;
+  status:
+    | 'active'
+    | 'invited'
+    | 'suspended'
+    | 'inactive';
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  roles: Array<{
+    id: number;
+    name: string;
+    code: string;
+    permissions_count: number;
+  }>;
+  security: {
+    risk_level: SecurityRiskLevel;
+    two_factor_required: boolean;
+    two_factor_enabled: boolean;
+    two_factor_confirmed_at: string | null;
+    two_factor_last_verified_at: string | null;
+    must_change_password: boolean;
+    last_login_at: string | null;
+    trusted_devices_count: number;
+    active_sessions_count: number;
+  };
+  trusted_devices: Array<{
+    id: number;
+    device_name: string | null;
+    ip_address: string | null;
+    last_used_at: string | null;
+    trusted_until: string | null;
+  }>;
+  sessions: Array<{
+    id: number;
+    name: string;
+    abilities: string[];
+    last_used_at: string | null;
+    created_at: string | null;
+    expires_at: string | null;
+  }>;
+};
+
+export type SecurityOperationsResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  summary: {
+    total_users: number;
+    active_users: number;
+    invited_users: number;
+    suspended_users: number;
+    inactive_users: number;
+    two_factor_required: number;
+    two_factor_enabled: number;
+    two_factor_pending: number;
+    password_change_required: number;
+    active_sessions: number;
+    trusted_devices: number;
+    never_logged_in: number;
+    high_risk_users: number;
+    two_factor_compliance_percent: number;
+  };
+  users: SecurityOperationsUser[];
+  generated_at: string;
+};
+
+export type SecurityUserAction =
+  | 'force-password-change'
+  | 'reset-two-factor'
+  | 'revoke-trusted-devices'
+  | 'revoke-sessions'
+  | 'status';
+
+export async function getSecurityOperations(
+  token: string,
+  tenantSlug: string,
+): Promise<SecurityOperationsResponse> {
+  return apiRequest<SecurityOperationsResponse>(
+    token,
+    tenantSlug,
+    '/access-check/security/operations',
+  );
+}
+
+export async function runSecurityUserAction(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+  action: SecurityUserAction,
+  payload: {
+    status?: string;
+    reason?: string;
+  } = {},
+): Promise<{
+  message: string;
+  revoked_count?: number;
+  user: SecurityOperationsUser;
+}> {
+  return apiRequest(
+    token,
+    tenantSlug,
+    `/access-check/security/users/${userId}/${action}`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+
+export type SodConflict = {
+  code: string;
+  severity: 'medium' | 'high' | 'critical';
+  message: string;
+  resource?: string;
+  permissions: string[];
+};
+
+export type SodAssessment = {
+  risk_score: number;
+  risk_level: 'low' | 'medium' | 'high' | 'blocked';
+  permission_count: number;
+  elevated_permission_count: number;
+  elevated_permissions: string[];
+  conflict_count: number;
+  blocking_conflict_count: number;
+  conflicts: SodConflict[];
+  compliant: boolean;
+};
+
+export type GovernedRole = {
+  id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  scope_type: string;
+  status: string;
+  role_type: 'managed' | 'custom';
+  permissions: string[];
+  permission_count: number;
+  active_user_count: number;
+  sod: SodAssessment;
+};
+
+export type PermissionCatalogueGroup = {
+  group: string;
+  permissions: Array<{
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+  }>;
+};
+
+export type RoleGovernanceResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  summary: {
+    total_roles: number;
+    custom_roles: number;
+    managed_roles: number;
+    active_roles: number;
+    roles_with_conflicts: number;
+  };
+  roles: GovernedRole[];
+  permission_catalogue:
+    PermissionCatalogueGroup[];
+  generated_at: string;
+};
+
+export type SecurityAuditEvent = {
+  id: number;
+  action: string;
+  category: 'role' | 'user' | 'security';
+  actor: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  target: {
+    type: string | null;
+    id: number | null;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+    } | null;
+    role_name: string | null;
+  };
+  metadata: Record<string, unknown>;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string | null;
+};
+
+export type SecurityAuditTimelineResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  summary: {
+    event_count: number;
+    user_events: number;
+    role_events: number;
+    security_events: number;
+    unique_actors: number;
+  };
+  events: SecurityAuditEvent[];
+  generated_at: string;
+};
+
+export async function getRoleGovernance(
+  token: string,
+  tenantSlug: string,
+): Promise<RoleGovernanceResponse> {
+  return apiRequest<RoleGovernanceResponse>(
+    token,
+    tenantSlug,
+    '/access-check/security/roles',
+  );
+}
+
+export async function assessRolePermissions(
+  token: string,
+  tenantSlug: string,
+  permissions: string[],
+): Promise<{
+  assessment: SodAssessment;
+}> {
+  return apiRequest(
+    token,
+    tenantSlug,
+    '/access-check/security/roles/assess',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        permissions,
+      }),
+    },
+  );
+}
+
+export async function createGovernedRole(
+  token: string,
+  tenantSlug: string,
+  payload: {
+    name: string;
+    description?: string;
+    permissions: string[];
+  },
+): Promise<{
+  message: string;
+  role: GovernedRole;
+}> {
+  return apiRequest(
+    token,
+    tenantSlug,
+    '/access-check/security/roles',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function updateGovernedRole(
+  token: string,
+  tenantSlug: string,
+  roleId: number,
+  payload: {
+    name: string;
+    description?: string;
+    status?: string;
+    permissions: string[];
+  },
+): Promise<{
+  message: string;
+  role: GovernedRole;
+}> {
+  return apiRequest(
+    token,
+    tenantSlug,
+    `/access-check/security/roles/${roleId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function cloneGovernedRole(
+  token: string,
+  tenantSlug: string,
+  roleId: number,
+  payload: {
+    name?: string;
+    description?: string;
+  } = {},
+): Promise<{
+  message: string;
+  role: GovernedRole;
+}> {
+  return apiRequest(
+    token,
+    tenantSlug,
+    `/access-check/security/roles/${roleId}/clone`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function archiveGovernedRole(
+  token: string,
+  tenantSlug: string,
+  roleId: number,
+): Promise<{
+  message: string;
+  role: GovernedRole;
+}> {
+  return apiRequest(
+    token,
+    tenantSlug,
+    `/access-check/security/roles/${roleId}/archive`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export async function getSecurityAuditTimeline(
+  token: string,
+  tenantSlug: string,
+  filters: {
+    search?: string;
+    action?: string;
+    actor_user_id?: number;
+    from?: string;
+    to?: string;
+    limit?: number;
+  } = {},
+): Promise<SecurityAuditTimelineResponse> {
+  const query = new URLSearchParams();
+
+  Object.entries(filters).forEach(
+    ([key, value]) => {
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== ''
+      ) {
+        query.set(key, String(value));
+      }
+    },
+  );
+
+  const suffix = query.toString()
+    ? `?${query.toString()}`
+    : '';
+
+  return apiRequest<SecurityAuditTimelineResponse>(
+    token,
+    tenantSlug,
+    `/access-check/security/audit-timeline${suffix}`,
+  );
 }

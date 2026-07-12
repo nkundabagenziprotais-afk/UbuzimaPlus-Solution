@@ -32,7 +32,7 @@ function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderPr
   return null;
 }
 
-import { AccessCheckResult, AccessProfile, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
+import { AccessCheckResult, AccessProfile, LoginExperience, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
 import {
   type PosSession,
   closePosSession,
@@ -43,6 +43,9 @@ import {
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { InventoryModuleHome } from './components/InventoryModuleHome';
+import {
+  GeneralStockItemsModule,
+} from './components/GeneralStockItemsModule';
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
 import { HistoricalPosWorkflow } from './components/HistoricalPosWorkflow';
@@ -58,6 +61,7 @@ import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
+import { LoginSuccessOverlay } from './components/LoginSuccessOverlay';
 import { PlatformManagementPanel } from './components/PlatformManagementPanel';
 import { CorporateEmailPanel } from './components/CorporateEmailPanel';
 import { PharmacistChatPanel } from './components/PharmacistChatPanel';
@@ -109,6 +113,7 @@ type AdminSectionKey =
   | 'ai-center'
   | 'admin-panel'
   | 'inventory'
+  | 'general-stock-items'
   | 'insurance'
   | 'pos'
   | 'suppliers'
@@ -590,7 +595,6 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
   ],
   'admin-panel': [
     { key: 'admin-users', label: 'User Profiles', target: 'user-profiles' },
-    { key: 'admin-2fa', label: '2FA Management', target: 'two-factor-auth' },
     { key: 'admin-platform', label: 'Platform Management', target: 'platform-management' },
     { key: 'admin-notifications', label: 'Notification Management', target: 'notification-management' },
     { key: 'admin-email', label: 'Corporate Email', target: 'corporate-email' },
@@ -841,6 +845,12 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     title: 'Platform settings blueprint',
     description: 'Module activation, offline policy, channels, integration placeholders, and deployment readiness.',
   },
+
+  'general-stock-items': {
+    eyebrow: 'Operational stock control',
+    title: 'General Stock Items',
+    description: 'Monitor operational supplies, shortages, stock cover and replenishment separately from pharmacy inventory.',
+  },
 };
 
 const menuGroups: MenuGroup[] = [
@@ -897,7 +907,6 @@ const menuGroups: MenuGroup[] = [
     items: [
       { key: 'admin-panel', context: 'user-profiles', label: 'User Profiles', description: 'Create, edit, deactivate users', icon: 'US', status: 'Active' },
       { key: 'admin-panel', context: 'backend-api', label: 'Backend API', description: 'Laravel API and services', icon: 'BE', status: 'Active' },
-      { key: 'admin-panel', context: 'two-factor-auth', label: 'Staff 2FA', description: 'Authenticator and trusted devices', icon: '2FA', status: 'Mandatory' },
       { key: 'admin-panel', context: 'platform-management', label: 'Platform Management', description: 'Website, pages, sections', icon: 'PM', status: 'Active' },
       { key: 'admin-panel', context: 'notification-management', label: 'Notification Management', description: 'Recurring and platform notices', icon: 'NM', status: 'Active' },
       { key: 'admin-panel', context: 'corporate-email', label: 'Corporate Email', description: 'Company mailbox workspace', icon: 'EM', status: 'Active' },
@@ -1797,6 +1806,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
         icon: 'PH',
         items: [
           { key: 'inventory', label: 'Inventory', description: 'Stock, batches, expiry', icon: 'IN', status: 'Live' },
+          { key: 'general-stock-items', label: 'General Stock Items', description: 'Operational supplies, shortages and reorder planning', icon: 'GS', status: 'Live' },
           { key: 'insurance', label: 'Insurance', description: 'Partners, schemes, pricing and claims', icon: 'IS', status: 'Live' },
           { key: 'pos', label: 'POS', description: 'Sales and dispensing', icon: 'PS', status: 'Live' },
           { key: 'suppliers', label: 'Procurement', description: 'Procurement and payables', icon: 'SP', status: 'Live' },
@@ -1836,6 +1846,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       icon: 'PH',
       items: [
         { key: 'inventory', label: 'Inventory', description: 'Products, stock, batches', icon: 'IN', status: 'Live' },
+        { key: 'general-stock-items', label: 'General Stock Items', description: 'Operational supplies, shortages and reorder planning', icon: 'GS', status: 'Live' },
         { key: 'insurance', label: 'Insurance', description: 'Partners, schemes, pricing and claims', icon: 'IS', status: 'Live' },
         { key: 'pos', label: 'POS and Sales', description: 'Counter sales and dispensing', icon: 'PS', status: 'Live' },
         { key: 'suppliers', label: 'Procurement', description: 'Purchasing and receiving', icon: 'PR', status: 'Live' },
@@ -1852,7 +1863,6 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       items: [
         { key: 'tenant-setup', label: 'Business Setup', description: 'Profile, branches, departments', icon: 'TS', status: 'Live' },
         { key: 'security', label: 'Users and Security', description: 'Scope, roles, access', icon: 'SC', status: 'Protected' },
-        { key: 'admin-panel', context: 'two-factor-auth', label: 'Staff 2FA', description: 'Authenticator and trusted devices', icon: '2F', status: 'Mandatory' },
         { key: 'corporate-email', label: 'Corporate Email', description: 'Company mail', icon: 'EM', status: 'Active' },
         { key: 'notifications', label: 'Notifications', description: 'Staff communication', icon: 'NT', status: 'Active' },
         { key: 'localization', label: 'Language and Market', description: 'EN, FR, PT preference', icon: 'LG', status: 'Active' },
@@ -2652,6 +2662,8 @@ function App() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [trustThisDevice, setTrustThisDevice] = useState(true);
   const [newRecoveryCodes, setNewRecoveryCodes] = useState<string[] | null>(null);
+  const [loginSuccess, setLoginSuccess] =
+    useState<LoginExperience | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false);
   const [passwordResetEmail, setPasswordResetEmail] = useState('');
@@ -3314,7 +3326,10 @@ function App() {
       };
 
       persistSession(nextSession);
-    } catch (err) {
+
+      setLoginSuccess(
+        response.login_experience,
+      );    } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed.');
     } finally {
       setIsSubmitting(false);
@@ -3375,7 +3390,16 @@ function App() {
       setNewRecoveryCodes(response.recovery_codes);
       setTwoFactorFlow(null);
       setTwoFactorCode('');
-      persistSession(nextSession, response.trusted_device?.trusted_device_token);
+
+      persistSession(
+        nextSession,
+        response.trusted_device
+          ?.trusted_device_token,
+      );
+
+      setLoginSuccess(
+        response.login_experience,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Two-factor verification failed.');
     } finally {
@@ -3389,7 +3413,7 @@ function App() {
     }
 
     localStorage.removeItem(storageKey);
-    setSession(null);
+    setLoginSuccess(null);    setSession(null);
     setAccessCheck(null);
     setPharmaCore({
       profile: null,
@@ -6459,15 +6483,7 @@ function App() {
           </article>
         )}
 
-        {selectedWorkspace === 'two-factor-auth' && (
-          <TwoFactorAdminPanel
-            token={session!.token}
-            profile={profile!}
-            onVerified={(nextToken, nextProfile, trustedDeviceToken) => {
-              persistSession({ token: nextToken, profile: nextProfile }, trustedDeviceToken);
-            }}
-          />
-        )}
+
 
         {selectedWorkspace === 'platform-management' && (
           <PlatformManagementPanel token={session!.token} />
@@ -6887,6 +6903,19 @@ function App() {
         return renderAiCenter();
       case 'admin-panel':
         return renderAdminPanel();
+            case 'general-stock-items': {
+
+              return (
+                <section className="section-page general-stock-route-page">
+                  <GeneralStockItemsModule
+            token={session!.token}
+            profile={profile!}
+            onOpenWorkspace={setActiveInventoryView}
+          />
+                </section>
+              );
+            }
+
             case 'inventory':
         return renderInventoryWorkspace();
       case 'insurance': {
@@ -6942,87 +6971,56 @@ function App() {
           </section>
         );
       case 'security': {
-        const tenantSlug =
+        const securityTenantSlug =
           profile?.tenant_assignments?.find(
-            (assignment) => assignment.status === 'active' && assignment.tenant?.slug,
-          )?.tenant?.slug ||
-          profile?.tenant_assignments?.find(
-            (assignment) => assignment.tenant?.slug,
-          )?.tenant?.slug ||
-          '';
+            (assignment) =>
+              assignment.status === 'active'
+              && assignment.tenant?.slug,
+          )?.tenant?.slug
+          ?? profile?.tenant_assignments?.find(
+            (assignment) =>
+              assignment.tenant?.slug,
+          )?.tenant?.slug
+          ?? '';
 
-        if (!tenantSlug) {
+        if (!securityTenantSlug) {
           return (
-            <section className="section-page">
-              <section className="dedicated-module-page">
-                <DedicatedModuleHeader
-                  eyebrow="Administration and access control"
-                  title="User and Security Workspace"
-                  description="Review staff identity, tenant scope, roles, permissions, and security controls."
-                  onDashboard={() => navigateToSection('overview')}
-                />
-                <article className="panel wide">
-                  <h2>Tenant access is required</h2>
-                  <p className="form-error">
-                    No tenant assignment is available for this account. User Management cannot load
-                    or change staff records until an authorized tenant assignment is restored.
-                  </p>
-                </article>
-              </section>
+            <section className="section-page user-security-route-page">
+              <article className="panel wide">
+                <h2>User &amp; Security</h2>
+                <p className="form-error">
+                  An active tenant assignment is required
+                  before staff security can be managed.
+                </p>
+              </article>
             </section>
           );
         }
 
         return (
-          <section className="section-page">
-<section className="content-grid security-content-grid">
-            <section className="dedicated-module-page">
-              <DedicatedModuleHeader
-                eyebrow="Administration and access control"
-                title="User and Security Workspace"
-                description="Review the staff directory, create or modify users through pop-ups, and manage role-based access without an overloaded landing page."
-                onDashboard={() => navigateToSection('overview')}
-              />
-              <UserSecurityManagement token={session!.token} tenantSlug={tenantSlug} />
-            </section>
-              <article className="panel">
-                <h2>Resolved access profile</h2>
-                <div className="scope-list">
-                  <div><span>Scope type</span><strong>{profile!.scope.type}</strong></div>
-                  <div><span>Solution ID</span><strong>{profile!.scope.solution_id ?? 'All'}</strong></div>
-                  <div><span>Tenant ID</span><strong>{profile!.scope.tenant_id ?? 'All / none'}</strong></div>
-                  <div><span>Branch ID</span><strong>{profile!.scope.branch_id ?? 'All / none'}</strong></div>
-                </div>
-              </article>
-
-              <article className="panel">
-                <h2>Roles</h2>
-                <div className="tag-list">
-                  {profile!.roles.map((role) => (
-                    <span key={`${role.code}-${role.tenant_id ?? 'global'}`}>{role.name}</span>
-                  ))}
-                </div>
-              </article>
-
-              <article className="panel wide permission-matrix-panel">
-                <div className="permission-matrix-panel__header">
-                  <div>
-                    <p className="eyebrow">Granular access matrix</p>
-                    <h2>Permissions by module and action</h2>
-                    <span>
-                      Each resource is separated into View, Add, Edit, and Delete so roles do not receive more power than intended.
-                    </span>
-                  </div>
-                </div>
-
-                {renderProfilePermissionMatrix(profile!)}
-              </article>
-              {accessControlPanel}
-              {tenantAssignmentsPanel}
-            </section>
+          <section className="section-page user-security-route-page">
+            <UserSecurityManagement
+              token={session!.token}
+              tenantSlug={securityTenantSlug}
+              profile={profile!}
+              onVerified={(
+                nextToken,
+                nextProfile,
+                trustedDeviceToken,
+              ) => {
+                persistSession(
+                  {
+                    token: nextToken,
+                    profile: nextProfile,
+                  },
+                  trustedDeviceToken,
+                );
+              }}
+            />
           </section>
         );
       }
+
       case 'corporate-email':
         return (
           <section className="section-page">
@@ -7466,6 +7464,15 @@ function App() {
         <section className="dashboard-scroll-panel">
           {renderActiveSection()}
         </section>
+
+        {loginSuccess && (
+          <LoginSuccessOverlay
+            experience={loginSuccess}
+            onClose={() =>
+              setLoginSuccess(null)
+            }
+          />
+        )}
 
         {isChangePasswordOpen && (
           <div className="recovery-overlay" role="dialog" aria-modal="true" aria-label="Change password">

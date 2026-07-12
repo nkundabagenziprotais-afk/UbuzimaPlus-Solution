@@ -419,4 +419,330 @@ class TenantUserManagementApiTest extends TestCase
         ]);
     }
 
+    /**
+     * AQUILA_USER_ACCESS_ASSIGNMENT_MODE_TESTS_20260712
+     */
+    public function test_user_can_be_created_with_explicit_predefined_role_mode(): void
+    {
+        $email =
+            'predefined-role-user@example.test';
+
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->postJson(
+                '/api/v1/access-check/security/users',
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' =>
+                        'Predefined Role User',
+                    'email' => $email,
+                    'job_title' => 'Cashier',
+                    'access_assignment_mode' =>
+                        'predefined_role',
+                    'role_code' => 'cashier',
+                    'status' => 'active',
+                ],
+            );
+
+        $response->assertCreated();
+
+        $user = \App\Models\User::query()
+            ->where('email', $email)
+            ->firstOrFail();
+
+        $activeRole = $user->roles()
+            ->wherePivot(
+                'tenant_id',
+                $this->tenant->id,
+            )
+            ->wherePivot('status', 'active')
+            ->firstOrFail();
+
+        $this->assertSame(
+            \Illuminate\Support\Str::slug(
+                $this->tenant->slug
+                . '-cashier'
+            ),
+            $activeRole->code,
+        );
+
+        $this->assertStringNotContainsString(
+            '-user-',
+            $activeRole->code,
+        );
+
+        $this->assertSame(
+            'tenant',
+            $activeRole->scope_type,
+        );
+    }
+
+    public function test_user_can_be_created_with_explicit_granular_permission_mode(): void
+    {
+        $email =
+            'granular-permission-user@example.test';
+
+        $permissions = [
+            'tenant.profile.view',
+            'pos.sales.view',
+            'pos.sales.add',
+        ];
+
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->postJson(
+                '/api/v1/access-check/security/users',
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' =>
+                        'Granular Permission User',
+                    'email' => $email,
+                    'job_title' =>
+                        'Custom Operations Officer',
+                    'access_assignment_mode' =>
+                        'granular_permissions',
+                    'role_code' => 'custom-access',
+                    'permissions' => $permissions,
+                    'status' => 'active',
+                ],
+            );
+
+        $response->assertCreated();
+
+        $user = \App\Models\User::query()
+            ->where('email', $email)
+            ->firstOrFail();
+
+        $activeRole = $user->roles()
+            ->with('permissions')
+            ->wherePivot(
+                'tenant_id',
+                $this->tenant->id,
+            )
+            ->wherePivot('status', 'active')
+            ->firstOrFail();
+
+        $this->assertSame(
+            \Illuminate\Support\Str::slug(
+                $this->tenant->slug
+                . '-custom-access-user-'
+                . $user->id
+            ),
+            $activeRole->code,
+        );
+
+        $this->assertEqualsCanonicalizing(
+            $permissions,
+            $activeRole->permissions
+                ->pluck('code')
+                ->all(),
+        );
+
+        $this->assertSame(
+            'tenant',
+            $activeRole->scope_type,
+        );
+    }
+
+    public function test_predefined_role_mode_rejects_direct_permissions(): void
+    {
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->postJson(
+                '/api/v1/access-check/security/users',
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' => 'Invalid Mixed User',
+                    'email' =>
+                        'mixed-access-user@example.test',
+                    'access_assignment_mode' =>
+                        'predefined_role',
+                    'role_code' => 'cashier',
+                    'permissions' => [
+                        'tenant.profile.view',
+                    ],
+                ],
+            );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'Pre-defined role mode does not accept direct permissions.',
+            );
+    }
+
+    public function test_granular_mode_requires_at_least_one_permission(): void
+    {
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->postJson(
+                '/api/v1/access-check/security/users',
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' => 'Empty Granular User',
+                    'email' =>
+                        'empty-granular@example.test',
+                    'access_assignment_mode' =>
+                        'granular_permissions',
+                    'role_code' => 'custom-access',
+                    'permissions' => [],
+                ],
+            );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'Select at least one permission for the Granular Permission Matrix.',
+            );
+    }
+
+    public function test_granular_mode_rejects_platform_permissions(): void
+    {
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->postJson(
+                '/api/v1/access-check/security/users',
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' =>
+                        'Platform Permission Attempt',
+                    'email' =>
+                        'platform-permission-attempt@example.test',
+                    'access_assignment_mode' =>
+                        'granular_permissions',
+                    'role_code' => 'custom-access',
+                    'permissions' => [
+                        'roles.manage',
+                    ],
+                ],
+            );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'Platform or tenant-administration permissions cannot be assigned through the Granular Permission Matrix.',
+            );
+    }
+
+    public function test_user_can_switch_from_predefined_role_to_granular_permissions(): void
+    {
+        $email =
+            'access-mode-switch@example.test';
+
+        $createResponse = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->postJson(
+                '/api/v1/access-check/security/users',
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' => 'Mode Switch User',
+                    'email' => $email,
+                    'access_assignment_mode' =>
+                        'predefined_role',
+                    'role_code' => 'cashier',
+                    'status' => 'active',
+                ],
+            );
+
+        $createResponse->assertCreated();
+
+        $user = \App\Models\User::query()
+            ->where('email', $email)
+            ->firstOrFail();
+
+        $updateResponse = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->putJson(
+                "/api/v1/access-check/security/users/{$user->id}",
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' => 'Mode Switch User',
+                    'access_assignment_mode' =>
+                        'granular_permissions',
+                    'role_code' => 'custom-access',
+                    'permissions' => [
+                        'tenant.profile.view',
+                        'inventory.dashboard.view',
+                    ],
+                    'status' => 'active',
+                ],
+            );
+
+        $updateResponse->assertOk();
+
+        $activeRole = $user->fresh()
+            ->roles()
+            ->with('permissions')
+            ->wherePivot(
+                'tenant_id',
+                $this->tenant->id,
+            )
+            ->wherePivot('status', 'active')
+            ->firstOrFail();
+
+        $this->assertStringContainsString(
+            '-custom-access-user-',
+            $activeRole->code,
+        );
+
+        $this->assertEqualsCanonicalizing(
+            [
+                'tenant.profile.view',
+                'inventory.dashboard.view',
+            ],
+            $activeRole->permissions
+                ->pluck('code')
+                ->all(),
+        );
+
+        $this->assertFalse(
+            $user->fresh()
+                ->roles()
+                ->wherePivot(
+                    'tenant_id',
+                    $this->tenant->id,
+                )
+                ->where(
+                    'roles.code',
+                    \Illuminate\Support\Str::slug(
+                        $this->tenant->slug
+                        . '-cashier'
+                    ),
+                )
+                ->wherePivot('status', 'active')
+                ->exists(),
+        );
+    }
+
 }
