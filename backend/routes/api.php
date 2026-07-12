@@ -1073,6 +1073,44 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         'tenant.module:pharmaco.sales',
     ]);
 
+    Route::post('/sales/checkout', [SalesDispensingController::class, 'checkoutSale'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::get('/sales', [SalesDispensingController::class, 'sales'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+
+
+    Route::post('/sales/{sale}/payments', [SalesDispensingController::class, 'recordPayment'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::post('/sales/{sale}/confirm', [SalesDispensingController::class, 'confirmSale'])
+        ->middleware([
+            'permission:pharmaco.sales.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+
+    Route::get(
+        '/sales/returns',
+        [
+            \App\Http\Controllers\Api\V1\PharmaCo360\SaleReturnsController::class,
+            'index',
+        ]
+    )->middleware([
+        'permission:pharmaco.pos.refund',
+        'tenant.module:pharmaco.sales',
+    ]);
+
     Route::get(
         '/sales/returns/{saleReturn}',
         [

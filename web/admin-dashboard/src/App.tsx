@@ -33,12 +33,10 @@ function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderPr
 }
 
 import { AccessCheckResult, AccessProfile, LoginExperience, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor,
-  createPharmaSale,
-  confirmPharmaSale,
-  recordPharmaPayment,
   getPharmaSales,
   type PharmaSale,
   type PharmaPayment,
+  checkoutPharmaSale,
 } from './lib/api';
 import {
   type PosSession,
@@ -2678,6 +2676,22 @@ function FocusRegisterPreview({
   );
 }
 
+
+function createPosCheckoutKey(): string {
+  const secureUuid =
+    globalThis.crypto?.randomUUID?.();
+
+  if (secureUuid) {
+    return `pos-${secureUuid}`;
+  }
+
+  return [
+    'pos',
+    Date.now().toString(36),
+    Math.random().toString(36).slice(2),
+  ].join('-');
+}
+
 function App() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
@@ -2745,6 +2759,7 @@ function App() {
   const [posInvoiceContact, setPosInvoiceContact] = useState('');
   const [posDiscountAmount, setPosDiscountAmount] = useState('0');
   const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
+  const [posCheckoutKey, setPosCheckoutKey] = useState(createPosCheckoutKey);
   const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
   const [posTillZeroized, setPosTillZeroized] = useState(false);
   const [posDepositProof, setPosDepositProof] = useState('');
@@ -4861,6 +4876,7 @@ function App() {
           posTenantSlug,
           {
             branch_id: branchId,
+          pos_session_id: posSession?.id ?? undefined,
           },
         );
 
@@ -4969,121 +4985,62 @@ function App() {
               ? 'credit_sale'
               : 'cash_sale';
 
-        const creationResponse = await createPharmaSale(
-          session.token,
-          posTenantSlug,
-          {
-            branch_id: branchId,
-            sale_type: saleType,
-            discount_amount:
-              Math.max(
-                Number(posDiscountAmount) || 0,
-                0,
-              ),
-            tax_amount: 0,
-            notes: [
-              'Created from the Pharmacy POS Counter.',
-              `Customer type: ${posCustomerType}.`,
-              `Customer receipt requested: ${posCustomerReceipt}.`,
-              `Customer invoice requested: ${posCustomerInvoice}.`,
-            ].join(' '),
-            items: currentItems.map((item) => ({
-              product_id: item.productId,
-              quantity: item.quantity,
-              unit_price: item.unitPrice,
-              discount_amount: 0,
+        const checkoutResponse =
+          await checkoutPharmaSale(
+            session.token,
+            posTenantSlug,
+            {
+              idempotency_key: posCheckoutKey,
+              branch_id: branchId,
+              sale_type: saleType,
+              discount_amount:
+                Math.max(
+                  Number(posDiscountAmount) || 0,
+                  0,
+                ),
               tax_amount: 0,
-            })),
-          },
-        );
-
-        const createdItems =
-          creationResponse.sale.items ?? [];
-
-        if (
-          createdItems.length
-          !== currentItems.length
-        ) {
-          throw new Error(
-            'The saved sale does not contain every cart item. Open the Sales Review workspace before retrying.',
-          );
-        }
-
-        const confirmationItems = createdItems.map(
-          (saleItem) => {
-            const matchingCartItem = currentItems.find(
-              (item) =>
-                item.productId
-                === saleItem.product?.id,
-            );
-
-            if (!matchingCartItem) {
-              throw new Error(
-                `Unable to match ${saleItem.product_name_snapshot} to its selected stock batch.`,
-              );
-            }
-
-            return {
-              sale_item_id: saleItem.id,
-              stock_batch_id: matchingCartItem.batchId,
-              prescription_verified:
-                posPrescriptionStatus === 'captured',
-            };
-          },
-        );
-
-        const confirmationResponse =
-          await confirmPharmaSale(
-            session.token,
-            posTenantSlug,
-            creationResponse.sale.id,
-            {
-              items: confirmationItems,
+              notes: [
+                'Created from the Pharmacy POS Counter.',
+                `Customer type: ${posCustomerType}.`,
+                `Customer receipt requested: ${posCustomerReceipt}.`,
+                `Customer invoice requested: ${posCustomerInvoice}.`,
+              ].join(' '),
+              items: currentItems.map((item) => ({
+                product_id: item.productId,
+                quantity: item.quantity,
+                unit_price: item.unitPrice,
+                discount_amount: 0,
+                tax_amount: 0,
+                stock_batch_id: item.batchId,
+                prescription_verified:
+                  posPrescriptionStatus === 'captured',
+              })),
+              payment: {
+                payment_method: posPaymentMethod,
+                generate_receipt:
+                  posCustomerReceipt === 'yes',
+                reference_number:
+                  posInvoiceContact.trim() || null,
+                notes:
+                  posCustomerReceipt === 'yes'
+                    ? 'Customer receipt requested at POS confirmation.'
+                    : 'Customer declined a receipt at POS confirmation.',
+              },
             },
           );
 
-        const paymentAmount = Number(
-          confirmationResponse.sale.balance_amount,
-        );
-
-        if (
-          !Number.isFinite(paymentAmount)
-          || paymentAmount <= 0
-        ) {
-          throw new Error(
-            'The confirmed sale does not have a valid payment balance.',
-          );
-        }
-
-        const paymentResponse =
-          await recordPharmaPayment(
-            session.token,
-            posTenantSlug,
-            confirmationResponse.sale.id,
-            {
-              amount: paymentAmount,
-              payment_method: posPaymentMethod,
-              generate_receipt:
-                posCustomerReceipt === 'yes',
-              reference_number:
-                posInvoiceContact.trim() || null,
-              notes:
-                posCustomerReceipt === 'yes'
-                  ? 'Customer receipt requested at POS confirmation.'
-                  : 'Customer declined a receipt at POS confirmation.',
-            },
-          );
-
-        setPosConfirmedSale(paymentResponse.sale);
-        setPosConfirmedPayment(paymentResponse.payment);
+        setPosConfirmedSale(checkoutResponse.sale);
+        setPosConfirmedPayment(checkoutResponse.payment);
         setPosConfirmedItems(currentItems);
         setPosTransactionConfirmed(true);
+        setPosCheckoutKey(createPosCheckoutKey());
 
         const recentResponse = await getPharmaSales(
           session.token,
           posTenantSlug,
           {
             branch_id: branchId,
+          pos_session_id: posSession?.id ?? undefined,
           },
         );
 
@@ -5113,14 +5070,14 @@ function App() {
 
         if (
           posCustomerReceipt === 'yes'
-          && paymentResponse.payment.receipt_number
+          && checkoutResponse.payment.receipt_number
         ) {
           setPosNotice(
-            `Transaction ${paymentResponse.sale.sale_number} confirmed successfully. Receipt ${paymentResponse.payment.receipt_number} is ready.`,
+            `Transaction ${checkoutResponse.sale.sale_number} confirmed successfully. Receipt ${checkoutResponse.payment.receipt_number} is ready.`,
           );
         } else {
           setPosNotice(
-            `Transaction ${paymentResponse.sale.sale_number} confirmed successfully without a customer receipt.`,
+            `Transaction ${checkoutResponse.sale.sale_number} confirmed successfully without a customer receipt.`,
           );
         }
       } catch (error: unknown) {

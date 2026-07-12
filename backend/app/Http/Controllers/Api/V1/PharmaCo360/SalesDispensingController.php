@@ -89,6 +89,7 @@ class SalesDispensingController extends Controller
             ->when($request->query('payment_status'), fn ($query, $status) => $query->where('payment_status', $status))
             ->when($request->query('sale_type'), fn ($query, $saleType) => $query->where('sale_type', $saleType))
             ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
+            ->when($request->query('pos_session_id'), fn ($query, $sessionId) => $query->where('pos_session_id', $sessionId))
             ->latest('created_at')
             ->get();
 
@@ -924,6 +925,322 @@ class SalesDispensingController extends Controller
         ], 201);
     }
 
+
+    /**
+     * Complete POS checkout atomically and safely support retries.
+     */
+    public function checkoutSale(
+        Request $request,
+        AuditLogService $auditLogService,
+        ScopeResolver $scopeResolver,
+        \App\Services\PharmaCo360\AtomicPosCheckoutService $checkoutService
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'idempotency_key' => [
+                'required',
+                'string',
+                'max:100',
+                'regex:/^[A-Za-z0-9._:-]+$/',
+            ],
+            'branch_id' => ['required', 'integer'],
+            'pharmaco_customer_id' => ['nullable', 'integer'],
+            'pharmaco_prescription_id' => ['nullable', 'integer'],
+            'sale_type' => [
+                'nullable',
+                'string',
+                'in:cash_sale,prescription_sale,insurance_sale,credit_sale',
+            ],
+            'discount_amount' => ['nullable', 'numeric', 'gte:0'],
+            'tax_amount' => ['nullable', 'numeric', 'gte:0'],
+            'notes' => ['nullable', 'string'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0'],
+            'items.*.unit_price' => ['required', 'numeric', 'gte:0'],
+            'items.*.discount_amount' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.tax_amount' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.stock_batch_id' => ['required', 'integer'],
+            'items.*.prescription_verified' => ['sometimes', 'boolean'],
+            'payment' => ['required', 'array'],
+            'payment.payment_method' => [
+                'required',
+                'string',
+                'in:cash,momo,card,insurance,credit,bank_transfer',
+            ],
+            'payment.generate_receipt' => ['sometimes', 'boolean'],
+            'payment.reference_number' => [
+                'nullable',
+                'string',
+                'max:120',
+            ],
+            'payment.received_at' => ['nullable', 'date'],
+            'payment.notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $idempotencyKey = $validated['idempotency_key'];
+
+        $result = $checkoutService->execute(
+            $idempotencyKey,
+            function () use (
+                $tenant,
+                $idempotencyKey
+            ): ?array {
+                $existingSale = PharmacoSale::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->where('pos_checkout_key', $idempotencyKey)
+                    ->with([
+                        'branch',
+                        'customer',
+                        'prescription.customer',
+                        'items.product.category',
+                        'items.stockBatch',
+                        'items.stockLocation',
+                        'payments',
+                    ])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $existingSale) {
+                    return null;
+                }
+
+                $payment = $existingSale->payments()
+                    ->latest('id')
+                    ->first();
+
+                if (
+                    ! $payment
+                    || $existingSale->payment_status !== 'paid'
+                    || $existingSale->status !== 'dispensed'
+                ) {
+                    throw ValidationException::withMessages([
+                        'idempotency_key' => [
+                            'A previous checkout attempt with this key '
+                            . 'did not finish. Review the existing sale '
+                            . 'before retrying.',
+                        ],
+                    ]);
+                }
+
+                return [
+                    'sale' => $existingSale,
+                    'payment' => $payment,
+                ];
+            },
+            function () use (
+                $request,
+                $tenant,
+                $validated,
+                $idempotencyKey,
+                $auditLogService,
+                $scopeResolver
+            ): PharmacoSale {
+                $createPayload = [
+                    'branch_id' => $validated['branch_id'],
+                    'pharmaco_customer_id' =>
+                        $validated['pharmaco_customer_id'] ?? null,
+                    'pharmaco_prescription_id' =>
+                        $validated['pharmaco_prescription_id'] ?? null,
+                    'sale_type' =>
+                        $validated['sale_type'] ?? 'cash_sale',
+                    'discount_amount' =>
+                        $validated['discount_amount'] ?? 0,
+                    'tax_amount' =>
+                        $validated['tax_amount'] ?? 0,
+                    'notes' => $validated['notes'] ?? null,
+                    'items' => array_map(
+                        static fn (array $item): array => [
+                            'product_id' => $item['product_id'],
+                            'quantity' => $item['quantity'],
+                            'unit_price' => $item['unit_price'],
+                            'discount_amount' =>
+                                $item['discount_amount'] ?? 0,
+                            'tax_amount' =>
+                                $item['tax_amount'] ?? 0,
+                        ],
+                        $validated['items']
+                    ),
+                ];
+
+                $response = $this->createSale(
+                    $this->nestedPosRequest(
+                        $request,
+                        $createPayload
+                    ),
+                    $auditLogService,
+                    $scopeResolver
+                );
+
+                $payload = $response->getData(true);
+                $sale = PharmacoSale::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->findOrFail($payload['sale']['id']);
+
+                $sale->forceFill([
+                    'pos_checkout_key' => $idempotencyKey,
+                    'metadata' => [
+                        ...($sale->metadata ?? []),
+                        'pos_checkout_idempotency_key' =>
+                            $idempotencyKey,
+                        'pos_checkout_started_at' =>
+                            now()->toISOString(),
+                    ],
+                ])->save();
+
+                return $sale->fresh();
+            },
+            function (PharmacoSale $sale) use (
+                $request,
+                $validated,
+                $auditLogService,
+                $scopeResolver
+            ): PharmacoSale {
+                $sale->load([
+                    'items' => fn ($query) =>
+                        $query->orderBy('id'),
+                ]);
+
+                $submittedItems = array_values(
+                    $validated['items']
+                );
+
+                if ($sale->items->count() !== count($submittedItems)) {
+                    throw ValidationException::withMessages([
+                        'items' => [
+                            'The created sale items do not match the '
+                            . 'submitted checkout items.',
+                        ],
+                    ]);
+                }
+
+                $confirmationItems = $sale->items
+                    ->values()
+                    ->map(
+                        static function (
+                            $saleItem,
+                            int $index
+                        ) use ($submittedItems): array {
+                            $submitted = $submittedItems[$index];
+
+                            return [
+                                'sale_item_id' => $saleItem->id,
+                                'stock_batch_id' =>
+                                    $submitted['stock_batch_id'],
+                                'prescription_verified' =>
+                                    (bool) (
+                                        $submitted[
+                                            'prescription_verified'
+                                        ] ?? false
+                                    ),
+                            ];
+                        }
+                    )
+                    ->all();
+
+                $response = $this->confirmSale(
+                    $this->nestedPosRequest(
+                        $request,
+                        ['items' => $confirmationItems]
+                    ),
+                    $sale,
+                    $auditLogService,
+                    $scopeResolver
+                );
+
+                $payload = $response->getData(true);
+
+                return PharmacoSale::query()
+                    ->findOrFail($payload['sale']['id']);
+            },
+            function (PharmacoSale $sale) use (
+                $request,
+                $validated,
+                $auditLogService,
+                $scopeResolver
+            ): array {
+                $sale->refresh();
+
+                $balance = round(
+                    (float) $sale->balance_amount,
+                    2
+                );
+
+                if ($balance <= 0) {
+                    throw ValidationException::withMessages([
+                        'payment' => [
+                            'The confirmed sale has no payable balance.',
+                        ],
+                    ]);
+                }
+
+                $paymentPayload = [
+                    'amount' => $balance,
+                    'payment_method' =>
+                        $validated['payment']['payment_method'],
+                    'generate_receipt' => (bool) (
+                        $validated['payment'][
+                            'generate_receipt'
+                        ] ?? true
+                    ),
+                    'reference_number' =>
+                        $validated['payment'][
+                            'reference_number'
+                        ] ?? null,
+                    'received_at' =>
+                        $validated['payment']['received_at']
+                        ?? null,
+                    'notes' =>
+                        $validated['payment']['notes']
+                        ?? null,
+                ];
+
+                $response = $this->recordPayment(
+                    $this->nestedPosRequest(
+                        $request,
+                        $paymentPayload
+                    ),
+                    $sale,
+                    $auditLogService,
+                    $scopeResolver
+                );
+
+                $payload = $response->getData(true);
+
+                return [
+                    'sale' => PharmacoSale::query()
+                        ->with([
+                            'branch',
+                            'customer',
+                            'prescription.customer',
+                            'items.product.category',
+                            'items.stockBatch',
+                            'items.stockLocation',
+                            'payments',
+                        ])
+                        ->findOrFail($payload['sale']['id']),
+                    'payment' => PharmacoPayment::query()
+                        ->findOrFail($payload['payment']['id']),
+                ];
+            }
+        );
+
+        return response()->json([
+            'message' => $result['idempotent']
+                ? 'Checkout already completed. Existing result returned.'
+                : 'POS checkout completed successfully.',
+            'idempotent' => $result['idempotent'],
+            'sale' => $this->serializeSale(
+                $result['sale'],
+                includeDetails: true
+            ),
+            'payment' => $this->serializePayment(
+                $result['payment']
+            ),
+        ], $result['idempotent'] ? 200 : 201);
+    }
+
     public function confirmSale(
         Request $request,
         PharmacoSale $sale,
@@ -1306,6 +1623,39 @@ class SalesDispensingController extends Controller
         ], 201);
     }
 
+
+    private function nestedPosRequest(
+        Request $parent,
+        array $payload
+    ): Request {
+        $nested = Request::create(
+            $parent->getRequestUri(),
+            'POST',
+            $payload,
+            $parent->cookies->all(),
+            [],
+            $parent->server->all()
+        );
+
+        $nested->headers->replace(
+            $parent->headers->all()
+        );
+
+        $nested->setUserResolver(
+            static fn () => $parent->user()
+        );
+
+        $nested->setRouteResolver(
+            $parent->getRouteResolver()
+        );
+
+        foreach ($parent->attributes->all() as $key => $value) {
+            $nested->attributes->set($key, $value);
+        }
+
+        return $nested;
+    }
+
     private function lockActiveHistoricalSessionForBranch(
         Request $request,
         int $tenantId,
@@ -1477,6 +1827,7 @@ class SalesDispensingController extends Controller
         $payload = [
             'id' => $sale->id,
             'uuid' => $sale->uuid,
+            'pos_checkout_key' => $sale->pos_checkout_key,
             'sale_number' => $sale->sale_number,
             'sale_type' => $sale->sale_type,
             'status' => $sale->status,
