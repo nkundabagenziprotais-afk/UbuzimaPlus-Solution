@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
+use App\Http\Controllers\Api\V1\PharmaCo360\GeneralItemsController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReceivablesController;
@@ -715,6 +716,103 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ]);
 
 
+    Route::get('/general-item-categories', [GeneralItemsController::class, 'categories'])
+        ->middleware([
+            'permission:pharmaco.procurement.view',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/general-item-categories/seed-defaults', [GeneralItemsController::class, 'seedDefaultCategories'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.create',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/general-item-categories', [GeneralItemsController::class, 'createCategory'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.create',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::patch('/general-item-categories/{category}', [GeneralItemsController::class, 'updateCategory'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.create',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/general-items', [GeneralItemsController::class, 'items'])
+        ->middleware([
+            'permission:pharmaco.procurement.view',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/general-items', [GeneralItemsController::class, 'createItem'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.create',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::patch('/general-items/{item}', [GeneralItemsController::class, 'updateItem'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.create',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/general-item-locations', [GeneralItemsController::class, 'locations'])
+        ->middleware([
+            'permission:pharmaco.procurement.view',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/general-item-locations', [GeneralItemsController::class, 'createLocation'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.create',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::patch('/general-item-locations/{location}', [GeneralItemsController::class, 'updateLocation'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.create',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/general-item-stock/summary', [GeneralItemsController::class, 'summary'])
+        ->middleware([
+            'permission:pharmaco.procurement.view',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/general-item-stock', [GeneralItemsController::class, 'stock'])
+        ->middleware([
+            'permission:pharmaco.procurement.view',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/purchase-orders/{purchaseOrder}/general-items/receive', [GeneralItemsController::class, 'receivePurchaseOrder'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.receive',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/general-item-stock/receive', [GeneralItemsController::class, 'receive'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.receive',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::post('/general-item-stock/issue', [GeneralItemsController::class, 'issue'])
+        ->middleware([
+            'permission:pharmaco.procurement.purchase_order.receive',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/general-item-movements', [GeneralItemsController::class, 'movements'])
+        ->middleware([
+            'permission:pharmaco.procurement.view',
+            'tenant.module:pharmaco.suppliers',
+        ]);
+
+
     Route::get('/product-categories', [ProductInventoryController::class, 'productCategories'])
         ->middleware([
             'permission:pharmaco.inventory.manage',
@@ -1141,7 +1239,7 @@ Route::middleware('auth:sanctum')
 
         Route::get(
             '/categories',
-            [$controller, 'categories']
+            [$controller, 'tenantCategories']
         );
 
         Route::post(
@@ -1151,12 +1249,12 @@ Route::middleware('auth:sanctum')
 
         Route::put(
             '/categories/{categoryId}',
-            [$controller, 'updateCategory']
+            [$controller, 'tenantUpdateCategory']
         );
 
         Route::get(
             '/items',
-            [$controller, 'items']
+            [$controller, 'tenantItems']
         );
 
         Route::post(
@@ -1166,12 +1264,12 @@ Route::middleware('auth:sanctum')
 
         Route::put(
             '/items/{itemId}',
-            [$controller, 'updateItem']
+            [$controller, 'tenantUpdateItem']
         );
 
         Route::get(
             '/locations',
-            [$controller, 'locations']
+            [$controller, 'tenantLocations']
         );
 
         Route::post(
@@ -1181,22 +1279,22 @@ Route::middleware('auth:sanctum')
 
         Route::get(
             '/stock',
-            [$controller, 'stock']
+            [$controller, 'tenantStock']
         );
 
         Route::get(
             '/movements',
-            [$controller, 'movements']
+            [$controller, 'tenantMovements']
         );
 
         Route::post(
             '/receiving',
-            [$controller, 'receive']
+            [$controller, 'tenantReceive']
         );
 
         Route::post(
             '/usage',
-            [$controller, 'issue']
+            [$controller, 'tenantIssue']
         );
     });
 

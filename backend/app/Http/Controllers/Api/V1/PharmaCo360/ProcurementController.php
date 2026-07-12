@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\PharmaCo360;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\PharmacoGeneralItem;
+use App\Models\PharmacoGeneralPurchaseOrderItem;
 use App\Models\PharmacoPurchaseOrder;
 use App\Models\PharmacoPurchaseOrderItem;
 use App\Models\PharmacoSupplier;
@@ -228,8 +230,19 @@ class ProcurementController extends Controller
 
         $purchaseOrders = PharmacoPurchaseOrder::query()
             ->with(['supplier', 'branch'])
-            ->withCount('items')
+            ->withCount([
+                'items as core_items_count',
+                'generalItems as general_items_count',
+            ])
             ->where('tenant_id', $tenant->id)
+            ->when(
+                $request->query('purchase_type'),
+                fn ($query, $purchaseType) =>
+                    $query->where(
+                        'purchase_type',
+                        $purchaseType
+                    )
+            )
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
             ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($request->query('supplier_id'), fn ($query, $supplierId) => $query->where('pharmaco_supplier_id', $supplierId))
@@ -252,7 +265,12 @@ class ProcurementController extends Controller
             abort(404);
         }
 
-        $purchaseOrder->load(['supplier', 'branch', 'items.product.category']);
+        $purchaseOrder->load([
+            'supplier',
+            'branch',
+            'items.product.category',
+            'generalItems',
+        ]);
 
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
@@ -267,24 +285,150 @@ class ProcurementController extends Controller
     ): JsonResponse {
         $tenant = $request->attributes->get('tenant');
 
-        $validated = $request->validate([
+        $purchaseType = (string) $request->input(
+            'purchase_type',
+            'core_products'
+        );
+
+        $rules = [
+            'purchase_type' => [
+                'nullable',
+                Rule::in([
+                    'core_products',
+                    'general_items',
+                ]),
+            ],
             'branch_id' => ['required', 'integer'],
-            'pharmaco_supplier_id' => ['required', 'integer'],
-            'po_number' => ['nullable', 'string', 'max:120'],
-            'order_date' => ['nullable', 'date'],
-            'expected_delivery_date' => ['nullable', 'date', 'after_or_equal:order_date'],
-            'discount_amount' => ['nullable', 'numeric', 'gte:0'],
-            'tax_amount' => ['nullable', 'numeric', 'gte:0'],
-            'shipping_amount' => ['nullable', 'numeric', 'gte:0'],
+            'pharmaco_supplier_id' => [
+                'required',
+                'integer',
+            ],
+            'po_number' => [
+                'nullable',
+                'string',
+                'max:120',
+            ],
+            'order_date' => [
+                'nullable',
+                'date',
+            ],
+            'expected_delivery_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:order_date',
+            ],
+            'discount_amount' => [
+                'nullable',
+                'numeric',
+                'gte:0',
+            ],
+            'tax_amount' => [
+                'nullable',
+                'numeric',
+                'gte:0',
+            ],
+            'shipping_amount' => [
+                'nullable',
+                'numeric',
+                'gte:0',
+            ],
             'notes' => ['nullable', 'string'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer'],
-            'items.*.quantity_ordered' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_cost' => ['required', 'numeric', 'gte:0'],
-            'items.*.discount_amount' => ['nullable', 'numeric', 'gte:0'],
-            'items.*.tax_amount' => ['nullable', 'numeric', 'gte:0'],
-            'items.*.notes' => ['nullable', 'string'],
-        ]);
+        ];
+
+        if ($purchaseType === 'general_items') {
+            $rules = [
+                ...$rules,
+                'general_items' => [
+                    'required',
+                    'array',
+                    'min:1',
+                ],
+                'general_items.*.general_item_id' => [
+                    'required',
+                    'integer',
+                ],
+                'general_items.*.quantity_ordered' => [
+                    'required',
+                    'numeric',
+                    'gt:0',
+                ],
+                'general_items.*.unit_cost' => [
+                    'required',
+                    'numeric',
+                    'gte:0',
+                ],
+                'general_items.*.discount_amount' => [
+                    'nullable',
+                    'numeric',
+                    'gte:0',
+                ],
+                'general_items.*.tax_amount' => [
+                    'nullable',
+                    'numeric',
+                    'gte:0',
+                ],
+                'general_items.*.notes' => [
+                    'nullable',
+                    'string',
+                    'max:1000',
+                ],
+                'general_items.*.item_name' => [
+                    'prohibited',
+                ],
+                'general_items.*.item_code' => [
+                    'prohibited',
+                ],
+                'general_items.*.category' => [
+                    'prohibited',
+                ],
+                'general_items.*.unit_of_measure' => [
+                    'prohibited',
+                ],
+                'items' => ['prohibited'],
+            ];
+        } else {
+            $purchaseType = 'core_products';
+
+            $rules = [
+                ...$rules,
+                'items' => [
+                    'required',
+                    'array',
+                    'min:1',
+                ],
+                'items.*.product_id' => [
+                    'required',
+                    'integer',
+                ],
+                'items.*.quantity_ordered' => [
+                    'required',
+                    'numeric',
+                    'gt:0',
+                ],
+                'items.*.unit_cost' => [
+                    'required',
+                    'numeric',
+                    'gte:0',
+                ],
+                'items.*.discount_amount' => [
+                    'nullable',
+                    'numeric',
+                    'gte:0',
+                ],
+                'items.*.tax_amount' => [
+                    'nullable',
+                    'numeric',
+                    'gte:0',
+                ],
+                'items.*.notes' => [
+                    'nullable',
+                    'string',
+                ],
+                'general_items' => ['prohibited'],
+            ];
+        }
+
+        $validated = $request->validate($rules);
 
         $branch = Branch::query()
             ->where('tenant_id', $tenant->id)
@@ -293,152 +437,453 @@ class ProcurementController extends Controller
 
         if (! $branch) {
             throw ValidationException::withMessages([
-                'branch_id' => ['Selected branch does not belong to the current tenant or is inactive.'],
+                'branch_id' => [
+                    'Selected branch does not belong to the current tenant or is inactive.',
+                ],
             ]);
         }
 
         $supplier = PharmacoSupplier::query()
             ->where('tenant_id', $tenant->id)
             ->where('status', 'active')
-            ->find($validated['pharmaco_supplier_id']);
+            ->find(
+                $validated['pharmaco_supplier_id']
+            );
 
         if (! $supplier) {
             throw ValidationException::withMessages([
-                'pharmaco_supplier_id' => ['Selected supplier does not belong to the current tenant or is inactive.'],
+                'pharmaco_supplier_id' => [
+                    'Selected supplier does not belong to the current tenant or is inactive.',
+                ],
             ]);
         }
 
-        $productIds = collect($validated['items'])->pluck('product_id')->unique()->values();
-        $products = Product::query()
-            ->where('tenant_id', $tenant->id)
-            ->whereIn('id', $productIds)
-            ->get()
-            ->keyBy('id');
+        $products = collect();
+        $generalItems = collect();
 
-        if ($products->count() !== $productIds->count()) {
-            throw ValidationException::withMessages([
-                'items' => ['One or more selected products do not belong to the current tenant.'],
-            ]);
-        }
+        if ($purchaseType === 'core_products') {
+            $productIds = collect(
+                $validated['items']
+            )
+                ->pluck('product_id')
+                ->unique()
+                ->values();
 
-        if ($products->contains(fn (Product $product) => $product->status !== 'active')) {
-            throw ValidationException::withMessages([
-                'items' => ['Inactive products cannot be added to a purchase order.'],
-            ]);
-        }
+            $products = Product::query()
+                ->where('tenant_id', $tenant->id)
+                ->whereIn('id', $productIds)
+                ->get()
+                ->keyBy('id');
 
-        $poNumber = $validated['po_number'] ?? $this->nextPurchaseOrderNumber($tenant->id);
-
-        $poExists = PharmacoPurchaseOrder::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('po_number', $poNumber)
-            ->exists();
-
-        if ($poExists) {
-            throw ValidationException::withMessages([
-                'po_number' => ['This purchase order number already exists for the current tenant.'],
-            ]);
-        }
-
-        $purchaseOrder = DB::transaction(function () use ($request, $tenant, $validated, $branch, $supplier, $products, $poNumber) {
-            $lineItems = collect($validated['items'])->map(function (array $item) use ($tenant, $products) {
-                /** @var Product $product */
-                $product = $products->get($item['product_id']);
-
-                $quantity = round((float) $item['quantity_ordered'], 3);
-                $unitCost = round((float) $item['unit_cost'], 2);
-                $discount = round((float) ($item['discount_amount'] ?? 0), 2);
-                $tax = round((float) ($item['tax_amount'] ?? 0), 2);
-                $lineTotal = round(($quantity * $unitCost) - $discount + $tax, 2);
-
-                if ($lineTotal < 0) {
-                    throw ValidationException::withMessages([
-                        'items' => ["Line total cannot be negative for product {$product->sku}."],
-                    ]);
-                }
-
-                return [
-                    'uuid' => (string) Str::uuid(),
-                    'tenant_id' => $tenant->id,
-                    'product_id' => $product->id,
-                    'product_name_snapshot' => $product->name,
-                    'sku_snapshot' => $product->sku,
-                    'quantity_ordered' => $quantity,
-                    'quantity_received' => 0,
-                    'unit_cost' => $unitCost,
-                    'discount_amount' => $discount,
-                    'tax_amount' => $tax,
-                    'line_total' => $lineTotal,
-                    'status' => 'pending',
-                    'notes' => $item['notes'] ?? null,
-                    'metadata' => [
-                        'creation_workflow' => 'phase_7_1_create_purchase_order',
-                    ],
-                ];
-            });
-
-            $subtotal = round($lineItems->sum('line_total'), 2);
-            $discount = round((float) ($validated['discount_amount'] ?? 0), 2);
-            $tax = round((float) ($validated['tax_amount'] ?? 0), 2);
-            $shipping = round((float) ($validated['shipping_amount'] ?? 0), 2);
-            $total = round($subtotal - $discount + $tax + $shipping, 2);
-
-            if ($total < 0) {
+            if (
+                $products->count()
+                !== $productIds->count()
+            ) {
                 throw ValidationException::withMessages([
-                    'total_amount' => ['Purchase order total cannot be negative.'],
+                    'items' => [
+                        'One or more products do not exist in Product Master for the current tenant.',
+                    ],
                 ]);
             }
 
-            $purchaseOrder = PharmacoPurchaseOrder::query()->create([
-                'uuid' => (string) Str::uuid(),
-                'tenant_id' => $tenant->id,
-                'branch_id' => $branch->id,
-                'pharmaco_supplier_id' => $supplier->id,
-                'po_number' => $poNumber,
-                'status' => 'draft',
-                'order_date' => $validated['order_date'] ?? now()->toDateString(),
-                'expected_delivery_date' => $validated['expected_delivery_date'] ?? null,
-                'subtotal_amount' => $subtotal,
-                'discount_amount' => $discount,
-                'tax_amount' => $tax,
-                'shipping_amount' => $shipping,
-                'total_amount' => $total,
-                'created_by' => $request->user()?->id,
-                'notes' => $validated['notes'] ?? null,
-                'metadata' => [
-                    'creation_workflow' => 'phase_7_1_create_purchase_order',
-                    'receiving_status' => 'not_received',
+            if (
+                $products->contains(
+                    fn (Product $product) =>
+                        $product->status !== 'active'
+                )
+            ) {
+                throw ValidationException::withMessages([
+                    'items' => [
+                        'Inactive Product Master records cannot be added to a Core Products Purchase.',
+                    ],
+                ]);
+            }
+        } else {
+            $generalItemIds = collect(
+                $validated['general_items']
+            )
+                ->pluck('general_item_id')
+                ->unique()
+                ->values();
+
+            $generalItems =
+                PharmacoGeneralItem::query()
+                    ->where(
+                        'tenant_id',
+                        $tenant->id
+                    )
+                    ->whereIn(
+                        'id',
+                        $generalItemIds
+                    )
+                    ->with('category')
+                    ->get()
+                    ->keyBy('id');
+
+            if (
+                $generalItems->count()
+                !== $generalItemIds->count()
+            ) {
+                throw ValidationException::withMessages([
+                    'general_items' => [
+                        'One or more items do not exist in General Item Master for the current tenant.',
+                    ],
+                ]);
+            }
+
+            if (
+                $generalItems->contains(
+                    fn (PharmacoGeneralItem $item) =>
+                        $item->status !== 'active'
+                )
+            ) {
+                throw ValidationException::withMessages([
+                    'general_items' => [
+                        'Inactive General Item Master records cannot be added to a Purchase Order.',
+                    ],
+                ]);
+            }
+        }
+
+        $poNumber = $validated['po_number']
+            ?? $this->nextPurchaseOrderNumber(
+                $tenant->id
+            );
+
+        $poExists =
+            PharmacoPurchaseOrder::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('po_number', $poNumber)
+                ->exists();
+
+        if ($poExists) {
+            throw ValidationException::withMessages([
+                'po_number' => [
+                    'This purchase order number already exists for the current tenant.',
                 ],
             ]);
+        }
 
-            $lineItems->each(function (array $lineItem) use ($purchaseOrder) {
-                $purchaseOrder->items()->create($lineItem);
-            });
+        $purchaseOrder = DB::transaction(
+            function () use (
+                $request,
+                $tenant,
+                $validated,
+                $branch,
+                $supplier,
+                $products,
+                $generalItems,
+                $poNumber,
+                $purchaseType
+            ) {
+                $payloadItems =
+                    $purchaseType === 'general_items'
+                        ? $validated['general_items']
+                        : $validated['items'];
 
-            return $purchaseOrder->fresh(['supplier', 'branch', 'items.product.category']);
-        });
+                $lineItems = collect(
+                    $payloadItems
+                )->map(
+                    function (array $item) use (
+                        $tenant,
+                        $products,
+                        $generalItems,
+                        $purchaseType
+                    ): array {
+                        $quantity = round(
+                            (float)
+                            $item['quantity_ordered'],
+                            3
+                        );
 
-        $scope = $scopeResolver->resolveForUser($request->user());
+                        $unitCost = round(
+                            (float) $item['unit_cost'],
+                            2
+                        );
+
+                        $discount = round(
+                            (float) (
+                                $item[
+                                    'discount_amount'
+                                ] ?? 0
+                            ),
+                            2
+                        );
+
+                        $tax = round(
+                            (float) (
+                                $item['tax_amount']
+                                ?? 0
+                            ),
+                            2
+                        );
+
+                        $lineTotal = round(
+                            ($quantity * $unitCost)
+                            - $discount
+                            + $tax,
+                            2
+                        );
+
+                        if ($lineTotal < 0) {
+                            throw ValidationException::withMessages([
+                                $purchaseType ===
+                                'general_items'
+                                    ? 'general_items'
+                                    : 'items' => [
+                                        'Purchase Order line total cannot be negative.',
+                                    ],
+                            ]);
+                        }
+
+                        if (
+                            $purchaseType ===
+                            'general_items'
+                        ) {
+                            $generalItem =
+                                $generalItems->get(
+                                    $item[
+                                        'general_item_id'
+                                    ]
+                                );
+
+                            return [
+                                'uuid' =>
+                                    (string) Str::uuid(),
+                                'tenant_id' =>
+                                    $tenant->id,
+                                'pharmaco_general_item_id' =>
+                                    $generalItem->id,
+                                'item_name' =>
+                                    $generalItem->name,
+                                'item_code' =>
+                                    $generalItem->code,
+                                'category' =>
+                                    $generalItem
+                                        ->category
+                                        ?->name,
+                                'unit_of_measure' =>
+                                    $generalItem
+                                        ->unit_of_measure,
+                                'quantity_ordered' =>
+                                    $quantity,
+                                'quantity_received' => 0,
+                                'unit_cost' => $unitCost,
+                                'discount_amount' =>
+                                    $discount,
+                                'tax_amount' => $tax,
+                                'line_total' => $lineTotal,
+                                'status' => 'pending',
+                                'notes' =>
+                                    $item['notes'] ?? null,
+                                'metadata' => [
+                                    'source' =>
+                                        'general_item_master',
+                                    'category_code' =>
+                                        $generalItem
+                                            ->category
+                                            ?->code,
+                                ],
+                            ];
+                        }
+
+                        $product = $products->get(
+                            $item['product_id']
+                        );
+
+                        return [
+                            'uuid' =>
+                                (string) Str::uuid(),
+                            'tenant_id' =>
+                                $tenant->id,
+                            'product_id' =>
+                                $product->id,
+                            'product_name_snapshot' =>
+                                $product->name,
+                            'sku_snapshot' =>
+                                $product->sku,
+                            'quantity_ordered' =>
+                                $quantity,
+                            'quantity_received' => 0,
+                            'unit_cost' => $unitCost,
+                            'discount_amount' =>
+                                $discount,
+                            'tax_amount' => $tax,
+                            'line_total' => $lineTotal,
+                            'status' => 'pending',
+                            'notes' =>
+                                $item['notes'] ?? null,
+                            'metadata' => [
+                                'source' =>
+                                    'product_master',
+                            ],
+                        ];
+                    }
+                );
+
+                $subtotal = round(
+                    (float)
+                    $lineItems->sum('line_total'),
+                    2
+                );
+
+                $discount = round(
+                    (float) (
+                        $validated[
+                            'discount_amount'
+                        ] ?? 0
+                    ),
+                    2
+                );
+
+                $tax = round(
+                    (float) (
+                        $validated['tax_amount']
+                        ?? 0
+                    ),
+                    2
+                );
+
+                $shipping = round(
+                    (float) (
+                        $validated[
+                            'shipping_amount'
+                        ] ?? 0
+                    ),
+                    2
+                );
+
+                $total = round(
+                    $subtotal
+                    - $discount
+                    + $tax
+                    + $shipping,
+                    2
+                );
+
+                if ($total < 0) {
+                    throw ValidationException::withMessages([
+                        'total_amount' => [
+                            'Purchase order total cannot be negative.',
+                        ],
+                    ]);
+                }
+
+                $purchaseOrder =
+                    PharmacoPurchaseOrder::query()
+                        ->create([
+                            'uuid' =>
+                                (string) Str::uuid(),
+                            'tenant_id' =>
+                                $tenant->id,
+                            'branch_id' =>
+                                $branch->id,
+                            'pharmaco_supplier_id' =>
+                                $supplier->id,
+                            'po_number' => $poNumber,
+                            'purchase_type' =>
+                                $purchaseType,
+                            'status' => 'draft',
+                            'order_date' =>
+                                $validated[
+                                    'order_date'
+                                ]
+                                ?? now()
+                                    ->toDateString(),
+                            'expected_delivery_date' =>
+                                $validated[
+                                    'expected_delivery_date'
+                                ] ?? null,
+                            'subtotal_amount' =>
+                                $subtotal,
+                            'discount_amount' =>
+                                $discount,
+                            'tax_amount' => $tax,
+                            'shipping_amount' =>
+                                $shipping,
+                            'total_amount' => $total,
+                            'created_by' =>
+                                $request->user()?->id,
+                            'notes' =>
+                                $validated['notes']
+                                ?? null,
+                            'metadata' => [
+                                'creation_workflow' =>
+                                    $purchaseType ===
+                                    'general_items'
+                                        ? 'general_item_master_purchase'
+                                        : 'product_master_purchase',
+                                'receiving_status' =>
+                                    'not_received',
+                            ],
+                        ]);
+
+                if (
+                    $purchaseType ===
+                    'general_items'
+                ) {
+                    $lineItems->each(
+                        fn (array $lineItem) =>
+                            $purchaseOrder
+                                ->generalItems()
+                                ->create($lineItem)
+                    );
+                } else {
+                    $lineItems->each(
+                        fn (array $lineItem) =>
+                            $purchaseOrder
+                                ->items()
+                                ->create($lineItem)
+                    );
+                }
+
+                return $purchaseOrder;
+            }
+        );
+
+        $purchaseOrder->load([
+            'supplier',
+            'branch',
+            'items.product.category',
+            'generalItems.generalItem.category',
+        ]);
+
+        $scope = $scopeResolver->resolveForUser(
+            $request->user()
+        );
 
         $auditLogService->record(
-            action: 'pharmaco.purchase_order.created',
+            action:
+                'pharmaco.purchase_order.created',
             scope: $scope,
             metadata: [
                 'tenant_slug' => $tenant->slug,
-                'purchase_order_id' => $purchaseOrder->id,
-                'po_number' => $purchaseOrder->po_number,
-                'supplier_id' => $supplier->id,
-                'items_count' => $purchaseOrder->items->count(),
-                'total_amount' => (float) $purchaseOrder->total_amount,
+                'purchase_order_id' =>
+                    $purchaseOrder->id,
+                'purchase_type' =>
+                    $purchaseType,
+                'po_number' =>
+                    $purchaseOrder->po_number,
+                'total_amount' =>
+                    (float)
+                    $purchaseOrder->total_amount,
             ],
             dataClassification: 'internal',
-            auditableType: PharmacoPurchaseOrder::class,
+            auditableType:
+                PharmacoPurchaseOrder::class,
             auditableId: $purchaseOrder->id
         );
 
         return response()->json([
-            'message' => 'Purchase order created successfully.',
-            'purchase_order' => $this->serializePurchaseOrder($purchaseOrder, includeDetails: true),
+            'message' =>
+                $purchaseType === 'general_items'
+                    ? 'General Items purchase order created successfully.'
+                    : 'Purchase order created successfully.',
+            'purchase_order' =>
+                $this->serializePurchaseOrder(
+                    $purchaseOrder,
+                    includeDetails: true
+                ),
         ], 201);
     }
 
@@ -461,9 +906,21 @@ class ProcurementController extends Controller
             ]);
         }
 
-        if ($purchaseOrder->items()->count() === 0) {
+        $lineCount =
+            $purchaseOrder->purchase_type ===
+            'general_items'
+                ? $purchaseOrder
+                    ->generalItems()
+                    ->count()
+                : $purchaseOrder
+                    ->items()
+                    ->count();
+
+        if ($lineCount === 0) {
             throw ValidationException::withMessages([
-                'items' => ['A purchase order must have at least one item before approval.'],
+                'items' => [
+                    'A purchase order must have at least one valid item before approval.',
+                ],
             ]);
         }
 
@@ -477,7 +934,12 @@ class ProcurementController extends Controller
         ];
         $purchaseOrder->save();
 
-        $purchaseOrder->load(['supplier', 'branch', 'items.product.category']);
+        $purchaseOrder->load([
+            'supplier',
+            'branch',
+            'items.product.category',
+            'generalItems',
+        ]);
 
         $scope = $scopeResolver->resolveForUser($request->user());
 
@@ -525,9 +987,31 @@ class ProcurementController extends Controller
             ]);
         }
 
-        if ($purchaseOrder->items()->where('quantity_received', '>', 0)->exists()) {
+        $hasReceivedItems =
+            $purchaseOrder->purchase_type ===
+            'general_items'
+                ? $purchaseOrder
+                    ->generalItems()
+                    ->where(
+                        'quantity_received',
+                        '>',
+                        0
+                    )
+                    ->exists()
+                : $purchaseOrder
+                    ->items()
+                    ->where(
+                        'quantity_received',
+                        '>',
+                        0
+                    )
+                    ->exists();
+
+        if ($hasReceivedItems) {
             throw ValidationException::withMessages([
-                'status' => ['Purchase orders with received stock cannot be cancelled.'],
+                'status' => [
+                    'Purchase orders with received items cannot be cancelled.',
+                ],
             ]);
         }
 
@@ -541,12 +1025,27 @@ class ProcurementController extends Controller
         ];
         $purchaseOrder->save();
 
-        $purchaseOrder->items()->update([
-            'status' => 'cancelled',
-            'updated_at' => now(),
-        ]);
+        if (
+            $purchaseOrder->purchase_type ===
+            'general_items'
+        ) {
+            $purchaseOrder->generalItems()->update([
+                'status' => 'cancelled',
+                'updated_at' => now(),
+            ]);
+        } else {
+            $purchaseOrder->items()->update([
+                'status' => 'cancelled',
+                'updated_at' => now(),
+            ]);
+        }
 
-        $purchaseOrder->load(['supplier', 'branch', 'items.product.category']);
+        $purchaseOrder->load([
+            'supplier',
+            'branch',
+            'items.product.category',
+            'generalItems',
+        ]);
 
         $scope = $scopeResolver->resolveForUser($request->user());
 
@@ -660,6 +1159,17 @@ class ProcurementController extends Controller
             $purchaseOrder = PharmacoPurchaseOrder::query()
                 ->where('tenant_id', $tenant->id)
                 ->findOrFail($validated['pharmaco_purchase_order_id']);
+
+            if (
+                $purchaseOrder->purchase_type ===
+                'general_items'
+            ) {
+                throw ValidationException::withMessages([
+                    'pharmaco_purchase_order_id' => [
+                        'General Items purchase orders require the dedicated General Items invoice workflow.',
+                    ],
+                ]);
+            }
 
             if ((int) $purchaseOrder->pharmaco_supplier_id !== (int) $supplier->id) {
                 throw ValidationException::withMessages([
@@ -1090,63 +1600,263 @@ class ProcurementController extends Controller
         ];
     }
 
-    private function serializePurchaseOrder(PharmacoPurchaseOrder $purchaseOrder, bool $includeDetails = false): array
-    {
+    private function serializePurchaseOrder(
+        PharmacoPurchaseOrder $purchaseOrder,
+        bool $includeDetails = false
+    ): array {
+        $purchaseType =
+            $purchaseOrder->purchase_type
+                ?: 'core_products';
+
+        $coreItemsCount =
+            $purchaseOrder->core_items_count
+                ?? (
+                    $purchaseOrder
+                        ->relationLoaded('items')
+                        ? $purchaseOrder
+                            ->items
+                            ->count()
+                        : null
+                );
+
+        $generalItemsCount =
+            $purchaseOrder->general_items_count
+                ?? (
+                    $purchaseOrder
+                        ->relationLoaded('generalItems')
+                        ? $purchaseOrder
+                            ->generalItems
+                            ->count()
+                        : null
+                );
+
+        $itemsCount =
+            $purchaseType === 'general_items'
+                ? $generalItemsCount
+                : $coreItemsCount;
+
         $payload = [
             'id' => $purchaseOrder->id,
             'uuid' => $purchaseOrder->uuid,
-            'po_number' => $purchaseOrder->po_number,
+            'po_number' =>
+                $purchaseOrder->po_number,
+            'purchase_type' => $purchaseType,
             'status' => $purchaseOrder->status,
-            'order_date' => $purchaseOrder->order_date?->toDateString(),
-            'expected_delivery_date' => $purchaseOrder->expected_delivery_date?->toDateString(),
-            'subtotal_amount' => (float) $purchaseOrder->subtotal_amount,
-            'discount_amount' => (float) $purchaseOrder->discount_amount,
-            'tax_amount' => (float) $purchaseOrder->tax_amount,
-            'shipping_amount' => (float) $purchaseOrder->shipping_amount,
-            'total_amount' => (float) $purchaseOrder->total_amount,
+            'order_date' =>
+                $purchaseOrder
+                    ->order_date
+                    ?->toDateString(),
+            'expected_delivery_date' =>
+                $purchaseOrder
+                    ->expected_delivery_date
+                    ?->toDateString(),
+            'subtotal_amount' =>
+                (float) $purchaseOrder
+                    ->subtotal_amount,
+            'discount_amount' =>
+                (float) $purchaseOrder
+                    ->discount_amount,
+            'tax_amount' =>
+                (float) $purchaseOrder
+                    ->tax_amount,
+            'shipping_amount' =>
+                (float) $purchaseOrder
+                    ->shipping_amount,
+            'total_amount' =>
+                (float) $purchaseOrder
+                    ->total_amount,
             'notes' => $purchaseOrder->notes,
-            'supplier' => $purchaseOrder->supplier ? $this->serializeSupplier($purchaseOrder->supplier) : null,
-            'branch' => $purchaseOrder->branch ? [
-                'id' => $purchaseOrder->branch->id,
-                'name' => $purchaseOrder->branch->name,
-                'code' => $purchaseOrder->branch->code,
-            ] : null,
-            'items_count' => $purchaseOrder->items_count ?? ($purchaseOrder->relationLoaded('items') ? $purchaseOrder->items->count() : null),
-            'created_at' => $purchaseOrder->created_at?->toISOString(),
+            'supplier' =>
+                $purchaseOrder->supplier
+                    ? $this->serializeSupplier(
+                        $purchaseOrder->supplier
+                    )
+                    : null,
+            'branch' =>
+                $purchaseOrder->branch
+                    ? [
+                        'id' =>
+                            $purchaseOrder
+                                ->branch
+                                ->id,
+                        'name' =>
+                            $purchaseOrder
+                                ->branch
+                                ->name,
+                        'code' =>
+                            $purchaseOrder
+                                ->branch
+                                ->code,
+                    ]
+                    : null,
+            'items_count' => $itemsCount,
+            'created_at' =>
+                $purchaseOrder
+                    ->created_at
+                    ?->toISOString(),
         ];
 
         if ($includeDetails) {
-            $payload['items'] = $purchaseOrder->items
-                ->map(fn (PharmacoPurchaseOrderItem $item) => $this->serializePurchaseOrderItem($item))
-                ->values();
+            if (
+                $purchaseType ===
+                'general_items'
+            ) {
+                $payload['items'] =
+                    $purchaseOrder
+                        ->generalItems
+                        ->map(
+                            fn (
+                                PharmacoGeneralPurchaseOrderItem $item
+                            ) =>
+                                $this
+                                    ->serializeGeneralPurchaseOrderItem(
+                                        $item
+                                    )
+                        )
+                        ->values();
+            } else {
+                $payload['items'] =
+                    $purchaseOrder
+                        ->items
+                        ->map(
+                            fn (
+                                PharmacoPurchaseOrderItem $item
+                            ) =>
+                                $this
+                                    ->serializePurchaseOrderItem(
+                                        $item
+                                    )
+                        )
+                        ->values();
+            }
         }
 
         return $payload;
     }
 
-    private function serializePurchaseOrderItem(PharmacoPurchaseOrderItem $item): array
-    {
+    private function serializePurchaseOrderItem(
+        PharmacoPurchaseOrderItem $item
+    ): array {
         return [
             'id' => $item->id,
             'uuid' => $item->uuid,
-            'product' => $item->product ? [
-                'id' => $item->product->id,
-                'name' => $item->product->name,
-                'sku' => $item->product->sku,
-                'category' => $item->product->category ? [
-                    'id' => $item->product->category->id,
-                    'name' => $item->product->category->name,
-                    'code' => $item->product->category->code,
-                ] : null,
-            ] : null,
-            'product_name_snapshot' => $item->product_name_snapshot,
-            'sku_snapshot' => $item->sku_snapshot,
-            'quantity_ordered' => (float) $item->quantity_ordered,
-            'quantity_received' => (float) $item->quantity_received,
-            'unit_cost' => (float) $item->unit_cost,
-            'discount_amount' => (float) $item->discount_amount,
-            'tax_amount' => (float) $item->tax_amount,
-            'line_total' => (float) $item->line_total,
+            'item_type' => 'core_product',
+            'product' => $item->product
+                ? [
+                    'id' => $item->product->id,
+                    'name' =>
+                        $item->product->name,
+                    'sku' =>
+                        $item->product->sku,
+                    'category' =>
+                        $item->product->category
+                            ? [
+                                'id' =>
+                                    $item
+                                        ->product
+                                        ->category
+                                        ->id,
+                                'name' =>
+                                    $item
+                                        ->product
+                                        ->category
+                                        ->name,
+                                'code' =>
+                                    $item
+                                        ->product
+                                        ->category
+                                        ->code,
+                            ]
+                            : null,
+                ]
+                : null,
+            'product_name_snapshot' =>
+                $item->product_name_snapshot,
+            'sku_snapshot' =>
+                $item->sku_snapshot,
+            'quantity_ordered' =>
+                (float) $item->quantity_ordered,
+            'quantity_received' =>
+                (float) $item->quantity_received,
+            'unit_cost' =>
+                (float) $item->unit_cost,
+            'discount_amount' =>
+                (float) $item->discount_amount,
+            'tax_amount' =>
+                (float) $item->tax_amount,
+            'line_total' =>
+                (float) $item->line_total,
+            'status' => $item->status,
+            'notes' => $item->notes,
+            'metadata' => $item->metadata ?? [],
+        ];
+    }
+
+    private function serializeGeneralPurchaseOrderItem(
+        PharmacoGeneralPurchaseOrderItem $item
+    ): array {
+        return [
+            'id' => $item->id,
+            'uuid' => $item->uuid,
+            'item_type' => 'general_item',
+            'product' => null,
+            'general_item' => $item->generalItem
+                ? [
+                    'id' =>
+                        $item->generalItem->id,
+                    'name' =>
+                        $item->generalItem->name,
+                    'code' =>
+                        $item->generalItem->code,
+                    'unit_of_measure' =>
+                        $item
+                            ->generalItem
+                            ->unit_of_measure,
+                    'category' =>
+                        $item
+                            ->generalItem
+                            ->category
+                            ? [
+                                'id' =>
+                                    $item
+                                        ->generalItem
+                                        ->category
+                                        ->id,
+                                'name' =>
+                                    $item
+                                        ->generalItem
+                                        ->category
+                                        ->name,
+                                'code' =>
+                                    $item
+                                        ->generalItem
+                                        ->category
+                                        ->code,
+                            ]
+                            : null,
+                ]
+                : null,
+            'item_name' => $item->item_name,
+            'item_code' => $item->item_code,
+            'category' => $item->category,
+            'unit_of_measure' =>
+                $item->unit_of_measure,
+            'product_name_snapshot' =>
+                $item->item_name,
+            'sku_snapshot' =>
+                $item->item_code,
+            'quantity_ordered' =>
+                (float) $item->quantity_ordered,
+            'quantity_received' =>
+                (float) $item->quantity_received,
+            'unit_cost' =>
+                (float) $item->unit_cost,
+            'discount_amount' =>
+                (float) $item->discount_amount,
+            'tax_amount' =>
+                (float) $item->tax_amount,
+            'line_total' =>
+                (float) $item->line_total,
             'status' => $item->status,
             'notes' => $item->notes,
             'metadata' => $item->metadata ?? [],
