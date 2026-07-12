@@ -9,6 +9,7 @@ use App\Models\PharmacoSale;
 use App\Models\PharmacoSupplierInvoice;
 use App\Models\PharmacoSupplierPayment;
 use App\Models\StockBatch;
+use App\Services\Inventory\InventoryExecutiveRiskService;
 use App\Models\PharmacoCustomer;
 use App\Models\PharmacoCustomerReceivable;
 use Illuminate\Http\JsonResponse;
@@ -250,6 +251,13 @@ class ReportingController extends Controller
             fn (StockBatch $batch) => (float) $batch->quantity_on_hand * (float) ($batch->selling_price ?? 0)
         );
 
+        $executiveInventory = app(
+            InventoryExecutiveRiskService::class
+        )->build(
+            $batches,
+            $tenantId
+        );
+
         $lowStockBatches = $batches
             ->filter(fn (StockBatch $batch) => (float) $batch->quantity_on_hand > 0 && (float) $batch->quantity_on_hand <= 10)
             ->count();
@@ -267,11 +275,17 @@ class ReportingController extends Controller
             'product_count' => $batches->pluck('product_id')->unique()->count(),
             'total_quantity_on_hand' => round($totalQuantity, 3),
             'total_cost_value' => round($totalCostValue, 2),
+            'total_inventory_value' =>
+                round($totalCostValue, 2),
             'total_retail_value' => round($totalRetailValue, 2),
             'estimated_margin_value' => round($totalRetailValue - $totalCostValue, 2),
             'low_stock_batches' => $lowStockBatches,
             'expired_batches' => $expiredBatches,
             'expiring_soon_batches' => $expiringSoonBatches,
+            'risk_mix' =>
+                $executiveInventory['risk_mix'],
+            'general_stock' =>
+                $executiveInventory['general_stock'],
         ];
 
         if ($includeLocations) {

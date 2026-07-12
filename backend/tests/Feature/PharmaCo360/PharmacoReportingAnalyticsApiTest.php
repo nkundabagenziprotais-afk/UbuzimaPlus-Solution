@@ -34,6 +34,34 @@ class PharmacoReportingAnalyticsApiTest extends TestCase
                     'low_stock_batches',
                     'expired_batches',
                     'expiring_soon_batches',
+                    'risk_mix' => [
+                        'analysis_basis',
+                        'currency',
+                        'total_inventory_value',
+                        'low_stock_value',
+                        'near_expiry_value',
+                        'expired_quarantined_value',
+                        'slow_overstock_value',
+                        'healthy_stock_value',
+                        'total_value_at_risk',
+                        'value_at_risk_percent',
+                        'executive_recommendation',
+                    ],
+                    'general_stock' => [
+                        'analysis_basis',
+                        'currency',
+                        'item_count',
+                        'total_value',
+                        'items_below_minimum',
+                        'zero_stock_items',
+                        'estimated_shortage_exposure_value',
+                        'slow_moving_value',
+                        'average_stock_cover_days',
+                        'predicted_stockout_items',
+                        'recommended_reorder_value',
+                        'ai_health_score',
+                        'ai_recommendation',
+                    ],
                 ],
                 'sales' => [
                     'sale_count',
@@ -86,9 +114,88 @@ class PharmacoReportingAnalyticsApiTest extends TestCase
                     'total_cost_value',
                     'total_retail_value',
                     'estimated_margin_value',
+                    'risk_mix',
+                    'general_stock',
                     'locations',
                 ],
             ]);
+    }
+
+    public function test_inventory_risk_values_reconcile_to_total_inventory_value(): void
+    {
+        $this->seed();
+
+        $token = $this->loginAs(
+            'admin@vitapharmaafrica.com'
+        );
+
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                'vitapharma'
+            )
+            ->withToken($token)
+            ->getJson(
+                '/api/v1/pharmaco/reports/inventory-valuation'
+            )
+            ->assertOk();
+
+        $risk = $response->json(
+            'inventory.risk_mix'
+        );
+
+        $bucketTotal =
+            (float) $risk['low_stock_value']
+            + (float) $risk['near_expiry_value']
+            + (float) $risk[
+                'expired_quarantined_value'
+            ]
+            + (float) $risk[
+                'slow_overstock_value'
+            ]
+            + (float) $risk[
+                'healthy_stock_value'
+            ];
+
+        $calculatedRisk =
+            (float) $risk['low_stock_value']
+            + (float) $risk['near_expiry_value']
+            + (float) $risk[
+                'expired_quarantined_value'
+            ]
+            + (float) $risk[
+                'slow_overstock_value'
+            ];
+
+        $this->assertEqualsWithDelta(
+            (float) $risk[
+                'total_inventory_value'
+            ],
+            $bucketTotal,
+            0.05
+        );
+
+        $this->assertEqualsWithDelta(
+            (float) $risk[
+                'total_value_at_risk'
+            ],
+            $calculatedRisk,
+            0.05
+        );
+
+        $healthScore = (float) $response->json(
+            'inventory.general_stock.ai_health_score'
+        );
+
+        $this->assertGreaterThanOrEqual(
+            0,
+            $healthScore
+        );
+
+        $this->assertLessThanOrEqual(
+            100,
+            $healthScore
+        );
     }
 
     public function test_tenant_admin_can_view_sales_summary_report_with_date_filters(): void

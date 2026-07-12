@@ -355,7 +355,11 @@ class TenantUserManagementController extends Controller
 
         $assignments = TenantUser::query()
             ->where('tenant_id', $tenant->id)
-            ->with(['user.roles.permissions', 'branch'])
+            ->with([
+                'user.roles.permissions',
+                'user.trustedDevices',
+                'branch',
+            ])
             ->latest()
             ->get()
             ->map(fn (TenantUser $assignment) => [
@@ -365,6 +369,31 @@ class TenantUserManagementController extends Controller
                 'phone' => $assignment->user->phone,
                 'job_title' => $assignment->job_title,
                 'status' => $assignment->status,
+                'security' => [
+                    'two_factor_required' =>
+                        (bool) $assignment->user
+                            ->two_factor_required,
+                    'two_factor_enabled' =>
+                        (bool) $assignment->user
+                            ->two_factor_enabled,
+                    'must_change_password' =>
+                        (bool) $assignment->user
+                            ->must_change_password,
+                    'last_login_at' =>
+                        optional(
+                            $assignment->user
+                                ->last_login_at
+                        )->toISOString(),
+                    'trusted_devices_count' =>
+                        $assignment->user
+                            ->trustedDevices
+                            ->whereNull('revoked_at')
+                            ->count(),
+                    'active_sessions_count' =>
+                        $assignment->user
+                            ->tokens()
+                            ->count(),
+                ],
                 'branch' => $assignment->branch ? [
                     'id' => $assignment->branch->id,
                     'name' => $assignment->branch->name,
@@ -379,6 +408,10 @@ class TenantUserManagementController extends Controller
                         'name' => $role->name,
                         'code' => $this->normalizeRequestedRoleCode($tenant, $role->code),
                         'stored_code' => $role->code,
+                        'access_assignment_mode' =>
+                            $this->roleAccessAssignmentMode(
+                                $role
+                            ),
                         'permissions' => $role->permissions->pluck('code')->values(),
                     ])
                     ->values(),
@@ -403,13 +436,24 @@ class TenantUserManagementController extends Controller
             'email' => ['required', 'email', 'max:191'],
             'phone' => ['nullable', 'string', 'max:50'],
             'job_title' => ['nullable', 'string', 'max:191'],
+            'access_assignment_mode' => [
+                'nullable',
+                'string',
+                'in:predefined_role,granular_permissions',
+            ],
             'role_code' => ['required', 'string', 'max:80'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'max:100'],
             'password' => ['nullable', 'string', 'min:8', 'max:100'],
             'branch_id' => ['nullable', 'integer'],
             'status' => ['nullable', 'string', 'in:active,invited,suspended,inactive'],
-        ]);
+            'two_factor_required' =>
+                ['nullable', 'boolean'],        ]);
+
+        $validated['access_assignment_mode'] =
+            $this->resolveAccessAssignmentMode(
+                $validated
+            );
 
         $temporaryPassword = $validated['password'] ?? (Str::random(10) . '1!');
 
@@ -429,7 +473,12 @@ class TenantUserManagementController extends Controller
             $user->password = Hash::make($temporaryPassword);
             $user->forceFill([
                 'must_change_password' => true,
-                'two_factor_required' => false,
+                'two_factor_required' =>
+                    (bool) (
+                        $validated[
+                            'two_factor_required'
+                        ] ?? true
+                    ),
             ]);
             $user->save();
 
@@ -445,6 +494,9 @@ class TenantUserManagementController extends Controller
 
             $role = $this->ensureTenantRole(
                 $tenant,
+                $validated[
+                    'access_assignment_mode'
+                ],
                 $validated['role_code'],
                 $validated['permissions'] ?? null,
                 $user,
@@ -510,18 +562,45 @@ class TenantUserManagementController extends Controller
             'name' => ['sometimes', 'string', 'max:191'],
             'phone' => ['nullable', 'string', 'max:50'],
             'job_title' => ['nullable', 'string', 'max:191'],
+            'access_assignment_mode' => [
+                'nullable',
+                'string',
+                'in:predefined_role,granular_permissions',
+            ],
             'role_code' => ['required', 'string', 'max:80'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'max:100'],
             'branch_id' => ['nullable', 'integer'],
             'status' => ['nullable', 'string', 'in:active,invited,suspended,inactive'],
-        ]);
+            'two_factor_required' =>
+                ['nullable', 'boolean'],        ]);
+
+        $validated['access_assignment_mode'] =
+            $this->resolveAccessAssignmentMode(
+                $validated
+            );
 
         $updatedUser = DB::transaction(function () use ($tenant, $assignment, $validated, $user) {
             $user->name = $validated['name'] ?? $user->name;
-            $user->phone = array_key_exists('phone', $validated)
+            $user->phone = array_key_exists(
+                'phone',
+                $validated
+            )
                 ? $validated['phone']
                 : $user->phone;
+
+            if (
+                array_key_exists(
+                    'two_factor_required',
+                    $validated
+                )
+            ) {
+                $user->two_factor_required =
+                    (bool) $validated[
+                        'two_factor_required'
+                    ];
+            }
+
             $user->save();
 
             $assignmentStatus = $validated['status'] ?? $assignment->status ?? 'active';
@@ -537,6 +616,9 @@ class TenantUserManagementController extends Controller
 
             $role = $this->ensureTenantRole(
                 $tenant,
+                $validated[
+                    'access_assignment_mode'
+                ],
                 $validated['role_code'],
                 $validated['permissions'] ?? null,
                 $user,
@@ -621,56 +703,356 @@ class TenantUserManagementController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
     }
+    /**
+     * AQUILA_USER_ACCESS_ASSIGNMENT_MODES_20260712
+     */
+    private function resolveAccessAssignmentMode(
+        array $validated,
+    ): string {
+        $mode = $validated[
+            'access_assignment_mode'
+        ] ?? (
+            array_key_exists(
+                'permissions',
+                $validated,
+            )
+                ? 'granular_permissions'
+                : 'predefined_role'
+        );
+
+        abort_if(
+            $mode === 'predefined_role'
+            && ! empty(
+                $validated['permissions'] ?? []
+            ),
+            422,
+            'Pre-defined role mode does not accept direct permissions.',
+        );
+
+        abort_if(
+            $mode === 'granular_permissions'
+            && empty(
+                $validated['permissions'] ?? []
+            ),
+            422,
+            'Select at least one permission for the Granular Permission Matrix.',
+        );
+
+        return $mode;
+    }
+
+    private function roleAccessAssignmentMode(
+        Role $role,
+    ): string {
+        return preg_match(
+            '/-custom-access-user-\d+$/',
+            $role->code,
+        ) === 1
+            ? 'granular_permissions'
+            : 'predefined_role';
+    }
+
     private function ensureTenantRole(
         Tenant $tenant,
+        string $accessAssignmentMode,
         string $requestedCode,
         ?array $requestedPermissions,
         ?User $user = null,
     ): Role {
         $templates = $this->roleTemplates();
-        $templateCode = $this->normalizeRequestedRoleCode($tenant, $requestedCode);
-        $template = $templates[$templateCode] ?? $templates['support-assistant'];
 
-        $permissions = $requestedPermissions !== null
-            ? array_values(array_unique($requestedPermissions))
-            : $template['permissions'];
+        if (
+            $accessAssignmentMode
+            === 'predefined_role'
+        ) {
+            $templateCode =
+                $this->normalizeRequestedRoleCode(
+                    $tenant,
+                    $requestedCode,
+                );
 
-        if ($templateCode === 'owner') {
-            $permissions = $templates['owner']['permissions'];
+            abort_unless(
+                array_key_exists(
+                    $templateCode,
+                    $templates,
+                ),
+                422,
+                'The selected pre-defined role is not available for this tenant.',
+            );
+
+            $template = $templates[$templateCode];
+
+            $tenantRoleCode = Str::slug(
+                $tenant->slug
+                . '-'
+                . $templateCode
+            );
+
+            $role = Role::query()->updateOrCreate(
+                ['code' => $tenantRoleCode],
+                [
+                    'name' =>
+                        $tenant->name
+                        . ' '
+                        . $template['name'],
+                    'scope_type' => 'tenant',
+                    'description' =>
+                        $template['description'],
+                    'status' => 'active',
+                ],
+            );
+
+            $permissionIds = Permission::query()
+                ->whereIn(
+                    'code',
+                    $template['permissions'],
+                )
+                ->where('status', 'active')
+                ->pluck('id')
+                ->all();
+
+            $role->permissions()->sync(
+                $permissionIds
+            );
+
+            return $role;
         }
 
-        $identitySuffix = $user ? '-user-' . $user->id : '';
-        $tenantRoleCode = Str::slug($tenant->slug . '-' . $templateCode . $identitySuffix);
+        abort_unless(
+            $user instanceof User,
+            422,
+            'A user is required for granular permission assignment.',
+        );
+
+        $permissions =
+            $this->validateGranularPermissions(
+                $requestedPermissions ?? [],
+            );
+
+        $tenantRoleCode = Str::slug(
+            $tenant->slug
+            . '-custom-access-user-'
+            . $user->id
+        );
 
         $role = Role::query()->updateOrCreate(
             ['code' => $tenantRoleCode],
             [
-                'name' => $tenant->name . ' ' . $template['name'] . ($user ? ' — ' . $user->name : ''),
+                'name' =>
+                    $tenant->name
+                    . ' Custom Access — '
+                    . $user->name,
                 'scope_type' => 'tenant',
-                'description' => $template['description'],
+                'description' =>
+                    'Individual tenant-scoped access configured through the Granular Permission Matrix.',
                 'status' => 'active',
             ],
         );
 
         $permissionIds = collect($permissions)
-            ->filter(fn ($code) => is_string($code) && trim($code) !== '')
-            ->map(fn (string $code) => Permission::query()->firstOrCreate(
-                ['code' => $code],
-                [
-                    'name' => Str::headline(str_replace('.', ' ', $code)),
-                    'permission_group' => str_contains($code, 'insurance')
-                        ? 'insurance'
-                        : (str_contains($code, 'pharmaco') ? 'pharmaco' : 'security'),
-                    'description' => 'Tenant permission for ' . $code,
-                    'status' => 'active',
-                ],
-            )->id)
+            ->map(
+                fn (string $code) =>
+                    Permission::query()
+                        ->firstOrCreate(
+                            ['code' => $code],
+                            [
+                                'name' =>
+                                    Str::headline(
+                                        str_replace(
+                                            '.',
+                                            ' ',
+                                            $code,
+                                        ),
+                                    ),
+                                'permission_group' =>
+                                    str_contains(
+                                        $code,
+                                        'insurance',
+                                    )
+                                        ? 'insurance'
+                                        : (
+                                            str_contains(
+                                                $code,
+                                                'pharmaco',
+                                            )
+                                                ? 'pharmaco'
+                                                : 'security'
+                                        ),
+                                'description' =>
+                                    'Approved tenant permission for '
+                                    . $code,
+                                'status' => 'active',
+                            ],
+                        )
+                        ->id,
+            )
             ->values()
             ->all();
 
-        $role->permissions()->sync($permissionIds);
+        $role->permissions()->sync(
+            $permissionIds
+        );
 
         return $role;
+    }
+
+    private function validateGranularPermissions(
+        array $requestedPermissions,
+    ): array {
+        $permissions = collect(
+            $requestedPermissions
+        )
+            ->filter(
+                fn ($code) =>
+                    is_string($code)
+                    && trim($code) !== ''
+            )
+            ->map(
+                fn (string $code) =>
+                    trim(strtolower($code))
+            )
+            ->unique()
+            ->values();
+
+        abort_if(
+            $permissions->isEmpty(),
+            422,
+            'Select at least one permission for the Granular Permission Matrix.',
+        );
+
+        $forbiddenExact = collect([
+            'roles.manage',
+            'tenant.roles.manage',
+            'users.permissions.edit',
+        ]);
+
+        $forbiddenPrefixes = [
+            'platform.',
+            'system.',
+            'tenants.',
+            'solutions.',
+        ];
+
+        $forbidden = $permissions
+            ->filter(
+                function (
+                    string $code
+                ) use (
+                    $forbiddenExact,
+                    $forbiddenPrefixes,
+                ): bool {
+                    if (
+                        $forbiddenExact->contains(
+                            $code
+                        )
+                    ) {
+                        return true;
+                    }
+
+                    foreach (
+                        $forbiddenPrefixes
+                        as $prefix
+                    ) {
+                        if (
+                            str_starts_with(
+                                $code,
+                                $prefix,
+                            )
+                        ) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                },
+            )
+            ->values();
+
+        abort_if(
+            $forbidden->isNotEmpty(),
+            422,
+            'Platform or tenant-administration permissions cannot be assigned through the Granular Permission Matrix.',
+        );
+
+        $approvedNamespaces = [
+            'tenant.profile.',
+            'pos.',
+            'inventory.',
+            'procurement.',
+            'finance.',
+            'reports.',
+            'insurance.',
+            'communications.',
+            'notifications.',
+            'ai.',
+            'audit.',
+            'pharmaco.',
+            'general_items.',
+            'security.audit.',
+            'security.sessions.',
+            'security.trusted_devices.',
+            'security.two_factor.',
+            'security.passwords.',
+        ];
+
+        $forbiddenGranularPrefixes = [
+            'security.roles.',
+            'security.permissions.',
+            'security.users.',
+            'tenant.roles.',
+            'tenant.users.',
+            'tenant.permissions.',
+        ];
+
+        $unknown = $permissions
+            ->filter(
+                function (
+                    string $code
+                ) use (
+                    $approvedNamespaces,
+                    $forbiddenGranularPrefixes,
+                ): bool {
+                    foreach (
+                        $forbiddenGranularPrefixes
+                        as $prefix
+                    ) {
+                        if (
+                            str_starts_with(
+                                $code,
+                                $prefix,
+                            )
+                        ) {
+                            return true;
+                        }
+                    }
+
+                    foreach (
+                        $approvedNamespaces
+                        as $namespace
+                    ) {
+                        if (
+                            str_starts_with(
+                                $code,
+                                $namespace,
+                            )
+                        ) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                },
+            )
+            ->values();
+
+        abort_if(
+            $unknown->isNotEmpty(),
+            422,
+            'Unknown or unapproved granular permissions: '
+            . $unknown->implode(', '),
+        );
+
+        return $permissions->all();
     }
 
     private function normalizeRequestedRoleCode(Tenant $tenant, string $requestedCode): string
@@ -680,6 +1062,15 @@ class TenantUserManagementController extends Controller
 
         if (str_starts_with($normalized, $tenantPrefix)) {
             $normalized = substr($normalized, strlen($tenantPrefix));
+        }
+
+        if (
+            preg_match(
+                '/-custom-access-user-\d+$/',
+                $normalized,
+            ) === 1
+        ) {
+            return 'custom-access';
         }
 
         $normalized = preg_replace('/-user-\d+$/', '', $normalized) ?: $normalized;

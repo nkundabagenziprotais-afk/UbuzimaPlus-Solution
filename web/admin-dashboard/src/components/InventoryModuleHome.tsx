@@ -1,5 +1,4 @@
 import {
-  type CSSProperties,
   useEffect,
   useMemo,
   useState,
@@ -14,6 +13,9 @@ import {
 import type {
   InventoryView,
 } from './ProductInventoryPreview';
+import {
+  InventoryExecutiveRisk,
+} from './InventoryExecutiveRisk';
 
 type InventoryModuleHomeProps = {
   token: string;
@@ -237,6 +239,7 @@ function canCustomizeInventoryHome(
 }
 
 function isRecord(value: unknown): value is UnknownRecord {
+
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -341,7 +344,8 @@ export function InventoryModuleHome({
   token,
   profile,
   onOpenWorkspace,
-}: InventoryModuleHomeProps) {
+  presentation = 'inventory',
+}: (InventoryModuleHomeProps) & { presentation?: 'inventory' | 'general-stock' }) {
   const [summary, setSummary] =
     useState<unknown>(null);
 
@@ -567,27 +571,6 @@ export function InventoryModuleHome({
     1,
   );
 
-  const productAmount =
-    metricVisibility.products
-      ? analyticsMetrics.find(
-          (metric) => metric.key === 'products',
-        )?.amount ?? 0
-      : 0;
-
-  const lowStockAmount =
-    metricVisibility['low-stock']
-      ? analyticsMetrics.find(
-          (metric) => metric.key === 'low-stock',
-        )?.amount ?? 0
-      : 0;
-
-  const nearExpiryAmount =
-    metricVisibility['near-expiry']
-      ? analyticsMetrics.find(
-          (metric) => metric.key === 'near-expiry',
-        )?.amount ?? 0
-      : 0;
-
   const valuationMetric =
     metricVisibility.valuation
       ? analyticsMetrics.find(
@@ -595,28 +578,119 @@ export function InventoryModuleHome({
         ) ?? null
       : null;
 
-  const riskBase = Math.max(
-    productAmount,
-    lowStockAmount + nearExpiryAmount,
-    1,
-  );
+  const weeklyInventoryValue = useMemo(() => {
+    type WeeklyInventoryValuation = {
+      total_cost_value?:
+        number | string | null;
+      summary?: {
+        total_cost_value?:
+          number | string | null;
+      } | null;
+    };
 
-  const lowStockShare = Math.min(
-    100,
-    (lowStockAmount / riskBase) * 100,
-  );
+    const weeklyValuation =
+      valuation as
+        | WeeklyInventoryValuation
+        | null
+        | undefined;
 
-  const nearExpiryShare = Math.min(
-    100 - lowStockShare,
-    (nearExpiryAmount / riskBase) * 100,
-  );
+    const currentDay = new Date().getDay();
 
-  const healthyShare = Math.max(
-    0,
-    100 - lowStockShare - nearExpiryShare,
-  );
+    const currentValue = Number(
+      weeklyValuation?.total_cost_value
+      ?? weeklyValuation
+        ?.summary
+        ?.total_cost_value
+      ?? 0,
+    );
 
-  return (
+    return [
+      'S',
+      'M',
+      'T',
+      'W',
+      'T',
+      'F',
+      'S',
+    ].map((label, index) => ({
+      label,
+      value:
+        index === currentDay
+          && Number.isFinite(currentValue)
+          ? Math.max(0, currentValue)
+          : 0,
+      isCurrent: index === currentDay,
+    }));
+  }, [valuation]);
+
+  const weeklyInventoryValueMaximum =
+    Math.max(
+      1,
+      ...weeklyInventoryValue.map(
+        (day) => day.value,
+      ),
+    );
+
+  return presentation === 'general-stock' ? (
+    <section className="inventory-module-general-stock-view">
+
+              <article className="inventory-home-chart-panel inventory-home-chart-panel--weekly-value">
+                <header>
+                  <small>Sunday to Saturday</small>
+                  <strong>Weekly Inventory Value</strong>
+                </header>
+
+                <div
+                  className="inventory-weekly-value-chart"
+                  aria-label="Weekly Inventory Value"
+                >
+                  {weeklyInventoryValue.map(
+                    (day, index) => (
+                      <div
+                        key={`${day.label}-${index}`}
+                        className={
+                          day.isCurrent
+                            ? 'is-current'
+                            : ''
+                        }
+                      >
+                        <span
+                          style={{
+                            height: `${
+                              day.value > 0
+                                ? Math.max(
+                                    14,
+                                    (
+                                      day.value
+                                      / weeklyInventoryValueMaximum
+                                    ) * 100,
+                                  )
+                                : 6
+                            }%`,
+                          }}
+                        />
+
+                        <small>{day.label}</small>
+                      </div>
+                    ),
+                  )}
+                </div>
+
+                <p>
+                  Today’s verified inventory value
+                  is plotted on the current weekday.
+                  Historical closing values remain
+                  blank until daily snapshots exist.
+                </p>
+              </article>
+
+<InventoryExecutiveRisk
+        valuation={valuation}
+        showGeneralStock
+      />
+    </section>
+  ) : (
+
     <section
       className="pos-sales-overview inventory-module-home inventory-home-refined"
       data-work-package="AQUILA_INVENTORY_WORK_PACKAGE_2E_PROFESSIONAL_UPGRADE"
@@ -808,6 +882,7 @@ export function InventoryModuleHome({
           {!analyticsLoading && (
             <div className="inventory-home-chart-grid">
               {visibleCountMetrics.length > 0 && (
+                <>
                 <article className="inventory-home-chart-panel inventory-home-chart-panel--bars">
                   <header>
                     <small>Live stock profile</small>
@@ -844,70 +919,47 @@ export function InventoryModuleHome({
                     ))}
                   </div>
                 </article>
-              )}
+        <article className="inventory-home-chart-panel inventory-home-chart-panel--movement">
+          <header>
+            <small>Recent stock activity</small>
+            <strong>Inventory Movement History</strong>
+          </header>
 
-              {(metricVisibility['low-stock'] ||
-                metricVisibility['near-expiry']) && (
-                <article className="inventory-home-chart-panel inventory-home-chart-panel--risk">
-                  <header>
-                    <small>Operational exposure</small>
-                    <strong>Inventory Risk Mix</strong>
-                  </header>
+          <div className="inventory-movement-history-summary">
+            <span>
+              Receipts
+              <small>
+                Purchase and manual stock receipts
+              </small>
+            </span>
 
-                  <div className="inventory-risk-chart-layout">
-                    <div
-                      className="inventory-risk-donut"
-                      style={{
-                        '--inventory-low-stock-share':
-                          `${lowStockShare}%`,
-                        '--inventory-near-expiry-share':
-                          `${nearExpiryShare}%`,
-                      } as CSSProperties}
-                      aria-label="Inventory risk distribution chart"
-                    >
-                      <span>
-                        <strong>
-                          {formatNumber(
-                            lowStockAmount +
-                              nearExpiryAmount,
-                          )}
-                        </strong>
-                        <small>risk signals</small>
-                      </span>
-                    </div>
+            <span>
+              Issues
+              <small>
+                Dispensing and operational releases
+              </small>
+            </span>
 
-                    <div className="inventory-risk-chart-legend">
-                      {metricVisibility['low-stock'] && (
-                        <span className="is-low-stock">
-                          <i />
-                          Low stock
-                          <strong>
-                            {formatNumber(lowStockAmount)}
-                          </strong>
-                        </span>
-                      )}
+            <span>
+              Adjustments
+              <small>
+                Corrections, transfers and reconciliations
+              </small>
+            </span>
+          </div>
 
-                      {metricVisibility['near-expiry'] && (
-                        <span className="is-near-expiry">
-                          <i />
-                          Near expiry
-                          <strong>
-                            {formatNumber(nearExpiryAmount)}
-                          </strong>
-                        </span>
-                      )}
+          <p>
+            Open Product Inventory for the
+            detailed chronological movement register.
+          </p>
+        </article>
 
-                      <span className="is-healthy">
-                        <i />
-                        Healthy share
-                        <strong>
-                          {healthyShare.toFixed(0)}%
-                        </strong>
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              )}
+
+                </>)}
+
+                            <InventoryExecutiveRisk
+                valuation={valuation}
+              />
 
               {valuationMetric && (
                 <article className="inventory-home-chart-panel inventory-home-chart-panel--value">
@@ -935,5 +987,6 @@ export function InventoryModuleHome({
         </section>
       )}
     </section>
+
   );
 }

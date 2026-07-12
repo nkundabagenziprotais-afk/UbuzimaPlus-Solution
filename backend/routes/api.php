@@ -67,7 +67,7 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
         ->middleware('permission:roles.manage');
 
     Route::get('/security/role-templates', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'roleTemplatesResponse'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::get('/security/users', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'index'])
         ->middleware('permission:roles.manage');
@@ -80,6 +80,47 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
 
     Route::delete('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'deactivate'])
         ->middleware('permission:roles.manage');
+
+
+    Route::get('/security/operations', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'summary'])
+        ->middleware('permission:roles.manage');
+
+    Route::post('/security/users/{user}/force-password-change', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'forcePasswordChange'])
+        ->middleware('permission:roles.manage');
+
+    Route::post('/security/users/{user}/reset-two-factor', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'resetTwoFactor'])
+        ->middleware('permission:roles.manage');
+
+    Route::post('/security/users/{user}/revoke-trusted-devices', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'revokeTrustedDevices'])
+        ->middleware('permission:roles.manage');
+
+    Route::post('/security/users/{user}/revoke-sessions', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'revokeSessions'])
+        ->middleware('permission:roles.manage');
+
+    Route::post('/security/users/{user}/status', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'updateStatus'])
+        ->middleware('permission:roles.manage');
+
+
+    Route::get('/security/audit-timeline', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'auditTimeline'])
+        ->middleware('permission:roles.manage');
+
+    Route::get('/security/roles', [\App\Http\Controllers\Api\V1\RoleGovernanceController::class, 'index'])
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
+
+    Route::post('/security/roles/assess', [\App\Http\Controllers\Api\V1\RoleGovernanceController::class, 'assess'])
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
+
+    Route::post('/security/roles', [\App\Http\Controllers\Api\V1\RoleGovernanceController::class, 'store'])
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
+
+    Route::post('/security/roles/{role}/clone', [\App\Http\Controllers\Api\V1\RoleGovernanceController::class, 'cloneRole'])
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
+
+    Route::put('/security/roles/{role}', [\App\Http\Controllers\Api\V1\RoleGovernanceController::class, 'update'])
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
+
+    Route::post('/security/roles/{role}/archive', [\App\Http\Controllers\Api\V1\RoleGovernanceController::class, 'archive'])
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::get('/inventory', [\App\Http\Controllers\Api\V1\AccessCheckController::class, 'inventoryAccessCheck'])
         ->middleware([
@@ -1074,3 +1115,93 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
 
 });
+
+/*
+|--------------------------------------------------------------------------
+| AQUILA_GENERAL_ITEMS_OPERATIONAL_ROUTES_START
+|--------------------------------------------------------------------------
+|
+| Operational General Items management moved from Procurement into the
+| dedicated General Stock Items workspace.
+|
+*/
+
+Route::middleware('auth:sanctum')
+    ->prefix(
+        'v1/tenants/{tenantSlug}/pharmaco360/general-items'
+    )
+    ->group(function (): void {
+        $controller =
+            \App\Http\Controllers\Api\V1\PharmaCo360\GeneralItemsController::class;
+
+        Route::get(
+            '/overview',
+            [$controller, 'overview']
+        );
+
+        Route::get(
+            '/categories',
+            [$controller, 'categories']
+        );
+
+        Route::post(
+            '/categories',
+            [$controller, 'storeCategory']
+        );
+
+        Route::put(
+            '/categories/{categoryId}',
+            [$controller, 'updateCategory']
+        );
+
+        Route::get(
+            '/items',
+            [$controller, 'items']
+        );
+
+        Route::post(
+            '/items',
+            [$controller, 'storeItem']
+        );
+
+        Route::put(
+            '/items/{itemId}',
+            [$controller, 'updateItem']
+        );
+
+        Route::get(
+            '/locations',
+            [$controller, 'locations']
+        );
+
+        Route::post(
+            '/locations',
+            [$controller, 'storeLocation']
+        );
+
+        Route::get(
+            '/stock',
+            [$controller, 'stock']
+        );
+
+        Route::get(
+            '/movements',
+            [$controller, 'movements']
+        );
+
+        Route::post(
+            '/receiving',
+            [$controller, 'receive']
+        );
+
+        Route::post(
+            '/usage',
+            [$controller, 'issue']
+        );
+    });
+
+/*
+|--------------------------------------------------------------------------
+| AQUILA_GENERAL_ITEMS_OPERATIONAL_ROUTES_END
+|--------------------------------------------------------------------------
+*/

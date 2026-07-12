@@ -74,10 +74,18 @@ class AuthController extends Controller
             ]);
         }
 
-        if (
-            $twoFactor->staffTwoFactorRequired($user)
-            && ! $twoFactor->trustedDeviceIsValid($user, $data['trusted_device_token'] ?? null)
-        ) {
+        $previousLastLoginAt = $user->last_login_at;
+        $twoFactorRequired =
+            $twoFactor->staffTwoFactorRequired($user);
+
+        $trustedDeviceAccepted =
+            $twoFactorRequired
+            && $twoFactor->trustedDeviceIsValid(
+                $user,
+                $data['trusted_device_token'] ?? null
+            );
+
+        if ($twoFactorRequired && ! $trustedDeviceAccepted) {
             if (! $user->two_factor_enabled || ! $user->two_factor_secret) {
                 return response()->json([
                     'status' => 'two_factor_setup_required',
@@ -114,6 +122,12 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'access_token' => $token,
             'profile' => $profileService->build($user->fresh()),
+            'login_experience' =>
+                $this->loginExperiencePayload(
+                    $user,
+                    $previousLastLoginAt,
+                    $trustedDeviceAccepted
+                ),
         ]);
     }
 
@@ -186,6 +200,27 @@ class AuthController extends Controller
             'status' => 'ok',
             'message' => 'Signed out successfully.',
         ]);
+    }
+
+    private function loginExperiencePayload(
+        User $user,
+        mixed $previousLastLoginAt,
+        bool $trustedDeviceUsed
+    ): array {
+        $firstLogin = $previousLastLoginAt === null;
+
+        return [
+            'first_login' => $firstLogin,
+            'title' => $firstLogin
+                ? 'Welcome'
+                : 'Welcome Back',
+            'user_name' => $user->name,
+            'message' => $firstLogin
+                ? 'Your secure Ubuzima+ workspace is ready.'
+                : 'Your secure Ubuzima+ workspace has been restored.',
+            'trusted_device_used' => $trustedDeviceUsed,
+            'authenticated_at' => now()->toISOString(),
+        ];
     }
 
     /**

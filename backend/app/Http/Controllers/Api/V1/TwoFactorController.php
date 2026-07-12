@@ -71,6 +71,7 @@ class TwoFactorController extends Controller
         }
 
         $user = $challenge->user;
+        $previousLastLoginAt = $user->last_login_at;
         $recoveryCodes = null;
 
         if ($challenge->purpose === 'setup') {
@@ -113,7 +114,34 @@ class TwoFactorController extends Controller
             'profile' => $profileService->build($user->fresh()),
             'recovery_codes' => $recoveryCodes,
             'trusted_device' => $trustedDevice,
+            'login_experience' =>
+                $this->loginExperiencePayload(
+                    $user,
+                    $previousLastLoginAt,
+                    $trustedDevice !== null
+                ),
         ]);
+    }
+
+    private function loginExperiencePayload(
+        $user,
+        mixed $previousLastLoginAt,
+        bool $trustedDeviceUsed
+    ): array {
+        $firstLogin = $previousLastLoginAt === null;
+
+        return [
+            'first_login' => $firstLogin,
+            'title' => $firstLogin
+                ? 'Welcome'
+                : 'Welcome Back',
+            'user_name' => $user->name,
+            'message' => $firstLogin
+                ? 'Your secure Ubuzima+ workspace is ready.'
+                : 'Your secure Ubuzima+ workspace has been restored.',
+            'trusted_device_used' => $trustedDeviceUsed,
+            'authenticated_at' => now()->toISOString(),
+        ];
     }
 
     public function recoveryCodes(Request $request, TwoFactorAuthenticationService $twoFactor): JsonResponse
