@@ -1150,6 +1150,7 @@ class SalesDispensingController extends Controller
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'gt:0'],
             'payment_method' => ['required', 'string', 'in:cash,momo,card,insurance,credit,bank_transfer'],
+            'generate_receipt' => ['sometimes', 'boolean'],
             'reference_number' => ['nullable', 'string', 'max:120'],
             'received_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -1197,7 +1198,16 @@ class SalesDispensingController extends Controller
             $newBalance = max(round($totalAmount - $newPaid, 2), 0);
             $paymentStatus = $newBalance <= 0 ? 'paid' : 'partially_paid';
 
-            $receiptNumber = $this->nextReceiptNumber($tenant->id, $lockedSale->id);
+            $generateReceipt = (bool) (
+                $validated['generate_receipt'] ?? true
+            );
+
+            $receiptNumber = $generateReceipt
+                ? $this->nextReceiptNumber(
+                    $tenant->id,
+                    $lockedSale->id
+                )
+                : null;
 
             $payment = PharmacoPayment::query()->create([
                 'uuid' => (string) Str::uuid(),
@@ -1227,6 +1237,7 @@ class SalesDispensingController extends Controller
                     'new_paid_amount' => $newPaid,
                     'new_balance_amount' => $newBalance,
                     'payment_workflow' => 'phase_5_1_record_payment',
+                    'customer_receipt_requested' => $generateReceipt,
                     ...($historicalSession ? [
                         'entry_mode' => 'historical',
                         'business_date' => $historicalSession->business_date

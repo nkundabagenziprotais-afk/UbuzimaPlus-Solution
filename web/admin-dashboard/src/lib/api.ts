@@ -1595,6 +1595,7 @@ export async function confirmPharmaSale(
 
 
 export type RecordPharmaPaymentPayload = {
+  generate_receipt?: boolean;
   amount: number;
   payment_method: 'cash' | 'momo' | 'card' | 'insurance' | 'credit' | 'bank_transfer';
   reference_number?: string | null;

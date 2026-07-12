@@ -657,6 +657,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [temporaryPassword, setTemporaryPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [pendingDeleteUser, setPendingDeleteUser] = useState<TenantSecurityUser | null>(null);
@@ -889,8 +890,8 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setIsSaving(true);
     setError('');
+    setFieldErrors({});
     setNotice('');
     setTemporaryPassword('');
 
@@ -902,13 +903,72 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
           )
         : [];
 
+    const normalizedName = form.name.trim();
+    const normalizedEmail = form.email.trim().toLowerCase();
+    const normalizedPhone = form.phone.trim();
+    const normalizedJobTitle = form.job_title.trim();
+
+    const validationErrors: Record<string, string> = {};
+
+    if (!normalizedName) {
+      validationErrors.name =
+        'Enter the staff member’s full name.';
+    }
+
+    if (!normalizedEmail) {
+      validationErrors.email =
+        'Enter the email address used for sign-in.';
+    } else if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        normalizedEmail,
+      )
+    ) {
+      validationErrors.email =
+        'Enter a valid professional email address.';
+    }
+
+    if (
+      form.access_assignment_mode === 'predefined_role'
+      && !form.role_code
+    ) {
+      validationErrors.role_code =
+        'Select a role for this user.';
+    }
+
+    if (
+      form.access_assignment_mode === 'granular_permissions'
+      && payloadPermissions.length === 0
+    ) {
+      validationErrors.permissions =
+        'Select at least one permission.';
+    }
+
+    if (
+      !editingUserId
+      && form.password
+      && form.password.length < 8
+    ) {
+      validationErrors.password =
+        'The temporary password must contain at least 8 characters.';
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError(
+        'Review the highlighted information before saving the user.',
+      );
+      return;
+    }
+
+    setIsSaving(true);
+
     try {
       if (editingUserId) {
         const response = await updateTenantSecurityUser(token, tenantSlug, editingUserId, {
           tenant_slug: tenantSlug,
-          name: form.name,
-          phone: form.phone,
-          job_title: form.job_title,
+          name: normalizedName,
+          phone: normalizedPhone,
+          job_title: normalizedJobTitle,
           access_assignment_mode:
             form.access_assignment_mode,
           role_code:
@@ -929,10 +989,10 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
       } else {
         const response = await createTenantSecurityUser(token, tenantSlug, {
           tenant_slug: tenantSlug,
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          job_title: form.job_title,
+          name: normalizedName,
+          email: normalizedEmail,
+          phone: normalizedPhone,
+          job_title: normalizedJobTitle,
           access_assignment_mode:
             form.access_assignment_mode,
           role_code:
@@ -956,6 +1016,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
       }
 
       setForm(emptyForm);
+      setFieldErrors({});
       setEditingUserId(null);
       setIsEditorOpen(false);
       requestAppDataRefresh('security');
@@ -1066,7 +1127,34 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
               </button>
             </header>
 
-            <form className="tenant-user-form-grid tenant-user-form-grid--professional tenant-user-form-grid--modal" onSubmit={handleSubmit}>
+            <form
+              className="tenant-user-form-grid tenant-user-form-grid--professional tenant-user-form-grid--modal"
+              onSubmit={handleSubmit}
+              noValidate
+            >
+              {/* AQUILA_PROFESSIONAL_USER_FORM_20260712 */}
+              {(error || Object.keys(fieldErrors).length > 0) && (
+                <div
+                  className="tenant-user-form-error-summary"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <strong>Unable to save the user yet</strong>
+                  <span>
+                    {error || 'Review the information below and try again.'}
+                  </span>
+
+                  {Object.keys(fieldErrors).length > 0 && (
+                    <ul>
+                      {Object.entries(fieldErrors).map(
+                        ([field, message]) => (
+                          <li key={field}>{message}</li>
+                        ),
+                      )}
+                    </ul>
+                  )}
+                </div>
+              )}
         <div className="tenant-user-form-section tenant-user-form-section--identity">
           <div className="tenant-user-form-section-heading">
             <strong>Staff identity</strong>

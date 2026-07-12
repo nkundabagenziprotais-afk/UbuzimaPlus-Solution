@@ -71,39 +71,39 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
         ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::get('/security/users', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'index'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::post('/security/users', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'store'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::put('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'update'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::delete('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'deactivate'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
 
     Route::get('/security/operations', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'summary'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::post('/security/users/{user}/force-password-change', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'forcePasswordChange'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::post('/security/users/{user}/reset-two-factor', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'resetTwoFactor'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::post('/security/users/{user}/revoke-trusted-devices', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'revokeTrustedDevices'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::post('/security/users/{user}/revoke-sessions', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'revokeSessions'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::post('/security/users/{user}/status', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'updateStatus'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
 
     Route::get('/security/audit-timeline', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'auditTimeline'])
-        ->middleware('permission:roles.manage');
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
     Route::get('/security/roles', [\App\Http\Controllers\Api\V1\RoleGovernanceController::class, 'index'])
         ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
