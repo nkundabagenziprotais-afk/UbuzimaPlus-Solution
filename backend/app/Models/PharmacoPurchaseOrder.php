@@ -14,6 +14,7 @@ class PharmacoPurchaseOrder extends Model
         'branch_id',
         'pharmaco_supplier_id',
         'po_number',
+        'purchase_type',
         'status',
         'order_date',
         'expected_delivery_date',
@@ -53,6 +54,15 @@ class PharmacoPurchaseOrder extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(PharmacoPurchaseOrderItem::class);
+        return $this->hasMany(
+            PharmacoPurchaseOrderItem::class
+        );
+    }
+
+    public function generalItems(): HasMany
+    {
+        return $this->hasMany(
+            PharmacoGeneralPurchaseOrderItem::class
+        );
     }
 }

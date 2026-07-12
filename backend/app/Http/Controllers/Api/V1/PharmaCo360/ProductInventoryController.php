@@ -509,59 +509,492 @@ class ProductInventoryController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
+        // AQUILA_REAL_INVENTORY_VALUE_TREND_20260710
+        // Reconstruct the current Sunday-to-Saturday retail-value
+        // history from signed, dated stock movements. No artificial
+        // values are generated when movement history is unavailable.
+
         $tenant = $request->attributes->get('tenant');
 
         $products = Product::query()
             ->where('tenant_id', $tenant->id)
-            ->withSum('stockBatches as total_quantity_on_hand', 'quantity_on_hand')
+            ->withSum(
+                'stockBatches as total_quantity_on_hand',
+                'quantity_on_hand'
+            )
             ->get();
 
         $lowStockProducts = $products
-            ->filter(fn (Product $product) => (float) ($product->total_quantity_on_hand ?? 0) <= (float) $product->reorder_level)
+            ->filter(
+                fn (Product $product) =>
+                    (float) (
+                        $product->total_quantity_on_hand
+                        ?? 0
+                    )
+                    <= (float) $product->reorder_level
+            )
             ->values();
 
-        $stockCostValue = (float) StockBatch::query()
-            ->where('tenant_id', $tenant->id)
-            ->selectRaw('COALESCE(SUM(quantity_on_hand * COALESCE(unit_cost, 0)), 0) as value')
-            ->value('value');
+        $stockCostValue = (float)
+            StockBatch::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->selectRaw(
+                    'COALESCE(SUM('
+                    . 'quantity_on_hand '
+                    . '* COALESCE(unit_cost, 0)'
+                    . '), 0) as value'
+                )
+                ->value('value');
 
-        $stockRetailValue = (float) StockBatch::query()
-            ->where('tenant_id', $tenant->id)
-            ->selectRaw('COALESCE(SUM(quantity_on_hand * COALESCE(selling_price, 0)), 0) as value')
-            ->value('value');
+        $stockRetailValue = (float)
+            StockBatch::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->selectRaw(
+                    'COALESCE(SUM('
+                    . 'quantity_on_hand '
+                    . '* COALESCE(selling_price, 0)'
+                    . '), 0) as value'
+                )
+                ->value('value');
 
-        $potentialMarginValue = max($stockRetailValue - $stockCostValue, 0);
+        $potentialMarginValue = max(
+            $stockRetailValue - $stockCostValue,
+            0
+        );
 
-        $expiredBatchesCount = StockBatch::query()
-            ->where('tenant_id', $tenant->id)
-            ->whereNotNull('expiry_date')
-            ->whereDate('expiry_date', '<', now()->toDateString())
-            ->count();
+        $expiredBatchesCount =
+            StockBatch::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->whereNotNull('expiry_date')
+                ->whereDate(
+                    'expiry_date',
+                    '<',
+                    now()->toDateString()
+                )
+                ->count();
+
+        $now = now();
+        $today = $now->copy()->startOfDay();
+
+        $weekStart = $today
+            ->copy()
+            ->subDays($today->dayOfWeek);
+
+        $weekEnd = $weekStart
+            ->copy()
+            ->addDays(6)
+            ->endOfDay();
+
+        $weeklyMovements =
+            StockMovement::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->where(
+                    function ($query) use (
+                        $weekStart,
+                        $now
+                    ) {
+                        $query
+                            ->whereBetween(
+                                'occurred_at',
+                                [
+                                    $weekStart,
+                                    $now,
+                                ]
+                            )
+                            ->orWhereBetween(
+                                'business_date',
+                                [
+                                    $weekStart
+                                        ->toDateString(),
+                                    $now
+                                        ->toDateString(),
+                                ]
+                            );
+                    }
+                )
+                ->with([
+                    'stockBatch:id,selling_price,unit_cost',
+                ])
+                ->orderBy('occurred_at')
+                ->get()
+                ->map(
+                    function (
+                        StockMovement $movement
+                    ) {
+                        $movementDate =
+                            $movement->business_date
+                                ?? $movement
+                                    ->occurred_at;
+
+                        $sellingPrice = (float) (
+                            $movement
+                                ->stockBatch
+                                ?->selling_price
+                            ?? 0
+                        );
+
+                        $unitCost = (float) (
+                            $movement
+                                ->stockBatch
+                                ?->unit_cost
+                            ?? 0
+                        );
+
+                        $valuationPrice =
+                            $sellingPrice > 0
+                                ? $sellingPrice
+                                : $unitCost;
+
+                        return [
+                            'date' =>
+                                $movementDate
+                                    ?->copy()
+                                    ->startOfDay(),
+                            'quantity' =>
+                                (float)
+                                $movement->quantity,
+                            'valuation_price' =>
+                                $valuationPrice,
+                            'has_valuation_price' =>
+                                $valuationPrice > 0,
+                        ];
+                    }
+                )
+                ->filter(
+                    fn (array $movement) =>
+                        $movement['date'] !== null
+                )
+                ->values();
+
+        $weeklyPoints = collect(
+            range(0, 6)
+        )->map(
+            function (
+                int $offset
+            ) use (
+                $weekStart,
+                $today,
+                $stockRetailValue,
+                $weeklyMovements
+            ) {
+                $day = $weekStart
+                    ->copy()
+                    ->addDays($offset);
+
+                $label = substr(
+                    $day->format('D'),
+                    0,
+                    1
+                );
+
+                if ($day->greaterThan($today)) {
+                    return [
+                        'date' =>
+                            $day->toDateString(),
+                        'label' => $label,
+                        'value' => null,
+                        'is_future' => true,
+                    ];
+                }
+
+                $dayEnd = $day
+                    ->copy()
+                    ->endOfDay();
+
+                $subsequentMovementValue =
+                    $weeklyMovements
+                        ->filter(
+                            fn (array $movement) =>
+                                $movement['date']
+                                    ->greaterThan(
+                                        $dayEnd
+                                    )
+                        )
+                        ->sum(
+                            fn (array $movement) =>
+                                $movement['quantity']
+                                * $movement[
+                                    'valuation_price'
+                                ]
+                        );
+
+                return [
+                    'date' =>
+                        $day->toDateString(),
+                    'label' => $label,
+                    'value' => round(
+                        max(
+                            0,
+                            $stockRetailValue
+                            - $subsequentMovementValue
+                        ),
+                        2
+                    ),
+                    'is_future' => false,
+                ];
+            }
+        )->values();
+
+        $availableWeeklyValues =
+            $weeklyPoints
+                ->whereNotNull('value')
+                ->values();
+
+        $firstWeeklyValue =
+            $availableWeeklyValues
+                ->first()['value']
+                ?? $stockRetailValue;
+
+        $latestWeeklyValue =
+            $availableWeeklyValues
+                ->last()['value']
+                ?? $stockRetailValue;
+
+        $weeklyDelta = round(
+            $latestWeeklyValue
+            - $firstWeeklyValue,
+            2
+        );
+
+        $weeklyDirection =
+            abs($weeklyDelta) < 0.01
+                ? 'stable'
+                : (
+                    $weeklyDelta > 0
+                        ? 'growing'
+                        : 'reducing'
+                );
+
+        $historyAvailable =
+            $weeklyMovements->isNotEmpty();
+
+        $unmappedMovementCount =
+            $weeklyMovements
+                ->where(
+                    'has_valuation_price',
+                    false
+                )
+                ->count();
+
+        /*
+         * AQUILA_INVENTORY_VALUE_BY_CATEGORY_20260711
+         *
+         * Uses the same retail selling-price basis as the existing
+         * Inventory value analytics. Missing selling prices remain
+         * disclosed rather than being silently estimated.
+         */
+        $inventoryValueByCategory =
+            StockBatch::query()
+                ->join(
+                    'products',
+                    'products.id',
+                    '=',
+                    'stock_batches.product_id'
+                )
+                ->leftJoin(
+                    'product_categories',
+                    function ($join) use ($tenant): void {
+                        $join
+                            ->on(
+                                'product_categories.id',
+                                '=',
+                                'products.product_category_id'
+                            )
+                            ->where(
+                                'product_categories.tenant_id',
+                                '=',
+                                $tenant->id
+                            );
+                    }
+                )
+                ->where(
+                    'stock_batches.tenant_id',
+                    $tenant->id
+                )
+                ->selectRaw(
+                    "COALESCE(product_categories.name, 'Uncategorized') as category_name"
+                )
+                ->selectRaw(
+                    'COALESCE(SUM(stock_batches.quantity_on_hand), 0) as quantity_on_hand'
+                )
+                ->selectRaw(
+                    'COALESCE(SUM(stock_batches.quantity_on_hand * COALESCE(stock_batches.selling_price, 0)), 0) as inventory_value'
+                )
+                ->selectRaw(
+                    'COUNT(stock_batches.id) as stock_batches_count'
+                )
+                ->selectRaw(
+                    'SUM(CASE WHEN COALESCE(stock_batches.selling_price, 0) > 0 THEN 1 ELSE 0 END) as priced_batches_count'
+                )
+                ->selectRaw(
+                    'SUM(CASE WHEN COALESCE(stock_batches.selling_price, 0) <= 0 THEN 1 ELSE 0 END) as missing_price_batches_count'
+                )
+                ->groupBy(
+                    'product_categories.name'
+                )
+                ->get()
+                ->map(
+                    fn ($category): array => [
+                        'category_name' =>
+                            (string)
+                            $category->category_name,
+                        'inventory_value' =>
+                            round(
+                                (float)
+                                $category->inventory_value,
+                                2
+                            ),
+                        'quantity_on_hand' =>
+                            round(
+                                (float)
+                                $category->quantity_on_hand,
+                                3
+                            ),
+                        'stock_batches_count' =>
+                            (int)
+                            $category->stock_batches_count,
+                        'priced_batches_count' =>
+                            (int)
+                            $category->priced_batches_count,
+                        'missing_price_batches_count' =>
+                            (int)
+                            $category
+                                ->missing_price_batches_count,
+                        'currency' => 'RWF',
+                        'valuation_basis' =>
+                            'retail_selling_price',
+                    ]
+                )
+                ->sortByDesc(
+                    'inventory_value'
+                )
+                ->values();
 
         $summary = [
-            'product_categories_count' => ProductCategory::where('tenant_id', $tenant->id)->count(),
-            'products_count' => $products->count(),
-            'stock_locations_count' => StockLocation::where('tenant_id', $tenant->id)->count(),
-            'stock_batches_count' => StockBatch::where('tenant_id', $tenant->id)->count(),
-            'total_quantity_on_hand' => (float) StockBatch::where('tenant_id', $tenant->id)->sum('quantity_on_hand'),
-            'estimated_stock_value' => $stockRetailValue,
-            'estimated_stock_cost_value' => $stockCostValue,
-            'estimated_stock_retail_value' => $stockRetailValue,
-            'estimated_potential_margin_value' => $potentialMarginValue,
-            'expired_batches_count' => $expiredBatchesCount,
-            'low_stock_products_count' => $lowStockProducts->count(),
-            'near_expiry_batches_180_days_count' => StockBatch::where('tenant_id', $tenant->id)
-                ->whereNotNull('expiry_date')
-                ->whereDate('expiry_date', '<=', now()->addDays(180)->toDateString())
-                ->count(),
+            'product_categories_count' =>
+                ProductCategory::where(
+                    'tenant_id',
+                    $tenant->id
+                )->count(),
+
+            'products_count' =>
+                $products->count(),
+
+            'stock_locations_count' =>
+                StockLocation::where(
+                    'tenant_id',
+                    $tenant->id
+                )->count(),
+
+            'stock_batches_count' =>
+                StockBatch::where(
+                    'tenant_id',
+                    $tenant->id
+                )->count(),
+
+            'total_quantity_on_hand' =>
+                (float)
+                StockBatch::where(
+                    'tenant_id',
+                    $tenant->id
+                )->sum('quantity_on_hand'),
+
+            'estimated_stock_value' =>
+                $stockRetailValue,
+
+            'estimated_stock_cost_value' =>
+                $stockCostValue,
+
+            'estimated_stock_retail_value' =>
+                $stockRetailValue,
+
+            'estimated_potential_margin_value' =>
+                $potentialMarginValue,
+
+            'expired_batches_count' =>
+                $expiredBatchesCount,
+
+            'low_stock_products_count' =>
+                $lowStockProducts->count(),
+
+            'near_expiry_batches_180_days_count' =>
+                StockBatch::where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                    ->whereNotNull('expiry_date')
+                    ->whereDate(
+                        'expiry_date',
+                        '<=',
+                        now()
+                            ->addDays(180)
+                            ->toDateString()
+                    )
+                    ->count(),
+
+            'inventory_value_by_category' => $inventoryValueByCategory,
+            'inventory_value_weekly_trend' => [
+                'basis' => 'retail_value',
+                'currency' => 'RWF',
+                'week_start' =>
+                    $weekStart->toDateString(),
+                'week_end' =>
+                    $weekEnd->toDateString(),
+                'as_of' =>
+                    $now->toISOString(),
+                'labels' =>
+                    $weeklyPoints
+                        ->pluck('label')
+                        ->values(),
+                'points' =>
+                    $weeklyPoints,
+                'history_available' =>
+                    $historyAvailable,
+                'recorded_movement_count' =>
+                    $weeklyMovements->count(),
+                'unmapped_movement_count' =>
+                    $unmappedMovementCount,
+                'direction' =>
+                    $weeklyDirection,
+                'delta_value' =>
+                    $weeklyDelta,
+                'method' =>
+                    'current_retail_value_reversed_by_signed_stock_movements',
+                'method_note' =>
+                    'Historical values use recorded movement dates and the current batch retail price, with unit cost used only when retail price is unavailable.',
+            ],
         ];
 
+
+
         return response()->json([
-            'tenant' => $this->tenantPayload($tenant),
+            'tenant' =>
+                $this->tenantPayload($tenant),
+
             'summary' => $summary,
-            'low_stock_products' => $lowStockProducts
-                ->map(fn (Product $product) => $this->serializeProduct($product, includeStockSummary: true))
-                ->values(),
+
+            'low_stock_products' =>
+                $lowStockProducts
+                    ->map(
+                        fn (Product $product) =>
+                            $this->serializeProduct(
+                                $product,
+                                includeStockSummary: true
+                            )
+                    )
+                    ->values(),
         ]);
     }
 
@@ -1374,6 +1807,17 @@ class ProductInventoryController extends Controller
                 ]);
             }
 
+            if (
+                $purchaseOrder->purchase_type ===
+                'general_items'
+            ) {
+                throw ValidationException::withMessages([
+                    'pharmaco_purchase_order_item_id' => [
+                        'General Items purchases cannot be received into pharmaceutical Product Inventory.',
+                    ],
+                ]);
+            }
+
             if ((int) $purchaseOrderItem->product_id !== (int) $product->id) {
                 throw ValidationException::withMessages([
                     'product_id' => ['Received product must match the selected purchase order item.'],
@@ -1428,6 +1872,17 @@ class ProductInventoryController extends Controller
                     ->firstOrFail();
 
                 $purchaseOrder->load(['supplier', 'items']);
+
+                if (
+                    $purchaseOrder->purchase_type ===
+                    'general_items'
+                ) {
+                    throw ValidationException::withMessages([
+                        'pharmaco_purchase_order_item_id' => [
+                            'General Items purchases cannot be received into pharmaceutical Product Inventory.',
+                        ],
+                    ]);
+                }
 
                 if (! in_array($purchaseOrder->status, ['approved', 'partially_received'], true)) {
                     throw ValidationException::withMessages([

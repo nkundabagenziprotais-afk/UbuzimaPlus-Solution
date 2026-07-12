@@ -948,6 +948,11 @@ export function ProductInventoryPreview({
   const [shelfViewMode, setShelfViewMode] = useState<ShelfViewMode>('grid');
   const [tableFontSizes, setTableFontSizes] = useState<Record<InventoryView, InventoryTableFontSize>>(loadStoredInventoryTableFontSizes);
   const [inventoryCreateForm, setInventoryCreateForm] = useState<InventoryCreateFormState>(emptyInventoryCreateForm);
+
+  const [
+    inventoryProductMasterReturnPending,
+    setInventoryProductMasterReturnPending,
+  ] = useState(false);
   const [activeProductMasterAction, setActiveProductMasterAction] = useState<ProductMasterAction>(null);
   const [productMasterForm, setProductMasterForm] = useState<ProductMasterFormState>(emptyProductMasterForm);
   const [selectedProductMasterEditId, setSelectedProductMasterEditId] = useState('');
@@ -1995,6 +2000,60 @@ export function ProductInventoryPreview({
     };
   }
 
+  function openMissingInventoryProductCreation() {
+    const searchedProductName =
+      inventoryProductSearchTerm.trim();
+
+    if (!hasInventoryAdminAccess) {
+      setError(
+        'The product does not exist in Product Master. Inventory administration permission is required to create it.',
+      );
+      return;
+    }
+
+    setInventoryProductMasterReturnPending(true);
+
+    setProductMasterForm({
+      ...emptyProductMasterForm,
+      designation: searchedProductName,
+      source:
+        'Inventory receiving quick creation',
+    });
+
+    setSelectedProductMasterEditId('');
+    setViewingProductMasterProduct(null);
+    setPendingDeleteProduct(null);
+    setActiveProductMasterAction('create');
+
+    selectInventoryView('product-master');
+
+    setError('');
+    setInventoryNotice(
+      'Product Master creation opened from Inventory receiving. The current batch, quantity, location, cost, margin, selling price, supplier and reference draft remains preserved.',
+    );
+  }
+
+  function closeProductMasterCreation() {
+    setActiveProductMasterAction(null);
+    setSelectedProductMasterEditId('');
+
+    if (!inventoryProductMasterReturnPending) {
+      return;
+    }
+
+    setInventoryProductMasterReturnPending(false);
+
+    selectInventoryView(
+      'product-inventory',
+    );
+
+    setIsInventoryReceiveFlowOpen(true);
+
+    setInventoryNotice(
+      'Returned to Inventory receiving. Your receiving draft was preserved.',
+    );
+  }
+
   async function handleCreateProductMaster(event: FormEvent<HTMLFormElement>, createAnother = false) {
     event.preventDefault();
 
@@ -2008,10 +2067,60 @@ export function ProductInventoryPreview({
     setInventoryNotice('');
 
     try {
-      const response = await createPharmaProduct(token, tenantSlug, productMasterPayload());
-      setInventoryNotice(`${response.message} ${response.product.name} added to Product Master.`);
-      setProductMasterForm(createAnother ? emptyProductMasterForm : productMasterForm);
-      if (!createAnother) setActiveProductMasterAction(null);
+      const response = await createPharmaProduct(
+        token,
+        tenantSlug,
+        productMasterPayload(),
+      );
+
+      if (
+        inventoryProductMasterReturnPending &&
+        !createAnother
+      ) {
+        await loadInventoryPreview();
+
+        selectInventoryProductFromMaster(
+          response.product,
+        );
+
+        setInventoryProductMasterReturnPending(
+          false,
+        );
+
+        setProductMasterForm(
+          emptyProductMasterForm,
+        );
+
+        setActiveProductMasterAction(null);
+        setSelectedProductMasterEditId('');
+
+        selectInventoryView(
+          'product-inventory',
+        );
+
+        setIsInventoryReceiveFlowOpen(true);
+
+        setInventoryNotice(
+          `${response.product.name} was created in Product Master and selected automatically. Complete the preserved Inventory receiving draft.`,
+        );
+
+        return;
+      }
+
+      setInventoryNotice(
+        `${response.message} ${response.product.name} added to Product Master.`,
+      );
+
+      setProductMasterForm(
+        createAnother
+          ? emptyProductMasterForm
+          : productMasterForm,
+      );
+
+      if (!createAnother) {
+        setActiveProductMasterAction(null);
+      }
+
       await loadInventoryPreview();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create Product Master item.');
@@ -2553,7 +2662,7 @@ export function ProductInventoryPreview({
               <h3>{activeProductMasterAction === 'replicate' ? 'Replicate Product' : 'Create New Product'}</h3>
               <span>{activeProductMasterAction === 'replicate' ? 'Copied Product Master fields. Review unique fields before saving.' : 'Fields start from the Product Master table structure.'}</span>
             </div>
-            <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
+            <button type="button" onClick={closeProductMasterCreation}>Cancel</button>
           </div>
 
           <InventoryPopupForm
@@ -2561,11 +2670,23 @@ export function ProductInventoryPreview({
                   title="Product master record"
                   description="Maintain pharmaceutical identity, commercial and replenishment information."
                   open
-                  onClose={() => { setActiveProductMasterAction(null); setSelectedProductMasterEditId(''); }}
+                  onClose={closeProductMasterCreation}
 >
 <form
             onSubmit={(event) => void handleCreateProductMaster(event, false)}
           >
+            {inventoryProductMasterReturnPending && (
+              <div className="product-master-inventory-return-context">
+                <strong>
+                  Creating for Inventory receiving
+                </strong>
+
+                <span>
+                  Save this Product Master record to return automatically to the preserved Inventory draft with the new product selected.
+                </span>
+              </div>
+            )}
+
             {renderProductMasterAiAssistant('create')}
             {renderProductMasterFormFields()}
 
@@ -2573,10 +2694,22 @@ export function ProductInventoryPreview({
               <button type="submit" disabled={isSavingProductMaster}>
                 {isSavingProductMaster ? 'Saving…' : 'Save'}
               </button>
-              <button type="button" disabled={isSavingProductMaster} onClick={(event) => void handleCreateProductMaster(event as unknown as FormEvent<HTMLFormElement>, true)}>
+              <button
+                type="button"
+                disabled={
+                  isSavingProductMaster ||
+                  inventoryProductMasterReturnPending
+                }
+                onClick={(event) =>
+                  void handleCreateProductMaster(
+                    event as unknown as FormEvent<HTMLFormElement>,
+                    true,
+                  )
+                }
+              >
                 Save and Create Another
               </button>
-              <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
+              <button type="button" onClick={closeProductMasterCreation}>Cancel</button>
             </div>
           </form>
                 </InventoryPopupForm>
@@ -5343,9 +5476,33 @@ export function ProductInventoryPreview({
                       {isInventoryProductSearchOpen && inventoryProductSearchTerm.trim().length > 0 && (
                         <div className="inventory-product-master-options">
                           {filteredInventoryProductOptions.length === 0 ? (
-                            <button type="button" disabled>
-                              No Product Master products found for the typed keyword.
-                            </button>
+                            <div
+                              className="inventory-product-master-missing-result"
+                              role="status"
+                            >
+                              <strong>
+                                Product does not exist in Product Master.
+                              </strong>
+
+                              <span>
+                                Create the Product Master record before recording quantity, batch, expiry or pharmaceutical stock.
+                              </span>
+
+                              {hasInventoryAdminAccess ? (
+                                <button
+                                  type="button"
+                                  onClick={
+                                    openMissingInventoryProductCreation
+                                  }
+                                >
+                                  Create Product in Product Master
+                                </button>
+                              ) : (
+                                <small>
+                                  Inventory administration permission is required. Ask an authorised Product Master user to create the product.
+                                </small>
+                              )}
+                            </div>
                           ) : (
                             filteredInventoryProductOptions.map((product) => (
                               <button

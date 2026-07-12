@@ -129,9 +129,6 @@ p {
   font-weight: 700;
 }
 
-
-
-
 .auth-side {
   padding: 56px;
   display: grid;
@@ -422,7 +419,6 @@ p {
   }
 }
 
-
 .access-actions {
   display: flex;
   flex-wrap: wrap;
@@ -462,7 +458,6 @@ p {
   background: #fff4ee;
   color: #8a3a15;
 }
-
 
 .panel-heading-row {
   display: flex;
@@ -562,7 +557,6 @@ p {
   }
 }
 
-
 .form-success {
   border-radius: 14px;
   padding: 12px 14px;
@@ -660,7 +654,6 @@ p {
     grid-column: auto;
   }
 }
-
 
 .inventory-preview-panel {
   background:
@@ -1108,7 +1101,6 @@ p {
   }
 }
 
-
 .inventory-actions-panel {
   background:
     radial-gradient(circle at top left, rgba(18, 123, 90, 0.08), transparent 22rem),
@@ -1190,7 +1182,6 @@ p {
     grid-template-columns: 1fr;
   }
 }
-
 
 .sales-review-panel {
   display: flex;
@@ -1370,7 +1361,6 @@ p {
   }
 }
 
-
 .confirmation-controls {
   display: grid;
   gap: 0.75rem;
@@ -1441,7 +1431,6 @@ p {
     align-items: stretch;
   }
 }
-
 
 .payment-recording-card {
   border: 1px solid rgba(20, 83, 45, 0.12);
@@ -1540,7 +1529,6 @@ p {
     grid-template-columns: 1fr;
   }
 }
-
 
 .sales-creation-card {
   border: 1px solid rgba(20, 83, 45, 0.12);
@@ -1924,7 +1912,6 @@ p {
   }
 }
 
-
 .procurement-panel {
   border-color: rgba(15, 118, 110, 0.16);
 }
@@ -1962,7 +1949,6 @@ p {
   }
 }
 
-
 .selected-list-row {
   border-color: rgba(15, 118, 110, 0.35) !important;
   background: rgba(240, 253, 250, 0.78);
@@ -1986,7 +1972,6 @@ p {
 .approval-actions button {
   width: fit-content;
 }
-
 
 .payables-panel {
   display: grid;
@@ -2093,7 +2078,6 @@ p {
     grid-template-columns: 1fr;
   }
 }
-
 
 .reporting-dashboard-panel {
   display: grid;
@@ -2245,10 +2229,9 @@ p {
   }
 }
 
+/* -------------------------------------------------------------------------- */
 
-/* -------------------------------------------------------------------------- */
 /* PharmaCo360 Customer Credit & Receivables                                  */
-/* -------------------------------------------------------------------------- */
 
 .receivables-workflow {
   display: grid;
@@ -2492,6 +2475,7 @@ p {
 }
 
 /* Operations 360 reporting dashboard readability bundle */
+
 .reporting-dashboard-panel--business .section-heading p {
   max-width: 840px;
 }
@@ -2552,6 +2536,7 @@ p {
 }
 
 /* Operations 360 reporting dashboard empty and loading states */
+
 .reporting-loading-state,
 .reporting-empty-overview,
 .report-empty-state {
@@ -3195,6 +3180,7 @@ p {
 }
 
 /* Ubuzima+ design infrastructure layer */
+
 :root {
   --ubuzima-blue: #0877c9;
   --ubuzima-green: #36ad3a;
@@ -3508,6 +3494,7 @@ h3,
 }
 
 /* Section-based admin shell */
+
 .dashboard-shell {
   height: 100vh;
   min-height: 0;
@@ -3920,6 +3907,7 @@ h3,
 }
 
 /* Portfolio, ERP, AI Center, and Admin Panel framework */
+
 .workspace-selector,
 .segment-switcher,
 .feature-tabs,
@@ -4228,6 +4216,7 @@ h3,
 }
 
 /* Staff identity login and operational admin modules */
+
 .auth-shell--identity {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   background: #f7faf9;
@@ -5697,7 +5686,6 @@ h3,
   }
 }
 
-
 .password-input-row {
   position: relative;
   display: flex;
@@ -5731,6 +5719,7 @@ h3,
 }
 
 /* Phase I Home/header notification refinement */
+
 .header-mail-button {
   position: relative;
   display: inline-flex;
@@ -5754,6 +5743,7 @@ h3,
 
 /* Phase I corrective feedback:
    Module tree/section navigation belongs in the left menu panel, not inside the main page body. */
+
 .module-workspace-shell {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -5803,6 +5793,7 @@ h3,
 }
 
 /* Phase I corrected left navigation: titles only, functional child pages */
+
 .tree-nav {
   overflow-y: auto;
   max-height: calc(100vh - 9.5rem);
@@ -5875,6 +5866,7 @@ h3,
 
 /* Phase I corrected principal left menu:
    no extra category layer, titles only, single-line readable submenu labels */
+
 @media (min-width: 1024px) {
   .dashboard-shell {
     grid-template-columns: 340px minmax(0, 1fr);
@@ -5946,15 +5938,9 @@ h3,
   text-overflow: clip;
 }
 
-.tree-child-submenu button:hover,
-.tree-child-submenu button.active {
-  background: rgba(180, 33, 41, 0.1);
-  color: #991b1b;
-  box-shadow: inset 3px 0 0 #b42129;
-}
-
 /* Phase I left menu visual refinement:
    soft near-white background, genuine dashboard feel, left/top-aligned titles */
+
 .sidebar {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 248, 244, 0.96) 48%, rgba(248, 250, 252, 0.98) 100%);
@@ -6047,6 +6033,7 @@ h3,
 
 /* Phase I pharmacy-friendly left menu refinement:
    green module cards, white title text, compact height, admin-configurable variables */
+
 .sidebar {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(251, 253, 249, 0.98) 48%, rgba(248, 250, 252, 0.98) 100%);
@@ -6146,13 +6133,9 @@ h3,
 
 /* Phase I refined sidebar and header:
    military green menu cards, white title text, compact height, aligned icons/titles */
+
 :root {
   --pharmacy-military-green: #4B5320;
-}
-
-.sidebar {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(251, 253, 249, 0.98) 48%, rgba(248, 250, 252, 0.98) 100%);
 }
 
 .sidebar-inner {
@@ -6242,11 +6225,8 @@ h3,
   text-align: left;
 }
 
-.tree-child-submenu button span {
-  text-align: left;
-}
-
 /* Refined dashboard heading */
+
 .dashboard-header--refined {
   display: grid;
   grid-template-columns: minmax(180px, 0.9fr) auto auto;
@@ -6413,45 +6393,6 @@ h3,
   font-weight: 850;
 }
 
-.appearance-control-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-}
-
-.appearance-control-grid label {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 18px;
-  padding: 0.9rem;
-  background: rgba(255, 255, 255, 0.86);
-  display: grid;
-  gap: 0.45rem;
-}
-
-.appearance-control-grid label span {
-  font-weight: 850;
-  color: #1f2937;
-}
-
-.appearance-control-grid input[type='color'] {
-  width: 100%;
-  height: 2.5rem;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.appearance-control-grid select {
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 12px;
-  padding: 0.65rem;
-  background: #ffffff;
-}
-
-.appearance-control-grid small {
-  color: #64748b;
-}
-
 @media (max-width: 1080px) {
   .dashboard-header--refined {
     grid-template-columns: 1fr;
@@ -6463,13 +6404,8 @@ h3,
   }
 }
 
-@media (max-width: 960px) {
-  .appearance-control-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Phase I correction: folded principal menu, aligned icon/title/plus, green header actions */
+
 .principal-menu-button,
 .tree-root-button.principal-menu-button {
   grid-template-columns: 1.18rem minmax(0, 1fr) auto;
@@ -6607,6 +6543,7 @@ h3,
 }
 
 /* Phase I meaningful Dashboard operating cards */
+
 .dashboard-operating-page {
   display: grid;
   gap: 1rem;
@@ -6737,6 +6674,7 @@ h3,
 }
 
 /* Phase I Dashboard refinement: compact operating cards with 3 metric rows */
+
 .dashboard-operating-hero--compact {
   padding: 0.9rem 1rem;
 }
@@ -6812,6 +6750,7 @@ h3,
 }
 
 /* Operation Helicopter View: make existing tenant information behave like fitted tables */
+
 .operation-helicopter-view {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 22px;
@@ -6902,6 +6841,7 @@ h3,
 }
 
 /* Phase I Dashboard: per-card field customization and compact cards */
+
 .dashboard-card-customizer-grid {
   display: grid;
   gap: 0.7rem;
@@ -6957,147 +6897,7 @@ h3,
 }
 
 /* Operation Helicopter View: smaller branch/user titles and fitted tables */
-.operation-helicopter-view .section-heading h3 {
-  font-size: clamp(0.95rem, 1.1vw, 1.08rem);
-  line-height: 1.15;
-  margin: 0;
-}
 
-.helicopter-quick-table-card {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 18px;
-  background: #ffffff;
-  padding: 0.85rem;
-  display: grid;
-  gap: 0.75rem;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
-}
-
-.helicopter-quick-table-card .section-heading {
-  align-items: center;
-}
-
-.helicopter-quick-table-card .section-heading button,
-.helicopter-table button {
-  background: var(--left-menu-accent, #4B5320);
-  color: var(--left-menu-title-color, #ffffff);
-  border: 0;
-  border-radius: 999px;
-  padding: 0.45rem 0.68rem;
-  font-size: 0.74rem;
-  font-weight: 850;
-}
-
-.helicopter-table-wrap {
-  overflow-x: auto;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 14px;
-}
-
-.helicopter-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 680px;
-  background: #ffffff;
-}
-
-.helicopter-table th,
-.helicopter-table td {
-  padding: 0.62rem 0.68rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.13);
-  text-align: left;
-  font-size: 0.78rem;
-  vertical-align: middle;
-}
-
-.helicopter-table th {
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.68rem;
-  font-weight: 900;
-  background: rgba(248, 250, 252, 0.8);
-}
-
-.helicopter-table td {
-  color: #1f2937;
-}
-
-.helicopter-table td:last-child,
-.helicopter-table th:last-child {
-  text-align: right;
-}
-
-@media (max-width: 760px) {
-  .dashboard-card-customizer {
-    width: 100%;
-  }
-
-  .helicopter-quick-table-card {
-    padding: 0.7rem;
-  }
-
-  .helicopter-table {
-    min-width: 560px;
-  }
-}
-
-/* Phase I Dashboard: per-card field customization and compact cards */
-.dashboard-card-customizer-grid {
-  display: grid;
-  gap: 0.7rem;
-  max-height: 360px;
-  overflow-y: auto;
-  padding-right: 0.25rem;
-}
-
-.dashboard-card-customizer-grid section {
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
-  padding-top: 0.55rem;
-}
-
-.dashboard-card-master-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-bottom: 0.42rem;
-}
-
-.dashboard-card-master-toggle strong {
-  color: #1f2937;
-  font-size: 0.78rem;
-}
-
-.dashboard-card-field-options {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.28rem;
-  margin-left: 1.2rem;
-}
-
-.dashboard-card-field-options label {
-  display: flex;
-  gap: 0.38rem;
-  align-items: center;
-  color: #64748b;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.dashboard-operating-card--metrics {
-  min-height: 6.6rem;
-  justify-content: flex-start;
-}
-
-.dashboard-operating-card--metrics > span {
-  margin-bottom: 0.4rem;
-}
-
-.dashboard-card-metrics {
-  margin-top: auto;
-}
-
-/* Operation Helicopter View: smaller branch/user titles and fitted tables */
 .operation-helicopter-view .section-heading h3 {
   font-size: clamp(0.95rem, 1.1vw, 1.08rem);
   line-height: 1.15;
@@ -7185,194 +6985,7 @@ h3,
 
 /* Phase I Inventory smart cards:
    same operating-card logic as Dashboard, reusable for every card-based page */
-.inventory-card-control-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.85rem;
-}
 
-.inventory-card-customizer {
-  width: min(360px, 100%);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
-  padding: 0.62rem 0.75rem;
-}
-
-.inventory-card-customizer summary {
-  cursor: pointer;
-  color: var(--left-menu-accent, #4B5320);
-  font-size: 0.8rem;
-  font-weight: 900;
-}
-
-.inventory-card-customizer-grid {
-  display: grid;
-  gap: 0.72rem;
-  max-height: 360px;
-  overflow-y: auto;
-  margin-top: 0.65rem;
-  padding-right: 0.25rem;
-}
-
-.inventory-card-customizer-grid section {
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
-  padding-top: 0.55rem;
-}
-
-.inventory-card-master-toggle,
-.inventory-card-field-options label {
-  display: flex;
-  align-items: center;
-  gap: 0.42rem;
-}
-
-.inventory-card-master-toggle strong {
-  color: #1f2937;
-  font-size: 0.78rem;
-}
-
-.inventory-card-field-options {
-  display: grid;
-  gap: 0.28rem;
-  margin: 0.42rem 0 0 1.2rem;
-}
-
-.inventory-card-field-options span {
-  color: #64748b;
-  font-size: 0.72rem;
-  font-weight: 720;
-}
-
-.inventory-smart-card-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.8rem;
-}
-
-.inventory-smart-card {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 19px;
-  background: #ffffff;
-  padding: 0.85rem;
-  min-height: 9.3rem;
-  display: grid;
-  gap: 0.5rem;
-  align-content: start;
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.inventory-smart-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(75, 83, 32, 0.28);
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
-}
-
-.inventory-smart-card > span {
-  color: var(--left-menu-accent, #4B5320);
-  font-size: 0.72rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.inventory-smart-card > strong {
-  color: #1f2937;
-  font-size: 1.05rem;
-  line-height: 1.05;
-}
-
-.inventory-smart-card > small {
-  color: #64748b;
-  font-size: 0.72rem;
-  line-height: 1.25;
-}
-
-.mini-ai-trend {
-  width: 100%;
-  min-height: 4rem;
-}
-
-.mini-ai-trend--bar {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.24rem;
-  align-items: end;
-}
-
-.mini-ai-trend--bar span {
-  min-height: 3.7rem;
-  display: grid;
-  align-content: end;
-  justify-items: center;
-  gap: 0.2rem;
-}
-
-.mini-ai-trend--bar i {
-  width: 100%;
-  max-width: 0.6rem;
-  border-radius: 999px 999px 3px 3px;
-  background: color-mix(in srgb, var(--left-menu-accent, #4B5320) 74%, #ffffff 26%);
-  display: block;
-}
-
-.mini-ai-trend small {
-  color: #64748b;
-  font-size: 0.58rem;
-  font-weight: 850;
-}
-
-.mini-ai-trend--line svg {
-  width: 100%;
-  height: 3.4rem;
-}
-
-.mini-ai-trend--line polyline {
-  fill: none;
-  stroke: var(--left-menu-accent, #4B5320);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.mini-ai-trend--line circle {
-  fill: #ffffff;
-  stroke: var(--left-menu-accent, #4B5320);
-  stroke-width: 2;
-}
-
-.mini-ai-trend--line > div {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  text-align: center;
-  margin-top: -0.15rem;
-}
-
-@media (max-width: 1360px) {
-  .inventory-smart-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .inventory-card-control-row {
-    justify-content: stretch;
-  }
-
-  .inventory-card-customizer {
-    width: 100%;
-  }
-
-  .inventory-smart-card-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Phase I Inventory smart cards:
-   same operating-card logic as Dashboard, reusable for every card-based page */
 .inventory-card-control-row {
   display: flex;
   justify-content: flex-end;
@@ -7560,9 +7173,6 @@ h3,
 }
 
 /* Phase I golden rule: left menu is the only section navigator */
-.module-workspace-shell {
-  grid-template-columns: minmax(0, 1fr);
-}
 
 .module-workspace-shell > .module-section-rail {
   display: none !important;
@@ -7663,6 +7273,7 @@ h3,
 }
 
 /* Phase I Inventory page routing marker: confirms each submenu opens its own page */
+
 .inventory-active-page-marker {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 18px;
@@ -7694,6 +7305,7 @@ h3,
 }
 
 /* Global table rule: applies across the admin system */
+
 .dashboard-main table,
 .system-table,
 .helicopter-table,
@@ -7763,295 +7375,7 @@ h3,
 }
 
 /* POS journey */
-.pos-journey-page {
-  display: grid;
-  gap: 1rem;
-}
 
-.pos-journey-header {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 22px;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.94);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.055);
-}
-
-.pos-journey-header h2 {
-  margin: 0.12rem 0 0.24rem;
-  font-size: clamp(1.05rem, 1.45vw, 1.3rem);
-}
-
-.pos-day-status {
-  border-radius: 18px;
-  padding: 0.8rem;
-  min-width: 220px;
-  display: grid;
-  gap: 0.18rem;
-  background: rgba(148, 163, 184, 0.12);
-  color: #334155;
-}
-
-.pos-day-status.open {
-  background: rgba(75, 83, 32, 0.12);
-  color: #1f2937;
-}
-
-.pos-day-status.closed {
-  background: rgba(180, 33, 41, 0.08);
-}
-
-.pos-day-status span {
-  font-size: 0.72rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.pos-day-status strong {
-  font-size: 0.86rem;
-}
-
-.pos-journey-grid {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.72fr) minmax(420px, 1.45fr) minmax(280px, 0.88fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.pos-sale-summary-card,
-.pos-transaction-card,
-.pos-till-card,
-.pos-product-browser-card,
-.pos-invoice-journey {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 20px;
-  background: #ffffff;
-  padding: 0.9rem;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055);
-}
-
-.pos-sale-summary-card,
-.pos-till-card {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.pos-summary-list {
-  display: grid;
-  gap: 0.45rem;
-  margin: 0;
-}
-
-.pos-summary-list div {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.65rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-  padding-bottom: 0.42rem;
-}
-
-.pos-summary-list dt {
-  color: #64748b;
-  font-size: 0.74rem;
-  font-weight: 800;
-}
-
-.pos-summary-list dd {
-  margin: 0;
-  color: #1f2937;
-  font-size: 0.82rem;
-  font-weight: 900;
-  text-align: right;
-}
-
-.pos-summary-list .total dd {
-  color: var(--left-menu-accent, #4B5320);
-  font-size: 1rem;
-}
-
-.pos-sale-summary-card > button,
-.pos-till-card button,
-.pos-invoice-journey button,
-.pos-product-browser-card .section-heading button {
-  border: 0;
-  border-radius: 999px;
-  background: var(--left-menu-accent, #4B5320);
-  color: var(--left-menu-title-color, #ffffff);
-  padding: 0.55rem 0.78rem;
-  font-weight: 850;
-  font-size: 0.76rem;
-}
-
-.pos-sale-summary-card > button:disabled,
-.pos-till-card button:disabled {
-  opacity: 0.48;
-  cursor: not-allowed;
-}
-
-.pos-field-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.pos-field-grid.single {
-  grid-template-columns: 1fr;
-}
-
-.pos-field-grid label,
-.pos-invoice-journey label {
-  display: grid;
-  gap: 0.28rem;
-}
-
-.pos-field-grid label span,
-.pos-invoice-journey label span,
-.pos-checkbox-row span {
-  color: #64748b;
-  font-size: 0.72rem;
-  font-weight: 850;
-}
-
-.pos-field-grid input,
-.pos-field-grid select,
-.pos-invoice-journey select {
-  width: 100%;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 12px;
-  padding: 0.62rem;
-  background: #ffffff;
-  font: inherit;
-  font-size: 0.82rem;
-}
-
-.pos-checkbox-row {
-  display: flex !important;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.pos-checkbox-row input {
-  width: auto;
-  margin-top: 0.18rem;
-}
-
-.pos-product-browser-card {
-  margin-top: 1rem;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.pos-invoice-journey {
-  display: grid;
-  gap: 0.65rem;
-}
-
-@media (max-width: 1380px) {
-  .pos-journey-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .pos-sale-summary-card {
-    order: -1;
-  }
-}
-
-@media (max-width: 760px) {
-  .pos-journey-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .pos-day-status {
-    width: 100%;
-  }
-
-  .pos-field-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .system-table {
-    min-width: 620px;
-  }
-
-  .pos-product-browser-card {
-    overflow-x: auto;
-  }
-}
-
-/* Global table rule: applies across the admin system */
-.dashboard-main table,
-.system-table,
-.helicopter-table,
-.linked-submenu-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.82rem;
-  background: #ffffff;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.dashboard-main table th,
-.dashboard-main table td,
-.system-table th,
-.system-table td,
-.helicopter-table th,
-.helicopter-table td,
-.linked-submenu-table th,
-.linked-submenu-table td {
-  padding: 0.62rem 0.7rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.13);
-  text-align: left;
-  vertical-align: middle;
-  line-height: 1.28;
-}
-
-.dashboard-main table th,
-.system-table th,
-.helicopter-table th,
-.linked-submenu-table th {
-  background: rgba(248, 250, 252, 0.92);
-  color: #64748b;
-  font-size: 0.7rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.dashboard-main table td,
-.system-table td,
-.helicopter-table td,
-.linked-submenu-table td {
-  color: #1f2937;
-}
-
-.dashboard-main table tr:last-child td,
-.system-table tr:last-child td,
-.helicopter-table tr:last-child td,
-.linked-submenu-table tr:last-child td {
-  border-bottom: 0;
-}
-
-.dashboard-main table button,
-.system-table button,
-.helicopter-table button,
-.linked-submenu-table button {
-  border: 0;
-  border-radius: 999px;
-  background: var(--left-menu-accent, #4B5320);
-  color: var(--left-menu-title-color, #ffffff);
-  padding: 0.38rem 0.6rem;
-  font-size: 0.72rem;
-  font-weight: 850;
-}
-
-/* POS journey */
 .pos-journey-page {
   display: grid;
   gap: 1rem;
@@ -8272,6 +7596,7 @@ h3,
 }
 
 /* Strong global table rule: compact, readable, same standard as dashboard user tables */
+
 .dashboard-shell table,
 .dashboard-shell .system-table,
 .dashboard-shell .helicopter-table,
@@ -8320,6 +7645,7 @@ h3,
 }
 
 /* POS counter layout inspired by modern pharmacy POS, adapted to Ubuzima+ data */
+
 .pos-counter-page {
   display: grid;
   gap: 1rem;
@@ -8625,14 +7951,6 @@ h3,
   font-weight: 850;
 }
 
-.pos-summary-list dd {
-  margin: 0;
-  color: #1f2937;
-  font-size: 0.82rem;
-  font-weight: 900;
-  text-align: right;
-}
-
 .pos-summary-list .total dd {
   color: var(--left-menu-accent, #4B5320);
   font-size: 1.05rem;
@@ -8694,6 +8012,7 @@ h3,
 }
 
 /* POS correction: operational drug-to-cart flow and cleaner information fit */
+
 .pos-day-control-strip--two-by-two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -8840,6 +8159,7 @@ h3,
 }
 
 /* Final system-wide table rule: compact, consistent, readable across all admin tables */
+
 body .dashboard-shell table,
 body .dashboard-main table,
 body .dashboard-shell .system-table,
@@ -8954,30 +8274,7 @@ body .dashboard-main table button {
 }
 
 /* POS Sale Summary live cart synchronization */
-.pos-summary-sync-note {
-  border: 1px solid rgba(75, 83, 32, 0.18);
-  background: rgba(75, 83, 32, 0.08);
-  border-radius: 14px;
-  padding: 0.55rem 0.65rem;
-  display: grid;
-  gap: 0.16rem;
-  margin-bottom: 0.65rem;
-}
 
-.pos-summary-sync-note span {
-  color: var(--left-menu-accent, #4B5320);
-  font-size: 0.66rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.pos-summary-sync-note strong {
-  color: #1f2937;
-  font-size: 0.82rem;
-}
-
-/* POS Sale Summary live cart synchronization */
 .pos-summary-sync-note {
   border: 1px solid rgba(75, 83, 32, 0.18);
   background: rgba(75, 83, 32, 0.08);
@@ -9002,6 +8299,7 @@ body .dashboard-main table button {
 }
 
 /* POS insurance contribution logic */
+
 .pos-transaction-setup-card--two-column .pos-field-grid--two label:has(select[value='insurance']) {
   border-color: rgba(75, 83, 32, 0.22);
 }
@@ -9019,6 +8317,7 @@ body .dashboard-main table button {
 }
 
 /* POS overview analytics and fallback summary refresh */
+
 .pos-overview-analytics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -9049,6 +8348,7 @@ body .dashboard-main table button {
 }
 
 /* Executive POS and Sales Overview */
+
 .pos-executive-overview {
   display: grid;
   gap: 1rem;
@@ -9236,6 +8536,7 @@ body .dashboard-main table button {
 }
 
 /* Inventory live tables and Product Master-driven inventory creation */
+
 .inventory-create-from-master-panel,
 .inventory-ai-opportunity-panel {
   border: 1px solid rgba(45, 80, 52, 0.14);
@@ -9348,6 +8649,7 @@ body .dashboard-main table button {
 }
 
 /* Inventory table fitting, action toolbar, and military-green cards */
+
 .inventory-section {
   overflow-x: hidden;
 }
@@ -9484,6 +8786,7 @@ body .dashboard-main table button {
 }
 
 /* RHIA Product Master register formatting */
+
 .inventory-master-table--rhia-format {
   border: 1px solid rgba(45, 80, 52, 0.22);
   border-radius: 14px;
@@ -9569,6 +8872,7 @@ body .dashboard-main table button {
 }
 
 /* Final Product Master RHIA table register */
+
 .inventory-master-table--rhia-format {
   border: 1px solid rgba(45, 80, 52, 0.26);
   border-radius: 14px;
@@ -9629,11 +8933,6 @@ body .dashboard-main table button {
   line-height: 1.28;
 }
 
-.inventory-master-table--rhia-format .rhia-product-master-row > span:last-child,
-.inventory-master-table--rhia-format .rhia-product-master-row > strong:last-child {
-  border-right: 0;
-}
-
 .inventory-master-table--rhia-format .rhia-number-cell {
   justify-content: flex-end !important;
   text-align: right !important;
@@ -9647,11 +8946,8 @@ body .dashboard-main table button {
   gap: 0.32rem;
 }
 
-.inventory-master-table--rhia-format .table-action-row button {
-  white-space: nowrap;
-}
-
 /* Product Master action cards: smaller and normal system-green style */
+
 .product-master-action-cards {
   grid-template-columns: repeat(4, minmax(140px, 1fr));
   gap: 0.65rem;
@@ -9732,6 +9028,7 @@ body .dashboard-main table button {
 }
 
 /* Product Master: added Product Margin Rate and fixed edit search row */
+
 .inventory-master-table--rhia-format .rhia-product-master-row {
   grid-template-columns:
     64px
@@ -9784,6 +9081,7 @@ body .dashboard-main table button {
 }
 
 /* Product Master view panel, delete confirmation and embedded dropdown search */
+
 .product-master-combo-select {
   max-width: 100%;
 }
@@ -9923,11 +9221,13 @@ body .dashboard-main table button {
 }
 
 /* Hide legacy ProductInventoryActions section without deleting it */
+
 .product-inventory-actions-legacy-hidden {
   display: none !important;
 }
 
 /* Reusable register-table principles across admin system */
+
 .inventory-master-table,
 .inventory-master-table--wide,
 .admin-register-table,
@@ -9978,6 +9278,7 @@ body .dashboard-main table button {
 }
 
 /* Product Master AI assistant */
+
 .product-master-ai-assistant {
   display: grid;
   gap: 0.75rem;
@@ -10042,6 +9343,7 @@ body .dashboard-main table button {
 }
 
 /* Extended combo dropdown/search field */
+
 .product-master-combo-select {
   grid-column: 1 / -1;
   width: 100%;
@@ -10077,12 +9379,14 @@ body .dashboard-main table button {
 }
 
 /* Keep Product Master cards compact */
+
 .product-master-action-cards button {
   min-height: 44px !important;
   padding: 0.55rem 0.7rem !important;
 }
 
 /* Responsive AI and combo controls */
+
 @media (max-width: 1280px) {
   .product-master-ai-suggestion-grid {
     grid-template-columns: repeat(3, minmax(130px, 1fr));
@@ -10107,6 +9411,7 @@ body .dashboard-main table button {
 }
 
 /* Low Stock Watch List approved register format */
+
 .inventory-master-table--low-stock-register,
 .inventory-master-table--ai-import {
   width: 100%;
@@ -10189,160 +9494,7 @@ body .dashboard-main table button {
 }
 
 /* AI Import working panel */
-.product-master-ai-import-panel {
-  overflow: hidden;
-}
 
-.ai-import-input-grid {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.7fr) minmax(320px, 1.3fr) auto;
-  gap: 0.75rem;
-  align-items: end;
-  margin-bottom: 0.9rem;
-}
-
-.ai-import-input-grid label {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.ai-import-input-grid input,
-.ai-import-input-grid textarea {
-  border: 1px solid rgba(45, 80, 52, 0.18);
-  border-radius: 10px;
-  padding: 0.55rem 0.65rem;
-  font: inherit;
-  background: #ffffff;
-}
-
-.ai-import-actions {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.ai-import-actions button {
-  min-height: 36px;
-  white-space: nowrap;
-}
-
-.ai-import-row {
-  display: grid;
-  grid-template-columns:
-    82px
-    145px
-    minmax(320px, 1fr)
-    minmax(340px, 1.1fr)
-    130px
-    130px
-    170px
-    150px
-    minmax(260px, 0.9fr)
-    minmax(300px, 1fr)
-    minmax(280px, 1fr)
-    minmax(260px, 0.8fr);
-  min-width: 2860px;
-  gap: 0;
-  align-items: stretch;
-  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
-  white-space: normal;
-}
-
-@media (max-width: 1100px) {
-  .ai-import-input-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ai-import-actions {
-    display: flex;
-    flex-wrap: wrap;
-  }
-}
-
-/* Low Stock Watch List approved register format */
-.inventory-master-table--low-stock-register,
-.inventory-master-table--ai-import {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  border: 1px solid rgba(45, 80, 52, 0.22);
-  border-radius: 14px;
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(15, 30, 20, 0.04);
-}
-
-.low-stock-register-row {
-  display: grid;
-  grid-template-columns:
-    74px
-    64px
-    145px
-    minmax(320px, 1.1fr)
-    minmax(340px, 1.1fr)
-    minmax(240px, 0.8fr)
-    150px
-    150px
-    150px
-    150px
-    160px
-    170px
-    170px
-    230px;
-  min-width: 2860px;
-  gap: 0;
-  align-items: stretch;
-  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
-  white-space: normal;
-}
-
-.low-stock-register-row > span,
-.low-stock-register-row > strong,
-.ai-import-row > span,
-.ai-import-row > strong {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-  padding: 0.58rem 0.72rem;
-  border-right: 1px solid rgba(45, 80, 52, 0.16);
-  text-align: left;
-  overflow: visible;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.28;
-}
-
-.low-stock-register-row > span:last-child,
-.low-stock-register-row > strong:last-child,
-.ai-import-row > span:last-child,
-.ai-import-row > strong:last-child {
-  border-right: 0;
-}
-
-.inventory-master-table--low-stock-register .inventory-master-table__header,
-.inventory-master-table--ai-import .inventory-master-table__header {
-  background: rgba(45, 80, 52, 0.1);
-  color: #243b2b;
-  font-weight: 800;
-  position: sticky;
-  top: 0;
-  z-index: 3;
-}
-
-.register-action-toolbar {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: end;
-  gap: 0.45rem;
-  overflow-x: auto;
-  white-space: nowrap;
-  max-width: 100%;
-  padding-bottom: 0.15rem;
-}
-
-/* AI Import working panel */
 .product-master-ai-import-panel {
   overflow: hidden;
 }
@@ -10415,6 +9567,7 @@ body .dashboard-main table button {
 }
 
 /* Hide legacy section without deleting its code */
+
 .legacy-product-master-actions-title,
 .product-inventory-actions-legacy-hidden,
 .product-inventory-actions-legacy-hidden * {
@@ -10422,6 +9575,7 @@ body .dashboard-main table button {
 }
 
 /* Low Stock uses same register principle as Product Master */
+
 .inventory-master-table--low-stock-standard .low-stock-product-master-row {
   display: grid;
   grid-template-columns:
@@ -10469,6 +9623,7 @@ body .dashboard-main table button {
 }
 
 /* Batch, Expiry and Near Expiry also use Product Master identity/pricing standard */
+
 .inventory-master-table--batch-standard .batch-product-master-row {
   display: grid;
   grid-template-columns:
@@ -10516,6 +9671,7 @@ body .dashboard-main table button {
 }
 
 /* Global admin register order: applies across system tables where table layout is used */
+
 .admin-shell table,
 .admin-dashboard table,
 .module-section-stage table,
@@ -10576,380 +9732,7 @@ body .dashboard-main table button {
 }
 
 /* Action cards across operational pages should follow Product Master compact card principle */
-.inventory-action-card-grid button,
-.product-master-action-cards button,
-.module-action-card-grid button,
-.workspace-action-card-grid button,
-.admin-action-card-grid button {
-  min-height: 44px;
-  padding: 0.55rem 0.75rem;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(45, 80, 52, 0.14), rgba(45, 80, 52, 0.07));
-  color: #243b2b;
-  border: 1px solid rgba(45, 80, 52, 0.18);
-  display: grid;
-  place-items: center;
-  text-align: center;
-}
 
-.inventory-action-card-grid button strong,
-.product-master-action-cards button strong,
-.module-action-card-grid button strong,
-.workspace-action-card-grid button strong,
-.admin-action-card-grid button strong {
-  color: #243b2b;
-  font-size: 0.92rem;
-}
-
-/* Hide legacy section without deleting its code */
-.legacy-product-master-actions-title,
-.product-inventory-actions-legacy-hidden,
-.product-inventory-actions-legacy-hidden * {
-  display: none !important;
-}
-
-/* Low Stock uses same register principle as Product Master */
-.inventory-master-table--low-stock-standard .low-stock-product-master-row {
-  display: grid;
-  grid-template-columns:
-    64px
-    145px
-    minmax(340px, 1.1fr)
-    minmax(340px, 1.1fr)
-    minmax(130px, 0.55fr)
-    130px
-    150px
-    160px
-    minmax(230px, 0.8fr)
-    150px
-    150px
-    150px
-    150px
-    160px
-    230px;
-  min-width: 3180px;
-  gap: 0;
-  align-items: stretch;
-  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
-  white-space: normal;
-}
-
-.inventory-master-table--low-stock-standard .low-stock-product-master-row > span,
-.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-  padding: 0.58rem 0.72rem;
-  border-right: 1px solid rgba(45, 80, 52, 0.16);
-  text-align: left;
-  overflow: visible;
-  text-overflow: unset;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.28;
-}
-
-.inventory-master-table--low-stock-standard .low-stock-product-master-row > span:last-child,
-.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong:last-child {
-  border-right: 0;
-}
-
-/* Batch, Expiry and Near Expiry also use Product Master identity/pricing standard */
-.inventory-master-table--batch-standard .batch-product-master-row {
-  display: grid;
-  grid-template-columns:
-    74px
-    64px
-    145px
-    minmax(320px, 1.05fr)
-    minmax(340px, 1.1fr)
-    150px
-    160px
-    170px
-    minmax(260px, 0.9fr)
-    150px
-    150px
-    150px
-    minmax(260px, 0.9fr)
-    minmax(240px, 0.8fr)
-    230px;
-  min-width: 3090px;
-  gap: 0;
-  align-items: stretch;
-  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
-  white-space: normal;
-}
-
-.inventory-master-table--batch-standard .batch-product-master-row > span,
-.inventory-master-table--batch-standard .batch-product-master-row > strong {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-  padding: 0.58rem 0.72rem;
-  border-right: 1px solid rgba(45, 80, 52, 0.16);
-  text-align: left;
-  overflow: visible;
-  text-overflow: unset;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.28;
-}
-
-.inventory-master-table--batch-standard .batch-product-master-row > span:last-child,
-.inventory-master-table--batch-standard .batch-product-master-row > strong:last-child {
-  border-right: 0;
-}
-
-/* Global admin register order: applies across system tables where table layout is used */
-.admin-shell table,
-.admin-dashboard table,
-.module-section-stage table,
-.dashboard-panel table,
-.workspace-panel table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border: 1px solid rgba(45, 80, 52, 0.18);
-  border-radius: 14px;
-  overflow: hidden;
-  background: #ffffff;
-}
-
-.admin-shell th,
-.admin-dashboard th,
-.module-section-stage th,
-.dashboard-panel th,
-.workspace-panel th {
-  background: rgba(45, 80, 52, 0.1);
-  color: #243b2b;
-  font-weight: 800;
-  text-align: left;
-  border-right: 1px solid rgba(45, 80, 52, 0.16);
-  border-bottom: 1px solid rgba(45, 80, 52, 0.16);
-  padding: 0.6rem 0.72rem;
-  white-space: normal;
-}
-
-.admin-shell td,
-.admin-dashboard td,
-.module-section-stage td,
-.dashboard-panel td,
-.workspace-panel td {
-  text-align: left;
-  border-right: 1px solid rgba(45, 80, 52, 0.12);
-  border-bottom: 1px solid rgba(45, 80, 52, 0.1);
-  padding: 0.58rem 0.72rem;
-  line-height: 1.28;
-  vertical-align: middle;
-}
-
-.admin-shell td.numeric,
-.admin-shell th.numeric,
-.admin-dashboard td.numeric,
-.admin-dashboard th.numeric,
-.module-section-stage td.numeric,
-.module-section-stage th.numeric,
-.dashboard-panel td.numeric,
-.dashboard-panel th.numeric,
-.workspace-panel td.numeric,
-.workspace-panel th.numeric,
-.rhia-number-cell {
-  text-align: right !important;
-  justify-content: flex-end !important;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap !important;
-}
-
-/* Action cards across operational pages should follow Product Master compact card principle */
-.inventory-action-card-grid button,
-.product-master-action-cards button,
-.module-action-card-grid button,
-.workspace-action-card-grid button,
-.admin-action-card-grid button {
-  min-height: 44px;
-  padding: 0.55rem 0.75rem;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(45, 80, 52, 0.14), rgba(45, 80, 52, 0.07));
-  color: #243b2b;
-  border: 1px solid rgba(45, 80, 52, 0.18);
-  display: grid;
-  place-items: center;
-  text-align: center;
-}
-
-.inventory-action-card-grid button strong,
-.product-master-action-cards button strong,
-.module-action-card-grid button strong,
-.workspace-action-card-grid button strong,
-.admin-action-card-grid button strong {
-  color: #243b2b;
-  font-size: 0.92rem;
-}
-
-/* Hide legacy section without deleting its code */
-.legacy-product-master-actions-title,
-.product-inventory-actions-legacy-hidden,
-.product-inventory-actions-legacy-hidden * {
-  display: none !important;
-}
-
-/* Low Stock uses same register principle as Product Master */
-.inventory-master-table--low-stock-standard .low-stock-product-master-row {
-  display: grid;
-  grid-template-columns:
-    64px
-    145px
-    minmax(340px, 1.1fr)
-    minmax(340px, 1.1fr)
-    minmax(130px, 0.55fr)
-    130px
-    150px
-    160px
-    minmax(230px, 0.8fr)
-    150px
-    150px
-    150px
-    150px
-    160px
-    230px;
-  min-width: 3180px;
-  gap: 0;
-  align-items: stretch;
-  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
-  white-space: normal;
-}
-
-.inventory-master-table--low-stock-standard .low-stock-product-master-row > span,
-.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-  padding: 0.58rem 0.72rem;
-  border-right: 1px solid rgba(45, 80, 52, 0.16);
-  text-align: left;
-  overflow: visible;
-  text-overflow: unset;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.28;
-}
-
-.inventory-master-table--low-stock-standard .low-stock-product-master-row > span:last-child,
-.inventory-master-table--low-stock-standard .low-stock-product-master-row > strong:last-child {
-  border-right: 0;
-}
-
-/* Batch, Expiry and Near Expiry also use Product Master identity/pricing standard */
-.inventory-master-table--batch-standard .batch-product-master-row {
-  display: grid;
-  grid-template-columns:
-    74px
-    64px
-    145px
-    minmax(320px, 1.05fr)
-    minmax(340px, 1.1fr)
-    150px
-    160px
-    170px
-    minmax(260px, 0.9fr)
-    150px
-    150px
-    150px
-    minmax(260px, 0.9fr)
-    minmax(240px, 0.8fr)
-    230px;
-  min-width: 3090px;
-  gap: 0;
-  align-items: stretch;
-  border-bottom: 1px solid rgba(45, 80, 52, 0.13);
-  white-space: normal;
-}
-
-.inventory-master-table--batch-standard .batch-product-master-row > span,
-.inventory-master-table--batch-standard .batch-product-master-row > strong {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-  padding: 0.58rem 0.72rem;
-  border-right: 1px solid rgba(45, 80, 52, 0.16);
-  text-align: left;
-  overflow: visible;
-  text-overflow: unset;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.28;
-}
-
-.inventory-master-table--batch-standard .batch-product-master-row > span:last-child,
-.inventory-master-table--batch-standard .batch-product-master-row > strong:last-child {
-  border-right: 0;
-}
-
-/* Global admin register order: applies across system tables where table layout is used */
-.admin-shell table,
-.admin-dashboard table,
-.module-section-stage table,
-.dashboard-panel table,
-.workspace-panel table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border: 1px solid rgba(45, 80, 52, 0.18);
-  border-radius: 14px;
-  overflow: hidden;
-  background: #ffffff;
-}
-
-.admin-shell th,
-.admin-dashboard th,
-.module-section-stage th,
-.dashboard-panel th,
-.workspace-panel th {
-  background: rgba(45, 80, 52, 0.1);
-  color: #243b2b;
-  font-weight: 800;
-  text-align: left;
-  border-right: 1px solid rgba(45, 80, 52, 0.16);
-  border-bottom: 1px solid rgba(45, 80, 52, 0.16);
-  padding: 0.6rem 0.72rem;
-  white-space: normal;
-}
-
-.admin-shell td,
-.admin-dashboard td,
-.module-section-stage td,
-.dashboard-panel td,
-.workspace-panel td {
-  text-align: left;
-  border-right: 1px solid rgba(45, 80, 52, 0.12);
-  border-bottom: 1px solid rgba(45, 80, 52, 0.1);
-  padding: 0.58rem 0.72rem;
-  line-height: 1.28;
-  vertical-align: middle;
-}
-
-.admin-shell td.numeric,
-.admin-shell th.numeric,
-.admin-dashboard td.numeric,
-.admin-dashboard th.numeric,
-.module-section-stage td.numeric,
-.module-section-stage th.numeric,
-.dashboard-panel td.numeric,
-.dashboard-panel th.numeric,
-.workspace-panel td.numeric,
-.workspace-panel th.numeric,
-.rhia-number-cell {
-  text-align: right !important;
-  justify-content: flex-end !important;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap !important;
-}
-
-/* Action cards across operational pages should follow Product Master compact card principle */
 .inventory-action-card-grid button,
 .product-master-action-cards button,
 .module-action-card-grid button,
@@ -10976,6 +9759,7 @@ body .dashboard-main table button {
 }
 
 /* Low Stock Watch List: Product Master-style replacement table */
+
 .inventory-section--low-stock-product-master {
   display: grid;
   gap: 0.85rem;
@@ -11075,6 +9859,7 @@ body .dashboard-main table button {
 }
 
 /* HARD REPLACEMENT: Low Stock Watch List V2 Product Master trigger register */
+
 .low-stock-v2-section {
   display: grid;
   gap: 0.85rem;
@@ -11171,6 +9956,7 @@ body .dashboard-main table button {
 }
 
 /* FINAL ACTIVE Low Stock Watch List register */
+
 .low-stock-final-section {
   display: grid;
   gap: 0.85rem;
@@ -11267,31 +10053,6 @@ body .dashboard-main table button {
 }
 
 /* Stable Low Stock Watch List replacement */
-.inventory-section--low-stock-product-master {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.low-stock-trigger-note {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-  border: 1px solid rgba(45, 80, 52, 0.16);
-  border-radius: 12px;
-  padding: 0.7rem 0.85rem;
-  background: rgba(45, 80, 52, 0.06);
-  color: #243b2b;
-}
-
-.inventory-master-table--low-stock-product-master {
-  border: 1px solid rgba(45, 80, 52, 0.24);
-  border-radius: 14px;
-  background: #ffffff;
-  overflow-x: auto;
-  overflow-y: visible;
-  max-width: 100%;
-}
 
 .inventory-master-table--low-stock-product-master .low-stock-product-master-row {
   display: grid;
@@ -11328,35 +10089,8 @@ body .dashboard-main table button {
   font-weight: 800;
 }
 
-.inventory-master-table--low-stock-product-master .low-stock-product-master-row > span,
-.inventory-master-table--low-stock-product-master .low-stock-product-master-row > strong {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-  padding: 0.58rem 0.72rem;
-  border-right: 1px solid rgba(45, 80, 52, 0.16);
-  text-align: left;
-  overflow: visible;
-  text-overflow: unset;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.28;
-}
-
-.inventory-master-table--low-stock-product-master .low-stock-product-master-row > span:last-child,
-.inventory-master-table--low-stock-product-master .low-stock-product-master-row > strong:last-child {
-  border-right: 0;
-}
-
-.inventory-master-table--low-stock-product-master .rhia-number-cell {
-  justify-content: flex-end !important;
-  text-align: right !important;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap !important;
-}
-
 /* Batch and Expiry: Stock batch register, not Product Master table */
+
 .inventory-section--batch-expiry-register {
   display: grid;
   gap: 0.85rem;
@@ -11436,6 +10170,7 @@ body .dashboard-main table button {
 }
 
 /* Global delete confirmation for inventory tables */
+
 .inventory-delete-confirmation-panel {
   border: 1px solid rgba(150, 40, 40, 0.2);
   background: rgba(150, 40, 40, 0.04);
@@ -11476,6 +10211,7 @@ body .dashboard-main table button {
 }
 
 /* Product Master table column fitness */
+
 .inventory-master-table--rhia-format {
   width: 100%;
   max-width: 100%;
@@ -11560,6 +10296,7 @@ body .dashboard-main table button {
 }
 
 /* Product Inventory receiving source + Product Master searchable dropdown */
+
 .inventory-receive-source-selector {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -11687,6 +10424,7 @@ body .dashboard-main table button {
 }
 
 /* Inventory UX spacing refinement */
+
 .inventory-module,
 .inventory-preview,
 .inventory-workspace,
@@ -11815,6 +10553,7 @@ body .dashboard-main table button {
 }
 
 /* Product Inventory register: Product Master-style table with inventory data */
+
 .inventory-product-inventory-card-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(180px, 1fr));
@@ -11947,93 +10686,6 @@ body .dashboard-main table button {
 }
 
 /* Product Inventory register matching Product Master standard */
-.inventory-product-inventory-card-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
-  gap: 1rem;
-  margin: 1rem 0 1.25rem;
-}
-
-.inventory-product-inventory-card {
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 1rem;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-  display: grid;
-  gap: 0.35rem;
-}
-
-.inventory-product-inventory-card span {
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #64748b;
-}
-
-.inventory-product-inventory-card strong {
-  font-size: 1.35rem;
-  color: #0f172a;
-}
-
-.inventory-product-inventory-card small {
-  color: #64748b;
-  line-height: 1.45;
-}
-
-.inventory-product-inventory-table-shell {
-  margin-top: 1.25rem;
-  border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #ffffff;
-}
-
-.inventory-master-table--product-inventory-register {
-  min-width: 1480px;
-}
-
-.inventory-master-table--product-inventory-register .product-inventory-register-row {
-  display: grid;
-  grid-template-columns:
-    52px
-    minmax(230px, 1.35fr)
-    minmax(220px, 1.2fr)
-    minmax(170px, 0.9fr)
-    minmax(160px, 0.85fr)
-    minmax(110px, 0.65fr)
-    minmax(120px, 0.65fr)
-    minmax(95px, 0.5fr)
-    minmax(130px, 0.65fr)
-    minmax(150px, 0.75fr)
-    minmax(190px, 0.9fr);
-  align-items: stretch;
-}
-
-.inventory-master-table--product-inventory-register .product-inventory-register-row > span,
-.inventory-master-table--product-inventory-register .product-inventory-register-row > strong {
-  min-width: 0;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-  word-break: normal;
-  overflow-wrap: anywhere;
-}
-
-.inventory-master-table--product-inventory-register .product-inventory-register-row > span {
-  display: grid;
-  gap: 0.2rem;
-  align-content: start;
-}
-
-.inventory-master-table--product-inventory-register .product-inventory-register-row--empty {
-  grid-template-columns: 1fr;
-}
-
-.inventory-master-table--product-inventory-register .rhia-number-cell {
-  text-align: right;
-  justify-content: end;
-}
 
 .inventory-master-table--product-inventory-register .product-inventory-row-actions {
   display: flex !important;
@@ -12045,34 +10697,8 @@ body .dashboard-main table button {
   visibility: visible !important;
 }
 
-.inventory-master-table--product-inventory-register .product-inventory-row-actions button,
-.inventory-create-submit-button {
-  min-height: 36px;
-  white-space: nowrap;
-}
-
-.inventory-create-submit-button[aria-busy='true'] {
-  cursor: wait;
-  opacity: 0.78;
-}
-
-.inventory-create-submit-button:disabled {
-  cursor: not-allowed;
-}
-
-@media (max-width: 900px) {
-  .inventory-product-inventory-card-grid {
-    grid-template-columns: repeat(2, minmax(160px, 1fr));
-  }
-}
-
-@media (max-width: 560px) {
-  .inventory-product-inventory-card-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Product Inventory action workflow and AI opportunity activation */
+
 .inventory-opportunity-grid button {
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: #ffffff;
@@ -12133,22 +10759,6 @@ body .dashboard-main table button {
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }
 
-.inventory-ai-opportunity-detail {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.inventory-ai-opportunity-detail > span {
-  color: #475569;
-  line-height: 1.55;
-}
-
-.inventory-ai-opportunity-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-}
-
 .inventory-batch-detail-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(140px, 1fr));
@@ -12202,6 +10812,7 @@ body .dashboard-main table button {
 }
 
 /* Product Inventory final UX hardening: no overlap, reliable buttons, active AI cards */
+
 .inventory-create-from-master-panel {
   overflow: visible;
 }
@@ -12368,6 +10979,7 @@ body .dashboard-main table button {
 }
 
 /* Smart table wrapping: contain every record inside its own field */
+
 .admin-table,
 .inventory-table,
 .inventory-master-table,
@@ -12406,6 +11018,7 @@ table td,
 }
 
 /* Div/grid table cells */
+
 .inventory-master-table > div > span,
 .inventory-master-table > div > strong,
 .inventory-master-table--wide > div > span,
@@ -12428,6 +11041,7 @@ table td,
 }
 
 /* Keep action buttons inside their table column */
+
 .inventory-master-table .table-action-row,
 .inventory-table .table-action-row,
 .admin-table .table-action-row,
@@ -12454,6 +11068,7 @@ table td,
 }
 
 /* Product Inventory: action column must match the header/body grid */
+
 .inventory-master-table--product-inventory-register {
   min-width: 1520px !important;
 }
@@ -12510,6 +11125,7 @@ table td,
 }
 
 /* Manual vs Purchase Code visual separation */
+
 .inventory-receive-source-selector {
   grid-column: 1 / -1;
   display: grid;
@@ -12574,6 +11190,7 @@ table td,
 }
 
 /* Tenant user creation and security management */
+
 .tenant-user-security-panel {
   grid-column: 1 / -1;
   display: grid;
@@ -12696,6 +11313,7 @@ table td,
 }
 
 /* Professional User Creation layout */
+
 .tenant-user-security-panel {
   grid-column: 1 / -1;
   display: grid;
@@ -12911,6 +11529,7 @@ table td,
 }
 
 /* Strict table containment: SN and numeric cells stay compact, text cells wrap */
+
 table {
   width: 100%;
   table-layout: fixed;
@@ -12929,6 +11548,7 @@ table td,
 }
 
 /* SN / first column: compact and stable */
+
 table th:first-child,
 table td:first-child,
 .admin-table th:first-child,
@@ -12946,6 +11566,7 @@ table td:first-child,
 }
 
 /* Numeric fields: compact, do not break layout */
+
 .rhia-number-cell,
 table td.numeric,
 table th.numeric,
@@ -12961,6 +11582,7 @@ table th.numeric,
 }
 
 /* All non-SN, non-numeric text cells must wrap inside their own field */
+
 table th:not(:first-child):not(.numeric),
 table td:not(:first-child):not(.numeric),
 .admin-table th:not(:first-child):not(.numeric),
@@ -12985,6 +11607,7 @@ table td:not(:first-child):not(.numeric),
 }
 
 /* Nested text inside cells must not escape */
+
 table td:not(:first-child):not(.numeric) *,
 .admin-table td:not(:first-child):not(.numeric) *,
 .inventory-table td:not(:first-child):not(.numeric) *,
@@ -12999,6 +11622,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Action columns: buttons must remain inside their own table field */
+
 .inventory-master-table .table-action-row,
 .admin-table .table-action-row,
 .inventory-table .table-action-row,
@@ -13025,6 +11649,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Product Inventory register: strict grid containment */
+
 .inventory-master-table--product-inventory-register {
   min-width: 1560px !important;
   overflow-x: auto !important;
@@ -13058,6 +11683,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Product Inventory SN */
+
 .inventory-master-table--product-inventory-register > .inventory-master-table__header.product-inventory-register-row > strong:first-child,
 .inventory-master-table--product-inventory-register > .product-inventory-register-row > span:first-child {
   white-space: nowrap !important;
@@ -13067,6 +11693,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Product Inventory numeric columns: Available Qty, Unit Cost, Margin, Selling Price */
+
 .inventory-master-table--product-inventory-register > .product-inventory-register-row > span:nth-child(6),
 .inventory-master-table--product-inventory-register > .product-inventory-register-row > span:nth-child(7),
 .inventory-master-table--product-inventory-register > .product-inventory-register-row > span:nth-child(8),
@@ -13078,6 +11705,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Product Inventory text columns wrap hard inside field */
+
 .inventory-master-table--product-inventory-register > .product-inventory-register-row > span:nth-child(2),
 .inventory-master-table--product-inventory-register > .product-inventory-register-row > span:nth-child(3),
 .inventory-master-table--product-inventory-register > .product-inventory-register-row > span:nth-child(4),
@@ -13091,6 +11719,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Product Inventory Actions */
+
 .inventory-master-table--product-inventory-register > .product-inventory-register-row > span:last-child {
   display: grid !important;
   align-content: start !important;
@@ -13116,6 +11745,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Final row ecosystem lock: rows must obey the table, not behave independently */
+
 .inventory-master-table,
 .inventory-master-table--wide,
 .inventory-master-table--rhia-format,
@@ -13131,6 +11761,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Every custom row is a contained table row */
+
 .inventory-master-table > div,
 .inventory-master-table--wide > div,
 .inventory-master-table--rhia-format > div,
@@ -13143,6 +11774,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Every custom cell belongs to its row */
+
 .inventory-master-table > div > span,
 .inventory-master-table > div > strong,
 .inventory-master-table--wide > div > span,
@@ -13160,6 +11792,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* SN stays compact */
+
 .inventory-master-table > div > span:first-child,
 .inventory-master-table > div > strong:first-child,
 .inventory-master-table--wide > div > span:first-child,
@@ -13177,6 +11810,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Numeric fields stay compact */
+
 .rhia-number-cell,
 .numeric,
 [data-column-type='number'],
@@ -13190,6 +11824,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Text fields wrap hard inside the cell */
+
 .inventory-master-table > div > span:not(:first-child):not(.rhia-number-cell):not(.numeric),
 .inventory-master-table > div > strong:not(:first-child):not(.rhia-number-cell):not(.numeric),
 .inventory-master-table--wide > div > span:not(:first-child):not(.rhia-number-cell):not(.numeric),
@@ -13209,6 +11844,7 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Nested text cannot escape */
+
 .inventory-master-table > div > span:not(:first-child) *,
 .inventory-master-table > div > strong:not(:first-child) *,
 .inventory-master-table--wide > div > span:not(:first-child) *,
@@ -13225,10 +11861,6 @@ table td:not(:first-child):not(.numeric) *,
 }
 
 /* Real HTML tables follow the same containment logic */
-table {
-  width: 100%;
-  table-layout: fixed;
-}
 
 table th,
 table td {
@@ -13256,6 +11888,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Action cells must remain part of the row ecosystem */
+
 .table-action-row,
 .product-inventory-action-button-row {
   width: 100% !important;
@@ -13282,6 +11915,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Product Inventory row and header must use the same grid forever */
+
 .inventory-master-table--product-inventory-register {
   min-width: 1600px !important;
 }
@@ -13344,6 +11978,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Professional permission layout */
+
 .tenant-user-form-grid--professional {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
@@ -13495,6 +12130,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Final Product Inventory Actions containment */
+
 .inventory-master-table--product-inventory-register {
   min-width: 1680px !important;
   overflow-x: auto !important;
@@ -13566,6 +12202,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Permission section final readability */
+
 .tenant-user-permission-group {
   gap: 0.55rem !important;
 }
@@ -13600,6 +12237,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Final User/Security permission checkbox visibility */
+
 .tenant-user-permission-group input[type="checkbox"],
 .tenant-user-permissions input[type="checkbox"],
 .tenant-user-permission-groups input[type="checkbox"] {
@@ -13637,6 +12275,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Cross-role table consistency: same table/card structure for Admin, Manager, Cashier and tenant users */
+
 .table-action-row,
 .product-master-action-button-row,
 .product-inventory-action-button-row {
@@ -13696,8 +12335,8 @@ table td:not(:first-child):not(.numeric) {
   word-break: normal !important;
 }
 
-
 /* Profile password change and administrator user deactivation */
+
 .password-change-card form,
 .password-change-form {
   display: grid;
@@ -13735,8 +12374,8 @@ table td:not(:first-child):not(.numeric) {
   display: block;
 }
 
-
 /* POS current inventory picking */
+
 .pos-inventory-load-panel {
   display: flex;
   flex-wrap: wrap;
@@ -13764,8 +12403,8 @@ table td:not(:first-child):not(.numeric) {
   background: rgba(255, 255, 255, 0.78);
 }
 
-
 /* Simple but Mighty Inventory Command Center */
+
 .inventory-simple-command-center {
   display: grid;
   gap: 1rem;
@@ -13897,8 +12536,8 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* International Inventory Homepage Polish */
+
 .inventory-home-summary-suite {
   display: grid;
   gap: 1rem;
@@ -14007,6 +12646,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Compact command center refinement */
+
 .inventory-simple-command-center {
   padding: 0.9rem;
   border-radius: 22px;
@@ -14065,8 +12705,8 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* System-wide two-column table actions */
+
 .module-section-stage :where(
   .table-action-row,
   .product-master-action-button-row,
@@ -14128,6 +12768,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Inventory summary card identity refinement */
+
 .inventory-home-summary-card {
   isolation: isolate;
 }
@@ -14204,6 +12845,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Cleaner action cards without detail text */
+
 .inventory-simple-command-grid {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
@@ -14225,6 +12867,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Premium inventory page surfaces */
+
 .inventory-active-page-marker {
   border-radius: 18px !important;
   background:
@@ -14256,8 +12899,8 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* Inventory refinement package A */
+
 .inventory-preview-panel > .panel-heading-row h2 {
   letter-spacing: -0.03em;
 }
@@ -14294,6 +12937,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Enforce 2x2 action buttons across inventory-style tables */
+
 .inventory-master-table .table-action-row,
 .inventory-master-table--rhia-format .table-action-row,
 .inventory-master-table--batch-expiry-register .table-action-row,
@@ -14334,6 +12978,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Expiry labels, filters, and mapping */
+
 .inventory-expiry-control-suite {
   display: grid;
   gap: 0.8rem;
@@ -14510,8 +13155,8 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* Inventory refinement package B */
+
 .inventory-section--stock-locations {
   gap: 1rem;
 }
@@ -14646,6 +13291,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Standard 2x2 action buttons for all inventory tables going forward. */
+
 .inventory-master-table .table-action-row,
 .product-master-action-button-row,
 .product-inventory-action-button-row,
@@ -14798,18 +13444,31 @@ table td:not(:first-child):not(.numeric) {
 }
 
 .inventory-data-table .col-sn { width: 64px; }
+
 .inventory-data-table .col-product { width: 250px; }
+
 .inventory-data-table .col-code { width: 135px; }
+
 .inventory-data-table .col-category { width: 150px; }
+
 .inventory-data-table .col-location { width: 180px; }
+
 .inventory-data-table .col-branch { width: 190px; }
+
 .inventory-data-table .col-type { width: 145px; }
+
 .inventory-data-table .col-number { width: 110px; }
+
 .inventory-data-table .col-date { width: 130px; }
+
 .inventory-data-table .col-days { width: 115px; }
+
 .inventory-data-table .col-status { width: 155px; }
+
 .inventory-data-table .col-label { width: 175px; }
+
 .inventory-data-table .col-recommendation { width: 290px; }
+
 .inventory-data-table .col-actions { width: 190px; }
 
 .inventory-data-table--low-stock {
@@ -14921,12 +13580,11 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* Patch C.2 - Product register table width */
+
 .inventory-data-table--product-register {
   min-width: 1460px;
 }
-
 
 /* Patch C.2 - Admin Table Management */
 
@@ -15072,21 +13730,33 @@ table td:not(:first-child):not(.numeric) {
 /* Column width presets */
 
 .inventory-table-width--compact .inventory-data-table .col-product { width: 210px; }
+
 .inventory-table-width--compact .inventory-data-table .col-recommendation { width: 240px; }
+
 .inventory-table-width--compact .inventory-data-table .col-location { width: 150px; }
+
 .inventory-table-width--compact .inventory-data-table .col-branch { width: 160px; }
+
 .inventory-table-width--compact .inventory-data-table .col-actions { width: 170px; }
 
 .inventory-table-width--balanced .inventory-data-table .col-product { width: 250px; }
+
 .inventory-table-width--balanced .inventory-data-table .col-recommendation { width: 290px; }
+
 .inventory-table-width--balanced .inventory-data-table .col-location { width: 180px; }
+
 .inventory-table-width--balanced .inventory-data-table .col-branch { width: 190px; }
+
 .inventory-table-width--balanced .inventory-data-table .col-actions { width: 190px; }
 
 .inventory-table-width--wide .inventory-data-table .col-product { width: 320px; }
+
 .inventory-table-width--wide .inventory-data-table .col-recommendation { width: 360px; }
+
 .inventory-table-width--wide .inventory-data-table .col-location { width: 230px; }
+
 .inventory-table-width--wide .inventory-data-table .col-branch { width: 240px; }
+
 .inventory-table-width--wide .inventory-data-table .col-actions { width: 210px; }
 
 .inventory-data-table--low-stock {
@@ -15101,10 +13771,6 @@ table td:not(:first-child):not(.numeric) {
   min-width: 1420px;
 }
 
-.inventory-data-table--product-register {
-  min-width: 1460px;
-}
-
 @media (max-width: 1280px) {
   .inventory-table-management-panel {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
@@ -15116,7 +13782,6 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
-
 
 /* Platform Table Foundation - applies the Ubuzima+ table standard beyond Inventory */
 
@@ -15209,7 +13874,6 @@ table td:not(:first-child):not(.numeric) {
   min-width: 1080px;
 }
 
-
 /* Patch C.3 - finish Inventory real-table conversion */
 
 .inventory-data-table--product-register {
@@ -15232,7 +13896,6 @@ table td:not(:first-child):not(.numeric) {
 .inventory-data-table .table-cell-actions button {
   max-width: 100%;
 }
-
 
 /* Patch D - make table and labelling controls visibly apply */
 
@@ -15294,10 +13957,10 @@ table td:not(:first-child):not(.numeric) {
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
-
 /* Patch E - Inventory layout cleanup and anti-overlap polish */
 
 /* General inventory section spacing */
+
 .inventory-section {
   display: grid;
   gap: 18px;
@@ -15309,6 +13972,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Section headings should not collide with actions */
+
 .inventory-section .section-heading,
 .inventory-table-toolbar,
 .inventory-toolbar,
@@ -15351,6 +14015,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Product Inventory metric cards */
+
 .inventory-product-inventory-card-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(180px, 1fr));
@@ -15396,6 +14061,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Table Management panel: clean Excel-like control layout without overlap */
+
 .inventory-table-management-panel {
   display: grid !important;
   grid-template-columns: minmax(220px, 1.25fr) repeat(4, minmax(130px, 1fr));
@@ -15475,6 +14141,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Expiry label manager controls */
+
 .expiry-label-manager-actions {
   display: flex;
   flex-wrap: wrap;
@@ -15490,6 +14157,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Action card grids should wrap cleanly */
+
 .inventory-action-card-grid,
 .stock-location-action-cards {
   display: grid;
@@ -15508,6 +14176,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Guided receiving and form panels */
+
 .inventory-guided-flow-launch-panel,
 .inventory-guided-flow-panel,
 .inventory-create-from-master-panel,
@@ -15535,6 +14204,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Real table shell cleanup */
+
 .inventory-table-shell {
   width: 100%;
   max-width: 100%;
@@ -15560,10 +14230,6 @@ table td:not(:first-child):not(.numeric) {
   word-break: normal;
 }
 
-.inventory-data-table .cell-nowrap {
-  white-space: nowrap;
-}
-
 .inventory-data-table .cell-number,
 .inventory-data-table th.cell-number {
   text-align: right;
@@ -15572,6 +14238,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Prevent action buttons from overflowing cells */
+
 .inventory-data-table .table-cell-actions {
   min-width: 0;
   vertical-align: middle;
@@ -15606,6 +14273,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Sticky action column should not cover content badly */
+
 .inventory-table-sticky-actions .inventory-data-table th:last-child,
 .inventory-table-sticky-actions .inventory-data-table td:last-child {
   background: #ffffff;
@@ -15617,6 +14285,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Label/chip cleanup */
+
 .inventory-expiry-label,
 .inventory-table-chip,
 .stock-location-status-chip {
@@ -15627,6 +14296,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Keep dark expired rows readable even with custom labels */
+
 .inventory-data-table tr.expiry-row--expired td,
 .inventory-data-table tr.expiry-risk--expired td {
   color: #ffffff;
@@ -15640,6 +14310,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Large tablet */
+
 @media (max-width: 1280px) {
   .inventory-product-inventory-card-grid {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
@@ -15655,6 +14326,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Tablet */
+
 @media (max-width: 900px) {
   .inventory-section {
     gap: 14px;
@@ -15675,6 +14347,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Mobile */
+
 @media (max-width: 640px) {
   .inventory-section .section-heading,
   .inventory-table-toolbar,
@@ -15702,7 +14375,6 @@ table td:not(:first-child):not(.numeric) {
     flex: 1 1 100%;
   }
 }
-
 
 /* Patch F - professional settings surface cleanup */
 
@@ -15856,6 +14528,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* tighten existing table management visual style */
+
 .inventory-table-management-panel {
   border-radius: 18px;
   background: #f8fafc;
@@ -15873,6 +14546,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* responsive */
+
 @media (max-width: 1200px) {
   .inventory-settings-group-grid {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
@@ -15896,7 +14570,6 @@ table td:not(:first-child):not(.numeric) {
     flex: 1 1 100%;
   }
 }
-
 
 /* Patch F.3 - final professional settings polish */
 
@@ -16020,6 +14693,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Keep table management surfaces aligned with the new settings language */
+
 .inventory-table-management-panel {
   padding: 16px !important;
   border-radius: 20px !important;
@@ -16089,7 +14763,6 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
-
 
 /* Patch H.2 - professional granular permission matrix */
 
@@ -16269,7 +14942,6 @@ table td:not(:first-child):not(.numeric) {
     min-width: 680px;
   }
 }
-
 
 /* Patch H.3 - operational international user management console */
 
@@ -16516,10 +15188,10 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* Patch H.4 - row-based full-width permission matrix */
 
 /* Force each module to be arranged as a full-width row, not squeezed columns */
+
 .tenant-permission-assignment-matrix,
 .security-permission-matrix {
   display: grid !important;
@@ -16539,6 +15211,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Remove unnecessary internal card scrolling on desktop/laptop */
+
 .tenant-permission-table-shell,
 .security-permission-table-shell {
   width: 100%;
@@ -16547,6 +15220,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Make the matrix fit inside the available card width */
+
 .tenant-permission-table,
 .security-permission-table {
   width: 100% !important;
@@ -16555,6 +15229,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Resource column gets the largest share, actions stay compact */
+
 .tenant-permission-table th:first-child,
 .security-permission-table th:first-child {
   width: 42% !important;
@@ -16591,6 +15266,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Permission checkbox cells become compact and professional */
+
 .tenant-permission-table .permission-checkbox {
   width: 100%;
   min-width: 0;
@@ -16605,6 +15281,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* The column heading already says View/Add/Edit/Delete, so hide repetitive Allowed/Blocked text visually */
+
 .tenant-permission-table .permission-checkbox span {
   position: absolute;
   width: 1px;
@@ -16623,12 +15300,14 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Keep read-only permission matrix compact too */
+
 .security-permission-table .permission-matrix-cell {
   width: 26px;
   height: 26px;
 }
 
 /* Tablet and mobile: convert the matrix into stacked readable cards instead of hidden side-scroll */
+
 @media (max-width: 760px) {
   .tenant-permission-table-shell,
   .security-permission-table-shell {
@@ -16742,7 +15421,6 @@ table td:not(:first-child):not(.numeric) {
     grid-column: 1 / -1;
   }
 }
-
 
 /* Patch POS-B.1 - Simple but Mighty POS Counter redesign */
 
@@ -17173,6 +15851,7 @@ table td:not(:first-child):not(.numeric) {
 /* Patch POS-C.1.21A - Clean single-source POS layout */
 
 /* Overall POS screen */
+
 .pos-dedicated-counter-shell {
   position: fixed !important;
   inset: 0 !important;
@@ -17197,6 +15876,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Header: command bar + POS Counter header only */
+
 .pos-fixed-top-v16 {
   grid-row: 1 !important;
   display: grid !important;
@@ -17283,6 +15963,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Main page starts straight below header */
+
 .pos-scroll-body-v16 {
   grid-row: 2 !important;
   min-height: 0 !important;
@@ -17304,6 +15985,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Working area: product left, operation right */
+
 .pos-operating-cockpit-v2 {
   display: grid !important;
   grid-template-columns: minmax(0, 65fr) minmax(480px, 35fr) !important;
@@ -17344,6 +16026,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Product and stock pick */
+
 .pos-product-stock-section {
   display: grid !important;
   grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
@@ -17497,6 +16180,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Independent POS Session section above Cart */
+
 .pos-shift-control-section {
   display: grid !important;
   gap: 8px !important;
@@ -17596,6 +16280,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Cart */
+
 .pos-sale-cart-section {
   display: grid !important;
   gap: 8px !important;
@@ -17675,6 +16360,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Transaction setup */
+
 .pos-transaction-setup-section {
   display: grid !important;
   gap: 8px !important;
@@ -17721,6 +16407,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Update summary */
+
 .pos-summary-update-bridge {
   display: grid !important;
   padding: 0 !important;
@@ -17736,6 +16423,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Payment summary */
+
 .pos-summary-confirmation-card {
   display: grid !important;
   gap: 8px !important;
@@ -17831,6 +16519,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Recent Transactions: bottom section, never hidden by product area */
+
 .pos-recent-transactions-bottom,
 .pos-sales-summary-table-card.pos-recent-transactions-bottom {
   display: grid !important;
@@ -17878,6 +16567,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Responsive safety */
+
 @media (max-width: 1180px) {
   .pos-dedicated-counter-shell {
     position: static !important;
@@ -17941,6 +16631,7 @@ table td:not(:first-child):not(.numeric) {
 
 /* 1) Keep the POS scroll body as a real vertical document flow:
    header above, workbench, then Recent Transactions footer. */
+
 .pos-scroll-body-v16 {
   display: block !important;
   min-height: 0 !important;
@@ -17953,6 +16644,7 @@ table td:not(:first-child):not(.numeric) {
 
 /* 2) Workbench must keep its true height.
    Payment Summary and cart expansion must push the footer down. */
+
 .pos-operating-cockpit-v2 {
   display: grid !important;
   grid-template-columns: minmax(0, 65fr) minmax(500px, 35fr) !important;
@@ -17974,6 +16666,7 @@ table td:not(:first-child):not(.numeric) {
 
 /* 3) Right workflow must contribute to workbench height.
    Do not use display: contents for Payment Summary. */
+
 .pos-sale-transaction-section {
   grid-area: transaction !important;
   display: grid !important;
@@ -18006,6 +16699,7 @@ table td:not(:first-child):not(.numeric) {
 
 /* 4) Product & Stock Pick matches the workbench height and scrolls internally.
    This prevents product rows from pushing Recent Transactions upward or downward wrongly. */
+
 .pos-product-stock-section {
   grid-area: products !important;
   display: grid !important;
@@ -18033,6 +16727,7 @@ table td:not(:first-child):not(.numeric) {
 /* 5) Recent Transactions footer:
    independent full-width section, always after the workbench,
    not merged with Payment Summary and not allowed to overlay it. */
+
 .pos-recent-transactions-bottom,
 .pos-recent-transactions-fullwidth,
 .pos-sales-summary-table-card.pos-recent-transactions-fullwidth {
@@ -18076,6 +16771,7 @@ table td:not(:first-child):not(.numeric) {
 
 /* 6) Restore approved POS session layout:
    two compact clock cards on wide screens, no Clock-in / Clock-out title column. */
+
 .pos-shift-control-section {
   display: grid !important;
   gap: 8px !important;
@@ -18117,6 +16813,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* 7) Product card: transparent internal rows and simple 1-column / 5-row structure. */
+
 .pos-product-tile-v16 {
   display: grid !important;
   grid-template-columns: 1fr !important;
@@ -18182,11 +16879,8 @@ table td:not(:first-child):not(.numeric) {
   text-overflow: ellipsis !important;
 }
 
-.pos-product-tile-v16 .pos-product-card-line:nth-of-type(1) { order: 3 !important; }
-.pos-product-tile-v16 .pos-product-card-line:nth-of-type(2) { order: 4 !important; }
-.pos-product-tile-v16 .pos-product-card-line:nth-of-type(3) { order: 5 !important; }
-
 /* Full-card expiry colors only */
+
 .pos-product-tile-v16.product-expiry-expired {
   background: #7f1d1d !important;
   border-color: #7f1d1d !important;
@@ -18218,6 +16912,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* 8) Keep unwanted helper buttons/overview strip hidden. */
+
 .pos-view-products-link,
 .pos-unified-module-page > .pos-dedicated-command-bar:first-child,
 .pos-unified-module-page > .pos-unified-terminal-menu:first-child,
@@ -18257,15 +16952,9 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* C1.20 revisions: POS session 2-row/3-column layout and 9 product rows */
 
 /* POS Session: exactly two rows, each row has three operational columns */
-.pos-shift-control-section {
-  display: grid !important;
-  gap: 8px !important;
-  padding: 10px !important;
-}
 
 .pos-shift-control-grid {
   display: grid !important;
@@ -18274,10 +16963,6 @@ table td:not(:first-child):not(.numeric) {
   gap: 8px !important;
   width: 100% !important;
   min-width: 0 !important;
-}
-
-.pos-shift-control-grid .pos-shift-title {
-  display: none !important;
 }
 
 .pos-shift-control-grid .pos-shift-card-v16 {
@@ -18325,18 +17010,6 @@ table td:not(:first-child):not(.numeric) {
   padding: 2px 6px !important;
 }
 
-.pos-shift-control-grid .pos-shift-check {
-  grid-template-columns: 16px minmax(0, 1fr) !important;
-  align-items: center !important;
-}
-
-.pos-shift-control-grid .pos-shift-check input {
-  width: 14px !important;
-  height: 14px !important;
-  min-height: 14px !important;
-  margin: 0 !important;
-}
-
 .pos-shift-control-grid .pos-shift-card-v16 button {
   width: 100% !important;
   min-height: 42px !important;
@@ -18349,6 +17022,7 @@ table td:not(:first-child):not(.numeric) {
 
 /* Product & Stock Pick: 9 visible product rows before internal scroll.
    9 rows × 108px + 8 row gaps × 8px = 1036px visible product board. */
+
 .pos-drug-list--ten {
   grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   grid-auto-rows: 108px !important;
@@ -18401,8 +17075,8 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* C1.21A responsive Product & Stock Pick columns */
+
 @media (max-width: 1680px) and (min-width: 1441px) {
   .pos-drug-list--ten {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
@@ -18439,6 +17113,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* POS selling-unit quantity dialog */
+
 .pos-quantity-dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -18599,6 +17274,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Insurance Management workspace */
+
 .insurance-management-workspace {
   display: grid;
   gap: 1rem;
@@ -19012,11 +17688,15 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Insurance claims and reconciliation live workspace */
+
 .insurance-live-workspace { display: grid; gap: 1rem; }
+
 .insurance-live-toolbar,
 .insurance-live-filters,
 .insurance-live-layout { display: flex; gap: .85rem; }
+
 .insurance-live-toolbar { align-items: center; justify-content: space-between; }
+
 .insurance-live-toolbar span,
 .insurance-live-summary span,
 .insurance-live-table-wrap small,
@@ -19025,13 +17705,17 @@ table td:not(:first-child):not(.numeric) {
   color: var(--muted, #667085);
   font-size: .78rem;
 }
+
 .insurance-live-filters { flex-wrap: wrap; }
+
 .insurance-live-filters > * { min-width: 210px; }
+
 .insurance-live-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: .85rem;
 }
+
 .insurance-live-summary article,
 .insurance-live-detail,
 .insurance-live-form {
@@ -19040,12 +17724,19 @@ table td:not(:first-child):not(.numeric) {
   background: var(--surface, #fff);
   padding: 1rem;
 }
+
 .insurance-live-summary strong { display: block; margin-top: .35rem; }
+
 .insurance-live-layout { align-items: flex-start; }
+
 .insurance-live-layout > :first-child { flex: 1 1 auto; min-width: 0; }
+
 .insurance-live-detail { flex: 0 0 340px; position: sticky; top: 1rem; }
+
 .insurance-live-table-wrap { overflow-x: auto; }
+
 .insurance-live-table-wrap table { width: 100%; border-collapse: collapse; }
+
 .insurance-live-table-wrap th,
 .insurance-live-table-wrap td {
   padding: .75rem;
@@ -19054,25 +17745,32 @@ table td:not(:first-child):not(.numeric) {
   vertical-align: top;
   white-space: nowrap;
 }
+
 .insurance-live-detail dl { display: grid; gap: .55rem; }
+
 .insurance-live-detail dl div { display: flex; justify-content: space-between; gap: 1rem; }
+
 .insurance-live-form { display: grid; gap: .7rem; margin-top: 1rem; }
+
 .insurance-live-form--batch {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 1rem;
 }
+
 .insurance-claim-line {
   margin-top: .55rem;
   border-radius: 12px;
   background: rgba(148, 163, 184, .1);
   padding: .7rem;
 }
+
 @media (max-width: 1050px) {
   .insurance-live-layout { display: grid; }
   .insurance-live-detail { position: static; }
   .insurance-live-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .insurance-live-form--batch { grid-template-columns: 1fr; }
 }
+
 @media (max-width: 640px) {
   .insurance-live-summary { grid-template-columns: 1fr; }
   .insurance-live-filters > * { width: 100%; }
@@ -19108,8 +17806,8 @@ table td:not(:first-child):not(.numeric) {
   min-width: 1rem;
 }
 
-
 /* Inventory record search and transaction-source controls */
+
 .inventory-record-search-panel {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) minmax(280px, 0.9fr);
@@ -19211,8 +17909,8 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* Package 3: POS module, quantity and receipt experience */
+
 .pos-overview-hero-actions {
   display: flex !important;
   flex-wrap: wrap;
@@ -19524,8 +18222,8 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* Package 4: modal user editor and Product Master selling-unit correction */
+
 .tenant-user-editor-backdrop {
   position: fixed;
   inset: 0;
@@ -19622,8 +18320,8 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* Final consolidated module experience */
+
 .dedicated-module-page {
   display: grid;
   gap: 18px;
@@ -23859,6 +22557,7 @@ table td:not(:first-child):not(.numeric) {
 /* AQUILA_MOMO_FINAL_SYNC_END */
 
 /* AQUILA_INVENTORY_WORK_PACKAGE_1_OPERATIONAL_OVERVIEW_START */
+
 .inventory-operational-overview {
   display: grid;
   gap: 1rem;
@@ -24031,6 +22730,7 @@ table td:not(:first-child):not(.numeric) {
     grid-template-columns: 1fr;
   }
 }
+
 /* AQUILA_INVENTORY_WORK_PACKAGE_1_OPERATIONAL_OVERVIEW_END */
 
 /* AQUILA_INVENTORY_WORK_PACKAGE_2D_POS_VISUAL_PARITY */
@@ -24298,7 +22998,6 @@ table td:not(:first-child):not(.numeric) {
   }
 }
 
-
 /* AQUILA_INVENTORY_WORK_PACKAGE_2E_PROFESSIONAL_UPGRADE */
 
 .inventory-title-only-header {
@@ -24526,7 +23225,6 @@ table td:not(:first-child):not(.numeric) {
     display: none;
   }
 }
-
 
 /* AQUILA_INVENTORY_WORK_PACKAGE_2G_VISUAL_FINE_TUNING
 
@@ -24758,6 +23456,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Compact, consistent Inventory cards across all Inventory pages. */
+
 .inventory-route-page :is(
   .inventory-smart-card,
   .inventory-product-inventory-card,
@@ -24877,6 +23576,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* One centered search card containing title, input and actions. */
+
 .inventory-record-search-panel--refined {
   display: block;
   width: min(980px, 100%);
@@ -24936,6 +23636,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Shared header-card treatment for the common platform header contracts. */
+
 .dashboard-main :is(
   .dashboard-title-card,
   .professional-module-hero,
@@ -25023,7 +23724,6 @@ table td:not(:first-child):not(.numeric) {
     width: 100%;
   }
 }
-
 
 /* AQUILA_INVENTORY_WORK_PACKAGE_2H_CHART_AND_TITLE_REFINEMENT
    Title-only Inventory cards, chart analytics and shared header surfaces. */
@@ -25352,6 +24052,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* Approved compact card treatment extended to shared platform headers. */
+
 .dashboard-main :where(
   .dashboard-title-card,
   .professional-module-hero,
@@ -25430,6 +24131,7 @@ table td:not(:first-child):not(.numeric) {
 }
 
 /* AQUILA_INVENTORY_POPUP_ACTIONS_20260710 */
+
 [data-inventory-popup-host] {
   display: contents;
 }
@@ -25617,6 +24319,7 @@ section >
     );
   }
 }
+
 /* AQUILA_INVENTORY_POPUP_ACTIONS_20260710_END */
 
 /* AQUILA_POS_PRODUCT_PANEL_STABILITY_START */
@@ -25626,6 +24329,7 @@ section >
  * Session and historical-entry content must never change its width,
  * search-bar width, refresh-row width, or desktop product-card grid.
  */
+
 .pos-counter-workbench.pos-four-section-workspace.pos-operating-cockpit-v2 {
   min-width: 0;
   width: 100%;
@@ -25646,6 +24350,7 @@ section >
  * Prevent session forms, approval cards, or historical controls from
  * contributing an oversized intrinsic width to the shared POS grid.
  */
+
 .pos-counter-workbench.pos-four-section-workspace.pos-operating-cockpit-v2
   > .pos-sale-transaction-section {
   grid-column: 1 / -1;
@@ -25694,6 +24399,7 @@ section >
 }
 
 /* Laptop and smaller desktop */
+
 @media (max-width: 1200px) {
   .pos-builder-product-panel > .pos-drug-list--ten {
     grid-template-columns:
@@ -25702,6 +24408,7 @@ section >
 }
 
 /* Tablet landscape */
+
 @media (max-width: 900px) {
   .pos-builder-product-panel > .pos-drug-list--ten {
     grid-template-columns:
@@ -25710,6 +24417,7 @@ section >
 }
 
 /* Tablet portrait and large mobile */
+
 @media (max-width: 640px) {
   .pos-builder-product-panel > .pos-drug-list--ten {
     grid-template-columns:
@@ -25723,6 +24431,7 @@ section >
 }
 
 /* Small mobile */
+
 @media (max-width: 430px) {
   .pos-builder-product-panel > .pos-drug-list--ten {
     grid-template-columns: 1fr;
@@ -25744,6 +24453,7 @@ section >
 /* AQUILA_POS_PRODUCT_PANEL_STABILITY_END */
 
 /* AQUILA_PRODUCT_INVENTORY_LOCATION_WIDTH_20260710 */
+
 .inventory-create-from-master-panel .inventory-creation-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -25834,8 +24544,2842 @@ section >
     grid-column: 1 / -1;
   }
 }
+
 /* AQUILA_PRODUCT_INVENTORY_LOCATION_WIDTH_20260710_END */
 
+/* ============================================================
+   AQUILA PROCUREMENT PACKAGE 3A
+   Professional module home, shared header and AI analytics
+   ============================================================ */
+
+.procurement-module-stage {
+  min-width: 0;
+}
+
+.procurement-module-home {
+  display: grid;
+  gap: 1.35rem;
+  min-width: 0;
+}
+
+.procurement-home-title-card,
+.procurement-home-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-home-title-card {
+  padding: 1.25rem 1.35rem;
+}
+
+.procurement-home-title-card > div,
+.procurement-home-section-heading > div {
+  min-width: 0;
+}
+
+.procurement-home-title-card h1,
+.procurement-home-section-heading h2,
+.procurement-home-chart-card h3 {
+  margin: 0;
+}
+
+.procurement-home-title-card p,
+.procurement-home-section-heading p {
+  max-width: 760px;
+  margin: 0.35rem 0 0;
+}
+
+.procurement-home-eyebrow {
+  display: block;
+  margin-bottom: 0.28rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-blue, #174f78);
+}
+
+.procurement-home-menu-section,
+.procurement-home-analytics {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-home-menu-grid {
+  align-items: stretch;
+}
+
+.procurement-home-menu-card {
+  min-height: 104px;
+  height: 100%;
+}
+
+.procurement-home-menu-title {
+  min-width: 0;
+}
+
+.procurement-home-menu-title strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.procurement-home-menu-icon {
+  flex: 0 0 auto;
+}
+
+.procurement-home-state,
+.procurement-home-loading {
+  margin: 0;
+}
+
+.procurement-home-loading,
+.procurement-home-empty-chart {
+  display: grid;
+  place-items: center;
+  min-height: 170px;
+  padding: 1.25rem;
+  border: 1px dashed rgba(77, 102, 126, 0.28);
+  border-radius: 16px;
+  text-align: center;
+  color: var(--muted-text, #66778a);
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.procurement-home-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.procurement-home-kpi {
+  display: grid;
+  align-content: start;
+  gap: 0.34rem;
+  min-width: 0;
+  min-height: 128px;
+  padding: 1rem;
+  border: 1px solid rgba(89, 109, 128, 0.18);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(35, 57, 79, 0.06);
+}
+
+.procurement-home-kpi.primary {
+  border-color: rgba(28, 105, 157, 0.3);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(233, 246, 255, 0.94),
+      rgba(255, 255, 255, 0.98)
+    );
+}
+
+.procurement-home-kpi.attention {
+  border-color: rgba(196, 131, 31, 0.32);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 247, 226, 0.94),
+      rgba(255, 255, 255, 0.98)
+    );
+}
+
+.procurement-home-kpi.financial {
+  border-color: rgba(53, 122, 91, 0.25);
+}
+
+.procurement-home-kpi span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted-text, #66778a);
+}
+
+.procurement-home-kpi strong {
+  min-width: 0;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.procurement-home-kpi small {
+  line-height: 1.45;
+  color: var(--muted-text, #66778a);
+}
+
+.procurement-home-chart-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-home-chart-card {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 320px;
+  padding: 1.1rem;
+  border: 1px solid rgba(89, 109, 128, 0.18);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(35, 57, 79, 0.06);
+}
+
+.procurement-home-chart-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.procurement-home-chart-card > header > div {
+  min-width: 0;
+}
+
+.procurement-home-chart-card > header > strong {
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+}
+
+.procurement-status-chart,
+.procurement-supplier-chart,
+.procurement-insight-list {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.procurement-status-row {
+  display: grid;
+  grid-template-columns:
+    minmax(130px, 1fr)
+    minmax(120px, 1.3fr)
+    auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.procurement-status-row > div:first-child {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.5rem;
+  min-width: 0;
+}
+
+.procurement-status-row > div:first-child small {
+  grid-column: 2;
+  color: var(--muted-text, #66778a);
+}
+
+.procurement-status-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+}
+
+.procurement-status-dot.draft,
+.procurement-status-track i.draft {
+  background: #a36c16;
+}
+
+.procurement-status-dot.approved,
+.procurement-status-track i.approved {
+  background: #246c9d;
+}
+
+.procurement-status-dot.partial,
+.procurement-status-track i.partial {
+  background: #7559a8;
+}
+
+.procurement-status-dot.received,
+.procurement-status-track i.received {
+  background: #2f7b58;
+}
+
+.procurement-status-dot.cancelled,
+.procurement-status-track i.cancelled {
+  background: #9a4f54;
+}
+
+.procurement-status-track,
+.procurement-supplier-bar {
+  height: 0.58rem;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(113, 132, 151, 0.15);
+}
+
+.procurement-status-track i,
+.procurement-supplier-bar i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+}
+
+.procurement-supplier-row {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 1.25fr)
+    minmax(120px, 1fr)
+    minmax(90px, auto);
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.procurement-supplier-row > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.procurement-supplier-row strong,
+.procurement-supplier-row small {
+  overflow-wrap: anywhere;
+}
+
+.procurement-supplier-row small {
+  color: var(--muted-text, #66778a);
+}
+
+.procurement-supplier-row > b {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.procurement-supplier-bar i {
+  background:
+    linear-gradient(
+      90deg,
+      #1d668f,
+      #45a085
+    );
+}
+
+.procurement-home-insight-card {
+  grid-column: 1 / -1;
+  min-height: auto;
+}
+
+.procurement-insight-list {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.procurement-insight-list > div {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border-radius: 14px;
+  background: rgba(245, 248, 251, 0.9);
+}
+
+.procurement-insight-list span {
+  line-height: 1.5;
+  color: var(--muted-text, #66778a);
+}
+
+@media (max-width: 1100px) {
+  .procurement-home-kpi-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-home-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-home-insight-card {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-home-title-card,
+  .procurement-home-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .procurement-home-title-card > button {
+    width: 100%;
+  }
+
+  .procurement-home-kpi-grid,
+  .procurement-insight-list {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-status-row,
+  .procurement-supplier-row {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-status-row > b,
+  .procurement-supplier-row > b {
+    text-align: left;
+  }
+
+  .procurement-home-chart-card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-module-home {
+    gap: 1rem;
+  }
+
+  .procurement-home-title-card,
+  .procurement-home-section-heading,
+  .procurement-home-chart-card {
+    padding: 0.9rem;
+  }
+
+  .procurement-home-menu-card {
+    min-height: 92px;
+  }
+
+  .procurement-home-kpi {
+    min-height: 112px;
+  }
+
+  .procurement-home-kpi strong {
+    font-size: 1.35rem;
+  }
+}
+
+/* ============================================================
+   AQUILA_HISTORICAL_POS_CARD_FITNESS_20260710
+   Balanced Historical POS setup cards
+   ============================================================ */
+
+.historical-pos-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.historical-pos-form-grid > label {
+  display: grid;
+  grid-template-rows:
+    auto
+    minmax(42px, auto)
+    auto;
+  align-content: start;
+  gap: 0.5rem;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  min-height: 118px;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(70, 96, 85, 0.16);
+  border-radius: 14px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.historical-pos-form-grid > label > span {
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.historical-pos-form-grid > label > small {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: #65756d;
+  overflow-wrap: anywhere;
+}
+
+.historical-pos-form-grid > label input,
+.historical-pos-form-grid > label select,
+.historical-pos-form-grid > label textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.historical-pos-form-grid > label input,
+.historical-pos-form-grid > label select {
+  min-height: 42px;
+}
+
+.historical-pos-form-grid
+  > .historical-pos-form-grid__wide {
+  grid-column: 1 / -1;
+  min-height: auto;
+}
+
+.historical-pos-form-grid
+  > .historical-pos-form-grid__wide
+  textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.historical-pos-body,
+.historical-pos-workflow,
+.historical-pos-launch {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.historical-pos-conflict-card,
+.historical-pos-approval-card,
+.historical-pos-queue,
+.historical-pos-open-row {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1180px) {
+  .historical-pos-form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .historical-pos-form-grid
+    > .historical-pos-form-grid__wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .historical-pos-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .historical-pos-form-grid
+    > .historical-pos-form-grid__wide {
+    grid-column: auto;
+  }
+
+  .historical-pos-form-grid > label {
+    min-height: auto;
+    padding: 0.78rem;
+  }
+}
+
+/* ============================================================
+   AQUILA_PROCUREMENT_PACKAGE_3B1_SUPPLIER_REGISTER
+   Table-first Supplier workspace and popup operations
+   ============================================================ */
+
+.procurement-register-workspace {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-register-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid rgba(75, 99, 89, 0.15);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.procurement-register-header > div:first-child {
+  min-width: 0;
+}
+
+.procurement-register-header h1 {
+  margin: 0;
+}
+
+.procurement-register-header p {
+  max-width: 760px;
+  margin: 0.35rem 0 0;
+  color: #63736b;
+}
+
+.procurement-register-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.procurement-register-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.5fr)
+    minmax(150px, 0.55fr)
+    minmax(170px, 0.65fr)
+    auto;
+  align-items: end;
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.procurement-register-toolbar label {
+  display: grid;
+  gap: 0.42rem;
+  min-width: 0;
+  color: #344840;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.procurement-register-toolbar input,
+.procurement-register-toolbar select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.procurement-register-result-count {
+  display: grid;
+  min-width: 110px;
+  padding: 0.7rem 0.82rem;
+  border-radius: 12px;
+  background: #f2f7f4;
+}
+
+.procurement-register-result-count strong {
+  font-size: 1.2rem;
+}
+
+.procurement-register-result-count span {
+  color: #64746c;
+  font-size: 0.72rem;
+}
+
+.procurement-table-management {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(150px, 1fr))
+    repeat(2, minmax(145px, auto))
+    auto;
+  align-items: end;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.procurement-table-management label {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.procurement-table-management input,
+.procurement-table-management select {
+  min-width: 0;
+}
+
+.procurement-table-toggle {
+  display: flex !important;
+  align-items: center;
+  align-self: center;
+  gap: 0.5rem !important;
+}
+
+.procurement-table-toggle input {
+  width: auto;
+}
+
+.procurement-register-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.procurement-register-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.procurement-register-table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(
+    --procurement-table-font-size,
+    13px
+  );
+}
+
+.procurement-register-width--compact {
+  min-width: 980px;
+}
+
+.procurement-register-width--balanced {
+  min-width: 1120px;
+}
+
+.procurement-register-width--wide {
+  min-width: 1320px;
+}
+
+.procurement-register-table th,
+.procurement-register-table td {
+  padding:
+    var(
+      --procurement-table-padding-y,
+      0.78rem
+    )
+    0.78rem;
+  border-bottom: 1px solid rgba(92, 111, 102, 0.12);
+  text-align: left;
+  vertical-align: top;
+  background: #ffffff;
+}
+
+.procurement-register-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  color: #33463d;
+  font-size: 0.74em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #eef5f1;
+}
+
+.procurement-register-table tbody tr:hover td {
+  background: #f8fbf9;
+}
+
+.procurement-register-density--compact {
+  --procurement-table-padding-y: 0.52rem;
+}
+
+.procurement-register-density--comfortable {
+  --procurement-table-padding-y: 0.78rem;
+}
+
+.procurement-register-density--tall {
+  --procurement-table-padding-y: 1.05rem;
+}
+
+.procurement-register-wrap--off th,
+.procurement-register-wrap--off td {
+  white-space: nowrap;
+}
+
+.procurement-register-wrap--on th,
+.procurement-register-wrap--on td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.procurement-register-table td strong,
+.procurement-register-table td span,
+.procurement-register-table td small {
+  display: block;
+}
+
+.procurement-register-table td small {
+  margin-top: 0.2rem;
+  color: #687870;
+}
+
+.procurement-register-actions-column {
+  min-width: 285px;
+}
+
+.procurement-register-sticky-actions
+.procurement-register-actions-column {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  box-shadow: -8px 0 14px rgba(43, 64, 54, 0.06);
+}
+
+.procurement-register-sticky-actions
+thead
+.procurement-register-actions-column {
+  z-index: 4;
+  background: #eaf3ee;
+}
+
+.procurement-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.procurement-row-actions button {
+  min-height: 32px;
+  padding: 0.38rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+.procurement-row-actions .warning {
+  border-color: rgba(170, 107, 17, 0.32);
+  color: #8a570e;
+}
+
+.procurement-row-actions .success {
+  border-color: rgba(38, 117, 81, 0.32);
+  color: #246f4e;
+}
+
+.procurement-status-badge {
+  width: max-content;
+  padding: 0.28rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.procurement-status-badge.status-active {
+  color: #1f6948;
+  background: #e7f6ed;
+}
+
+.procurement-status-badge.status-inactive {
+  color: #6c5c38;
+  background: #f4efe2;
+}
+
+.procurement-status-badge.status-suspended {
+  color: #8a3d43;
+  background: #f9e8ea;
+}
+
+.procurement-register-empty {
+  padding: 2rem !important;
+  text-align: center !important;
+  white-space: normal !important;
+  color: #67776f;
+}
+
+.procurement-popup-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.procurement-popup-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.procurement-popup-form-grid label {
+  display: grid;
+  gap: 0.42rem;
+  min-width: 0;
+  color: #344840;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.procurement-popup-form-grid input,
+.procurement-popup-form-grid select,
+.procurement-popup-form-grid textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.procurement-popup-form-wide {
+  grid-column: 1 / -1;
+}
+
+.procurement-popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.procurement-detail-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.procurement-detail-grid > div {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+  padding: 0.78rem;
+  border-radius: 12px;
+  background: #f5f9f7;
+}
+
+.procurement-detail-grid span {
+  color: #66766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.procurement-detail-grid strong {
+  overflow-wrap: anywhere;
+}
+
+.procurement-detail-wide {
+  grid-column: 1 / -1;
+}
+
+.procurement-confirmation {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.procurement-confirmation p {
+  margin: 0;
+  line-height: 1.55;
+  color: #5f7067;
+}
+
+@media (max-width: 1180px) {
+  .procurement-register-toolbar {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-register-search {
+    grid-column: 1 / -1;
+  }
+
+  .procurement-table-management {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-register-header {
+    flex-direction: column;
+  }
+
+  .procurement-register-header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .procurement-register-header-actions button {
+    flex: 1 1 160px;
+  }
+
+  .procurement-register-toolbar,
+  .procurement-table-management,
+  .procurement-popup-form-grid,
+  .procurement-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-register-search,
+  .procurement-popup-form-wide,
+  .procurement-detail-wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-register-header,
+  .procurement-register-toolbar {
+    padding: 0.82rem;
+  }
+
+  .procurement-register-header-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-popup-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-popup-actions button {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   AQUILA_PROCUREMENT_PACKAGE_3B2_PURCHASE_ORDER_REGISTER
+   Table-first Purchase Order workspace and popup operations
+   ============================================================ */
+
+.procurement-purchase-order-table {
+  min-width: 1240px;
+}
+
+.procurement-purchase-order-table.procurement-register-width--compact {
+  min-width: 1100px;
+}
+
+.procurement-purchase-order-table.procurement-register-width--balanced {
+  min-width: 1240px;
+}
+
+.procurement-purchase-order-table.procurement-register-width--wide {
+  min-width: 1440px;
+}
+
+.procurement-status-badge.status-draft {
+  color: #81560f;
+  background: #fff3d8;
+}
+
+.procurement-status-badge.status-approved {
+  color: #235f8a;
+  background: #e7f2fa;
+}
+
+.procurement-status-badge.status-partially_received {
+  color: #674b96;
+  background: #f0eafa;
+}
+
+.procurement-status-badge.status-received,
+.procurement-status-badge.status-fully_received {
+  color: #216846;
+  background: #e5f5eb;
+}
+
+.procurement-status-badge.status-cancelled {
+  color: #8b3e45;
+  background: #f9e7e9;
+}
+
+.procurement-po-popup-form {
+  min-width: 0;
+}
+
+.procurement-po-preview {
+  display: grid;
+  align-content: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.78rem;
+  border: 1px solid rgba(35, 101, 73, 0.18);
+  border-radius: 12px;
+  background: #edf7f1;
+}
+
+.procurement-po-preview span {
+  color: #5e7067;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.procurement-po-preview strong {
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.procurement-po-line-section {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.procurement-po-line-section > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.procurement-po-line-section h3 {
+  margin: 0;
+}
+
+.procurement-po-line-list {
+  display: grid;
+  gap: 0.72rem;
+  min-width: 0;
+}
+
+.procurement-po-line-card {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1.8fr)
+    repeat(4, minmax(105px, 0.65fr))
+    auto;
+  align-items: end;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.78rem;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.procurement-po-line-card label {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.procurement-po-line-card input,
+.procurement-po-line-card select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.procurement-po-remove-line {
+  min-height: 42px;
+}
+
+.procurement-po-detail {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.procurement-po-detail-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid rgba(75, 99, 89, 0.14);
+  border-radius: 12px;
+}
+
+.procurement-po-detail-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.procurement-po-detail-table th,
+.procurement-po-detail-table td {
+  padding: 0.7rem;
+  border-bottom: 1px solid rgba(75, 99, 89, 0.12);
+  text-align: left;
+  vertical-align: top;
+}
+
+.procurement-po-detail-table th {
+  background: #eef5f1;
+  color: #344840;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.procurement-po-detail-table td strong,
+.procurement-po-detail-table td small {
+  display: block;
+}
+
+.procurement-po-detail-table td small {
+  margin-top: 0.2rem;
+  color: #687870;
+}
+
+.procurement-confirmation-reason {
+  display: grid;
+  gap: 0.42rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.procurement-confirmation-reason textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1180px) {
+  .procurement-po-line-card {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .procurement-po-product-field {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-po-line-section > header {
+    flex-direction: column;
+  }
+
+  .procurement-po-line-section > header button {
+    width: 100%;
+  }
+
+  .procurement-po-line-card {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-po-product-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-po-line-card {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-po-product-field {
+    grid-column: auto;
+  }
+
+  .procurement-po-remove-line {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   AQUILA_PROCUREMENT_PACKAGE_3C1_RECEIVING_REGISTER
+   Focused Purchase Order receiving workspace
+   ============================================================ */
+
+.procurement-receiving-table {
+  min-width: 1320px;
+}
+
+.procurement-receiving-table.procurement-register-width--compact {
+  min-width: 1160px;
+}
+
+.procurement-receiving-table.procurement-register-width--balanced {
+  min-width: 1320px;
+}
+
+.procurement-receiving-table.procurement-register-width--wide {
+  min-width: 1480px;
+}
+
+.procurement-receiving-readiness {
+  width: max-content;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  color: #245f48;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #e7f5ed;
+}
+
+.procurement-receiving-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.procurement-receiving-summary > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border-radius: 12px;
+  background: #f1f7f4;
+}
+
+.procurement-receiving-summary span {
+  color: #66776f;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.procurement-receiving-summary strong {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .procurement-receiving-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-receiving-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* AQUILA_PRODUCT_MASTER_COMPACT_ACTION_CARDS_20260710_START
+   Focused Product Master action-card height correction.
+   This intentionally does not modify Inventory analytics,
+   Product Inventory, Shelf, Procurement or global card rules. */
+
+.inventory-route-page .product-master-action-cards {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0.7rem 0 0.9rem;
+}
+
+.inventory-route-page
+  .product-master-action-cards > button {
+  display: flex;
+  min-width: 0;
+  min-height: 66px !important;
+  height: 66px !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.75rem !important;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.inventory-route-page
+  .product-master-action-cards > button strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+@media (max-width: 900px) {
+  .inventory-route-page
+    .product-master-action-cards {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .inventory-route-page
+    .product-master-action-cards > button {
+    min-height: 62px !important;
+    height: 62px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .inventory-route-page
+    .product-master-action-cards {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .inventory-route-page
+    .product-master-action-cards > button {
+    min-height: 58px !important;
+    height: 58px !important;
+    padding: 0.45rem 0.55rem !important;
+  }
+
+  .inventory-route-page
+    .product-master-action-cards > button strong {
+    font-size: 0.76rem;
+  }
+}
+
+/* AQUILA_PRODUCT_MASTER_COMPACT_ACTION_CARDS_20260710_END */
+
+/* AQUILA_PURCHASE_TYPE_FRONTEND_20260710
+   Core Product and General Item purchasing with controlled
+   Product Master quick creation. */
+
+.procurement-purchase-type-selector {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.procurement-purchase-type-selector > button {
+  display: grid;
+  min-width: 0;
+  min-height: 88px;
+  gap: 0.35rem;
+  align-content: center;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+
+.procurement-purchase-type-selector > button strong {
+  color: #17211c;
+  font-size: 0.9rem;
+}
+
+.procurement-purchase-type-selector > button span {
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.procurement-purchase-type-selector > button.active {
+  border-color:
+    var(--left-menu-accent, #4b5320);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(244, 247, 235, 0.98),
+      rgba(255, 255, 255, 0.98)
+    );
+  box-shadow:
+    0 0 0 2px rgba(75, 83, 32, 0.1);
+}
+
+.procurement-core-product-line {
+  position: relative;
+}
+
+.procurement-po-product-field {
+  position: relative;
+}
+
+.procurement-product-search-results {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  width: min(520px, 100%);
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.4rem;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+.procurement-product-search-results > button {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.procurement-product-search-results > button:hover,
+.procurement-product-search-results > button:focus-visible {
+  background: #f3f6ef;
+}
+
+.procurement-product-search-results strong,
+.procurement-selected-product strong {
+  color: #17211c;
+  font-size: 0.78rem;
+}
+
+.procurement-product-search-results span,
+.procurement-selected-product span {
+  color: #526174;
+  font-size: 0.7rem;
+}
+
+.procurement-product-search-results small,
+.procurement-selected-product small {
+  color: #77837c;
+  font-size: 0.65rem;
+}
+
+.procurement-selected-product {
+  display: grid;
+  gap: 0.12rem;
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(75, 83, 32, 0.24);
+  border-radius: 12px;
+  background: rgba(75, 83, 32, 0.06);
+}
+
+.procurement-product-missing {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 12px;
+  background: #fffbeb;
+}
+
+.procurement-product-missing strong {
+  color: #92400e;
+  font-size: 0.76rem;
+}
+
+.procurement-product-missing span,
+.procurement-product-missing small {
+  color: #785116;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.procurement-product-missing button {
+  width: fit-content;
+  min-height: 36px;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(146, 64, 14, 0.24);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.procurement-general-item-line {
+  grid-template-columns:
+    minmax(220px, 1.5fr)
+    repeat(4, minmax(105px, 0.75fr))
+    minmax(115px, 0.8fr)
+    minmax(100px, 0.7fr)
+    minmax(100px, 0.7fr)
+    minmax(180px, 1fr)
+    auto;
+}
+
+.procurement-po-line-notes {
+  min-width: 0;
+}
+
+.procurement-quick-product-form {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.procurement-quick-product-form > label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.procurement-quick-product-form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.procurement-quick-product-actions {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1180px) {
+  .procurement-general-item-line {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .procurement-general-item-line
+    .procurement-po-product-field,
+  .procurement-general-item-line
+    .procurement-po-line-notes {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-purchase-type-selector,
+  .procurement-quick-product-form {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-purchase-type-selector > button {
+    min-height: 76px;
+  }
+
+  .procurement-general-item-line {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-general-item-line
+    .procurement-po-product-field,
+  .procurement-general-item-line
+    .procurement-po-line-notes {
+    grid-column: 1 / -1;
+  }
+
+  .procurement-quick-product-actions {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .procurement-general-item-line {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-general-item-line
+    .procurement-po-product-field,
+  .procurement-general-item-line
+    .procurement-po-line-notes {
+    grid-column: auto;
+  }
+
+  .procurement-purchase-type-selector > button {
+    min-height: 68px;
+    padding: 0.7rem;
+  }
+
+  .procurement-product-search-results {
+    position: static;
+    width: 100%;
+    margin-top: 0.4rem;
+    box-shadow: none;
+  }
+}
+
+/* AQUILA_PURCHASE_TYPE_FRONTEND_20260710_END */
+
+/* AQUILA_INVENTORY_PRODUCT_MASTER_QUICK_CREATE_20260710
+   Guided Product Master creation from Inventory receiving.
+   Inventory receiving draft values remain in component state
+   until the missing pharmaceutical product is created. */
+
+.inventory-product-master-missing-result {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(217, 119, 6, 0.32);
+  border-radius: 12px;
+  background: #fffbeb;
+  text-align: left;
+}
+
+.inventory-product-master-missing-result strong {
+  color: #92400e;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.inventory-product-master-missing-result span,
+.inventory-product-master-missing-result small {
+  color: #785116;
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+.inventory-product-master-missing-result > button {
+  width: fit-content;
+  min-height: 36px;
+  padding: 0.48rem 0.68rem;
+  border: 1px solid rgba(146, 64, 14, 0.26);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.inventory-product-master-missing-result > button:hover,
+.inventory-product-master-missing-result > button:focus-visible {
+  border-color: rgba(146, 64, 14, 0.52);
+  background: #fff7ed;
+}
+
+.product-master-inventory-return-context {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(75, 83, 32, 0.26);
+  border-radius: 13px;
+  background: rgba(75, 83, 32, 0.07);
+}
+
+.product-master-inventory-return-context strong {
+  color: #343b18;
+  font-size: 0.78rem;
+}
+
+.product-master-inventory-return-context span {
+  color: #59612f;
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 430px) {
+  .inventory-product-master-missing-result,
+  .product-master-inventory-return-context {
+    padding: 0.65rem;
+  }
+
+  .inventory-product-master-missing-result > button {
+    width: 100%;
+  }
+}
+
+/* AQUILA_INVENTORY_PRODUCT_MASTER_QUICK_CREATE_20260710_END */
+
+/* AQUILA_REAL_INVENTORY_VALUE_TREND_20260710
+   Four compact Inventory analytics cards with a real,
+   movement-backed Sunday-to-Saturday RWF value trend. */
+
+.inventory-home-chart-grid--four {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.inventory-home-chart-grid--four
+  .inventory-home-chart-panel {
+  grid-column: auto;
+  min-width: 0;
+  min-height: 218px;
+  padding: 0.9rem;
+}
+
+.inventory-home-chart-grid--four
+  .inventory-home-chart-panel > header {
+  margin-bottom: 0.65rem;
+}
+
+.inventory-home-chart-grid--four
+  .inventory-home-chart-panel > header small {
+  font-size: 0.64rem;
+}
+
+.inventory-home-chart-grid--four
+  .inventory-home-chart-panel > header strong {
+  font-size: 0.88rem;
+}
+
+.inventory-home-chart-panel--compact {
+  min-height: 190px !important;
+}
+
+.inventory-horizontal-chart--compact {
+  gap: 0.58rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-row {
+  gap: 0.3rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-row > div:first-child {
+  gap: 0.3rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-row span {
+  font-size: 0.63rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-row strong {
+  font-size: 0.74rem;
+}
+
+.inventory-horizontal-chart--compact
+  .inventory-chart-track {
+  height: 5px;
+}
+
+.inventory-risk-chart-layout--compact {
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+}
+
+.inventory-risk-donut--compact {
+  width: 84px;
+  height: 84px;
+}
+
+.inventory-risk-donut--compact > span {
+  width: 54px;
+  height: 54px;
+}
+
+.inventory-risk-donut--compact > span strong {
+  font-size: 0.82rem;
+}
+
+.inventory-risk-donut--compact > span small {
+  font-size: 0.56rem;
+}
+
+.inventory-risk-chart-legend--compact {
+  gap: 0.42rem;
+}
+
+.inventory-risk-chart-legend--compact > span {
+  gap: 0.28rem;
+  font-size: 0.62rem;
+}
+
+.inventory-risk-chart-legend--compact > span strong {
+  margin-left: auto;
+  font-size: 0.66rem;
+}
+
+.inventory-home-chart-panel--currency {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(249, 250, 246, 0.98),
+      rgba(255, 255, 255, 0.98)
+    );
+}
+
+.inventory-currency-value {
+  display: grid;
+  gap: 0.45rem;
+  align-content: center;
+  min-height: 138px;
+}
+
+.inventory-currency-value > span {
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.inventory-currency-value > strong {
+  color: #27310e;
+  font-size: clamp(1.15rem, 1.65vw, 1.65rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.inventory-currency-value > small {
+  color: #718096;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.inventory-weekly-value-summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+
+.inventory-weekly-value-summary > strong {
+  color: #27310e;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.inventory-value-direction {
+  display: inline-grid;
+  gap: 0.12rem;
+  justify-items: end;
+  padding: 0.3rem 0.42rem;
+  border-radius: 9px;
+  font-size: 0.62rem;
+  font-weight: 850;
+}
+
+.inventory-value-direction small {
+  font-size: 0.55rem;
+  font-weight: 750;
+}
+
+.inventory-value-direction.is-growing {
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.inventory-value-direction.is-reducing {
+  background: #fff1f2;
+  color: #b42318;
+}
+
+.inventory-value-direction.is-stable {
+  background: #f2f4f7;
+  color: #475467;
+}
+
+.inventory-weekly-value-chart {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.inventory-weekly-value-chart svg {
+  display: block;
+  width: 100%;
+  height: 88px;
+  overflow: visible;
+}
+
+.inventory-weekly-value-chart polyline {
+  fill: none;
+  stroke: #4b5320;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.inventory-weekly-value-chart circle {
+  fill: #ffffff;
+  stroke: #4b5320;
+  stroke-width: 1.8;
+}
+
+.inventory-weekly-value-labels {
+  display: grid;
+  grid-template-columns:
+    repeat(7, minmax(0, 1fr));
+  gap: 0.12rem;
+}
+
+.inventory-weekly-value-labels small {
+  color: #667085;
+  font-size: 0.57rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.inventory-weekly-value-note {
+  color: #9a6700;
+  font-size: 0.58rem;
+  line-height: 1.35;
+}
+
+.inventory-weekly-value-empty {
+  display: grid;
+  gap: 0.48rem;
+  min-height: 132px;
+  align-content: center;
+  padding: 0.7rem;
+  border: 1px dashed rgba(102, 112, 133, 0.32);
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.inventory-weekly-value-empty > strong {
+  color: #344054;
+  font-size: 0.7rem;
+}
+
+.inventory-weekly-value-empty > span {
+  color: #667085;
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1180px) {
+  .inventory-home-chart-grid--four {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-home-chart-grid--four
+    .inventory-home-chart-panel--bars {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .inventory-home-chart-grid--four {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-home-chart-grid--four
+    .inventory-home-chart-panel {
+    min-height: 0;
+  }
+
+  .inventory-risk-chart-layout--compact {
+    grid-template-columns: auto 1fr;
+    justify-items: stretch;
+  }
+}
+
+@media (max-width: 430px) {
+  .inventory-home-chart-grid--four
+    .inventory-home-chart-panel {
+    padding: 0.78rem;
+  }
+
+  .inventory-risk-chart-layout--compact {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .inventory-risk-chart-legend--compact {
+    width: 100%;
+  }
+
+  .inventory-weekly-value-chart svg {
+    height: 78px;
+  }
+
+  .inventory-weekly-value-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inventory-value-direction {
+    width: fit-content;
+    justify-items: start;
+  }
+}
+
+/* AQUILA_REAL_INVENTORY_VALUE_TREND_20260710_END */
+
+/* AQUILA_GENERAL_ITEMS_MANAGEMENT_20260710_START
+   Dedicated non-sale operational stock domain under Procurement. */
+
+.general-items-workspace {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.general-items-workspace-header,
+.general-items-panel,
+.general-items-summary-grid article {
+  border: 1px solid rgba(79, 91, 56, 0.14);
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(35, 47, 29, 0.06);
+}
+
+.general-items-workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 18px;
+  padding: 1.1rem 1.2rem;
+}
+
+.general-items-workspace-header h2,
+.general-items-panel h3 {
+  margin: 0.2rem 0 0;
+}
+
+.general-items-workspace-header p {
+  max-width: 780px;
+  margin: 0.45rem 0 0;
+  color: var(--muted-text, #65705f);
+  line-height: 1.55;
+}
+
+.general-items-workspace-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.25rem 0;
+}
+
+.general-items-workspace-navigation button {
+  min-height: 38px;
+  border: 1px solid rgba(79, 91, 56, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.55rem 0.9rem;
+  color: #35402d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.general-items-workspace-navigation button.active {
+  border-color: #4b5320;
+  background: #4b5320;
+  color: #fff;
+}
+
+.general-items-message {
+  border-radius: 12px;
+  padding: 0.8rem 0.95rem;
+  font-weight: 700;
+}
+
+.general-items-message.success {
+  border: 1px solid rgba(28, 126, 73, 0.25);
+  background: rgba(28, 126, 73, 0.08);
+  color: #17633c;
+}
+
+.general-items-message.error {
+  border: 1px solid rgba(171, 47, 47, 0.25);
+  background: rgba(171, 47, 47, 0.08);
+  color: #8d2727;
+}
+
+.general-items-summary-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.general-items-summary-grid article {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  min-height: 118px;
+  border-radius: 15px;
+  padding: 0.9rem;
+}
+
+.general-items-summary-grid span {
+  color: #687260;
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.general-items-summary-grid strong {
+  margin-top: 0.4rem;
+  color: #283120;
+  font-size: 1.45rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.general-items-summary-grid small {
+  margin-top: 0.45rem;
+  color: #7b8475;
+  line-height: 1.35;
+}
+
+.general-items-overview-grid,
+.general-items-two-column {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.general-items-panel {
+  min-width: 0;
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.general-items-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-bottom: 0.9rem;
+}
+
+.general-items-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(75, 83, 32, 0.09);
+  color: #4b5320;
+  font-weight: 800;
+}
+
+.general-items-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.general-items-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.general-items-form label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  color: #43503b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.general-items-form input,
+.general-items-form select,
+.general-items-form textarea,
+.general-items-register-filters input,
+.general-items-register-filters select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(79, 91, 56, 0.2);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.68rem 0.72rem;
+  color: #263021;
+  font: inherit;
+}
+
+.general-items-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.general-items-checkbox {
+  display: flex !important;
+  align-items: center;
+  align-self: end;
+  min-height: 42px;
+  border: 1px solid rgba(79, 91, 56, 0.14);
+  border-radius: 10px;
+  padding: 0.65rem;
+  background: rgba(75, 83, 32, 0.035);
+}
+
+.general-items-checkbox input {
+  width: auto;
+  margin: 0;
+}
+
+.general-items-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.general-items-form-actions button {
+  min-height: 40px;
+}
+
+.general-items-register-header {
+  align-items: end !important;
+}
+
+.general-items-register-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(190px, 1fr)
+    minmax(160px, 0.7fr);
+  gap: 0.6rem;
+  width: min(520px, 100%);
+}
+
+.general-items-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(79, 91, 56, 0.11);
+  border-radius: 13px;
+}
+
+.general-items-table-scroll table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+}
+
+.general-items-table-scroll th,
+.general-items-table-scroll td {
+  padding: 0.72rem 0.78rem;
+  border-bottom: 1px solid rgba(79, 91, 56, 0.09);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.general-items-table-scroll th {
+  background: rgba(75, 83, 32, 0.045);
+  color: #65705d;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.general-items-table-scroll td {
+  color: #35402e;
+  font-size: 0.79rem;
+}
+
+.general-items-table-scroll td strong,
+.general-items-table-scroll td small {
+  display: block;
+}
+
+.general-items-table-scroll td small {
+  max-width: 260px;
+  margin-top: 0.2rem;
+  overflow: hidden;
+  color: #7b8475;
+  text-overflow: ellipsis;
+}
+
+.general-items-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  background: rgba(75, 83, 32, 0.09);
+  color: #4b5320;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: capitalize;
+}
+
+.general-items-status.is-active {
+  background: rgba(28, 126, 73, 0.1);
+  color: #17633c;
+}
+
+.general-items-status.is-inactive,
+.general-items-status.is-discontinued {
+  background: rgba(126, 126, 126, 0.1);
+  color: #60655d;
+}
+
+.general-items-compact-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.general-items-compact-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-width: 0;
+  border: 1px solid rgba(79, 91, 56, 0.1);
+  border-radius: 12px;
+  padding: 0.7rem 0.75rem;
+  background: rgba(75, 83, 32, 0.025);
+}
+
+.general-items-compact-list span {
+  display: grid;
+  min-width: 0;
+}
+
+.general-items-compact-list strong,
+.general-items-compact-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.general-items-compact-list small {
+  margin-top: 0.18rem;
+  color: #778170;
+}
+
+.general-items-compact-list b {
+  flex: 0 0 auto;
+  color: #4b5320;
+}
+
+@media (max-width: 1280px) {
+  .general-items-summary-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .general-items-form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .general-items-workspace-header {
+    display: grid;
+  }
+
+  .general-items-overview-grid,
+  .general-items-two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .general-items-register-header {
+    align-items: stretch !important;
+    display: grid !important;
+  }
+
+  .general-items-register-filters {
+    width: 100%;
+  }
+}
+
+@media (max-width: 620px) {
+  .general-items-summary-grid,
+  .general-items-form-grid,
+  .general-items-register-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .general-items-workspace-navigation {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .general-items-workspace-navigation button {
+    border-radius: 10px;
+  }
+
+  .general-items-panel,
+  .general-items-workspace-header {
+    padding: 0.82rem;
+  }
+}
+
+/* AQUILA_GENERAL_ITEMS_MANAGEMENT_20260710_END */
+
+/* AQUILA_GENERAL_ITEM_MASTER_PO_20260710_START
+   General Items Purchase Orders use controlled General Item Master
+   records instead of free-text item definitions. */
+
+.procurement-general-master-line {
+  grid-template-columns:
+    minmax(280px, 2fr)
+    minmax(270px, 1.45fr)
+    repeat(4, minmax(110px, 0.72fr))
+    minmax(180px, 1fr)
+    auto;
+}
+
+.procurement-general-item-search-results {
+  z-index: 18;
+}
+
+.procurement-selected-general-item {
+  border-color: rgba(75, 83, 32, 0.2);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(75, 83, 32, 0.08),
+      rgba(75, 83, 32, 0.025)
+    );
+}
+
+.procurement-general-item-master-facts {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-self: end;
+}
+
+.procurement-general-item-master-facts > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  min-height: 58px;
+  border: 1px solid rgba(79, 91, 56, 0.13);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(75, 83, 32, 0.035);
+}
+
+.procurement-general-item-master-facts span {
+  color: #75806d;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.procurement-general-item-master-facts strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #34402d;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1440px) {
+  .procurement-general-master-line {
+    grid-template-columns:
+      minmax(260px, 1.8fr)
+      minmax(230px, 1.3fr)
+      repeat(2, minmax(110px, 0.7fr));
+  }
+
+  .procurement-general-master-line
+    .procurement-po-line-notes {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 900px) {
+  .procurement-general-master-line {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .procurement-general-master-line
+    .procurement-po-product-field,
+  .procurement-general-item-master-facts {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .procurement-general-master-line,
+  .procurement-general-item-master-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .procurement-general-master-line
+    .procurement-po-line-notes {
+    grid-column: auto;
+  }
+}
+
+/* AQUILA_GENERAL_ITEM_MASTER_PO_20260710_END */
+
+/* AQUILA_INVENTORY_VALUE_BY_CATEGORY_20260711_START
+   Category valuation is added inside the existing Inventory Risk Mix
+   card without removing low-stock, near-expiry, or healthy-share data. */
+
+.inventory-risk-category-values {
+  display: grid;
+  gap: 0.48rem;
+  margin-top: 0.72rem;
+  padding-top: 0.68rem;
+  border-top: 1px solid rgba(79, 91, 56, 0.12);
+}
+
+.inventory-risk-category-values > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.inventory-risk-category-values > header > div {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.inventory-risk-category-values > header span {
+  color: #3d4935;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.inventory-risk-category-values > header small {
+  color: #7a8474;
+  font-size: 0.62rem;
+}
+
+.inventory-risk-category-values > header > strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 23px;
+  border-radius: 999px;
+  background: rgba(75, 83, 32, 0.09);
+  color: #4b5320;
+  font-size: 0.68rem;
+}
+
+.inventory-risk-category-list {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.inventory-risk-category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+  border-radius: 9px;
+  padding: 0.43rem 0.52rem;
+  background: rgba(75, 83, 32, 0.035);
+}
+
+.inventory-risk-category-row > span {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.inventory-risk-category-row strong,
+.inventory-risk-category-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-risk-category-row strong {
+  color: #394432;
+  font-size: 0.68rem;
+}
+
+.inventory-risk-category-row small {
+  color: #7b8475;
+  font-size: 0.59rem;
+}
+
+.inventory-risk-category-row > b {
+  flex: 0 0 auto;
+  color: #4b5320;
+  font-size: 0.69rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.inventory-risk-category-empty {
+  margin: 0;
+  border-radius: 9px;
+  padding: 0.52rem;
+  background: rgba(75, 83, 32, 0.035);
+  color: #737d6b;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.inventory-risk-category-more,
+.inventory-risk-category-warning {
+  display: block;
+  color: #7a8474;
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.inventory-risk-category-warning {
+  color: #886b25;
+}
+
+@media (max-width: 560px) {
+  .inventory-risk-category-row {
+    align-items: flex-start;
+  }
+
+  .inventory-risk-category-row > b {
+    max-width: 44%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* AQUILA_INVENTORY_VALUE_BY_CATEGORY_20260711_END */
+
+/* AQUILA_GENERAL_ITEM_PO_RECEIVING_UI_20260711_START
+   Dedicated receiving for General Item Stock. */
+
+.general-po-receiving-workspace {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+  border: 1px solid rgba(75, 83, 32, 0.14);
+  border-radius: 16px;
+  padding: 1rem;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(75, 83, 32, 0.055),
+      rgba(255, 255, 255, 0.96)
+    );
+}
+
+.general-po-receiving-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.general-po-receiving-header > div:first-child {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.general-po-receiving-header span {
+  color: #727c68;
+  font-size: 0.69rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.general-po-receiving-header h2 {
+  margin: 0;
+  color: #34402e;
+  font-size: 1.08rem;
+}
+
+.general-po-receiving-header p {
+  max-width: 720px;
+  margin: 0;
+  color: #697263;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.general-po-receiving-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+}
+
+.general-po-latest-receipt,
+.general-po-receiving-context,
+.general-po-line-quantities {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.general-po-latest-receipt > div,
+.general-po-receiving-context > div,
+.general-po-line-quantities > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  border: 1px solid rgba(75, 83, 32, 0.11);
+  border-radius: 10px;
+  padding: 0.58rem 0.65rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.general-po-latest-receipt span,
+.general-po-receiving-context span,
+.general-po-line-quantities span {
+  color: #798272;
+  font-size: 0.63rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.general-po-latest-receipt strong,
+.general-po-receiving-context strong,
+.general-po-line-quantities strong {
+  overflow: hidden;
+  color: #384332;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.general-po-receiving-table-scroll {
+  overflow-x: auto;
+  border: 1px solid rgba(75, 83, 32, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.general-po-receiving-table-scroll table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+.general-po-receiving-table-scroll th,
+.general-po-receiving-table-scroll td {
+  padding: 0.62rem 0.7rem;
+  border-bottom: 1px solid rgba(75, 83, 32, 0.08);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.general-po-receiving-table-scroll th {
+  color: #687261;
+  font-size: 0.65rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.general-po-receiving-table-scroll td {
+  color: #485242;
+  font-size: 0.73rem;
+}
+
+.general-po-receiving-table-scroll td strong,
+.general-po-receiving-table-scroll td small {
+  display: block;
+}
+
+.general-po-receiving-table-scroll td small {
+  margin-top: 0.14rem;
+  color: #7b8475;
+  font-size: 0.62rem;
+}
+
+@media (max-width: 900px) {
+  .general-po-receiving-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .general-po-latest-receipt,
+  .general-po-receiving-context,
+  .general-po-line-quantities {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .general-po-receiving-workspace {
+    padding: 0.78rem;
+  }
+
+  .general-po-latest-receipt,
+  .general-po-receiving-context,
+  .general-po-line-quantities {
+    grid-template-columns: 1fr;
+  }
+
+  .general-po-receiving-actions,
+  .general-po-receiving-actions button {
+    width: 100%;
+  }
+}
+
+/* AQUILA_GENERAL_ITEM_PO_RECEIVING_UI_20260711_END */
 
 /* USER_SECURITY_LOGIN_REVAMP_PACKAGE_1 */
 
@@ -26070,7 +27614,6 @@ section >
     padding: 27px 20px;
   }
 }
-
 
 /* INVENTORY_EXECUTIVE_ANALYTICS_PACKAGE_2 */
 
@@ -26423,7 +27966,6 @@ section >
     grid-template-columns: 1fr;
   }
 }
-
 
 /* USER_SECURITY_OPERATIONS_CENTRE_PACKAGE_3 */
 
@@ -26833,7 +28375,6 @@ section >
     flex-direction: column;
   }
 }
-
 
 /* ROLE_GOVERNANCE_AUDIT_TIMELINE_PACKAGE_4 */
 
@@ -27359,7 +28900,6 @@ section >
     grid-template-columns: 1fr;
   }
 }
-
 
 /* USER_SECURITY_APPROVED_MODULE_REFOUNDATION */
 
@@ -27976,7 +29516,6 @@ section >
   }
 }
 
-
 /* USER_SECURITY_ROUTE_AND_STAFF_2FA_FIX */
 
 .user-security-route-page {
@@ -28068,7 +29607,6 @@ section >
     grid-template-columns: 1fr;
   }
 }
-
 
 /* SECURITY_INVENTORY_GENERAL_STOCK_IMPROVEMENTS */
 
@@ -28375,7 +29913,6 @@ section >
   }
 }
 
-
 /* GENERAL_STOCK_EXACT_STRUCTURE_FIX */
 
 .inventory-module-general-stock-view {
@@ -28401,59 +29938,6 @@ section >
   width: 100%;
 }
 
-.general-stock-items-module-shell {
-  display: grid;
-  gap: 20px;
-  width: min(100%, 1680px);
-  margin: 0 auto;
-  padding:
-    clamp(18px, 2.4vw, 34px);
-}
-
-.general-stock-items-module-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: center;
-  padding:
-    clamp(22px, 3vw, 38px);
-  border: 1px solid #d5e1db;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow:
-    0 12px 32px rgba(28, 58, 46, 0.07);
-}
-
-.general-stock-items-module-header > div {
-  display: grid;
-  gap: 7px;
-  max-width: 820px;
-}
-
-.general-stock-items-module-header h1 {
-  margin: 0;
-  color: #17332a;
-  font-size:
-    clamp(1.7rem, 3vw, 2.5rem);
-}
-
-.general-stock-items-module-header p {
-  margin: 0;
-  color: #687970;
-  line-height: 1.6;
-}
-
-.general-stock-items-status {
-  min-width: 210px;
-  padding: 12px 15px;
-  border-radius: 12px;
-  color: #176b4d;
-  background: #e7f2ec;
-  font-size: 0.76rem;
-  font-weight: 900;
-  text-align: center;
-}
-
 @media (max-width: 900px) {
   .general-stock-items-module-header {
     align-items: flex-start;
@@ -28474,7 +29958,6 @@ section >
     padding: 20px;
   }
 }
-
 
 /* AQUILA_OPERATIONAL_GENERAL_ITEMS_20260711 */
 
@@ -28678,11 +30161,6 @@ section >
   letter-spacing: 0.06em;
 }
 
-.general-items-table-scroll td strong,
-.general-items-table-scroll td small {
-  display: block;
-}
-
 .general-items-table-scroll td small {
   margin-top: 3px;
   color: #75847c;
@@ -28810,7 +30288,6 @@ section >
     padding-inline: 6px;
   }
 }
-
 
 /* AQUILA_GENERAL_ITEMS_TABLE_POPUP_20260711 */
 
@@ -28964,7 +30441,6 @@ section >
   }
 }
 
-
 /* AQUILA_GENERAL_ITEMS_HEADER_ACTIONS_20260712 */
 
 .general-stock-items-module-header-actions {
@@ -29001,7 +30477,6 @@ section >
     flex: 1 1 150px;
   }
 }
-
 
 /* AQUILA_USER_ACCESS_ASSIGNMENT_MODES_20260712 */
 

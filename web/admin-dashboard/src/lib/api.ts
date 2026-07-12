@@ -848,6 +848,40 @@ export type PharmaInventorySummaryResponse = {
     expired_batches_count?: number;
     low_stock_products_count: number;
     near_expiry_batches_180_days_count: number;
+    inventory_value_weekly_trend?: {
+      basis: 'retail_value';
+      currency: 'RWF';
+      week_start: string;
+      week_end: string;
+      as_of: string;
+      labels: string[];
+      points: Array<{
+        date: string;
+        label: string;
+        value: number | null;
+        is_future: boolean;
+      }>;
+      history_available: boolean;
+      recorded_movement_count: number;
+      unmapped_movement_count: number;
+      direction:
+        | 'growing'
+        | 'reducing'
+        | 'stable';
+      delta_value: number;
+      method: string;
+      method_note: string;
+    };
+    inventory_value_by_category?: Array<{
+      category_name: string;
+      inventory_value: number;
+      quantity_on_hand: number;
+      stock_batches_count: number;
+      priced_batches_count: number;
+      missing_price_batches_count: number;
+      currency: 'RWF';
+      valuation_basis: 'retail_selling_price';
+    }>;
   };
   low_stock_products: PharmaProduct[];
 };
@@ -1829,9 +1863,14 @@ export type PharmaSupplier = {
   created_at: string | null;
 };
 
+export type PharmaPurchaseType =
+  | 'core_products'
+  | 'general_items';
+
 export type PharmaPurchaseOrderItem = {
   id: number;
   uuid: string;
+  item_type?: 'core_product' | 'general_item';
   product: {
     id: number;
     name: string;
@@ -1842,6 +1881,10 @@ export type PharmaPurchaseOrderItem = {
       code: string;
     } | null;
   } | null;
+  item_name?: string | null;
+  item_code?: string | null;
+  category?: string | null;
+  unit_of_measure?: string | null;
   product_name_snapshot: string;
   sku_snapshot: string | null;
   quantity_ordered: number;
@@ -1855,10 +1898,83 @@ export type PharmaPurchaseOrderItem = {
   metadata: Record<string, unknown>;
 };
 
+export type PharmaGeneralItemLocation = {
+  id: number;
+  uuid: string;
+  name: string;
+  code: string;
+  location_type: string;
+  status: string;
+  description?: string | null;
+  branch: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+};
+
+export type PharmaGeneralItemLocationsResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  locations: PharmaGeneralItemLocation[];
+};
+
+export type ReceivePharmaGeneralPurchaseOrderPayload = {
+  pharmaco_general_purchase_order_item_id: number;
+  pharmaco_general_item_location_id: number;
+  quantity_received: number;
+  unit_cost?: number | null;
+  reference_number?: string | null;
+  received_at?: string | null;
+  notes?: string | null;
+};
+
+export type ReceivePharmaGeneralPurchaseOrderResponse = {
+  message: string;
+  purchase_order: {
+    id: number;
+    uuid: string;
+    po_number: string;
+    purchase_type: 'general_items';
+    status: string;
+  };
+  purchase_order_item: {
+    id: number;
+    pharmaco_general_item_id: number;
+    item_name: string;
+    item_code: string | null;
+    quantity_ordered: number;
+    quantity_received: number;
+    remaining_quantity: number;
+    status: string;
+  };
+  stock: {
+    id: number;
+    quantity_on_hand: number;
+    average_unit_cost: number;
+    last_unit_cost: number;
+  };
+  movement: {
+    id: number;
+    uuid: string;
+    movement_type: string;
+    quantity: number;
+    running_balance: number | null;
+    reference_type: string | null;
+    reference_number: string | null;
+    reason: string | null;
+    occurred_at: string | null;
+  };
+};
+
 export type PharmaPurchaseOrder = {
   id: number;
   uuid: string;
   po_number: string;
+  purchase_type: PharmaPurchaseType;
   status: string;
   order_date: string | null;
   expected_delivery_date: string | null;
@@ -1948,7 +2064,7 @@ export async function createPharmaSupplier(
   );
 }
 
-export type CreatePharmaPurchaseOrderPayload = {
+type CreatePharmaPurchaseOrderCommonPayload = {
   branch_id: number;
   pharmaco_supplier_id: number;
   order_date?: string | null;
@@ -1957,15 +2073,39 @@ export type CreatePharmaPurchaseOrderPayload = {
   tax_amount?: number;
   shipping_amount?: number;
   notes?: string | null;
-  items: Array<{
-    product_id: number;
-    quantity_ordered: number;
-    unit_cost: number;
-    discount_amount?: number;
-    tax_amount?: number;
-    notes?: string | null;
-  }>;
 };
+
+export type CreatePharmaCorePurchaseOrderPayload =
+  CreatePharmaPurchaseOrderCommonPayload & {
+    purchase_type?: 'core_products';
+    items: Array<{
+      product_id: number;
+      quantity_ordered: number;
+      unit_cost: number;
+      discount_amount?: number;
+      tax_amount?: number;
+      notes?: string | null;
+    }>;
+    general_items?: never;
+  };
+
+export type CreatePharmaGeneralItemsPurchaseOrderPayload =
+  CreatePharmaPurchaseOrderCommonPayload & {
+    purchase_type: 'general_items';
+    items?: never;
+    general_items: Array<{
+      general_item_id: number;
+      quantity_ordered: number;
+      unit_cost: number;
+      discount_amount?: number;
+      tax_amount?: number;
+      notes?: string | null;
+    }>;
+  };
+
+export type CreatePharmaPurchaseOrderPayload =
+  | CreatePharmaCorePurchaseOrderPayload
+  | CreatePharmaGeneralItemsPurchaseOrderPayload;
 
 export type CreatePharmaPurchaseOrderResponse = {
   message: string;
@@ -1988,6 +2128,32 @@ export async function getPharmaPurchaseOrder(
     token,
     `/pharmaco/purchase-orders/${purchaseOrderId}`,
     tenantSlug,
+  );
+}
+
+export async function getPharmaGeneralItemLocations(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaGeneralItemLocationsResponse> {
+  return getJsonWithTenant<PharmaGeneralItemLocationsResponse>(
+    token,
+    '/pharmaco/general-item-locations',
+    tenantSlug,
+  );
+}
+
+export async function receivePharmaGeneralPurchaseOrder(
+  token: string,
+  tenantSlug: string,
+  purchaseOrderId: number,
+  payload: ReceivePharmaGeneralPurchaseOrderPayload,
+): Promise<ReceivePharmaGeneralPurchaseOrderResponse> {
+  return sendJsonWithTenant<ReceivePharmaGeneralPurchaseOrderResponse>(
+    token,
+    `/pharmaco/purchase-orders/${purchaseOrderId}/general-items/receive`,
+    tenantSlug,
+    'POST',
+    payload,
   );
 }
 

@@ -13,6 +13,8 @@ type InventoryPopupFormProps = {
   description: string;
   children: ReactNode;
   triggerLabel?: string;
+  eyebrow?: string;
+  footerNote?: string;
   open?: boolean;
   onClose?: () => void;
 };
@@ -23,6 +25,8 @@ export function InventoryPopupForm({
   description,
   children,
   triggerLabel,
+  eyebrow = 'Inventory operation',
+  footerNote = 'Existing permissions, validation and audit controls remain active.',
   open,
   onClose,
 }: InventoryPopupFormProps) {
@@ -139,7 +143,7 @@ export function InventoryPopupForm({
         <header className="inventory-popup-form__header">
           <div>
             <p className="inventory-popup-form__eyebrow">
-              Inventory operation
+              {eyebrow}
             </p>
 
             <h2 id={titleId}>{title}</h2>
@@ -164,9 +168,7 @@ export function InventoryPopupForm({
         </div>
 
         <footer className="inventory-popup-form__footer">
-          <span>
-            Existing permissions, validation and audit controls remain active.
-          </span>
+          <span>{footerNote}</span>
 
           <button
             type="button"
