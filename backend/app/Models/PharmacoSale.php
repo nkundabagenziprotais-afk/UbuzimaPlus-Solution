@@ -13,6 +13,7 @@ class PharmacoSale extends Model
 
     protected $fillable = [
         'uuid',
+        'pos_checkout_key',
         'tenant_id',
         'branch_id',
         'pos_session_id',

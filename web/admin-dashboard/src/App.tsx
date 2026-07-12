@@ -32,7 +32,12 @@ function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderPr
   return null;
 }
 
-import { AccessCheckResult, AccessProfile, LoginExperience, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor } from './lib/api';
+import { AccessCheckResult, AccessProfile, LoginExperience, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor,
+  getPharmaSales,
+  type PharmaSale,
+  type PharmaPayment,
+  checkoutPharmaSale,
+} from './lib/api';
 import {
   type PosSession,
   closePosSession,
@@ -2671,6 +2676,22 @@ function FocusRegisterPreview({
   );
 }
 
+
+function createPosCheckoutKey(): string {
+  const secureUuid =
+    globalThis.crypto?.randomUUID?.();
+
+  if (secureUuid) {
+    return `pos-${secureUuid}`;
+  }
+
+  return [
+    'pos',
+    Date.now().toString(36),
+    Math.random().toString(36).slice(2),
+  ].join('-');
+}
+
 function App() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
@@ -2726,10 +2747,19 @@ function App() {
   const [posInsuranceProvider, setPosInsuranceProvider] = useState('rssb');
   const [posInsuranceInstitution, setPosInsuranceInstitution] = useState('');
   const [posCustomerInvoice, setPosCustomerInvoice] = useState<'no' | 'yes'>('no');
+  const [posCustomerReceipt, setPosCustomerReceipt] = useState<'no' | 'yes'>('yes');
+  const [isConfirmingPosTransaction, setIsConfirmingPosTransaction] = useState(false);
+  const [posConfirmedSale, setPosConfirmedSale] = useState<PharmaSale | null>(null);
+  const [posConfirmedPayment, setPosConfirmedPayment] = useState<PharmaPayment | null>(null);
+  const [posRecentSales, setPosRecentSales] = useState<PharmaSale[]>([]);
+  const [posRecentSearch, setPosRecentSearch] = useState('');
+  const [posRecentFilter, setPosRecentFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [isLoadingPosRecentSales, setIsLoadingPosRecentSales] = useState(false);
   const [posInvoiceDelivery, setPosInvoiceDelivery] = useState<'printer' | 'whatsapp' | 'email'>('printer');
   const [posInvoiceContact, setPosInvoiceContact] = useState('');
   const [posDiscountAmount, setPosDiscountAmount] = useState('0');
   const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
+  const [posCheckoutKey, setPosCheckoutKey] = useState(createPosCheckoutKey);
   const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
   const [posTillZeroized, setPosTillZeroized] = useState(false);
   const [posDepositProof, setPosDepositProof] = useState('');
@@ -2753,6 +2783,7 @@ function App() {
     otherQuantity: number;
   }>>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
+  const [posConfirmedItems, setPosConfirmedItems] = useState<typeof posCartItems>([]);
   const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
   const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
   const [posCounterCart, setPosCounterCart] = useState<{
@@ -4479,6 +4510,9 @@ function App() {
       );
       setPosSummaryRefreshKey((current) => current + 1);
       setPosTransactionConfirmed(false);
+      setPosConfirmedSale(null);
+      setPosConfirmedPayment(null);
+      setPosConfirmedItems([]);
     }
 
     function forceRefreshSaleSummary() {
@@ -4822,35 +4856,318 @@ function App() {
       }
     }
 
-    function confirmTransaction() {
+    /* AQUILA_PERSISTED_POS_TRANSACTION_20260712 */
+    async function loadRecentPosTransactions() {
+      if (!session?.token || !posTenantSlug) {
+        return;
+      }
+
+      const branchId = Number(posSessionBranchId);
+
+      if (!Number.isFinite(branchId) || branchId <= 0) {
+        return;
+      }
+
+      setIsLoadingPosRecentSales(true);
+
+      try {
+        const response = await getPharmaSales(
+          session.token,
+          posTenantSlug,
+          {
+            branch_id: branchId,
+          pos_session_id: posSession?.id ?? undefined,
+          },
+        );
+
+        const orderedSales = [...response.sales].sort(
+          (left, right) => {
+            const leftTime = new Date(
+              left.sold_at
+                ?? left.created_at
+                ?? 0,
+            ).getTime();
+
+            const rightTime = new Date(
+              right.sold_at
+                ?? right.created_at
+                ?? 0,
+            ).getTime();
+
+            if (rightTime !== leftTime) {
+              return rightTime - leftTime;
+            }
+
+            return right.id - left.id;
+          },
+        );
+
+        setPosRecentSales(orderedSales);
+      } catch (error: unknown) {
+        setPosNotice(
+          error instanceof Error
+            ? error.message
+            : 'Unable to synchronize recent POS transactions.',
+        );
+      } finally {
+        setIsLoadingPosRecentSales(false);
+      }
+    }
+
+    async function confirmTransaction() {
+      if (
+        !session?.token
+        || !posTenantSlug
+      ) {
+        setPosNotice(
+          'The authenticated tenant context is unavailable.',
+        );
+        return;
+      }
+
+      const branchId = Number(posSessionBranchId);
+
+      if (
+        !Number.isFinite(branchId)
+        || branchId <= 0
+      ) {
+        setPosNotice(
+          'Select an active branch before confirming this transaction.',
+        );
+        return;
+      }
+
       const currentItems = readActivePosCounterItems();
-      const unavailableItem = currentItems.find((item) => item.quantity > item.availableQuantity || item.availableQuantity <= 0);
+
+      const unavailableItem = currentItems.find(
+        (item) =>
+          item.quantity > item.availableQuantity
+          || item.availableQuantity <= 0,
+      );
 
       if (unavailableItem) {
-        setPosNotice(`${unavailableItem.name} is no longer available in the selected quantity. Refresh current inventory before confirming.`);
+        setPosNotice(
+          `${unavailableItem.name} is no longer available in the selected quantity. Refresh current inventory before confirming.`,
+        );
         setPosTransactionConfirmed(false);
         return;
       }
 
       if (currentItems.length === 0) {
-        setPosNotice('Add at least one drug to cart before confirming payment.');
+        setPosNotice(
+          'Add at least one drug to cart before confirming payment.',
+        );
         return;
       }
 
-      if (posCustomerInvoice === 'yes' && posInvoiceDelivery !== 'printer' && !posInvoiceContact.trim()) {
-        setPosNotice('Provide customer WhatsApp number or email before invoice delivery.');
-        return;
-      }
-
-      commitPosCounterItems(currentItems);
-      setPosTransactionConfirmed(true);
-      setPosNotice(
+      if (
         posCustomerInvoice === 'yes'
-          ? 'Payment confirmed. Invoice generation and delivery are now available inside POS.'
-          : 'Payment confirmed without customer invoice.',
-      );
+        && posInvoiceDelivery !== 'printer'
+        && !posInvoiceContact.trim()
+      ) {
+        setPosNotice(
+          'Provide the customer WhatsApp number or email before invoice delivery.',
+        );
+        return;
+      }
+
+      setIsConfirmingPosTransaction(true);
+      setPosTransactionConfirmed(false);
+      setPosConfirmedSale(null);
+      setPosConfirmedPayment(null);
+      setPosNotice('');
+
+      try {
+        const saleType =
+          posPaymentMethod === 'insurance'
+            ? 'insurance_sale'
+            : posPaymentMethod === 'credit'
+              ? 'credit_sale'
+              : 'cash_sale';
+
+        const checkoutResponse =
+          await checkoutPharmaSale(
+            session.token,
+            posTenantSlug,
+            {
+              idempotency_key: posCheckoutKey,
+              branch_id: branchId,
+              sale_type: saleType,
+              discount_amount:
+                Math.max(
+                  Number(posDiscountAmount) || 0,
+                  0,
+                ),
+              tax_amount: 0,
+              notes: [
+                'Created from the Pharmacy POS Counter.',
+                `Customer type: ${posCustomerType}.`,
+                `Customer receipt requested: ${posCustomerReceipt}.`,
+                `Customer invoice requested: ${posCustomerInvoice}.`,
+              ].join(' '),
+              items: currentItems.map((item) => ({
+                product_id: item.productId,
+                quantity: item.quantity,
+                unit_price: item.unitPrice,
+                discount_amount: 0,
+                tax_amount: 0,
+                stock_batch_id: item.batchId,
+                prescription_verified:
+                  posPrescriptionStatus === 'captured',
+              })),
+              payment: {
+                payment_method: posPaymentMethod,
+                generate_receipt:
+                  posCustomerReceipt === 'yes',
+                reference_number:
+                  posInvoiceContact.trim() || null,
+                notes:
+                  posCustomerReceipt === 'yes'
+                    ? 'Customer receipt requested at POS confirmation.'
+                    : 'Customer declined a receipt at POS confirmation.',
+              },
+            },
+          );
+
+        setPosConfirmedSale(checkoutResponse.sale);
+        setPosConfirmedPayment(checkoutResponse.payment);
+        setPosConfirmedItems(currentItems);
+        setPosTransactionConfirmed(true);
+        setPosCheckoutKey(createPosCheckoutKey());
+
+        const recentResponse = await getPharmaSales(
+          session.token,
+          posTenantSlug,
+          {
+            branch_id: branchId,
+          pos_session_id: posSession?.id ?? undefined,
+          },
+        );
+
+        setPosRecentSales(
+          [...recentResponse.sales].sort(
+            (left, right) => {
+              const leftTime = new Date(
+                left.sold_at
+                  ?? left.created_at
+                  ?? 0,
+              ).getTime();
+
+              const rightTime = new Date(
+                right.sold_at
+                  ?? right.created_at
+                  ?? 0,
+              ).getTime();
+
+              if (rightTime !== leftTime) {
+                return rightTime - leftTime;
+              }
+
+              return right.id - left.id;
+            },
+          ),
+        );
+
+        if (
+          posCustomerReceipt === 'yes'
+          && checkoutResponse.payment.receipt_number
+        ) {
+          setPosNotice(
+            `Transaction ${checkoutResponse.sale.sale_number} confirmed successfully. Receipt ${checkoutResponse.payment.receipt_number} is ready.`,
+          );
+        } else {
+          setPosNotice(
+            `Transaction ${checkoutResponse.sale.sale_number} confirmed successfully without a customer receipt.`,
+          );
+        }
+      } catch (error: unknown) {
+        setPosTransactionConfirmed(false);
+
+        setPosNotice(
+          error instanceof Error
+            ? error.message
+            : 'Unable to confirm the POS transaction.',
+        );
+      } finally {
+        setIsConfirmingPosTransaction(false);
+      }
     }
 
+
+  const posRecentTransactionRows = posRecentSales
+    .filter((sale) => {
+      if (
+        posRecentFilter === 'paid'
+        && sale.payment_status !== 'paid'
+      ) {
+        return false;
+      }
+
+      if (
+        posRecentFilter === 'pending'
+        && sale.payment_status === 'paid'
+      ) {
+        return false;
+      }
+
+      const keyword =
+        posRecentSearch.trim().toLowerCase();
+
+      if (!keyword) {
+        return true;
+      }
+
+      return [
+        sale.sale_number,
+        sale.customer?.full_name,
+        sale.sale_type,
+        sale.payment_status,
+        sale.status,
+      ]
+        .filter(Boolean)
+        .some((value) =>
+          String(value)
+            .toLowerCase()
+            .includes(keyword),
+        );
+    })
+    .sort((left, right) => {
+      const leftTime = new Date(
+        left.sold_at
+          ?? left.created_at
+          ?? 0,
+      ).getTime();
+
+      const rightTime = new Date(
+        right.sold_at
+          ?? right.created_at
+          ?? 0,
+      ).getTime();
+
+      if (rightTime !== leftTime) {
+        return rightTime - leftTime;
+      }
+
+      return right.id - left.id;
+    })
+    .slice(0, 25)
+    .map((sale) => ({
+      dateTime: sale.sold_at || sale.created_at
+        ? new Date(
+            sale.sold_at
+              ?? sale.created_at
+              ?? '',
+          ).toLocaleString('en-RW')
+        : 'Not recorded',
+      saleNumber: sale.sale_number,
+      customer:
+        sale.customer?.full_name
+        ?? 'Walk-in customer',
+      method: sale.sale_type.replaceAll('_', ' '),
+      status: sale.payment_status.replaceAll('_', ' '),
+      amount:
+        `RWF ${Number(sale.total_amount).toLocaleString('en-RW')}`,
+    }));
 
   const renderPosWorkspaceTopMenu = (
     workspace: PosWorkspaceKey,
@@ -5706,6 +6023,30 @@ function App() {
                     </label>
 
                     <label>
+                      <span>Customer receipt</span>
+                      <select
+                        value={posCustomerReceipt}
+                        onChange={(event) => {
+                          setPosCustomerReceipt(
+                            event.target.value as 'yes' | 'no',
+                          );
+                          setPosTransactionConfirmed(false);
+                          setPosConfirmedPayment(null);
+                        }}
+                      >
+                        <option value="yes">
+                          Yes — generate after confirmation
+                        </option>
+                        <option value="no">
+                          No — complete without customer receipt
+                        </option>
+                      </select>
+                      <small>
+                        A receipt is generated only after the transaction and payment are successfully recorded.
+                      </small>
+                    </label>
+
+                    <label>
                       <span>Discount amount</span>
                       <input
                         type="number"
@@ -5814,17 +6155,32 @@ function App() {
                       </article>
                     </div>
                   </div>
-                  <button type="button" onClick={confirmTransaction} disabled={!isPosDayOpen || posCartOperatingUnits === 0}>
-                    {posTransactionConfirmed ? 'Payment confirmed' : 'Confirm payment'}
+                  <button
+                    type="button"
+                    onClick={() => void confirmTransaction()}
+                    disabled={
+                      !isPosDayOpen
+                      || posCartOperatingUnits === 0
+                      || isConfirmingPosTransaction
+                    }
+                  >
+                    {isConfirmingPosTransaction
+                      ? 'Confirming transaction…'
+                      : posTransactionConfirmed
+                        ? 'Transaction confirmed'
+                        : 'Confirm transaction'}
                   </button>
                 </section>
 
-                {posTransactionConfirmed && (
+                {posTransactionConfirmed
+                  && posCustomerReceipt === 'yes'
+                  && posConfirmedPayment?.receipt_number
+                  && (
                   <section className="pos-customer-receipt-shell">
                     <div className="pos-receipt-toolbar">
                       <div>
                         <span>Customer receipt</span>
-                        <strong>{posReceiptReference}</strong>
+                        <strong>{posConfirmedPayment.receipt_number}</strong>
                       </div>
                       <button type="button" onClick={() => window.print()}>
                         Print receipt
@@ -5839,7 +6195,7 @@ function App() {
                       </header>
 
                       <section className="pos-customer-receipt__meta">
-                        <div><span>Receipt</span><strong>{posReceiptReference}</strong></div>
+                        <div><span>Receipt</span><strong>{posConfirmedPayment.receipt_number}</strong></div>
                         <div><span>Date / time</span><strong>{posSummaryTimestamp}</strong></div>
                         <div><span>Cashier</span><strong>{profile!.user.name}</strong></div>
                         <div><span>Customer</span><strong>{posCustomerType.replaceAll('-', ' ')}</strong></div>
@@ -5867,7 +6223,7 @@ function App() {
                             </tr>
                           </thead>
                           <tbody>
-                            {posLiveCartItems.map((item) => (
+                            {posConfirmedItems.map((item) => (
                               <tr key={`${item.code}-${item.batchId}`}>
                                 <td>
                                   <strong>{item.name}</strong>
@@ -5902,7 +6258,7 @@ function App() {
                       <footer className="pos-customer-receipt__footer">
                         <strong>Thank you for choosing {profileInstitution}.</strong>
                         <span>Keep this receipt for returns, corrections, insurance follow-up, and audit verification.</span>
-                        <small>Verification code: {posReceiptReference}</small>
+                        <small>Verification code: {posConfirmedPayment.receipt_number}</small>
                       </footer>
                     </article>
                   </section>
@@ -5961,8 +6317,8 @@ function App() {
 <section className="pos-sales-summary-table-card pos-recent-transactions-bottom pos-recent-transactions-fullwidth">
               <div className="section-heading">
                 <div>
-                  <span>Current POS session</span>
-                  <h3>Recent transactions in this session</h3>
+                  <span>Synchronized sales feed</span>
+                  <h3>Recent transactions</h3>
                 </div>
                 {profileHasAdminAuthority(profile) && (
                 <details className="admin-table-settings-panel">
@@ -5985,16 +6341,51 @@ function App() {
                 )}
               </div>
 
-                              <div className="pos-current-session-table-toolbar" aria-label="Current session transaction table controls">
-                  <input aria-label="Search current session transactions" placeholder="Search receipt, customer, payment..." />
-                  <select aria-label="Filter current session transactions" defaultValue="current-session">
-                    <option value="current-session">Current session only</option>
+                              <div
+                  className="pos-current-session-table-toolbar"
+                  aria-label="Recent transaction table controls"
+                >
+                  <input
+                    aria-label="Search recent transactions"
+                    placeholder="Search sale, customer, type or status…"
+                    value={posRecentSearch}
+                    onChange={(event) =>
+                      setPosRecentSearch(event.target.value)
+                    }
+                  />
+
+                  <select
+                    aria-label="Filter recent transactions"
+                    value={posRecentFilter}
+                    onChange={(event) =>
+                      setPosRecentFilter(
+                        event.target.value as
+                          | 'all'
+                          | 'paid'
+                          | 'pending',
+                      )
+                    }
+                  >
+                    <option value="all">
+                      All recent transactions
+                    </option>
                     <option value="paid">Paid</option>
-                    <option value="pending">Pending</option>
-                    <option value="invoice">Invoice requested</option>
+                    <option value="pending">
+                      Pending or partially paid
+                    </option>
                   </select>
-                  <button type="button" onClick={() => setPosNotice('Column manager is ready for the current session transaction table.')}>Columns</button>
-                  <button type="button" onClick={() => setPosNotice('Export will use current session transaction rows once backend session rows are connected.')}>Export</button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void loadRecentPosTransactions()
+                    }
+                    disabled={isLoadingPosRecentSales}
+                  >
+                    {isLoadingPosRecentSales
+                      ? 'Refreshing…'
+                      : 'Refresh'}
+                  </button>
                 </div>
 
 <div className="system-table-wrap">
@@ -6010,14 +6401,14 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {salesSummaryRows.length === 0 ? (
+                    {posRecentTransactionRows.length === 0 ? (
                       <tr>
                         <td colSpan={6}>
-                          No transactions have been recorded in this POS session yet. Current-session sales will appear here from POS opening to POS closure.
+                          No matching transactions are available. Confirm a sale or refresh the synchronized sales feed.
                         </td>
                       </tr>
                     ) : (
-                      salesSummaryRows.map(({ dateTime, saleNumber, customer, method, status, amount }) => (
+                      posRecentTransactionRows.map(({ dateTime, saleNumber, customer, method, status, amount }) => (
                         <tr key={saleNumber}>
                           <td>{dateTime}</td>
                           <td>{saleNumber}</td>

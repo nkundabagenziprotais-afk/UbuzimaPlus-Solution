@@ -1525,6 +1525,7 @@ export type PharmaSalesFilters = {
   payment_status?: string;
   sale_type?: string;
   branch_id?: number;
+  pos_session_id?: number;
 };
 
 function buildPharmaQueryString(params: Record<string, string | number | null | undefined>): string {
@@ -1551,6 +1552,7 @@ export async function getPharmaSales(
     payment_status: filters.payment_status,
     sale_type: filters.sale_type,
     branch_id: filters.branch_id,
+    pos_session_id: filters.pos_session_id,
   });
 
   return getJsonWithTenant<PharmaSalesResponse>(token, `/pharmaco/sales${query}`, tenantSlug);
@@ -1595,6 +1597,7 @@ export async function confirmPharmaSale(
 
 
 export type RecordPharmaPaymentPayload = {
+  generate_receipt?: boolean;
   amount: number;
   payment_method: 'cash' | 'momo' | 'card' | 'insurance' | 'credit' | 'bank_transfer';
   reference_number?: string | null;
@@ -1842,6 +1845,65 @@ export async function createPharmaSale(
     payload,
   );
 }
+
+export type CheckoutPharmaSalePayload = {
+  idempotency_key: string;
+  branch_id: number;
+  pharmaco_customer_id?: number | null;
+  pharmaco_prescription_id?: number | null;
+  sale_type?:
+    | 'cash_sale'
+    | 'prescription_sale'
+    | 'insurance_sale'
+    | 'credit_sale';
+  discount_amount?: number;
+  tax_amount?: number;
+  notes?: string | null;
+  items: Array<{
+    product_id: number;
+    quantity: number;
+    unit_price: number;
+    discount_amount?: number;
+    tax_amount?: number;
+    stock_batch_id: number;
+    prescription_verified?: boolean;
+  }>;
+  payment: {
+    payment_method:
+      | 'cash'
+      | 'momo'
+      | 'card'
+      | 'insurance'
+      | 'credit'
+      | 'bank_transfer';
+    generate_receipt?: boolean;
+    reference_number?: string | null;
+    received_at?: string | null;
+    notes?: string | null;
+  };
+};
+
+export type CheckoutPharmaSaleResponse = {
+  message: string;
+  idempotent: boolean;
+  sale: PharmaSale;
+  payment: PharmaPayment;
+};
+
+export async function checkoutPharmaSale(
+  token: string,
+  tenantSlug: string,
+  payload: CheckoutPharmaSalePayload,
+): Promise<CheckoutPharmaSaleResponse> {
+  return sendJsonWithTenant<CheckoutPharmaSaleResponse>(
+    token,
+    '/pharmaco/sales/checkout',
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
 
 
 export type PharmaSupplier = {

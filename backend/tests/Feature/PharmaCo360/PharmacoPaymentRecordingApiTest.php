@@ -243,4 +243,53 @@ class PharmacoPaymentRecordingApiTest extends TestCase
             'payment_status' => 'unpaid',
         ]);
     }
+
+
+    public function test_full_payment_can_be_recorded_without_generating_customer_receipt(): void
+    {
+        $this->seed();
+
+        $sale = $this->confirmSeededSale();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson("/api/v1/pharmaco/sales/{$sale->id}/payments", [
+                'amount' => (float) $sale->fresh()->balance_amount,
+                'payment_method' => 'cash',
+                'generate_receipt' => false,
+                'reference_number' => 'CASH-001',
+                'notes' => 'Full cash settlement at counter.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('message', 'Payment recorded successfully.')
+            ->assertJsonPath('payment.status', 'completed')
+            ->assertJsonPath('payment.payment_method', 'cash')
+            ->assertJsonPath('sale.payment_status', 'paid')
+            ->assertJsonPath('sale.balance_amount', 0);
+
+        $sale->refresh();
+
+        $this->assertSame('paid', $sale->payment_status);
+        $this->assertSame(0.0, (float) $sale->balance_amount);
+        $this->assertSame((float) $sale->total_amount, (float) $sale->paid_amount);
+
+        $payment = PharmacoPayment::where('pharmaco_sale_id', $sale->id)->firstOrFail();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'pharmaco.payment.recorded',
+            'auditable_type' => PharmacoPayment::class,
+            'auditable_id' => $payment->id,
+        ]);
+
+        $response->assertJsonPath(
+            'payment.receipt_number',
+            null
+        );
+
+        $this->assertDatabaseHas('pharmaco_payments', [
+            'id' => $response->json('payment.id'),
+            'receipt_number' => null,
+        ]);
+}
 }

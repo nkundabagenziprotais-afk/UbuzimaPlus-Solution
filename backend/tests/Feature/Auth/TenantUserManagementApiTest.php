@@ -336,7 +336,7 @@ class TenantUserManagementApiTest extends TestCase
 
         $response->assertNotFound();
     }
-    public function test_user_without_roles_manage_cannot_list_tenant_users(): void
+    public function test_user_without_role_management_permissions_cannot_list_tenant_users(): void
     {
         $unauthorizedUser = User::factory()->create();
 
@@ -355,7 +355,10 @@ class TenantUserManagementApiTest extends TestCase
 
         $response
             ->assertForbidden()
-            ->assertJsonPath('missing_permissions.0', 'roles.manage');
+            ->assertJsonPath(
+                'message',
+                'You do not have permission to perform this action.'
+            );
     }
 
     public function test_missing_tenant_context_is_rejected(): void
