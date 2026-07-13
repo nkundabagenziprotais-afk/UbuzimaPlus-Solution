@@ -3836,6 +3836,7 @@ export async function updateTenantSecurityUser(
   payload: {
     tenant_slug: string;
     name: string;
+    email?: string;
     phone?: string;
     job_title?: string;
     access_assignment_mode:
@@ -4354,5 +4355,32 @@ export async function getPharmaInventoryIntelligence(
     `/pharmaco/inventory/intelligence${
       encoded ? `?${encoded}` : ""
     }`,
+  );
+}
+
+export async function resetSecurityUserPassword(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+  payload: {
+    password: string;
+    password_confirmation: string;
+    reason?: string;
+  },
+): Promise<{
+  message: string;
+  sessions_revoked: number;
+  user: SecurityOperationsUser;
+}> {
+  return sendJsonWithTenant<{
+    message: string;
+    sessions_revoked: number;
+    user: SecurityOperationsUser;
+  }>(
+    token,
+    `/access-check/security/users/${userId}/reset-password`,
+    tenantSlug,
+    'POST',
+    payload,
   );
 }

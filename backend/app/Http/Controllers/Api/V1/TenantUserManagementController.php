@@ -44,6 +44,7 @@ class TenantUserManagementController extends Controller
             'pharmaco.pos.void_sale',
             'pharmaco.pos.cash_drawer',
             'pharmaco.pos.daily_close',
+            'pharmaco.pos.session.reset',
 
             'pharmaco.sales.manage',
             'pharmaco.sales.view',
@@ -186,6 +187,32 @@ class TenantUserManagementController extends Controller
                     'ai.use',
                     'ai.inventory.assistant',
                     'ai.sales.assistant',
+                ],
+            ],
+            'pos-admin' => [
+                'name' => 'POS Admin',
+                'description' => 'Supervises POS sessions, cashier operations, receipts, returns, payments, session support and sales reporting without wider tenant administration.',
+                'permissions' => [
+                    'tenant.dashboard.view',
+                    'pharmaco.pos.use',
+                    'pharmaco.pos.open_session',
+                    'pharmaco.pos.close_session',
+                    'pharmaco.pos.discount',
+                    'pharmaco.pos.refund',
+                    'pharmaco.pos.void_sale',
+                    'pharmaco.pos.cash_drawer',
+                    'pharmaco.pos.daily_close',
+                    'pharmaco.pos.session.reset',
+                    'pharmaco.sales.manage',
+                    'pharmaco.sales.view',
+                    'pharmaco.sales.create',
+                    'pharmaco.sales.return',
+                    'pharmaco.sales.receipt.reprint',
+                    'pharmaco.customers.view',
+                    'pharmaco.customers.manage',
+                    'pharmaco.reports.view',
+                    'pharmaco.reports.sales',
+                    'notifications.view',
                 ],
             ],
             'cashier' => [
@@ -564,6 +591,7 @@ class TenantUserManagementController extends Controller
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:191'],
+            'email' => ['sometimes', 'required', 'email', 'max:191'],
             'phone' => ['nullable', 'string', 'max:50'],
             'job_title' => ['nullable', 'string', 'max:191'],
             'access_assignment_mode' => [
@@ -585,6 +613,23 @@ class TenantUserManagementController extends Controller
             );
 
         $updatedUser = DB::transaction(function () use ($tenant, $assignment, $validated, $user) {
+            if (array_key_exists('email', $validated)) {
+                $normalizedEmail = strtolower(
+                    trim($validated['email'])
+                );
+
+                abort_if(
+                    User::query()
+                        ->where('email', $normalizedEmail)
+                        ->where('id', '!=', $user->id)
+                        ->exists(),
+                    422,
+                    'A user with this login email address already exists.',
+                );
+
+                $user->email = $normalizedEmail;
+            }
+
             $user->name = $validated['name'] ?? $user->name;
             $user->phone = array_key_exists(
                 'phone',
@@ -650,7 +695,7 @@ class TenantUserManagementController extends Controller
         });
 
         return response()->json([
-            'message' => 'User profile, role, permissions and status updated successfully.',
+            'message' => 'User identity, login email, profile, role, permissions and status updated successfully.',
             'user' => [
                 'id' => $updatedUser->id,
                 'name' => $updatedUser->name,

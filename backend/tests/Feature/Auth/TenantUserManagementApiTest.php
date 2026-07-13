@@ -265,6 +265,97 @@ class TenantUserManagementApiTest extends TestCase
         ]);
     }
 
+    public function test_administrator_can_update_user_login_email(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Login Email Test User',
+            'email' => 'old-login-email@example.test',
+        ]);
+
+        TenantUser::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $user->id,
+            'branch_id' => $this->branch->id,
+            'status' => 'active',
+        ]);
+
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug
+            )
+            ->putJson(
+                "/api/v1/access-check/security/users/{$user->id}",
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' =>
+                        'Login Email Test User',
+                    'email' =>
+                        'new-login-email@example.test',
+                    'role_code' => 'cashier',
+                    'status' => 'active',
+                ]
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'user.email',
+                'new-login-email@example.test'
+            );
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'email' =>
+                'new-login-email@example.test',
+        ]);
+    }
+
+
+    public function test_pos_admin_role_template_contains_session_administration_privilege(): void
+    {
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug
+            )
+            ->getJson(
+                '/api/v1/access-check/security/role-templates'
+            );
+
+        $response->assertOk();
+
+        $role = collect(
+            $response->json('roles')
+        )->firstWhere(
+            'code',
+            'pos-admin'
+        );
+
+        $this->assertNotNull($role);
+        $this->assertSame(
+            'POS Admin',
+            $role['name']
+        );
+
+        $this->assertContains(
+            'pharmaco.pos.session.reset',
+            $role['permissions']
+        );
+
+        $this->assertContains(
+            'pos.session_support.view',
+            $role['permissions']
+        );
+
+        $this->assertContains(
+            'pos.session_support.edit',
+            $role['permissions']
+        );
+    }
+
+
     public function test_deactivation_preserves_user_and_disables_tenant_assignment(): void
     {
         $user = User::factory()->create([

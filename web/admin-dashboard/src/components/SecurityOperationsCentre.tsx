@@ -6,6 +6,7 @@ import {
 
 import {
   getSecurityOperations,
+  resetSecurityUserPassword,
   runSecurityUserAction,
   type SecurityOperationsResponse,
   type SecurityOperationsUser,
@@ -21,7 +22,7 @@ type Props = {
 
 type PendingAction = {
   user: SecurityOperationsUser;
-  action: SecurityUserAction;
+  action: SecurityUserAction | 'reset-password';
   label: string;
   status?: string;
 } | null;
@@ -82,6 +83,8 @@ export function SecurityOperationsCentre({
     useState<PendingAction>(null);
 
   const [reason, setReason] = useState('');
+  const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [temporaryPasswordConfirmation, setTemporaryPasswordConfirmation] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] =
@@ -164,11 +167,13 @@ export function SecurityOperationsCentre({
 
   function queueAction(
     user: SecurityOperationsUser,
-    action: SecurityUserAction,
+    action: SecurityUserAction | 'reset-password',
     label: string,
     status?: string,
   ) {
     setReason('');
+    setTemporaryPassword('');
+    setTemporaryPasswordConfirmation('');
     setNotice('');
     setError('');
     setPendingAction({
@@ -184,28 +189,64 @@ export function SecurityOperationsCentre({
       return;
     }
 
+    if (
+      pendingAction.action === 'reset-password'
+      && temporaryPassword.length < 8
+    ) {
+      setError(
+        'Enter a temporary password containing at least 8 characters.',
+      );
+      return;
+    }
+
+    if (
+      pendingAction.action === 'reset-password'
+      && temporaryPassword
+        !== temporaryPasswordConfirmation
+    ) {
+      setError(
+        'The temporary password confirmation does not match.',
+      );
+      return;
+    }
+
     setIsActing(true);
     setError('');
     setNotice('');
 
     try {
       const response =
-        await runSecurityUserAction(
-          token,
-          tenantSlug,
-          pendingAction.user.id,
-          pendingAction.action,
-          {
-            status:
-              pendingAction.status,
-            reason:
-              reason.trim() || undefined,
-          },
-        );
+        pendingAction.action === 'reset-password'
+          ? await resetSecurityUserPassword(
+              token,
+              tenantSlug,
+              pendingAction.user.id,
+              {
+                password: temporaryPassword,
+                password_confirmation:
+                  temporaryPasswordConfirmation,
+                reason:
+                  reason.trim() || undefined,
+              },
+            )
+          : await runSecurityUserAction(
+              token,
+              tenantSlug,
+              pendingAction.user.id,
+              pendingAction.action,
+              {
+                status:
+                  pendingAction.status,
+                reason:
+                  reason.trim() || undefined,
+              },
+            );
 
       setNotice(response.message);
       setPendingAction(null);
       setReason('');
+      setTemporaryPassword('');
+      setTemporaryPasswordConfirmation('');
 
       await loadOperations();
       onMutated?.();
@@ -577,6 +618,19 @@ export function SecurityOperationsCentre({
                                 onClick={() =>
                                   queueAction(
                                     user,
+                                    'reset-password',
+                                    'Reset user password',
+                                  )
+                                }
+                              >
+                                Reset password
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  queueAction(
+                                    user,
                                     'force-password-change',
                                     'Force password change',
                                   )
@@ -715,6 +769,54 @@ export function SecurityOperationsCentre({
               </strong>
               {' '}({pendingAction.user.email})?
             </p>
+
+            {pendingAction.action
+              === 'reset-password' && (
+              <>
+                <label>
+                  Temporary password
+                  <input
+                    type="password"
+                    value={temporaryPassword}
+                    onChange={(event) =>
+                      setTemporaryPassword(
+                        event.target.value,
+                      )
+                    }
+                    minLength={8}
+                    maxLength={100}
+                    autoComplete="new-password"
+                    placeholder="Minimum 8 characters"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Confirm temporary password
+                  <input
+                    type="password"
+                    value={
+                      temporaryPasswordConfirmation
+                    }
+                    onChange={(event) =>
+                      setTemporaryPasswordConfirmation(
+                        event.target.value,
+                      )
+                    }
+                    minLength={8}
+                    maxLength={100}
+                    autoComplete="new-password"
+                    required
+                  />
+                </label>
+
+                <small>
+                  Existing sessions will be revoked.
+                  The user must change this temporary
+                  password after login.
+                </small>
+              </>
+            )}
 
             <label>
               Administrative reason

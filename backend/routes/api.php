@@ -91,6 +91,9 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
     Route::post('/security/users/{user}/force-password-change', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'forcePasswordChange'])
         ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 
+    Route::post('/security/users/{user}/reset-password', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'resetPassword'])
+        ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
+
     Route::post('/security/users/{user}/reset-two-factor', [\App\Http\Controllers\Api\V1\SecurityOperationsController::class, 'resetTwoFactor'])
         ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
 

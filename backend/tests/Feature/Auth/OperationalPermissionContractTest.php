@@ -38,6 +38,24 @@ class OperationalPermissionContractTest extends TestCase
         }
     }
 
+    public function test_pos_admin_permission_expands_to_session_support_controls(): void
+    {
+        $permissions = OperationalPermissionContract::expand([
+            'pharmaco.pos.session.reset',
+        ]);
+
+        $this->assertContains(
+            'pos.session_support.view',
+            $permissions,
+        );
+
+        $this->assertContains(
+            'pos.session_support.edit',
+            $permissions,
+        );
+    }
+
+
     public function test_inventory_permissions_expand_to_inventory_workspace(): void
     {
         $permissions = OperationalPermissionContract::expand([
