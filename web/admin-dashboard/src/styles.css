@@ -31271,3 +31271,187 @@ thead
     display: none;
   }
 }
+
+
+/* Admin Management module · 2026-07-13 */
+.admin-management-route-page {
+  width: 100%;
+}
+
+.admin-management-module {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-management-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color, #d8dee8);
+  border-radius: 14px;
+  background: var(--panel-background, #ffffff);
+}
+
+.admin-management-header span,
+.admin-management-intro > span,
+.admin-management-roadmap header > span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--muted-text, #667085);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-management-header h2,
+.admin-management-intro h3,
+.admin-management-roadmap h3 {
+  margin: 0;
+}
+
+.admin-management-header p,
+.admin-management-intro p,
+.admin-management-card p,
+.admin-management-roadmap p {
+  color: var(--muted-text, #667085);
+  line-height: 1.55;
+}
+
+.admin-management-context {
+  min-width: 210px;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-color, #d8dee8);
+  border-radius: 12px;
+  background: var(--subtle-background, #f7f8fa);
+}
+
+.admin-management-context small,
+.admin-management-context strong,
+.admin-management-context span {
+  display: block;
+  margin: 0;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.admin-management-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border-color, #d8dee8);
+  border-radius: 12px;
+  background: var(--panel-background, #ffffff);
+}
+
+.admin-management-navigation button {
+  border: 1px solid var(--border-color, #d8dee8);
+  border-radius: 9px;
+  background: transparent;
+}
+
+.admin-management-navigation button.active {
+  border-color: var(--left-menu-accent, #176b5b);
+  background: var(--left-menu-accent, #176b5b);
+  color: #ffffff;
+}
+
+.admin-management-overview,
+.admin-management-workspace,
+.admin-management-roadmap {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-management-intro,
+.admin-management-roadmap > header {
+  padding: 1rem 1.15rem;
+  border-left: 4px solid var(--left-menu-accent, #176b5b);
+  background: var(--panel-background, #ffffff);
+}
+
+.admin-management-card-grid,
+.admin-management-roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-management-card,
+.admin-management-roadmap-grid article {
+  display: flex;
+  min-height: 205px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--border-color, #d8dee8);
+  border-radius: 12px;
+  background: var(--panel-background, #ffffff);
+}
+
+.admin-management-card > div > span {
+  color: var(--left-menu-accent, #176b5b);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-management-card h3 {
+  margin: 0.4rem 0 0;
+}
+
+.admin-management-card.is-locked {
+  opacity: 0.66;
+}
+
+.admin-management-notice {
+  padding: 0.8rem 1rem;
+  border: 1px solid #9bc9bd;
+  border-radius: 10px;
+  background: #eef8f5;
+  color: #174c40;
+}
+
+.admin-management-roadmap-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-management-roadmap-grid article {
+  min-height: auto;
+}
+
+@media (max-width: 900px) {
+  .admin-management-header {
+    flex-direction: column;
+  }
+
+  .admin-management-context {
+    width: 100%;
+  }
+
+  .admin-management-card-grid,
+  .admin-management-roadmap-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .admin-management-header,
+  .admin-management-card,
+  .admin-management-roadmap-grid article {
+    padding: 0.9rem;
+  }
+
+  .admin-management-navigation {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-management-navigation button {
+    width: 100%;
+    text-align: left;
+  }
+}

@@ -1,3 +1,8 @@
+import {
+  buildApiUrl,
+  normalizeApiBaseUrl,
+} from './apiBase';
+
 export type LoginPayload = {
   login_method: 'email' | 'phone';
   email?: string;
@@ -142,8 +147,9 @@ export type TwoFactorStatusResponse = {
   };
 };
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '/api/v1';
+const API_BASE_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_BASE_URL,
+);
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -502,7 +508,7 @@ async function getJsonWithTenant<T>(
   path: string,
   tenantSlug: string,
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(API_BASE_URL, path), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -588,7 +594,7 @@ async function sendJsonWithTenant<T>(
   method: 'POST' | 'PATCH',
   payload: unknown,
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(API_BASE_URL, path), {
     method,
     headers: {
       Accept: 'application/json',
@@ -2867,7 +2873,7 @@ const receivablesRequest = async <T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(API_BASE_URL, path), {
     ...options,
     headers,
   });
@@ -3735,7 +3741,7 @@ async function apiRequest<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(API_BASE_URL, path), {
     ...options,
     headers,
   });

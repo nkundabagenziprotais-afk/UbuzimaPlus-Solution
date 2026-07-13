@@ -54,7 +54,7 @@ import {
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
 import { HistoricalPosWorkflow } from './components/HistoricalPosWorkflow';
-import { PosSessionAdminControl } from './components/PosSessionAdminControl';
+import { AdminManagementWorkspace } from './components/AdminManagementWorkspace';
 import { SalesReturnsWorkspace } from './components/SalesReturnsWorkspace';
 import { MomoReconciliationWorkspace } from './components/MomoReconciliationWorkspace';
 import { PosSalesOverview } from './components/PosSalesOverview';
@@ -84,7 +84,6 @@ import { NotificationCenterPanel } from './components/NotificationCenterPanel';
 import { MarketLocalizationPanel } from './components/MarketLocalizationPanel';
 import { NearbyProvidersPanel } from './components/NearbyProvidersPanel';
 import { TenantPharmacyDashboard } from './components/TenantPharmacyDashboard';
-import { UserSecurityManagement } from './components/UserSecurityManagement';
 import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
@@ -125,6 +124,7 @@ type AdminSectionKey =
   | 'solution-portfolio'
   | 'ai-center'
   | 'admin-panel'
+  | 'admin-management'
   | 'inventory'
   | 'general-stock-items'
   | 'insurance'
@@ -790,6 +790,11 @@ const sectionMeta: Record<AdminSectionKey, { title: string; eyebrow: string; des
     title: 'Platform administration architecture',
     description: 'Backend API, web, mobile, desktop, data layer, and infrastructure readiness for controlled deployment.',
   },
+  'admin-management': {
+    eyebrow: 'Governed tenant administration',
+    title: 'Admin Management',
+    description: 'User security, administrator support, POS session controls, audit-ready privileges, and future administrative capabilities.',
+  },
   inventory: {
     eyebrow: 'Inventory and product control',
     title: 'Inventory command workspace',
@@ -1051,6 +1056,19 @@ const granularMenuPermissionMap: Record<string, string[]> = {
     'tenant.branches.view',
     'tenant.departments.view',
     'tenant.capabilities.view',
+  ],
+  'admin-management': [
+    'users.staff.view',
+    'security.users.view',
+    'security.roles.view',
+    'security.permissions.view',
+    'security.audit.view',
+    'security.two_factor.view',
+    'pos.session_support.view',
+    'pos.session_support.edit',
+    'pharmaco.pos.session.reset',
+    'roles.manage',
+    'tenant.roles.manage',
   ],
   security: [
     'users.staff.view',
@@ -1598,7 +1616,7 @@ function preferredOperationalSection(
       ['users.staff.view'],
     )
   ) {
-    return 'security';
+    return 'admin-management';
   }
 
   return 'overview';
@@ -2252,7 +2270,7 @@ function buildVisibleMenuGroups(profile: AccessProfile | undefined): MenuGroup[]
       icon: 'ADM',
       items: [
         { key: 'tenant-setup', label: 'Business Setup', description: 'Profile, branches, departments', icon: 'TS', status: 'Live' },
-        { key: 'security', label: 'Users and Security', description: 'Scope, roles, access', icon: 'SC', status: 'Protected' },
+        { key: 'admin-management', label: 'Admin Management', description: 'Users, security and administrator support', icon: 'AM', status: 'Protected' },
         { key: 'corporate-email', label: 'Corporate Email', description: 'Company mail', icon: 'EM', status: 'Active' },
         { key: 'notifications', label: 'Notifications', description: 'Staff communication', icon: 'NT', status: 'Active' },
         { key: 'localization', label: 'Language and Market', description: 'EN, FR, PT preference', icon: 'LG', status: 'Active' },
@@ -6045,30 +6063,6 @@ function App() {
                   onNotice={setPosNotice}
                 />
 
-                <PosSessionAdminControl
-                  token={session!.token}
-                  tenantSlug={
-                    posSessionTenantSlug || ''
-                  }
-                  permissions={
-                    profile?.permissions ?? []
-                  }
-                  currentSession={posSession}
-                  onSessionChanged={(
-                    nextSession,
-                    message,
-                  ) => {
-                    setPosSession(nextSession);
-                    setIsPosDayOpen(
-                      nextSession.status === 'open',
-                    );
-                    setPosTillZeroized(
-                      nextSession.balance_cleared,
-                    );
-                    setPosNotice(message);
-                  }}
-                />
-
 
                 <section className="pos-shift-control-section pos-session-control-card">
                   <div className="section-heading">
@@ -7849,8 +7843,9 @@ function App() {
             <PharmaCoreEditor token={session!.token} profile={profile!} />
           </section>
         );
+      case 'admin-management':
       case 'security': {
-        const securityTenantSlug =
+        const administrationTenantSlug =
           profile?.tenant_assignments?.find(
             (assignment) =>
               assignment.status === 'active'
@@ -7862,14 +7857,14 @@ function App() {
           )?.tenant?.slug
           ?? '';
 
-        if (!securityTenantSlug) {
+        if (!administrationTenantSlug) {
           return (
-            <section className="section-page user-security-route-page">
+            <section className="section-page admin-management-route-page">
               <article className="panel wide">
-                <h2>User &amp; Security</h2>
+                <h2>Admin Management</h2>
                 <p className="form-error">
                   An active tenant assignment is required
-                  before staff security can be managed.
+                  before administrative privileges can be managed.
                 </p>
               </article>
             </section>
@@ -7877,10 +7872,10 @@ function App() {
         }
 
         return (
-          <section className="section-page user-security-route-page">
-            <UserSecurityManagement
+          <section className="section-page admin-management-route-page">
+            <AdminManagementWorkspace
               token={session!.token}
-              tenantSlug={securityTenantSlug}
+              tenantSlug={administrationTenantSlug}
               profile={profile!}
               onVerified={(
                 nextToken,
@@ -8156,6 +8151,7 @@ function App() {
                 'finance',
                 'reports',
                 'security',
+                'admin-management',
                 'ai-center',
                 'admin-panel',
               ].includes(item.key);

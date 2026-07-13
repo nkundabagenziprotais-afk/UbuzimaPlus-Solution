@@ -1,6 +1,11 @@
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "/api/v1"
-).replace(/\/+$/, "");
+import {
+  buildApiUrl,
+  normalizeApiBaseUrl,
+} from './apiBase';
+
+const API_BASE_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_BASE_URL,
+);
 
 export type PosSessionStatus =
   | "open"
@@ -175,7 +180,7 @@ async function requestPosSession<T>(
   }
 
   const response = await fetch(
-    `${API_BASE_URL}${path}`,
+    buildApiUrl(API_BASE_URL, path),
     {
       ...options,
       headers,
