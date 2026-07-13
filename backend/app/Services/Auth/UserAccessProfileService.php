@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Support\OperationalPermissionContract;
 use App\Models\AdminScope;
 use App\Models\User;
 use App\Services\Access\ScopeResolver;
@@ -17,7 +18,9 @@ class UserAccessProfileService
     public function build(User $user): array
     {
         $roles = $this->activeRoles($user);
-        $permissions = $this->permissionCodes($user);
+        $permissions = OperationalPermissionContract::expand(
+            $this->permissionCodes($user),
+        );
         $scope = $this->scopeResolver->resolveForUser($user);
 
         return [

@@ -30731,3 +30731,543 @@ thead
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   overflow: hidden;
 }
+
+/* AQUILA_POS_SESSION_ADMIN_CONTROL_20260713 */
+
+.pos-admin-control {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(75, 83, 32, 0.18);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(35, 47, 29, 0.06);
+}
+
+.pos-admin-control__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pos-admin-control__header h3 {
+  margin: 0.2rem 0 0;
+}
+
+.pos-admin-control__header p {
+  max-width: 780px;
+  margin: 0.45rem 0 0;
+  color: #65705f;
+  line-height: 1.55;
+}
+
+.pos-admin-control__summary {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.pos-admin-control__summary article {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(75, 83, 32, 0.12);
+  border-radius: 14px;
+  background: #f8faf6;
+}
+
+.pos-admin-control__summary strong {
+  font-size: 1.35rem;
+}
+
+.pos-admin-control__summary small,
+.pos-admin-control table small {
+  display: block;
+  color: #6b7466;
+  line-height: 1.4;
+}
+
+.pos-admin-control__filters {
+  display: grid;
+  grid-template-columns:
+    minmax(160px, 0.45fr)
+    minmax(260px, 1fr)
+    auto;
+  gap: 0.7rem;
+  align-items: end;
+}
+
+.pos-admin-control__filters label,
+.pos-admin-control__dialog label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.pos-admin-control__filters input,
+.pos-admin-control__filters select,
+.pos-admin-control__dialog input,
+.pos-admin-control__dialog textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.pos-admin-control__table-shell {
+  overflow-x: auto;
+  border: 1px solid rgba(75, 83, 32, 0.12);
+  border-radius: 14px;
+}
+
+.pos-admin-control__table-shell table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+}
+
+.pos-admin-control__table-shell th,
+.pos-admin-control__table-shell td {
+  padding: 0.72rem;
+  border-bottom: 1px solid rgba(75, 83, 32, 0.1);
+  text-align: left;
+  vertical-align: top;
+}
+
+.pos-admin-control__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pos-admin-status {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: #eef2ea;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pos-admin-status.is-open {
+  background: rgba(28, 126, 73, 0.12);
+  color: #17633c;
+}
+
+.pos-admin-status.is-zeroized {
+  background: rgba(154, 103, 0, 0.12);
+  color: #7a5200;
+}
+
+.pos-admin-status.is-closed {
+  background: rgba(71, 84, 103, 0.12);
+  color: #475467;
+}
+
+.pos-admin-status.is-stuck {
+  background: rgba(180, 35, 24, 0.12);
+  color: #b42318;
+}
+
+.pos-admin-control__notice {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(28, 126, 73, 0.2);
+  border-radius: 12px;
+  background: rgba(28, 126, 73, 0.08);
+  color: #17633c;
+  font-weight: 700;
+}
+
+.pos-admin-control__dialog-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(21, 28, 19, 0.58);
+}
+
+.pos-admin-control__dialog {
+  display: grid;
+  gap: 1rem;
+  width: min(620px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1rem;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(14, 20, 12, 0.24);
+}
+
+.pos-admin-control__dialog header,
+.pos-admin-control__dialog footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.pos-admin-control__dialog h4 {
+  margin: 0.2rem 0 0;
+}
+
+.pos-admin-control__dialog-context {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #f6f8f4;
+}
+
+.pos-admin-control__checkbox {
+  grid-template-columns: auto 1fr !important;
+  align-items: start;
+}
+
+.pos-admin-control__checkbox input {
+  width: auto;
+  margin-top: 0.2rem;
+}
+
+/* AQUILA_INVENTORY_INTELLIGENCE_20260713 */
+
+.inventory-intelligence-card {
+  min-width: 0;
+}
+
+.inventory-intelligence-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.inventory-intelligence-card > header div {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.inventory-intelligence-totals {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.inventory-intelligence-totals span {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.55rem;
+  border-radius: 10px;
+  background: #f6f8f4;
+}
+
+.inventory-intelligence-totals small {
+  color: #6b7466;
+  font-size: 0.61rem;
+}
+
+.inventory-movement-week {
+  display: grid;
+  grid-template-columns:
+    repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  min-height: 130px;
+  align-items: end;
+  padding-top: 0.6rem;
+}
+
+.inventory-movement-day {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  justify-items: center;
+}
+
+.inventory-movement-day.is-future {
+  opacity: 0.35;
+}
+
+.inventory-movement-day.is-today strong {
+  color: #4b5320;
+}
+
+.inventory-movement-bars {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 88px;
+  padding-inline: 3px;
+  border-bottom: 1px solid rgba(75, 83, 32, 0.18);
+}
+
+.inventory-movement-bars i {
+  display: block;
+  width: 22%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+}
+
+.inventory-movement-bars .is-receipt {
+  background: #4b7f52;
+}
+
+.inventory-movement-bars .is-issue {
+  background: #b5473c;
+}
+
+.inventory-movement-bars .is-adjustment {
+  background: #b8842e;
+}
+
+.inventory-movement-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.inventory-movement-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 0.3rem;
+  border-radius: 999px;
+}
+
+.inventory-movement-legend .is-receipt::before {
+  background: #4b7f52;
+}
+
+.inventory-movement-legend .is-issue::before {
+  background: #b5473c;
+}
+
+.inventory-movement-legend .is-adjustment::before {
+  background: #b8842e;
+}
+
+.inventory-recent-movement-list {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.inventory-recent-movement-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid rgba(75, 83, 32, 0.08);
+}
+
+.inventory-recent-movement-list span {
+  display: grid;
+  min-width: 0;
+}
+
+.inventory-recent-movement-list strong,
+.inventory-recent-movement-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-recent-movement-list b.is-positive {
+  color: #17633c;
+}
+
+.inventory-recent-movement-list b.is-negative {
+  color: #b42318;
+}
+
+.inventory-expiry-trend-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.inventory-expiry-trend-summary > span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.inventory-expiry-direction {
+  justify-items: end;
+  padding: 0.35rem 0.55rem;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.inventory-expiry-direction.is-increasing {
+  background: rgba(180, 35, 24, 0.1);
+  color: #b42318;
+}
+
+.inventory-expiry-direction.is-decreasing {
+  background: rgba(28, 126, 73, 0.1);
+  color: #17633c;
+}
+
+.inventory-expiry-direction.is-stable {
+  background: rgba(71, 84, 103, 0.1);
+  color: #475467;
+}
+
+.inventory-expiry-line-chart {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.inventory-expiry-line-chart svg {
+  display: block;
+  width: 100%;
+  height: 118px;
+  overflow: visible;
+}
+
+.inventory-expiry-line-chart polyline {
+  fill: none;
+  stroke: #4b5320;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.inventory-expiry-line-chart circle {
+  fill: #fff;
+  stroke: #4b5320;
+  stroke-width: 1.8;
+}
+
+.inventory-expiry-line-chart > div {
+  display: grid;
+  grid-template-columns:
+    repeat(7, minmax(0, 1fr));
+  gap: 0.2rem;
+}
+
+.inventory-expiry-line-chart span {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.inventory-expiry-line-chart span.is-today {
+  color: #4b5320;
+}
+
+.inventory-expiry-line-chart small {
+  overflow: hidden;
+  font-size: 0.52rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-intelligence-note {
+  margin: 0;
+  color: #69736a;
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+
+/* Product Master form overflow hardening */
+
+.product-master-form-grid {
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(min(220px, 100%), 1fr)
+    );
+}
+
+.product-master-form-grid > label {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.product-master-form-grid input,
+.product-master-form-grid select,
+.product-master-form-grid textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.product-master-form-field--category {
+  width: 100%;
+  max-width: 100%;
+  grid-column: span 1 !important;
+}
+
+@media (max-width: 1180px) {
+  .pos-admin-control__summary,
+  .inventory-intelligence-totals {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-admin-control__filters {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-admin-control__filters > button {
+    width: fit-content;
+  }
+}
+
+@media (max-width: 760px) {
+  .pos-admin-control__header,
+  .inventory-intelligence-card > header,
+  .inventory-expiry-trend-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pos-admin-control__summary,
+  .pos-admin-control__filters,
+  .inventory-intelligence-totals {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-movement-week {
+    gap: 0.18rem;
+  }
+
+  .inventory-movement-bars {
+    height: 72px;
+  }
+
+  .inventory-expiry-line-chart svg {
+    height: 92px;
+  }
+}
+
+@media (max-width: 430px) {
+  .pos-admin-control {
+    padding: 0.75rem;
+  }
+
+  .inventory-expiry-line-chart small {
+    display: none;
+  }
+}

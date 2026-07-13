@@ -54,6 +54,7 @@ import {
 import { ProductInventoryActions } from './components/ProductInventoryActions';
 import { SalesDispensingReview } from './components/SalesDispensingReview';
 import { HistoricalPosWorkflow } from './components/HistoricalPosWorkflow';
+import { PosSessionAdminControl } from './components/PosSessionAdminControl';
 import { SalesReturnsWorkspace } from './components/SalesReturnsWorkspace';
 import { MomoReconciliationWorkspace } from './components/MomoReconciliationWorkspace';
 import { PosSalesOverview } from './components/PosSalesOverview';
@@ -1187,8 +1188,301 @@ function normalizePermissionKey(value: unknown): string {
     .replace(/^_+|_+$/g, '');
 }
 
-function profilePermissionSet(profile: AccessProfile | undefined): Set<string> {
-  return new Set((profile?.permissions ?? []).map((permission) => normalizePermissionKey(permission)));
+const operationalPermissionAliases: Record<string, string[]> = {
+  'tenant.dashboard.view': [
+    'dashboard.view',
+  ],
+
+  'pharmaco.pos.use': [
+    'pos.sales.view',
+    'pos.receipts.view',
+    'pos.payments.view',
+    'pos.cashier_close.view',
+  ],
+  'pharmaco.pos.open_session': [
+    'pos.sales.view',
+    'pos.sales.add',
+    'pos.cashier_close.view',
+    'pos.cashier_close.add',
+  ],
+  'pharmaco.pos.close_session': [
+    'pos.cashier_close.view',
+    'pos.cashier_close.edit',
+  ],
+  'pharmaco.pos.session.reset': [
+    'pos.session_support.view',
+    'pos.session_support.edit',
+  ],
+
+  'pharmaco.sales.view': [
+    'pos.sales.view',
+    'pos.receipts.view',
+    'pos.returns.view',
+    'pos.payments.view',
+    'reports.sales.view',
+  ],
+  'pharmaco.sales.create': [
+    'pos.sales.view',
+    'pos.sales.add',
+    'pos.receipts.view',
+    'pos.receipts.add',
+    'pos.payments.view',
+    'pos.payments.add',
+  ],
+  'pharmaco.sales.manage': [
+    'pos.sales.view',
+    'pos.sales.add',
+    'pos.sales.edit',
+    'pos.receipts.view',
+    'pos.receipts.add',
+    'pos.returns.view',
+    'pos.returns.add',
+    'pos.returns.edit',
+    'pos.payments.view',
+    'pos.payments.add',
+    'pos.payments.edit',
+    'pos.cashier_close.view',
+    'pos.cashier_close.add',
+    'pos.cashier_close.edit',
+    'reports.sales.view',
+  ],
+  'pharmaco.sales.return': [
+    'pos.returns.view',
+    'pos.returns.add',
+  ],
+  'pharmaco.sales.receipt.reprint': [
+    'pos.receipts.view',
+    'pos.receipts.add',
+  ],
+  'pharmaco.customers.view': [
+    'pos.customers.view',
+  ],
+
+  'pharmaco.inventory.view': [
+    'inventory.dashboard.view',
+    'inventory.products.view',
+    'inventory.batches.view',
+    'inventory.locations.view',
+    'inventory.low_stock.view',
+    'inventory.expiry_review.view',
+    'inventory.table_settings.view',
+    'inventory.expiry_labels.view',
+    'reports.inventory.view',
+  ],
+  'pharmaco.inventory.manage': [
+    'inventory.dashboard.view',
+    'inventory.products.view',
+    'inventory.products.add',
+    'inventory.products.edit',
+    'inventory.batches.view',
+    'inventory.batches.add',
+    'inventory.batches.edit',
+    'inventory.receiving.view',
+    'inventory.receiving.add',
+    'inventory.locations.view',
+    'inventory.locations.add',
+    'inventory.locations.edit',
+    'inventory.low_stock.view',
+    'inventory.expiry_review.view',
+    'inventory.expiry_review.edit',
+    'inventory.table_settings.view',
+    'inventory.table_settings.edit',
+    'inventory.expiry_labels.view',
+    'inventory.expiry_labels.add',
+    'reports.inventory.view',
+  ],
+  'pharmaco.product_master.view': [
+    'inventory.products.view',
+  ],
+  'pharmaco.product_master.manage': [
+    'inventory.products.view',
+    'inventory.products.add',
+    'inventory.products.edit',
+    'inventory.products.delete',
+  ],
+  'pharmaco.products.manage': [
+    'inventory.products.view',
+    'inventory.products.add',
+    'inventory.products.edit',
+    'inventory.products.delete',
+  ],
+  'pharmaco.product_inventory.receive': [
+    'inventory.receiving.view',
+    'inventory.receiving.add',
+    'inventory.batches.view',
+    'inventory.batches.add',
+  ],
+  'pharmaco.product_inventory.update': [
+    'inventory.batches.view',
+    'inventory.batches.edit',
+  ],
+  'pharmaco.inventory.low_stock.view': [
+    'inventory.low_stock.view',
+  ],
+  'pharmaco.inventory.batch_expiry.view': [
+    'inventory.expiry_review.view',
+    'inventory.expiry_labels.view',
+  ],
+  'pharmaco.inventory.batch_expiry.manage': [
+    'inventory.expiry_review.view',
+    'inventory.expiry_review.edit',
+    'inventory.expiry_labels.view',
+    'inventory.expiry_labels.add',
+  ],
+
+  'pharmaco.procurement.view': [
+    'procurement.suppliers.view',
+    'procurement.purchase_orders.view',
+    'procurement.receiving.view',
+    'reports.procurement.view',
+  ],
+  'pharmaco.suppliers.manage': [
+    'procurement.suppliers.view',
+    'procurement.suppliers.add',
+    'procurement.suppliers.edit',
+  ],
+  'pharmaco.procurement.suppliers.manage': [
+    'procurement.suppliers.view',
+    'procurement.suppliers.add',
+    'procurement.suppliers.edit',
+  ],
+  'pharmaco.procurement.purchase_order.create': [
+    'procurement.purchase_orders.view',
+    'procurement.purchase_orders.add',
+  ],
+  'pharmaco.procurement.purchase_order.approve': [
+    'procurement.purchase_orders.view',
+    'procurement.purchase_orders.edit',
+  ],
+  'pharmaco.procurement.purchase_order.receive': [
+    'procurement.receiving.view',
+    'procurement.receiving.add',
+  ],
+
+  'pharmaco.finance.view': [
+    'finance.dashboard.view',
+    'finance.payables.view',
+    'finance.receivables.view',
+    'finance.payments.view',
+    'finance.reconciliation.view',
+    'reports.finance.view',
+  ],
+  'pharmaco.finance.receivables.manage': [
+    'finance.receivables.view',
+    'finance.receivables.add',
+    'finance.receivables.edit',
+  ],
+  'pharmaco.finance.payables.manage': [
+    'finance.payables.view',
+    'finance.payables.add',
+    'finance.payables.edit',
+  ],
+  'pharmaco.finance.reconciliation.manage': [
+    'finance.reconciliation.view',
+    'finance.reconciliation.add',
+    'finance.reconciliation.edit',
+  ],
+  'pharmaco.procurement.payment.view': [
+    'finance.payments.view',
+  ],
+  'pharmaco.procurement.payment.manage': [
+    'finance.payments.view',
+    'finance.payments.add',
+    'finance.payments.edit',
+  ],
+
+  'pharmaco.reports.view': [
+    'reports.sales.view',
+    'reports.inventory.view',
+    'reports.procurement.view',
+    'reports.finance.view',
+  ],
+  'pharmaco.reports.sales': [
+    'reports.sales.view',
+  ],
+  'pharmaco.reports.inventory': [
+    'reports.inventory.view',
+  ],
+  'pharmaco.reports.procurement': [
+    'reports.procurement.view',
+  ],
+  'pharmaco.reports.finance': [
+    'reports.finance.view',
+  ],
+  'pharmaco.reports.audit': [
+    'reports.audit.view',
+  ],
+
+  'users.view': [
+    'users.staff.view',
+  ],
+  'users.manage': [
+    'users.staff.view',
+    'security.users.view',
+    'security.users.add',
+    'security.users.edit',
+    'security.users.delete',
+  ],
+  'tenant.roles.manage': [
+    'users.staff.view',
+    'security.users.view',
+    'security.users.add',
+    'security.users.edit',
+    'security.roles.view',
+    'security.permissions.view',
+  ],
+  'roles.manage': [
+    'users.staff.view',
+    'security.users.view',
+    'security.users.add',
+    'security.users.edit',
+    'security.users.delete',
+    'security.roles.view',
+    'security.roles.add',
+    'security.roles.edit',
+    'security.roles.delete',
+    'security.permissions.view',
+    'security.permissions.add',
+    'security.permissions.edit',
+    'security.permissions.delete',
+  ],
+
+  'notifications.view': [
+    'communications.notifications.view',
+  ],
+  'notifications.manage': [
+    'communications.notifications.view',
+    'communications.notifications.add',
+    'communications.notifications.edit',
+  ],
+  'communications.email.use': [
+    'communications.email.view',
+  ],
+  'pharmaco.chat.manage': [
+    'communications.chat.view',
+  ],
+};
+
+function profilePermissionSet(
+  profile: AccessProfile | undefined,
+): Set<string> {
+  const permissions = new Set<string>();
+
+  (profile?.permissions ?? []).forEach((rawPermission) => {
+    const permission = normalizePermissionKey(rawPermission);
+
+    if (!permission) return;
+
+    permissions.add(permission);
+
+    (operationalPermissionAliases[permission] ?? []).forEach(
+      (alias) => {
+        permissions.add(normalizePermissionKey(alias));
+      },
+    );
+  });
+
+  return permissions;
 }
 
 function profileRoleTokens(profile: AccessProfile | undefined): string[] {
@@ -1236,6 +1530,78 @@ function profileHasGranularPermission(profile: AccessProfile | undefined, permis
   return permissions
     .map((permission) => normalizePermissionKey(permission))
     .some((permission) => availablePermissions.has(permission));
+}
+
+function preferredOperationalSection(
+  profile: AccessProfile | undefined,
+): AdminSectionKey {
+  if (!profile || profileHasAdminAuthority(profile)) {
+    return 'overview';
+  }
+
+  const roles = profileRoleTokens(profile);
+
+  const hasRole = (...tokens: string[]) =>
+    roles.some((role) =>
+      tokens.some(
+        (token) =>
+          role === token
+          || role.endsWith(`_${token}`)
+          || role.includes(`_${token}_`),
+      ),
+    );
+
+  if (
+    hasRole('cashier', 'pharmacist')
+    || profileHasGranularPermission(
+      profile,
+      ['pos.sales.view'],
+    )
+  ) {
+    return 'pos';
+  }
+
+  if (
+    hasRole('inventory_officer')
+    || profileHasGranularPermission(
+      profile,
+      ['inventory.dashboard.view'],
+    )
+  ) {
+    return 'inventory';
+  }
+
+  if (
+    hasRole('procurement_officer')
+    || profileHasGranularPermission(
+      profile,
+      ['procurement.suppliers.view'],
+    )
+  ) {
+    return 'suppliers';
+  }
+
+  if (
+    hasRole('finance_officer')
+    || profileHasGranularPermission(
+      profile,
+      ['finance.dashboard.view'],
+    )
+  ) {
+    return 'finance';
+  }
+
+  if (
+    hasRole('hr_officer')
+    || profileHasGranularPermission(
+      profile,
+      ['users.staff.view'],
+    )
+  ) {
+    return 'security';
+  }
+
+  return 'overview';
 }
 
 function menuPermissionLookupKey(item: MenuItem): string {
@@ -2725,6 +3091,7 @@ function App() {
   const [isLoadingPharmaCore, setIsLoadingPharmaCore] = useState(false);
   const [pharmaCoreError, setPharmaCoreError] = useState('');
   const [activeSection, setActiveSection] = useState<AdminSectionKey>(loadStoredActiveSection);
+  const [hasAppliedRoleLanding, setHasAppliedRoleLanding] = useState(false);
   const [navigationStack, setNavigationStack] = useState<AdminSectionKey[]>([]);
   const [activeErpWorkspace, setActiveErpWorkspace] = useState<ErpWorkspaceKey>('erp-overview');
   const [activeSolution, setActiveSolution] = useState<SolutionKey>('pharmaco');
@@ -3182,11 +3549,38 @@ function App() {
   }, [session?.token]);
 
   useEffect(() => {
-    if (profile && !visibleSectionKeys.has(activeSection)) {
-      setActiveSection('overview');
-      setNavigationStack([]);
+    if (!profile) return;
+
+    const preferredSection =
+      preferredOperationalSection(profile);
+
+    const fallbackSection =
+      visibleSectionKeys.has(preferredSection)
+        ? preferredSection
+        : Array.from(visibleSectionKeys)[0]
+          ?? 'overview';
+
+    if (!hasAppliedRoleLanding) {
+      if (
+        preferredSection !== activeSection
+        && visibleSectionKeys.has(preferredSection)
+      ) {
+        setActiveSection(preferredSection);
+      }
+
+      setHasAppliedRoleLanding(true);
+      return;
     }
-  }, [activeSection, profile, visibleSectionKeys]);
+
+    if (!visibleSectionKeys.has(activeSection)) {
+      setActiveSection(fallbackSection);
+    }
+  }, [
+    activeSection,
+    hasAppliedRoleLanding,
+    profile,
+    visibleSectionKeys,
+  ]);
 
   function navigateToSection(section: AdminSectionKey) {
     setIsProfileMenuOpen(false);
@@ -5651,6 +6045,31 @@ function App() {
                   onNotice={setPosNotice}
                 />
 
+                <PosSessionAdminControl
+                  token={session!.token}
+                  tenantSlug={
+                    posSessionTenantSlug || ''
+                  }
+                  permissions={
+                    profile?.permissions ?? []
+                  }
+                  currentSession={posSession}
+                  onSessionChanged={(
+                    nextSession,
+                    message,
+                  ) => {
+                    setPosSession(nextSession);
+                    setIsPosDayOpen(
+                      nextSession.status === 'open',
+                    );
+                    setPosTillZeroized(
+                      nextSession.balance_cleared,
+                    );
+                    setPosNotice(message);
+                  }}
+                />
+
+
                 <section className="pos-shift-control-section pos-session-control-card">
                   <div className="section-heading">
                     <div>
@@ -6042,7 +6461,7 @@ function App() {
                         </option>
                       </select>
                       <small>
-                        A receipt is generated only after the transaction and payment are successfully recorded.
+
                       </small>
                     </label>
 

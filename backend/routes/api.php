@@ -18,12 +18,14 @@ use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InventoryIntelligenceController;
 use App\Http\Controllers\Api\V1\PharmaCo360\GeneralItemsController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReceivablesController;
 use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\PosOperationsController;
+use App\Http\Controllers\Api\V1\PharmaCo360\PosSessionAdminController;
 use App\Http\Controllers\Api\V1\PharmaCo360\HistoricalPosApprovalController;
 use App\Http\Controllers\Api\V1\PharmaCo360\HistoricalPosSessionController;
 use Illuminate\Support\Facades\Route;
@@ -207,7 +209,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
     Route::prefix('pos')
         ->middleware([
-            'permission:pharmaco.sales.manage',
+            'App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.sales.manage,pharmaco.pos.use,pharmaco.sales.create',
             'tenant.module:pharmaco.sales',
         ])
         ->group(function () {
@@ -244,6 +246,41 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             Route::post(
                 '/sessions/{session}/admin-reset',
                 [PosOperationsController::class, 'adminReset']
+            )->middleware(
+                'permission:pharmaco.pos.session.reset'
+            );
+
+            /*
+             * AQUILA_POS_SESSION_ADMIN_CONTROL_20260713
+             * Tenant-scoped support operations with mandatory reasons
+             * and immutable historical session numbering.
+             */
+            Route::get(
+                '/sessions/admin',
+                [
+                    PosSessionAdminController::class,
+                    'index',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.session.reset'
+            );
+
+            Route::post(
+                '/sessions/{session}/force-close',
+                [
+                    PosSessionAdminController::class,
+                    'forceClose',
+                ]
+            )->middleware(
+                'permission:pharmaco.pos.session.reset'
+            );
+
+            Route::post(
+                '/sessions/{session}/reset-limit',
+                [
+                    PosSessionAdminController::class,
+                    'resetLimit',
+                ]
             )->middleware(
                 'permission:pharmaco.pos.session.reset'
             );
@@ -812,6 +849,22 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.suppliers',
         ]);
 
+
+    /*
+     * AQUILA_INVENTORY_INTELLIGENCE_20260713
+     * Real signed movement history and reconstructed daily
+     * near-expiry inventory exposure.
+     */
+    Route::get(
+        '/inventory/intelligence',
+        [
+            InventoryIntelligenceController::class,
+            'index',
+        ]
+    )->middleware([
+        'App\Http\Middleware\EnsureAnyPermission:pharmaco.inventory.view,pharmaco.inventory.manage',
+        'tenant.module:pharmaco.inventory',
+    ]);
 
     Route::get('/product-categories', [ProductInventoryController::class, 'productCategories'])
         ->middleware([

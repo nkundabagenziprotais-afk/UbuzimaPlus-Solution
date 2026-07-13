@@ -4256,3 +4256,103 @@ export async function getSecurityAuditTimeline(
     `/access-check/security/audit-timeline${suffix}`,
   );
 }
+
+/* AQUILA_INVENTORY_INTELLIGENCE_20260713 */
+
+export type InventoryMovementDay = {
+  date: string;
+  day: string;
+  short_day: string;
+  is_today: boolean;
+  is_future: boolean;
+  receipts: number;
+  issues: number;
+  adjustments: number;
+  net: number;
+  transactions: number;
+};
+
+export type InventoryMovementHistoryRow = {
+  id: number;
+  movement_type: string;
+  quantity: number;
+  running_balance: number | null;
+  reference_type: string | null;
+  reference_number: string | null;
+  reason: string | null;
+  product_name: string;
+  product_sku: string | null;
+  branch_name: string | null;
+  branch_code: string | null;
+  occurred_at: string;
+};
+
+export type NearExpiryValuePoint = {
+  date: string;
+  day: string;
+  short_day: string;
+  value: number | null;
+  is_today: boolean;
+  is_future: boolean;
+};
+
+export type PharmaInventoryIntelligenceResponse = {
+  period: {
+    starts_on: string;
+    ends_on: string;
+    timezone: string;
+    generated_at: string;
+  };
+  weekly_movements: {
+    days: InventoryMovementDay[];
+    totals: {
+      receipts: number;
+      issues: number;
+      adjustments: number;
+      net: number;
+      transactions: number;
+    };
+    recent: InventoryMovementHistoryRow[];
+  };
+  near_expiry_value_trend: {
+    threshold_days: number;
+    points: NearExpiryValuePoint[];
+    direction:
+      | "increasing"
+      | "decreasing"
+      | "stable";
+    delta: number;
+    latest_value: number | null;
+    data_source: string;
+    is_estimated: boolean;
+  };
+};
+
+export async function getPharmaInventoryIntelligence(
+  token: string,
+  tenantSlug: string,
+  filters: {
+    branchId?: number;
+  } = {},
+): Promise<PharmaInventoryIntelligenceResponse> {
+  const query = new URLSearchParams();
+
+  if (filters.branchId) {
+    query.set(
+      "branch_id",
+      String(filters.branchId),
+    );
+  }
+
+  const encoded = query.toString();
+
+  return getJsonWithTenant<
+    PharmaInventoryIntelligenceResponse
+  >(
+    token,
+    tenantSlug,
+    `/pharmaco/inventory/intelligence${
+      encoded ? `?${encoded}` : ""
+    }`,
+  );
+}

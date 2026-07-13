@@ -104,19 +104,108 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
 
   const tenantSlug = useMemo(() => tenantSlugFromProfile(profile), [profile]);
   const tenantName = useMemo(() => tenantNameFromProfile(profile), [profile]);
-  const canUseSales = profile.permissions.includes('pharmaco.sales.manage');
-  const canUseInventory = profile.permissions.includes('pharmaco.inventory.manage');
+  const permissions = new Set(
+    profile.permissions.map(
+      (permission) => permission.toLowerCase(),
+    ),
+  );
+
+  const hasPermission = (...codes: string[]) =>
+    codes.some(
+      (code) => permissions.has(code.toLowerCase()),
+    );
+
+  const roleTokens = (profile.roles ?? [])
+    .flatMap((role) => [role.code, role.name])
+    .map((role) =>
+      String(role ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_'),
+    );
+
+  const hasRole = (...codes: string[]) =>
+    roleTokens.some((role) =>
+      codes.some(
+        (code) =>
+          role === code
+          || role.endsWith(`_${code}`)
+          || role.includes(`_${code}_`),
+      ),
+    );
+
+  const isCashier = hasRole('cashier');
+  const isInventoryOfficer =
+    hasRole('inventory_officer');
+  const isFinanceOfficer =
+    hasRole('finance_officer');
+  const isProcurementOfficer =
+    hasRole('procurement_officer');
+
+  const canUseSales = hasPermission(
+    'pharmaco.pos.use',
+    'pharmaco.sales.view',
+    'pharmaco.sales.create',
+    'pharmaco.sales.manage',
+    'pos.sales.view',
+  );
+
+  const canLoadManagementSales =
+    canUseSales
+    && !isCashier;
+
+  const canUseInventory = hasPermission(
+    'pharmaco.inventory.view',
+    'pharmaco.inventory.manage',
+    'inventory.dashboard.view',
+  );
+
   const canUseSuppliers =
-    profile.permissions.includes('pharmaco.procurement.view') &&
-    profile.permissions.includes('branches.view') &&
-    profile.permissions.includes('pharmaco.product_master.view') &&
-    profile.permissions.includes('pharmaco.inventory.view');
-  const canUseReports =
-    profile.permissions.includes('pharmaco.reports.view') ||
-    profile.permissions.includes('pharmaco.sales.manage') ||
-    profile.permissions.includes('pharmaco.inventory.manage') ||
-    profile.permissions.includes('pharmaco.procurement.view') ||
-    profile.permissions.includes('pharmaco.procurement.payment.view');
+    hasPermission(
+      'pharmaco.procurement.view',
+      'procurement.suppliers.view',
+    )
+    && hasPermission(
+      'branches.view',
+      'tenant.branches.view',
+    )
+    && hasPermission(
+      'pharmaco.product_master.view',
+      'inventory.products.view',
+    )
+    && hasPermission(
+      'pharmaco.inventory.view',
+      'inventory.dashboard.view',
+    );
+
+  const canUseReports = hasPermission(
+    'pharmaco.reports.view',
+    'pharmaco.sales.manage',
+    'pharmaco.inventory.manage',
+    'pharmaco.procurement.view',
+    'pharmaco.procurement.payment.view',
+    'reports.sales.view',
+    'reports.inventory.view',
+    'reports.procurement.view',
+    'reports.finance.view',
+  );
+
+  const canManageUsers = hasPermission(
+    'roles.manage',
+    'tenant.roles.manage',
+    'users.manage',
+    'users.staff.view',
+    'security.users.view',
+  );
+
+  const canViewFinancialSummary =
+    isFinanceOfficer
+    || hasPermission(
+      'pharmaco.finance.view',
+      'finance.dashboard.view',
+      'finance.receivables.view',
+      'finance.payables.view',
+    );
 
   useEffect(() => {
     let cancelled = false;
@@ -144,9 +233,9 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
           canUseInventory ? getPharmaProducts(token, tenantSlug) : Promise.resolve(null),
           canUseInventory ? getPharmaInventoryBatches(token, tenantSlug) : Promise.resolve(null),
           canUseInventory ? getPharmaInventoryBatches(token, tenantSlug, 180) : Promise.resolve(null),
-          canUseSales ? getPharmaSales(token, tenantSlug) : Promise.resolve(null),
-          canUseSales ? getPharmaCustomers(token, tenantSlug) : Promise.resolve(null),
-          canUseSales ? getPharmaPrescriptions(token, tenantSlug) : Promise.resolve(null),
+          canLoadManagementSales ? getPharmaSales(token, tenantSlug) : Promise.resolve(null),
+          canLoadManagementSales ? getPharmaCustomers(token, tenantSlug) : Promise.resolve(null),
+          canLoadManagementSales ? getPharmaPrescriptions(token, tenantSlug) : Promise.resolve(null),
         ]);
 
         if (cancelled) return;
@@ -176,7 +265,7 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
     return () => {
       cancelled = true;
     };
-  }, [canUseInventory, canUseSales, tenantSlug, token]);
+  }, [canLoadManagementSales, canUseInventory, tenantSlug, token]);
 
   const operations = useMemo(() => {
     const todaySales = state.sales.filter((sale) => isToday(sale.sold_at ?? sale.created_at));
@@ -252,7 +341,7 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
       label: 'Manage users',
       detail: 'Roles, scope, 2FA, tenant setup',
       section: 'security' as const,
-      enabled: true,
+      enabled: canManageUsers,
     },
     {
       label: 'Customer messages',
@@ -262,12 +351,128 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
     },
   ];
 
+  if (isCashier) {
+    return (
+      <section
+        className={
+          'tenant-command-dashboard '
+          + 'tenant-command-dashboard--cashier'
+        }
+        aria-busy={isLoading}
+      >
+        <div className="tenant-command-hero">
+          <div>
+            <p className="eyebrow">
+              Cashier workspace
+            </p>
+
+            <h2>
+              {tenantName} point-of-sale operations
+            </h2>
+
+            <p className="muted">
+              Open your till, serve customers, record payments,
+              issue receipts, review your current session and
+              complete cashier close.
+            </p>
+          </div>
+
+          <div className="tenant-command-status">
+            <span>
+              Permission-limited workspace
+            </span>
+            <strong>Cashier</strong>
+            <small>{profile.user.email}</small>
+          </div>
+        </div>
+
+        {error && (
+          <div className="form-error">
+            {error}
+          </div>
+        )}
+
+        <div className="tenant-kpi-strip">
+          <article>
+            <span>Assigned workspace</span>
+            <strong>POS</strong>
+            <small>
+              Sales, payments, receipts and cashier close
+            </small>
+          </article>
+
+          <article>
+            <span>Data boundary</span>
+            <strong>Protected</strong>
+            <small>
+              Administrative and executive figures are hidden
+            </small>
+          </article>
+
+          <article>
+            <span>Session support</span>
+            <strong>Admin assisted</strong>
+            <small>
+              Authorized managers can resolve stuck sessions
+            </small>
+          </article>
+        </div>
+
+        <div className="tenant-action-grid">
+          <button
+            type="button"
+            disabled={!canUseSales}
+            onClick={() => onOpenSection('pos')}
+          >
+            <strong>Open POS workspace</strong>
+            <span>
+              Start or continue your cashier session
+            </span>
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              !hasPermission('notifications.view')
+            }
+            onClick={() =>
+              onOpenSection('notifications')
+            }
+          >
+            <strong>
+              View operational notices
+            </strong>
+            <span>
+              Branch instructions and service announcements
+            </span>
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  const dashboardEyebrow = isInventoryOfficer
+    ? 'Inventory officer dashboard'
+    : isFinanceOfficer
+      ? 'Finance officer dashboard'
+      : isProcurementOfficer
+        ? 'Procurement officer dashboard'
+        : 'Tenant management dashboard';
+
+  const dashboardTitle = isInventoryOfficer
+    ? `${tenantName} inventory control`
+    : isFinanceOfficer
+      ? `${tenantName} finance control`
+      : isProcurementOfficer
+        ? `${tenantName} procurement control`
+        : `${tenantName} daily pharmacy control`;
+
   return (
     <section className="tenant-command-dashboard" aria-busy={isLoading}>
       <div className="tenant-command-hero">
         <div>
-          <p className="eyebrow">Tenant admin dashboard</p>
-          <h2>{tenantName} daily pharmacy control</h2>
+          <p className="eyebrow">{dashboardEyebrow}</p>
+          <h2>{dashboardTitle}</h2>
           <p className="muted">
             Start from what matters today: counter sales, stock risk, customer service, supplier work,
             and the next management review.
@@ -303,11 +508,17 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
           <strong>{operations.expiringSoon.length}</strong>
           <small>Active batches within 180 days</small>
         </article>
-        <article>
-          <span>Open balance</span>
-          <strong>{money(operations.openBalance)}</strong>
-          <small>Unpaid or partially paid sales</small>
-        </article>
+        {canViewFinancialSummary && (
+          <article>
+            <span>Open balance</span>
+            <strong>
+              {money(operations.openBalance)}
+            </strong>
+            <small>
+              Unpaid or partially paid sales
+            </small>
+          </article>
+        )}
       </div>
 
       <div className="tenant-action-grid">

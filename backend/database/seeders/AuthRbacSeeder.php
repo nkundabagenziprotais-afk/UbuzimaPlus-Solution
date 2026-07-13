@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\OperationalPermissionContract;
 use App\Models\AdminScope;
 use App\Models\Branch;
 use App\Models\Permission;
@@ -110,6 +111,17 @@ class AuthRbacSeeder extends Seeder
                     'permission_group' => $group,
                     'status' => 'active',
                 ]
+            );
+        }
+
+        foreach (OperationalPermissionContract::definitions() as $code => $definition) {
+            Permission::query()->updateOrCreate(
+                ['code' => $code],
+                [
+                    'name' => $definition['name'],
+                    'permission_group' => $definition['group'],
+                    'status' => 'active',
+                ],
             );
         }
 
@@ -403,7 +415,12 @@ class AuthRbacSeeder extends Seeder
             );
 
             $permissionIds = Permission::query()
-                ->whereIn('code', $roleData['permissions'])
+                ->whereIn(
+                    'code',
+                    OperationalPermissionContract::expand(
+                        $roleData['permissions'],
+                    ),
+                )
                 ->pluck('id')
                 ->all();
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Support\OperationalPermissionContract;
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Models\Role;
@@ -345,6 +346,9 @@ class TenantUserManagementController extends Controller
             'roles' => collect($this->roleTemplates())->map(fn ($template, $code) => [
                 'code' => $code,
                 ...$template,
+                'permissions' => OperationalPermissionContract::expand(
+                    $template['permissions'],
+                ),
             ])->values(),
         ]);
     }
@@ -782,6 +786,11 @@ class TenantUserManagementController extends Controller
 
             $template = $templates[$templateCode];
 
+            $templatePermissions =
+                OperationalPermissionContract::expand(
+                    $template['permissions'],
+                );
+
             $tenantRoleCode = Str::slug(
                 $tenant->slug
                 . '-'
@@ -805,7 +814,7 @@ class TenantUserManagementController extends Controller
             $permissionIds = Permission::query()
                 ->whereIn(
                     'code',
-                    $template['permissions'],
+                    $templatePermissions,
                 )
                 ->where('status', 'active')
                 ->pluck('id')
