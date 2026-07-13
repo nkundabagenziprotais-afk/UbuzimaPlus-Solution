@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
+use App\Http\Controllers\Api\V1\PharmaCo360\ProductReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InventoryIntelligenceController;
 use App\Http\Controllers\Api\V1\PharmaCo360\GeneralItemsController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
@@ -868,6 +869,43 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         'App\Http\Middleware\EnsureAnyPermission:pharmaco.inventory.view,pharmaco.inventory.manage',
         'tenant.module:pharmaco.inventory',
     ]);
+
+    Route::prefix('/product-master/reconciliation')
+        ->middleware([
+            'permission:pharmaco.inventory.manage',
+            'tenant.module:pharmaco.inventory',
+        ])
+        ->group(function (): void {
+            Route::get('/summary', [
+                ProductReconciliationController::class,
+                'summary',
+            ])->name('product-reconciliation.summary');
+
+            Route::get('/rows', [
+                ProductReconciliationController::class,
+                'rows',
+            ])->name('product-reconciliation.rows');
+
+            Route::patch('/rows/{row}/review', [
+                ProductReconciliationController::class,
+                'reviewRow',
+            ])->name('product-reconciliation.rows.review');
+
+            Route::get('/duplicates', [
+                ProductReconciliationController::class,
+                'duplicates',
+            ])->name('product-reconciliation.duplicates');
+
+            Route::patch('/duplicates/{proposal}/review', [
+                ProductReconciliationController::class,
+                'reviewDuplicate',
+            ])->name('product-reconciliation.duplicates.review');
+
+            Route::get('/payer-prices', [
+                ProductReconciliationController::class,
+                'payerPrices',
+            ])->name('product-reconciliation.payer-prices');
+        });
 
     Route::get('/product-categories', [ProductInventoryController::class, 'productCategories'])
         ->middleware([
