@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
+use App\Models\Tenant;
 class ProductInventoryController extends Controller
 {
     public function products(Request $request): JsonResponse
@@ -1749,7 +1750,30 @@ class ProductInventoryController extends Controller
             'reason' => ['nullable', 'string', 'max:1000'],
 
             'receive_source' => ['nullable', Rule::in(['manual', 'purchase-code'])],
-        ]);
+
+            /*
+             * MEDICINE_RECEIPT_DUPLICATE_GUARD_20260714
+             */
+            'idempotency_key' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'duplicate_override' => [
+                'sometimes',
+                'boolean',
+            ],
+            'duplicate_check_token' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+            'duplicate_override_reason' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+]);
 
         if (! empty($validated['pharmaco_purchase_order_item_id'])) {
             $user = $request->user();
@@ -1784,6 +1808,32 @@ class ProductInventoryController extends Controller
             ->findOrFail($validated['stock_location_id']);
 
         $quantityReceived = (float) $validated['quantity'];
+
+        $validated['idempotency_key'] = trim(
+            (string) (
+                $validated['idempotency_key']
+                ?? $request->header(
+                    'Idempotency-Key',
+                    ''
+                )
+            )
+        );
+
+        $inventoryReceiptGuard =
+            app(
+                \App\Services\Inventory\MedicineReceiptDuplicateGuardService::class
+            )->begin(
+                $tenant,
+                $product,
+                $location,
+                $validated,
+                $request->user()
+            );
+
+        $validated[
+            '_inventory_receipt_guard_id'
+        ] = $inventoryReceiptGuard?->id;
+
 
         $purchaseOrderItem = null;
 
@@ -1971,6 +2021,31 @@ class ProductInventoryController extends Controller
                 ->lockForUpdate()
                 ->first();
 
+            if (
+                ! empty(
+                    $validated[
+                        '_inventory_receipt_guard_id'
+                    ]
+                )
+            ) {
+                app(
+                    \App\Services\Inventory\MedicineReceiptDuplicateGuardService::class
+                )->revalidateOrFail(
+                    \App\Models\InventoryReceiptGuard::
+                        query()->findOrFail(
+                            $validated[
+                                '_inventory_receipt_guard_id'
+                            ]
+                        ),
+                    $tenant,
+                    $product,
+                    $location,
+                    $validated,
+                    $request->user()
+                );
+            }
+
+
             $beforeQuantity = $batch ? (float) $batch->quantity_on_hand : 0.0;
             $afterQuantity = $beforeQuantity + $quantityReceived;
             $supplierName = $validated['supplier_name'] ?? $purchaseOrderSupplierName;
@@ -2067,6 +2142,28 @@ class ProductInventoryController extends Controller
                 'metadata' => $movementMetadata,
             ]);
 
+            if (
+                ! empty(
+                    $validated[
+                        '_inventory_receipt_guard_id'
+                    ]
+                )
+            ) {
+                app(
+                    \App\Services\Inventory\MedicineReceiptDuplicateGuardService::class
+                )->complete(
+                    \App\Models\InventoryReceiptGuard::
+                        query()->findOrFail(
+                            $validated[
+                                '_inventory_receipt_guard_id'
+                            ]
+                        ),
+                    $movement,
+                    $batch
+                );
+            }
+
+
             return [
                 $batch->fresh(['product.category', 'stockLocation', 'branch']),
                 $movement,
@@ -2152,6 +2249,27 @@ class ProductInventoryController extends Controller
             'stock_batches_count' => $location->stock_batches_count ?? $location->stockBatches()->count(),
             'metadata' => $location->metadata ?? [],
         ];
+    }
+
+    private function resolveTenant(
+        Request $request,
+    ): Tenant {
+        $slug =
+            $request->header('X-Tenant-Slug')
+            ?: $request->header('X-Tenant')
+            ?: $request->input('tenant_slug');
+
+        abort_if(
+            ! is_string($slug)
+            || trim($slug) === '',
+            422,
+            'Tenant context is required.',
+        );
+
+        return Tenant::query()
+            ->where('slug', trim($slug))
+            ->where('status', 'active')
+            ->firstOrFail();
     }
 
     private function tenantPayload($tenant): array

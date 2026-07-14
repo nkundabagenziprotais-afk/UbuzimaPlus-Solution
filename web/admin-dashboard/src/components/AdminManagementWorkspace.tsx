@@ -13,6 +13,10 @@ import {
 } from './PosSessionAdminControl';
 
 import {
+  ProductMasterReconciliationWorkspace,
+} from './ProductMasterReconciliationWorkspace';
+
+import {
   UserSecurityManagement,
 } from './UserSecurityManagement';
 
@@ -23,6 +27,7 @@ type AdminManagementWorkspaceKey =
   | 'overview'
   | 'users-security'
   | 'pos-session-admin'
+  | 'product-master-reconciliation'
   | 'privilege-roadmap';
 
 type Props = {
@@ -37,7 +42,11 @@ type WorkspaceCard = {
   title: string;
   description: string;
   status: string;
-  permissionArea: 'general' | 'security' | 'pos';
+  permissionArea:
+    | 'general'
+    | 'security'
+    | 'pos'
+    | 'inventory';
 };
 
 const workspaceCards: WorkspaceCard[] = [
@@ -56,6 +65,14 @@ const workspaceCards: WorkspaceCard[] = [
       'Inspect cashier sessions, resolve stuck tills, force-close sessions and authorize controlled daily-session recovery.',
     status: 'Operational',
     permissionArea: 'pos',
+  },
+  {
+    key: 'product-master-reconciliation',
+    title: 'Product Master Reconciliation',
+    description:
+      'Review staged medicine catalogues, missing products, in-place corrections, duplicate proposals and payer-specific prices without breaking inventory history.',
+    status: 'Controlled review',
+    permissionArea: 'inventory',
   },
   {
     key: 'privilege-roadmap',
@@ -101,6 +118,9 @@ export function AdminManagementWorkspace({
     'tenant.roles.manage',
   ].some((permission) => permissions.has(permission));
 
+  const canManageProductMaster =
+    permissions.has('pharmaco.inventory.manage');
+
   function workspaceAvailable(
     area: WorkspaceCard['permissionArea'],
   ): boolean {
@@ -112,7 +132,15 @@ export function AdminManagementWorkspace({
       return canManagePosSessions;
     }
 
-    return canManageSecurity || canManagePosSessions;
+    if (area === 'inventory') {
+      return canManageProductMaster;
+    }
+
+    return (
+      canManageSecurity
+      || canManagePosSessions
+      || canManageProductMaster
+    );
   }
 
   const activeTitle =
@@ -129,8 +157,8 @@ export function AdminManagementWorkspace({
           <p>
             A controlled administrative workspace for user
             security, credential management, POS support,
-            audit-ready privileges and future administrator
-            capabilities.
+            Product Master reconciliation, audit-ready privileges
+            and future administrator capabilities.
           </p>
         </div>
 
@@ -271,6 +299,19 @@ export function AdminManagementWorkspace({
             onSessionChanged={(_session, message) => {
               setSessionNotice(message);
             }}
+          />
+        </section>
+      )}
+
+      {activeWorkspace
+        === 'product-master-reconciliation' && (
+        <section
+          className="admin-management-workspace"
+          aria-label={activeTitle}
+        >
+          <ProductMasterReconciliationWorkspace
+            token={token}
+            tenantSlug={tenantSlug}
           />
         </section>
       )}

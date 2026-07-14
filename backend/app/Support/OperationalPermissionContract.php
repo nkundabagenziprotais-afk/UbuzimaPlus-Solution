@@ -109,6 +109,7 @@ final class OperationalPermissionContract
                 'inventory.batches.edit',
                 'inventory.receiving.view',
                 'inventory.receiving.add',
+                'pharmaco.inventory.duplicate_override',
                 'inventory.locations.view',
                 'inventory.locations.add',
                 'inventory.locations.edit',

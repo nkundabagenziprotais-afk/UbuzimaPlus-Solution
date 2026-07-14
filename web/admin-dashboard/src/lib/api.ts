@@ -1,4 +1,8 @@
 import {
+  runDuplicateProtectedReceipt,
+} from './duplicateReceiptFlow';
+
+import {
   buildApiUrl,
   normalizeApiBaseUrl,
 } from './apiBase';
@@ -587,6 +591,30 @@ export type CreateDepartmentPayload = {
 
 export type UpdateDepartmentPayload = Partial<CreateDepartmentPayload>;
 
+
+/*
+ * DUPLICATE_RECEIPT_FRONTEND_FLOW_20260714
+ *
+ * Preserve the HTTP status and backend JSON response while retaining
+ * the standard Error message consumed by existing workspaces.
+ */
+export class ApiRequestError extends Error {
+  readonly status: number;
+
+  readonly payload: unknown;
+
+  constructor(
+    status: number,
+    payload: unknown,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 async function sendJsonWithTenant<T>(
   token: string,
   path: string,
@@ -612,7 +640,11 @@ async function sendJsonWithTenant<T>(
       ? Object.values(data.errors).flat().join(' ')
       : null;
 
-    throw new Error(validationMessage || data?.message || 'Unable to save PharmaCo360 tenant data.');
+    throw new ApiRequestError(
+      response.status,
+      data,
+      validationMessage || data?.message || 'Unable to save PharmaCo360 tenant data.',
+    );
   }
 
   return data as T;
@@ -1060,6 +1092,11 @@ export type ReceivePharmaStockPayload = {
   reference_number?: string | null;
   reason?: string | null;
   receive_source?: 'manual' | 'purchase-code';
+
+  idempotency_key?: string;
+  duplicate_override?: boolean;
+  duplicate_check_token?: string | null;
+  duplicate_override_reason?: string | null;
 };
 
 export type PharmaStockMovement = {
@@ -1242,12 +1279,20 @@ export async function receivePharmaStock(
   tenantSlug: string,
   payload: ReceivePharmaStockPayload,
 ): Promise<ReceivePharmaStockResponse> {
-  return sendJsonWithTenant<ReceivePharmaStockResponse>(
+  return runDuplicateProtectedReceipt(
+    payload,
+    (nextPayload) =>
+      sendJsonWithTenant<ReceivePharmaStockResponse>(
     token,
     '/pharmaco/inventory/receive',
     tenantSlug,
     'POST',
-    payload,
+    nextPayload,
+  ),
+    {
+      title: 'Review possible duplicate medicine receipt',
+      recordLabel: 'Medicine product ID',
+    },
   );
 }
 
@@ -1998,6 +2043,11 @@ export type ReceivePharmaGeneralPurchaseOrderPayload = {
   reference_number?: string | null;
   received_at?: string | null;
   notes?: string | null;
+
+  idempotency_key?: string;
+  duplicate_override?: boolean;
+  duplicate_check_token?: string | null;
+  duplicate_override_reason?: string | null;
 };
 
 export type ReceivePharmaGeneralPurchaseOrderResponse = {
@@ -2216,12 +2266,20 @@ export async function receivePharmaGeneralPurchaseOrder(
   purchaseOrderId: number,
   payload: ReceivePharmaGeneralPurchaseOrderPayload,
 ): Promise<ReceivePharmaGeneralPurchaseOrderResponse> {
-  return sendJsonWithTenant<ReceivePharmaGeneralPurchaseOrderResponse>(
+  return runDuplicateProtectedReceipt(
+    payload,
+    (nextPayload) =>
+      sendJsonWithTenant<ReceivePharmaGeneralPurchaseOrderResponse>(
     token,
     `/pharmaco/purchase-orders/${purchaseOrderId}/general-items/receive`,
     tenantSlug,
     'POST',
-    payload,
+    nextPayload,
+  ),
+    {
+      title: 'Review possible duplicate General Item receipt',
+      recordLabel: 'Purchase Order line ID',
+    },
   );
 }
 

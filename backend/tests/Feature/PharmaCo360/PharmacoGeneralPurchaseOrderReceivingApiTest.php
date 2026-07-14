@@ -229,6 +229,344 @@ class PharmacoGeneralPurchaseOrderReceivingApiTest extends TestCase
         );
     }
 
+
+    public function test_general_item_purchase_order_idempotent_replay_creates_one_movement(): void
+    {
+        $context = $this->context(
+            'approved',
+            20,
+            5000
+        );
+
+        $purchaseOrder = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoPurchaseOrder
+            );
+
+        $line = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoGeneralPurchaseOrderItem
+            );
+
+        $location = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoGeneralItemLocation
+            );
+
+        $this->assertNotNull($purchaseOrder);
+        $this->assertNotNull($line);
+        $this->assertNotNull($location);
+
+        $payload = [
+            'pharmaco_general_purchase_order_item_id' =>
+                $line->id,
+            'pharmaco_general_item_location_id' =>
+                $location->id,
+            'quantity_received' => 5,
+            'unit_cost' => 5000,
+            'reference_number' =>
+                'PO-IDEMPOTENT-'
+                . \Illuminate\Support\Str::upper(
+                    \Illuminate\Support\Str::random(6)
+                ),
+            'received_at' =>
+                now()->toDateString(),
+            'notes' =>
+                'Idempotency replay test.',
+            'idempotency_key' =>
+                'general-item-po-replay-'
+                . \Illuminate\Support\Str::uuid(),
+        ];
+
+        $before =
+            \App\Models\PharmacoGeneralItemMovement::
+                query()->count();
+
+        $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                'vitapharma'
+            )
+            ->postJson(
+                '/api/v1/pharmaco/purchase-orders/'
+                . $purchaseOrder->id
+                . '/general-items/receive',
+                $payload
+            )
+            ->assertCreated();
+
+        $afterFirst =
+            \App\Models\PharmacoGeneralItemMovement::
+                query()->count();
+
+        $this->assertSame(
+            $before + 1,
+            $afterFirst
+        );
+
+        $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                'vitapharma'
+            )
+            ->postJson(
+                '/api/v1/pharmaco/purchase-orders/'
+                . $purchaseOrder->id
+                . '/general-items/receive',
+                $payload
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'code',
+                'IDEMPOTENT_REPLAY'
+            )
+            ->assertJsonPath(
+                'replayed',
+                true
+            );
+
+        $this->assertSame(
+            $afterFirst,
+            \App\Models\PharmacoGeneralItemMovement::
+                query()->count()
+        );
+
+        $this->assertEquals(
+            5,
+            (float) $line->fresh()
+                ->quantity_received
+        );
+    }
+
+    public function test_same_purchase_order_line_and_quantity_with_new_key_is_exact_duplicate(): void
+    {
+        $context = $this->context(
+            'approved',
+            20,
+            5000
+        );
+
+        $purchaseOrder = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoPurchaseOrder
+            );
+
+        $line = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoGeneralPurchaseOrderItem
+            );
+
+        $location = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoGeneralItemLocation
+            );
+
+        $this->assertNotNull($purchaseOrder);
+        $this->assertNotNull($line);
+        $this->assertNotNull($location);
+
+        $base = [
+            'pharmaco_general_purchase_order_item_id' =>
+                $line->id,
+            'pharmaco_general_item_location_id' =>
+                $location->id,
+            'quantity_received' => 5,
+            'unit_cost' => 5000,
+            'reference_number' =>
+                'PO-EXACT-DUPLICATE',
+            'received_at' =>
+                now()->toDateString(),
+            'notes' =>
+                'Exact duplicate test.',
+        ];
+
+        $first = [
+            ...$base,
+            'idempotency_key' =>
+                'general-item-po-first-'
+                . \Illuminate\Support\Str::uuid(),
+        ];
+
+        $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                'vitapharma'
+            )
+            ->postJson(
+                '/api/v1/pharmaco/purchase-orders/'
+                . $purchaseOrder->id
+                . '/general-items/receive',
+                $first
+            )
+            ->assertCreated();
+
+        $movementCount =
+            \App\Models\PharmacoGeneralItemMovement::
+                query()->count();
+
+        $second = [
+            ...$base,
+            'idempotency_key' =>
+                'general-item-po-second-'
+                . \Illuminate\Support\Str::uuid(),
+        ];
+
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                'vitapharma'
+            )
+            ->postJson(
+                '/api/v1/pharmaco/purchase-orders/'
+                . $purchaseOrder->id
+                . '/general-items/receive',
+                $second
+            );
+
+        $response
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'code',
+                'EXACT_DUPLICATE'
+            )
+            ->assertJsonPath(
+                'duplicate.classification',
+                'exact'
+            )
+            ->assertJsonPath(
+                'duplicate.override_allowed',
+                false
+            );
+
+        $this->assertNotEmpty(
+            $response->json(
+                'duplicate.existing_record.recorded_at'
+            )
+        );
+
+        $this->assertNotEmpty(
+            $response->json(
+                'duplicate.existing_record.recorded_user.id'
+            )
+        );
+
+        $this->assertSame(
+            $movementCount,
+            \App\Models\PharmacoGeneralItemMovement::
+                query()->count()
+        );
+
+        $this->assertEquals(
+            5,
+            (float) $line->fresh()
+                ->quantity_received
+        );
+    }
+
+    public function test_different_partial_quantity_for_same_purchase_order_line_remains_allowed(): void
+    {
+        $context = $this->context(
+            'approved',
+            20,
+            5000
+        );
+
+        $purchaseOrder = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoPurchaseOrder
+            );
+
+        $line = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoGeneralPurchaseOrderItem
+            );
+
+        $location = collect($context)
+            ->first(
+                fn ($value): bool =>
+                    $value instanceof
+                    \App\Models\PharmacoGeneralItemLocation
+            );
+
+        $this->assertNotNull($purchaseOrder);
+        $this->assertNotNull($line);
+        $this->assertNotNull($location);
+
+        $first = [
+            'pharmaco_general_purchase_order_item_id' =>
+                $line->id,
+            'pharmaco_general_item_location_id' =>
+                $location->id,
+            'quantity_received' => 5,
+            'unit_cost' => 5000,
+            'reference_number' =>
+                'PO-PARTIAL-FIRST',
+            'received_at' =>
+                now()->toDateString(),
+            'idempotency_key' =>
+                'general-item-po-partial-first-'
+                . \Illuminate\Support\Str::uuid(),
+        ];
+
+        $second = [
+            ...$first,
+            'quantity_received' => 4,
+            'reference_number' =>
+                'PO-PARTIAL-SECOND',
+            'idempotency_key' =>
+                'general-item-po-partial-second-'
+                . \Illuminate\Support\Str::uuid(),
+        ];
+
+        $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                'vitapharma'
+            )
+            ->postJson(
+                '/api/v1/pharmaco/purchase-orders/'
+                . $purchaseOrder->id
+                . '/general-items/receive',
+                $first
+            )
+            ->assertCreated();
+
+        $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                'vitapharma'
+            )
+            ->postJson(
+                '/api/v1/pharmaco/purchase-orders/'
+                . $purchaseOrder->id
+                . '/general-items/receive',
+                $second
+            )
+            ->assertCreated();
+
+        $this->assertEquals(
+            9,
+            (float) $line->fresh()
+                ->quantity_received
+        );
+    }
+
     private function context(
         string $status,
         float $quantityOrdered,
