@@ -1031,7 +1031,55 @@ class GeneralItemsController extends Controller
                 'string',
                 'max:1000',
             ],
-        ]);
+
+            /*
+             * GENERAL_ITEM_PO_DUPLICATE_GUARD_20260714
+             */
+            'idempotency_key' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'duplicate_override' => [
+                'sometimes',
+                'boolean',
+            ],
+            'duplicate_check_token' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+            'duplicate_override_reason' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+]);
+
+        $validated['idempotency_key'] = trim(
+            (string) (
+                $validated['idempotency_key']
+                ?? $request->header(
+                    'Idempotency-Key',
+                    ''
+                )
+            )
+        );
+
+        $inventoryReceiptGuard =
+            app(
+                \App\Services\Inventory\GeneralItemPurchaseOrderReceiptDuplicateGuardService::class
+            )->begin(
+                $tenant,
+                $purchaseOrder,
+                $validated,
+                $request->user()
+            );
+
+        $validated[
+            '_inventory_receipt_guard_id'
+        ] = $inventoryReceiptGuard?->id;
+
 
         [
             $lockedPurchaseOrder,
@@ -1247,6 +1295,32 @@ class GeneralItemsController extends Controller
                         ->lockForUpdate()
                         ->first();
 
+                if (
+                    ! empty(
+                        $validated[
+                            '_inventory_receipt_guard_id'
+                        ]
+                    )
+                ) {
+                    app(
+                        \App\Services\Inventory\GeneralItemPurchaseOrderReceiptDuplicateGuardService::class
+                    )->revalidateOrFail(
+                        \App\Models\InventoryReceiptGuard::
+                            query()->findOrFail(
+                                $validated[
+                                    '_inventory_receipt_guard_id'
+                                ]
+                            ),
+                        $tenant,
+                        $purchaseOrder,
+                        $line,
+                        $location,
+                        $validated,
+                        $request->user()
+                    );
+                }
+
+
                 if (! $stock) {
                     $stock =
                         PharmacoGeneralItemStock::query()
@@ -1405,6 +1479,29 @@ class GeneralItemsController extends Controller
                                         ->pharmaco_supplier_id,
                             ],
                         ]);
+
+                if (
+                    ! empty(
+                        $validated[
+                            '_inventory_receipt_guard_id'
+                        ]
+                    )
+                ) {
+                    app(
+                        \App\Services\Inventory\GeneralItemPurchaseOrderReceiptDuplicateGuardService::class
+                    )->complete(
+                        \App\Models\InventoryReceiptGuard::
+                            query()->findOrFail(
+                                $validated[
+                                    '_inventory_receipt_guard_id'
+                                ]
+                            ),
+                        $movement,
+                        $purchaseOrder,
+                        $line
+                    );
+                }
+
 
                 $receivingLines =
                     PharmacoGeneralPurchaseOrderItem::query()
@@ -1700,7 +1797,30 @@ class GeneralItemsController extends Controller
                 'nullable',
                 'date',
             ],
-        ]);
+
+            /*
+             * GENERAL_ITEM_RECEIPT_DUPLICATE_GUARD_20260714
+             */
+            'idempotency_key' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'duplicate_override' => [
+                'sometimes',
+                'boolean',
+            ],
+            'duplicate_check_token' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+            'duplicate_override_reason' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+]);
 
         $branch = Branch::query()
             ->where('tenant_id', $tenant->id)
@@ -1779,6 +1899,36 @@ class GeneralItemsController extends Controller
             2
         );
 
+        $validated['idempotency_key'] = trim(
+            (string) (
+                $validated['idempotency_key']
+                ?? $request->header(
+                    'Idempotency-Key',
+                    ''
+                )
+            )
+        );
+
+        $inventoryReceiptGuard = null;
+
+        if ($movementType === 'received') {
+            $inventoryReceiptGuard =
+                app(
+                    \App\Services\Inventory\GeneralItemReceiptDuplicateGuardService::class
+                )->begin(
+                    $tenant,
+                    $item,
+                    $location,
+                    $validated,
+                    $request->user()
+                );
+        }
+
+        $validated[
+            '_inventory_receipt_guard_id'
+        ] = $inventoryReceiptGuard?->id;
+
+
         [$stock, $movement] =
             DB::transaction(function () use (
                 $request,
@@ -1809,6 +1959,32 @@ class GeneralItemsController extends Controller
                         )
                         ->lockForUpdate()
                         ->first();
+
+                if (
+                    $movementType === 'received'
+                    && ! empty(
+                        $validated[
+                            '_inventory_receipt_guard_id'
+                        ]
+                    )
+                ) {
+                    app(
+                        \App\Services\Inventory\GeneralItemReceiptDuplicateGuardService::class
+                    )->revalidateOrFail(
+                        \App\Models\InventoryReceiptGuard::
+                            query()->findOrFail(
+                                $validated[
+                                    '_inventory_receipt_guard_id'
+                                ]
+                            ),
+                        $tenant,
+                        $item,
+                        $location,
+                        $validated,
+                        $request->user()
+                    );
+                }
+
 
                 if (! $stock) {
                     $stock =
@@ -1959,6 +2135,28 @@ class GeneralItemsController extends Controller
                                     'general_items',
                             ],
                         ]);
+
+                if (
+                    $movementType === 'received'
+                    && ! empty(
+                        $validated[
+                            '_inventory_receipt_guard_id'
+                        ]
+                    )
+                ) {
+                    app(
+                        \App\Services\Inventory\GeneralItemReceiptDuplicateGuardService::class
+                    )->complete(
+                        \App\Models\InventoryReceiptGuard::
+                            query()->findOrFail(
+                                $validated[
+                                    '_inventory_receipt_guard_id'
+                                ]
+                            ),
+                        $movement
+                    );
+                }
+
 
                 return [$stock, $movement];
             });
@@ -2682,7 +2880,30 @@ class GeneralItemsController extends Controller
                 'string',
                 'max:1000',
             ],
-        ]);
+
+            /*
+             * TENANT_GENERAL_ITEM_DUPLICATE_GUARD_20260714
+             */
+            'idempotency_key' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'duplicate_override' => [
+                'sometimes',
+                'boolean',
+            ],
+            'duplicate_check_token' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+            'duplicate_override_reason' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+]);
 
         $item = $this->assertTenantRecord(
             'pharmaco_general_items',
@@ -2706,11 +2927,82 @@ class GeneralItemsController extends Controller
             ?? 0
         );
 
+
+        $validated['idempotency_key'] = trim(
+            (string) (
+                $validated['idempotency_key']
+                ?? $request->header(
+                    'Idempotency-Key',
+                    ''
+                )
+            )
+        );
+
+        $validated['reference_type'] =
+            $validated['reference_type']
+            ?? 'tenant_operational';
+
+        $validated['reference_number'] =
+            $validated['reference_number']
+            ?? $validated['reference']
+            ?? null;
+
+
+        /*
+         * TENANT_DUPLICATE_GUARD_MODEL_HYDRATION_20260714
+         *
+         * assertTenantRecord() intentionally returns stdClass records
+         * for the legacy query-builder workflow. The duplicate guard
+         * requires tenant-scoped Eloquent models so its typed contract,
+         * relationships and serialization remain safe.
+         */
+        $duplicateGuardItem =
+            \App\Models\PharmacoGeneralItem::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->findOrFail(
+                    (int) $item->id
+                );
+
+        $duplicateGuardLocation =
+            \App\Models\PharmacoGeneralItemLocation::
+                query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->findOrFail(
+                    (int) $location->id
+                );
+
+        $inventoryReceiptGuard = null;
+
+        if ($movementType === 'receipt') {
+            $inventoryReceiptGuard =
+                app(
+                    \App\Services\Inventory\GeneralItemReceiptDuplicateGuardService::class
+                )->begin(
+                    $tenant,
+                    $duplicateGuardItem,
+                    $duplicateGuardLocation,
+                    $validated,
+                    $request->user()
+                );
+        }
+
+        $validated[
+            '_inventory_receipt_guard_id'
+        ] = $inventoryReceiptGuard?->id;
+
         DB::transaction(function () use (
             $request,
             $tenant,
             $item,
             $location,
+            $duplicateGuardItem,
+            $duplicateGuardLocation,
             $movementType,
             $quantity,
             $unitCost,
@@ -2729,6 +3021,32 @@ class GeneralItemsController extends Controller
                 )
                 ->lockForUpdate()
                 ->first();
+
+            if (
+                $movementType === 'receipt'
+                && ! empty(
+                    $validated[
+                        '_inventory_receipt_guard_id'
+                    ]
+                )
+            ) {
+                app(
+                    \App\Services\Inventory\GeneralItemReceiptDuplicateGuardService::class
+                )->revalidateOrFail(
+                    \App\Models\InventoryReceiptGuard::
+                        query()->findOrFail(
+                            $validated[
+                                '_inventory_receipt_guard_id'
+                            ]
+                        ),
+                    $tenant,
+                    $duplicateGuardItem,
+                    $duplicateGuardLocation,
+                    $validated,
+                    $request->user()
+                );
+            }
+
 
             if (! $stock) {
                 $stockId = DB::table(
@@ -2823,9 +3141,9 @@ class GeneralItemsController extends Controller
                     'updated_at' => now(),
                 ]);
 
-            DB::table(
+            $movementId = DB::table(
                 'pharmaco_general_item_movements'
-            )->insert([
+            )->insertGetId([
                 'uuid' => (string) Str::uuid(),
                 'tenant_id' => $tenant->id,
                 'branch_id' =>
@@ -2879,6 +3197,37 @@ class GeneralItemsController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            $movement =
+                \App\Models\PharmacoGeneralItemMovement::
+                    query()
+                    ->where(
+                        'tenant_id',
+                        $tenant->id
+                    )
+                    ->findOrFail($movementId);
+
+            if (
+                $movementType === 'receipt'
+                && ! empty(
+                    $validated[
+                        '_inventory_receipt_guard_id'
+                    ]
+                )
+            ) {
+                app(
+                    \App\Services\Inventory\GeneralItemReceiptDuplicateGuardService::class
+                )->complete(
+                    \App\Models\InventoryReceiptGuard::
+                        query()->findOrFail(
+                            $validated[
+                                '_inventory_receipt_guard_id'
+                            ]
+                        ),
+                    $movement
+                );
+            }
+
         });
 
         return response()->json([

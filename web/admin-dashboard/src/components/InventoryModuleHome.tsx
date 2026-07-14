@@ -16,6 +16,7 @@ import type {
 import {
   InventoryExecutiveRisk,
 } from './InventoryExecutiveRisk';
+import { InventoryIntelligenceCards } from './InventoryIntelligenceCards';
 
 type InventoryModuleHomeProps = {
   token: string;
@@ -919,40 +920,13 @@ export function InventoryModuleHome({
                     ))}
                   </div>
                 </article>
-        <article className="inventory-home-chart-panel inventory-home-chart-panel--movement">
-          <header>
-            <small>Recent stock activity</small>
-            <strong>Inventory Movement History</strong>
-          </header>
-
-          <div className="inventory-movement-history-summary">
-            <span>
-              Receipts
-              <small>
-                Purchase and manual stock receipts
-              </small>
-            </span>
-
-            <span>
-              Issues
-              <small>
-                Dispensing and operational releases
-              </small>
-            </span>
-
-            <span>
-              Adjustments
-              <small>
-                Corrections, transfers and reconciliations
-              </small>
-            </span>
-          </div>
-
-          <p>
-            Open Product Inventory for the
-            detailed chronological movement register.
-          </p>
-        </article>
+        <InventoryIntelligenceCards
+          token={token}
+          profile={profile}
+          onOpenWorkspace={
+            onOpenWorkspace
+          }
+        />
 
 
                 </>)}

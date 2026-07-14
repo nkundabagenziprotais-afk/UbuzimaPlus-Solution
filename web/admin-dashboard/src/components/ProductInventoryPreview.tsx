@@ -2484,7 +2484,7 @@ export function ProductInventoryPreview({
           </datalist>
         </label>
 
-        <label>
+        <label className="product-master-form-field--category">
           Category
           <select
             value={productMasterForm.product_category_id}

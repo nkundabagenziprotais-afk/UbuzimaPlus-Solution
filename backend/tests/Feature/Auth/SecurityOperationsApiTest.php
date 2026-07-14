@@ -101,6 +101,71 @@ class SecurityOperationsApiTest extends TestCase
         );
     }
 
+    public function test_admin_can_reset_another_user_password_and_revoke_sessions(): void
+    {
+        [$token, $tenant, $target] =
+            $this->securityTarget();
+
+        $target->createToken(
+            'Password Reset Test Device'
+        );
+
+        $newPassword =
+            'TemporaryResetPassword456!';
+
+        $this->withHeader(
+            'X-Tenant-Slug',
+            $tenant->slug
+        )
+            ->withToken($token)
+            ->postJson(
+                "/api/v1/access-check/security/users/{$target->id}/reset-password",
+                [
+                    'password' => $newPassword,
+                    'password_confirmation' =>
+                        $newPassword,
+                    'reason' =>
+                        'Administrator-assisted account recovery.',
+                ]
+            )
+            ->assertOk()
+            ->assertJsonPath(
+                'user.security.must_change_password',
+                true
+            );
+
+        $target->refresh();
+
+        $this->assertTrue(
+            Hash::check(
+                $newPassword,
+                $target->password
+            )
+        );
+
+        $this->assertTrue(
+            (bool)
+            $target->must_change_password
+        );
+
+        $this->assertDatabaseMissing(
+            'personal_access_tokens',
+            [
+                'tokenable_id' => $target->id,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'audit_logs',
+            [
+                'auditable_id' => $target->id,
+                'action' =>
+                    'security.user.password_reset',
+            ]
+        );
+    }
+
+
     public function test_admin_can_reset_two_factor_and_revoke_devices(): void
     {
         [$token, $tenant, $target] =

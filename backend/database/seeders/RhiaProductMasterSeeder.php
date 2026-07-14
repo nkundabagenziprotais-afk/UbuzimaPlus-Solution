@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+
+
+use App\Services\Inventory\ProductMasterCorrectionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -129,7 +132,10 @@ class RhiaProductMasterSeeder extends Seeder
                     'tenant_id' => $tenant->id,
                     'product_category_id' => $categoryId,
                     'name' => $record['designation'] ?: $record['generic_description'],
-                    'generic_name' => $record['generic_description'] ?: null,
+                    'generic_name' => ProductMasterCorrectionService::correctedGenericName(
+                        (string) $record['drug_code'],
+                        $record['generic_description'] ?: null
+                    ),
                     'brand_name' => $record['designation'] ?: null,
                     'sku' => $record['drug_code'],
                     'dosage_form' => $record['selling_unit'] ?: null,

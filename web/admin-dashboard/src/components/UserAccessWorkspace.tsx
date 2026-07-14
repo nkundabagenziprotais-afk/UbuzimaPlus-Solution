@@ -182,6 +182,14 @@ const permissionMatrix: PermissionMatrixGroup[] = [
           edit: 'pos.cashier_close.edit',
         },
       },
+      {
+        label: 'POS Session Administration',
+        description: 'Review POS sessions, force-close abandoned sessions, and reset daily session limits.',
+        permissions: {
+          view: 'pos.session_support.view',
+          edit: 'pos.session_support.edit',
+        },
+      },
     ],
   },
   {
@@ -545,6 +553,7 @@ const legacyPermissionMap: Record<string, string[]> = {
   'users.update': ['users.staff.edit'],
   'users.permissions.edit': ['security.permissions.view', 'security.permissions.edit'],
   'pharmaco.pos.use': ['pos.sales.view', 'pos.sales.add', 'pos.receipts.view', 'pos.payments.view'],
+  'pharmaco.pos.session.reset': ['pos.session_support.view', 'pos.session_support.edit'],
   'pharmaco.sales.view': ['pos.sales.view', 'pos.receipts.view'],
   'pharmaco.sales.create': ['pos.sales.add', 'pos.payments.add'],
   'pharmaco.sales.manage': ['pos.sales.view', 'pos.receipts.view', 'pos.returns.view', 'pos.payments.view', 'pos.insurance.view'],
@@ -967,6 +976,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
         const response = await updateTenantSecurityUser(token, tenantSlug, editingUserId, {
           tenant_slug: tenantSlug,
           name: normalizedName,
+          email: normalizedEmail,
           phone: normalizedPhone,
           job_title: normalizedJobTitle,
           access_assignment_mode:
@@ -1172,7 +1182,6 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
               type="email"
               value={form.email}
               onChange={(event) => setForm({ ...form, email: event.target.value })}
-              disabled={!!editingUserId}
               required
             />
           </label>

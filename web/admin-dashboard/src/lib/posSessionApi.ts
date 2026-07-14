@@ -1,6 +1,11 @@
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "/api/v1"
-).replace(/\/+$/, "");
+import {
+  buildApiUrl,
+  normalizeApiBaseUrl,
+} from './apiBase';
+
+const API_BASE_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_BASE_URL,
+);
 
 export type PosSessionStatus =
   | "open"
@@ -175,7 +180,7 @@ async function requestPosSession<T>(
   }
 
   const response = await fetch(
-    `${API_BASE_URL}${path}`,
+    buildApiUrl(API_BASE_URL, path),
     {
       ...options,
       headers,
@@ -556,6 +561,104 @@ export function openHistoricalPosSession(
   return requestPosSession<HistoricalOpenSessionResponse>(
     context,
     "/pharmaco/pos/historical/session/open",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/* AQUILA_POS_SESSION_ADMIN_CONTROL_20260713 */
+
+export interface PosSessionAdminCashier {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface PosSessionAdminRecord
+  extends PosSession {
+  cashier: PosSessionAdminCashier | null;
+  support_status: "normal" | "stuck";
+  reset_authorizer:
+    | PosSessionAdminCashier
+    | null;
+  can_force_close: boolean;
+  can_reset_limit: boolean;
+}
+
+export interface PosSessionAdminSummary {
+  total: number;
+  open: number;
+  zeroized: number;
+  closed: number;
+  stuck: number;
+  reset_authorized: number;
+}
+
+export interface PosSessionAdminResponse {
+  summary: PosSessionAdminSummary;
+  sessions: PosSessionAdminRecord[];
+  support_policy: {
+    history_is_never_renumbered: boolean;
+    reset_limit_authorizes_next_session: boolean;
+    force_close_requires_reason: boolean;
+    all_admin_actions_create_clock_events: boolean;
+  };
+}
+
+export interface ForceClosePosSessionPayload {
+  declared_cash_amount?: number;
+  reason: string;
+  authorize_next_session?: boolean;
+}
+
+export function getAdminPosSessions(
+  context: PosSessionRequestContext,
+  filters: {
+    branch_id?: number;
+    user_id?: number;
+    status?: string;
+    business_date?: string;
+    search?: string;
+    limit?: number;
+  } = {},
+): Promise<PosSessionAdminResponse> {
+  return requestPosSession<PosSessionAdminResponse>(
+    context,
+    `/pharmaco/pos/sessions/admin${historicalQuery(
+      filters,
+    )}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+}
+
+export function forceClosePosSession(
+  context: PosSessionRequestContext,
+  sessionId: number | string,
+  payload: ForceClosePosSessionPayload,
+): Promise<PosSessionMutationResponse> {
+  return requestPosSession<PosSessionMutationResponse>(
+    context,
+    sessionPath(sessionId, "force-close"),
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function resetPosSessionLimit(
+  context: PosSessionRequestContext,
+  sessionId: number | string,
+  payload: AdminResetPosSessionPayload,
+): Promise<PosSessionMutationResponse> {
+  return requestPosSession<PosSessionMutationResponse>(
+    context,
+    sessionPath(sessionId, "reset-limit"),
     {
       method: "POST",
       body: JSON.stringify(payload),

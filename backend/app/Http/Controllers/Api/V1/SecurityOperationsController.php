@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
@@ -198,6 +199,95 @@ class SecurityOperationsController extends Controller
             ),
         ]);
     }
+
+    public function resetPassword(
+        Request $request,
+        User $user
+    ): JsonResponse {
+        [$tenant, $assignment] =
+            $this->resolveAssignment(
+                $request,
+                $user
+            );
+
+        abort_if(
+            $request->user()?->id === $user->id,
+            422,
+            'Use Change Password for your own account. Administrator password reset is for other users.',
+        );
+
+        $validated = $request->validate([
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'max:100',
+                'confirmed',
+            ],
+            'reason' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+        ]);
+
+        $revokedSessions = DB::transaction(
+            function () use (
+                $request,
+                $tenant,
+                $assignment,
+                $user,
+                $validated
+            ): int {
+                $user->forceFill([
+                    'password' => Hash::make(
+                        $validated['password']
+                    ),
+                    'must_change_password' => true,
+                ])->save();
+
+                $sessionsRevoked =
+                    $this->revokeUserSessions(
+                        $request,
+                        $user
+                    );
+
+                $this->recordAudit(
+                    $request,
+                    $tenant,
+                    $user,
+                    'security.user.password_reset',
+                    [
+                        'sessions_revoked' =>
+                            $sessionsRevoked,
+                        'must_change_password' => true,
+                        'reason' =>
+                            $validated['reason']
+                            ?? null,
+                        'tenant_assignment_status' =>
+                            $assignment->status,
+                    ]
+                );
+
+                return $sessionsRevoked;
+            }
+        );
+
+        return response()->json([
+            'message' =>
+                'The user password was reset securely. Existing sessions were revoked and the user must change the temporary password after login.',
+            'sessions_revoked' => $revokedSessions,
+            'user' => $this->userPayload(
+                $assignment->fresh([
+                    'user.roles.permissions',
+                    'user.trustedDevices',
+                    'branch',
+                ]),
+                $tenant
+            ),
+        ]);
+    }
+
 
     public function resetTwoFactor(
         Request $request,

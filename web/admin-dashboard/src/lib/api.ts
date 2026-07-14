@@ -1,3 +1,12 @@
+import {
+  runDuplicateProtectedReceipt,
+} from './duplicateReceiptFlow';
+
+import {
+  buildApiUrl,
+  normalizeApiBaseUrl,
+} from './apiBase';
+
 export type LoginPayload = {
   login_method: 'email' | 'phone';
   email?: string;
@@ -142,8 +151,9 @@ export type TwoFactorStatusResponse = {
   };
 };
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '/api/v1';
+const API_BASE_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_BASE_URL,
+);
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -502,7 +512,7 @@ async function getJsonWithTenant<T>(
   path: string,
   tenantSlug: string,
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(API_BASE_URL, path), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -581,6 +591,30 @@ export type CreateDepartmentPayload = {
 
 export type UpdateDepartmentPayload = Partial<CreateDepartmentPayload>;
 
+
+/*
+ * DUPLICATE_RECEIPT_FRONTEND_FLOW_20260714
+ *
+ * Preserve the HTTP status and backend JSON response while retaining
+ * the standard Error message consumed by existing workspaces.
+ */
+export class ApiRequestError extends Error {
+  readonly status: number;
+
+  readonly payload: unknown;
+
+  constructor(
+    status: number,
+    payload: unknown,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 async function sendJsonWithTenant<T>(
   token: string,
   path: string,
@@ -588,7 +622,7 @@ async function sendJsonWithTenant<T>(
   method: 'POST' | 'PATCH',
   payload: unknown,
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(API_BASE_URL, path), {
     method,
     headers: {
       Accept: 'application/json',
@@ -606,7 +640,11 @@ async function sendJsonWithTenant<T>(
       ? Object.values(data.errors).flat().join(' ')
       : null;
 
-    throw new Error(validationMessage || data?.message || 'Unable to save PharmaCo360 tenant data.');
+    throw new ApiRequestError(
+      response.status,
+      data,
+      validationMessage || data?.message || 'Unable to save PharmaCo360 tenant data.',
+    );
   }
 
   return data as T;
@@ -1054,6 +1092,11 @@ export type ReceivePharmaStockPayload = {
   reference_number?: string | null;
   reason?: string | null;
   receive_source?: 'manual' | 'purchase-code';
+
+  idempotency_key?: string;
+  duplicate_override?: boolean;
+  duplicate_check_token?: string | null;
+  duplicate_override_reason?: string | null;
 };
 
 export type PharmaStockMovement = {
@@ -1236,12 +1279,20 @@ export async function receivePharmaStock(
   tenantSlug: string,
   payload: ReceivePharmaStockPayload,
 ): Promise<ReceivePharmaStockResponse> {
-  return sendJsonWithTenant<ReceivePharmaStockResponse>(
+  return runDuplicateProtectedReceipt(
+    payload,
+    (nextPayload) =>
+      sendJsonWithTenant<ReceivePharmaStockResponse>(
     token,
     '/pharmaco/inventory/receive',
     tenantSlug,
     'POST',
-    payload,
+    nextPayload,
+  ),
+    {
+      title: 'Review possible duplicate medicine receipt',
+      recordLabel: 'Medicine product ID',
+    },
   );
 }
 
@@ -1992,6 +2043,11 @@ export type ReceivePharmaGeneralPurchaseOrderPayload = {
   reference_number?: string | null;
   received_at?: string | null;
   notes?: string | null;
+
+  idempotency_key?: string;
+  duplicate_override?: boolean;
+  duplicate_check_token?: string | null;
+  duplicate_override_reason?: string | null;
 };
 
 export type ReceivePharmaGeneralPurchaseOrderResponse = {
@@ -2210,12 +2266,20 @@ export async function receivePharmaGeneralPurchaseOrder(
   purchaseOrderId: number,
   payload: ReceivePharmaGeneralPurchaseOrderPayload,
 ): Promise<ReceivePharmaGeneralPurchaseOrderResponse> {
-  return sendJsonWithTenant<ReceivePharmaGeneralPurchaseOrderResponse>(
+  return runDuplicateProtectedReceipt(
+    payload,
+    (nextPayload) =>
+      sendJsonWithTenant<ReceivePharmaGeneralPurchaseOrderResponse>(
     token,
     `/pharmaco/purchase-orders/${purchaseOrderId}/general-items/receive`,
     tenantSlug,
     'POST',
-    payload,
+    nextPayload,
+  ),
+    {
+      title: 'Review possible duplicate General Item receipt',
+      recordLabel: 'Purchase Order line ID',
+    },
   );
 }
 
@@ -2867,7 +2931,7 @@ const receivablesRequest = async <T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(API_BASE_URL, path), {
     ...options,
     headers,
   });
@@ -3735,7 +3799,7 @@ async function apiRequest<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(API_BASE_URL, path), {
     ...options,
     headers,
   });
@@ -3836,6 +3900,7 @@ export async function updateTenantSecurityUser(
   payload: {
     tenant_slug: string;
     name: string;
+    email?: string;
     phone?: string;
     job_title?: string;
     access_assignment_mode:
@@ -4254,5 +4319,132 @@ export async function getSecurityAuditTimeline(
     token,
     tenantSlug,
     `/access-check/security/audit-timeline${suffix}`,
+  );
+}
+
+/* AQUILA_INVENTORY_INTELLIGENCE_20260713 */
+
+export type InventoryMovementDay = {
+  date: string;
+  day: string;
+  short_day: string;
+  is_today: boolean;
+  is_future: boolean;
+  receipts: number;
+  issues: number;
+  adjustments: number;
+  net: number;
+  transactions: number;
+};
+
+export type InventoryMovementHistoryRow = {
+  id: number;
+  movement_type: string;
+  quantity: number;
+  running_balance: number | null;
+  reference_type: string | null;
+  reference_number: string | null;
+  reason: string | null;
+  product_name: string;
+  product_sku: string | null;
+  branch_name: string | null;
+  branch_code: string | null;
+  occurred_at: string;
+};
+
+export type NearExpiryValuePoint = {
+  date: string;
+  day: string;
+  short_day: string;
+  value: number | null;
+  is_today: boolean;
+  is_future: boolean;
+};
+
+export type PharmaInventoryIntelligenceResponse = {
+  period: {
+    starts_on: string;
+    ends_on: string;
+    timezone: string;
+    generated_at: string;
+  };
+  weekly_movements: {
+    days: InventoryMovementDay[];
+    totals: {
+      receipts: number;
+      issues: number;
+      adjustments: number;
+      net: number;
+      transactions: number;
+    };
+    recent: InventoryMovementHistoryRow[];
+  };
+  near_expiry_value_trend: {
+    threshold_days: number;
+    points: NearExpiryValuePoint[];
+    direction:
+      | "increasing"
+      | "decreasing"
+      | "stable";
+    delta: number;
+    latest_value: number | null;
+    data_source: string;
+    is_estimated: boolean;
+  };
+};
+
+export async function getPharmaInventoryIntelligence(
+  token: string,
+  tenantSlug: string,
+  filters: {
+    branchId?: number;
+  } = {},
+): Promise<PharmaInventoryIntelligenceResponse> {
+  const query = new URLSearchParams();
+
+  if (filters.branchId) {
+    query.set(
+      "branch_id",
+      String(filters.branchId),
+    );
+  }
+
+  const encoded = query.toString();
+
+  return getJsonWithTenant<
+    PharmaInventoryIntelligenceResponse
+  >(
+    token,
+    tenantSlug,
+    `/pharmaco/inventory/intelligence${
+      encoded ? `?${encoded}` : ""
+    }`,
+  );
+}
+
+export async function resetSecurityUserPassword(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+  payload: {
+    password: string;
+    password_confirmation: string;
+    reason?: string;
+  },
+): Promise<{
+  message: string;
+  sessions_revoked: number;
+  user: SecurityOperationsUser;
+}> {
+  return sendJsonWithTenant<{
+    message: string;
+    sessions_revoked: number;
+    user: SecurityOperationsUser;
+  }>(
+    token,
+    `/access-check/security/users/${userId}/reset-password`,
+    tenantSlug,
+    'POST',
+    payload,
   );
 }
