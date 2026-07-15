@@ -866,6 +866,14 @@ export type PharmaInventoryBatchesResponse = {
     slug: string;
   };
   batches: PharmaStockBatch[];
+  meta?: {
+    total: number;
+    returned: number;
+    per_page: number | null;
+    offset: number;
+    next_offset: number | null;
+    limited: boolean;
+  };
 };
 
 export type PharmaInventorySummaryResponse = {
@@ -979,13 +987,21 @@ export async function getPharmaInventoryBatches(
     search?: string;
     perPage?: number;
     sellableOnly?: boolean;
-  },
+
+    offset?: number;},
 ): Promise<PharmaInventoryBatchesResponse> {
   const params = new URLSearchParams();
 
   if (expiringWithinDays) params.set('expiring_within_days', String(expiringWithinDays));
   if (options?.search) params.set('search', options.search);
   if (options?.perPage) params.set('per_page', String(options.perPage));
+
+  if (
+    options?.offset !== undefined
+    && options.offset >= 0
+  ) {
+    params.set('offset', String(options.offset));
+  }
   if (options?.sellableOnly) params.set('sellable_only', '1');
 
   const query = params.toString();
@@ -996,6 +1012,143 @@ export async function getPharmaInventoryBatches(
     tenantSlug,
   );
 }
+
+/**
+ * Load the complete tenant inventory batch register.
+ *
+ * Each HTTP request remains limited to 150 records. The helper
+ * follows the backend offset contract until meta.limited is
+ * false and verifies the combined count against meta.total.
+ */
+export async function getAllPharmaInventoryBatches(
+  token: string,
+  tenantSlug: string,
+  expiringWithinDays?: number,
+  options?: {
+    search?: string;
+    sellableOnly?: boolean;
+  },
+): Promise<PharmaInventoryBatchesResponse> {
+  const perPage = 150;
+  const maximumSegments = 200;
+
+  let offset = 0;
+  let expectedTotal: number | null = null;
+  let firstResponse:
+    | PharmaInventoryBatchesResponse
+    | null = null;
+
+  const batchesById = new Map<
+    number,
+    PharmaStockBatch
+  >();
+
+  for (
+    let segment = 0;
+    segment < maximumSegments;
+    segment += 1
+  ) {
+    const response =
+      await getPharmaInventoryBatches(
+        token,
+        tenantSlug,
+        expiringWithinDays,
+        {
+          search: options?.search,
+          sellableOnly:
+            options?.sellableOnly,
+          perPage,
+          offset,
+        },
+      );
+
+    if (!firstResponse) {
+      firstResponse = response;
+    }
+
+    const responseBatches = Array.isArray(
+      response.batches,
+    )
+      ? response.batches
+      : [];
+
+    responseBatches.forEach((batch) => {
+      batchesById.set(batch.id, batch);
+    });
+
+    expectedTotal = Number(
+      response.meta?.total
+        ?? expectedTotal
+        ?? responseBatches.length,
+    );
+
+    const limited = Boolean(
+      response.meta?.limited,
+    );
+
+    if (!limited) {
+      break;
+    }
+
+    const nextOffset = Number(
+      response.meta?.next_offset
+        ?? offset + responseBatches.length,
+    );
+
+    if (
+      responseBatches.length === 0
+      || !Number.isFinite(nextOffset)
+      || nextOffset <= offset
+    ) {
+      throw new Error(
+        'Inventory loading could not advance to the next record segment.',
+      );
+    }
+
+    offset = nextOffset;
+
+    if (segment === maximumSegments - 1) {
+      throw new Error(
+        'Inventory loading exceeded the controlled segment limit.',
+      );
+    }
+  }
+
+  const batches = Array.from(
+    batchesById.values(),
+  );
+
+  if (
+    expectedTotal !== null
+    && batches.length < expectedTotal
+  ) {
+    throw new Error(
+      `Inventory loading stopped at ${batches.length} of ${expectedTotal} records.`,
+    );
+  }
+
+  return {
+    ...(firstResponse ?? {
+      tenant: {
+        id: 0,
+        name: tenantSlug,
+        slug: tenantSlug,
+      },
+      batches: [],
+    }),
+    batches,
+    meta: {
+      total:
+        expectedTotal ?? batches.length,
+      returned: batches.length,
+      per_page: perPage,
+      offset: 0,
+      next_offset: null,
+      limited: false,
+    },
+  };
+}
+
 
 
 export async function getPharmaNearExpiryBatches(

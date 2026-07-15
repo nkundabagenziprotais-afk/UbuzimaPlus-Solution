@@ -513,10 +513,24 @@ class ProductInventoryController extends Controller
                             ->toDateString()
                     );
             })
-            ->orderBy('expiry_date');
+            ->orderBy('expiry_date')
+            ->orderBy('id');
 
         $totalBatches = (clone $batches)->count();
         $perPage = min(max((int) $request->query('per_page', 0), 0), 500);
+
+        $offset = min(
+            max(
+                (int) $request->query('offset', 0),
+                0
+            ),
+            1000000
+        );
+
+
+        if ($offset > 0) {
+            $batches->offset($offset);
+        }
 
         if ($perPage > 0) {
             $batches->limit($perPage);
@@ -534,7 +548,17 @@ class ProductInventoryController extends Controller
                 'total' => $totalBatches,
                 'returned' => $batches->count(),
                 'per_page' => $perPage > 0 ? $perPage : null,
-                'limited' => $perPage > 0 && $batches->count() < $totalBatches,
+                'offset' => $offset,
+                'next_offset' => (
+                    $perPage > 0
+                    && ($offset + $batches->count()) < $totalBatches
+                )
+                    ? $offset + $batches->count()
+                    : null,
+                'limited' => (
+                    $perPage > 0
+                    && ($offset + $batches->count()) < $totalBatches
+                ),
             ],
         ]);
     }
