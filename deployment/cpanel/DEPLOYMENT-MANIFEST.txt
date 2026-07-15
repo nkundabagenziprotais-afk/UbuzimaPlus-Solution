@@ -1,0 +1,17 @@
+UBUZIMA+ CPANEL DEPLOYMENT MANIFEST
+
+generated_at=2026-07-15T11:15:04Z
+pull_request=141
+previous_production_source=fb96498178d6e8afaf06cfca30264b1cd07e44e9
+source_commit=e5b384592e8796ef4efacbb3a2812e2a28ee7f89
+fix_commit=5fbb6c4affe6f31601da86ccc98bd7ed94267ca0
+deployment_branch=deploy/inventory-complete-register-20260715-124843
+admin_base=/admin/
+main_bundle=/admin/assets/index-XteUX5xL.js
+admin_index_sha256=7bbbabeb3ff5098551df9213876df6b631234936522a3ae8c5b77e1bd5ebfd00
+backend_controller_sha256=9a15602d4ecea1e6e6b15186e970becd67c99c4f07334b89c388d06933011f90
+migration_required=NO
+database_change_required=NO
+composer_install_required=NO
+node_build_on_cpanel=NO
+production_deployed=NO

@@ -1,0 +1,29 @@
+UBUZIMA+ PR #141 RELEASE SCOPE
+
+generated_at=2026-07-15T11:15:04Z
+pull_request=141
+previous_production_source=fb96498178d6e8afaf06cfca30264b1cd07e44e9
+source_commit=e5b384592e8796ef4efacbb3a2812e2a28ee7f89
+fix_commit=5fbb6c4affe6f31601da86ccc98bd7ed94267ca0
+deployment_branch=deploy/inventory-complete-register-20260715-124843
+
+Source files changed:
+backend/app/Http/Controllers/Api/V1/PharmaCo360/ProductInventoryController.php
+web/admin-dashboard/src/components/ProductInventoryPreview.tsx
+web/admin-dashboard/src/lib/api.ts
+
+Implemented:
+- Backend inventory offset support
+- Stable inventory batch ordering
+- next_offset response metadata
+- Complete 150-record segment loading
+- Combined inventory-total verification
+- Stale inventory cache invalidation
+- Defensive collection normalization
+
+Safety:
+- No migrations
+- No database mutation
+- No inventory movement
+- No consolidation command
+- No production deployment
