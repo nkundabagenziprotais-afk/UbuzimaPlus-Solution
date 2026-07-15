@@ -31,6 +31,11 @@ use App\Http\Controllers\Api\V1\PharmaCo360\HistoricalPosApprovalController;
 use App\Http\Controllers\Api\V1\PharmaCo360\HistoricalPosSessionController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/v1/vitapharma', [
+    \App\Http\Controllers\Api\V1\TenantResolutionController::class,
+    'vitapharma',
+])->name('tenant-resolution.vitapharma');
+
 Route::prefix('v1')->group(function () {
     Route::get('/health', HealthController::class);
     Route::get('/platform/status', PlatformStatusController::class);
@@ -853,6 +858,17 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.suppliers',
         ]);
 
+
+    Route::get(
+        '/inventory/near-expiry-batches',
+        [
+            ProductInventoryController::class,
+            'nearExpiryBatches',
+        ]
+    )->middleware([
+        'App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.inventory.view,pharmaco.inventory.manage',
+        'tenant.module:pharmaco.inventory',
+    ])->name('inventory.near-expiry-batches');
 
     /*
      * AQUILA_INVENTORY_INTELLIGENCE_20260713

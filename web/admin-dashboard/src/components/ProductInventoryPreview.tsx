@@ -11,6 +11,7 @@ import {
   PharmaStockBatch,
   PharmaStockLocation,
   getPharmaInventoryBatches,
+  getPharmaNearExpiryBatches,
   getPharmaInventoryLocations,
   createPharmaStockLocation,
   updatePharmaStockLocation,
@@ -299,6 +300,18 @@ function aiTrendMode(values: number[]): 'line' | 'bar' {
 
   return movement >= 16 ? 'bar' : 'line';
 }
+
+const formatRwfAmount = (
+  value: number | null | undefined,
+): string => {
+  const amount = Number(value ?? 0);
+
+  return new Intl.NumberFormat('en-RW', {
+    style: 'currency',
+    currency: 'RWF',
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(amount) ? amount : 0);
+};
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-RW', {
@@ -1426,7 +1439,7 @@ export function ProductInventoryPreview({
     return `${inventoryCacheNamespace}.${resource}`;
   }
 
-  const productMasterInitialLoadLimit = 150;
+  const productMasterInitialLoadLimit = 2000;
   const inventoryBatchInitialLoadLimit = 150;
 
   const inventoryCacheVersion = 'inventory-active-page-v3';
@@ -1600,7 +1613,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'near-expiry-batches',
           setNearExpiryBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug, 180, { perPage: inventoryBatchInitialLoadLimit }),
+          () => getPharmaNearExpiryBatches(token, tenantSlug, 180, { perPage: inventoryBatchInitialLoadLimit }),
           force,
         );
         return;
@@ -5055,7 +5068,7 @@ export function ProductInventoryPreview({
                   onExport: () =>
                     exportCsv(
                       'near-expiry-watchlist.csv',
-                      ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Expiry', 'Remaining days', 'Expiry label', 'AI action'],
+                      ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Amount', 'Expiry', 'Remaining days', 'Expiry label', 'AI action'],
                       nearRows.map((batch) => {
                         const days = remainingDays(batch.expiry_date);
                         return [
@@ -5064,6 +5077,7 @@ export function ProductInventoryPreview({
                           batch.batch_number,
                           batch.stock_location.code,
                           batch.available_quantity,
+                          batch.amount,
                           formatDate(batch.expiry_date),
                           days ?? '',
                           managedExpiryRiskLabel(days),
@@ -5104,6 +5118,7 @@ export function ProductInventoryPreview({
                       <col className="col-code" />
                       <col className="col-location" />
                       <col className="col-number" />
+                      <col className="col-number" />
                       <col className="col-date" />
                       <col className="col-days" />
                       <col className="col-label" />
@@ -5118,6 +5133,7 @@ export function ProductInventoryPreview({
                         <th>Batch</th>
                         <th>Location</th>
                         <th className="cell-number">Available</th>
+                        <th className="cell-number">Amount</th>
                         <th>Expiry</th>
                         <th className="cell-number">Days</th>
                         <th>Label</th>
@@ -5129,7 +5145,7 @@ export function ProductInventoryPreview({
                     <tbody>
                       {nearRows.length === 0 ? (
                         <tr>
-                          <td colSpan={10} className="cell-center">
+                          <td colSpan={11} className="cell-center">
                             No batches match the selected expiry filter.
                           </td>
                         </tr>
@@ -5144,6 +5160,7 @@ export function ProductInventoryPreview({
                               <td className="cell-nowrap">{batch.batch_number}</td>
                               <td className="cell-wrap">{batch.stock_location.code}</td>
                               <td className="cell-number">{formatNumber(batch.available_quantity)}</td>
+                              <td className="cell-number">{formatRwfAmount(batch.amount)}</td>
                               <td className="cell-nowrap">{formatDate(batch.expiry_date)}</td>
                               <td className="cell-number">{days ?? 'N/A'}</td>
                               <td className="cell-center">{renderExpiryLabelBadge(days)}</td>

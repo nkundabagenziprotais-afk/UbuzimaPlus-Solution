@@ -6,7 +6,7 @@ const API_VERSION_MARKER = '/api/v1';
  *
  * This protects the application from malformed build-time values such as:
  *
- *   /api/v1vitapharma
+ *   /api/v1/vitapharma
  *
  * Tenant identity belongs in X-Tenant-Slug and must never be concatenated
  * to the API root.
