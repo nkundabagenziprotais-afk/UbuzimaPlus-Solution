@@ -11,6 +11,7 @@ import {
   PharmaStockBatch,
   PharmaStockLocation,
   getPharmaInventoryBatches,
+  getAllPharmaInventoryBatches,
   getPharmaNearExpiryBatches,
   getPharmaInventoryLocations,
   createPharmaStockLocation,
@@ -25,6 +26,15 @@ import {
   updatePharmaStockBatch,
   deletePharmaStockBatch,
 } from '../lib/api';
+
+const inventoryArray = <T,>(
+  value: T[] | null | undefined,
+): T[] => (
+  Array.isArray(value)
+    ? value
+    : []
+);
+
 
 
 type InventoryProductReference = Omit<Partial<PharmaProduct>, 'id' | 'name' | 'sku' | 'category'> & {
@@ -1073,7 +1083,7 @@ export function ProductInventoryPreview({
     return Array.from(categories.entries()).map(([code, name]) => ({ code, name }));
   }, [products]);
 
-  const allProducts = products?.products ?? [];
+  const allProducts = inventoryArray(products?.products);
   const categoryOptions = useMemo(() => {
     const categoryMap = new Map<number, { id: number; code: string; name: string }>();
 
@@ -1139,7 +1149,7 @@ export function ProductInventoryPreview({
       }
     });
 
-    (locations?.locations ?? []).forEach((location) => {
+    (inventoryArray(locations?.locations)).forEach((location) => {
       if (location.branch) {
         branchMap.set(location.branch.id, {
           id: location.branch.id,
@@ -1155,7 +1165,7 @@ export function ProductInventoryPreview({
   const filteredStockLocations = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
 
-    return (locations?.locations ?? [])
+    return (inventoryArray(locations?.locations))
       .filter((location) => {
         if (!keyword) return true;
 
@@ -1173,7 +1183,7 @@ export function ProductInventoryPreview({
       .sort((left, right) => left.name.localeCompare(right.name));
   }, [locations, searchTerm]);
 
-  const allBatches = batches?.batches ?? [];
+  const allBatches = inventoryArray(batches?.batches);
   const inventoryProductLookupOptions = useMemo(() => {
     const merged = new Map<number, PharmaProduct>();
 
@@ -1222,7 +1232,7 @@ export function ProductInventoryPreview({
   const inventoryCalculatedSellingPrice = inventoryUnitCost > 0
     ? Math.round(inventoryUnitCost * (1 + inventoryMarginPercent / 100))
     : 0;
-  const nearExpiryRows = nearExpiryBatches?.batches ?? [];
+  const nearExpiryRows = inventoryArray(nearExpiryBatches?.batches);
 
   const visibleProducts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -1442,7 +1452,9 @@ export function ProductInventoryPreview({
   const productMasterInitialLoadLimit = 2000;
   const inventoryBatchInitialLoadLimit = 150;
 
-  const inventoryCacheVersion = 'inventory-active-page-v3';
+  const inventoryCacheVersion = 'inventory-complete-register-v4';
+
+
 
   function readInventoryCache<T>(resource: string): T | null {
     if (typeof window === 'undefined') {
@@ -1539,7 +1551,7 @@ export function ProductInventoryPreview({
           void loadInventoryResource(
             'batches',
             setBatches,
-            () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
+            () => getAllPharmaInventoryBatches(token, tenantSlug),
             false,
           );
         }
@@ -1592,7 +1604,7 @@ export function ProductInventoryPreview({
         void loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
+          () => getAllPharmaInventoryBatches(token, tenantSlug),
           false,
         );
 
@@ -1603,7 +1615,7 @@ export function ProductInventoryPreview({
         await loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
+          () => getAllPharmaInventoryBatches(token, tenantSlug),
           force,
         );
         return;
@@ -1647,7 +1659,7 @@ export function ProductInventoryPreview({
         const batchesPromise = loadInventoryResource(
           'batches',
           setBatches,
-          () => getPharmaInventoryBatches(token, tenantSlug, undefined, { perPage: inventoryBatchInitialLoadLimit }),
+          () => getAllPharmaInventoryBatches(token, tenantSlug),
           force,
         );
 
@@ -3174,7 +3186,7 @@ export function ProductInventoryPreview({
     let candidate = base;
     let counter = 2;
 
-    while ((locations?.locations ?? []).some((item) => item.code.toLowerCase() === candidate.toLowerCase())) {
+    while ((inventoryArray(locations?.locations)).some((item) => item.code.toLowerCase() === candidate.toLowerCase())) {
       candidate = `${base}${counter}`;
       counter += 1;
     }
@@ -4703,7 +4715,7 @@ export function ProductInventoryPreview({
               <div className="section-heading">
                 <div>
                   <h3>Retail product shelf</h3>
-                  <span>{visibleProducts.length} visible of {products.products.length} product(s)</span>
+                  <span>{visibleProducts.length} visible of {inventoryArray(products.products).length} product(s)</span>
                 </div>
                 <div className="bulk-action-row">
                   {renderRowLimitControl()}
@@ -5631,7 +5643,7 @@ export function ProductInventoryPreview({
                       required
                     >
                       <option value="">Select location</option>
-                      {(locations?.locations ?? []).map((location) => (
+                      {(inventoryArray(locations?.locations)).map((location) => (
                         <option key={location.id} value={location.id}>
                           {location.name} ({location.code})
                         </option>
