@@ -1,0 +1,9 @@
+backend/app/Console/Commands/ConsolidateStockLocation.php
+backend/app/Http/Controllers/Api/V1/PharmaCo360/ProductInventoryController.php
+backend/app/Http/Controllers/Api/V1/TenantResolutionController.php
+backend/app/Services/Inventory/StockLocationConsolidationService.php
+backend/routes/api.php
+backend/tests/Feature/PharmaCo360/CriticalLiveCustomerRoutesTest.php
+web/admin-dashboard/src/components/ProductInventoryPreview.tsx
+web/admin-dashboard/src/lib/api.ts
+web/admin-dashboard/src/lib/apiBase.ts

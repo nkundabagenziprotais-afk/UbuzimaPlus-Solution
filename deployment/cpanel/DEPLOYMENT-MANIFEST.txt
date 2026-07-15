@@ -1,0 +1,45 @@
+============================================================
+UBUZIMA+ CONTROLLED CPANEL DEPLOYMENT PACKAGE
+============================================================
+
+Built:
+2026-07-15T08:49:03Z
+
+Pull request:
+140
+
+Release:
+Critical inventory consolidation and expiry value reporting
+
+Source branch:
+main
+
+Source merge commit:
+fb96498178d6e8afaf06cfca30264b1cd07e44e9
+
+PR head commit:
+377174fef12d697edd92072ad8af4c7252cd8fe3
+
+Approved base commit:
+ccd117a95b52c89d556acd43664eaab295ea8a95
+
+Deployment branch:
+deploy/critical-inventory-expiry-20260715-20260715-104843
+
+Release file count:
+9
+
+Node version:
+v26.3.1
+
+npm version:
+11.16.0
+
+Composer manifests changed:
+NO
+
+npm manifests changed:
+NO
+
+Production changed by this build:
+NO
