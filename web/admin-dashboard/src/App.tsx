@@ -3132,7 +3132,6 @@ function App() {
   const [posInsuranceProvider, setPosInsuranceProvider] = useState('rssb');
   const [posInsuranceInstitution, setPosInsuranceInstitution] = useState('');
   const [posCustomerInvoice] = useState<'no' | 'yes'>('no');
-  const [posCustomerReceipt] = useState<'no' | 'yes'>('yes');
   const [isConfirmingPosTransaction, setIsConfirmingPosTransaction] = useState(false);
   const [posConfirmedSale, setPosConfirmedSale] = useState<PharmaSale | null>(null);
   const [posConfirmedPayment, setPosConfirmedPayment] = useState<PharmaPayment | null>(null);
@@ -3168,7 +3167,6 @@ function App() {
     otherQuantity: number;
   }>>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
-  const [posConfirmedItems, setPosConfirmedItems] = useState<typeof posCartItems>([]);
   const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
   const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
   const [posCounterCart, setPosCounterCart] = useState<{
@@ -4924,7 +4922,6 @@ function App() {
       setPosTransactionConfirmed(false);
       setPosConfirmedSale(null);
       setPosConfirmedPayment(null);
-      setPosConfirmedItems([]);
     }
 
     function forceRefreshSaleSummary() {
@@ -5470,7 +5467,6 @@ function App() {
 
         setPosConfirmedSale(checkoutResponse.sale);
         setPosConfirmedPayment(checkoutResponse.payment);
-        setPosConfirmedItems(currentItems);
         setPosTransactionConfirmed(true);
         setPosCheckoutKey(createPosCheckoutKey());
 
@@ -6445,13 +6441,6 @@ function App() {
                       </>
                     )}
 
-                    <div className="pos-document-rule-note">
-                      <span>Customer receipt</span>
-                      <small>
-                        Generated automatically when the transaction is recorded.
-                      </small>
-                    </div>
-
                     <label>
                       <span>Discount amount</span>
                       <input
@@ -6583,101 +6572,6 @@ function App() {
                         : 'Confirm transaction'}
                   </button>
                 </section>
-
-                {posTransactionConfirmed
-                  && posConfirmedPayment?.receipt_number
-                  && (
-                  <section className="pos-customer-receipt-shell">
-                    <div className="pos-receipt-toolbar">
-                      <div>
-                        <span>Customer receipt</span>
-                        <strong>{posConfirmedPayment.receipt_number}</strong>
-                      </div>
-                      <button type="button" onClick={() => window.print()}>
-                        Print receipt
-                      </button>
-                    </div>
-
-                    <article className="pos-customer-receipt" id="pos-customer-receipt">
-                      <header className="pos-customer-receipt__header">
-                        <strong>{profileInstitution}</strong>
-                        <span>Pharmacy sales receipt</span>
-                        <small>Powered by Ubuzima+</small>
-                      </header>
-
-                      <section className="pos-customer-receipt__meta">
-                        <div><span>Receipt</span><strong>{posConfirmedPayment.receipt_number}</strong></div>
-                        <div><span>Date / time</span><strong>{posSummaryTimestamp}</strong></div>
-                        <div><span>Cashier</span><strong>{profile!.user.name}</strong></div>
-                        <div><span>Customer</span><strong>{posCustomerType.replaceAll('-', ' ')}</strong></div>
-                        <div><span>Contact</span><strong>{posInvoiceContact.trim() || 'Not provided'}</strong></div>
-                        <div><span>Payment</span><strong>{posPaymentMethod.replaceAll('_', ' ')}</strong></div>
-                      </section>
-
-                      {posPaymentMethod === 'insurance' && (
-                        <section className="pos-customer-receipt__insurance">
-                          <div><span>Insurer</span><strong>{selectedInsurance.name}</strong></div>
-                          <div><span>Scheme / institution</span><strong>{selectedInsuranceInstitution?.name || 'Not selected'}</strong></div>
-                          <div><span>Customer share</span><strong>{posSummaryCustomerContributionPercent}%</strong></div>
-                          <div><span>Insurer share</span><strong>{posSummaryInsurerContributionPercent}%</strong></div>
-                        </section>
-                      )}
-
-                      <div className="pos-customer-receipt__table-wrap">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>Item</th>
-                              <th>Qty / unit</th>
-                              <th>Price</th>
-                              <th>Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {posConfirmedItems.map((item) => (
-                              <tr key={`${item.code}-${item.batchId}`}>
-                                <td>
-                                  <strong>{item.name}</strong>
-                                  <small>Batch {item.batchNumber}</small>
-                                </td>
-                                <td>
-                                  {Number(item.sellingUnitQuantity || 0).toLocaleString('en-RW')}{' '}
-                                  {item.sellingUnit}
-                                </td>
-                                <td>RWF {(item.unitPrice * item.quantityPerSellingUnit).toLocaleString('en-RW')}</td>
-                                <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <section className="pos-customer-receipt__totals">
-                        <div><span>Subtotal</span><strong>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</strong></div>
-                        <div><span>Discount</span><strong>RWF {posSummaryAppliedDiscount.toLocaleString('en-RW')}</strong></div>
-                        <div><span>Tax</span><strong>RWF {posSummaryTaxAmount.toLocaleString('en-RW')}</strong></div>
-                        <div className="total"><span>Total</span><strong>RWF {posSummaryTotalAmount.toLocaleString('en-RW')}</strong></div>
-                        {posPaymentMethod === 'insurance' && (
-                          <>
-                            <div><span>Customer contribution</span><strong>RWF {posSummaryCustomerPayment.toLocaleString('en-RW')}</strong></div>
-                            <div><span>Insurer contribution</span><strong>RWF {posSummaryInsurerPayment.toLocaleString('en-RW')}</strong></div>
-                          </>
-                        )}
-                        <div><span>Balance</span><strong>RWF 0</strong></div>
-                      </section>
-
-                      <footer className="pos-customer-receipt__footer">
-                        <strong>Thank you for choosing {profileInstitution}.</strong>
-                        <span>Keep this receipt for returns, corrections, insurance follow-up, and audit verification.</span>
-                        <small>Verification code: {posConfirmedPayment.receipt_number}</small>
-                      </footer>
-                    </article>
-                  </section>
-                )}
-
-
-
-
 
                 {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
                   <section className="pos-invoice-journey">

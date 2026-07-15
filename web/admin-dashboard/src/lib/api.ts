@@ -2126,13 +2126,84 @@ export async function checkoutPharmaSale(
   tenantSlug: string,
   payload: CheckoutPharmaSalePayload,
 ): Promise<CheckoutPharmaSaleResponse> {
-  return sendJsonWithTenant<CheckoutPharmaSaleResponse>(
+  const createdResponse = await createPharmaSale(
     token,
-    '/pharmaco/sales/checkout',
     tenantSlug,
-    'POST',
-    payload,
+    {
+      branch_id: payload.branch_id,
+      pharmaco_customer_id: payload.pharmaco_customer_id,
+      pharmaco_prescription_id: payload.pharmaco_prescription_id,
+      sale_type: payload.sale_type,
+      discount_amount: payload.discount_amount,
+      tax_amount: payload.tax_amount,
+      notes: payload.notes,
+      items: payload.items.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        discount_amount: item.discount_amount,
+        tax_amount: item.tax_amount,
+      })),
+    },
   );
+
+  const createdItems = createdResponse.sale.items ?? [];
+
+  if (createdItems.length !== payload.items.length) {
+    throw new Error(
+      'The POS sale was created, but the sale item count did not match the cart. Please review the sale before retrying payment.',
+    );
+  }
+
+  const confirmedResponse = await confirmPharmaSale(
+    token,
+    tenantSlug,
+    createdResponse.sale.id,
+    {
+      items: createdItems.map((saleItem, index) => ({
+        sale_item_id: saleItem.id,
+        stock_batch_id: payload.items[index]?.stock_batch_id,
+        prescription_verified:
+          payload.items[index]?.prescription_verified ?? false,
+      })),
+    },
+  );
+
+  const payableSale = confirmedResponse.sale;
+  const payableAmount = Number(
+    (payableSale as { total_amount?: number | string }).total_amount
+      ?? (createdResponse.sale as { total_amount?: number | string }).total_amount
+      ?? 0,
+  );
+
+  if (!Number.isFinite(payableAmount) || payableAmount <= 0) {
+    throw new Error(
+      'The POS sale was dispensed, but the payable amount could not be resolved. Please review the sale before recording payment.',
+    );
+  }
+
+  const paymentResponse = await recordPharmaPayment(
+    token,
+    tenantSlug,
+    payableSale.id,
+    {
+      amount: payableAmount,
+      payment_method: payload.payment.payment_method,
+      generate_receipt: true,
+      reference_number: payload.payment.reference_number,
+      received_at: payload.payment.received_at,
+      notes:
+        payload.payment.notes
+        ?? 'Customer receipt generated automatically at POS confirmation.',
+    },
+  );
+
+  return {
+    message: 'POS checkout completed successfully.',
+    sale: paymentResponse.sale,
+    payment: paymentResponse.payment,
+    idempotent: false,
+  };
 }
 
 

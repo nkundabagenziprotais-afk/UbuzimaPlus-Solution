@@ -447,3 +447,26 @@
     max-width: none;
   }
 }
+
+
+/* POS historical date containment hotfix */
+.historical-pos-workflow,
+.historical-pos-body,
+.historical-pos-form-grid,
+.historical-pos-form-grid label {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.historical-pos-form-grid input,
+.historical-pos-form-grid select,
+.historical-pos-form-grid textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.historical-pos-form-grid input[type="date"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
