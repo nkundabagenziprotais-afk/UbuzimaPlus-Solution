@@ -1,0 +1,18 @@
+UBUZIMA+ PR #143 RELEASE SCOPE
+
+Pull request: #143
+Source merge: eb577263d6d76e36ade3cd11bc17c12390115287
+Fix commit: cc557f6b56f86171068325048844d4594b39bf99
+Artifact branch: deploy/inventory-ai-near-expiry-guard-20260715-194527
+
+Approved source scope:
+web/admin-dashboard/src/components/InventoryIntelligenceCards.tsx
+
+Frontend bundle:
+/admin/assets/index-Erapeywx.js
+
+Backend changes: NO
+Database changes: NO
+Migration required: NO
+Inventory movement required: NO
+Consolidation required: NO

@@ -1,0 +1,20 @@
+UBUZIMA+ CPANEL DEPLOYMENT MANIFEST
+
+created_at=2026-07-15T17:49:08Z
+pr_number=143
+source_commit=eb577263d6d76e36ade3cd11bc17c12390115287
+fix_commit=cc557f6b56f86171068325048844d4594b39bf99
+artifact_branch=deploy/inventory-ai-near-expiry-guard-20260715-194527
+
+admin_index_sha256=a66ae6a0234b9835b923253a421694eb216fde4a8d43142b33459b3db2f24842
+admin_bundle=/admin/assets/index-Erapeywx.js
+admin_bundle_sha256=6d82ad93fc09052113c5eeba7f64fac8d30ea23ca7592e8b14f8102316089fc9
+
+deployment_target=/home/inzoeqqx/ubuzimaplus.com/public_html/admin
+source_target=/home/inzoeqqx/ubuzimaplus.com
+
+composer_required=NO
+node_required_on_cpanel=NO
+migration_required=NO
+database_mutation=NO
+inventory_movement=NO

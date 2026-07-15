@@ -1,0 +1,11 @@
+{
+  "application": "Ubuzima+ Admin Dashboard",
+  "pr_number": 143,
+  "source_commit": "eb577263d6d76e36ade3cd11bc17c12390115287",
+  "fix_commit": "cc557f6b56f86171068325048844d4594b39bf99",
+  "artifact_branch": "deploy/inventory-ai-near-expiry-guard-20260715-194527",
+  "bundle": "/admin/assets/index-Erapeywx.js",
+  "built_at": "2026-07-15T17:49:08Z",
+  "database_changes": false,
+  "migration_required": false
+}
