@@ -784,6 +784,7 @@ export type PharmaStockBatch = {
   quantity_reserved: number;
   available_quantity: number;
   unit_cost: number | null;
+  amount: number;
   selling_price: number | null;
   supplier_name: string | null;
   reference_number?: string | null;
@@ -992,6 +993,32 @@ export async function getPharmaInventoryBatches(
   return getJsonWithTenant<PharmaInventoryBatchesResponse>(
     token,
     `/pharmaco/inventory/batches${query ? `?${query}` : ''}`,
+    tenantSlug,
+  );
+}
+
+
+export async function getPharmaNearExpiryBatches(
+  token: string,
+  tenantSlug: string,
+  days = 180,
+  options?: {
+    search?: string;
+    perPage?: number;
+  },
+): Promise<PharmaInventoryBatchesResponse> {
+  const params = new URLSearchParams();
+
+  params.set('days', String(days));
+
+  if (options?.search) params.set('search', options.search);
+  if (options?.perPage) params.set('per_page', String(options.perPage));
+
+  const query = params.toString();
+
+  return getJsonWithTenant<PharmaInventoryBatchesResponse>(
+    token,
+    `/pharmaco/inventory/near-expiry-batches?${query}`,
     tenantSlug,
   );
 }

@@ -66,7 +66,7 @@ class ProductInventoryController extends Controller
             ->orderBy('name');
 
         $totalProducts = (clone $products)->count();
-        $perPage = min(max((int) $request->query('per_page', 0), 0), 500);
+        $perPage = min(max((int) $request->query('per_page', 0), 0), 5000);
 
         if ($perPage > 0) {
             $products->limit($perPage);
@@ -442,6 +442,25 @@ class ProductInventoryController extends Controller
         ]);
     }
 
+    public function nearExpiryBatches(
+        Request $request
+    ): JsonResponse {
+        $days = min(
+            max(
+                (int) $request->query('days', 180),
+                1
+            ),
+            730
+        );
+
+        $request->merge([
+            'expiring_within_days' => $days,
+            'sellable_only' => true,
+        ]);
+
+        return $this->batches($request);
+    }
+
     public function batches(Request $request): JsonResponse
     {
         $tenant = $request->attributes->get('tenant');
@@ -479,8 +498,20 @@ class ProductInventoryController extends Controller
                 });
             })
             ->when($request->query('expiring_within_days'), function ($query, $days) {
-                $query->whereNotNull('expiry_date')
-                    ->whereDate('expiry_date', '<=', now()->addDays((int) $days)->toDateString());
+                $query
+                    ->whereNotNull('expiry_date')
+                    ->whereDate(
+                        'expiry_date',
+                        '>=',
+                        now()->toDateString()
+                    )
+                    ->whereDate(
+                        'expiry_date',
+                        '<=',
+                        now()
+                            ->addDays((int) $days)
+                            ->toDateString()
+                    );
             })
             ->orderBy('expiry_date');
 
@@ -2500,6 +2531,11 @@ class ProductInventoryController extends Controller
             'quantity_reserved' => (float) $batch->quantity_reserved,
             'available_quantity' => (float) $batch->quantity_on_hand - (float) $batch->quantity_reserved,
             'unit_cost' => $batch->unit_cost === null ? null : (float) $batch->unit_cost,
+            'amount' => round(
+                (float) $batch->quantity_on_hand
+                * (float) ($batch->unit_cost ?? 0),
+                2
+            ),
             'selling_price' => $batch->selling_price === null ? null : (float) $batch->selling_price,
             'supplier_name' => $batch->supplier_name,
             'status' => $batch->status,
