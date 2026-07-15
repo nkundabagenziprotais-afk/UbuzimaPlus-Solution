@@ -3131,8 +3131,8 @@ function App() {
   const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'momo' | 'card' | 'insurance' | 'credit'>('cash');
   const [posInsuranceProvider, setPosInsuranceProvider] = useState('rssb');
   const [posInsuranceInstitution, setPosInsuranceInstitution] = useState('');
-  const [posCustomerInvoice, setPosCustomerInvoice] = useState<'no' | 'yes'>('no');
-  const [posCustomerReceipt, setPosCustomerReceipt] = useState<'no' | 'yes'>('yes');
+  const [posCustomerInvoice] = useState<'no' | 'yes'>('no');
+  const [posCustomerReceipt] = useState<'no' | 'yes'>('yes');
   const [isConfirmingPosTransaction, setIsConfirmingPosTransaction] = useState(false);
   const [posConfirmedSale, setPosConfirmedSale] = useState<PharmaSale | null>(null);
   const [posConfirmedPayment, setPosConfirmedPayment] = useState<PharmaPayment | null>(null);
@@ -5337,6 +5337,47 @@ function App() {
         return;
       }
 
+      let activeCheckoutSession = posSession;
+
+      if (activeCheckoutSession?.status !== 'open') {
+        try {
+          const currentSessionResponse =
+            await getCurrentPosSession({
+              token: session.token,
+              tenantSlug: posSessionTenantSlug,
+            });
+
+          activeCheckoutSession =
+            currentSessionResponse.session;
+
+          setPosSession(activeCheckoutSession);
+          setIsPosDayOpen(
+            activeCheckoutSession?.status === 'open',
+          );
+          setPosTillZeroized(
+            activeCheckoutSession?.balance_cleared
+              ?? false,
+          );
+        } catch (error: unknown) {
+          setPosNotice(
+            error instanceof Error
+              ? error.message
+              : 'Unable to verify the current POS session.',
+          );
+          return;
+        }
+      }
+
+      if (
+        !activeCheckoutSession
+        || activeCheckoutSession.status !== 'open'
+      ) {
+        setPosNotice(
+          'Open or restore a Live or Historical POS session before confirming this transaction.',
+        );
+        return;
+      }
+
       const branchId = Number(posSessionBranchId);
 
       if (
@@ -5372,17 +5413,6 @@ function App() {
         return;
       }
 
-      if (
-        posCustomerInvoice === 'yes'
-        && posInvoiceDelivery !== 'printer'
-        && !posInvoiceContact.trim()
-      ) {
-        setPosNotice(
-          'Provide the customer WhatsApp number or email before invoice delivery.',
-        );
-        return;
-      }
-
       setIsConfirmingPosTransaction(true);
       setPosTransactionConfirmed(false);
       setPosConfirmedSale(null);
@@ -5414,8 +5444,8 @@ function App() {
               notes: [
                 'Created from the Pharmacy POS Counter.',
                 `Customer type: ${posCustomerType}.`,
-                `Customer receipt requested: ${posCustomerReceipt}.`,
-                `Customer invoice requested: ${posCustomerInvoice}.`,
+                'Customer receipt: generated automatically.',
+                'Customer invoice: not used for completed POS checkout.',
               ].join(' '),
               items: currentItems.map((item) => ({
                 product_id: item.productId,
@@ -5429,14 +5459,11 @@ function App() {
               })),
               payment: {
                 payment_method: posPaymentMethod,
-                generate_receipt:
-                  posCustomerReceipt === 'yes',
+                generate_receipt: true,
                 reference_number:
                   posInvoiceContact.trim() || null,
                 notes:
-                  posCustomerReceipt === 'yes'
-                    ? 'Customer receipt requested at POS confirmation.'
-                    : 'Customer declined a receipt at POS confirmation.',
+                  'Customer receipt generated automatically at POS confirmation.',
               },
             },
           );
@@ -5480,16 +5507,13 @@ function App() {
           ),
         );
 
-        if (
-          posCustomerReceipt === 'yes'
-          && checkoutResponse.payment.receipt_number
-        ) {
+        if (checkoutResponse.payment.receipt_number) {
           setPosNotice(
             `Transaction ${checkoutResponse.sale.sale_number} confirmed successfully. Receipt ${checkoutResponse.payment.receipt_number} is ready.`,
           );
         } else {
           setPosNotice(
-            `Transaction ${checkoutResponse.sale.sale_number} confirmed successfully without a customer receipt.`,
+            `Transaction ${checkoutResponse.sale.sale_number} was recorded, but no receipt number was returned.`,
           );
         }
       } catch (error: unknown) {
@@ -6421,43 +6445,12 @@ function App() {
                       </>
                     )}
 
-                    <label>
-                      <span>Customer invoice</span>
-                      <select
-                        value={posCustomerInvoice}
-                        onChange={(event) => {
-                          setPosCustomerInvoice(event.target.value as 'yes' | 'no');
-                          setPosTransactionConfirmed(false);
-                        }}
-                      >
-                        <option value="no">No</option>
-                        <option value="yes">Yes</option>
-                      </select>
-                    </label>
-
-                    <label>
+                    <div className="pos-document-rule-note">
                       <span>Customer receipt</span>
-                      <select
-                        value={posCustomerReceipt}
-                        onChange={(event) => {
-                          setPosCustomerReceipt(
-                            event.target.value as 'yes' | 'no',
-                          );
-                          setPosTransactionConfirmed(false);
-                          setPosConfirmedPayment(null);
-                        }}
-                      >
-                        <option value="yes">
-                          Yes — generate after confirmation
-                        </option>
-                        <option value="no">
-                          No — complete without customer receipt
-                        </option>
-                      </select>
                       <small>
-
+                        Generated automatically when the transaction is recorded.
                       </small>
-                    </label>
+                    </div>
 
                     <label>
                       <span>Discount amount</span>
@@ -6568,14 +6561,20 @@ function App() {
                       </article>
                     </div>
                   </div>
+                  {posNotice && (
+                    <div
+                      className="notice pos-confirmation-notice"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      {posNotice}
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => void confirmTransaction()}
-                    disabled={
-                      !isPosDayOpen
-                      || posCartOperatingUnits === 0
-                      || isConfirmingPosTransaction
-                    }
+                    disabled={isConfirmingPosTransaction}
                   >
                     {isConfirmingPosTransaction
                       ? 'Confirming transaction…'
@@ -6586,7 +6585,6 @@ function App() {
                 </section>
 
                 {posTransactionConfirmed
-                  && posCustomerReceipt === 'yes'
                   && posConfirmedPayment?.receipt_number
                   && (
                   <section className="pos-customer-receipt-shell">
