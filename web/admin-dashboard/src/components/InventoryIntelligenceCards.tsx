@@ -106,12 +106,44 @@ export function InventoryIntelligenceCards({
     };
   }, [slug, token]);
 
+  // Inventory intelligence may return a partial response after
+  // validation, permission, tenant, or upstream data errors.
+  // Normalize every nested collection and numeric total before render.
+  const weeklyMovements = data?.weekly_movements;
+
+  const weeklyMovementDays = Array.isArray(
+    weeklyMovements?.days,
+  )
+    ? weeklyMovements.days
+    : [];
+
+  const weeklyMovementRecent = Array.isArray(
+    weeklyMovements?.recent,
+  )
+    ? weeklyMovements.recent
+    : [];
+
+  const weeklyMovementTotals = {
+    receipts: Number(
+      weeklyMovements?.totals?.receipts ?? 0,
+    ),
+    issues: Number(
+      weeklyMovements?.totals?.issues ?? 0,
+    ),
+    adjustments: Number(
+      weeklyMovements?.totals?.adjustments ?? 0,
+    ),
+    transactions: Number(
+      weeklyMovements?.totals?.transactions ?? 0,
+    ),
+  };
+
   const movementMaximum = useMemo(() => {
     if (!data) return 1;
 
     return Math.max(
       1,
-      ...data.weekly_movements.days.flatMap(
+      ...weeklyMovementDays.flatMap(
         (day) => [
           day.receipts,
           day.issues,
@@ -235,8 +267,7 @@ export function InventoryIntelligenceCards({
             <div className="inventory-intelligence-totals">
               <span>
                 <strong>
-                  {data.weekly_movements
-                    .totals.receipts
+                  {weeklyMovementTotals.receipts
                     .toLocaleString("en-RW")}
                 </strong>
                 <small>Units received</small>
@@ -244,8 +275,7 @@ export function InventoryIntelligenceCards({
 
               <span>
                 <strong>
-                  {data.weekly_movements
-                    .totals.issues
+                  {weeklyMovementTotals.issues
                     .toLocaleString("en-RW")}
                 </strong>
                 <small>Units issued</small>
@@ -253,8 +283,7 @@ export function InventoryIntelligenceCards({
 
               <span>
                 <strong>
-                  {data.weekly_movements
-                    .totals.adjustments
+                  {weeklyMovementTotals.adjustments
                     .toLocaleString("en-RW")}
                 </strong>
                 <small>Adjusted / transferred</small>
@@ -262,15 +291,14 @@ export function InventoryIntelligenceCards({
 
               <span>
                 <strong>
-                  {data.weekly_movements
-                    .totals.transactions}
+                  {weeklyMovementTotals.transactions}
                 </strong>
                 <small>Movement records</small>
               </span>
             </div>
 
             <div className="inventory-movement-week">
-              {data.weekly_movements.days.map(
+              {weeklyMovementDays.map(
                 (day) => (
                   <div
                     key={day.date}
@@ -349,7 +377,7 @@ export function InventoryIntelligenceCards({
             </div>
 
             <div className="inventory-recent-movement-list">
-              {data.weekly_movements.recent
+              {weeklyMovementRecent
                 .slice(0, 5)
                 .map((movement) => (
                   <div key={movement.id}>
@@ -385,7 +413,7 @@ export function InventoryIntelligenceCards({
                   </div>
                 ))}
 
-              {data.weekly_movements.recent
+              {weeklyMovementRecent
                 .length === 0 && (
                 <p>
                   No signed stock movements were recorded
