@@ -1,0 +1,18 @@
+UBUZIMA+ CPANEL DEPLOYMENT MANIFEST
+
+release=PR #142 AI Inventory Analytics white-page fix
+source_commit=5ac87180a149797f41938662bd53f90be3257b84
+fix_commit=30cf325dcfa27760f8bcd556969e902f3a8612ef
+deployment_branch=deploy/inventory-ai-analytics-white-page-20260715-162455
+
+deployment_target=/home/inzoeqqx/ubuzimaplus.com/public_html/admin
+source_runtime_target=/home/inzoeqqx/ubuzimaplus.com
+
+admin_bundle=/admin/assets/index-CTnAqHCb.js
+admin_index_sha256=c297e0f858a492add02940d756817ea74b250bd86110d0f9a4cecc78d07062d0
+bundle_sha256=7a3e68f1ea626d694e1e9818d78f1d04c7bd1050e1798adcd416b715a20ca0d6
+
+deployment_strategy=SOURCE_COMMIT_PLUS_COMPILED_ADMIN_ARTIFACT
+migration_required=NO
+database_mutation_required=NO
+inventory_movement_required=NO

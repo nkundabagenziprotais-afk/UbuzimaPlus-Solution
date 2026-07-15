@@ -1,0 +1,13 @@
+{
+  "application": "Ubuzima+ Admin Dashboard",
+  "release_scope": "AI Inventory Analytics white-page fix",
+  "source_commit": "5ac87180a149797f41938662bd53f90be3257b84",
+  "fix_commit": "30cf325dcfa27760f8bcd556969e902f3a8612ef",
+  "bundle": "/admin/assets/index-CTnAqHCb.js",
+  "admin_index_sha256": "c297e0f858a492add02940d756817ea74b250bd86110d0f9a4cecc78d07062d0",
+  "bundle_sha256": "7a3e68f1ea626d694e1e9818d78f1d04c7bd1050e1798adcd416b715a20ca0d6",
+  "built_at": "2026-07-15T15:00:09Z",
+  "migration_required": false,
+  "database_change": false,
+  "inventory_movement": false
+}
