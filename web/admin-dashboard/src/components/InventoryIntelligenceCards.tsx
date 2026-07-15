@@ -138,6 +138,48 @@ export function InventoryIntelligenceCards({
     ),
   };
 
+  const nearExpirySource =
+    data?.near_expiry_value_trend;
+
+  const nearExpiryDirection =
+    nearExpirySource?.direction === "increasing"
+    || nearExpirySource?.direction === "decreasing"
+    || nearExpirySource?.direction === "stable"
+      ? nearExpirySource.direction
+      : "stable";
+
+  const nearExpiryDeltaCandidate = Number(
+    nearExpirySource?.delta ?? 0,
+  );
+
+  const nearExpiryLatestCandidate =
+    nearExpirySource?.latest_value;
+
+  const nearExpiryTrend = {
+    points: Array.isArray(
+      nearExpirySource?.points,
+    )
+      ? nearExpirySource.points
+      : [],
+    direction: nearExpiryDirection,
+    delta: Number.isFinite(
+      nearExpiryDeltaCandidate,
+    )
+      ? nearExpiryDeltaCandidate
+      : 0,
+    latest_value:
+      nearExpiryLatestCandidate === null
+      || nearExpiryLatestCandidate === undefined
+        ? null
+        : (
+            Number.isFinite(
+              Number(nearExpiryLatestCandidate),
+            )
+              ? Number(nearExpiryLatestCandidate)
+              : null
+          ),
+  };
+
   const movementMaximum = useMemo(() => {
     if (!data) return 1;
 
@@ -155,7 +197,7 @@ export function InventoryIntelligenceCards({
 
   const expiryPoints = useMemo(() => {
     const points =
-      data?.near_expiry_value_trend.points
+      nearExpiryTrend.points
       ?? [];
 
     const available = points.filter(
@@ -452,7 +494,7 @@ export function InventoryIntelligenceCards({
               <span>
                 <strong>
                   {money(
-                    data.near_expiry_value_trend
+                    nearExpiryTrend
                       .latest_value,
                   )}
                 </strong>
@@ -462,19 +504,19 @@ export function InventoryIntelligenceCards({
               <span
                 className={
                   `inventory-expiry-direction is-`
-                  + data.near_expiry_value_trend
+                  + nearExpiryTrend
                     .direction
                 }
               >
-                {data.near_expiry_value_trend
+                {nearExpiryTrend
                   .direction}
                 <small>
-                  {data.near_expiry_value_trend
+                  {nearExpiryTrend
                     .delta >= 0
                     ? "+"
                     : ""}
                   {money(
-                    data.near_expiry_value_trend
+                    nearExpiryTrend
                       .delta,
                   )}
                 </small>
