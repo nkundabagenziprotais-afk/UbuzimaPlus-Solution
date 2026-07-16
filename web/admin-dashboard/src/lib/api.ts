@@ -4803,3 +4803,30 @@ export async function getPharmaRecentTransactionsWithUsers(
     '/pharmaco/pos/recent-transactions-with-users',
   );
 }
+
+export async function adminResetTenantSecurityUserPassword(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+  payload: {
+    password: string;
+    password_confirmation: string;
+    must_change_password?: boolean;
+  },
+): Promise<{
+  message: string;
+  sessions_revoked?: number;
+  user?: unknown;
+}> {
+  return sendJsonWithTenant<{
+    message: string;
+    sessions_revoked?: number;
+    user?: unknown;
+  }>(
+    token,
+    `/security/users/${userId}/admin-reset-password`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
