@@ -700,8 +700,7 @@ export function HistoricalPosWorkflow({
               </strong>
 
               <small>
-                Recorded now · Reported under the
-                selected historical business date
+
               </small>
             </div>
           </div>
