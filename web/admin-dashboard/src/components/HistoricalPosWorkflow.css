@@ -470,3 +470,25 @@
   min-width: 0;
   max-width: 100%;
 }
+
+
+/* UBIZIMA handover: reduce Historical POS session emphasis to a practical operations size. */
+.historical-pos-badge {
+  font-size: 0.64rem !important;
+  letter-spacing: 0.06em !important;
+  padding: 0.28rem 0.55rem !important;
+}
+
+.historical-pos-banner__identity small,
+.historical-pos-banner__details span {
+  font-size: 0.68rem !important;
+}
+
+.historical-pos-code-input {
+  font-size: 1rem !important;
+  letter-spacing: 0.08em !important;
+}
+
+.historical-pos-one-time-code strong {
+  font-size: 1.25rem !important;
+}

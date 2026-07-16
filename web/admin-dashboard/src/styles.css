@@ -32411,3 +32411,108 @@ thead
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+
+/* UBIZIMA handover: live POS business performance and operator strip. */
+.pos-live-business-performance-card,
+.pos-transaction-operator-strip {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pos-live-business-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.pos-live-business-performance-grid article {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: #f8fafc;
+}
+
+.pos-live-business-performance-grid span,
+.pos-transaction-operator-strip span {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.pos-live-business-performance-grid strong,
+.pos-transaction-operator-strip strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.pos-live-business-performance-grid small,
+.pos-transaction-operator-strip small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #64748b;
+}
+
+.pos-live-business-performance-card__notice {
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+@media (max-width: 900px) {
+  .pos-live-business-performance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .pos-live-business-performance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* UBIZIMA handover: print-safe POS invoice and receipt output. */
+@media print {
+  body.ubuzima-pos-print-mode * {
+    visibility: hidden !important;
+  }
+
+  body.ubuzima-pos-print-mode .pos-payment-summary-section,
+  body.ubuzima-pos-print-mode .pos-payment-summary-section *,
+  body.ubuzima-pos-print-mode .pos-invoice-journey,
+  body.ubuzima-pos-print-mode .pos-invoice-journey *,
+  body.ubuzima-pos-print-mode .pos-transaction-completion-actions,
+  body.ubuzima-pos-print-mode .pos-transaction-completion-actions * {
+    visibility: visible !important;
+  }
+
+  body.ubuzima-pos-print-mode .pos-payment-summary-section,
+  body.ubuzima-pos-print-mode .pos-invoice-journey,
+  body.ubuzima-pos-print-mode .pos-transaction-completion-actions {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #fff !important;
+    color: #111827 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 18px !important;
+  }
+
+  body.ubuzima-pos-print-mode button,
+  body.ubuzima-pos-print-mode .secondary-action,
+  body.ubuzima-pos-print-mode .primary-action {
+    display: none !important;
+  }
+}

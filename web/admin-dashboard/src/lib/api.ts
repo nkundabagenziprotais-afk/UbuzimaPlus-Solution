@@ -4699,3 +4699,107 @@ export async function resetSecurityUserPassword(
     payload,
   );
 }
+
+export interface PharmaLiveBusinessAnalyticsSignal {
+  label: string;
+  value: number;
+  detail: string;
+}
+
+export interface PharmaLiveBusinessAnalyticsResponse {
+  message: string;
+  business_date: string;
+  sales_total: number;
+  collections_total: number;
+  open_balance: number;
+  transaction_count: number;
+  receipt_count: number;
+  average_transaction_value: number;
+  collection_ratio: number;
+  payment_methods: Array<{
+    payment_method: string | null;
+    count: number;
+    amount: number;
+  }>;
+  signals: PharmaLiveBusinessAnalyticsSignal[];
+}
+
+export interface PharmaRecentTransactionWithUser {
+  id: number;
+  sale_number: string | null;
+  business_date: string | null;
+  sold_at: string | null;
+  created_at: string | null;
+  created_by: number | null;
+  total_amount: number;
+  payment_status: string | null;
+  payment_method: string | null;
+  receipt_number: string | null;
+  paid_amount: number | null;
+  received_at: string | null;
+  received_by: number | null;
+  operator_name: string | null;
+  operator_email: string | null;
+}
+
+function ubuzimaHandoverApiBase(): string {
+  const configuredBase = String(import.meta.env.VITE_API_BASE_URL ?? '').trim();
+  return configuredBase ? configuredBase.replace(/\/$/, '') : '/api/v1';
+}
+
+async function ubuzimaHandoverRequest<T>(
+  token: string,
+  tenantSlug: string,
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await fetch(`${ubuzimaHandoverApiBase()}${path}`, {
+    ...options,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-Slug': tenantSlug,
+      'X-Tenant': tenantSlug,
+      'X-Tenant-Code': tenantSlug,
+      ...(options.headers ?? {}),
+    },
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = payload && typeof payload === 'object' && 'message' in payload
+      ? String((payload as { message?: unknown }).message ?? 'Request failed.')
+      : 'Request failed.';
+
+    throw new Error(message);
+  }
+
+  return payload as T;
+}
+
+export async function getPharmaLiveBusinessAnalytics(
+  token: string,
+  tenantSlug: string,
+  businessDate?: string | null,
+): Promise<PharmaLiveBusinessAnalyticsResponse> {
+  const params = businessDate ? `?business_date=${encodeURIComponent(businessDate)}` : '';
+
+  return ubuzimaHandoverRequest<PharmaLiveBusinessAnalyticsResponse>(
+    token,
+    tenantSlug,
+    `/pharmaco/business-analytics/live${params}`,
+  );
+}
+
+export async function getPharmaRecentTransactionsWithUsers(
+  token: string,
+  tenantSlug: string,
+): Promise<{ message: string; transactions: PharmaRecentTransactionWithUser[] }> {
+  return ubuzimaHandoverRequest<{ message: string; transactions: PharmaRecentTransactionWithUser[] }>(
+    token,
+    tenantSlug,
+    '/pharmaco/pos/recent-transactions-with-users',
+  );
+}

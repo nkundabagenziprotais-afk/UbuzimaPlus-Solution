@@ -1,42 +1,87 @@
-import { InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import {
+  InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
+  useEffect,
+  useMemo,
+  useState } from 'react';   type PosBatchProduct = PharmaStockBatch['product'] & {   selling_unit?: string | null;   base_unit?: string | null;   unit?: string | null;   quantity_per_selling_unit?: number | string | null;   allow_other_quantity?: boolean | null;   default_pos_quantity_mode?: string | null; };  type UbuzimaHandoverLiveAnalytics = PharmaLiveBusinessAnalyticsResponse | null;
 
+function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser | null | undefined): string {
+  const name = transaction?.operator_name?.trim();
 
-type PosBatchProduct = PharmaStockBatch['product'] & {
-  selling_unit?: string | null;
-  base_unit?: string | null;
-  unit?: string | null;
-  quantity_per_selling_unit?: number | string | null;
-  allow_other_quantity?: boolean | null;
-  default_pos_quantity_mode?: string | null;
-};
+  if (name) {
+    return name;
+  }
 
-function configuredPosTaxMode(): 'inclusive' | 'exclusive' {
-  return 'inclusive';
+  const email = transaction?.operator_email?.trim();
+
+  if (email) {
+    return email;
+  }
+
+  return 'Recorded user';
 }
 
-type PosInventoryAutoLoaderProps = {
-  shouldLoad: boolean;
-  onLoad: () => void | Promise<void>;
-};
+function normalizeUbuzimaTransactionDate(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
 
-function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderProps) {
-  useEffect(() => {
-    if (!shouldLoad) {
-      return;
-    }
+  const dateOnlyMatch = value.match(/^\d{4}-\d{2}-\d{2}/);
 
-    void onLoad();
-  }, [onLoad, shouldLoad]);
-
-  return null;
+  return dateOnlyMatch ? dateOnlyMatch[0] : value;
 }
 
-import { AccessCheckResult, AccessProfile, LoginExperience, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor,
+function formatUbuzimaMoney(value: number | string | null | undefined): string {
+  const amount = Number(value ?? 0);
+
+  return `RWF ${(Number.isFinite(amount) ? amount : 0).toLocaleString('en-RW')}`;
+}
+
+function printUbuzimaPosDocument(): void {
+  const nativePrint = window.print.bind(window);
+
+  document.body.classList.add('ubuzima-pos-print-mode');
+
+  window.setTimeout(() => {
+    nativePrint();
+
+    window.setTimeout(() => {
+      document.body.classList.remove('ubuzima-pos-print-mode');
+    }, 250);
+  }, 50);
+}
+
+function configuredPosTaxMode(): 'inclusive' | 'exclusive' {   return 'inclusive'; }  type PosInventoryAutoLoaderProps = {   shouldLoad: boolean;   onLoad: () => void | Promise<void>; };  function PosInventoryAutoLoader({ shouldLoad,
+  onLoad }: PosInventoryAutoLoaderProps) {   useEffect(() => {     if (!shouldLoad) {       return;     }      void onLoad();   },
+  [onLoad,
+  shouldLoad]);    return null; }  import { AccessCheckResult,
+  AccessProfile,
+  LoginExperience,
+  BranchDepartmentsResponse,
+  BranchesResponse,
+  LoginResponse,
+  PharmacyProfileResponse,
+  PharmaStockBatch,
+  TwoFactorSetupPayload,
+  getAuthenticatedProfile,
+  getBranchDepartments,
+  getCorporateMailOverview,
+  getPharmaBranches,
+  getPharmaInventoryBatches,
+  getPharmacyProfile,
+  login,
+  logout,
+  requestPasswordReset,
+  changePassword,
+  runAccessCheck,
+  verifyTwoFactor,
   getPharmaSales,
   type PharmaSale,
   type PharmaPayment,
   checkoutPharmaSale,
+  getPharmaLiveBusinessAnalytics,
+  getPharmaRecentTransactionsWithUsers,
+  type PharmaLiveBusinessAnalyticsResponse,
+  type PharmaRecentTransactionWithUser,
 } from './lib/api';
 import {
   type PosSession,
@@ -3143,6 +3188,9 @@ function App() {
   const [posInvoiceContact, setPosInvoiceContact] = useState('');
   const [posDiscountAmount, setPosDiscountAmount] = useState('0');
   const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
+  const [posLiveBusinessAnalytics, setPosLiveBusinessAnalytics] = useState<UbuzimaHandoverLiveAnalytics>(null);
+  const [posRecentTransactionsWithUsers, setPosRecentTransactionsWithUsers] = useState<PharmaRecentTransactionWithUser[]>([]);
+  const [posLiveBusinessAnalyticsNotice, setPosLiveBusinessAnalyticsNotice] = useState<string | null>(null);
   const [posCheckoutKey, setPosCheckoutKey] = useState(createPosCheckoutKey);
   const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
   const [posTillZeroized, setPosTillZeroized] = useState(false);
@@ -5325,7 +5373,40 @@ function App() {
       }
     }
 
-    async function confirmTransaction() {
+
+      async function refreshPosHandoverInsights(businessDateOverride?: string | null): Promise<void> {
+        if (!session?.token || !posTenantSlug) {
+          return;
+        }
+
+        const posSessionBusinessDate =
+          (posSession as { business_date?: string | null } | null)?.business_date
+          ?? null;
+
+        const effectiveBusinessDate =
+          businessDateOverride
+          ?? posSessionBusinessDate
+          ?? new Date().toISOString().slice(0, 10);
+
+        try {
+          const [analyticsResponse, transactionsResponse] = await Promise.all([
+            getPharmaLiveBusinessAnalytics(session.token, posTenantSlug, effectiveBusinessDate),
+            getPharmaRecentTransactionsWithUsers(session.token, posTenantSlug),
+          ]);
+
+          setPosLiveBusinessAnalytics(analyticsResponse);
+          setPosRecentTransactionsWithUsers(transactionsResponse.transactions);
+          setPosLiveBusinessAnalyticsNotice(null);
+        } catch (error) {
+          setPosLiveBusinessAnalyticsNotice(
+            error instanceof Error
+              ? error.message
+              : 'Unable to refresh live POS analytics.',
+          );
+        }
+      }
+
+async function confirmTransaction() {
       if (
         !session?.token
         || !posTenantSlug
@@ -5476,6 +5557,8 @@ function App() {
         setPosConfirmedSale(checkoutResponse.sale);
         setPosConfirmedPayment(checkoutResponse.payment);
         setPosTransactionConfirmed(true);
+          setPosCartItems([]);
+          await refreshPosHandoverInsights((activeCheckoutSession as { business_date?: string | null } | null)?.business_date ?? null);
         setPosCheckoutKey(createPosCheckoutKey());
 
         const recentResponse = await getPharmaSales(
@@ -5806,7 +5889,7 @@ function App() {
             </div>
 
             <div className="pos-terminal-main-scroll pos-scroll-body-v16">
-              {posNotice && !posTransactionConfirmed && <div className="form-success">{posNotice}</div>}
+              {posNotice && !posTransactionConfirmed && !/added:/i.test(posNotice) && <div className="form-success">{posNotice}</div>}
 
 <section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
               <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
@@ -6612,7 +6695,7 @@ function App() {
                         <button
                           type="button"
                           className="pos-print-receipt-button"
-                          onClick={() => window.print()}
+                          onClick={() => printUbuzimaPosDocument()}
                           disabled={!posConfirmedPayment?.receipt_number}
                         >
                           Print Receipt
@@ -6640,7 +6723,7 @@ function App() {
                     </button>
 
                     {posInvoiceDelivery === 'printer' && (
-                      <button type="button" onClick={() => window.print()}>
+                      <button type="button" onClick={() => printUbuzimaPosDocument()}>
                         Print invoice
                       </button>
                     )}
@@ -6668,7 +6751,74 @@ function App() {
               </section>
             </section>
 
+
+              <section className="pos-live-business-performance-card" aria-label="Live business performance analytics">
+                <div className="section-heading">
+                  <div>
+                    <span>Business performance</span>
+                    <h3>Live POS sales intelligence</h3>
+                    <p className="muted">
+                      Practical signals derived from current sales, collections, balances,
+                      and transaction patterns.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary-action"
+                    onClick={() => void refreshPosHandoverInsights()}
+                  >
+                    Refresh data
+                  </button>
+                </div>
+
+                {posLiveBusinessAnalyticsNotice ? (
+                  <p className="pos-live-business-performance-card__notice">
+                    {posLiveBusinessAnalyticsNotice}
+                  </p>
+                ) : null}
+
+                <div className="pos-live-business-performance-grid">
+                  <article>
+                    <span>Sales</span>
+                    <strong>{formatUbuzimaMoney(posLiveBusinessAnalytics?.sales_total ?? 0)}</strong>
+                    <small>{posLiveBusinessAnalytics?.transaction_count ?? 0} transactions</small>
+                  </article>
+                  <article>
+                    <span>Collections</span>
+                    <strong>{formatUbuzimaMoney(posLiveBusinessAnalytics?.collections_total ?? 0)}</strong>
+                    <small>{posLiveBusinessAnalytics?.receipt_count ?? 0} receipts</small>
+                  </article>
+                  <article>
+                    <span>Open balance</span>
+                    <strong>{formatUbuzimaMoney(posLiveBusinessAnalytics?.open_balance ?? 0)}</strong>
+                    <small>{posLiveBusinessAnalytics?.collection_ratio ?? 0}% collection ratio</small>
+                  </article>
+                  <article>
+                    <span>Average sale</span>
+                    <strong>{formatUbuzimaMoney(posLiveBusinessAnalytics?.average_transaction_value ?? 0)}</strong>
+                    <small>{posLiveBusinessAnalytics?.business_date ?? (posSession as { business_date?: string | null } | null)?.business_date ?? 'Current date'}</small>
+                  </article>
+                </div>
+              </section>
+
 <section className="pos-sales-summary-table-card pos-recent-transactions-bottom pos-recent-transactions-fullwidth">
+
+              {posRecentTransactionsWithUsers.length > 0 ? (
+                <div className="pos-transaction-operator-strip">
+                  <span>Latest operator</span>
+                  <strong>{formatUbuzimaOperatorName(posRecentTransactionsWithUsers[0])}</strong>
+                  <small>
+                    {posRecentTransactionsWithUsers[0]?.sale_number ?? 'Recent POS transaction'}
+                    {' · '}
+                    {normalizeUbuzimaTransactionDate(
+                      posRecentTransactionsWithUsers[0]?.business_date
+                        ?? posRecentTransactionsWithUsers[0]?.received_at
+                        ?? posRecentTransactionsWithUsers[0]?.sold_at,
+                    ) ?? 'Date pending'}
+                  </small>
+                </div>
+              ) : null}
+
               <div className="section-heading">
                 <div>
                   <span>Synchronized sales feed</span>
