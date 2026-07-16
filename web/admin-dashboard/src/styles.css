@@ -32370,3 +32370,84 @@ thead
 | AQUILA_DUPLICATE_RECEIPT_CONFIRMATION_END
 |--------------------------------------------------------------------------
 */
+
+
+/* POS transaction completion and live AI analytics cards */
+.pos-transaction-completion-actions,
+.pos-ai-business-analytics-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 1rem 0;
+}
+
+.pos-transaction-completion-card,
+.pos-transaction-print-card,
+.pos-ai-business-analytics-card {
+  min-width: 0;
+}
+
+.pos-transaction-completion-card strong,
+.pos-ai-business-analytics-card strong {
+  line-height: 1.2;
+}
+
+.pos-print-receipt-button {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.68rem 0.9rem;
+  background: #176b46;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pos-print-receipt-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pos-ai-business-analytics-card-grid {
+  align-items: stretch;
+  border: 1px solid #d9e6ee;
+  border-radius: 16px;
+  padding: 1rem;
+  background: #f8fbfd;
+}
+
+.pos-ai-business-analytics-heading {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.pos-ai-business-analytics-card {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid #dce7ee;
+  border-radius: 14px;
+  padding: 0.95rem;
+  background: #ffffff;
+}
+
+.pos-ai-business-analytics-card span {
+  color: #526878;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pos-ai-business-analytics-card small {
+  color: #5d7280;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .pos-transaction-completion-actions,
+  .pos-ai-business-analytics-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

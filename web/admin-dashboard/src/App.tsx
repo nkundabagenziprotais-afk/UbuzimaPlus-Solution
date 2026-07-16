@@ -5292,15 +5292,17 @@ function App() {
         const orderedSales = [...response.sales].sort(
           (left, right) => {
             const leftTime = new Date(
-              left.sold_at
-                ?? left.created_at
-                ?? 0,
+              (left as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? left.sold_at
+                    ?? left.created_at
+                    ?? 0,
             ).getTime();
 
             const rightTime = new Date(
-              right.sold_at
-                ?? right.created_at
-                ?? 0,
+              (right as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? right.sold_at
+                    ?? right.created_at
+                    ?? 0,
             ).getTime();
 
             if (rightTime !== leftTime) {
@@ -5459,6 +5461,12 @@ function App() {
                 generate_receipt: true,
                 reference_number:
                   posInvoiceContact.trim() || null,
+                received_at:
+                  (activeCheckoutSession as { business_date?: string | null }).business_date
+                  && (activeCheckoutSession as { business_date?: string | null }).business_date
+                    !== new Date().toISOString().slice(0, 10)
+                    ? `${(activeCheckoutSession as { business_date?: string | null }).business_date}T12:00:00`
+                    : null,
                 notes:
                   'Customer receipt generated automatically at POS confirmation.',
               },
@@ -5483,15 +5491,17 @@ function App() {
           [...recentResponse.sales].sort(
             (left, right) => {
               const leftTime = new Date(
-                left.sold_at
-                  ?? left.created_at
-                  ?? 0,
+                (left as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? left.sold_at
+                    ?? left.created_at
+                    ?? 0,
               ).getTime();
 
               const rightTime = new Date(
-                right.sold_at
-                  ?? right.created_at
-                  ?? 0,
+                (right as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? right.sold_at
+                    ?? right.created_at
+                    ?? 0,
               ).getTime();
 
               if (rightTime !== leftTime) {
@@ -5505,7 +5515,7 @@ function App() {
 
         if (checkoutResponse.payment.receipt_number) {
           setPosNotice(
-            `Transaction ${checkoutResponse.sale.sale_number} confirmed successfully. Receipt ${checkoutResponse.payment.receipt_number} is ready.`,
+            'Transaction Successful',
           );
         } else {
           setPosNotice(
@@ -5565,15 +5575,17 @@ function App() {
     })
     .sort((left, right) => {
       const leftTime = new Date(
-        left.sold_at
-          ?? left.created_at
-          ?? 0,
+        (left as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? left.sold_at
+                    ?? left.created_at
+                    ?? 0,
       ).getTime();
 
       const rightTime = new Date(
-        right.sold_at
-          ?? right.created_at
-          ?? 0,
+        (right as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? right.sold_at
+                    ?? right.created_at
+                    ?? 0,
       ).getTime();
 
       if (rightTime !== leftTime) {
@@ -5584,7 +5596,7 @@ function App() {
     })
     .slice(0, 25)
     .map((sale) => ({
-      dateTime: sale.sold_at || sale.created_at
+      dateTime: (sale as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at || sale.sold_at || sale.created_at
         ? new Date(
             sale.sold_at
               ?? sale.created_at
@@ -5595,7 +5607,7 @@ function App() {
       customer:
         sale.customer?.full_name
         ?? 'Walk-in customer',
-      method: sale.sale_type.replaceAll('_', ' '),
+      method: ((sale as { payments?: Array<{ payment_method?: string | null }> }).payments?.[0]?.payment_method ?? sale.sale_type).replaceAll('_', ' '),
       status: sale.payment_status.replaceAll('_', ' '),
       amount:
         `RWF ${Number(sale.total_amount).toLocaleString('en-RW')}`,
@@ -5710,11 +5722,23 @@ function App() {
       const posSummaryInsurerPayment = posPaymentMethod === 'insurance'
         ? Math.max(posSummaryTotalAmount - posSummaryCustomerPayment, 0)
         : 0;
-      const posSummaryTimestamp = new Date().toLocaleString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
+      const posSessionBusinessDate =
+        typeof (posSession as { business_date?: string | null } | null)?.business_date === 'string'
+          ? (posSession as { business_date?: string | null }).business_date ?? null
+          : null;
+      const todayDateKey = new Date().toISOString().slice(0, 10);
+      const isHistoricalPosTransactionDate =
+        Boolean(
+          posSessionBusinessDate
+          && posSessionBusinessDate !== todayDateKey,
+        );
+      const posSummaryTimestamp = (
+        isHistoricalPosTransactionDate && posSessionBusinessDate
+          ? new Date(`${posSessionBusinessDate}T12:00:00`)
+          : new Date()
+      ).toLocaleString('en-GB', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
       });
 
       const posPaymentSummarySignature = [
@@ -5782,7 +5806,7 @@ function App() {
             </div>
 
             <div className="pos-terminal-main-scroll pos-scroll-body-v16">
-              {posNotice && <div className="form-success">{posNotice}</div>}
+              {posNotice && !posTransactionConfirmed && <div className="form-success">{posNotice}</div>}
 
 <section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
               <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
@@ -6498,7 +6522,7 @@ function App() {
                   <div className="pos-payment-summary-grid pos-payment-summary-grid-v17">
                     <div className="pos-payment-summary-column pos-payment-summary-column--operational" aria-label="Operational payment summary">
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
-                        <span>Date</span>
+                        <span>Transaction Date</span>
                         <strong>{posSummaryTimestamp}</strong>
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
@@ -6550,7 +6574,30 @@ function App() {
                       </article>
                     </div>
                   </div>
-                  {posNotice && (
+                  {posTransactionConfirmed ? (
+                    <div
+                      className="pos-transaction-completion-actions"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <article className="pos-summary-field-card pos-summary-field-card--operational pos-transaction-completion-card">
+                        <span>Transaction Completion Confirmation</span>
+                        <strong>Transaction Successful</strong>
+                      </article>
+
+                      <article className="pos-summary-field-card pos-summary-field-card--financial pos-transaction-print-card">
+                        <span>Print Receipt</span>
+                        <button
+                          type="button"
+                          className="pos-print-receipt-button"
+                          onClick={() => window.print()}
+                          disabled={!posConfirmedPayment?.receipt_number}
+                        >
+                          Print Receipt
+                        </button>
+                      </article>
+                    </div>
+                  ) : posNotice ? (
                     <div
                       className="notice pos-confirmation-notice"
                       role="status"
@@ -6558,7 +6605,7 @@ function App() {
                     >
                       {posNotice}
                     </div>
-                  )}
+                  ) : null}
 
                   <button
                     type="button"
@@ -6618,6 +6665,146 @@ function App() {
               </section>
               </section>
             </section>
+  <section
+    className="pos-ai-business-analytics-card-grid"
+    aria-label="AI-assisted business analytics live POS sales"
+    data-pos-analytics-source="live-pos-sales"
+  >
+    <div className="section-heading pos-ai-business-analytics-heading">
+      <div>
+        <span>AI-assisted Business Analytics</span>
+        <h3>Live POS sales intelligence</h3>
+        <p className="muted">
+          Calculated from synchronized POS sales, recorded payments,
+          receipts, and current cart stock signals.
+        </p>
+      </div>
+    </div>
+
+    {(() => {
+      const readMoneyValue = (value: unknown): number => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return value;
+        }
+
+        if (
+          typeof value === 'string'
+          && value.trim()
+          && Number.isFinite(Number(value))
+        ) {
+          return Number(value);
+        }
+
+        return 0;
+      };
+
+      const paidSales = posRecentSales.filter(
+        (sale) => sale.payment_status === 'paid',
+      );
+
+      const paymentRows = posRecentSales.flatMap((sale) =>
+        (sale as {
+          payments?: Array<{
+            amount?: number | string | null;
+            payment_method?: string | null;
+            receipt_number?: string | null;
+            received_at?: string | null;
+          }>;
+        }).payments ?? [],
+      );
+
+      const livePaymentRevenue = paymentRows.reduce(
+        (total, payment) =>
+          total + readMoneyValue(payment.amount),
+        0,
+      );
+
+      const liveSalesRevenue =
+        livePaymentRevenue > 0
+          ? livePaymentRevenue
+          : paidSales.reduce(
+            (total, sale) =>
+              total
+              + readMoneyValue(
+                (sale as { total_amount?: number | string | null })
+                  .total_amount,
+              ),
+            0,
+          );
+
+      const paymentMethods = Array.from(
+        new Set(
+          paymentRows
+            .map((payment) => payment.payment_method)
+            .filter((value): value is string => Boolean(value)),
+        ),
+      );
+
+      const receiptCount = paymentRows.filter(
+        (payment) => Boolean(payment.receipt_number),
+      ).length;
+
+      const stockRiskCount = posLiveCartItems.filter(
+        (item) =>
+          item.availableQuantity <= item.quantity
+          || item.availableQuantity <= 2,
+      ).length;
+
+      const averageBasket =
+        paidSales.length > 0
+          ? Math.round(liveSalesRevenue / paidSales.length)
+          : 0;
+
+      const formattedMethods =
+        paymentMethods.length > 0
+          ? paymentMethods
+            .map((method) => method.replaceAll('_', ' '))
+            .join(', ')
+          : 'No recorded payment yet';
+
+      const analyticsCards = [
+        {
+          label: 'Completed POS sales',
+          value: paidSales.length.toLocaleString('en-RW'),
+          detail: `${posRecentSales.length.toLocaleString('en-RW')} synchronized transaction${posRecentSales.length === 1 ? '' : 's'}`,
+        },
+        {
+          label: 'Recorded payment revenue',
+          value: `RWF ${liveSalesRevenue.toLocaleString('en-RW')}`,
+          detail: `Average paid basket: RWF ${averageBasket.toLocaleString('en-RW')}`,
+        },
+        {
+          label: 'Payment methods recorded',
+          value: formattedMethods,
+          detail: 'Pulled from recorded POS payment rows, not sale type.',
+        },
+        {
+          label: 'Receipt readiness',
+          value: `${receiptCount.toLocaleString('en-RW')} receipt${receiptCount === 1 ? '' : 's'}`,
+          detail: `${paidSales.length.toLocaleString('en-RW')} completed paid sale${paidSales.length === 1 ? '' : 's'} in the live feed.`,
+        },
+        {
+          label: 'Current cart stock risk',
+          value: stockRiskCount > 0 ? `${stockRiskCount} item${stockRiskCount === 1 ? '' : 's'}` : 'Clear',
+          detail: stockRiskCount > 0
+            ? 'One or more cart items are near selected available quantity.'
+            : 'No current cart stock pressure detected.',
+        },
+      ];
+
+      return analyticsCards.map((card) => (
+        <article
+          className="pos-ai-business-analytics-card"
+          key={card.label}
+        >
+          <span>{card.label}</span>
+          <strong>{card.value}</strong>
+          <small>{card.detail}</small>
+        </article>
+      ));
+    })()}
+  </section>
+
 
 <section className="pos-sales-summary-table-card pos-recent-transactions-bottom pos-recent-transactions-fullwidth">
               <div className="section-heading">
