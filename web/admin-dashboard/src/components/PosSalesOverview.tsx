@@ -890,6 +890,22 @@ export function PosSalesOverview({
             </article>
           )}
 
+          {widgetVisible('momo-sales') && (
+            <article className="pos-overview-kpi">
+              <span>MoMo Sales</span>
+              <strong>{money(analytics.momoSales)}</strong>
+              <small>Completed MoMo payments from live and historical POS</small>
+            </article>
+          )}
+
+          {widgetVisible('insurance-sales') && (
+            <article className="pos-overview-kpi accent">
+              <span>Insurance Sales</span>
+              <strong>{money(analytics.insuranceSales)}</strong>
+              <small>Insurance sale value from live and historical POS</small>
+            </article>
+          )}
+
           {widgetVisible('average-ticket') && (
             <article className="pos-overview-kpi">
               <span>Average transaction</span>
@@ -911,21 +927,6 @@ export function PosSalesOverview({
               <small>
                 Customer, payer, or credit balance
               </small>
-            </article>
-          )}
-          {widgetVisible('momo-sales') && (
-            <article className="pos-overview-kpi">
-              <span>MoMo Sales</span>
-              <strong>{money(analytics.momoSales)}</strong>
-              <small>Completed MoMo payments from live and historical POS</small>
-            </article>
-          )}
-
-          {widgetVisible('insurance-sales') && (
-            <article className="pos-overview-kpi accent">
-              <span>Insurance Sales</span>
-              <strong>{money(analytics.insuranceSales)}</strong>
-              <small>Insurance sale value from live and historical POS</small>
             </article>
           )}
 
@@ -985,7 +986,7 @@ export function PosSalesOverview({
               </small>
             </article>
           )}
-        </div>
+</div>
 
         <div className="pos-overview-analytics-grid">
           {widgetVisible('trend-chart') && (
