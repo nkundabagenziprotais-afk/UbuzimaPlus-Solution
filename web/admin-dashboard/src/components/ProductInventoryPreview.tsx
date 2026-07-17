@@ -963,8 +963,6 @@ export function ProductInventoryPreview({
   const [batches, setBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
   const [nearExpiryBatches, setNearExpiryBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [inventoryRecordSearchTerm, setInventoryRecordSearchTerm] = useState('');
-  const [inventoryRecordAppliedSearch, setInventoryRecordAppliedSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [internalInventoryView, setInternalInventoryView] = useState<InventoryView>('overview');
   const [rowLimit, setRowLimit] = useState<RowLimit>('15');
@@ -1291,39 +1289,7 @@ export function ProductInventoryPreview({
 
   const productInventoryRows = useMemo(
     () => {
-      const normalizedInventoryRecordSearch = inventoryRecordAppliedSearch.trim().toLowerCase();
-
       return visibleBatches
-        .filter((batch) => {
-          if (!normalizedInventoryRecordSearch) return true;
-
-          const product = allProducts.find((item) => item.id === batch.product.id);
-          const searchableValues = [
-            batch.product.name,
-            batch.product.sku,
-            product?.generic_name,
-            product?.brand_name,
-            batch.batch_number,
-            batch.stock_location?.name,
-            batch.stock_location?.code,
-            batch.supplier_name,
-            batch.reference_number,
-            inventoryBatchSourceLabel(batch),
-            batchMetadataValue(batch, [
-              'reference_number',
-              'purchase_code',
-              'purchase_order_code',
-              'delivery_note',
-              'supplier_name',
-              'receive_source',
-              'created_from',
-            ]),
-          ];
-
-          return searchableValues
-            .filter((value) => value !== null && value !== undefined)
-            .some((value) => String(value).toLowerCase().includes(normalizedInventoryRecordSearch));
-        })
         .map((batch) => {
           const product = allProducts.find((item) => item.id === batch.product.id);
           const defaultMargin = metadataNumber(product?.metadata, ['default_margin', 'margin_percent', 'allowed_margin'], 0);
@@ -1343,7 +1309,7 @@ export function ProductInventoryPreview({
           };
         });
     },
-    [allProducts, inventoryRecordAppliedSearch, visibleBatches],
+    [allProducts, visibleBatches],
   );
 
   const pagedProducts = visibleProducts.slice(0, rowLimitValue(rowLimit, visibleProducts.length));
@@ -5834,68 +5800,6 @@ export function ProductInventoryPreview({
                       <strong>{opportunity.title}</strong>
                     </button>
                   ))}
-                </div>
-              </section>
-
-              <section
-                className="inventory-record-search-panel inventory-record-search-panel--refined"
-                data-visual-fine-tuning="AQUILA_INVENTORY_WORK_PACKAGE_2G_VISUAL_FINE_TUNING"
-              >
-                <div className="inventory-record-search-card">
-                  <div className="inventory-section-title-card platform-heading-card">
-                    <h3>Inventory Record Search</h3>
-                  </div>
-
-                  <form
-                    className="inventory-record-search-form"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-
-
-                      setInventoryNotice(
-                        inventoryProductSearchTerm.trim()
-                          ? `Inventory records filtered by "${inventoryProductSearchTerm.trim()}".`
-                          : 'Inventory record search cleared.',
-                      );
-                    }}
-                  >
-                    <input
-                      value={inventoryProductSearchTerm}
-                      onChange={(event) =>
-                        setInventoryProductSearchTerm(
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Search product, Internal SKU, batch, location or supplier"
-                      aria-label="Search Inventory records"
-                    />
-
-                    <button type="submit">
-                      Search
-                    </button>
-
-                    <button
-                      type="button"
-                      className="inventory-record-search-clear"
-                      onClick={() => {
-                        setInventoryProductSearchTerm('');
-
-                        setInventoryNotice(
-                          'Inventory record search cleared.',
-                        );
-                      }}
-                    >
-                      Clear
-                    </button>
-                  </form>
-
-                  <small className="inventory-record-search-result">
-                    Showing {formatNumber(
-                      pagedProductInventory.length,
-                    )} of {formatNumber(
-                      productInventoryRows.length,
-                    )} matching records
-                  </small>
                 </div>
               </section>
 
