@@ -30,6 +30,7 @@ class EnsurePermission
             if (! $user->hasPermission($permission)) {
                 return response()->json([
                     'message' => 'You do not have permission to perform this action.',
+                    'missing_permissions' => [$permission],
                     'missing_permission' => $permission,
                     'required_permissions' => $permissions,
                 ], 403);
