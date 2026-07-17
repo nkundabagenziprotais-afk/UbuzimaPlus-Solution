@@ -1674,6 +1674,18 @@ class SalesDispensingController extends Controller
             return null;
         }
 
+        if (
+            ! $request->user()
+            || ! $request->user()->hasPermission(
+                'pharmaco.pos.historical.record'
+            )
+        ) {
+            abort(
+                403,
+                'Historical POS transaction recording permission is required.'
+            );
+        }
+
         if ((int) $session->branch_id !== $branchId) {
             throw ValidationException::withMessages([
                 'branch_id' => [
@@ -1692,6 +1704,18 @@ class SalesDispensingController extends Controller
     ): ?PharmacoPosSession {
         if ($sale->entry_mode !== 'historical') {
             return null;
+        }
+
+        if (
+            ! $request->user()
+            || ! $request->user()->hasPermission(
+                'pharmaco.pos.historical.record'
+            )
+        ) {
+            abort(
+                403,
+                'Historical POS transaction recording permission is required.'
+            );
         }
 
         if (! $sale->pos_session_id) {

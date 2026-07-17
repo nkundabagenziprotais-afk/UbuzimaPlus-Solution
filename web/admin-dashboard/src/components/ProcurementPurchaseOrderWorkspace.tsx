@@ -1083,7 +1083,7 @@ export function ProcurementPurchaseOrderWorkspace({
       !quickProductForm.unit.trim()
     ) {
       setError(
-        'Product name, drug code/SKU and unit are required.',
+        'Product name, internal SKU and unit are required.',
       );
       return;
     }
@@ -2911,7 +2911,7 @@ export function ProcurementPurchaseOrderWorkspace({
           </label>
 
           <label>
-            Drug code / SKU
+            Internal SKU
             <input
               value={quickProductForm.sku}
               onChange={(event) =>

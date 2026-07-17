@@ -32707,3 +32707,70 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+
+/* AQUILA C2 handover hardening: inventory operation-page cleanup */
+
+.session-restore-shell {
+  min-height: 100vh;
+}
+
+.inventory-record-search-panel {
+  display: none !important;
+}
+
+.product-master-action-panel {
+  padding: 0.85rem !important;
+}
+
+.product-master-action-panel .section-heading {
+  gap: 0.65rem !important;
+  margin-bottom: 0.7rem !important;
+}
+
+.product-master-action-panel .section-heading h3 {
+  font-size: clamp(
+    0.98rem,
+    1.2vw,
+    1.12rem
+  ) !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.product-master-action-panel .section-heading span {
+  font-size: 0.76rem !important;
+  line-height: 1.35 !important;
+}
+
+.product-master-ai-import-panel {
+  padding: 0.85rem !important;
+}
+
+.product-master-ai-import-panel
+.section-heading h3,
+.product-master-ai-import-panel h3 {
+  font-size: clamp(
+    0.98rem,
+    1.2vw,
+    1.12rem
+  ) !important;
+  line-height: 1.2 !important;
+}
+
+.product-master-ai-import-panel
+.section-heading span,
+.product-master-ai-import-panel
+.form-hint {
+  font-size: 0.76rem !important;
+  line-height: 1.35 !important;
+}
+
+.inventory-section h1:empty,
+.inventory-section h2:empty,
+.inventory-section h3:empty,
+.inventory-section h4:empty,
+.inventory-section p:empty,
+.inventory-section span:empty {
+  display: none !important;
+}

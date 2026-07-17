@@ -745,7 +745,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
     Route::post('/purchase-orders', [ProcurementController::class, 'createPurchaseOrder'])
         ->middleware([
-            'permission:pharmaco.procurement.purchase_order.create',
+            'App\Http\Middleware\EnsureAnyPermission:pharmaco.procurement.purchase_order.create,procurement.purchase_orders.add',
             'tenant.module:pharmaco.suppliers',
         ]);
 

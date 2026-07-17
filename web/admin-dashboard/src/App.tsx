@@ -1531,7 +1531,6 @@ function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
     'platform_admin',
     'solution_admin',
     'tenant_admin',
-    'owner',
   ]);
 
   return profileRoleTokens(profile).some((role) =>
@@ -1542,6 +1541,25 @@ function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
     )
   );
 }
+
+function profileHasOwnerRole(
+  profile: AccessProfile | undefined,
+): boolean {
+  if (!profile) return false;
+
+  return profileRoleTokens(profile).some(
+    (role) =>
+      role === 'owner'
+      || role.endsWith('_owner')
+      || role.includes('_owner_'),
+  );
+}
+
+const ownerTechnicalSectionKeys =
+  new Set<AdminSectionKey>([
+    'admin-panel',
+    'settings',
+  ]);
 
 function profileHasGranularPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
   if (!profile) return false;
@@ -1559,6 +1577,10 @@ function preferredOperationalSection(
 ): AdminSectionKey {
   if (!profile || profileHasAdminAuthority(profile)) {
     return 'overview';
+  }
+
+  if (profileHasOwnerRole(profile)) {
+    return 'pos';
   }
 
   const roles = profileRoleTokens(profile);
@@ -2967,11 +2989,13 @@ function DedicatedModuleHeader({
   eyebrow,
   title,
   description,
+  dashboardLabel = 'Main Dashboard',
   onDashboard,
 }: {
   eyebrow: string;
   title: string;
   description: string;
+  dashboardLabel?: string;
   onDashboard: () => void;
 }) {
   return (
@@ -2981,8 +3005,12 @@ function DedicatedModuleHeader({
         <h2>{title}</h2>
         <p>{description}</p>
       </div>
-      <button type="button" className="secondary-action" onClick={onDashboard}>
-        Main Dashboard
+      <button
+        type="button"
+        className="secondary-action"
+        onClick={onDashboard}
+      >
+        {dashboardLabel}
       </button>
     </header>
   );
@@ -3845,12 +3873,49 @@ function App() {
 
   const profile = session?.profile;
   const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
-  const visibleMenuGroups = useMemo(() => buildVisibleMenuGroups(profile), [profile]);
+  const builtVisibleMenuGroups = useMemo(
+    () => buildVisibleMenuGroups(profile),
+    [profile],
+  );
+  const isAdminProfile =
+    profileHasAdminAuthority(profile);
+  const isOwnerProfile =
+    profileHasOwnerRole(profile);
+  const visibleMenuGroups = useMemo(() => {
+    if (!isOwnerProfile) {
+      return builtVisibleMenuGroups;
+    }
+
+    return builtVisibleMenuGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          !ownerTechnicalSectionKeys.has(item.key),
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [
+    builtVisibleMenuGroups,
+    isOwnerProfile,
+  ]);
   const visibleSectionKeys = useMemo(() => {
-    const keys = new Set<AdminSectionKey>(['overview']);
-    visibleMenuGroups.forEach((group) => group.items.forEach((item) => keys.add(item.key)));
+    const keys = new Set<AdminSectionKey>();
+
+    if (isAdminProfile) {
+      keys.add('overview');
+    }
+
+    visibleMenuGroups.forEach((group) =>
+      group.items.forEach((item) =>
+        keys.add(item.key),
+      ),
+    );
+
     return keys;
-  }, [visibleMenuGroups]);
+  }, [
+    profile,
+    visibleMenuGroups,
+  ]);
   const principalMenuItems = useMemo(
     () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
     [visibleMenuGroups],
@@ -4142,18 +4207,18 @@ function App() {
     const preferredSection =
       preferredOperationalSection(profile);
 
+    const firstVisibleSection =
+      Array.from(visibleSectionKeys)[0];
+
     const fallbackSection =
       visibleSectionKeys.has(preferredSection)
         ? preferredSection
-        : Array.from(visibleSectionKeys)[0]
+        : firstVisibleSection
           ?? 'overview';
 
     if (!hasAppliedRoleLanding) {
-      if (
-        preferredSection !== activeSection
-        && visibleSectionKeys.has(preferredSection)
-      ) {
-        setActiveSection(preferredSection);
+      if (fallbackSection !== activeSection) {
+        setActiveSection(fallbackSection);
       }
 
       setHasAppliedRoleLanding(true);
@@ -4172,12 +4237,25 @@ function App() {
 
   function navigateToSection(section: AdminSectionKey) {
     setIsProfileMenuOpen(false);
-    if (section === activeSection) {
+
+    const firstVisibleSection =
+      Array.from(visibleSectionKeys)[0];
+
+    const permittedSection =
+      visibleSectionKeys.has(section)
+        ? section
+        : firstVisibleSection
+          ?? 'overview';
+
+    if (permittedSection === activeSection) {
       return;
     }
 
-    setNavigationStack((current) => [activeSection, ...current].slice(0, 10));
-    setActiveSection(section);
+    setNavigationStack(
+      (current) =>
+        [activeSection, ...current].slice(0, 10),
+    );
+    setActiveSection(permittedSection);
   }
 
   function activateModuleDefaultPage(item: MenuItem) {
@@ -4548,26 +4626,10 @@ function App() {
 
   if (isRestoringSession) {
     return (
-      <main className="auth-shell">
-        <section className="auth-panel">
-          <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
-          <p className="eyebrow">Ubuzima+ Platform</p>
-          <h1>Checking your secure session.</h1>
-          <p className="auth-copy">
-            We are validating your stored access token before opening the admin workspace.
-          </p>
-        </section>
-
-        <section className="auth-side">
-          <div className="status-card">
-            <span className="status-dot" />
-            <div>
-              <strong>Session validation</strong>
-              <p>Stored sessions are verified through the backend before dashboard access.</p>
-            </div>
-          </div>
-        </section>
-      </main>
+      <main
+        className="session-restore-shell"
+        aria-hidden="true"
+      />
     );
   }
 
@@ -6226,11 +6288,15 @@ async function confirmTransaction() {
     <div className="module-page-sticky-header">
       <ModulePageNavigation
         platformDashboardLabel="POS & Sales Dashboard"
+        showMainDashboardExit={isAdminProfile}
         onExitToMainDashboard={() => {
           setActivePosWorkspace('overview');
-          setActiveSection(
-            'overview' as typeof activeSection,
-          );
+
+          if (isAdminProfile) {
+            setActiveSection(
+              'overview' as typeof activeSection,
+            );
+          }
         }}
         onOpenPlatformDashboard={() => {
           setActivePosWorkspace('overview');
@@ -7564,7 +7630,15 @@ async function confirmTransaction() {
         <div className="module-page-sticky-header">
           <ModulePageNavigation
             platformDashboardLabel="Procurement Home"
-            onExitToMainDashboard={() => navigateToSection('overview')}
+            showMainDashboardExit={isAdminProfile}
+            onExitToMainDashboard={() => {
+              if (isAdminProfile) {
+                navigateToSection('overview');
+                return;
+              }
+
+              setActiveSupplierWorkspace('overview');
+            }}
             onOpenPlatformDashboard={() => setActiveSupplierWorkspace('overview')}
             onBack={() => setActiveSupplierWorkspace('overview')}
           />
@@ -7672,7 +7746,19 @@ async function confirmTransaction() {
           eyebrow="Finance and control"
           title="Finance Workspace"
           description="Move from finance overview to payables, receivables, collections, exceptions, and statements through focused pages."
-          onDashboard={() => navigateToSection('overview')}
+          dashboardLabel={
+            isAdminProfile
+              ? 'Main Dashboard'
+              : 'Finance Home'
+          }
+          onDashboard={() => {
+            if (isAdminProfile) {
+              navigateToSection('overview');
+              return;
+            }
+
+            setActiveFinanceWorkspace('overview');
+          }}
         />
         {activeFinanceWorkspace === 'overview' && (
           <ModuleLandingCards
@@ -7759,7 +7845,19 @@ async function confirmTransaction() {
           eyebrow="Reports and management review"
           title="Reports Workspace"
           description="Open operational alerts, review queues, executive summaries, decisions, checklists, and follow-up pages individually."
-          onDashboard={() => navigateToSection('overview')}
+          dashboardLabel={
+            isAdminProfile
+              ? 'Main Dashboard'
+              : 'Reports Home'
+          }
+          onDashboard={() => {
+            if (isAdminProfile) {
+              navigateToSection('overview');
+              return;
+            }
+
+            setActiveAdhocReportWorkspace('overview');
+          }}
         />
         {activeAdhocReportWorkspace === 'overview' && (
           <ModuleLandingCards
@@ -8078,8 +8176,39 @@ async function confirmTransaction() {
   }
 
   function renderActiveSection() {
+    if (
+      !isAdminProfile
+      && visibleSectionKeys.size === 0
+    ) {
+      return (
+        <section className="section-page">
+          <section className="module-page-intro">
+            <div>
+              <p className="eyebrow">
+                Access setup required
+              </p>
+              <h2>
+                No operational workspace is assigned
+              </h2>
+              <p className="muted">
+                Your account is active, but no module
+                permission is currently available. Ask
+                a tenant administrator to assign the
+                appropriate role or workspace access.
+              </p>
+            </div>
+            <span>Access required</span>
+          </section>
+        </section>
+      );
+    }
+
     switch (activeSection) {
       case 'overview':
+        if (!profileHasAdminAuthority(profile)) {
+          return null;
+        }
+
         return (
           <section className="section-page dashboard-overview-page dashboard-operating-page">
             <section className="dashboard-operating-hero dashboard-operating-hero--compact">
@@ -8374,6 +8503,9 @@ async function confirmTransaction() {
       case 'ai-center':
         return renderAiCenter();
       case 'admin-panel':
+        if (!profileHasAdminAuthority(profile)) {
+          return null;
+        }
         return renderAdminPanel();
             case 'general-stock-items': {
 
@@ -8415,7 +8547,21 @@ async function confirmTransaction() {
                 eyebrow="Insurance administration"
                 title="Insurance Workspace"
                 description="Manage partners, institutions, schemes, pricing, contributions, claims, reconciliation, and audit evidence in focused pages."
-                onDashboard={() => navigateToSection('overview')}
+                dashboardLabel={
+                  isAdminProfile
+                    ? 'Main Dashboard'
+                    : 'Insurance Home'
+                }
+                onDashboard={() => {
+                  if (isAdminProfile) {
+                    navigateToSection('overview');
+                    return;
+                  }
+
+                  setActiveInsuranceWorkspace(
+                    'overview',
+                  );
+                }}
               />
               <InsuranceManagementWorkspace
               token={session!.token}
@@ -8719,20 +8865,39 @@ async function confirmTransaction() {
             <img className="sidebar-logo" src={brandLogoSrc} alt="Ubuzima+" />
             <div>
               <strong>Ubuzima+</strong>
-              <span>Admin Center</span>
+              <span>
+                {isAdminProfile
+                  ? 'Admin Center'
+                  : isOwnerProfile
+                    ? 'Owner Business Center'
+                    : 'Operations Center'}
+              </span>
             </div>
           </div>
 
-          <nav className="tree-nav tree-nav--principal" aria-label="Admin workspace navigation">
-            <button
-              type="button"
-              className={`tree-root-button principal-menu-button ${activeSection === 'overview' ? 'active' : ''}`}
-              data-section="overview"
-              onClick={() => navigateToSection('overview')}
-            >
-              <span className="nav-icon">DB</span>
-              <span className="principal-menu-title">Dashboard</span>
-            </button>
+          <nav
+            className="tree-nav tree-nav--principal"
+            aria-label={
+              isAdminProfile
+                ? 'Admin workspace navigation'
+                : 'Operational workspace navigation'
+            }
+          >
+            {isAdminProfile && (
+              <button
+                type="button"
+                className={`tree-root-button principal-menu-button ${activeSection === 'overview' ? 'active' : ''}`}
+                data-section="overview"
+                onClick={() =>
+                  navigateToSection('overview')
+                }
+              >
+                <span className="nav-icon">DB</span>
+                <span className="principal-menu-title">
+                  Dashboard
+                </span>
+              </button>
+            )}
 
             {[...principalMenuItems]
               .sort((left, right) => {
