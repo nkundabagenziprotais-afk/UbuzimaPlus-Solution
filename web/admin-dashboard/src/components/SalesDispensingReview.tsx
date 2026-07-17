@@ -243,7 +243,14 @@ export function SalesDispensingReview({
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const tenantSlug = useMemo(() => getTenantSlug(profile), [profile]);
-  const canReadSales = (profile.permissions ?? []).includes('pharmaco.sales.manage');
+  const canReadSales = [
+    'pharmaco.sales.manage',
+    'pharmaco.sales.view',
+    'pharmaco.pos.use',
+    'pos.sales.view',
+  ].some((permission) =>
+    (profile.permissions ?? []).includes(permission),
+  );
 
   const apiSalesFilters = useMemo(() => salesFiltersToApiFilters(salesFilters), [salesFilters]);
 
@@ -306,7 +313,7 @@ export function SalesDispensingReview({
     }
 
     if (!canReadSales) {
-      setError('Your current role does not include pharmaco.sales.manage.');
+      setError('Your current role does not include permission to view POS sales.');
       return;
     }
 
