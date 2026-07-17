@@ -96,7 +96,7 @@ const analyticsDefinitions = [
   },
   {
     id: 'open-pos',
-    title: 'MoMo Sales Counter',
+    title: 'Open POS Counter',
   },
   {
     id: 'best-day',
@@ -438,7 +438,7 @@ export function PosSalesOverview({
       setError(
         requestError instanceof Error
           ? requestError.message
-          : ' data could not be loaded.',
+          : 'Business performance data could not be loaded.',
       );
     } finally {
       setIsLoading(false);
@@ -907,7 +907,7 @@ export function PosSalesOverview({
             <span className="pos-overview-eyebrow">
               AI-assisted business analytics
             </span>
-            <h2></h2>
+            <h2>Business performance</h2>
             <p>
               Practical signals derived from current sales,
               collections, balances, and transaction
@@ -977,7 +977,7 @@ export function PosSalesOverview({
               onClick={() => onOpenWorkspace('pos')}
             >
               <span>Dedicated POS Counter</span>
-              <strong>MoMo Sales</strong>
+              <strong>Open POS</strong>
               <small>
                 Start a controlled pharmacy sale and payment workflow.
               </small>
