@@ -690,7 +690,7 @@ export function HistoricalPosWorkflow({
         >
           <div className="historical-pos-banner__identity">
             <span className="historical-pos-badge">
-              Historical session
+              Historical session open
             </span>
 
             <div>
@@ -700,8 +700,7 @@ export function HistoricalPosWorkflow({
               </strong>
 
               <small>
-                Recorded now · Reported under the
-                selected historical business date
+
               </small>
             </div>
           </div>
@@ -712,15 +711,11 @@ export function HistoricalPosWorkflow({
               {currentSession.session_number}
             </span>
 
-            <span>
-              {currentSession.historical_reference
-                || "No external reference"}
-            </span>
-
-            <span>
-              Sales, payments and stock movements
-              are session-linked
-            </span>
+            {currentSession.historical_reference ? (
+              <span>
+                {currentSession.historical_reference}
+              </span>
+            ) : null}
           </div>
         </div>
       ) : (

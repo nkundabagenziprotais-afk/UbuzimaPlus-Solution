@@ -1,42 +1,46 @@
-import { InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-
-
-type PosBatchProduct = PharmaStockBatch['product'] & {
-  selling_unit?: string | null;
-  base_unit?: string | null;
-  unit?: string | null;
-  quantity_per_selling_unit?: number | string | null;
-  allow_other_quantity?: boolean | null;
-  default_pos_quantity_mode?: string | null;
-};
-
-function configuredPosTaxMode(): 'inclusive' | 'exclusive' {
-  return 'inclusive';
-}
-
-type PosInventoryAutoLoaderProps = {
-  shouldLoad: boolean;
-  onLoad: () => void | Promise<void>;
-};
-
-function PosInventoryAutoLoader({ shouldLoad, onLoad }: PosInventoryAutoLoaderProps) {
-  useEffect(() => {
-    if (!shouldLoad) {
-      return;
-    }
-
-    void onLoad();
-  }, [onLoad, shouldLoad]);
-
-  return null;
-}
-
-import { AccessCheckResult, AccessProfile, LoginExperience, BranchDepartmentsResponse, BranchesResponse, LoginResponse, PharmacyProfileResponse, PharmaStockBatch, TwoFactorSetupPayload, getAuthenticatedProfile, getBranchDepartments, getCorporateMailOverview, getPharmaBranches, getPharmaInventoryBatches, getPharmacyProfile, login, logout, requestPasswordReset, changePassword, runAccessCheck, verifyTwoFactor,
+import {
+  InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
+  useEffect,
+  useMemo,
+  useState } from 'react';   type PosBatchProduct = PharmaStockBatch['product'] & {   selling_unit?: string | null;   base_unit?: string | null;   unit?: string | null;   quantity_per_selling_unit?: number | string | null;   allow_other_quantity?: boolean | null;   default_pos_quantity_mode?: string | null; };  type UbuzimaHandoverLiveAnalytics = PharmaLiveBusinessAnalyticsResponse | null;  function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser | null | undefined): string {   const name = transaction?.operator_name?.trim();    if (name) {     return name;   }    const email = transaction?.operator_email?.trim();    if (email) {     return email;   }    return 'Recorded user'; }  function normalizeUbuzimaTransactionDate(value: string | null | undefined): string | null {   if (!value) {     return null;   }    const dateOnlyMatch = value.match(/^\d{4}-\d{2}-\d{2}/);    return dateOnlyMatch ? dateOnlyMatch[0] : value; }  function formatUbuzimaMoney(value: number | string | null | undefined): string {   const amount = Number(value ?? 0);    return `RWF ${(Number.isFinite(amount) ? amount : 0).toLocaleString('en-RW')}`; }  function printUbuzimaPosDocument(): void {   const nativePrint = window.print.bind(window);    document.body.classList.add('ubuzima-pos-print-mode');    window.setTimeout(() => {     nativePrint();      window.setTimeout(() => {       document.body.classList.remove('ubuzima-pos-print-mode');     },
+  250);   },
+  50); }  function configuredPosTaxMode(): 'inclusive' | 'exclusive' {   return 'inclusive'; }  type PosInventoryAutoLoaderProps = {   shouldLoad: boolean;   onLoad: () => void | Promise<void>; };  function PosInventoryAutoLoader({ shouldLoad,
+  onLoad }: PosInventoryAutoLoaderProps) {   useEffect(() => {     if (!shouldLoad) {       return;     }      void onLoad();   },
+  [onLoad,
+  shouldLoad]);    return null; }  import { AccessCheckResult,
+  AccessProfile,
+  LoginExperience,
+  BranchDepartmentsResponse,
+  BranchesResponse,
+  LoginResponse,
+  PharmacyProfileResponse,
+  PharmaStockBatch,
+  TwoFactorSetupPayload,
+  getAuthenticatedProfile,
+  getBranchDepartments,
+  getCorporateMailOverview,
+  getPharmaBranches,
+  getPharmaInventoryBatches,
+  getPharmacyProfile,
+  login,
+  logout,
+  requestPasswordReset,
+  changePassword,
+  runAccessCheck,
+  verifyTwoFactor,
   getPharmaSales,
   type PharmaSale,
   type PharmaPayment,
   checkoutPharmaSale,
+  getPharmaLiveBusinessAnalytics,
+  getPharmaRecentTransactionsWithUsers,
+  type PharmaLiveBusinessAnalyticsResponse,
+  type PharmaRecentTransactionWithUser,
+  getTenantSecurityRoleTemplates,
+  getTenantSecurityUsers,
+  createTenantSecurityUser,
+  updateTenantSecurityUser,
+  adminResetTenantSecurityUserPassword,
 } from './lib/api';
 import {
   type PosSession,
@@ -1527,7 +1531,6 @@ function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
     'platform_admin',
     'solution_admin',
     'tenant_admin',
-    'owner',
   ]);
 
   return profileRoleTokens(profile).some((role) =>
@@ -1538,6 +1541,25 @@ function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
     )
   );
 }
+
+function profileHasOwnerRole(
+  profile: AccessProfile | undefined,
+): boolean {
+  if (!profile) return false;
+
+  return profileRoleTokens(profile).some(
+    (role) =>
+      role === 'owner'
+      || role.endsWith('_owner')
+      || role.includes('_owner_'),
+  );
+}
+
+const ownerTechnicalSectionKeys =
+  new Set<AdminSectionKey>([
+    'admin-panel',
+    'settings',
+  ]);
 
 function profileHasGranularPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
   if (!profile) return false;
@@ -1555,6 +1577,10 @@ function preferredOperationalSection(
 ): AdminSectionKey {
   if (!profile || profileHasAdminAuthority(profile)) {
     return 'overview';
+  }
+
+  if (profileHasOwnerRole(profile)) {
+    return 'pos';
   }
 
   const roles = profileRoleTokens(profile);
@@ -2963,11 +2989,13 @@ function DedicatedModuleHeader({
   eyebrow,
   title,
   description,
+  dashboardLabel = 'Main Dashboard',
   onDashboard,
 }: {
   eyebrow: string;
   title: string;
   description: string;
+  dashboardLabel?: string;
   onDashboard: () => void;
 }) {
   return (
@@ -2977,8 +3005,12 @@ function DedicatedModuleHeader({
         <h2>{title}</h2>
         <p>{description}</p>
       </div>
-      <button type="button" className="secondary-action" onClick={onDashboard}>
-        Main Dashboard
+      <button
+        type="button"
+        className="secondary-action"
+        onClick={onDashboard}
+      >
+        {dashboardLabel}
       </button>
     </header>
   );
@@ -3076,6 +3108,571 @@ function createPosCheckoutKey(): string {
   ].join('-');
 }
 
+type B2TenantSecurityRole = {
+  code?: string | null;
+  name?: string | null;
+  role?: {
+    code?: string | null;
+    name?: string | null;
+  } | null;
+};
+
+type B2TenantSecurityUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  job_title?: string | null;
+  status?: string | null;
+  two_factor_required?: boolean | null;
+  roles?: B2TenantSecurityRole[];
+};
+
+type B2TenantSecurityRoleTemplate = {
+  code: string;
+  name: string;
+  description?: string | null;
+  permissions?: string[];
+};
+
+type B2TenantUserForm = {
+  name: string;
+  email: string;
+  phone: string;
+  job_title: string;
+  role_code: string;
+  status: string;
+  password: string;
+  two_factor_required: boolean;
+};
+
+const emptyB2TenantUserForm: B2TenantUserForm = {
+  name: '',
+  email: '',
+  phone: '',
+  job_title: '',
+  role_code: '',
+  status: 'active',
+  password: '',
+  two_factor_required: true,
+};
+
+function b2AsRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : {};
+}
+
+function extractB2TenantSlug(profile: unknown): string {
+  const record = b2AsRecord(profile);
+  const tenant = b2AsRecord(record.tenant);
+  const currentTenant = b2AsRecord(record.current_tenant);
+  const activeTenant = b2AsRecord(record.active_tenant);
+
+  const candidates = [
+    record.tenant_slug,
+    tenant.slug,
+    currentTenant.slug,
+    activeTenant.slug,
+    record.slug,
+  ];
+
+  for (const candidate of candidates) {
+    const value = String(candidate ?? '').trim();
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return 'ubuzima-plus';
+}
+
+function getB2RoleCode(user: B2TenantSecurityUser): string {
+  const firstRole = Array.isArray(user.roles) ? user.roles[0] : null;
+  const nestedRole = b2AsRecord(firstRole?.role);
+
+  return String(firstRole?.code ?? nestedRole.code ?? '').trim();
+}
+
+function getB2RoleName(user: B2TenantSecurityUser): string {
+  const firstRole = Array.isArray(user.roles) ? user.roles[0] : null;
+  const nestedRole = b2AsRecord(firstRole?.role);
+
+  return String(firstRole?.name ?? nestedRole.name ?? getB2RoleCode(user) ?? 'Role pending').trim();
+}
+
+function generateB2TemporaryPassword(): string {
+  const segment = Math.random().toString(36).slice(2, 8);
+  const stamp = Date.now().toString(36).slice(-4);
+
+  return `Ubuzima-${segment}-${stamp}!`;
+}
+
+function TenantSecurityUserManagementPanel({
+  token,
+  profile,
+}: {
+  token: string;
+  profile: unknown;
+}) {
+  const tenantSlug = extractB2TenantSlug(profile);
+  const [users, setUsers] = useState<B2TenantSecurityUser[]>([]);
+  const [roles, setRoles] = useState<B2TenantSecurityRoleTemplate[]>([]);
+  const [form, setForm] = useState<B2TenantUserForm>(emptyB2TenantUserForm);
+  const [editingUser, setEditingUser] = useState<B2TenantSecurityUser | null>(null);
+  const [resetTarget, setResetTarget] = useState<B2TenantSecurityUser | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [resetMustChange, setResetMustChange] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const roleOptions = roles.length > 0
+    ? roles
+    : [
+        { code: 'tenant_admin', name: 'Tenant Admin' },
+        { code: 'cashier', name: 'Cashier / POS User' },
+        { code: 'pharmacist', name: 'Pharmacist' },
+        { code: 'inventory_officer', name: 'Inventory Officer' },
+      ];
+
+  async function loadUsers(): Promise<void> {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [roleResponse, userResponse] = await Promise.all([
+        getTenantSecurityRoleTemplates(token, tenantSlug),
+        getTenantSecurityUsers(token, tenantSlug),
+      ]);
+
+      const loadedRoles = Array.isArray(roleResponse.roles)
+        ? roleResponse.roles as B2TenantSecurityRoleTemplate[]
+        : [];
+
+      setRoles(loadedRoles);
+      setUsers(Array.isArray(userResponse.users) ? userResponse.users as B2TenantSecurityUser[] : []);
+
+      setForm((current) => ({
+        ...current,
+        role_code: current.role_code || loadedRoles[0]?.code || 'tenant_admin',
+      }));
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : 'Unable to load tenant users.',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadUsers();
+  }, [token, tenantSlug]);
+
+  function startNewUser(): void {
+    setEditingUser(null);
+    setForm({
+      ...emptyB2TenantUserForm,
+      role_code: roleOptions[0]?.code ?? 'tenant_admin',
+      password: generateB2TemporaryPassword(),
+    });
+    setNotice('Create a handover-ready user with a clear role, active status, and controlled temporary password.');
+    setError(null);
+  }
+
+  function startEditUser(user: B2TenantSecurityUser): void {
+    setEditingUser(user);
+    setForm({
+      name: user.name ?? '',
+      email: user.email ?? '',
+      phone: user.phone ?? '',
+      job_title: user.job_title ?? '',
+      role_code: getB2RoleCode(user) || roleOptions[0]?.code || 'tenant_admin',
+      status: user.status ?? 'active',
+      password: '',
+      two_factor_required: Boolean(user.two_factor_required),
+    });
+    setNotice(`Editing ${user.name}. Password changes are handled through Admin Reset Password.`);
+    setError(null);
+  }
+
+  async function saveUser(): Promise<void> {
+    setIsSaving(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      if (!form.name.trim()) {
+        throw new Error('Name is required.');
+      }
+
+      if (!form.email.trim()) {
+        throw new Error('Email is required.');
+      }
+
+      if (!form.role_code.trim()) {
+        throw new Error('Role is required.');
+      }
+
+      const payload = {
+        tenant_slug: tenantSlug,
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || undefined,
+        job_title: form.job_title.trim() || undefined,
+        access_assignment_mode: 'predefined_role' as const,
+        role_code: form.role_code,
+        status: form.status,
+        two_factor_required: form.two_factor_required,
+      };
+
+      if (editingUser) {
+        await updateTenantSecurityUser(token, tenantSlug, editingUser.id, payload);
+        setNotice(`User updated: ${form.name.trim()}.`);
+      } else {
+        const response = await createTenantSecurityUser(token, tenantSlug, {
+          ...payload,
+          password: form.password.trim() || undefined,
+        });
+
+        setNotice(
+          response.temporary_password
+            ? `User created. Temporary password: ${response.temporary_password}`
+            : `User created: ${form.name.trim()}.`,
+        );
+      }
+
+      setEditingUser(null);
+      setForm({
+        ...emptyB2TenantUserForm,
+        role_code: roleOptions[0]?.code ?? 'tenant_admin',
+      });
+
+      await loadUsers();
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : 'Unable to save user.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function openResetPassword(user: B2TenantSecurityUser): void {
+    const generated = generateB2TemporaryPassword();
+
+    setResetTarget(user);
+    setResetPassword(generated);
+    setResetConfirmPassword(generated);
+    setResetMustChange(true);
+    setNotice(`Prepare a controlled password reset for ${user.name}.`);
+    setError(null);
+  }
+
+  async function submitPasswordReset(): Promise<void> {
+    if (!resetTarget) {
+      return;
+    }
+
+    setIsResetting(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      if (resetPassword.length < 8) {
+        throw new Error('The new password must be at least 8 characters.');
+      }
+
+      if (resetPassword !== resetConfirmPassword) {
+        throw new Error('Password confirmation does not match.');
+      }
+
+      await adminResetTenantSecurityUserPassword(
+        token,
+        tenantSlug,
+        resetTarget.id,
+        {
+          password: resetPassword,
+          password_confirmation: resetConfirmPassword,
+          must_change_password: resetMustChange,
+        },
+      );
+
+      setNotice(`Password reset completed for ${resetTarget.name}.`);
+      setResetTarget(null);
+      setResetPassword('');
+      setResetConfirmPassword('');
+
+      await loadUsers();
+    } catch (resetError) {
+      setError(
+        resetError instanceof Error
+          ? resetError.message
+          : 'Unable to reset password.',
+      );
+    } finally {
+      setIsResetting(false);
+    }
+  }
+
+  const activeUsers = users.filter((user) => String(user.status ?? '').toLowerCase() === 'active').length;
+  const twoFactorUsers = users.filter((user) => Boolean(user.two_factor_required)).length;
+
+  return (
+    <section className="ubuzima-user-management-shell">
+      <div className="ubuzima-user-management-hero">
+        <div>
+          <p className="eyebrow">Admin users</p>
+          <h2>User creation and access handover</h2>
+          <p className="muted">
+            Manage staff identity, tenant role, active status, two-factor readiness,
+            and controlled administrator password resets from one practical surface.
+          </p>
+        </div>
+        <div className="ubuzima-user-management-actions">
+          <button type="button" onClick={startNewUser}>
+            Create user
+          </button>
+          <button type="button" className="secondary-action" onClick={() => void loadUsers()} disabled={isLoading}>
+            {isLoading ? 'Refreshing…' : 'Refresh users'}
+          </button>
+        </div>
+      </div>
+
+      <div className="ubuzima-user-management-summary">
+        <article>
+          <span>Total users</span>
+          <strong>{users.length}</strong>
+          <small>Tenant: {tenantSlug}</small>
+        </article>
+        <article>
+          <span>Active users</span>
+          <strong>{activeUsers}</strong>
+          <small>Ready for handover</small>
+        </article>
+        <article>
+          <span>2FA required</span>
+          <strong>{twoFactorUsers}</strong>
+          <small>Security posture</small>
+        </article>
+      </div>
+
+      {notice ? <div className="form-success">{notice}</div> : null}
+      {error ? <div className="form-error">{error}</div> : null}
+
+      <div className="ubuzima-user-management-grid">
+        <form
+          className="ubuzima-user-form-card"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void saveUser();
+          }}
+        >
+          <div className="section-heading">
+            <div>
+              <span>{editingUser ? 'Update user' : 'Create user'}</span>
+              <h3>{editingUser ? editingUser.name : 'New staff account'}</h3>
+              <p className="muted">
+                Clean handover fields only: identity, role, status, and security.
+              </p>
+            </div>
+          </div>
+
+          <div className="ubuzima-user-form-sections">
+            <fieldset>
+              <legend>Identity</legend>
+              <label>
+                <span>Full name</span>
+                <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="Staff full name" />
+              </label>
+              <label>
+                <span>Email</span>
+                <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} placeholder="name@company.rw" />
+              </label>
+              <label>
+                <span>Phone</span>
+                <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} placeholder="+250..." />
+              </label>
+              <label>
+                <span>Job title</span>
+                <input value={form.job_title} onChange={(event) => setForm((current) => ({ ...current, job_title: event.target.value }))} placeholder="Cashier, Pharmacist, Manager..." />
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Access</legend>
+              <label>
+                <span>Role</span>
+                <select value={form.role_code} onChange={(event) => setForm((current) => ({ ...current, role_code: event.target.value }))}>
+                  {roleOptions.map((role) => (
+                    <option key={role.code} value={role.code}>
+                      {role.name || role.code}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Status</span>
+                <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}>
+                  <option value="active">Active</option>
+                  <option value="invited">Invited</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </label>
+              <label className="ubuzima-user-check-row">
+                <input type="checkbox" checked={form.two_factor_required} onChange={(event) => setForm((current) => ({ ...current, two_factor_required: event.target.checked }))} />
+                <span>Require two-factor setup</span>
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Security</legend>
+              <label>
+                <span>{editingUser ? 'Password reset handled separately' : 'Temporary password'}</span>
+                <input
+                  value={form.password}
+                  onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                  placeholder={editingUser ? 'Use Admin Reset Password' : 'Optional temporary password'}
+                  disabled={Boolean(editingUser)}
+                />
+              </label>
+              <p className="muted">
+                New users can receive a temporary password. Existing users should be reset through the audited Admin Reset Password action.
+              </p>
+            </fieldset>
+          </div>
+
+          <div className="ubuzima-user-form-footer">
+            <button type="submit" disabled={isSaving}>
+              {isSaving ? 'Saving…' : editingUser ? 'Update user' : 'Create user'}
+            </button>
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={() => {
+                setEditingUser(null);
+                setForm({
+                  ...emptyB2TenantUserForm,
+                  role_code: roleOptions[0]?.code ?? 'tenant_admin',
+                });
+              }}
+            >
+              Clear form
+            </button>
+          </div>
+        </form>
+
+        <aside className="ubuzima-user-reset-card">
+          <div className="section-heading">
+            <div>
+              <span>Admin Reset Password</span>
+              <h3>{resetTarget ? resetTarget.name : 'Select a user'}</h3>
+              <p className="muted">
+                Reset passwords without reactivating old inactive accounts manually.
+              </p>
+            </div>
+          </div>
+
+          {resetTarget ? (
+            <div className="ubuzima-user-reset-form">
+              <label>
+                <span>New password</span>
+                <input value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} />
+              </label>
+              <label>
+                <span>Confirm password</span>
+                <input value={resetConfirmPassword} onChange={(event) => setResetConfirmPassword(event.target.value)} />
+              </label>
+              <label className="ubuzima-user-check-row">
+                <input type="checkbox" checked={resetMustChange} onChange={(event) => setResetMustChange(event.target.checked)} />
+                <span>Require password change at next login</span>
+              </label>
+              <div className="ubuzima-user-form-footer">
+                <button type="button" onClick={() => void submitPasswordReset()} disabled={isResetting}>
+                  {isResetting ? 'Resetting…' : 'Reset password'}
+                </button>
+                <button type="button" className="secondary-action" onClick={() => setResetTarget(null)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="muted">
+              Use the Reset Password action in the user table. The action revokes old access and prepares a clean handover login.
+            </p>
+          )}
+        </aside>
+      </div>
+
+      <section className="ubuzima-user-table-card">
+        <div className="section-heading">
+          <div>
+            <span>Staff register</span>
+            <h3>Tenant users</h3>
+          </div>
+        </div>
+
+        <div className="ubuzima-user-table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>2FA</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>No users loaded yet.</td>
+                </tr>
+              ) : users.map((user) => (
+                <tr key={user.id}>
+                  <td>
+                    <strong>{user.name}</strong>
+                    <small>{user.email}</small>
+                    {user.phone ? <small>{user.phone}</small> : null}
+                  </td>
+                  <td>
+                    <strong>{getB2RoleName(user)}</strong>
+                    <small>{user.job_title || 'Job title pending'}</small>
+                  </td>
+                  <td>
+                    <span className={`ubuzima-user-status ubuzima-user-status--${String(user.status ?? 'pending').toLowerCase()}`}>
+                      {user.status || 'pending'}
+                    </span>
+                  </td>
+                  <td>{user.two_factor_required ? 'Required' : 'Optional'}</td>
+                  <td>
+                    <div className="ubuzima-user-row-actions">
+                      <button type="button" onClick={() => startEditUser(user)}>
+                        Manage
+                      </button>
+                      <button type="button" className="secondary-action" onClick={() => openResetPassword(user)}>
+                        Reset Password
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  );
+}
+
 function App() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
@@ -3132,7 +3729,6 @@ function App() {
   const [posInsuranceProvider, setPosInsuranceProvider] = useState('rssb');
   const [posInsuranceInstitution, setPosInsuranceInstitution] = useState('');
   const [posCustomerInvoice] = useState<'no' | 'yes'>('no');
-  const [posCustomerReceipt] = useState<'no' | 'yes'>('yes');
   const [isConfirmingPosTransaction, setIsConfirmingPosTransaction] = useState(false);
   const [posConfirmedSale, setPosConfirmedSale] = useState<PharmaSale | null>(null);
   const [posConfirmedPayment, setPosConfirmedPayment] = useState<PharmaPayment | null>(null);
@@ -3144,6 +3740,9 @@ function App() {
   const [posInvoiceContact, setPosInvoiceContact] = useState('');
   const [posDiscountAmount, setPosDiscountAmount] = useState('0');
   const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
+  const [posLiveBusinessAnalytics, setPosLiveBusinessAnalytics] = useState<UbuzimaHandoverLiveAnalytics>(null);
+  const [posRecentTransactionsWithUsers, setPosRecentTransactionsWithUsers] = useState<PharmaRecentTransactionWithUser[]>([]);
+  const [posLiveBusinessAnalyticsNotice, setPosLiveBusinessAnalyticsNotice] = useState<string | null>(null);
   const [posCheckoutKey, setPosCheckoutKey] = useState(createPosCheckoutKey);
   const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
   const [posTillZeroized, setPosTillZeroized] = useState(false);
@@ -3168,7 +3767,6 @@ function App() {
     otherQuantity: number;
   }>>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
-  const [posConfirmedItems, setPosConfirmedItems] = useState<typeof posCartItems>([]);
   const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
   const [posCounterItems, setPosCounterItems] = useState<typeof posCartItems>([]);
   const [posCounterCart, setPosCounterCart] = useState<{
@@ -3275,12 +3873,49 @@ function App() {
 
   const profile = session?.profile;
   const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
-  const visibleMenuGroups = useMemo(() => buildVisibleMenuGroups(profile), [profile]);
+  const builtVisibleMenuGroups = useMemo(
+    () => buildVisibleMenuGroups(profile),
+    [profile],
+  );
+  const isAdminProfile =
+    profileHasAdminAuthority(profile);
+  const isOwnerProfile =
+    profileHasOwnerRole(profile);
+  const visibleMenuGroups = useMemo(() => {
+    if (!isOwnerProfile) {
+      return builtVisibleMenuGroups;
+    }
+
+    return builtVisibleMenuGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          !ownerTechnicalSectionKeys.has(item.key),
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [
+    builtVisibleMenuGroups,
+    isOwnerProfile,
+  ]);
   const visibleSectionKeys = useMemo(() => {
-    const keys = new Set<AdminSectionKey>(['overview']);
-    visibleMenuGroups.forEach((group) => group.items.forEach((item) => keys.add(item.key)));
+    const keys = new Set<AdminSectionKey>();
+
+    if (isAdminProfile) {
+      keys.add('overview');
+    }
+
+    visibleMenuGroups.forEach((group) =>
+      group.items.forEach((item) =>
+        keys.add(item.key),
+      ),
+    );
+
     return keys;
-  }, [visibleMenuGroups]);
+  }, [
+    profile,
+    visibleMenuGroups,
+  ]);
   const principalMenuItems = useMemo(
     () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
     [visibleMenuGroups],
@@ -3572,18 +4207,18 @@ function App() {
     const preferredSection =
       preferredOperationalSection(profile);
 
+    const firstVisibleSection =
+      Array.from(visibleSectionKeys)[0];
+
     const fallbackSection =
       visibleSectionKeys.has(preferredSection)
         ? preferredSection
-        : Array.from(visibleSectionKeys)[0]
+        : firstVisibleSection
           ?? 'overview';
 
     if (!hasAppliedRoleLanding) {
-      if (
-        preferredSection !== activeSection
-        && visibleSectionKeys.has(preferredSection)
-      ) {
-        setActiveSection(preferredSection);
+      if (fallbackSection !== activeSection) {
+        setActiveSection(fallbackSection);
       }
 
       setHasAppliedRoleLanding(true);
@@ -3602,12 +4237,25 @@ function App() {
 
   function navigateToSection(section: AdminSectionKey) {
     setIsProfileMenuOpen(false);
-    if (section === activeSection) {
+
+    const firstVisibleSection =
+      Array.from(visibleSectionKeys)[0];
+
+    const permittedSection =
+      visibleSectionKeys.has(section)
+        ? section
+        : firstVisibleSection
+          ?? 'overview';
+
+    if (permittedSection === activeSection) {
       return;
     }
 
-    setNavigationStack((current) => [activeSection, ...current].slice(0, 10));
-    setActiveSection(section);
+    setNavigationStack(
+      (current) =>
+        [activeSection, ...current].slice(0, 10),
+    );
+    setActiveSection(permittedSection);
   }
 
   function activateModuleDefaultPage(item: MenuItem) {
@@ -3978,26 +4626,10 @@ function App() {
 
   if (isRestoringSession) {
     return (
-      <main className="auth-shell">
-        <section className="auth-panel">
-          <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
-          <p className="eyebrow">Ubuzima+ Platform</p>
-          <h1>Checking your secure session.</h1>
-          <p className="auth-copy">
-            We are validating your stored access token before opening the admin workspace.
-          </p>
-        </section>
-
-        <section className="auth-side">
-          <div className="status-card">
-            <span className="status-dot" />
-            <div>
-              <strong>Session validation</strong>
-              <p>Stored sessions are verified through the backend before dashboard access.</p>
-            </div>
-          </div>
-        </section>
-      </main>
+      <main
+        className="session-restore-shell"
+        aria-hidden="true"
+      />
     );
   }
 
@@ -4924,7 +5556,6 @@ function App() {
       setPosTransactionConfirmed(false);
       setPosConfirmedSale(null);
       setPosConfirmedPayment(null);
-      setPosConfirmedItems([]);
     }
 
     function forceRefreshSaleSummary() {
@@ -5295,15 +5926,17 @@ function App() {
         const orderedSales = [...response.sales].sort(
           (left, right) => {
             const leftTime = new Date(
-              left.sold_at
-                ?? left.created_at
-                ?? 0,
+              (left as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? left.sold_at
+                    ?? left.created_at
+                    ?? 0,
             ).getTime();
 
             const rightTime = new Date(
-              right.sold_at
-                ?? right.created_at
-                ?? 0,
+              (right as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? right.sold_at
+                    ?? right.created_at
+                    ?? 0,
             ).getTime();
 
             if (rightTime !== leftTime) {
@@ -5326,7 +5959,40 @@ function App() {
       }
     }
 
-    async function confirmTransaction() {
+
+      async function refreshPosHandoverInsights(businessDateOverride?: string | null): Promise<void> {
+        if (!session?.token || !posTenantSlug) {
+          return;
+        }
+
+        const posSessionBusinessDate =
+          (posSession as { business_date?: string | null } | null)?.business_date
+          ?? null;
+
+        const effectiveBusinessDate =
+          businessDateOverride
+          ?? posSessionBusinessDate
+          ?? new Date().toISOString().slice(0, 10);
+
+        try {
+          const [analyticsResponse, transactionsResponse] = await Promise.all([
+            getPharmaLiveBusinessAnalytics(session.token, posTenantSlug, effectiveBusinessDate),
+            getPharmaRecentTransactionsWithUsers(session.token, posTenantSlug),
+          ]);
+
+          setPosLiveBusinessAnalytics(analyticsResponse);
+          setPosRecentTransactionsWithUsers(transactionsResponse.transactions);
+          setPosLiveBusinessAnalyticsNotice(null);
+        } catch (error) {
+          setPosLiveBusinessAnalyticsNotice(
+            error instanceof Error
+              ? error.message
+              : 'Unable to refresh live POS analytics.',
+          );
+        }
+      }
+
+async function confirmTransaction() {
       if (
         !session?.token
         || !posTenantSlug
@@ -5462,6 +6128,12 @@ function App() {
                 generate_receipt: true,
                 reference_number:
                   posInvoiceContact.trim() || null,
+                received_at:
+                  (activeCheckoutSession as { business_date?: string | null }).business_date
+                  && (activeCheckoutSession as { business_date?: string | null }).business_date
+                    !== new Date().toISOString().slice(0, 10)
+                    ? `${(activeCheckoutSession as { business_date?: string | null }).business_date}T12:00:00`
+                    : null,
                 notes:
                   'Customer receipt generated automatically at POS confirmation.',
               },
@@ -5470,8 +6142,9 @@ function App() {
 
         setPosConfirmedSale(checkoutResponse.sale);
         setPosConfirmedPayment(checkoutResponse.payment);
-        setPosConfirmedItems(currentItems);
         setPosTransactionConfirmed(true);
+          setPosCartItems([]);
+          await refreshPosHandoverInsights((activeCheckoutSession as { business_date?: string | null } | null)?.business_date ?? null);
         setPosCheckoutKey(createPosCheckoutKey());
 
         const recentResponse = await getPharmaSales(
@@ -5487,15 +6160,17 @@ function App() {
           [...recentResponse.sales].sort(
             (left, right) => {
               const leftTime = new Date(
-                left.sold_at
-                  ?? left.created_at
-                  ?? 0,
+                (left as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? left.sold_at
+                    ?? left.created_at
+                    ?? 0,
               ).getTime();
 
               const rightTime = new Date(
-                right.sold_at
-                  ?? right.created_at
-                  ?? 0,
+                (right as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? right.sold_at
+                    ?? right.created_at
+                    ?? 0,
               ).getTime();
 
               if (rightTime !== leftTime) {
@@ -5509,7 +6184,7 @@ function App() {
 
         if (checkoutResponse.payment.receipt_number) {
           setPosNotice(
-            `Transaction ${checkoutResponse.sale.sale_number} confirmed successfully. Receipt ${checkoutResponse.payment.receipt_number} is ready.`,
+            'Transaction Successful',
           );
         } else {
           setPosNotice(
@@ -5569,15 +6244,17 @@ function App() {
     })
     .sort((left, right) => {
       const leftTime = new Date(
-        left.sold_at
-          ?? left.created_at
-          ?? 0,
+        (left as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? left.sold_at
+                    ?? left.created_at
+                    ?? 0,
       ).getTime();
 
       const rightTime = new Date(
-        right.sold_at
-          ?? right.created_at
-          ?? 0,
+        (right as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at
+                    ?? right.sold_at
+                    ?? right.created_at
+                    ?? 0,
       ).getTime();
 
       if (rightTime !== leftTime) {
@@ -5588,7 +6265,7 @@ function App() {
     })
     .slice(0, 25)
     .map((sale) => ({
-      dateTime: sale.sold_at || sale.created_at
+      dateTime: (sale as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at || sale.sold_at || sale.created_at
         ? new Date(
             sale.sold_at
               ?? sale.created_at
@@ -5599,7 +6276,7 @@ function App() {
       customer:
         sale.customer?.full_name
         ?? 'Walk-in customer',
-      method: sale.sale_type.replaceAll('_', ' '),
+      method: ((sale as { payments?: Array<{ payment_method?: string | null }> }).payments?.[0]?.payment_method ?? sale.sale_type).replaceAll('_', ' '),
       status: sale.payment_status.replaceAll('_', ' '),
       amount:
         `RWF ${Number(sale.total_amount).toLocaleString('en-RW')}`,
@@ -5611,11 +6288,15 @@ function App() {
     <div className="module-page-sticky-header">
       <ModulePageNavigation
         platformDashboardLabel="POS & Sales Dashboard"
+        showMainDashboardExit={isAdminProfile}
         onExitToMainDashboard={() => {
           setActivePosWorkspace('overview');
-          setActiveSection(
-            'overview' as typeof activeSection,
-          );
+
+          if (isAdminProfile) {
+            setActiveSection(
+              'overview' as typeof activeSection,
+            );
+          }
         }}
         onOpenPlatformDashboard={() => {
           setActivePosWorkspace('overview');
@@ -5714,11 +6395,23 @@ function App() {
       const posSummaryInsurerPayment = posPaymentMethod === 'insurance'
         ? Math.max(posSummaryTotalAmount - posSummaryCustomerPayment, 0)
         : 0;
-      const posSummaryTimestamp = new Date().toLocaleString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
+      const posSessionBusinessDate =
+        typeof (posSession as { business_date?: string | null } | null)?.business_date === 'string'
+          ? (posSession as { business_date?: string | null }).business_date ?? null
+          : null;
+      const todayDateKey = new Date().toISOString().slice(0, 10);
+      const isHistoricalPosTransactionDate =
+        Boolean(
+          posSessionBusinessDate
+          && posSessionBusinessDate !== todayDateKey,
+        );
+      const posSummaryTimestamp = (
+        isHistoricalPosTransactionDate && posSessionBusinessDate
+          ? new Date(`${posSessionBusinessDate}T12:00:00`)
+          : new Date()
+      ).toLocaleString('en-GB', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
       });
 
       const posPaymentSummarySignature = [
@@ -5786,7 +6479,7 @@ function App() {
             </div>
 
             <div className="pos-terminal-main-scroll pos-scroll-body-v16">
-              {posNotice && <div className="form-success">{posNotice}</div>}
+              {posNotice && !posTransactionConfirmed && !/added:/i.test(posNotice) && <div className="form-success">{posNotice}</div>}
 
 <section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
               <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
@@ -6445,13 +7138,6 @@ function App() {
                       </>
                     )}
 
-                    <div className="pos-document-rule-note">
-                      <span>Customer receipt</span>
-                      <small>
-                        Generated automatically when the transaction is recorded.
-                      </small>
-                    </div>
-
                     <label>
                       <span>Discount amount</span>
                       <input
@@ -6509,7 +7195,7 @@ function App() {
                   <div className="pos-payment-summary-grid pos-payment-summary-grid-v17">
                     <div className="pos-payment-summary-column pos-payment-summary-column--operational" aria-label="Operational payment summary">
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
-                        <span>Date</span>
+                        <span>Transaction Date</span>
                         <strong>{posSummaryTimestamp}</strong>
                       </article>
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
@@ -6561,7 +7247,7 @@ function App() {
                       </article>
                     </div>
                   </div>
-                  {posNotice && (
+                  {!posTransactionConfirmed && posNotice ? (
                     <div
                       className="notice pos-confirmation-notice"
                       role="status"
@@ -6569,7 +7255,7 @@ function App() {
                     >
                       {posNotice}
                     </div>
-                  )}
+                  ) : null}
 
                   <button
                     type="button"
@@ -6582,102 +7268,32 @@ function App() {
                         ? 'Transaction confirmed'
                         : 'Confirm transaction'}
                   </button>
-                </section>
 
-                {posTransactionConfirmed
-                  && posConfirmedPayment?.receipt_number
-                  && (
-                  <section className="pos-customer-receipt-shell">
-                    <div className="pos-receipt-toolbar">
-                      <div>
-                        <span>Customer receipt</span>
-                        <strong>{posConfirmedPayment.receipt_number}</strong>
-                      </div>
-                      <button type="button" onClick={() => window.print()}>
-                        Print receipt
-                      </button>
+                  {posTransactionConfirmed ? (
+                    <div
+                      className="pos-transaction-completion-actions pos-transaction-completion-actions--summary"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <article className="pos-summary-field-card pos-summary-field-card--operational pos-transaction-completion-card">
+                        <span>Transaction Completion Confirmation</span>
+                        <strong>Transaction Successful</strong>
+                      </article>
+
+                      <article className="pos-summary-field-card pos-summary-field-card--financial pos-transaction-print-card">
+                        <span>Print Receipt</span>
+                        <button
+                          type="button"
+                          className="pos-print-receipt-button"
+                          onClick={() => printUbuzimaPosDocument()}
+                          disabled={!posConfirmedPayment?.receipt_number}
+                        >
+                          Print Receipt
+                        </button>
+                      </article>
                     </div>
-
-                    <article className="pos-customer-receipt" id="pos-customer-receipt">
-                      <header className="pos-customer-receipt__header">
-                        <strong>{profileInstitution}</strong>
-                        <span>Pharmacy sales receipt</span>
-                        <small>Powered by Ubuzima+</small>
-                      </header>
-
-                      <section className="pos-customer-receipt__meta">
-                        <div><span>Receipt</span><strong>{posConfirmedPayment.receipt_number}</strong></div>
-                        <div><span>Date / time</span><strong>{posSummaryTimestamp}</strong></div>
-                        <div><span>Cashier</span><strong>{profile!.user.name}</strong></div>
-                        <div><span>Customer</span><strong>{posCustomerType.replaceAll('-', ' ')}</strong></div>
-                        <div><span>Contact</span><strong>{posInvoiceContact.trim() || 'Not provided'}</strong></div>
-                        <div><span>Payment</span><strong>{posPaymentMethod.replaceAll('_', ' ')}</strong></div>
-                      </section>
-
-                      {posPaymentMethod === 'insurance' && (
-                        <section className="pos-customer-receipt__insurance">
-                          <div><span>Insurer</span><strong>{selectedInsurance.name}</strong></div>
-                          <div><span>Scheme / institution</span><strong>{selectedInsuranceInstitution?.name || 'Not selected'}</strong></div>
-                          <div><span>Customer share</span><strong>{posSummaryCustomerContributionPercent}%</strong></div>
-                          <div><span>Insurer share</span><strong>{posSummaryInsurerContributionPercent}%</strong></div>
-                        </section>
-                      )}
-
-                      <div className="pos-customer-receipt__table-wrap">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>Item</th>
-                              <th>Qty / unit</th>
-                              <th>Price</th>
-                              <th>Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {posConfirmedItems.map((item) => (
-                              <tr key={`${item.code}-${item.batchId}`}>
-                                <td>
-                                  <strong>{item.name}</strong>
-                                  <small>Batch {item.batchNumber}</small>
-                                </td>
-                                <td>
-                                  {Number(item.sellingUnitQuantity || 0).toLocaleString('en-RW')}{' '}
-                                  {item.sellingUnit}
-                                </td>
-                                <td>RWF {(item.unitPrice * item.quantityPerSellingUnit).toLocaleString('en-RW')}</td>
-                                <td>RWF {(item.quantity * item.unitPrice).toLocaleString('en-RW')}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <section className="pos-customer-receipt__totals">
-                        <div><span>Subtotal</span><strong>RWF {posFinancialSubtotal.toLocaleString('en-RW')}</strong></div>
-                        <div><span>Discount</span><strong>RWF {posSummaryAppliedDiscount.toLocaleString('en-RW')}</strong></div>
-                        <div><span>Tax</span><strong>RWF {posSummaryTaxAmount.toLocaleString('en-RW')}</strong></div>
-                        <div className="total"><span>Total</span><strong>RWF {posSummaryTotalAmount.toLocaleString('en-RW')}</strong></div>
-                        {posPaymentMethod === 'insurance' && (
-                          <>
-                            <div><span>Customer contribution</span><strong>RWF {posSummaryCustomerPayment.toLocaleString('en-RW')}</strong></div>
-                            <div><span>Insurer contribution</span><strong>RWF {posSummaryInsurerPayment.toLocaleString('en-RW')}</strong></div>
-                          </>
-                        )}
-                        <div><span>Balance</span><strong>RWF 0</strong></div>
-                      </section>
-
-                      <footer className="pos-customer-receipt__footer">
-                        <strong>Thank you for choosing {profileInstitution}.</strong>
-                        <span>Keep this receipt for returns, corrections, insurance follow-up, and audit verification.</span>
-                        <small>Verification code: {posConfirmedPayment.receipt_number}</small>
-                      </footer>
-                    </article>
-                  </section>
-                )}
-
-
-
-
+                  ) : null}
+                </section>
 
                 {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
                   <section className="pos-invoice-journey">
@@ -6697,7 +7313,7 @@ function App() {
                     </button>
 
                     {posInvoiceDelivery === 'printer' && (
-                      <button type="button" onClick={() => window.print()}>
+                      <button type="button" onClick={() => printUbuzimaPosDocument()}>
                         Print invoice
                       </button>
                     )}
@@ -6725,7 +7341,74 @@ function App() {
               </section>
             </section>
 
+
+              <section className="pos-live-business-performance-card" aria-label="Live business performance analytics">
+                <div className="section-heading">
+                  <div>
+                    <span>Business performance</span>
+                    <h3>Live POS sales intelligence</h3>
+                    <p className="muted">
+                      Practical signals derived from current sales, collections, balances,
+                      and transaction patterns.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary-action"
+                    onClick={() => void refreshPosHandoverInsights()}
+                  >
+                    Refresh data
+                  </button>
+                </div>
+
+                {posLiveBusinessAnalyticsNotice ? (
+                  <p className="pos-live-business-performance-card__notice">
+                    {posLiveBusinessAnalyticsNotice}
+                  </p>
+                ) : null}
+
+                <div className="pos-live-business-performance-grid">
+                  <article>
+                    <span>Sales</span>
+                    <strong>{formatUbuzimaMoney(posLiveBusinessAnalytics?.sales_total ?? 0)}</strong>
+                    <small>{posLiveBusinessAnalytics?.transaction_count ?? 0} transactions</small>
+                  </article>
+                  <article>
+                    <span>Collections</span>
+                    <strong>{formatUbuzimaMoney(posLiveBusinessAnalytics?.collections_total ?? 0)}</strong>
+                    <small>{posLiveBusinessAnalytics?.receipt_count ?? 0} receipts</small>
+                  </article>
+                  <article>
+                    <span>Open balance</span>
+                    <strong>{formatUbuzimaMoney(posLiveBusinessAnalytics?.open_balance ?? 0)}</strong>
+                    <small>{posLiveBusinessAnalytics?.collection_ratio ?? 0}% collection ratio</small>
+                  </article>
+                  <article>
+                    <span>Average sale</span>
+                    <strong>{formatUbuzimaMoney(posLiveBusinessAnalytics?.average_transaction_value ?? 0)}</strong>
+                    <small>{posLiveBusinessAnalytics?.business_date ?? (posSession as { business_date?: string | null } | null)?.business_date ?? 'Current date'}</small>
+                  </article>
+                </div>
+              </section>
+
 <section className="pos-sales-summary-table-card pos-recent-transactions-bottom pos-recent-transactions-fullwidth">
+
+              {posRecentTransactionsWithUsers.length > 0 ? (
+                <div className="pos-transaction-operator-strip">
+                  <span>Latest operator</span>
+                  <strong>{formatUbuzimaOperatorName(posRecentTransactionsWithUsers[0])}</strong>
+                  <small>
+                    {posRecentTransactionsWithUsers[0]?.sale_number ?? 'Recent POS transaction'}
+                    {' · '}
+                    {normalizeUbuzimaTransactionDate(
+                      posRecentTransactionsWithUsers[0]?.business_date
+                        ?? posRecentTransactionsWithUsers[0]?.received_at
+                        ?? posRecentTransactionsWithUsers[0]?.sold_at,
+                    ) ?? 'Date pending'}
+                  </small>
+                </div>
+              ) : null}
+
               <div className="section-heading">
                 <div>
                   <span>Synchronized sales feed</span>
@@ -6947,7 +7630,15 @@ function App() {
         <div className="module-page-sticky-header">
           <ModulePageNavigation
             platformDashboardLabel="Procurement Home"
-            onExitToMainDashboard={() => navigateToSection('overview')}
+            showMainDashboardExit={isAdminProfile}
+            onExitToMainDashboard={() => {
+              if (isAdminProfile) {
+                navigateToSection('overview');
+                return;
+              }
+
+              setActiveSupplierWorkspace('overview');
+            }}
             onOpenPlatformDashboard={() => setActiveSupplierWorkspace('overview')}
             onBack={() => setActiveSupplierWorkspace('overview')}
           />
@@ -7055,7 +7746,19 @@ function App() {
           eyebrow="Finance and control"
           title="Finance Workspace"
           description="Move from finance overview to payables, receivables, collections, exceptions, and statements through focused pages."
-          onDashboard={() => navigateToSection('overview')}
+          dashboardLabel={
+            isAdminProfile
+              ? 'Main Dashboard'
+              : 'Finance Home'
+          }
+          onDashboard={() => {
+            if (isAdminProfile) {
+              navigateToSection('overview');
+              return;
+            }
+
+            setActiveFinanceWorkspace('overview');
+          }}
         />
         {activeFinanceWorkspace === 'overview' && (
           <ModuleLandingCards
@@ -7142,7 +7845,19 @@ function App() {
           eyebrow="Reports and management review"
           title="Reports Workspace"
           description="Open operational alerts, review queues, executive summaries, decisions, checklists, and follow-up pages individually."
-          onDashboard={() => navigateToSection('overview')}
+          dashboardLabel={
+            isAdminProfile
+              ? 'Main Dashboard'
+              : 'Reports Home'
+          }
+          onDashboard={() => {
+            if (isAdminProfile) {
+              navigateToSection('overview');
+              return;
+            }
+
+            setActiveAdhocReportWorkspace('overview');
+          }}
         />
         {activeAdhocReportWorkspace === 'overview' && (
           <ModuleLandingCards
@@ -7333,27 +8048,11 @@ function App() {
     return (
       <section className="section-page">
 {selectedWorkspace === 'user-profiles' && (
-          <article className="panel wide">
-            <div className="panel-heading-row">
-              <div>
-                <h2>User profile management</h2>
-                <p className="muted">
-                  Admin users can manage staff identity, tenant scope, branch assignment, role, language, 2FA readiness, and status from this surface.
-                </p>
-              </div>
-              <button type="button">Create user</button>
-            </div>
-            <div className="document-action-grid">
-              {adminUserActions.map(([title, text]) => (
-                <article key={title}>
-                  <strong>{title}</strong>
-                  <span>{text}</span>
-                </article>
-              ))}
-            </div>
-          </article>
+          <TenantSecurityUserManagementPanel
+            token={session!.token}
+            profile={profile}
+          />
         )}
-
 
 
         {selectedWorkspace === 'platform-management' && (
@@ -7477,8 +8176,39 @@ function App() {
   }
 
   function renderActiveSection() {
+    if (
+      !isAdminProfile
+      && visibleSectionKeys.size === 0
+    ) {
+      return (
+        <section className="section-page">
+          <section className="module-page-intro">
+            <div>
+              <p className="eyebrow">
+                Access setup required
+              </p>
+              <h2>
+                No operational workspace is assigned
+              </h2>
+              <p className="muted">
+                Your account is active, but no module
+                permission is currently available. Ask
+                a tenant administrator to assign the
+                appropriate role or workspace access.
+              </p>
+            </div>
+            <span>Access required</span>
+          </section>
+        </section>
+      );
+    }
+
     switch (activeSection) {
       case 'overview':
+        if (!profileHasAdminAuthority(profile)) {
+          return null;
+        }
+
         return (
           <section className="section-page dashboard-overview-page dashboard-operating-page">
             <section className="dashboard-operating-hero dashboard-operating-hero--compact">
@@ -7773,6 +8503,9 @@ function App() {
       case 'ai-center':
         return renderAiCenter();
       case 'admin-panel':
+        if (!profileHasAdminAuthority(profile)) {
+          return null;
+        }
         return renderAdminPanel();
             case 'general-stock-items': {
 
@@ -7814,7 +8547,21 @@ function App() {
                 eyebrow="Insurance administration"
                 title="Insurance Workspace"
                 description="Manage partners, institutions, schemes, pricing, contributions, claims, reconciliation, and audit evidence in focused pages."
-                onDashboard={() => navigateToSection('overview')}
+                dashboardLabel={
+                  isAdminProfile
+                    ? 'Main Dashboard'
+                    : 'Insurance Home'
+                }
+                onDashboard={() => {
+                  if (isAdminProfile) {
+                    navigateToSection('overview');
+                    return;
+                  }
+
+                  setActiveInsuranceWorkspace(
+                    'overview',
+                  );
+                }}
               />
               <InsuranceManagementWorkspace
               token={session!.token}
@@ -8118,20 +8865,39 @@ function App() {
             <img className="sidebar-logo" src={brandLogoSrc} alt="Ubuzima+" />
             <div>
               <strong>Ubuzima+</strong>
-              <span>Admin Center</span>
+              <span>
+                {isAdminProfile
+                  ? 'Admin Center'
+                  : isOwnerProfile
+                    ? 'Owner Business Center'
+                    : 'Operations Center'}
+              </span>
             </div>
           </div>
 
-          <nav className="tree-nav tree-nav--principal" aria-label="Admin workspace navigation">
-            <button
-              type="button"
-              className={`tree-root-button principal-menu-button ${activeSection === 'overview' ? 'active' : ''}`}
-              data-section="overview"
-              onClick={() => navigateToSection('overview')}
-            >
-              <span className="nav-icon">DB</span>
-              <span className="principal-menu-title">Dashboard</span>
-            </button>
+          <nav
+            className="tree-nav tree-nav--principal"
+            aria-label={
+              isAdminProfile
+                ? 'Admin workspace navigation'
+                : 'Operational workspace navigation'
+            }
+          >
+            {isAdminProfile && (
+              <button
+                type="button"
+                className={`tree-root-button principal-menu-button ${activeSection === 'overview' ? 'active' : ''}`}
+                data-section="overview"
+                onClick={() =>
+                  navigateToSection('overview')
+                }
+              >
+                <span className="nav-icon">DB</span>
+                <span className="principal-menu-title">
+                  Dashboard
+                </span>
+              </button>
+            )}
 
             {[...principalMenuItems]
               .sort((left, right) => {

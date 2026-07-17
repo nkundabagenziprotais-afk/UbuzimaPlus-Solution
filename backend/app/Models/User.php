@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+
+use App\Support\OperationalPermissionContract;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -66,6 +68,82 @@ class User extends Authenticatable
     public function trustedDevices(): HasMany
     {
         return $this->hasMany(TrustedDevice::class);
+    }
+
+
+    public function expandedPermissionCodes(): array
+    {
+        $permissionCodes = $this->roles()
+            ->wherePivot('status', 'active')
+            ->where('roles.status', 'active')
+            ->with([
+                'permissions' => function ($query) {
+                    $query->where(
+                        'permissions.status',
+                        'active'
+                    );
+                },
+            ])
+            ->get()
+            ->flatMap(function ($role) {
+                return $role->permissions->pluck('code');
+            })
+            ->filter()
+            ->map(function ($code) {
+                return trim((string) $code);
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        /*
+         * Effective access must come from explicit active RBAC
+         * assignments. Role names and broad module prefixes must
+         * never imply write, approval, payment, security, or
+         * platform-administration authority.
+         *
+         * OperationalPermissionContract is retained only for its
+         * reviewed compatibility aliases.
+         */
+        return collect(
+            OperationalPermissionContract::expand(
+                $permissionCodes
+            )
+        )
+            ->merge($permissionCodes)
+            ->filter()
+            ->map(function ($code) {
+                return trim((string) $code);
+            })
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        $permission = trim($permission);
+
+        if ($permission === '') {
+            return true;
+        }
+
+        return in_array($permission, $this->expandedPermissionCodes(), true);
+    }
+
+    public function hasAnyPermission(array|string $permissions): bool
+    {
+        if (is_string($permissions)) {
+            $permissions = array_filter(array_map('trim', explode(',', $permissions)));
+        }
+
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission((string) $permission)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }

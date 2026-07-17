@@ -2126,13 +2126,84 @@ export async function checkoutPharmaSale(
   tenantSlug: string,
   payload: CheckoutPharmaSalePayload,
 ): Promise<CheckoutPharmaSaleResponse> {
-  return sendJsonWithTenant<CheckoutPharmaSaleResponse>(
+  const createdResponse = await createPharmaSale(
     token,
-    '/pharmaco/sales/checkout',
     tenantSlug,
-    'POST',
-    payload,
+    {
+      branch_id: payload.branch_id,
+      pharmaco_customer_id: payload.pharmaco_customer_id,
+      pharmaco_prescription_id: payload.pharmaco_prescription_id,
+      sale_type: payload.sale_type,
+      discount_amount: payload.discount_amount,
+      tax_amount: payload.tax_amount,
+      notes: payload.notes,
+      items: payload.items.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        discount_amount: item.discount_amount,
+        tax_amount: item.tax_amount,
+      })),
+    },
   );
+
+  const createdItems = createdResponse.sale.items ?? [];
+
+  if (createdItems.length !== payload.items.length) {
+    throw new Error(
+      'The POS sale was created, but the sale item count did not match the cart. Please review the sale before retrying payment.',
+    );
+  }
+
+  const confirmedResponse = await confirmPharmaSale(
+    token,
+    tenantSlug,
+    createdResponse.sale.id,
+    {
+      items: createdItems.map((saleItem, index) => ({
+        sale_item_id: saleItem.id,
+        stock_batch_id: payload.items[index]?.stock_batch_id,
+        prescription_verified:
+          payload.items[index]?.prescription_verified ?? false,
+      })),
+    },
+  );
+
+  const payableSale = confirmedResponse.sale;
+  const payableAmount = Number(
+    (payableSale as { total_amount?: number | string }).total_amount
+      ?? (createdResponse.sale as { total_amount?: number | string }).total_amount
+      ?? 0,
+  );
+
+  if (!Number.isFinite(payableAmount) || payableAmount <= 0) {
+    throw new Error(
+      'The POS sale was dispensed, but the payable amount could not be resolved. Please review the sale before recording payment.',
+    );
+  }
+
+  const paymentResponse = await recordPharmaPayment(
+    token,
+    tenantSlug,
+    payableSale.id,
+    {
+      amount: payableAmount,
+      payment_method: payload.payment.payment_method,
+      generate_receipt: true,
+      reference_number: payload.payment.reference_number,
+      received_at: payload.payment.received_at,
+      notes:
+        payload.payment.notes
+        ?? 'Customer receipt generated automatically at POS confirmation.',
+    },
+  );
+
+  return {
+    message: 'POS checkout completed successfully.',
+    sale: paymentResponse.sale,
+    payment: paymentResponse.payment,
+    idempotent: false,
+  };
 }
 
 
@@ -4623,6 +4694,137 @@ export async function resetSecurityUserPassword(
   }>(
     token,
     `/access-check/security/users/${userId}/reset-password`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export interface PharmaLiveBusinessAnalyticsSignal {
+  label: string;
+  value: number;
+  detail: string;
+}
+
+export interface PharmaLiveBusinessAnalyticsResponse {
+  message: string;
+  business_date: string;
+  sales_total: number;
+  collections_total: number;
+  open_balance: number;
+  transaction_count: number;
+  receipt_count: number;
+  average_transaction_value: number;
+  collection_ratio: number;
+  payment_methods: Array<{
+    payment_method: string | null;
+    count: number;
+    amount: number;
+  }>;
+  signals: PharmaLiveBusinessAnalyticsSignal[];
+}
+
+export interface PharmaRecentTransactionWithUser {
+  id: number;
+  sale_number: string | null;
+  business_date: string | null;
+  sold_at: string | null;
+  created_at: string | null;
+  created_by: number | null;
+  total_amount: number;
+  payment_status: string | null;
+  payment_method: string | null;
+  receipt_number: string | null;
+  paid_amount: number | null;
+  received_at: string | null;
+  received_by: number | null;
+  operator_name: string | null;
+  operator_email: string | null;
+}
+
+function ubuzimaHandoverApiBase(): string {
+  const configuredBase = String(import.meta.env.VITE_API_BASE_URL ?? '').trim();
+  return configuredBase ? configuredBase.replace(/\/$/, '') : '/api/v1';
+}
+
+async function ubuzimaHandoverRequest<T>(
+  token: string,
+  tenantSlug: string,
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await fetch(`${ubuzimaHandoverApiBase()}${path}`, {
+    ...options,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-Slug': tenantSlug,
+      'X-Tenant': tenantSlug,
+      'X-Tenant-Code': tenantSlug,
+      ...(options.headers ?? {}),
+    },
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = payload && typeof payload === 'object' && 'message' in payload
+      ? String((payload as { message?: unknown }).message ?? 'Request failed.')
+      : 'Request failed.';
+
+    throw new Error(message);
+  }
+
+  return payload as T;
+}
+
+export async function getPharmaLiveBusinessAnalytics(
+  token: string,
+  tenantSlug: string,
+  businessDate?: string | null,
+): Promise<PharmaLiveBusinessAnalyticsResponse> {
+  const params = businessDate ? `?business_date=${encodeURIComponent(businessDate)}` : '';
+
+  return ubuzimaHandoverRequest<PharmaLiveBusinessAnalyticsResponse>(
+    token,
+    tenantSlug,
+    `/pharmaco/business-analytics/live${params}`,
+  );
+}
+
+export async function getPharmaRecentTransactionsWithUsers(
+  token: string,
+  tenantSlug: string,
+): Promise<{ message: string; transactions: PharmaRecentTransactionWithUser[] }> {
+  return ubuzimaHandoverRequest<{ message: string; transactions: PharmaRecentTransactionWithUser[] }>(
+    token,
+    tenantSlug,
+    '/pharmaco/pos/recent-transactions-with-users',
+  );
+}
+
+export async function adminResetTenantSecurityUserPassword(
+  token: string,
+  tenantSlug: string,
+  userId: number,
+  payload: {
+    password: string;
+    password_confirmation: string;
+    must_change_password?: boolean;
+  },
+): Promise<{
+  message: string;
+  sessions_revoked?: number;
+  user?: unknown;
+}> {
+  return sendJsonWithTenant<{
+    message: string;
+    sessions_revoked?: number;
+    user?: unknown;
+  }>(
+    token,
+    `/security/users/${userId}/admin-reset-password`,
     tenantSlug,
     'POST',
     payload,

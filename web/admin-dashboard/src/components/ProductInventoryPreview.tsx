@@ -203,7 +203,7 @@ const inventoryPageDescriptions: Record<InventoryView, string> = {
   batches: 'Live batch and expiry table with edit, delete, bulk actions, export, details and remaining days.',
   'near-expiry': 'Batches approaching expiry, remaining days, risk status and operational action.',
   'product-master': 'Supreme product source for margins, compliance, product setup, approval and audit history.',
-  'product-inventory': 'Commercial inventory used by POS, PO receiving, pricing, shelf availability and stock movement.',
+  'product-inventory': '',
   locations: 'Stock locations, branches, shelves, stores and storage points.',
 };
 
@@ -2193,7 +2193,8 @@ export function ProductInventoryPreview({
     setDetailPanel({
       title: product.name,
       fields: [
-        ['Drug Code', product.sku],
+        ['Product UID', product.uuid],
+        ['Internal SKU', product.sku],
         ['Generic Description', product.generic_name ?? 'Not set'],
         ['Designation', product.name],
         ['Instructions', metadataText(product, ['rhia_instructions'], 'Not set')],
@@ -2272,7 +2273,7 @@ export function ProductInventoryPreview({
     const term = productMasterSearchTerm.trim().toLowerCase();
 
     if (!term) {
-      setError('Type a drug code, designation, or generic description before searching.');
+      setError('Type an Internal SKU, designation, or generic description before searching.');
       return;
     }
 
@@ -2412,7 +2413,7 @@ export function ProductInventoryPreview({
             },
             {
               title: 'Naming Check',
-              value: productMasterForm.drug_code && productMasterForm.designation ? 'Ready for review' : 'Drug Code and Designation required',
+              value: productMasterForm.drug_code && productMasterForm.designation ? 'Ready for review' : 'Internal SKU and Designation required',
               apply: () => undefined,
               disabled: true,
             },
@@ -2434,7 +2435,7 @@ export function ProductInventoryPreview({
     return (
       <div className="product-master-form-grid">
         <label>
-          Drug Code
+          Internal SKU
           <input
             value={productMasterForm.drug_code}
             onChange={(event) => setProductMasterForm({ ...productMasterForm, drug_code: event.target.value })}
@@ -2646,7 +2647,7 @@ export function ProductInventoryPreview({
           <div className="product-master-view-grid">
             {[
               ['SN', metadataText(viewingProductMasterProduct, ['rhia_sn'], String(viewingProductMasterProduct.id))],
-              ['Drug Code', viewingProductMasterProduct.sku],
+              ['Internal SKU', viewingProductMasterProduct.sku],
               ['Generic Description', viewingProductMasterProduct.generic_name ?? 'Not set'],
               ['Designation', viewingProductMasterProduct.name],
               ['Instructions', metadataText(viewingProductMasterProduct, ['rhia_instructions'], 'Not set')],
@@ -2785,7 +2786,7 @@ export function ProductInventoryPreview({
                       searchProductMasterForEdit();
                     }
                   }}
-                  placeholder="Search by drug code, designation, or generic description"
+                  placeholder="Search by Internal SKU, designation, or generic description"
                   required/>
                 <button type="button" aria-label="Search Product Master" onClick={searchProductMasterForEdit}>Search</button>
               </div>
@@ -4571,7 +4572,7 @@ export function ProductInventoryPreview({
                           'low-stock-watch-list.csv',
                           [
                             'SN',
-                            'Drug Code',
+                            'Internal SKU',
                             'Generic Description',
                             'Designation',
                             'Selling Unit',
@@ -4644,7 +4645,7 @@ export function ProductInventoryPreview({
                     <thead>
                       <tr>
                         <th>SN</th>
-                        <th>Drug Code</th>
+                        <th>Internal SKU</th>
                         <th>Generic Description</th>
                         <th>Designation</th>
                         <th>Selling Unit</th>
@@ -4916,7 +4917,7 @@ export function ProductInventoryPreview({
                           'batch-and-expiry-register.csv',
                           [
                             'SN',
-                            'Drug Code',
+                            'Internal SKU',
                             'Generic Description',
                             'Designation',
                             'Selling Unit',
@@ -5008,7 +5009,7 @@ export function ProductInventoryPreview({
                     <thead>
                       <tr>
                         <th>SN</th>
-                        <th>Drug Code</th>
+                        <th>Internal SKU</th>
                         <th>Generic Description</th>
                         <th>Designation</th>
                         <th>Selling Unit</th>
@@ -5141,7 +5142,7 @@ export function ProductInventoryPreview({
                     <thead>
                       <tr>
                         <th>Product</th>
-                        <th>Drug Code</th>
+                        <th>Internal SKU</th>
                         <th>Batch</th>
                         <th>Location</th>
                         <th className="cell-number">Available</th>
@@ -5198,7 +5199,7 @@ export function ProductInventoryPreview({
                 onExport: () =>
                   exportCsv(
                     'product-master.csv',
-                    ['SN', 'Drug Code', 'Generic Description', 'Designation', 'Instructions', 'Selling Unit', 'Regulatory Price', 'Product Margin Rate', 'Category', 'Source', 'Section', 'Subsection', 'Re-order Level', 'Status'],
+                    ['SN', 'Internal SKU', 'Generic Description', 'Designation', 'Instructions', 'Selling Unit', 'Regulatory Price', 'Product Margin Rate', 'Category', 'Source', 'Section', 'Subsection', 'Re-order Level', 'Status'],
                     visibleProducts.map((product) => [
                       metadataText(product, ['rhia_sn']),
                       product.sku,
@@ -5264,7 +5265,7 @@ export function ProductInventoryPreview({
             <section className="inventory-section">
               {renderTableToolbar({
                 title: 'Product Inventory',
-                subtitle: 'Stock batches used for POS, receiving, availability, and pricing.',
+                subtitle: '',
                 selectedCount: selectedBatchIds.length,
                 onExport: () =>
                   exportCsv(
@@ -5359,9 +5360,6 @@ export function ProductInventoryPreview({
                   <div>
                     <p className="eyebrow">Guided receiving</p>
                     <h3>Receive stock only when you are ready</h3>
-                    <span>
-                      The receiving form is hidden to keep this page calm. Start the flow when you need to record stock against Product Master.
-                    </span>
                   </div>
                   <div className="inventory-guided-flow-actions">
                     <button
@@ -5437,7 +5435,7 @@ export function ProductInventoryPreview({
                       <div className="inventory-product-master-search-row">
                         <textarea
                           value={inventoryProductSearchTerm}
-                          placeholder={selectedInventoryProduct ? 'Product selected. Use Change product to search another item.' : 'Search Product Master by product name, generic name, or drug code'}
+                          placeholder={selectedInventoryProduct ? 'Product selected. Use Change product to search another item.' : 'Search Product Master by product name, generic name, or Internal SKU'}
                           onFocus={() => {
                             setIsInventoryProductSearchOpen(true);
                             if (inventoryProductOptions.length === 0) {
@@ -5479,7 +5477,7 @@ export function ProductInventoryPreview({
                           <div>
                             <strong>{selectedInventoryProduct.name}</strong>
                             <span>{selectedInventoryProduct.generic_name ?? 'Generic name not set'}</span>
-                            <small>Drug code: {selectedInventoryProduct.sku}</small>
+                            <small>Internal SKU: {selectedInventoryProduct.sku}</small>
                           </div>
                           <button
                             type="button"
@@ -5541,7 +5539,7 @@ export function ProductInventoryPreview({
                               >
                                 <strong>{product.name}</strong>
                                 <span>{product.generic_name ?? 'Generic name not set'}</span>
-                                <small>Drug code: {product.sku}</small>
+                                <small>Internal SKU: {product.sku}</small>
                               </button>
                             ))
                           )}
@@ -5710,7 +5708,7 @@ export function ProductInventoryPreview({
                   <div className="inventory-batch-detail-grid">
                     {[
                       ['Product', viewingInventoryBatch.product.name],
-                      ['Drug code', viewingInventoryBatch.product.sku],
+                      ['Internal SKU', viewingInventoryBatch.product.sku],
                       ['Generic name', metadataText(viewingInventoryBatch.product, ['generic_name'], 'Generic name not set')],
                       ['Batch number', viewingInventoryBatch.batch_number],
                       ['Location', `${viewingInventoryBatch.stock_location.name} (${viewingInventoryBatch.stock_location.code})`],
@@ -5868,7 +5866,7 @@ export function ProductInventoryPreview({
                           event.target.value,
                         )
                       }
-                      placeholder="Search product, drug code, batch, location or supplier"
+                      placeholder="Search product, Internal SKU, batch, location or supplier"
                       aria-label="Search Inventory records"
                     />
 
@@ -5922,7 +5920,7 @@ export function ProductInventoryPreview({
                   <thead>
                     <tr>
                       <th>SN</th>
-                      <th>Product / Drug Code</th>
+                      <th>Product / Internal SKU</th>
                       <th>Generic Description</th>
                       <th>Batch / Expiry</th>
                       <th>Location</th>
@@ -5949,7 +5947,7 @@ export function ProductInventoryPreview({
                           <td className="cell-wrap">
                             <strong className="cell-strong">{batch.product.name}</strong>
                             <br />
-                            <span className="cell-muted">Drug code: {batch.product.sku}</span>
+                            <span className="cell-muted">Internal SKU: {batch.product.sku}</span>
                             <br />
                             <span className="cell-muted">Regulatory Price: {formatRwf(regulatoryPrice(batch.product))}</span>
                           </td>
@@ -6380,7 +6378,7 @@ function ProductMasterTable({
         <thead>
           <tr>
             <th>SN</th>
-            <th>Drug Code</th>
+            <th>Internal SKU</th>
             <th>Generic Description</th>
             <th>Designation</th>
             <th>Instructions</th>

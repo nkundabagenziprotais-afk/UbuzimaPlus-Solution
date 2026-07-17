@@ -3,6 +3,7 @@ type ModulePageNavigationProps = {
   onExitToMainDashboard: () => void;
   onOpenPlatformDashboard: () => void;
   onBack: () => void;
+  showMainDashboardExit?: boolean;
 };
 
 function ExitIcon() {
@@ -70,20 +71,23 @@ export function ModulePageNavigation({
   onExitToMainDashboard,
   onOpenPlatformDashboard,
   onBack,
+  showMainDashboardExit = true,
 }: ModulePageNavigationProps) {
   return (
     <nav
       className="module-page-navigation"
       aria-label="Module page navigation"
     >
-      <button
-        type="button"
-        className="module-page-navigation-exit"
-        onClick={onExitToMainDashboard}
-      >
-        <ExitIcon />
-        <span>Exit to Main Dashboard</span>
-      </button>
+      {showMainDashboardExit && (
+        <button
+          type="button"
+          className="module-page-navigation-exit"
+          onClick={onExitToMainDashboard}
+        >
+          <ExitIcon />
+          <span>Exit to Main Dashboard</span>
+        </button>
+      )}
 
       <div className="module-page-navigation-context">
         <span className="module-page-navigation-label">

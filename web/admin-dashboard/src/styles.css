@@ -32370,3 +32370,407 @@ thead
 | AQUILA_DUPLICATE_RECEIPT_CONFIRMATION_END
 |--------------------------------------------------------------------------
 */
+
+
+/* POS transaction completion cards */
+.pos-transaction-completion-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.pos-transaction-completion-actions--summary {
+  width: 100%;
+}
+
+.pos-transaction-completion-card,
+.pos-transaction-print-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.pos-transaction-completion-card strong {
+  line-height: 1.2;
+}
+
+.pos-print-receipt-button {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.68rem 0.9rem;
+  background: #176b46;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pos-print-receipt-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+
+/* UBIZIMA handover: live POS business performance and operator strip. */
+.pos-live-business-performance-card,
+.pos-transaction-operator-strip {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pos-live-business-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.pos-live-business-performance-grid article {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: #f8fafc;
+}
+
+.pos-live-business-performance-grid span,
+.pos-transaction-operator-strip span {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.pos-live-business-performance-grid strong,
+.pos-transaction-operator-strip strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.pos-live-business-performance-grid small,
+.pos-transaction-operator-strip small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #64748b;
+}
+
+.pos-live-business-performance-card__notice {
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+@media (max-width: 900px) {
+  .pos-live-business-performance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .pos-live-business-performance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* UBIZIMA handover: print-safe POS invoice and receipt output. */
+@media print {
+  body.ubuzima-pos-print-mode * {
+    visibility: hidden !important;
+  }
+
+  body.ubuzima-pos-print-mode .pos-payment-summary-section,
+  body.ubuzima-pos-print-mode .pos-payment-summary-section *,
+  body.ubuzima-pos-print-mode .pos-invoice-journey,
+  body.ubuzima-pos-print-mode .pos-invoice-journey *,
+  body.ubuzima-pos-print-mode .pos-transaction-completion-actions,
+  body.ubuzima-pos-print-mode .pos-transaction-completion-actions * {
+    visibility: visible !important;
+  }
+
+  body.ubuzima-pos-print-mode .pos-payment-summary-section,
+  body.ubuzima-pos-print-mode .pos-invoice-journey,
+  body.ubuzima-pos-print-mode .pos-transaction-completion-actions {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #fff !important;
+    color: #111827 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 18px !important;
+  }
+
+  body.ubuzima-pos-print-mode button,
+  body.ubuzima-pos-print-mode .secondary-action,
+  body.ubuzima-pos-print-mode .primary-action {
+    display: none !important;
+  }
+}
+
+
+/* UBIZIMA handover: user-management workspace. */
+.ubuzima-user-management-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.ubuzima-user-management-hero,
+.ubuzima-user-management-summary,
+.ubuzima-user-management-grid,
+.ubuzima-user-table-card {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
+}
+
+.ubuzima-user-management-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem;
+}
+
+.ubuzima-user-management-actions,
+.ubuzima-user-form-footer,
+.ubuzima-user-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.ubuzima-user-management-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.ubuzima-user-management-summary article {
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 0.9rem;
+}
+
+.ubuzima-user-management-summary span,
+.ubuzima-user-form-sections legend,
+.ubuzima-user-reset-card .section-heading span,
+.ubuzima-user-table-card .section-heading span {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ubuzima-user-management-summary strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #0f172a;
+  font-size: 1.5rem;
+}
+
+.ubuzima-user-management-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.ubuzima-user-form-card,
+.ubuzima-user-reset-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.ubuzima-user-form-sections {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.ubuzima-user-form-sections fieldset,
+.ubuzima-user-reset-form {
+  display: grid;
+  gap: 0.8rem;
+  margin: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding: 1rem;
+  background: #f8fafc;
+}
+
+.ubuzima-user-form-sections label,
+.ubuzima-user-reset-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.ubuzima-user-form-sections input,
+.ubuzima-user-form-sections select,
+.ubuzima-user-reset-form input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 12px;
+  padding: 0.72rem 0.78rem;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.ubuzima-user-check-row {
+  display: flex !important;
+  align-items: center;
+  gap: 0.55rem !important;
+}
+
+.ubuzima-user-check-row input {
+  width: auto !important;
+}
+
+.ubuzima-user-table-card {
+  padding: 1rem;
+}
+
+.ubuzima-user-table-scroll {
+  overflow-x: auto;
+}
+
+.ubuzima-user-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ubuzima-user-table-scroll th,
+.ubuzima-user-table-scroll td {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ubuzima-user-table-scroll small {
+  display: block;
+  color: #64748b;
+  margin-top: 0.18rem;
+}
+
+.ubuzima-user-status {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.ubuzima-user-status--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ubuzima-user-status--inactive,
+.ubuzima-user-status--suspended {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 980px) {
+  .ubuzima-user-management-hero,
+  .ubuzima-user-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ubuzima-user-management-hero {
+    flex-direction: column;
+  }
+
+  .ubuzima-user-form-sections,
+  .ubuzima-user-management-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* AQUILA C2 handover hardening: inventory operation-page cleanup */
+
+.session-restore-shell {
+  min-height: 100vh;
+}
+
+.inventory-record-search-panel {
+  display: none !important;
+}
+
+.product-master-action-panel {
+  padding: 0.85rem !important;
+}
+
+.product-master-action-panel .section-heading {
+  gap: 0.65rem !important;
+  margin-bottom: 0.7rem !important;
+}
+
+.product-master-action-panel .section-heading h3 {
+  font-size: clamp(
+    0.98rem,
+    1.2vw,
+    1.12rem
+  ) !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.product-master-action-panel .section-heading span {
+  font-size: 0.76rem !important;
+  line-height: 1.35 !important;
+}
+
+.product-master-ai-import-panel {
+  padding: 0.85rem !important;
+}
+
+.product-master-ai-import-panel
+.section-heading h3,
+.product-master-ai-import-panel h3 {
+  font-size: clamp(
+    0.98rem,
+    1.2vw,
+    1.12rem
+  ) !important;
+  line-height: 1.2 !important;
+}
+
+.product-master-ai-import-panel
+.section-heading span,
+.product-master-ai-import-panel
+.form-hint {
+  font-size: 0.76rem !important;
+  line-height: 1.35 !important;
+}
+
+.inventory-section h1:empty,
+.inventory-section h2:empty,
+.inventory-section h3:empty,
+.inventory-section h4:empty,
+.inventory-section p:empty,
+.inventory-section span:empty {
+  display: none !important;
+}

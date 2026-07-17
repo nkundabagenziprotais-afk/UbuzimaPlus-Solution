@@ -19,3 +19,16 @@ public_html/
 *.low-stock-broken-backup
 local-backups/
 FETCH_HEAD
+
+# Production deployment and rollback artifacts
+/.deployment-backups/
+/.deployment-upload/
+/.deployment-work/
+/deployment_backups/
+/releases/
+
+# Generated admin deployment build
+/backend/public/admin/
+
+# Local database safety copies
+/backend/database/backups/

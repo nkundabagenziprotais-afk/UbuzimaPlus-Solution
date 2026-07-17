@@ -15,7 +15,7 @@ type Props = {
   tenantSlug?: string;
 };
 
-type PermissionAction = 'view' | 'add' | 'edit' | 'delete';
+type PermissionAction = 'view' | 'add' | 'edit' | 'delete' | 'approve';
 
 type PermissionMatrixResource = {
   label: string;
@@ -29,7 +29,7 @@ type PermissionMatrixGroup = {
   resources: PermissionMatrixResource[];
 };
 
-const permissionActions: PermissionAction[] = ['view', 'add', 'edit', 'delete'];
+const permissionActions: PermissionAction[] = ['view', 'add', 'edit', 'delete', 'approve'];
 
 const permissionMatrix: PermissionMatrixGroup[] = [
   {
@@ -188,6 +188,16 @@ const permissionMatrix: PermissionMatrixGroup[] = [
         permissions: {
           view: 'pos.session_support.view',
           edit: 'pos.session_support.edit',
+        },
+      },
+      {
+        label: 'Historical POS Sessions',
+        description: 'View, open, record, and approve controlled historical POS sessions.',
+        permissions: {
+          view: 'pharmaco.pos.historical.view',
+          add: 'pharmaco.pos.historical.open',
+          edit: 'pharmaco.pos.historical.record',
+          approve: 'pharmaco.pos.historical.approve',
         },
       },
     ],
