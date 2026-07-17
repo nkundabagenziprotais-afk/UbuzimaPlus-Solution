@@ -7350,8 +7350,8 @@ async function confirmTransaction() {
               <section className="pos-live-business-performance-card" aria-label="Live business performance analytics">
                 <div className="section-heading">
                   <div>
-                    <span>Business performance</span>
-                    <h3>Live POS sales intelligence</h3>
+                    <span></span>
+                    <h3></h3>
                     <p className="muted">
                       Practical signals derived from current sales, collections, balances,
                       and transaction patterns.

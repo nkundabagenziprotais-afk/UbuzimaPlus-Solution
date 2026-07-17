@@ -95,8 +95,12 @@ const analyticsDefinitions = [
     title: 'Average transaction',
   },
   {
-    id: 'open-pos',
-    title: 'Open POS Counter',
+    id: 'momo-sales',
+    title: 'MoMo Sales',
+  },
+  {
+    id: 'insurance-sales',
+    title: 'Insurance Sales',
   },
   {
     id: 'best-day',
@@ -397,7 +401,7 @@ export function PosSalesOverview({
   const isAdmin = profileIsAdmin(profile);
 
   const visibilityKey =
-    `ubuzimaplus:pos-dashboard:${tenantSlug || 'tenant'}:v3`;
+    `ubuzimaplus:pos-dashboard:${tenantSlug || 'tenant'}:v4`;
 
   const [sales, setSales] = useState<PharmaSale[]>(
     [],
@@ -438,7 +442,7 @@ export function PosSalesOverview({
       setError(
         requestError instanceof Error
           ? requestError.message
-          : 'Business performance data could not be loaded.',
+          : ' data could not be loaded.',
       );
     } finally {
       setIsLoading(false);
@@ -480,137 +484,76 @@ export function PosSalesOverview({
   }, [visibilityKey]);
 
   const analytics = useMemo(() => {
-    const totalSales = sales.reduce(
-      (sum, sale) =>
-        sum + numberValue(sale.total_amount),
-      0,
-    );
+    const validSales = sales.filter((sale) => !['draft', 'cancelled', 'voided'].includes(String(sale.status ?? '').toLowerCase()));
+    const completedPayments = validSales.flatMap((sale) => (Array.isArray(sale.payments) ? sale.payments : [])
+      .filter((payment) => String(payment.status ?? '').toLowerCase() === 'completed')
+      .map((payment) => ({ payment, sale })));
 
-    const totalCollected = sales.reduce(
-      (sum, sale) =>
-        sum + numberValue(sale.paid_amount),
-      0,
-    );
+    const effectiveSaleDate = (sale: PharmaSale): Date | null =>
+      safeDate(sale.business_date ?? sale.sold_at ?? sale.created_at);
 
-    const outstanding = sales.reduce(
-      (sum, sale) =>
-        sum + numberValue(sale.balance_amount),
-      0,
-    );
+    const effectivePaymentDate = (payment: NonNullable<PharmaSale['payments']>[number], sale: PharmaSale): Date | null =>
+      safeDate(payment.business_date ?? sale.business_date ?? payment.received_at ?? sale.sold_at ?? sale.created_at);
 
-    const dailyMap = new Map<
-      string,
-      DailyPerformance
-    >();
+    const totalSales = validSales.reduce((sum, sale) => sum + numberValue(sale.total_amount), 0);
+    const totalCollected = completedPayments.reduce((sum, row) => sum + numberValue(row.payment.amount), 0);
+    const cashCollected = completedPayments.filter((row) => String(row.payment.payment_method ?? '').toLowerCase() === 'cash').reduce((sum, row) => sum + numberValue(row.payment.amount), 0);
+    const momoSales = completedPayments.filter((row) => String(row.payment.payment_method ?? '').toLowerCase() === 'momo').reduce((sum, row) => sum + numberValue(row.payment.amount), 0);
+    const insuranceSales = validSales.filter((sale) => String(sale.sale_type ?? '').toLowerCase() === 'insurance_sale').reduce((sum, sale) => sum + numberValue(sale.total_amount), 0);
+    const outstanding = validSales.reduce((sum, sale) => sum + numberValue(sale.balance_amount), 0);
 
-    sales.forEach((sale) => {
-      const saleDate = safeDate(sale.sold_at);
-
-      if (!saleDate) {
-        return;
-      }
-
-      const key = dateKey(saleDate);
+    const dailyMap = new Map<string, DailyPerformance>();
+    const ensureDay = (date: Date): DailyPerformance => {
+      const key = dateKey(date);
       const existing = dailyMap.get(key);
+      if (existing) return existing;
+      const created: DailyPerformance = { date: key, label: dayLabel(date), sales: 0, collected: 0, transactions: 0 };
+      dailyMap.set(key, created);
+      return created;
+    };
 
-      if (existing) {
-        existing.sales += numberValue(
-          sale.total_amount,
-        );
-        existing.collected += numberValue(
-          sale.paid_amount,
-        );
-        existing.transactions += 1;
-        return;
-      }
-
-      dailyMap.set(key, {
-        date: key,
-        label: dayLabel(saleDate),
-        sales: numberValue(sale.total_amount),
-        collected: numberValue(
-          sale.paid_amount,
-        ),
-        transactions: 1,
-      });
+    validSales.forEach((sale) => {
+      const date = effectiveSaleDate(sale);
+      if (!date) return;
+      const day = ensureDay(date);
+      day.sales += numberValue(sale.total_amount);
+      day.transactions += 1;
     });
 
-    const daily = [...dailyMap.values()]
-      .sort((left, right) =>
-        left.date.localeCompare(right.date),
-      )
-      .slice(-14);
+    completedPayments.forEach(({ payment, sale }) => {
+      const date = effectivePaymentDate(payment, sale);
+      if (!date) return;
+      ensureDay(date).collected += numberValue(payment.amount);
+    });
 
-    const activeDays = Math.max(
-      daily.length,
-      1,
-    );
+    const daily = [...dailyMap.values()].sort((left, right) => left.date.localeCompare(right.date)).slice(-14);
+    const salesDays = Math.max(daily.filter((day) => day.sales > 0).length, 1);
+    const cashDays = Math.max(new Set(completedPayments
+      .filter((row) => String(row.payment.payment_method ?? '').toLowerCase() === 'cash')
+      .map((row) => effectivePaymentDate(row.payment, row.sale))
+      .filter((date): date is Date => date !== null)
+      .map(dateKey)).size, 1);
 
-    const averageDailySales =
-      totalSales / activeDays;
-
-    const averageDailyCollected =
-      totalCollected / activeDays;
-
-    const averageTicket =
-      sales.length > 0
-        ? totalSales / sales.length
-        : 0;
-
-    const collectionRate =
-      totalSales > 0
-        ? (totalCollected / totalSales) * 100
-        : 0;
-
-    const strongestDay =
-      daily.reduce<DailyPerformance | null>(
-        (best, current) =>
-          !best || current.sales > best.sales
-            ? current
-            : best,
-        null,
-      );
-
-    const weakestDay =
-      daily.reduce<DailyPerformance | null>(
-        (weakest, current) =>
-          !weakest ||
-          current.sales < weakest.sales
-            ? current
-            : weakest,
-        null,
-      );
+    const averageDailySales = totalSales / salesDays;
+    const averageDailyCollected = cashCollected / cashDays;
+    const averageTicket = validSales.length > 0 ? totalSales / validSales.length : 0;
+    const collectionRate = totalSales > 0 ? (totalCollected / totalSales) * 100 : 0;
+    const strongestDay = daily.reduce<DailyPerformance | null>((best, current) => !best || current.sales > best.sales ? current : best, null);
+    const weakestDay = daily.reduce<DailyPerformance | null>((weakest, current) => !weakest || current.sales < weakest.sales ? current : weakest, null);
 
     const recentSeven = daily.slice(-7);
-
     const earlierSeven = daily.slice(-14, -7);
-
-    const recentTotal = recentSeven.reduce(
-      (sum, day) => sum + day.sales,
-      0,
-    );
-
-    const earlierTotal = earlierSeven.reduce(
-      (sum, day) => sum + day.sales,
-      0,
-    );
-
-    const trendRate =
-      earlierTotal > 0
-        ? ((recentTotal - earlierTotal) /
-            earlierTotal) *
-          100
-        : recentTotal > 0
-          ? 100
-          : 0;
-
-    const forecast =
-      averageDailySales * 7 *
-      (1 + Math.max(-0.25, Math.min(0.25, trendRate / 100)));
+    const recentTotal = recentSeven.reduce((sum, day) => sum + day.sales, 0);
+    const earlierTotal = earlierSeven.reduce((sum, day) => sum + day.sales, 0);
+    const trendRate = earlierTotal > 0 ? ((recentTotal - earlierTotal) / earlierTotal) * 100 : recentTotal > 0 ? 100 : 0;
+    const forecast = averageDailySales * 7 * (1 + Math.max(-0.25, Math.min(0.25, trendRate / 100)));
 
     return {
       totalSales,
       totalCollected,
+      cashCollected,
+      momoSales,
+      insuranceSales,
       outstanding,
       averageDailySales,
       averageDailyCollected,
@@ -621,6 +564,7 @@ export function PosSalesOverview({
       trendRate,
       forecast,
       daily,
+      transactionCount: validSales.length,
     };
   }, [sales]);
 
@@ -907,7 +851,7 @@ export function PosSalesOverview({
             <span className="pos-overview-eyebrow">
               AI-assisted business analytics
             </span>
-            <h2>Business performance</h2>
+            <h2></h2>
             <p>
               Practical signals derived from current sales,
               collections, balances, and transaction
@@ -929,7 +873,7 @@ export function PosSalesOverview({
                 {money(analytics.totalSales)}
               </strong>
               <small>
-                {sales.length} recorded transactions
+                {analytics.transactionCount} recorded transactions
               </small>
             </article>
           )}
@@ -938,10 +882,10 @@ export function PosSalesOverview({
             <article className="pos-overview-kpi">
               <span>Cash collected</span>
               <strong>
-                {money(analytics.totalCollected)}
+                {money(analytics.cashCollected)}
               </strong>
               <small>
-                Settled against recorded sales
+                Completed cash payments from live and historical POS
               </small>
             </article>
           )}
@@ -969,20 +913,20 @@ export function PosSalesOverview({
               </small>
             </article>
           )}
+          {widgetVisible('momo-sales') && (
+            <article className="pos-overview-kpi">
+              <span>MoMo Sales</span>
+              <strong>{money(analytics.momoSales)}</strong>
+              <small>Completed MoMo payments from live and historical POS</small>
+            </article>
+          )}
 
-          {widgetVisible('open-pos') && (
-            <button
-              type="button"
-              className="pos-overview-kpi pos-overview-open-pos-card"
-              onClick={() => onOpenWorkspace('pos')}
-            >
-              <span>Dedicated POS Counter</span>
-              <strong>Open POS</strong>
-              <small>
-                Start a controlled pharmacy sale and payment workflow.
-              </small>
-              <b>Open dedicated page →</b>
-            </button>
+          {widgetVisible('insurance-sales') && (
+            <article className="pos-overview-kpi accent">
+              <span>Insurance Sales</span>
+              <strong>{money(analytics.insuranceSales)}</strong>
+              <small>Insurance sale value from live and historical POS</small>
+            </article>
           )}
 
           {widgetVisible('best-day') && (

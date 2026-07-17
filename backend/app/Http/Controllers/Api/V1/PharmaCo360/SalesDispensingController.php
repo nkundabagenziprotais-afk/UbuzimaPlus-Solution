@@ -82,7 +82,7 @@ class SalesDispensingController extends Controller
         $tenant = $request->attributes->get('tenant');
 
         $sales = PharmacoSale::query()
-            ->with(['branch', 'customer', 'prescription'])
+            ->with(['branch', 'customer', 'prescription', 'payments'])
             ->withCount(['items', 'payments'])
             ->where('tenant_id', $tenant->id)
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
@@ -1882,6 +1882,12 @@ class SalesDispensingController extends Controller
             'payments_count' => $sale->payments_count ?? ($sale->relationLoaded('payments') ? $sale->payments->count() : null),
             'created_at' => $sale->created_at?->toISOString(),
         ];
+
+        if ($sale->relationLoaded('payments')) {
+            $payload['payments'] = $sale->payments
+                ->map(fn (PharmacoPayment $payment) => $this->serializePayment($payment))
+                ->values();
+        }
 
         if ($includeDetails) {
             $payload['items'] = $sale->items
