@@ -424,7 +424,7 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
             disabled={!canUseSales}
             onClick={() => onOpenSection('pos')}
           >
-            <strong>Open POS workspace</strong>
+            <strong>MoMo Sales workspace</strong>
             <span>
               Start or continue your cashier session
             </span>
@@ -543,7 +543,7 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
               <span>Open the POS when there is a draft, balance, or walk-in sale.</span>
             </div>
             <button type="button" onClick={() => onOpenSection('pos')} disabled={!canUseSales}>
-              Open POS
+              MoMo Sales
             </button>
           </div>
 

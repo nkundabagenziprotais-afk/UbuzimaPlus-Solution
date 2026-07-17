@@ -7350,8 +7350,8 @@ async function confirmTransaction() {
               <section className="pos-live-business-performance-card" aria-label="Live business performance analytics">
                 <div className="section-heading">
                   <div>
-                    <span>Business performance</span>
-                    <h3>Live POS sales intelligence</h3>
+                    <span></span>
+                    <h3></h3>
                     <p className="muted">
                       Practical signals derived from current sales, collections, balances,
                       and transaction patterns.
@@ -8774,7 +8774,7 @@ async function confirmTransaction() {
             {homeWidgets['quick-actions'] && (
               <section className="home-quick-action-grid">
                 {[
-                  ['Open POS', 'Start or review counter sales', 'pos' as AdminSectionKey],
+                  ['MoMo Sales', 'Start or review counter sales', 'pos' as AdminSectionKey],
                   ['Review Inventory', 'Products, stock, batches, expiry', 'inventory' as AdminSectionKey],
                   ['Suppliers', 'Supplier setup, PO, receiving', 'suppliers' as AdminSectionKey],
                   ['Ad-hoc Report', 'Operating alerts and reports', 'reports' as AdminSectionKey],
