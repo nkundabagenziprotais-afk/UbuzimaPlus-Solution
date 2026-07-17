@@ -17806,6 +17806,46 @@ table td:not(:first-child):not(.numeric) {
   min-width: 1rem;
 }
 
+/* Inventory record search and transaction-source controls */
+
+.inventory-record-search-panel {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  align-items: end;
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(239, 246, 255, 0.86));
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.inventory-record-search-panel h3 {
+  margin: 4px 0 6px;
+  color: #0f172a;
+}
+
+.inventory-record-search-panel span,
+.inventory-record-search-panel small {
+  color: #64748b;
+}
+
+.inventory-record-search-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 10px;
+}
+
+.inventory-record-search-form input {
+  min-height: 44px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 14px;
+  padding: 0 14px;
+  background: #ffffff;
+}
+
+.inventory-record-search-form button,
 .inventory-guided-flow-actions button {
   min-height: 44px;
   border: 0;
@@ -17817,6 +17857,7 @@ table td:not(:first-child):not(.numeric) {
   color: #0f172a;
 }
 
+.inventory-record-search-form button[type='submit'],
 .inventory-guided-flow-actions button.primary {
   background: #0f766e;
   color: #ffffff;
@@ -17861,6 +17902,12 @@ table td:not(:first-child):not(.numeric) {
   filter: grayscale(0.2);
 }
 
+@media (max-width: 860px) {
+  .inventory-record-search-panel,
+  .inventory-record-search-form {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Package 3: POS module, quantity and receipt experience */
 
@@ -23528,12 +23575,65 @@ table td:not(:first-child):not(.numeric) {
   border-top: 3px solid var(--left-menu-accent, #4b5320);
 }
 
+/* One centered search card containing title, input and actions. */
 
+.inventory-record-search-panel--refined {
+  display: block;
+  width: min(980px, 100%);
+  margin: 1rem auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
 
+.inventory-record-search-card {
+  display: grid;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.06);
+}
 
+.inventory-record-search-form {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1fr) auto auto;
+  gap: 0.65rem;
+  width: 100%;
+  margin: 0;
+}
 
+.inventory-record-search-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border-radius: 12px;
+}
 
+.inventory-record-search-form button {
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 0 1rem;
+}
 
+.inventory-record-search-clear {
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  background: #f8fafc !important;
+  color: #334155 !important;
+}
+
+.inventory-record-search-result {
+  justify-self: center;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 720;
+  text-align: center;
+}
 
 /* Shared header-card treatment for the common platform header contracts. */
 
@@ -23603,7 +23703,8 @@ table td:not(:first-child):not(.numeric) {
 
   .inventory-home-menu-grid,
   .inventory-home-analytics-grid,
-  .inventory-opportunity-grid--creative {
+  .inventory-opportunity-grid--creative,
+  .inventory-record-search-form {
     grid-template-columns: 1fr;
   }
 
@@ -23619,6 +23720,9 @@ table td:not(:first-child):not(.numeric) {
     min-height: 0 !important;
   }
 
+  .inventory-record-search-form button {
+    width: 100%;
+  }
 }
 
 /* AQUILA_INVENTORY_WORK_PACKAGE_2H_CHART_AND_TITLE_REFINEMENT
@@ -32611,6 +32715,9 @@ thead
   min-height: 100vh;
 }
 
+.inventory-record-search-panel {
+  display: none !important;
+}
 
 .product-master-action-panel {
   padding: 0.85rem !important;
