@@ -1556,21 +1556,13 @@ export function InsuranceManagementWorkspace({
           </div>
 
           <section className="insurance-card">
-            <div className="insurance-section-heading">
-              <div>
-                <h3>Partner documents and insurer logo</h3>
-                <p>
-                  Attach contracts, acceptance letters, amendments, price
-                  lists, claim guides, accreditation letters, and insurer logos
-                  while configuring this partner.
-                </p>
-              </div>
-              {selectedDocumentPartner ? (
+            {selectedDocumentPartner ? (
+              <div className="insurance-section-heading">
                 <span className="insurance-muted">
                   Selected: {selectedDocumentPartner.name}
                 </span>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
 
             {selectedDocumentPartner ? (
               <>
@@ -1784,10 +1776,7 @@ export function InsuranceManagementWorkspace({
               </>
             ) : (
               <p className="insurance-muted">
-                Save or edit a partner first, then attach contracts,
-                acceptance letters, amendments, price lists, claim guides,
-                accreditation letters, and insurer logos from this same
-                configuration form.
+                Save or edit a partner first.
               </p>
             )}
           </section>
@@ -1797,8 +1786,8 @@ export function InsuranceManagementWorkspace({
               {isSaving
                 ? 'Saving…'
                 : editingPartnerId
-                  ? 'Update partner'
-                  : 'Create partner'}
+                  ? 'Update'
+                  : 'Create Partner'}
             </button>
 
             <button
