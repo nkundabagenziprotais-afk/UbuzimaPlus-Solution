@@ -2,7 +2,9 @@ import {
   InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
   useEffect,
   useMemo,
-  useState } from 'react';   type PosBatchProduct = PharmaStockBatch['product'] & {   selling_unit?: string | null;   base_unit?: string | null;   unit?: string | null;   quantity_per_selling_unit?: number | string | null;   allow_other_quantity?: boolean | null;   default_pos_quantity_mode?: string | null; };  type UbuzimaHandoverLiveAnalytics = PharmaLiveBusinessAnalyticsResponse | null;  function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser | null | undefined): string {   const name = transaction?.operator_name?.trim();    if (name) {     return name;   }    const email = transaction?.operator_email?.trim();    if (email) {     return email;   }    return 'Recorded user'; }  function normalizeUbuzimaTransactionDate(value: string | null | undefined): string | null {   if (!value) {     return null;   }    const dateOnlyMatch = value.match(/^\d{4}-\d{2}-\d{2}/);    return dateOnlyMatch ? dateOnlyMatch[0] : value; }  function formatUbuzimaMoney(value: number | string | null | undefined): string {   const amount = Number(value ?? 0);    return `RWF ${(Number.isFinite(amount) ? amount : 0).toLocaleString('en-RW')}`; }  function printUbuzimaPosDocument(): void {   const nativePrint = window.print.bind(window);    document.body.classList.add('ubuzima-pos-print-mode');    window.setTimeout(() => {     nativePrint();      window.setTimeout(() => {       document.body.classList.remove('ubuzima-pos-print-mode');     },
+  useState } from 'react';   type PosBatchProduct = PharmaStockBatch['product'] & {   selling_unit?: string | null;   base_unit?: string | null;   unit?: string | null;   quantity_per_selling_unit?: number | string | null;   allow_other_quantity?: boolean | null;   default_pos_quantity_mode?: string | null; };  type UbuzimaHandoverLiveAnalytics = PharmaLiveBusinessAnalyticsResponse | null;
+
+function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser | null | undefined): string {   const name = transaction?.operator_name?.trim();    if (name) {     return name;   }    const email = transaction?.operator_email?.trim();    if (email) {     return email;   }    return 'Recorded user'; }  function normalizeUbuzimaTransactionDate(value: string | null | undefined): string | null {   if (!value) {     return null;   }    const dateOnlyMatch = value.match(/^\d{4}-\d{2}-\d{2}/);    return dateOnlyMatch ? dateOnlyMatch[0] : value; }  function formatUbuzimaMoney(value: number | string | null | undefined): string {   const amount = Number(value ?? 0);    return `RWF ${(Number.isFinite(amount) ? amount : 0).toLocaleString('en-RW')}`; }  function printUbuzimaPosDocument(): void {   const nativePrint = window.print.bind(window);    document.body.classList.add('ubuzima-pos-print-mode');    window.setTimeout(() => {     nativePrint();      window.setTimeout(() => {       document.body.classList.remove('ubuzima-pos-print-mode');     },
   250);   },
   50); }  function configuredPosTaxMode(): 'inclusive' | 'exclusive' {   return 'inclusive'; }  type PosInventoryAutoLoaderProps = {   shouldLoad: boolean;   onLoad: () => void | Promise<void>; };  function PosInventoryAutoLoader({ shouldLoad,
   onLoad }: PosInventoryAutoLoaderProps) {   useEffect(() => {     if (!shouldLoad) {       return;     }      void onLoad();   },
@@ -982,6 +984,43 @@ const menuGroups: MenuGroup[] = [
 function hasAnyPermission(profile: AccessProfile | undefined, permissions: string[]): boolean {
   if (!profile) return false;
   return permissions.some((permission) => profile!.permissions.includes(permission));
+}
+
+
+function canManagePosSessions(profile: AccessProfile | undefined): boolean {
+  return hasAnyPermission(profile, [
+    'pharmaco.pos.sessions.manage',
+    'pharmaco.pos.session.manage',
+    'pharmaco.pos.session.admin',
+    'pharmaco.pos.session.view',
+    'pharmaco.pos.admin',
+    'pos.sessions.manage',
+    'pos.session.manage',
+    'pos.session.admin',
+    'pos.session.view',
+    'tenant.admin',
+    'tenant.users.manage',
+    'platform.admin',
+  ]);
+}
+
+function canOpenHistoricalPos(profile: AccessProfile | undefined): boolean {
+  return hasAnyPermission(profile, [
+    'pharmaco.pos.historical.open',
+    'pharmaco.pos.historical.create',
+    'pharmaco.pos.historical.record',
+    'pharmaco.pos.historical.request',
+    'historical.pos.open',
+    'historical.pos.create',
+    'historical.pos.record',
+    'pos.historical.open',
+    'pos.historical.create',
+    'pos.historical.record',
+    'pos.historical.request',
+    'pharmaco.pos.session.open',
+    'pos.session.open',
+    'pharmaco.pos.use',
+  ]);
 }
 
 const granularMenuPermissionMap: Record<string, string[]> = {
@@ -7153,7 +7192,17 @@ async function confirmTransaction() {
                   token={session!.token}
                   tenantSlug={posSessionTenantSlug}
                   branchId={posSessionBranchId}
-                  permissions={profile?.permissions ?? []}
+                  permissions={
+                    canOpenHistoricalPos(profile)
+                      ? Array.from(new Set([
+                          ...(profile?.permissions ?? []),
+                          'pharmaco.pos.historical.request',
+                          'pharmaco.pos.historical.open',
+                          'pharmaco.pos.historical.record',
+                          'pharmaco.sales.historical.record',
+                        ]))
+                      : (profile?.permissions ?? [])
+                  }
                   currentSession={posSession}
                   openingFloatAmount={
                     Number(posStartingCashBalance) || 0
