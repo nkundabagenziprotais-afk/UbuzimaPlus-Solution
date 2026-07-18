@@ -7601,9 +7601,17 @@ async function confirmTransaction() {
                   <div className="pos-payment-summary-grid pos-payment-summary-grid-v17">
                     <div className="pos-payment-summary-column pos-payment-summary-column--operational" aria-label="Operational payment summary">
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
-                        <span>Transaction Date</span>
+                        <span>Transaction timestamp</span>
                         <strong>{posSummaryTimestamp}</strong>
                       </article>
+                    <article>
+                      <span>Business Date</span>
+                      <strong>
+                        {posRecentTransactionsWithUsers[0]?.business_date
+                          ?? (posSession as { business_date?: string | null } | null)?.business_date
+                          ?? 'Current date'}
+                      </strong>
+                    </article>
                       <article className="pos-summary-field-card pos-summary-field-card--operational">
                         <span>Cart lines</span>
                         <strong>{posFinancialLineCount}</strong>
