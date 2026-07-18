@@ -1,25 +1,31 @@
-import { useMemo, useState } from 'react';
-
-type TrendArea = 'inventory' | 'pos-sales' | 'general-stock' | 'insurance';
-type TrendGranularity = 'day' | 'week' | 'month' | 'quarter' | 'year';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  getPharmaTrendAnalysis,
+  type TrendAnalysisArea,
+  type TrendAnalysisGranularity,
+  type TrendAnalysisResponse,
+} from '../lib/api';
 
 type TrendPoint = {
   label: string;
   current: number;
   comparison: number;
+  change_percent: number;
 };
 
-const areaOptions: Array<{ value: TrendArea; label: string }> = [
+const areaOptions: Array<{ value: TrendAnalysisArea; label: string }> = [
   { value: 'inventory', label: 'Inventory' },
   { value: 'pos-sales', label: 'POS Sales' },
   { value: 'general-stock', label: 'General Stock' },
   { value: 'insurance', label: 'Insurance' },
 ];
 
-const metricOptions: Record<TrendArea, Array<{ value: string; label: string }>> = {
+const metricOptions: Record<TrendAnalysisArea, Array<{ value: string; label: string }>> = {
   inventory: [
     { value: 'movement_quantity', label: 'Movement quantity' },
-    { value: 'near_expiry_value', label: 'Near-expiry exposure value' },
+    { value: 'receipts', label: 'Receipts quantity' },
+    { value: 'issues', label: 'Issued quantity' },
+    { value: 'transactions', label: 'Movement records' },
     { value: 'adjustments', label: 'Adjustment pressure' },
   ],
   'pos-sales': [
@@ -30,6 +36,7 @@ const metricOptions: Record<TrendArea, Array<{ value: string; label: string }>> 
   'general-stock': [
     { value: 'stock_value', label: 'Stock value' },
     { value: 'stock_units', label: 'Stock units' },
+    { value: 'near_expiry_value', label: 'Near-expiry exposure value' },
     { value: 'low_stock', label: 'Low-stock exposure' },
   ],
   insurance: [
@@ -40,61 +47,131 @@ const metricOptions: Record<TrendArea, Array<{ value: string; label: string }>> 
 };
 
 type Props = {
+  token: string;
+  profile: unknown;
   title?: string;
+  defaultArea?: TrendAnalysisArea;
 };
+
+function profileTenantSlug(profile: unknown): string {
+  if (!profile || typeof profile !== 'object') {
+    return '';
+  }
+
+  const profileRecord = profile as Record<string, unknown>;
+  const tenant = profileRecord.tenant;
+
+  if (!tenant || typeof tenant !== 'object') {
+    return '';
+  }
+
+  const tenantRecord = tenant as Record<string, unknown>;
+  const slug = tenantRecord.slug;
+
+  return typeof slug === 'string' ? slug : '';
+}
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-RW', {
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(Number(value || 0));
 }
 
-export function TrendAnalysisPanel({ title = 'Trend Analysis' }: Props) {
-  const [area, setArea] = useState<TrendArea>('inventory');
-  const [metric, setMetric] = useState('movement_quantity');
-  const [granularity, setGranularity] = useState<TrendGranularity>('week');
-  const [periodA, setPeriodA] = useState('');
-  const [periodB, setPeriodB] = useState('');
+function defaultDate(offsetDays: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
 
-  const demoSeries = useMemo<TrendPoint[]>(() => {
-    return ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'].map((label, index) => {
-      const base = (index + 1) * 120;
-      const current = base + (area === 'insurance' ? 300 : 80);
-      const comparison = base * 0.85 + (index % 2 === 0 ? 40 : -25);
+export function TrendAnalysisPanel({
+  token,
+  profile,
+  title = 'Trend Analysis',
+  defaultArea = 'inventory',
+}: Props) {
+  const tenantSlug = profileTenantSlug(profile);
+  const [area, setArea] = useState<TrendAnalysisArea>(defaultArea);
+  const [metric, setMetric] = useState(metricOptions[defaultArea][0]?.value || '');
+  const [granularity, setGranularity] = useState<TrendAnalysisGranularity>('day');
+  const [periodAStart, setPeriodAStart] = useState(defaultDate(-6));
+  const [periodAEnd, setPeriodAEnd] = useState(defaultDate(0));
+  const [periodBStart, setPeriodBStart] = useState(defaultDate(-13));
+  const [periodBEnd, setPeriodBEnd] = useState(defaultDate(-7));
+  const [data, setData] = useState<TrendAnalysisResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notice, setNotice] = useState('');
 
-      return {
-        label,
-        current,
-        comparison,
-      };
-    });
-  }, [area, metric, granularity, periodA, periodB]);
+  useEffect(() => {
+    if (!token || !tenantSlug) {
+      return;
+    }
 
-  const totalCurrent = demoSeries.reduce((sum, point) => sum + point.current, 0);
-  const totalComparison = demoSeries.reduce((sum, point) => sum + point.comparison, 0);
-  const variance = totalComparison === 0
-    ? 0
-    : ((totalCurrent - totalComparison) / totalComparison) * 100;
+    let cancelled = false;
 
+    async function loadTrend() {
+      setIsLoading(true);
+      setNotice('');
+
+      try {
+        const response = await getPharmaTrendAnalysis(token, tenantSlug, {
+          area,
+          metric,
+          granularity,
+          current_start: periodAStart,
+          current_end: periodAEnd,
+          comparison_start: periodBStart,
+          comparison_end: periodBEnd,
+        });
+
+        if (!cancelled) {
+          setData(response);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setNotice(
+            error instanceof Error
+              ? error.message
+              : 'Unable to load trend analysis.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadTrend();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    token,
+    tenantSlug,
+    area,
+    metric,
+    granularity,
+    periodAStart,
+    periodAEnd,
+    periodBStart,
+    periodBEnd,
+  ]);
+
+  const points = useMemo<TrendPoint[]>(() => data?.points || [], [data]);
   const maximum = Math.max(
     1,
-    ...demoSeries.flatMap((point) => [point.current, point.comparison]),
+    ...points.flatMap((point) => [point.current, point.comparison]),
   );
-
-  const insight =
-    variance > 10
-      ? 'The current period is materially higher than the comparison period. Review the drivers and confirm whether this is demand growth, pricing impact, or stock movement pressure.'
-      : variance < -10
-        ? 'The current period is materially lower than the comparison period. Investigate stock availability, POS activity, insurance claims, or purchasing delays.'
-        : 'The current and comparison periods are broadly stable. Continue monitoring for operational drift.';
 
   return (
     <section className="trend-analysis-panel">
       <div className="section-heading">
         <div>
-          <span>Trend analysis foundation</span>
+          <span>Live business intelligence</span>
           <h3>{title}</h3>
         </div>
+        {isLoading ? <small>Loading live trend…</small> : null}
       </div>
 
       <div className="trend-analysis-controls">
@@ -103,7 +180,7 @@ export function TrendAnalysisPanel({ title = 'Trend Analysis' }: Props) {
           <select
             value={area}
             onChange={(event) => {
-              const nextArea = event.target.value as TrendArea;
+              const nextArea = event.target.value as TrendAnalysisArea;
               setArea(nextArea);
               setMetric(metricOptions[nextArea][0]?.value || '');
             }}
@@ -134,7 +211,7 @@ export function TrendAnalysisPanel({ title = 'Trend Analysis' }: Props) {
           Compare by
           <select
             value={granularity}
-            onChange={(event) => setGranularity(event.target.value as TrendGranularity)}
+            onChange={(event) => setGranularity(event.target.value as TrendAnalysisGranularity)}
           >
             <option value="day">Days</option>
             <option value="week">Weeks</option>
@@ -145,49 +222,89 @@ export function TrendAnalysisPanel({ title = 'Trend Analysis' }: Props) {
         </label>
 
         <label>
-          Current period
+          Current start
           <input
-            value={periodA}
-            onChange={(event) => setPeriodA(event.target.value)}
-            placeholder="Example: 2026-W29 or 2026-07"
+            type="date"
+            value={periodAStart}
+            onChange={(event) => setPeriodAStart(event.target.value)}
           />
         </label>
 
         <label>
-          Compare with
+          Current end
           <input
-            value={periodB}
-            onChange={(event) => setPeriodB(event.target.value)}
-            placeholder="Example: 2026-W28 or 2026-06"
+            type="date"
+            value={periodAEnd}
+            onChange={(event) => setPeriodAEnd(event.target.value)}
+          />
+        </label>
+
+        <label>
+          Compare start
+          <input
+            type="date"
+            value={periodBStart}
+            onChange={(event) => setPeriodBStart(event.target.value)}
+          />
+        </label>
+
+        <label>
+          Compare end
+          <input
+            type="date"
+            value={periodBEnd}
+            onChange={(event) => setPeriodBEnd(event.target.value)}
           />
         </label>
       </div>
 
+      {notice ? <p className="form-error">{notice}</p> : null}
+
       <div className="trend-analysis-summary">
         <article>
           <span>Current period</span>
-          <strong>{formatNumber(totalCurrent)}</strong>
+          <strong>{formatNumber(data?.summary.current_total || 0)}</strong>
         </article>
         <article>
           <span>Comparison period</span>
-          <strong>{formatNumber(totalComparison)}</strong>
+          <strong>{formatNumber(data?.summary.comparison_total || 0)}</strong>
         </article>
         <article>
           <span>Variance</span>
-          <strong>{variance >= 0 ? '+' : ''}{variance.toFixed(1)}%</strong>
+          <strong>
+            {(data?.summary.variance_percent || 0) >= 0 ? '+' : ''}
+            {(data?.summary.variance_percent || 0).toFixed(1)}%
+          </strong>
         </article>
       </div>
 
       <div className="trend-analysis-chart">
-        {demoSeries.map((point) => (
-          <div key={point.label}>
-            <span>
-              <i style={{ height: `${Math.max(6, (point.current / maximum) * 100)}%` }} />
-              <b style={{ height: `${Math.max(6, (point.comparison / maximum) * 100)}%` }} />
-            </span>
-            <strong>{point.label}</strong>
-          </div>
-        ))}
+        {points.length ? (
+          points.map((point) => (
+            <div key={point.label}>
+              <span>
+                <i
+                  title={`Current: ${formatNumber(point.current)}`}
+                  style={{
+                    height: `${Math.max(6, (point.current / maximum) * 100)}%`,
+                  }}
+                />
+                <b
+                  title={`Comparison: ${formatNumber(point.comparison)}`}
+                  style={{
+                    height: `${Math.max(6, (point.comparison / maximum) * 100)}%`,
+                  }}
+                />
+              </span>
+              <strong>{point.label}</strong>
+              <small>{formatNumber(point.current)}</small>
+            </div>
+          ))
+        ) : (
+          <p className="insurance-muted">
+            No live trend records were found for this comparison.
+          </p>
+        )}
       </div>
 
       <div className="trend-analysis-table">
@@ -201,32 +318,24 @@ export function TrendAnalysisPanel({ title = 'Trend Analysis' }: Props) {
             </tr>
           </thead>
           <tbody>
-            {demoSeries.map((point) => {
-              const change = point.comparison === 0
-                ? 0
-                : ((point.current - point.comparison) / point.comparison) * 100;
-
-              return (
-                <tr key={point.label}>
-                  <td>{point.label}</td>
-                  <td>{formatNumber(point.current)}</td>
-                  <td>{formatNumber(point.comparison)}</td>
-                  <td>{change >= 0 ? '+' : ''}{change.toFixed(1)}%</td>
-                </tr>
-              );
-            })}
+            {points.map((point) => (
+              <tr key={point.label}>
+                <td>{point.label}</td>
+                <td>{formatNumber(point.current)}</td>
+                <td>{formatNumber(point.comparison)}</td>
+                <td>
+                  {point.change_percent >= 0 ? '+' : ''}
+                  {point.change_percent.toFixed(1)}%
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
       <article className="trend-analysis-insight">
-        <strong>Business interpretation preview</strong>
-        <p>{insight}</p>
-        <small>
-          Live comparison data will be connected through the trend-analysis API
-          so Inventory, POS Sales, General Stock and Insurance can compare
-          days, weeks, months, quarters and years using real records.
-        </small>
+        <strong>AI business interpretation</strong>
+        <p>{data?.insight || 'Select periods to generate a live business interpretation.'}</p>
       </article>
     </section>
   );

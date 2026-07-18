@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InventoryIntelligenceController;
+use App\Http\Controllers\Api\V1\PharmaCo360\TrendAnalysisController;
 use App\Http\Controllers\Api\V1\PharmaCo360\GeneralItemsController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
@@ -930,6 +931,12 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         'App\Http\Middleware\EnsureAnyPermission:pharmaco.inventory.view,pharmaco.inventory.manage',
         'tenant.module:pharmaco.inventory',
     ]);
+
+        Route::get('/trend-analysis', [
+            TrendAnalysisController::class,
+            'index',
+        ])->middleware('App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.analytics.view,pharmaco.inventory.view,inventory.view,pharmaco.sales.view,insurance.analytics.view');
+
 
     Route::prefix('/product-master/reconciliation')
         ->middleware([
