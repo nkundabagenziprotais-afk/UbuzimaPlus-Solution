@@ -1811,7 +1811,7 @@ export function ProductInventoryPreview({
     setInventoryNotice('');
 
     try {
-      const sellingPrice = Number(inventoryCreateForm.selling_price || inventoryCalculatedSellingPrice || 0);
+      const sellingPrice = Number(inventoryCalculatedSellingPrice || 0);
 
       if (editingInventoryBatch) {
         if (!hasInventoryAdminAccess && !canEditInventoryBatch(editingInventoryBatch)) {
@@ -1927,7 +1927,7 @@ export function ProductInventoryPreview({
         ['Remaining days', days === null ? 'N/A' : String(days)],
         ['Supplier', batch.supplier_name ?? 'Not set'],
         ['Unit cost', formatRwf(batch.unit_cost)],
-        ['Selling price', formatRwf(batch.selling_price)],
+        ['Calculated selling price', formatRwf(batch.selling_price)],
         ['Status', batch.status],
       ],
     });
@@ -5239,7 +5239,7 @@ export function ProductInventoryPreview({
                 onExport: () =>
                   exportCsv(
                     'product-inventory.csv',
-                    ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Unit cost', 'Margin multiplier', 'Selling price', 'Expiry', 'Remaining days', 'Status'],
+                    ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Unit cost', 'Margin multiplier', 'Calculated selling price', 'Expiry', 'Remaining days', 'Status'],
                     productInventoryRows.map(({ batch, defaultMargin, computedSellingPrice, days }) => [
                       batch.product.name,
                       batch.product.sku,
@@ -5574,13 +5574,12 @@ export function ProductInventoryPreview({
                   </label>
 
                   <label>
-                    Selling price
+                    Calculated selling price
                     <input
                       type="number"
                       min="0"
-                      value={inventoryCreateForm.selling_price}
-                      onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, selling_price: event.target.value })}
-                      placeholder={inventoryCalculatedSellingPrice ? String(inventoryCalculatedSellingPrice) : 'Calculated as cost × margin multiplier'}
+                      value={inventoryCalculatedSellingPrice || ""}
+                      placeholder={inventoryCalculatedSellingPrice ? String(inventoryCalculatedSellingPrice) : 'Calculated automatically as Unit Cost × Margin multiplier'}
                     />
                   </label>
 
@@ -5683,7 +5682,7 @@ export function ProductInventoryPreview({
                       ['Location', `${viewingInventoryBatch.stock_location.name} (${viewingInventoryBatch.stock_location.code})`],
                       ['Available quantity', formatNumber(viewingInventoryBatch.available_quantity)],
                       ['Unit cost', formatRwf(viewingInventoryBatch.unit_cost)],
-                      ['Selling price', formatRwf(viewingInventoryBatch.selling_price)],
+                      ['Calculated selling price', formatRwf(viewingInventoryBatch.selling_price)],
                       ['Expiry date', formatDate(viewingInventoryBatch.expiry_date)],
                       ['Status', viewingInventoryBatch.status],
                       ['Record source', inventoryBatchSourceLabel(viewingInventoryBatch)],
