@@ -361,7 +361,7 @@ export function InsuranceClaimsReconciliationWorkspace({
         <>
           <div className="insurance-live-summary">
             <article><span>Claims</span><strong>{claims.length}</strong></article>
-            <article><span>Claimed</span><strong>{money(claimTotals.claimed)} RWF</strong></article>
+            <article><span>Claimed</span><strong>{money(claimTotals.claimed)}  RWF</strong></article>
             <article><span>Approved</span><strong>{money(claimTotals.approved)} RWF</strong></article>
             <article><span>Paid</span><strong>{money(claimTotals.paid)} RWF</strong></article>
           </div>
