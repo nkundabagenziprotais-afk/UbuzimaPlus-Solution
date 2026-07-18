@@ -1187,9 +1187,64 @@ export function InsuranceManagementWorkspace({
   }
 
   function overview() {
+    const insuredSalesTotal = salesRegister.rows.reduce(
+      (sum, row) => sum + Number(row.gross_amount ?? 0),
+      0,
+    );
+    const insurerContributionTotal = salesRegister.rows.reduce(
+      (sum, row) => sum + Number(row.insurer_claim_amount ?? 0),
+      0,
+    );
+    const customerContributionTotal = salesRegister.rows.reduce(
+      (sum, row) => sum + Number(row.customer_contribution_amount ?? 0),
+      0,
+    );
+
+    const partnerTotals = salesRegister.rows.reduce(
+      (totals, row) => {
+        const partnerName = row.partner?.name || 'Unassigned partner';
+        totals.set(
+          partnerName,
+          (totals.get(partnerName) || 0) +
+            Number(row.insurer_claim_amount ?? 0),
+        );
+        return totals;
+      },
+      new Map<string, number>(),
+    );
+
+    const leadingPartner = Array.from(partnerTotals.entries()).sort(
+      (a, b) => b[1] - a[1],
+    )[0];
+
+    const insuranceAnalyticsCards = [
+      {
+        label: 'Insured sales value',
+        value: `RWF ${money(insuredSalesTotal)}`,
+        hint: 'Gross value of insured POS lines currently available in the sales register.',
+      },
+      {
+        label: 'Insurer contribution',
+        value: `RWF ${money(insurerContributionTotal)}`,
+        hint: 'Amount expected from insurance partners before reconciliation.',
+      },
+      {
+        label: 'Customer contribution',
+        value: `RWF ${money(customerContributionTotal)}`,
+        hint: 'Customer share collected or expected on insurance transactions.',
+      },
+      {
+        label: 'Leading insurance contributor',
+        value: leadingPartner ? leadingPartner[0] : 'No live data',
+        hint: leadingPartner
+          ? `RWF ${money(leadingPartner[1])} insurer contribution`
+          : 'Appears once insurance sales register data is available.',
+      },
+    ];
+
     return (
       <>
-        <section className="insurance-kpi-grid">
+        <section className="insurance-kpi-grid insurance-kpi-grid-compact">
           {kpis.map((item) => (
             <article key={item.label}>
               <span>{item.label}</span>
@@ -1199,77 +1254,14 @@ export function InsuranceManagementWorkspace({
           ))}
         </section>
 
-        <section className="insurance-overview-grid">
-          <article className="insurance-card">
-            <div className="section-heading">
-              <div>
-                <span>Implementation readiness</span>
-                <h3>Insurance configuration flow</h3>
-              </div>
-            </div>
-
-            <div className="insurance-readiness-list">
-              {[
-                [
-                  '1. Partner setup',
-                  'Register payer identity, contribution defaults and operating status.',
-                ],
-                [
-                ],
-                [
-                  '5. Product coverage',
-                  'Map covered products and approved unit prices.',
-                ],
-                [
-                  '6. POS resolution',
-                  'Resolve the payable split before sale confirmation and stock deduction.',
-                ],
-              ].map(([title, description]) => (
-                <div key={title}>
-                  <strong>{title}</strong>
-                  <span>{description}</span>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="insurance-card">
-            <div className="section-heading">
-              <div>
-                <span>Governance</span>
-                <h3>Safe operating principles</h3>
-              </div>
-            </div>
-
-            <div className="insurance-readiness-list">
-              <div>
-                <strong>Tenant isolated</strong>
-                <span>
-                  Every request includes the active tenant header.
-                </span>
-              </div>
-              <div>
-                <strong>Permission protected</strong>
-                <span>
-                  Access requires the dedicated insurance management
-                  permission.
-                </span>
-              </div>
-              <div>
-                <strong>Audited mutations</strong>
-                <span>
-                  Partner and pricing changes are retained in backend
-                  audit history.
-                </span>
-              </div>
-              <div>
-                <strong>No cart-stage stock deduction</strong>
-                <span>
-                  Insurance pricing preparation does not alter stock.
-                </span>
-              </div>
-            </div>
-          </article>
+        <section className="insurance-kpi-grid insurance-kpi-grid-compact">
+          {insuranceAnalyticsCards.map((item) => (
+            <article key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.hint}</small>
+            </article>
+          ))}
         </section>
       </>
     );
@@ -3521,12 +3513,7 @@ export function InsuranceManagementWorkspace({
         <div>
           <p className="eyebrow">PharmaCore 360</p>
           <h2>Insurance Management</h2>
-          <p>
-            Configure partners, institutional groups, schemes,
-            covered prices and customer contribution rules while
-            preserving tenant isolation, auditability and safe POS
-            confirmation.
-          </p>
+
         </div>
 
         <div className="insurance-hero-actions">
@@ -3538,13 +3525,6 @@ export function InsuranceManagementWorkspace({
             {isSaving
               ? 'Initializing…'
               : 'Initialize standard partners'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onWorkspaceChange('overview')}
-          >
-            Insurance overview
           </button>
         </div>
       </section>

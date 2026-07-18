@@ -32692,3 +32692,23 @@ thead
   min-height: 2.25rem;
   padding: 0.45rem 0.6rem;
 }
+
+.insurance-kpi-grid-compact article {
+  min-height: 7.5rem;
+  padding: 1rem;
+}
+
+.insurance-kpi-grid-compact article span {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.insurance-kpi-grid-compact article strong {
+  font-size: clamp(1.15rem, 1.8vw, 1.65rem);
+  line-height: 1.2;
+}
+
+.insurance-kpi-grid-compact article small {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
