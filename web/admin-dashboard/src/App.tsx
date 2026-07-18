@@ -4117,29 +4117,70 @@ function App() {
   }, [activeSection, activeInsuranceWorkspace]);
 
   useEffect(() => {
-    const scrollKey = `ubuzima.admin.scroll.${activeSection}.${activeInsuranceWorkspace}`;
+    const workspaceBySection: Record<string, string> = {
+      inventory: activeInventoryView,
+      insurance: activeInsuranceWorkspace,
+      pos: activePosWorkspace,
+      suppliers: activeSupplierWorkspace,
+      finance: activeFinanceWorkspace,
+      reports: activeAdhocReportWorkspace,
+      'ai-center': activeAiWorkspace,
+      'admin-panel': activeAdminPanelWorkspace,
+      notifications: activeNotificationWorkspace,
+      'pharmacist-chat': activePharmacistChatWorkspace,
+    };
+
+    const activeWorkspace = workspaceBySection[activeSection] || 'main';
+    const scrollKey = `ubuzima.admin.scroll.${activeSection}.${activeWorkspace}`;
+    let frame = 0;
 
     const restore = window.setTimeout(() => {
       const stored = sessionStorage.getItem(scrollKey);
       if (stored) {
-        window.scrollTo(0, Number(stored) || 0);
+        window.requestAnimationFrame(() => {
+          window.scrollTo(0, Number(stored) || 0);
+        });
       }
-    }, 120);
+    }, 250);
 
     const save = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        sessionStorage.setItem(scrollKey, String(window.scrollY));
+      });
+    };
+
+    const saveNow = () => {
       sessionStorage.setItem(scrollKey, String(window.scrollY));
     };
 
-    window.addEventListener('beforeunload', save);
-    window.addEventListener('pagehide', save);
+    window.addEventListener('scroll', save, { passive: true });
+    window.addEventListener('beforeunload', saveNow);
+    window.addEventListener('pagehide', saveNow);
+    document.addEventListener('visibilitychange', saveNow);
 
     return () => {
       window.clearTimeout(restore);
-      save();
-      window.removeEventListener('beforeunload', save);
-      window.removeEventListener('pagehide', save);
+      window.cancelAnimationFrame(frame);
+      saveNow();
+      window.removeEventListener('scroll', save);
+      window.removeEventListener('beforeunload', saveNow);
+      window.removeEventListener('pagehide', saveNow);
+      document.removeEventListener('visibilitychange', saveNow);
     };
-  }, [activeSection, activeInsuranceWorkspace]);
+  }, [
+    activeSection,
+    activeInventoryView,
+    activeInsuranceWorkspace,
+    activePosWorkspace,
+    activeSupplierWorkspace,
+    activeFinanceWorkspace,
+    activeAdhocReportWorkspace,
+    activeAiWorkspace,
+    activeAdminPanelWorkspace,
+    activeNotificationWorkspace,
+    activePharmacistChatWorkspace,
+  ]);
 
 
 
@@ -7245,12 +7286,7 @@ async function confirmTransaction() {
                               Customer contribution{' '}
                               {selectedInsuranceCustomerContribution}%
                             </small>
-                          ) : (
-                            <small>
-                              Active insurance partners are loaded from
-                              Insurance Management.
-                            </small>
-                          )}
+                          ) : null}
                         </label>
                       </>
                     )}
