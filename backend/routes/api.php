@@ -381,97 +381,97 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             Route::post('/bootstrap', [
                 InsuranceManagementController::class,
                 'bootstrap',
-            ])->middleware('permission:insurance.configuration.manage');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.configuration.manage');
 
             Route::get('/partners', [
                 InsuranceManagementController::class,
                 'partners',
-            ])->middleware('permission:insurance.providers.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.providers.view');
 
             Route::post('/partners', [
                 InsuranceManagementController::class,
                 'createPartner',
-            ])->middleware('permission:insurance.providers.manage');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.providers.manage');
 
             Route::patch('/partners/{insurancePartner}', [
                 InsuranceManagementController::class,
                 'updatePartner',
-            ])->middleware('permission:insurance.providers.manage');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.providers.manage');
 
             Route::get('/schemes', [
                 InsuranceManagementController::class,
                 'schemes',
-            ])->middleware('permission:insurance.plans.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.plans.view');
 
             Route::post('/schemes', [
                 InsuranceManagementController::class,
                 'createScheme',
-            ])->middleware('permission:insurance.plans.manage');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.plans.manage');
 
             Route::get('/institutions', [
                 InsuranceManagementController::class,
                 'institutions',
-            ])->middleware('permission:insurance.configuration.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.configuration.view');
 
             Route::post('/institutions', [
                 InsuranceManagementController::class,
                 'createInstitution',
-            ])->middleware('permission:insurance.configuration.manage');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.configuration.manage');
 
             Route::patch('/institutions/{insuranceInstitution}', [
                 InsuranceManagementController::class,
                 'updateInstitution',
-            ])->middleware('permission:insurance.configuration.manage');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.configuration.manage');
 
             Route::patch('/schemes/{insuranceScheme}', [
                 InsuranceManagementController::class,
                 'updateScheme',
-            ])->middleware('permission:insurance.plans.manage');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.plans.manage');
 
             Route::get('/price-lists', [
                 InsuranceManagementController::class,
                 'priceLists',
-            ])->middleware('permission:insurance.pricing.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.view');
 
             Route::post('/price-lists', [
                 InsuranceManagementController::class,
                 'createPriceList',
-            ])->middleware('permission:insurance.pricing.create');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.create');
 
             Route::patch('/price-lists/{insurancePriceList}', [
                 InsuranceManagementController::class,
                 'updatePriceList',
-            ])->middleware('permission:insurance.pricing.edit');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.edit');
 
             Route::get('/product-prices', [
                 InsuranceManagementController::class,
                 'productPrices',
-            ])->middleware('permission:insurance.pricing.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.view');
 
             Route::post('/product-prices', [
                 InsuranceManagementController::class,
                 'upsertProductPrice',
-            ])->middleware('permission:insurance.pricing.edit');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.edit');
 
             Route::post('/product-prices/bulk-import', [
                 InsuranceManagementController::class,
                 'bulkImportProductPrices',
-            ])->middleware('permission:insurance.pricing.import');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.import');
 
             Route::get('/product-prices/export', [
                 InsuranceManagementController::class,
                 'exportProductPrices',
-            ])->middleware('permission:insurance.pricing.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.view');
 
             Route::get('/contribution-rules', [
                 InsuranceManagementController::class,
                 'contributionRules',
-            ])->middleware('permission:insurance.pricing.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.view');
 
             Route::post('/contribution-rules', [
                 InsuranceManagementController::class,
                 'createContributionRule',
-            ])->middleware('permission:insurance.pricing.create');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.create');
 
             Route::patch(
                 '/contribution-rules/{insuranceContributionRule}',
@@ -479,17 +479,17 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceManagementController::class,
                     'updateContributionRule',
                 ]
-            )->middleware('permission:insurance.pricing.edit');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.edit');
 
             Route::get('/memberships', [
                 InsuranceMembershipController::class,
                 'memberships',
-            ])->middleware('permission:insurance.memberships.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.memberships.view');
 
             Route::post('/memberships', [
                 InsuranceMembershipController::class,
                 'createMembership',
-            ])->middleware('permission:insurance.memberships.manage');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.memberships.manage');
 
             Route::patch(
                 '/memberships/{customerInsuranceMembership}',
@@ -497,7 +497,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceMembershipController::class,
                     'updateMembership',
                 ]
-            )->middleware('permission:insurance.memberships.manage');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.memberships.manage');
 
             Route::post(
                 '/memberships/{customerInsuranceMembership}/eligibility',
@@ -505,17 +505,17 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceMembershipController::class,
                     'checkEligibility',
                 ]
-            )->middleware('permission:insurance.eligibility.check');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.eligibility.check');
 
             Route::get('/claims', [
                 InsuranceClaimController::class,
                 'claims',
-            ])->middleware('permission:insurance.claims.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.view');
 
             Route::post('/claims/from-sale', [
                 InsuranceClaimController::class,
                 'createFromSale',
-            ])->middleware('permission:insurance.claims.create');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.create');
 
             Route::post(
                 '/claims/{insuranceClaim}/submit',
@@ -523,7 +523,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceClaimController::class,
                     'submitClaim',
                 ]
-            )->middleware('permission:insurance.claims.edit');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.edit');
 
             Route::post(
                 '/claims/{insuranceClaim}/adjudicate',
@@ -531,7 +531,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceClaimController::class,
                     'adjudicateClaim',
                 ]
-            )->middleware('permission:insurance.claims.adjudicate');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.adjudicate');
 
             Route::post(
                 '/claims/{insuranceClaim}/payments',
@@ -539,7 +539,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceClaimController::class,
                     'recordClaimPayment',
                 ]
-            )->middleware('permission:insurance.claims.payments');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.payments');
 
             Route::get(
                 '/reconciliation-batches',
@@ -547,7 +547,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceReconciliationController::class,
                     'index',
                 ]
-            )->middleware('permission:insurance.reconciliation.view');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.reconciliation.view');
 
             Route::post(
                 '/reconciliation-batches',
@@ -555,7 +555,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceReconciliationController::class,
                     'store',
                 ]
-            )->middleware('permission:insurance.reconciliation.manage');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.reconciliation.manage');
 
             Route::get(
                 '/reconciliation-batches/{insuranceReconciliationBatch}',
@@ -563,7 +563,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceReconciliationController::class,
                     'show',
                 ]
-            )->middleware('permission:insurance.reconciliation.view');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.reconciliation.view');
 
             Route::post(
                 '/reconciliation-batches/{insuranceReconciliationBatch}/submit',
@@ -571,7 +571,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceReconciliationController::class,
                     'submit',
                 ]
-            )->middleware('permission:insurance.reconciliation.manage');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.reconciliation.manage');
 
             Route::get(
                 '/reconciliation-batches/{insuranceReconciliationBatch}/eligible-payments',
@@ -579,7 +579,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceReconciliationController::class,
                     'eligiblePayments',
                 ]
-            )->middleware('permission:insurance.reconciliation.view');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.reconciliation.view');
 
             Route::post(
                 '/reconciliation-batches/{insuranceReconciliationBatch}/reconcile',
@@ -587,17 +587,17 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                     InsuranceReconciliationController::class,
                     'reconcile',
                 ]
-            )->middleware('permission:insurance.reconciliation.manage');
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.reconciliation.manage');
 
             Route::get('/claims/{insuranceClaim}', [
                 InsuranceClaimController::class,
                 'claim',
-            ])->middleware('permission:insurance.claims.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.view');
 
             Route::post('/pricing/resolve', [
                 InsuranceManagementController::class,
                 'resolvePricing',
-            ])->middleware('permission:insurance.pricing.view');
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.pricing.view');
         });
 
     Route::get('/receivables', [ReceivablesController::class, 'receivables'])
