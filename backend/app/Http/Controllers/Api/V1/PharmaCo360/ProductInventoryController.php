@@ -517,7 +517,7 @@ class ProductInventoryController extends Controller
             ->orderBy('id');
 
         $totalBatches = (clone $batches)->count();
-        $perPage = min(max((int) $request->query('per_page', 0), 0), 500);
+        $perPage = min(max((int) $request->query('per_page', 0), 0), 5000);
 
         $offset = min(
             max(

@@ -37,7 +37,7 @@ class PosSessionAdminController extends Controller
             ],
             'business_date' => ['nullable', 'date_format:Y-m-d'],
             'search' => ['nullable', 'string', 'max:120'],
-            'limit' => ['nullable', 'integer', 'min:10', 'max:100'],
+            'limit' => ['nullable', 'integer', 'min:10', 'max:500'],
         ]);
 
         $query = PharmacoPosSession::query()
@@ -122,7 +122,7 @@ class PosSessionAdminController extends Controller
         $sessions = $query
             ->latest('business_date')
             ->latest('sequence_number')
-            ->limit((int) ($validated['limit'] ?? 50))
+            ->limit((int) ($validated['limit'] ?? 250))
             ->get();
 
         $serialized = $sessions

@@ -1228,7 +1228,7 @@ export function ProductInventoryPreview({
   const inventoryUnitCost = Number(inventoryCreateForm.unit_cost || 0);
   const inventoryMarginPercent = Number(inventoryCreateForm.margin_percent || selectedInventoryDefaultMargin || 0);
   const inventoryCalculatedSellingPrice = inventoryUnitCost > 0
-    ? Math.round(inventoryUnitCost * inventoryMarginPercent)
+    ? Math.ceil(inventoryUnitCost * inventoryMarginPercent)
     : 0;
   const nearExpiryRows = inventoryArray(nearExpiryBatches?.batches);
 
@@ -5567,9 +5567,11 @@ export function ProductInventoryPreview({
                     <input
                       type="number"
                       min="0"
+                      step="0.01"
+                      inputMode="decimal"
                       value={inventoryCreateForm.margin_percent}
                       onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, margin_percent: event.target.value })}
-                      placeholder="Product Master margin"
+                      placeholder="e.g. 1.4"
                     />
                   </label>
 
@@ -5579,7 +5581,9 @@ export function ProductInventoryPreview({
                       type="number"
                       min="0"
                       value={inventoryCalculatedSellingPrice || ""}
-                      placeholder={inventoryCalculatedSellingPrice ? String(inventoryCalculatedSellingPrice) : 'Calculated automatically as Unit Cost × Margin multiplier'}
+                      placeholder={inventoryCalculatedSellingPrice ? String(inventoryCalculatedSellingPrice) : 'Calculated automatically as Unit Cost × Margin multiplier, rounded up'}
+                      readOnly
+                      aria-readonly="true"
                     />
                   </label>
 
