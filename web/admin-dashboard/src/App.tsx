@@ -2929,8 +2929,78 @@ function loadStoredSession(): StoredSession | null {
   }
 }
 
+type AdminRouteSnapshot = {
+  section?: string;
+  inventory?: string;
+  insurance?: string;
+  pos?: string;
+  supplier?: string;
+  finance?: string;
+  reports?: string;
+  ai?: string;
+  adminPanel?: string;
+  scrollY?: string;
+};
+
+function readAdminRouteSnapshot(): AdminRouteSnapshot {
+  try {
+    const hash = window.location.hash.replace(/^#/, '');
+    const params = new URLSearchParams(hash);
+    const stored = localStorage.getItem('ubuzima.admin.route.snapshot.v2');
+    const saved = stored ? JSON.parse(stored) as AdminRouteSnapshot : {};
+
+    return {
+      ...saved,
+      section: params.get('section') || saved.section,
+      inventory: params.get('inventory') || saved.inventory,
+      insurance: params.get('insurance') || saved.insurance,
+      pos: params.get('pos') || saved.pos,
+      supplier: params.get('supplier') || saved.supplier,
+      finance: params.get('finance') || saved.finance,
+      reports: params.get('reports') || saved.reports,
+      ai: params.get('ai') || saved.ai,
+      adminPanel: params.get('adminPanel') || saved.adminPanel,
+      scrollY: params.get('scrollY') || saved.scrollY,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function writeAdminRouteSnapshot(snapshot: AdminRouteSnapshot): void {
+  try {
+    localStorage.setItem(
+      'ubuzima.admin.route.snapshot.v2',
+      JSON.stringify(snapshot),
+    );
+
+    const hash = new URLSearchParams(
+      Object.entries(snapshot).reduce<Record<string, string>>(
+        (values, [key, value]) => {
+          if (value !== undefined && value !== '') {
+            values[key] = value;
+          }
+
+          return values;
+        },
+        {},
+      ),
+    ).toString();
+
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}#${hash}`,
+    );
+  } catch {
+    // Route persistence must never block the app.
+  }
+}
+
 function loadStoredActiveSection(): AdminSectionKey {
+  const snapshot = readAdminRouteSnapshot();
   const stored =
+    snapshot.section ||
     storedAdminValue('section', '') ||
     localStorage.getItem(activeSectionStorageKey);
 
@@ -3740,10 +3810,10 @@ function App() {
   const [activeSolution, setActiveSolution] = useState<SolutionKey>('pharmaco');
   const [activePharmaSegment, setActivePharmaSegment] = useState<PharmaSegmentKey>('retail');
   const [activePharmaFeature, setActivePharmaFeature] = useState<PharmaFeatureKey>('ai-model');
-  const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
-  const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
-  const [activeInsuranceWorkspace, setActiveInsuranceWorkspace] = useState<InsuranceWorkspaceKey>(() => storedAdminValue('insuranceWorkspace', 'overview') as InsuranceWorkspaceKey);
-  const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
+  const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>(() => (readAdminRouteSnapshot().ai || storedAdminValue('aiWorkspace', 'model-registry')) as AiWorkspaceKey);
+  const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>(() => (readAdminRouteSnapshot().adminPanel || storedAdminValue('adminPanelWorkspace', 'backend-api')) as AdminPanelWorkspaceKey);
+  const [activeInsuranceWorkspace, setActiveInsuranceWorkspace] = useState<InsuranceWorkspaceKey>(() => (readAdminRouteSnapshot().insurance || storedAdminValue('insuranceWorkspace', 'overview')) as InsuranceWorkspaceKey);
+  const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>(() => (readAdminRouteSnapshot().pos || storedAdminValue('posWorkspace', 'overview')) as PosWorkspaceKey);
   const [isPosDayOpen, setIsPosDayOpen] = useState(false);
   const [posSession, setPosSession] = useState<PosSession | null>(null);
   const [isLoadingPosSession, setIsLoadingPosSession] = useState(false);
@@ -3754,7 +3824,7 @@ function App() {
   const [posCustomerType, setPosCustomerType] = useState<'walk-in' | 'existing-customer' | 'insurance-customer' | 'corporate-customer'>('walk-in');
   const [posPrescriptionStatus, setPosPrescriptionStatus] = useState<'not-required' | 'required' | 'captured' | 'manual-review'>('not-required');
   const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'momo' | 'card' | 'insurance' | 'credit'>('cash');
-  const [posInsuranceProvider, setPosInsuranceProvider] = useState('rssb');
+  const [posInsuranceProvider, setPosInsuranceProvider] = useState('');
   const [posInsuranceInstitution, setPosInsuranceInstitution] = useState('');
   const [posCustomerInvoice] = useState<'no' | 'yes'>('no');
   const [isConfirmingPosTransaction, setIsConfirmingPosTransaction] = useState(false);
@@ -3850,14 +3920,17 @@ function App() {
   } | null>(null);
   const [posSellingUnitQuantity, setPosSellingUnitQuantity] = useState('1');
   const [posOtherQuantity, setPosOtherQuantity] = useState('0');
-  const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>(() => storedAdminValue('supplierWorkspace', 'overview') as SupplierWorkspaceKey);
-  const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>(() => storedAdminValue('financeWorkspace', 'overview') as FinanceWorkspaceKey);
-  const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>(() => storedAdminValue('reportsWorkspace', 'overview') as AdhocReportWorkspaceKey);
+  const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>(() => (readAdminRouteSnapshot().supplier || storedAdminValue('supplierWorkspace', 'overview')) as SupplierWorkspaceKey);
+  const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>(() => (readAdminRouteSnapshot().finance || storedAdminValue('financeWorkspace', 'overview')) as FinanceWorkspaceKey);
+  const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>(() => (readAdminRouteSnapshot().reports || storedAdminValue('reportsWorkspace', 'overview')) as AdhocReportWorkspaceKey);
   const [activeNotificationWorkspace, setActiveNotificationWorkspace] = useState<'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center'>('overview');
   const [activePharmacistChatWorkspace, setActivePharmacistChatWorkspace] = useState<'in-app-chat' | 'whatsapp-chat'>('in-app-chat');
   const [activeInventoryView, setActiveInventoryView] =
     useState<InventoryView>(() => {
+      const snapshotView = readAdminRouteSnapshot().inventory;
       const requestedView =
+        snapshotView ||
+        storedAdminValue('inventoryWorkspace', '') ||
         new URLSearchParams(window.location.search)
           .get('inventoryView');
 
@@ -4115,96 +4188,46 @@ function App() {
     };
   }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activeInsuranceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
 
-  useEffect(() => {
-    const restoreFlag = 'ubuzima.admin.route.restored.v1';
-
-    if (sessionStorage.getItem(restoreFlag)) {
-      return;
-    }
-
-    sessionStorage.setItem(restoreFlag, '1');
-
-    const stored = localStorage.getItem('ubuzima.admin.route.snapshot.v1');
-    const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    const snapshot = stored ? JSON.parse(stored) as Record<string, string> : {};
-
-    const section = params.get('section') || snapshot.section;
-    const inventory = params.get('inventory') || snapshot.inventory;
-    const insurance = params.get('insurance') || snapshot.insurance;
-    const pos = params.get('pos') || snapshot.pos;
-    const supplier = params.get('supplier') || snapshot.supplier;
-    const finance = params.get('finance') || snapshot.finance;
-    const reports = params.get('reports') || snapshot.reports;
-    const ai = params.get('ai') || snapshot.ai;
-    const adminPanel = params.get('adminPanel') || snapshot.adminPanel;
-    const scrollY = Number(params.get('scroll') || snapshot.scrollY || 0);
-
-    if (section && section in sectionMeta) {
-      setActiveSection(section as AdminSectionKey);
-    }
-
-    if (inventory) setActiveInventoryView(inventory as InventoryView);
-    if (insurance) setActiveInsuranceWorkspace(insurance as InsuranceWorkspaceKey);
-    if (pos) setActivePosWorkspace(pos as PosWorkspaceKey);
-    if (supplier) setActiveSupplierWorkspace(supplier as SupplierWorkspaceKey);
-    if (finance) setActiveFinanceWorkspace(finance as FinanceWorkspaceKey);
-    if (reports) setActiveAdhocReportWorkspace(reports as AdhocReportWorkspaceKey);
-    if (ai) setActiveAiWorkspace(ai as AiWorkspaceKey);
-    if (adminPanel) setActiveAdminPanelWorkspace(adminPanel as AdminPanelWorkspaceKey);
-
-    [120, 400, 900, 1600, 2400].forEach((delay) => {
-      window.setTimeout(() => {
-        window.scrollTo(0, scrollY);
-      }, delay);
-    });
-  }, []);
 
   useEffect(() => {
-    const snapshot = {
-      section: activeSection,
-      inventory: activeInventoryView,
-      insurance: activeInsuranceWorkspace,
-      pos: activePosWorkspace,
-      supplier: activeSupplierWorkspace,
-      finance: activeFinanceWorkspace,
-      reports: activeAdhocReportWorkspace,
-      ai: activeAiWorkspace,
-      adminPanel: activeAdminPanelWorkspace,
-      scrollY: String(window.scrollY),
+    const saveRoute = () => {
+      const snapshot: AdminRouteSnapshot = {
+        section: activeSection,
+        inventory: activeInventoryView,
+        insurance: activeInsuranceWorkspace,
+        pos: activePosWorkspace,
+        supplier: activeSupplierWorkspace,
+        finance: activeFinanceWorkspace,
+        reports: activeAdhocReportWorkspace,
+        ai: activeAiWorkspace,
+        adminPanel: activeAdminPanelWorkspace,
+        scrollY: String(window.scrollY),
+      };
+
+      writeAdminRouteSnapshot(snapshot);
+
+      rememberAdminState('section', activeSection);
+      rememberAdminState('inventoryWorkspace', activeInventoryView);
+      rememberAdminState('insuranceWorkspace', activeInsuranceWorkspace);
+      rememberAdminState('posWorkspace', activePosWorkspace);
+      rememberAdminState('supplierWorkspace', activeSupplierWorkspace);
+      rememberAdminState('financeWorkspace', activeFinanceWorkspace);
+      rememberAdminState('reportsWorkspace', activeAdhocReportWorkspace);
+      rememberAdminState('aiWorkspace', activeAiWorkspace);
+      rememberAdminState('adminPanelWorkspace', activeAdminPanelWorkspace);
     };
 
-    const saveSnapshot = () => {
-      snapshot.scrollY = String(window.scrollY);
-      localStorage.setItem(
-        'ubuzima.admin.route.snapshot.v1',
-        JSON.stringify(snapshot),
-      );
+    saveRoute();
 
-      const hash = new URLSearchParams(snapshot).toString();
-      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${hash}`);
-    };
-
-    rememberAdminState('section', activeSection);
-    rememberAdminState('inventoryWorkspace', activeInventoryView);
-    rememberAdminState('insuranceWorkspace', activeInsuranceWorkspace);
-    rememberAdminState('posWorkspace', activePosWorkspace);
-    rememberAdminState('supplierWorkspace', activeSupplierWorkspace);
-    rememberAdminState('financeWorkspace', activeFinanceWorkspace);
-    rememberAdminState('reportsWorkspace', activeAdhocReportWorkspace);
-    rememberAdminState('aiWorkspace', activeAiWorkspace);
-    rememberAdminState('adminPanelWorkspace', activeAdminPanelWorkspace);
-
-    saveSnapshot();
-
-    window.addEventListener('scroll', saveSnapshot, { passive: true });
-    window.addEventListener('beforeunload', saveSnapshot);
-    window.addEventListener('pagehide', saveSnapshot);
+    window.addEventListener('scroll', saveRoute, { passive: true });
+    window.addEventListener('beforeunload', saveRoute);
+    window.addEventListener('pagehide', saveRoute);
 
     return () => {
-      saveSnapshot();
-      window.removeEventListener('scroll', saveSnapshot);
-      window.removeEventListener('beforeunload', saveSnapshot);
-      window.removeEventListener('pagehide', saveSnapshot);
+      saveRoute();
+      window.removeEventListener('scroll', saveRoute);
+      window.removeEventListener('beforeunload', saveRoute);
+      window.removeEventListener('pagehide', saveRoute);
     };
   }, [
     activeSection,
@@ -4217,6 +4240,85 @@ function App() {
     activeAiWorkspace,
     activeAdminPanelWorkspace,
   ]);
+
+  useEffect(() => {
+    const snapshot = readAdminRouteSnapshot();
+    const scrollY = Number(snapshot.scrollY || 0);
+
+    if (!scrollY) {
+      return;
+    }
+
+    [150, 500, 1000, 1800, 2800].forEach((delay) => {
+      window.setTimeout(() => {
+        window.scrollTo(0, scrollY);
+      }, delay);
+    });
+  }, [activeSection]);
+
+  useEffect(() => {
+    const saveRoute = () => {
+      writeAdminRouteSnapshot({
+        section: activeSection,
+        inventory: activeInventoryView,
+        insurance: activeInsuranceWorkspace,
+        pos: activePosWorkspace,
+        supplier: activeSupplierWorkspace,
+        finance: activeFinanceWorkspace,
+        reports: activeAdhocReportWorkspace,
+        ai: activeAiWorkspace,
+        adminPanel: activeAdminPanelWorkspace,
+        scrollY: String(window.scrollY),
+      });
+
+      rememberAdminState('section', activeSection);
+      rememberAdminState('inventoryWorkspace', activeInventoryView);
+      rememberAdminState('insuranceWorkspace', activeInsuranceWorkspace);
+      rememberAdminState('posWorkspace', activePosWorkspace);
+      rememberAdminState('supplierWorkspace', activeSupplierWorkspace);
+      rememberAdminState('financeWorkspace', activeFinanceWorkspace);
+      rememberAdminState('reportsWorkspace', activeAdhocReportWorkspace);
+      rememberAdminState('aiWorkspace', activeAiWorkspace);
+      rememberAdminState('adminPanelWorkspace', activeAdminPanelWorkspace);
+    };
+
+    saveRoute();
+
+    window.addEventListener('scroll', saveRoute, { passive: true });
+    window.addEventListener('beforeunload', saveRoute);
+    window.addEventListener('pagehide', saveRoute);
+
+    return () => {
+      saveRoute();
+      window.removeEventListener('scroll', saveRoute);
+      window.removeEventListener('beforeunload', saveRoute);
+      window.removeEventListener('pagehide', saveRoute);
+    };
+  }, [
+    activeSection,
+    activeInventoryView,
+    activeInsuranceWorkspace,
+    activePosWorkspace,
+    activeSupplierWorkspace,
+    activeFinanceWorkspace,
+    activeAdhocReportWorkspace,
+    activeAiWorkspace,
+    activeAdminPanelWorkspace,
+  ]);
+
+  useEffect(() => {
+    const scrollY = Number(readAdminRouteSnapshot().scrollY || 0);
+
+    if (!scrollY) {
+      return;
+    }
+
+    [150, 500, 1000, 1800, 2800].forEach((delay) => {
+      window.setTimeout(() => {
+        window.scrollTo(0, scrollY);
+      }, delay);
+    });
+  }, [activeSection, activeInventoryView, activeInsuranceWorkspace, activePosWorkspace]);
 
   useEffect(() => {
     const workspaceBySection: Record<string, string> = {

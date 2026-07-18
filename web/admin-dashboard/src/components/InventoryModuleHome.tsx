@@ -17,6 +17,7 @@ import {
   InventoryExecutiveRisk,
 } from './InventoryExecutiveRisk';
 import { InventoryIntelligenceCards } from './InventoryIntelligenceCards';
+import { TrendAnalysisPanel } from './TrendAnalysisPanel';
 
 type InventoryModuleHomeProps = {
   token: string;
