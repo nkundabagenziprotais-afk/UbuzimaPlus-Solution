@@ -30,6 +30,19 @@ class InsuranceClaim extends Model
         'rejection_reason',
         'submission_payload',
         'adjudication_response',
+        'invoice_due_date',
+        'invoice_submission_status',
+        'invoice_submitted_at',
+        'invoice_submitted_by',
+        'invoice_submission_reference',
+        'invoice_submission_channel',
+        'reminder_lead_days',
+        'reminder_frequency',
+        'next_reminder_at',
+        'last_reminder_at',
+        'reminder_count',
+        'invoice_document_path',
+        'annex_document_path',
         'metadata',
     ];
 
@@ -45,6 +58,12 @@ class InsuranceClaim extends Model
         'paid_amount' => 'decimal:2',
         'submission_payload' => 'array',
         'adjudication_response' => 'array',
+        'invoice_due_date' => 'date',
+        'invoice_submitted_at' => 'datetime',
+        'next_reminder_at' => 'datetime',
+        'last_reminder_at' => 'datetime',
+        'reminder_lead_days' => 'integer',
+        'reminder_count' => 'integer',
         'metadata' => 'array',
     ];
 
@@ -79,6 +98,22 @@ class InsuranceClaim extends Model
         return $this->belongsTo(
             PharmacoSale::class,
             'sale_id'
+        );
+    }
+
+    public function submissionEvents(): HasMany
+    {
+        return $this->hasMany(
+            InsuranceClaimSubmissionEvent::class,
+            'insurance_claim_id'
+        );
+    }
+
+    public function salesRegisterEntries(): HasMany
+    {
+        return $this->hasMany(
+            InsuranceSalesRegister::class,
+            'insurance_claim_id'
         );
     }
 }

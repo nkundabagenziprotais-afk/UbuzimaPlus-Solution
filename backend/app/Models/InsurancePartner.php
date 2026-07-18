@@ -82,4 +82,12 @@ class InsurancePartner extends Model
     {
         return $this->hasMany(InsuranceClaim::class);
     }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(
+            InsurancePartnerDocument::class,
+            'insurance_partner_id'
+        );
+    }
 }
