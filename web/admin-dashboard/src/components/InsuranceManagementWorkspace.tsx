@@ -17,6 +17,7 @@ import {
   createInsuranceContributionRule,
   createInsuranceInstitution,
   createInsurancePartner,
+  updateInsurancePartner,
   createInsurancePriceList,
   createInsuranceProductPrice,
   createInsuranceScheme,
@@ -175,6 +176,9 @@ export function InsuranceManagementWorkspace({
     insurer_contribution_percent: '85',
     status: 'active',
   });
+
+  const [editingPartnerId, setEditingPartnerId] =
+    useState<number | null>(null);
 
   const [institutionForm, setInstitutionForm] = useState({
     insurance_partner_id: '',
@@ -415,54 +419,192 @@ export function InsuranceManagementWorkspace({
     }
   }
 
+  function resetPartnerForm(): void {
+    setEditingPartnerId(null);
+    setPartnerForm({
+      code: '',
+      name: '',
+      partner_type: 'public',
+      pricing_mode: 'standard',
+      contract_start_date: '',
+      contract_expiry_date: '',
+      coverage_limit: '',
+      external_portal_reference: '',
+      requires_price_approval: false,
+      contact_name: '',
+      phone: '',
+      email: '',
+      customer_contribution_percent: '15',
+      insurer_contribution_percent: '85',
+      status: 'active',
+    });
+  }
+
+  function loadPartnerForEdit(partner: InsurancePartner): void {
+    setEditingPartnerId(partner.id);
+    setPartnerForm({
+      code: partner.code || '',
+      name: partner.name || '',
+      partner_type: partner.partner_type || 'public',
+      pricing_mode: partner.pricing_mode || 'standard',
+      contract_start_date: partner.contract_start_date || '',
+      contract_expiry_date: partner.contract_expiry_date || '',
+      coverage_limit:
+        partner.coverage_limit !== null && partner.coverage_limit !== undefined
+          ? String(partner.coverage_limit)
+          : '',
+      external_portal_reference:
+        partner.external_portal_reference || '',
+      requires_price_approval:
+        Boolean(partner.requires_price_approval),
+      contact_name: partner.contact_name || '',
+      phone: partner.phone || '',
+      email: partner.email || '',
+      customer_contribution_percent:
+        partner.default_customer_contribution_percent !== null &&
+        partner.default_customer_contribution_percent !== undefined
+          ? String(partner.default_customer_contribution_percent)
+          : '15',
+      insurer_contribution_percent:
+        partner.default_insurer_contribution_percent !== null &&
+        partner.default_insurer_contribution_percent !== undefined
+          ? String(partner.default_insurer_contribution_percent)
+          : '85',
+      status: partner.status || 'active',
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function replicatePartner(partner: InsurancePartner): void {
+    const baseCode = `${partner.code || 'PARTNER'}-COPY`
+      .toUpperCase()
+      .replace(/[^A-Z0-9-]/g, '-')
+      .slice(0, 60);
+
+    setEditingPartnerId(null);
+    setPartnerForm({
+      code: baseCode,
+      name: `${partner.name || 'Insurance Partner'} Copy`,
+      partner_type: partner.partner_type || 'public',
+      pricing_mode: partner.pricing_mode || 'standard',
+      contract_start_date: partner.contract_start_date || '',
+      contract_expiry_date: partner.contract_expiry_date || '',
+      coverage_limit:
+        partner.coverage_limit !== null && partner.coverage_limit !== undefined
+          ? String(partner.coverage_limit)
+          : '',
+      external_portal_reference:
+        partner.external_portal_reference || '',
+      requires_price_approval:
+        Boolean(partner.requires_price_approval),
+      contact_name: partner.contact_name || '',
+      phone: partner.phone || '',
+      email: partner.email || '',
+      customer_contribution_percent:
+        partner.default_customer_contribution_percent !== null &&
+        partner.default_customer_contribution_percent !== undefined
+          ? String(partner.default_customer_contribution_percent)
+          : '15',
+      insurer_contribution_percent:
+        partner.default_insurer_contribution_percent !== null &&
+        partner.default_insurer_contribution_percent !== undefined
+          ? String(partner.default_insurer_contribution_percent)
+          : '85',
+      status: 'active',
+    });
+
+    setNotice('Partner details copied. Review code/name, then save as a new partner.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function changePartnerStatus(
+    partner: InsurancePartner,
+    nextStatus: string,
+  ): Promise<void> {
+    setIsSaving(true);
+    setNotice('');
+    setError('');
+
+    try {
+      await updateInsurancePartner(token, tenantSlug, partner.id, {
+        status: nextStatus,
+      });
+
+      setNotice(
+        nextStatus === 'active'
+          ? 'Insurance partner reactivated successfully.'
+          : 'Insurance partner suspended successfully.',
+      );
+
+      await loadPartners();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to update insurance partner status.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function submitPartner(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
     setNotice('');
     setError('');
 
+    const payload = {
+      code: partnerForm.code.trim(),
+      name: partnerForm.name.trim(),
+      partner_type: partnerForm.partner_type,
+      pricing_mode: partnerForm.pricing_mode,
+      contract_start_date: partnerForm.contract_start_date || null,
+      contract_expiry_date: partnerForm.contract_expiry_date || null,
+      coverage_limit: partnerForm.coverage_limit
+        ? Number(partnerForm.coverage_limit)
+        : null,
+      external_portal_reference:
+        partnerForm.external_portal_reference.trim() || null,
+      requires_price_approval: partnerForm.requires_price_approval,
+      contact_name: partnerForm.contact_name.trim() || null,
+      phone: partnerForm.phone.trim() || null,
+      email: partnerForm.email.trim() || null,
+      default_customer_contribution_percent: Number(
+        partnerForm.customer_contribution_percent,
+      ),
+      default_insurer_contribution_percent: Number(
+        partnerForm.insurer_contribution_percent,
+      ),
+      status: partnerForm.status,
+    };
+
     try {
-      await createInsurancePartner(token, tenantSlug, {
-        code: partnerForm.code.trim(),
-        name: partnerForm.name.trim(),
-        partner_type: partnerForm.partner_type,
-        pricing_mode: partnerForm.pricing_mode,
-        contract_start_date: partnerForm.contract_start_date || null,
-        contract_expiry_date: partnerForm.contract_expiry_date || null,
-        coverage_limit: partnerForm.coverage_limit
-          ? Number(partnerForm.coverage_limit)
-          : null,
-        external_portal_reference:
-          partnerForm.external_portal_reference.trim() || null,
-        requires_price_approval: partnerForm.requires_price_approval,
-        contact_name: partnerForm.contact_name.trim() || null,
-        phone: partnerForm.phone.trim() || null,
-        email: partnerForm.email.trim() || null,
-        default_customer_contribution_percent: Number(
-          partnerForm.customer_contribution_percent,
-        ),
-        default_insurer_contribution_percent: Number(
-          partnerForm.insurer_contribution_percent,
-        ),
-        status: partnerForm.status,
-      });
+      if (editingPartnerId) {
+        await updateInsurancePartner(
+          token,
+          tenantSlug,
+          editingPartnerId,
+          payload,
+        );
 
-      setPartnerForm((current) => ({
-        ...current,
-        code: '',
-        name: '',
-        contact_name: '',
-        phone: '',
-        email: '',
-      }));
+        setNotice('Insurance partner updated successfully.');
+      } else {
+        await createInsurancePartner(token, tenantSlug, payload);
 
-      setNotice('Insurance partner created successfully.');
+        setNotice('Insurance partner created successfully.');
+      }
+
+      resetPartnerForm();
       await loadPartners();
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Unable to create insurance partner.',
+          : editingPartnerId
+            ? 'Unable to update insurance partner.'
+            : 'Unable to create insurance partner.',
       );
     } finally {
       setIsSaving(false);
@@ -1165,13 +1307,31 @@ export function InsuranceManagementWorkspace({
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
               </select>
             </label>
           </div>
 
-          <button disabled={isSaving} type="submit">
-            {isSaving ? 'Saving…' : 'Create partner'}
-          </button>
+          <div className="insurance-action-row">
+            <button disabled={isSaving} type="submit">
+              {isSaving
+                ? 'Saving…'
+                : editingPartnerId
+                  ? 'Update partner'
+                  : 'Create partner'}
+            </button>
+
+            {editingPartnerId ? (
+              <button
+                type="button"
+                className="secondary"
+                onClick={resetPartnerForm}
+                disabled={isSaving}
+              >
+                Cancel edit
+              </button>
+            ) : null}
+          </div>
         </form>
 
         {filters()}
@@ -1187,6 +1347,7 @@ export function InsuranceManagementWorkspace({
                 <th>Contribution split</th>
                 <th>Contact</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1227,12 +1388,55 @@ export function InsuranceManagementWorkspace({
                   <td>
                     <StatusPill status={partner.status} />
                   </td>
+                  <td>
+                    <div className="insurance-action-row">
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => loadPartnerForEdit(partner)}
+                        disabled={isSaving}
+                      >
+                        Edit
+                      </button>
+                      {partner.status === 'active' ? (
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() =>
+                            changePartnerStatus(partner, 'suspended')
+                          }
+                          disabled={isSaving}
+                        >
+                          Suspend
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() =>
+                            changePartnerStatus(partner, 'active')
+                          }
+                          disabled={isSaving}
+                        >
+                          Reactivate
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => replicatePartner(partner)}
+                        disabled={isSaving}
+                      >
+                        Replicate
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
 
               {!partners.rows.length && (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     No insurance partners match the current
                     filters.
                   </td>
