@@ -133,6 +133,9 @@ export function InventoryIntelligenceCards({
     adjustments: Number(
       weeklyMovements?.totals?.adjustments ?? 0,
     ),
+    net: Number(
+      weeklyMovements?.totals?.net ?? 0,
+    ),
     transactions: Number(
       weeklyMovements?.totals?.transactions ?? 0,
     ),
@@ -254,6 +257,114 @@ export function InventoryIntelligenceCards({
     )
     .join(" ");
 
+  const nearExpiryExposure =
+    nearExpiryTrend.latest_value ?? 0;
+
+  const issueReceiptRatio =
+    weeklyMovementTotals.receipts > 0
+      ? (
+          weeklyMovementTotals.issues
+          / weeklyMovementTotals.receipts
+        ) * 100
+      : weeklyMovementTotals.issues > 0
+        ? 100
+        : 0;
+
+  const adjustmentPressure =
+    weeklyMovementTotals.transactions > 0
+      ? (
+          weeklyMovementTotals.adjustments
+          / Math.max(
+              1,
+              weeklyMovementTotals.receipts
+              + weeklyMovementTotals.issues
+              + weeklyMovementTotals.adjustments,
+            )
+        ) * 100
+      : 0;
+
+  const actionSignal =
+    nearExpiryTrend.direction === "increasing"
+      ? "Prioritize expiry reduction"
+      : weeklyMovementTotals.net < 0
+        ? "Review replenishment"
+        : weeklyMovementTotals.transactions === 0
+          ? "No movement this week"
+          : "Inventory flow is active";
+
+  const actionHint =
+    nearExpiryTrend.direction === "increasing"
+      ? "Near-expiry value is growing; review transfers, markdowns or supplier follow-up."
+      : weeklyMovementTotals.net < 0
+        ? "Issued quantity is higher than receipts; check reorder levels and fast movers."
+        : weeklyMovementTotals.transactions === 0
+          ? "No signed stock movement was found for this week."
+          : "Receipts, issues and adjustments are being captured for decision support.";
+
+  const decisionCards = [
+    {
+      label: "Weekly receipts",
+      value: weeklyMovementTotals.receipts.toLocaleString("en-RW"),
+      hint: "Units received into inventory this week.",
+      tone: "positive",
+    },
+    {
+      label: "Weekly issues",
+      value: weeklyMovementTotals.issues.toLocaleString("en-RW"),
+      hint: "Units issued, sold, transferred or deducted this week.",
+      tone: "warning",
+    },
+    {
+      label: "Net movement",
+      value: weeklyMovementTotals.net.toLocaleString("en-RW"),
+      hint:
+        weeklyMovementTotals.net >= 0
+          ? "Inventory increased or remained stable this week."
+          : "Inventory reduced this week; review replenishment.",
+      tone:
+        weeklyMovementTotals.net >= 0
+          ? "positive"
+          : "danger",
+    },
+    {
+      label: "Movement records",
+      value: weeklyMovementTotals.transactions.toLocaleString("en-RW"),
+      hint: "Signed stock movement transactions feeding audit history.",
+      tone: "neutral",
+    },
+    {
+      label: "Issue pressure",
+      value: `${Math.round(issueReceiptRatio)}%`,
+      hint: "Issues compared with receipts. High values may indicate replenishment pressure.",
+      tone: issueReceiptRatio > 80 ? "danger" : "neutral",
+    },
+    {
+      label: "Adjustment pressure",
+      value: `${Math.round(adjustmentPressure)}%`,
+      hint: "Share of stock activity affected by adjustments, counts or transfers.",
+      tone: adjustmentPressure > 20 ? "warning" : "neutral",
+    },
+    {
+      label: "Near-expiry exposure",
+      value: money(nearExpiryExposure),
+      hint: "Current value of inventory at expiry risk within the configured window.",
+      tone:
+        nearExpiryExposure > 0
+          ? "warning"
+          : "positive",
+    },
+    {
+      label: "Recommended action",
+      value: actionSignal,
+      hint: actionHint,
+      tone:
+        nearExpiryTrend.direction === "increasing"
+        || weeklyMovementTotals.net < 0
+          ? "danger"
+          : "positive",
+    },
+  ];
+
   if (!slug) {
     return (
       <article className="inventory-home-chart-panel">
@@ -271,6 +382,19 @@ export function InventoryIntelligenceCards({
 
   return (
     <>
+      <section className="inventory-intelligence-decision-grid">
+        {decisionCards.map((card) => (
+          <article
+            key={card.label}
+            className={`inventory-intelligence-decision-card is-${card.tone}`}
+          >
+            <span>{card.label}</span>
+            <strong>{card.value}</strong>
+            <small>{card.hint}</small>
+          </article>
+        ))}
+      </section>
+
       <article className="inventory-home-chart-panel inventory-intelligence-card">
         <header>
           <div>

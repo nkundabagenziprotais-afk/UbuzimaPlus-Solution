@@ -265,13 +265,14 @@ function rememberAdminState(key: string, value: string): void {
         [key]: value,
       }),
     );
+    localStorage.setItem(`ubuzima.admin.${key}`, value);
   } catch {
     // Browser storage is optional.
   }
 }
 
 function storedAdminValue(key: string, fallback: string): string {
-  return storedAdminState()[key] || fallback;
+  return storedAdminState()[key] || localStorage.getItem(`ubuzima.admin.${key}`) || fallback;
 }
 
 function posPartnerCustomerContributionPercent(
@@ -2929,12 +2930,15 @@ function loadStoredSession(): StoredSession | null {
 }
 
 function loadStoredActiveSection(): AdminSectionKey {
-  try {
-    const stored = localStorage.getItem(activeSectionStorageKey) as AdminSectionKey | null;
-    return stored && sectionMeta[stored] ? stored : 'overview';
-  } catch {
-    return 'overview';
+  const stored =
+    storedAdminValue('section', '') ||
+    localStorage.getItem(activeSectionStorageKey);
+
+  if (stored && stored in sectionMeta) {
+    return stored as AdminSectionKey;
   }
+
+  return 'overview';
 }
 
 function ModuleReadinessGrid({
@@ -3846,9 +3850,9 @@ function App() {
   } | null>(null);
   const [posSellingUnitQuantity, setPosSellingUnitQuantity] = useState('1');
   const [posOtherQuantity, setPosOtherQuantity] = useState('0');
-  const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>('overview');
-  const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>('overview');
-  const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>('overview');
+  const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>(() => storedAdminValue('supplierWorkspace', 'overview') as SupplierWorkspaceKey);
+  const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>(() => storedAdminValue('financeWorkspace', 'overview') as FinanceWorkspaceKey);
+  const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>(() => storedAdminValue('reportsWorkspace', 'overview') as AdhocReportWorkspaceKey);
   const [activeNotificationWorkspace, setActiveNotificationWorkspace] = useState<'overview' | 'create-notification' | 'recurring-notifications' | 'platform-notification-center'>('overview');
   const [activePharmacistChatWorkspace, setActivePharmacistChatWorkspace] = useState<'in-app-chat' | 'whatsapp-chat'>('in-app-chat');
   const [activeInventoryView, setActiveInventoryView] =
@@ -4113,8 +4117,25 @@ function App() {
 
   useEffect(() => {
     rememberAdminState('section', activeSection);
+    rememberAdminState('inventoryWorkspace', activeInventoryView);
     rememberAdminState('insuranceWorkspace', activeInsuranceWorkspace);
-  }, [activeSection, activeInsuranceWorkspace]);
+    rememberAdminState('posWorkspace', activePosWorkspace);
+    rememberAdminState('supplierWorkspace', activeSupplierWorkspace);
+    rememberAdminState('financeWorkspace', activeFinanceWorkspace);
+    rememberAdminState('reportsWorkspace', activeAdhocReportWorkspace);
+    rememberAdminState('aiWorkspace', activeAiWorkspace);
+    rememberAdminState('adminPanelWorkspace', activeAdminPanelWorkspace);
+  }, [
+    activeSection,
+    activeInventoryView,
+    activeInsuranceWorkspace,
+    activePosWorkspace,
+    activeSupplierWorkspace,
+    activeFinanceWorkspace,
+    activeAdhocReportWorkspace,
+    activeAiWorkspace,
+    activeAdminPanelWorkspace,
+  ]);
 
   useEffect(() => {
     const workspaceBySection: Record<string, string> = {
