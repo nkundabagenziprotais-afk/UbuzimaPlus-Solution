@@ -4116,6 +4116,74 @@ function App() {
   }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activeInsuranceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
 
   useEffect(() => {
+    const restoreFlag = 'ubuzima.admin.route.restored.v1';
+
+    if (sessionStorage.getItem(restoreFlag)) {
+      return;
+    }
+
+    sessionStorage.setItem(restoreFlag, '1');
+
+    const stored = localStorage.getItem('ubuzima.admin.route.snapshot.v1');
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const snapshot = stored ? JSON.parse(stored) as Record<string, string> : {};
+
+    const section = params.get('section') || snapshot.section;
+    const inventory = params.get('inventory') || snapshot.inventory;
+    const insurance = params.get('insurance') || snapshot.insurance;
+    const pos = params.get('pos') || snapshot.pos;
+    const supplier = params.get('supplier') || snapshot.supplier;
+    const finance = params.get('finance') || snapshot.finance;
+    const reports = params.get('reports') || snapshot.reports;
+    const ai = params.get('ai') || snapshot.ai;
+    const adminPanel = params.get('adminPanel') || snapshot.adminPanel;
+    const scrollY = Number(params.get('scroll') || snapshot.scrollY || 0);
+
+    if (section && section in sectionMeta) {
+      setActiveSection(section as AdminSectionKey);
+    }
+
+    if (inventory) setActiveInventoryView(inventory as InventoryView);
+    if (insurance) setActiveInsuranceWorkspace(insurance as InsuranceWorkspaceKey);
+    if (pos) setActivePosWorkspace(pos as PosWorkspaceKey);
+    if (supplier) setActiveSupplierWorkspace(supplier as SupplierWorkspaceKey);
+    if (finance) setActiveFinanceWorkspace(finance as FinanceWorkspaceKey);
+    if (reports) setActiveAdhocReportWorkspace(reports as AdhocReportWorkspaceKey);
+    if (ai) setActiveAiWorkspace(ai as AiWorkspaceKey);
+    if (adminPanel) setActiveAdminPanelWorkspace(adminPanel as AdminPanelWorkspaceKey);
+
+    [120, 400, 900, 1600, 2400].forEach((delay) => {
+      window.setTimeout(() => {
+        window.scrollTo(0, scrollY);
+      }, delay);
+    });
+  }, []);
+
+  useEffect(() => {
+    const snapshot = {
+      section: activeSection,
+      inventory: activeInventoryView,
+      insurance: activeInsuranceWorkspace,
+      pos: activePosWorkspace,
+      supplier: activeSupplierWorkspace,
+      finance: activeFinanceWorkspace,
+      reports: activeAdhocReportWorkspace,
+      ai: activeAiWorkspace,
+      adminPanel: activeAdminPanelWorkspace,
+      scrollY: String(window.scrollY),
+    };
+
+    const saveSnapshot = () => {
+      snapshot.scrollY = String(window.scrollY);
+      localStorage.setItem(
+        'ubuzima.admin.route.snapshot.v1',
+        JSON.stringify(snapshot),
+      );
+
+      const hash = new URLSearchParams(snapshot).toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${hash}`);
+    };
+
     rememberAdminState('section', activeSection);
     rememberAdminState('inventoryWorkspace', activeInventoryView);
     rememberAdminState('insuranceWorkspace', activeInsuranceWorkspace);
@@ -4125,6 +4193,19 @@ function App() {
     rememberAdminState('reportsWorkspace', activeAdhocReportWorkspace);
     rememberAdminState('aiWorkspace', activeAiWorkspace);
     rememberAdminState('adminPanelWorkspace', activeAdminPanelWorkspace);
+
+    saveSnapshot();
+
+    window.addEventListener('scroll', saveSnapshot, { passive: true });
+    window.addEventListener('beforeunload', saveSnapshot);
+    window.addEventListener('pagehide', saveSnapshot);
+
+    return () => {
+      saveSnapshot();
+      window.removeEventListener('scroll', saveSnapshot);
+      window.removeEventListener('beforeunload', saveSnapshot);
+      window.removeEventListener('pagehide', saveSnapshot);
+    };
   }, [
     activeSection,
     activeInventoryView,

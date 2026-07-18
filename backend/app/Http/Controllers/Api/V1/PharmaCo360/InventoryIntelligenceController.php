@@ -224,6 +224,36 @@ class InventoryIntelligenceController extends Controller
                         : 'decreasing'
                 );
 
+        $liveMovementSummary = DB::table('stock_movements')
+            ->where('tenant_id', $tenant->id)
+            ->where('occurred_at', '>=', $today->subDays(7)->utc());
+
+        if ($branchId !== null) {
+            $liveMovementSummary->where('branch_id', $branchId);
+        }
+
+        $liveMovementSummary = $liveMovementSummary
+            ->selectRaw('COUNT(*) as movement_count')
+            ->selectRaw('SUM(CASE WHEN quantity >= 0 THEN quantity ELSE 0 END) as positive_quantity')
+            ->selectRaw('SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) as negative_quantity')
+            ->first();
+
+        $liveNearExpirySummary = DB::table('stock_batches')
+            ->where('tenant_id', $tenant->id)
+            ->where('quantity_on_hand', '>', 0)
+            ->whereNotNull('expiry_date')
+            ->whereDate('expiry_date', '<=', $today->addDays(180)->toDateString());
+
+        if ($branchId !== null) {
+            $liveNearExpirySummary->where('branch_id', $branchId);
+        }
+
+        $liveNearExpirySummary = $liveNearExpirySummary
+            ->selectRaw('COUNT(*) as batch_count')
+            ->selectRaw('SUM(quantity_on_hand) as units')
+            ->selectRaw('SUM(quantity_on_hand * COALESCE(selling_price, unit_cost, 0)) as value')
+            ->first();
+
         return response()->json([
             'period' => [
                 'starts_on' =>
@@ -233,6 +263,14 @@ class InventoryIntelligenceController extends Controller
                 'timezone' => $timezone,
                 'generated_at' =>
                     now()->toISOString(),
+            ],
+            'live_summary' => [
+                'movement_count' => (int) ($liveMovementSummary->movement_count ?? 0),
+                'positive_quantity' => round((float) ($liveMovementSummary->positive_quantity ?? 0), 2),
+                'negative_quantity' => round((float) ($liveMovementSummary->negative_quantity ?? 0), 2),
+                'near_expiry_batches' => (int) ($liveNearExpirySummary->batch_count ?? 0),
+                'near_expiry_units' => round((float) ($liveNearExpirySummary->units ?? 0), 2),
+                'near_expiry_value' => round((float) ($liveNearExpirySummary->value ?? 0), 2),
             ],
             'weekly_movements' => [
                 'days' => $movementDays,

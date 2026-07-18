@@ -4619,6 +4619,14 @@ export type PharmaInventoryIntelligenceResponse = {
     timezone: string;
     generated_at: string;
   };
+  live_summary?: {
+    movement_count: number;
+    positive_quantity: number;
+    negative_quantity: number;
+    near_expiry_batches: number;
+    near_expiry_units: number;
+    near_expiry_value: number;
+  };
   weekly_movements: {
     days: InventoryMovementDay[];
     totals: {
