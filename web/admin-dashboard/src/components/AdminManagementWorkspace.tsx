@@ -111,11 +111,23 @@ export function AdminManagementWorkspace({
   ].some((permission) => permissions.has(permission));
 
   const canManagePosSessions = [
+    'pharmaco.pos.sessions.manage',
+    'pharmaco.pos.session.manage',
+    'pharmaco.pos.session.admin',
+    'pharmaco.pos.session.view',
     'pharmaco.pos.session.reset',
+    'pharmaco.pos.admin',
+    'pos.sessions.manage',
+    'pos.session.manage',
+    'pos.session.admin',
+    'pos.session.view',
     'pos.session_support.view',
     'pos.session_support.edit',
     'roles.manage',
     'tenant.roles.manage',
+    'tenant.admin',
+    'tenant.users.manage',
+    'platform.admin',
   ].some((permission) => permissions.has(permission));
 
   const canManageProductMaster =
