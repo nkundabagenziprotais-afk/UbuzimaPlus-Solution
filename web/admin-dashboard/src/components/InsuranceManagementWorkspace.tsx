@@ -494,6 +494,9 @@ export function InsuranceManagementWorkspace({
       insurer_contribution_percent: '85',
       status: 'active',
     });
+    setSelectedDocumentPartner(null);
+    setPartnerDocuments([]);
+    resetPartnerDocumentForm();
   }
 
   function loadPartnerForEdit(partner: InsurancePartner): void {
@@ -529,6 +532,10 @@ export function InsuranceManagementWorkspace({
           : '85',
       status: partner.status || 'active',
     });
+
+    setSelectedDocumentPartner(partner);
+    setPartnerDocuments([]);
+    void loadPartnerDocuments(partner);
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -690,9 +697,9 @@ export function InsuranceManagementWorkspace({
   }
 
   async function submitPartnerDocument(
-    event: FormEvent<HTMLFormElement>,
+    event?: FormEvent<HTMLFormElement>,
   ): Promise<void> {
-    event.preventDefault();
+    event?.preventDefault();
 
     if (!selectedDocumentPartner) {
       setError('Select a partner before uploading a document.');
@@ -1292,7 +1299,11 @@ export function InsuranceManagementWorkspace({
           <div className="section-heading">
             <div>
               <span>Partner configuration</span>
-              <h3>Add insurance partner</h3>
+              <h3>
+                {editingPartnerId
+                  ? 'Edit insurance partner'
+                  : 'Create insurance partner'}
+              </h3>
             </div>
           </div>
 
@@ -1544,7 +1555,244 @@ export function InsuranceManagementWorkspace({
             </label>
           </div>
 
-          <div className="insurance-action-row">
+          <section className="insurance-card">
+            <div className="insurance-section-heading">
+              <div>
+                <h3>Partner documents and insurer logo</h3>
+                <p>
+                  Attach contracts, acceptance letters, amendments, price
+                  lists, claim guides, accreditation letters, and insurer logos
+                  while configuring this partner.
+                </p>
+              </div>
+              {selectedDocumentPartner ? (
+                <span className="insurance-muted">
+                  Selected: {selectedDocumentPartner.name}
+                </span>
+              ) : null}
+            </div>
+
+            {selectedDocumentPartner ? (
+              <>
+                <div className="insurance-form-grid">
+                  <label>
+                    Document type
+                    <select
+                      value={partnerDocumentForm.document_type}
+                      onChange={(event) =>
+                        setPartnerDocumentForm((current) => ({
+                          ...current,
+                          document_type: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="contract">Contract</option>
+                      <option value="acceptance_letter">
+                        Acceptance letter
+                      </option>
+                      <option value="amendment">Amendment</option>
+                      <option value="price_list">Price list</option>
+                      <option value="claim_guide">Claim guide</option>
+                      <option value="accreditation">Accreditation</option>
+                      <option value="tax_registration">
+                        Tax registration
+                      </option>
+                      <option value="logo">Insurer logo</option>
+                      <option value="termination_notice">
+                        Termination notice
+                      </option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Document title
+                    <input
+                      value={partnerDocumentForm.title}
+                      onChange={(event) =>
+                        setPartnerDocumentForm((current) => ({
+                          ...current,
+                          title: event.target.value,
+                        }))
+                      }
+                      placeholder="Example: 2026 RSSB contract"
+                    />
+                  </label>
+
+                  <label>
+                    Version
+                    <input
+                      value={partnerDocumentForm.version}
+                      onChange={(event) =>
+                        setPartnerDocumentForm((current) => ({
+                          ...current,
+                          version: event.target.value,
+                        }))
+                      }
+                      placeholder="Optional"
+                    />
+                  </label>
+
+                  <label>
+                    Effective from
+                    <input
+                      type="date"
+                      value={partnerDocumentForm.effective_from}
+                      onChange={(event) =>
+                        setPartnerDocumentForm((current) => ({
+                          ...current,
+                          effective_from: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Effective to
+                    <input
+                      type="date"
+                      value={partnerDocumentForm.effective_to}
+                      onChange={(event) =>
+                        setPartnerDocumentForm((current) => ({
+                          ...current,
+                          effective_to: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Document status
+                    <select
+                      value={partnerDocumentForm.status}
+                      onChange={(event) =>
+                        setPartnerDocumentForm((current) => ({
+                          ...current,
+                          status: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="active">Active</option>
+                      <option value="draft">Draft</option>
+                      <option value="expired">Expired</option>
+                      <option value="replaced">Replaced</option>
+                      <option value="revoked">Revoked</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    File
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp,.csv,.xlsx,.doc,.docx"
+                      onChange={(event) =>
+                        setPartnerDocumentFile(
+                          event.target.files?.[0] ?? null,
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Notes
+                    <textarea
+                      value={partnerDocumentForm.notes}
+                      onChange={(event) =>
+                        setPartnerDocumentForm((current) => ({
+                          ...current,
+                          notes: event.target.value,
+                        }))
+                      }
+                      placeholder="Optional notes"
+                    />
+                  </label>
+
+                  <label className="insurance-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={partnerDocumentForm.is_primary}
+                      onChange={(event) =>
+                        setPartnerDocumentForm((current) => ({
+                          ...current,
+                          is_primary: event.target.checked,
+                        }))
+                      }
+                    />
+                    Mark as primary for this document type
+                  </label>
+                </div>
+
+                <div className="insurance-table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Document</th>
+                        <th>Type</th>
+                        <th>Effective period</th>
+                        <th>Status</th>
+                        <th>File</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {partnerDocuments.map((document) => (
+                        <tr key={document.id}>
+                          <td>
+                            <strong>{document.title}</strong>
+                            <small>
+                              {document.version || 'No version'}
+                              {document.is_primary ? ' · Primary' : ''}
+                            </small>
+                          </td>
+                          <td>
+                            {document.document_type.replace(/_/g, ' ')}
+                          </td>
+                          <td>
+                            {document.effective_from || 'Open'} →{' '}
+                            {document.effective_to || 'Open'}
+                          </td>
+                          <td>
+                            <StatusPill status={document.status} />
+                          </td>
+                          <td>
+                            {document.public_url ? (
+                              <a
+                                href={document.public_url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Open file
+                              </a>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+
+                      {!partnerDocuments.length ? (
+                        <tr>
+                          <td colSpan={5}>
+                            {isLoadingPartnerDocuments
+                              ? 'Loading documents…'
+                              : 'No documents uploaded for this partner yet.'}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="insurance-muted">
+                Save or edit a partner first, then attach contracts,
+                acceptance letters, amendments, price lists, claim guides,
+                accreditation letters, and insurer logos from this same
+                configuration form.
+              </p>
+            )}
+          </section>
+
+          <div className="insurance-action-grid insurance-action-grid-2x2">
             <button disabled={isSaving} type="submit">
               {isSaving
                 ? 'Saving…'
@@ -1553,16 +1801,36 @@ export function InsuranceManagementWorkspace({
                   : 'Create partner'}
             </button>
 
-            {editingPartnerId ? (
-              <button
-                type="button"
-                className="secondary"
-                onClick={resetPartnerForm}
-                disabled={isSaving}
-              >
-                Cancel edit
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="secondary"
+              onClick={resetPartnerForm}
+              disabled={isSaving}
+            >
+              {editingPartnerId ? 'Cancel edit' : 'Clear form'}
+            </button>
+
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => void submitPartnerDocument()}
+              disabled={isSaving || !selectedDocumentPartner}
+            >
+              {isSaving ? 'Uploading…' : 'Upload / attach document'}
+            </button>
+
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                selectedDocumentPartner
+                  ? void loadPartnerDocuments(selectedDocumentPartner)
+                  : undefined
+              }
+              disabled={isSaving || !selectedDocumentPartner}
+            >
+              Refresh documents
+            </button>
           </div>
         </form>
 
@@ -1629,7 +1897,7 @@ export function InsuranceManagementWorkspace({
                     <StatusPill status={partner.status} />
                   </td>
                   <td>
-                    <div className="insurance-action-row">
+                    <div className="insurance-action-grid insurance-action-grid-2x2 compact">
                       <button
                         type="button"
                         className="secondary"
@@ -1699,261 +1967,7 @@ export function InsuranceManagementWorkspace({
           onPageChange={setPage}
         />
 
-        <section className="insurance-card">
-          <div className="insurance-section-heading">
-            <div>
-              <h3>Partner documents and insurer logo</h3>
-              <p>
-                Upload contracts, acceptance letters, amendments, price lists,
-                claim guides, accreditation letters, and insurer logos.
-              </p>
-            </div>
-            {selectedDocumentPartner ? (
-              <span className="insurance-muted">
-                Selected: {selectedDocumentPartner.name}
-              </span>
-            ) : null}
-          </div>
 
-          {selectedDocumentPartner ? (
-            <>
-              <form
-                className="insurance-form"
-                onSubmit={submitPartnerDocument}
-              >
-                <div className="insurance-form-grid">
-                  <label>
-                    Document type
-                    <select
-                      value={partnerDocumentForm.document_type}
-                      onChange={(event) =>
-                        setPartnerDocumentForm((current) => ({
-                          ...current,
-                          document_type: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="contract">Contract</option>
-                      <option value="acceptance_letter">
-                        Acceptance letter
-                      </option>
-                      <option value="amendment">Amendment</option>
-                      <option value="price_list">Price list</option>
-                      <option value="claim_guide">Claim guide</option>
-                      <option value="accreditation">Accreditation</option>
-                      <option value="tax_registration">
-                        Tax registration
-                      </option>
-                      <option value="logo">Insurer logo</option>
-                      <option value="termination_notice">
-                        Termination notice
-                      </option>
-                      <option value="other">Other</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Title
-                    <input
-                      value={partnerDocumentForm.title}
-                      onChange={(event) =>
-                        setPartnerDocumentForm((current) => ({
-                          ...current,
-                          title: event.target.value,
-                        }))
-                      }
-                      placeholder="Example: 2026 RSSB contract"
-                      required
-                    />
-                  </label>
-
-                  <label>
-                    Version
-                    <input
-                      value={partnerDocumentForm.version}
-                      onChange={(event) =>
-                        setPartnerDocumentForm((current) => ({
-                          ...current,
-                          version: event.target.value,
-                        }))
-                      }
-                      placeholder="Optional"
-                    />
-                  </label>
-
-                  <label>
-                    Effective from
-                    <input
-                      type="date"
-                      value={partnerDocumentForm.effective_from}
-                      onChange={(event) =>
-                        setPartnerDocumentForm((current) => ({
-                          ...current,
-                          effective_from: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <label>
-                    Effective to
-                    <input
-                      type="date"
-                      value={partnerDocumentForm.effective_to}
-                      onChange={(event) =>
-                        setPartnerDocumentForm((current) => ({
-                          ...current,
-                          effective_to: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <label>
-                    Status
-                    <select
-                      value={partnerDocumentForm.status}
-                      onChange={(event) =>
-                        setPartnerDocumentForm((current) => ({
-                          ...current,
-                          status: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="active">Active</option>
-                      <option value="draft">Draft</option>
-                      <option value="expired">Expired</option>
-                      <option value="replaced">Replaced</option>
-                      <option value="revoked">Revoked</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    File
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png,.webp,.csv,.xlsx,.doc,.docx"
-                      onChange={(event) =>
-                        setPartnerDocumentFile(
-                          event.target.files?.[0] ?? null,
-                        )
-                      }
-                      required
-                    />
-                  </label>
-
-                  <label>
-                    Notes
-                    <textarea
-                      value={partnerDocumentForm.notes}
-                      onChange={(event) =>
-                        setPartnerDocumentForm((current) => ({
-                          ...current,
-                          notes: event.target.value,
-                        }))
-                      }
-                      placeholder="Optional notes"
-                    />
-                  </label>
-
-                  <label className="insurance-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={partnerDocumentForm.is_primary}
-                      onChange={(event) =>
-                        setPartnerDocumentForm((current) => ({
-                          ...current,
-                          is_primary: event.target.checked,
-                        }))
-                      }
-                    />
-                    Mark as primary for this document type
-                  </label>
-                </div>
-
-                <div className="insurance-action-row">
-                  <button disabled={isSaving} type="submit">
-                    {isSaving ? 'Uploading…' : 'Upload document'}
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={resetPartnerDocumentForm}
-                    disabled={isSaving}
-                  >
-                    Clear document form
-                  </button>
-                </div>
-              </form>
-
-              <div className="insurance-table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Document</th>
-                      <th>Type</th>
-                      <th>Effective period</th>
-                      <th>Status</th>
-                      <th>File</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partnerDocuments.map((document) => (
-                      <tr key={document.id}>
-                        <td>
-                          <strong>{document.title}</strong>
-                          <small>
-                            {document.version || 'No version'}
-                            {document.is_primary ? ' · Primary' : ''}
-                          </small>
-                        </td>
-                        <td>
-                          {document.document_type.replace(/_/g, ' ')}
-                        </td>
-                        <td>
-                          {document.effective_from || 'Open'} →{' '}
-                          {document.effective_to || 'Open'}
-                        </td>
-                        <td>
-                          <StatusPill status={document.status} />
-                        </td>
-                        <td>
-                          {document.public_url ? (
-                            <a
-                              href={document.public_url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Open file
-                            </a>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-
-                    {!partnerDocuments.length ? (
-                      <tr>
-                        <td colSpan={5}>
-                          {isLoadingPartnerDocuments
-                            ? 'Loading documents…'
-                            : 'No documents uploaded for this partner yet.'}
-                        </td>
-                      </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <p className="insurance-muted">
-              Select Documents on a partner row to manage contracts,
-              acceptance letters, amendments, price lists, claim guides,
-              accreditation letters, and insurer logos.
-            </p>
-          )}
-        </section>
       </>
     );
   }
