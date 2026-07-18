@@ -157,7 +157,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         }
 
         $rows = DB::table('pharmaco_sales as s')
-            ->leftJoin('pharmaco_payments as p', 'p.sale_id', '=', 's.id')
+            ->leftJoin('pharmaco_payments as p', 'p.pharmaco_sale_id', '=', 's.id')
             ->leftJoin('users as su', 'su.id', '=', 's.created_by')
             ->leftJoin('users as pu', 'pu.id', '=', 'p.received_by')
             ->select([

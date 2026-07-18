@@ -1007,6 +1007,8 @@ const granularMenuPermissionMap: Record<string, string[]> = {
   'admin-panel:infrastructure': ['platform.infrastructure.view'],
 
   inventory: [
+    'pharmaco.inventory.view',
+    'pharmaco.product_master.view',
     'inventory.dashboard.view',
     'inventory.products.view',
     'inventory.batches.view',
@@ -1028,6 +1030,9 @@ const granularMenuPermissionMap: Record<string, string[]> = {
     'pharmaco.insurance.manage',
   ],
   pos: [
+    'pharmaco.pos.use',
+    'pharmaco.sales.view',
+    'pharmaco.sales.create',
     'pos.sales.view',
     'pos.receipts.view',
     'pos.returns.view',
