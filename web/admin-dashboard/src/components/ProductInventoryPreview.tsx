@@ -1517,7 +1517,10 @@ export function ProductInventoryPreview({
           void loadInventoryResource(
             'batches',
             setBatches,
-            () => getAllPharmaInventoryBatches(token, tenantSlug),
+            () =>
+            getPharmaInventoryBatches(token, tenantSlug, undefined, {
+              perPage: inventoryBatchInitialLoadLimit,
+            }),
             false,
           );
         }
