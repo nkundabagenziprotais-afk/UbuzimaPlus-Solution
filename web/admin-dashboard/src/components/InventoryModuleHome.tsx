@@ -929,6 +929,13 @@ export function InventoryModuleHome({
           }
         />
 
+        <TrendAnalysisPanel
+          token={token}
+          profile={profile}
+          title="Inventory Trend Analysis"
+          defaultArea="inventory"
+        />
+
 
                 </>)}
 

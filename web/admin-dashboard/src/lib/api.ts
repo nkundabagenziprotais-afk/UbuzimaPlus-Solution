@@ -4838,3 +4838,71 @@ export async function adminResetTenantSecurityUserPassword(
     payload,
   );
 }
+
+
+export type TrendAnalysisArea =
+  | 'inventory'
+  | 'pos-sales'
+  | 'general-stock'
+  | 'insurance';
+
+export type TrendAnalysisGranularity =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'quarter'
+  | 'year';
+
+export type TrendAnalysisPoint = {
+  label: string;
+  current: number;
+  comparison: number;
+  change_percent: number;
+};
+
+export type TrendAnalysisResponse = {
+  area: TrendAnalysisArea;
+  metric: string;
+  granularity: TrendAnalysisGranularity;
+  periods: {
+    current: { start: string; end: string };
+    comparison: { start: string; end: string };
+  };
+  summary: {
+    current_total: number;
+    comparison_total: number;
+    variance_amount: number;
+    variance_percent: number;
+  };
+  points: TrendAnalysisPoint[];
+  insight: string;
+};
+
+export async function getPharmaTrendAnalysis(
+  token: string,
+  tenantSlug: string,
+  params: {
+    area: TrendAnalysisArea;
+    metric: string;
+    granularity: TrendAnalysisGranularity;
+    current_start?: string;
+    current_end?: string;
+    comparison_start?: string;
+    comparison_end?: string;
+    branch_id?: number;
+  },
+): Promise<TrendAnalysisResponse> {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.set(key, String(value));
+    }
+  });
+
+  return apiRequest<TrendAnalysisResponse>(
+    token,
+    tenantSlug,
+    `/v1/pharmaco/trend-analysis?${query.toString()}`,
+  );
+}
