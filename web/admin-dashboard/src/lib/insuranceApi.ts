@@ -691,3 +691,215 @@ export async function getEligibleInsuranceBatchPayments(
     ),
   };
 }
+
+export type InsurancePartnerDocument = {
+  id: number;
+  uuid?: string;
+  insurance_partner_id: number;
+  document_type: string;
+  title: string;
+  file_path?: string | null;
+  public_url?: string | null;
+  original_filename?: string | null;
+  mime_type?: string | null;
+  file_size?: number | null;
+  version?: string | null;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  status: string;
+  is_primary?: boolean;
+  notes?: string | null;
+  metadata?: unknown;
+  uploaded_by?: number | null;
+  uploaded_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export async function getInsurancePartnerDocuments(
+  token: string,
+  tenantSlug: string,
+  partnerId: number,
+): Promise<{ documents: InsurancePartnerDocument[] }> {
+  const response = await insuranceRequest<any>(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/partners/${partnerId}/documents`,
+  );
+
+  return {
+    documents: ensureArray<InsurancePartnerDocument>(
+      response.documents ?? response.data ?? [],
+    ),
+  };
+}
+
+export async function uploadInsurancePartnerDocument(
+  token: string,
+  tenantSlug: string,
+  partnerId: number,
+  formData: FormData,
+): Promise<{ message?: string; document: InsurancePartnerDocument }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/partners/${partnerId}/documents`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+  );
+}
+
+export async function updateInsurancePartnerDocument(
+  token: string,
+  tenantSlug: string,
+  partnerId: number,
+  documentId: number,
+  payload: Record<string, unknown>,
+): Promise<{ message?: string; document: InsurancePartnerDocument }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/partners/${partnerId}/documents/${documentId}`,
+    {
+      method: 'PATCH',
+      body: payload,
+    },
+  );
+}
+
+export type InsuranceClaimSubmissionEvent = {
+  id: number;
+  uuid?: string;
+  insurance_claim_id: number;
+  insurance_partner_id?: number | null;
+  event_type: string;
+  submission_channel: string;
+  submission_status: string;
+  recipient_name?: string | null;
+  recipient_email?: string | null;
+  recipient_phone?: string | null;
+  submission_reference?: string | null;
+  document_path?: string | null;
+  annex_document_path?: string | null;
+  message_body?: string | null;
+  notes?: string | null;
+  metadata?: unknown;
+  submitted_by?: number | null;
+  submitted_at?: string | null;
+  created_at?: string | null;
+};
+
+export type InsuranceClaimSubmissionFields = {
+  id: number;
+  claim_number: string;
+  invoice_due_date?: string | null;
+  invoice_submission_status?: string | null;
+  invoice_submitted_at?: string | null;
+  invoice_submitted_by?: number | null;
+  invoice_submission_reference?: string | null;
+  invoice_submission_channel?: string | null;
+  reminder_lead_days?: number | null;
+  reminder_frequency?: string | null;
+  next_reminder_at?: string | null;
+  last_reminder_at?: string | null;
+  reminder_count?: number | null;
+  invoice_document_path?: string | null;
+  annex_document_path?: string | null;
+};
+
+export async function updateInsuranceClaimSubmissionSettings(
+  token: string,
+  tenantSlug: string,
+  claimId: number,
+  payload: Record<string, unknown>,
+): Promise<{ message?: string; claim: InsuranceClaimSubmissionFields }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/claims/${claimId}/submission-settings`,
+    {
+      method: 'POST',
+      body: payload,
+    },
+  );
+}
+
+export async function recordInsuranceClaimSubmissionEvent(
+  token: string,
+  tenantSlug: string,
+  claimId: number,
+  payload: Record<string, unknown>,
+): Promise<{ message?: string; event: InsuranceClaimSubmissionEvent }> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/claims/${claimId}/submission-events`,
+    {
+      method: 'POST',
+      body: payload,
+    },
+  );
+}
+
+export async function markInsuranceClaimInvoiceSubmitted(
+  token: string,
+  tenantSlug: string,
+  claimId: number,
+  payload: Record<string, unknown>,
+): Promise<{
+  message?: string;
+  claim: InsuranceClaimSubmissionFields;
+  event: InsuranceClaimSubmissionEvent;
+}> {
+  return insuranceRequest(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/claims/${claimId}/mark-invoice-submitted`,
+    {
+      method: 'POST',
+      body: payload,
+    },
+  );
+}
+
+export type InsuranceSalesRegisterEntry = {
+  id: number;
+  uuid?: string;
+  sale_number?: string | null;
+  sale_date?: string | null;
+  claim_period?: string | null;
+  customer_name?: string | null;
+  member_number?: string | null;
+  product_name?: string | null;
+  quantity?: number | string | null;
+  gross_amount?: number | string | null;
+  customer_contribution_amount?: number | string | null;
+  insurer_claim_amount?: number | string | null;
+  claim_number?: string | null;
+  claim_status?: string | null;
+  partner?: Pick<InsurancePartner, 'id' | 'code' | 'name'> | null;
+  institution?: Pick<InsuranceInstitution, 'id' | 'code' | 'name'> | null;
+  scheme?: Pick<InsuranceScheme, 'id' | 'code' | 'name'> | null;
+};
+
+export async function getInsuranceSalesRegister(
+  token: string,
+  tenantSlug: string,
+  options: InsuranceListOptions = {},
+): Promise<InsuranceListResponse<InsuranceSalesRegisterEntry>> {
+  const response = await insuranceRequest<any>(
+    token,
+    tenantSlug,
+    `/pharmaco/insurance/sales-register${buildQuery(options)}`,
+  );
+
+  return {
+    tenant: response.tenant,
+    data: ensureArray<InsuranceSalesRegisterEntry>(
+      response.register ?? response.data ?? [],
+    ),
+    pagination: response.meta ?? response.pagination,
+  };
+}
