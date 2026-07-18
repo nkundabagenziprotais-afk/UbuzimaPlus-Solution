@@ -21,6 +21,12 @@ class InsurancePriceList extends Model
         'priority',
         'status',
         'is_default',
+        'source_type',
+        'source_document_path',
+        'approval_status',
+        'approved_by',
+        'approved_at',
+        'approval_notes',
         'metadata',
     ];
 
@@ -28,6 +34,7 @@ class InsurancePriceList extends Model
         'effective_from' => 'date',
         'effective_to' => 'date',
         'is_default' => 'boolean',
+        'approved_at' => 'datetime',
         'metadata' => 'array',
     ];
 

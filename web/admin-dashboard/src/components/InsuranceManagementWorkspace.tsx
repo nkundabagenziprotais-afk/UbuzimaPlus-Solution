@@ -162,6 +162,12 @@ export function InsuranceManagementWorkspace({
     code: '',
     name: '',
     partner_type: 'public',
+    pricing_mode: 'standard',
+    contract_start_date: '',
+    contract_expiry_date: '',
+    coverage_limit: '',
+    external_portal_reference: '',
+    requires_price_approval: false,
     contact_name: '',
     phone: '',
     email: '',
@@ -203,6 +209,10 @@ export function InsuranceManagementWorkspace({
     priority: '100',
     effective_from: '',
     effective_to: '',
+    source_type: 'manual',
+    source_document_path: '',
+    approval_status: 'pending',
+    approval_notes: '',
     status: 'active',
   });
 
@@ -210,6 +220,11 @@ export function InsuranceManagementWorkspace({
     insurance_price_list_id: '',
     product_id: '',
     covered_unit_price: '',
+    standard_selling_price_snapshot: '',
+    pricing_source: 'contract_price_list',
+    price_confidence: '',
+    approval_status: 'pending',
+    approval_notes: '',
     customer_contribution_percent: '',
     insurer_contribution_percent: '',
     requires_preauthorization: false,
@@ -411,6 +426,15 @@ export function InsuranceManagementWorkspace({
         code: partnerForm.code.trim(),
         name: partnerForm.name.trim(),
         partner_type: partnerForm.partner_type,
+        pricing_mode: partnerForm.pricing_mode,
+        contract_start_date: partnerForm.contract_start_date || null,
+        contract_expiry_date: partnerForm.contract_expiry_date || null,
+        coverage_limit: partnerForm.coverage_limit
+          ? Number(partnerForm.coverage_limit)
+          : null,
+        external_portal_reference:
+          partnerForm.external_portal_reference.trim() || null,
+        requires_price_approval: partnerForm.requires_price_approval,
         contact_name: partnerForm.contact_name.trim() || null,
         phone: partnerForm.phone.trim() || null,
         email: partnerForm.email.trim() || null,
@@ -554,6 +578,11 @@ export function InsuranceManagementWorkspace({
         priority: Number(priceListForm.priority),
         effective_from: priceListForm.effective_from || null,
         effective_to: priceListForm.effective_to || null,
+        source_type: priceListForm.source_type || null,
+        source_document_path:
+          priceListForm.source_document_path.trim() || null,
+        approval_status: priceListForm.approval_status,
+        approval_notes: priceListForm.approval_notes.trim() || null,
         status: priceListForm.status,
       });
 
@@ -588,9 +617,23 @@ export function InsuranceManagementWorkspace({
           productPriceForm.insurance_price_list_id,
         ),
         product_id: Number(productPriceForm.product_id),
+        agreed_unit_price: Number(
+          productPriceForm.covered_unit_price,
+        ),
         covered_unit_price: Number(
           productPriceForm.covered_unit_price,
         ),
+        standard_selling_price_snapshot:
+          productPriceForm.standard_selling_price_snapshot
+            ? Number(productPriceForm.standard_selling_price_snapshot)
+            : null,
+        pricing_source: productPriceForm.pricing_source,
+        price_confidence: productPriceForm.price_confidence
+          ? Number(productPriceForm.price_confidence)
+          : null,
+        approval_status: productPriceForm.approval_status,
+        approval_notes:
+          productPriceForm.approval_notes.trim() || null,
         customer_contribution_percent:
           productPriceForm.customer_contribution_percent
             ? Number(
@@ -941,6 +984,95 @@ export function InsuranceManagementWorkspace({
             </label>
 
             <label>
+              Pricing mode
+              <select
+                value={partnerForm.pricing_mode}
+                onChange={(event) =>
+                  setPartnerForm((current) => ({
+                    ...current,
+                    pricing_mode: event.target.value,
+                  }))
+                }
+              >
+                <option value="standard">Standard pharmacy price</option>
+                <option value="contract">Contract price</option>
+                <option value="portal_confirmed">Portal confirmed</option>
+                <option value="mixed">Mixed mode</option>
+              </select>
+            </label>
+
+            <label>
+              Contract start
+              <input
+                type="date"
+                value={partnerForm.contract_start_date}
+                onChange={(event) =>
+                  setPartnerForm((current) => ({
+                    ...current,
+                    contract_start_date: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              Contract expiry
+              <input
+                type="date"
+                value={partnerForm.contract_expiry_date}
+                onChange={(event) =>
+                  setPartnerForm((current) => ({
+                    ...current,
+                    contract_expiry_date: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              Coverage limit
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={partnerForm.coverage_limit}
+                onChange={(event) =>
+                  setPartnerForm((current) => ({
+                    ...current,
+                    coverage_limit: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              External portal reference
+              <input
+                value={partnerForm.external_portal_reference}
+                onChange={(event) =>
+                  setPartnerForm((current) => ({
+                    ...current,
+                    external_portal_reference: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label className="insurance-checkbox-label">
+              <input
+                type="checkbox"
+                checked={partnerForm.requires_price_approval}
+                onChange={(event) =>
+                  setPartnerForm((current) => ({
+                    ...current,
+                    requires_price_approval: event.target.checked,
+                  }))
+                }
+              />
+              Require price approval
+            </label>
+
+            <label>
               Contact person
               <input
                 value={partnerForm.contact_name}
@@ -1050,6 +1182,8 @@ export function InsuranceManagementWorkspace({
               <tr>
                 <th>Partner</th>
                 <th>Type</th>
+                <th>Pricing mode</th>
+                <th>Contract</th>
                 <th>Contribution split</th>
                 <th>Contact</th>
                 <th>Status</th>
@@ -1063,6 +1197,19 @@ export function InsuranceManagementWorkspace({
                     <small>{partner.code}</small>
                   </td>
                   <td>{partner.partner_type || '—'}</td>
+                  <td>
+                    {partner.pricing_mode || 'standard'}
+                    {partner.requires_price_approval ? (
+                      <small>Approval required</small>
+                    ) : null}
+                  </td>
+                  <td>
+                    {partner.contract_start_date || 'Open'} →{' '}
+                    {partner.contract_expiry_date || 'Open'}
+                    {partner.coverage_limit ? (
+                      <small>Limit RWF {money(partner.coverage_limit)}</small>
+                    ) : null}
+                  </td>
                   <td>
                     {contribution(
                       partner.default_customer_contribution_percent,
@@ -1085,7 +1232,7 @@ export function InsuranceManagementWorkspace({
 
               {!partners.rows.length && (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={7}>
                     No insurance partners match the current
                     filters.
                   </td>
@@ -1702,6 +1849,69 @@ export function InsuranceManagementWorkspace({
                 }
               />
             </label>
+
+            <label>
+              Source type
+              <select
+                value={priceListForm.source_type}
+                onChange={(event) =>
+                  setPriceListForm((current) => ({
+                    ...current,
+                    source_type: event.target.value,
+                  }))
+                }
+              >
+                <option value="manual">Manual</option>
+                <option value="contract">Contract</option>
+                <option value="portal">Portal</option>
+                <option value="import">Import</option>
+                <option value="ai_extract">AI extraction</option>
+              </select>
+            </label>
+
+            <label>
+              Source document path
+              <input
+                value={priceListForm.source_document_path}
+                onChange={(event) =>
+                  setPriceListForm((current) => ({
+                    ...current,
+                    source_document_path: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              Approval status
+              <select
+                value={priceListForm.approval_status}
+                onChange={(event) =>
+                  setPriceListForm((current) => ({
+                    ...current,
+                    approval_status: event.target.value,
+                  }))
+                }
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="expired">Expired</option>
+              </select>
+            </label>
+
+            <label>
+              Approval notes
+              <input
+                value={priceListForm.approval_notes}
+                onChange={(event) =>
+                  setPriceListForm((current) => ({
+                    ...current,
+                    approval_notes: event.target.value,
+                  }))
+                }
+              />
+            </label>
           </div>
 
           <button disabled={isSaving} type="submit">
@@ -1721,6 +1931,8 @@ export function InsuranceManagementWorkspace({
                 <th>Currency</th>
                 <th>Priority</th>
                 <th>Effective period</th>
+                <th>Source</th>
+                <th>Approval</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -1747,6 +1959,20 @@ export function InsuranceManagementWorkspace({
                     {priceList.effective_to || 'Open'}
                   </td>
                   <td>
+                    {priceList.source_type || 'manual'}
+                    {priceList.source_document_path ? (
+                      <small>{priceList.source_document_path}</small>
+                    ) : null}
+                  </td>
+                  <td>
+                    <StatusPill
+                      status={priceList.approval_status || 'pending'}
+                    />
+                    {priceList.approved_at ? (
+                      <small>{priceList.approved_at}</small>
+                    ) : null}
+                  </td>
+                  <td>
                     <StatusPill status={priceList.status} />
                   </td>
                 </tr>
@@ -1754,7 +1980,7 @@ export function InsuranceManagementWorkspace({
 
               {!priceLists.rows.length && (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={9}>
                     No price lists match the current filters.
                   </td>
                 </tr>
@@ -1844,6 +2070,89 @@ export function InsuranceManagementWorkspace({
             </label>
 
             <label>
+              Standard pharmacy price
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={productPriceForm.standard_selling_price_snapshot}
+                onChange={(event) =>
+                  setProductPriceForm((current) => ({
+                    ...current,
+                    standard_selling_price_snapshot: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              Pricing source
+              <select
+                value={productPriceForm.pricing_source}
+                onChange={(event) =>
+                  setProductPriceForm((current) => ({
+                    ...current,
+                    pricing_source: event.target.value,
+                  }))
+                }
+              >
+                <option value="contract_price_list">Contract price list</option>
+                <option value="portal_confirmed">Portal confirmed</option>
+                <option value="manual_override">Manual override</option>
+                <option value="ai_suggested">AI suggested</option>
+                <option value="standard">Standard</option>
+              </select>
+            </label>
+
+            <label>
+              Price confidence %
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={productPriceForm.price_confidence}
+                onChange={(event) =>
+                  setProductPriceForm((current) => ({
+                    ...current,
+                    price_confidence: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              Approval status
+              <select
+                value={productPriceForm.approval_status}
+                onChange={(event) =>
+                  setProductPriceForm((current) => ({
+                    ...current,
+                    approval_status: event.target.value,
+                  }))
+                }
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="expired">Expired</option>
+              </select>
+            </label>
+
+            <label>
+              Approval notes
+              <input
+                value={productPriceForm.approval_notes}
+                onChange={(event) =>
+                  setProductPriceForm((current) => ({
+                    ...current,
+                    approval_notes: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
               Customer contribution %
               <input
                 type="number"
@@ -1915,7 +2224,11 @@ export function InsuranceManagementWorkspace({
                 <th>Product</th>
                 <th>Price list</th>
                 <th>Covered price</th>
+                <th>Standard price</th>
+                <th>Difference</th>
                 <th>Contribution split</th>
+                <th>Source</th>
+                <th>Approval</th>
                 <th>Authorization</th>
                 <th>Status</th>
               </tr>
@@ -1937,7 +2250,16 @@ export function InsuranceManagementWorkspace({
                       productPrice.insurance_price_list_id}
                   </td>
                   <td>
-                    RWF {money(productPrice.covered_unit_price)}
+                    RWF {money(productPrice.agreed_unit_price ?? productPrice.covered_unit_price)}
+                  </td>
+                  <td>
+                    RWF {money(productPrice.standard_selling_price_snapshot)}
+                  </td>
+                  <td>
+                    RWF {money(productPrice.price_difference_amount)}
+                    <small>
+                      {money(productPrice.price_difference_percentage)}%
+                    </small>
                   </td>
                   <td>
                     {contribution(
@@ -1946,19 +2268,36 @@ export function InsuranceManagementWorkspace({
                     )}
                   </td>
                   <td>
-                    {productPrice.requires_preauthorization
+                    {productPrice.pricing_source || 'contract_price_list'}
+                    {productPrice.price_confidence ? (
+                      <small>{money(productPrice.price_confidence)}% confidence</small>
+                    ) : null}
+                  </td>
+                  <td>
+                    <StatusPill
+                      status={productPrice.approval_status || 'pending'}
+                    />
+                    {productPrice.approved_at ? (
+                      <small>{productPrice.approved_at}</small>
+                    ) : null}
+                  </td>
+                  <td>
+                    {productPrice.requires_pre_authorization ||
+                    productPrice.requires_preauthorization
                       ? 'Required'
                       : 'Not required'}
                   </td>
                   <td>
-                    <StatusPill status={productPrice.status} />
+                    <StatusPill
+                      status={productPrice.coverage_status || productPrice.status}
+                    />
                   </td>
                 </tr>
               ))}
 
               {!productPrices.rows.length && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={10}>
                     No covered product prices match the current
                     filters.
                   </td>

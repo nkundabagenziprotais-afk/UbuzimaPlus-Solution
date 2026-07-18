@@ -150,6 +150,33 @@ class InsuranceManagementController extends Controller
                     ->where('tenant_id', $tenant->id),
             ],
             'partner_type' => ['nullable', 'string', 'max:60'],
+            'pricing_mode' => [
+                'nullable',
+                Rule::in(['standard', 'contract', 'portal_confirmed', 'mixed']),
+            ],
+            'contract_start_date' => ['nullable', 'date'],
+            'contract_expiry_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:contract_start_date',
+            ],
+            'default_customer_contribution_percent' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+            'default_insurer_contribution_percent' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+            'coverage_limit' => ['nullable', 'numeric', 'min:0'],
+            'required_documentation' => ['nullable', 'array'],
+            'invoice_claim_settings' => ['nullable', 'array'],
+            'external_portal_reference' => ['nullable', 'string', 'max:191'],
+            'requires_price_approval' => ['nullable', 'boolean'],
             'registration_number' => ['nullable', 'string', 'max:191'],
             'tax_identification_number' => ['nullable', 'string', 'max:191'],
             'contact_name' => ['nullable', 'string', 'max:191'],
@@ -178,6 +205,26 @@ class InsuranceManagementController extends Controller
             'name' => $validated['name'],
             'code' => $validated['code'],
             'partner_type' => $validated['partner_type'] ?? 'insurer',
+            'pricing_mode' => $validated['pricing_mode'] ?? 'standard',
+            'contract_start_date' =>
+                $validated['contract_start_date'] ?? null,
+            'contract_expiry_date' =>
+                $validated['contract_expiry_date'] ?? null,
+            'default_customer_contribution_percent' =>
+                $validated['default_customer_contribution_percent'] ?? null,
+            'default_insurer_contribution_percent' =>
+                $validated['default_insurer_contribution_percent'] ?? null,
+            'coverage_limit' => $validated['coverage_limit'] ?? null,
+            'required_documentation' =>
+                $validated['required_documentation'] ?? null,
+            'invoice_claim_settings' =>
+                $validated['invoice_claim_settings'] ?? null,
+            'external_portal_reference' =>
+                $validated['external_portal_reference'] ?? null,
+            'requires_price_approval' =>
+                $validated['requires_price_approval'] ?? false,
+            'created_by' => $request->user()?->id,
+            'updated_by' => $request->user()?->id,
             'registration_number' =>
                 $validated['registration_number'] ?? null,
             'tax_identification_number' =>
@@ -252,6 +299,29 @@ class InsuranceManagementController extends Controller
                     ->ignore($insurancePartner->id),
             ],
             'partner_type' => ['sometimes', 'string', 'max:60'],
+            'pricing_mode' => [
+                'sometimes',
+                Rule::in(['standard', 'contract', 'portal_confirmed', 'mixed']),
+            ],
+            'contract_start_date' => ['nullable', 'date'],
+            'contract_expiry_date' => ['nullable', 'date'],
+            'default_customer_contribution_percent' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+            'default_insurer_contribution_percent' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+            'coverage_limit' => ['nullable', 'numeric', 'min:0'],
+            'required_documentation' => ['nullable', 'array'],
+            'invoice_claim_settings' => ['nullable', 'array'],
+            'external_portal_reference' => ['nullable', 'string', 'max:191'],
+            'requires_price_approval' => ['nullable', 'boolean'],
             'registration_number' => ['nullable', 'string', 'max:191'],
             'tax_identification_number' => ['nullable', 'string', 'max:191'],
             'contact_name' => ['nullable', 'string', 'max:191'],
@@ -278,6 +348,43 @@ class InsuranceManagementController extends Controller
         if (array_key_exists('currency', $validated)) {
             $validated['currency'] = strtoupper($validated['currency']);
         }
+        if (
+            isset($validated['contract_start_date'])
+            && isset($validated['contract_expiry_date'])
+            && $validated['contract_expiry_date']
+                < $validated['contract_start_date']
+        ) {
+            return response()->json([
+                'message' => 'The contract expiry date must be on or after the contract start date.',
+                'errors' => [
+                    'contract_expiry_date' => [
+                        'The contract expiry date is invalid.',
+                    ],
+                ],
+            ], 422);
+        }
+
+        if (
+            array_key_exists('default_customer_contribution_percent', $validated)
+            && array_key_exists('default_insurer_contribution_percent', $validated)
+        ) {
+            $total =
+                (float) $validated['default_customer_contribution_percent']
+                + (float) $validated['default_insurer_contribution_percent'];
+
+            if (abs($total - 100) > 0.0001) {
+                return response()->json([
+                    'message' => 'The default customer and insurer contribution percentages must total 100.',
+                    'errors' => [
+                        'default_insurer_contribution_percent' => [
+                            'The total contribution percentage must equal 100.',
+                        ],
+                    ],
+                ], 422);
+            }
+        }
+
+        $validated['updated_by'] = $request->user()?->id;
 
         if (array_key_exists('metadata', $validated)) {
             $validated['metadata'] = array_merge(
@@ -1025,6 +1132,13 @@ class InsuranceManagementController extends Controller
                 Rule::in(['draft', 'active', 'inactive', 'expired']),
             ],
             'is_default' => ['nullable', 'boolean'],
+            'source_type' => ['nullable', 'string', 'max:50'],
+            'source_document_path' => ['nullable', 'string', 'max:191'],
+            'approval_status' => [
+                'nullable',
+                Rule::in(['pending', 'approved', 'rejected', 'expired']),
+            ],
+            'approval_notes' => ['nullable', 'string'],
             'metadata' => ['nullable', 'array'],
         ]);
 
@@ -1075,6 +1189,20 @@ class InsuranceManagementController extends Controller
             'priority' => $validated['priority'] ?? 100,
             'status' => $validated['status'] ?? 'draft',
             'is_default' => $validated['is_default'] ?? false,
+            'source_type' => $validated['source_type'] ?? null,
+            'source_document_path' =>
+                $validated['source_document_path'] ?? null,
+            'approval_status' =>
+                $validated['approval_status'] ?? 'pending',
+            'approved_by' =>
+                ($validated['approval_status'] ?? null) === 'approved'
+                    ? $request->user()?->id
+                    : null,
+            'approved_at' =>
+                ($validated['approval_status'] ?? null) === 'approved'
+                    ? now()
+                    : null,
+            'approval_notes' => $validated['approval_notes'] ?? null,
             'metadata' => array_merge(
                 $validated['metadata'] ?? [],
                 [
@@ -1130,6 +1258,13 @@ class InsuranceManagementController extends Controller
                 Rule::in(['draft', 'active', 'inactive', 'expired']),
             ],
             'is_default' => ['sometimes', 'boolean'],
+            'source_type' => ['nullable', 'string', 'max:50'],
+            'source_document_path' => ['nullable', 'string', 'max:191'],
+            'approval_status' => [
+                'sometimes',
+                Rule::in(['pending', 'approved', 'rejected', 'expired']),
+            ],
+            'approval_notes' => ['nullable', 'string'],
             'metadata' => ['nullable', 'array'],
         ]);
 
@@ -1162,6 +1297,17 @@ class InsuranceManagementController extends Controller
 
         if (array_key_exists('currency', $validated)) {
             $validated['currency'] = strtoupper($validated['currency']);
+        }
+
+        if (($validated['approval_status'] ?? null) === 'approved') {
+            $validated['approved_by'] = $request->user()?->id;
+            $validated['approved_at'] = now();
+        } elseif (
+            array_key_exists('approval_status', $validated)
+            && $validated['approval_status'] !== 'approved'
+        ) {
+            $validated['approved_by'] = null;
+            $validated['approved_at'] = null;
         }
 
         if (array_key_exists('metadata', $validated)) {
@@ -1310,6 +1456,29 @@ class InsuranceManagementController extends Controller
                     'requires_pre_authorization',
                 ]),
             ],
+            'standard_selling_price_snapshot' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'price_difference_amount' => ['nullable', 'numeric'],
+            'price_difference_percentage' => ['nullable', 'numeric'],
+            'pricing_source' => [
+                'nullable',
+                Rule::in([
+                    'standard',
+                    'contract_price_list',
+                    'portal_confirmed',
+                    'manual_override',
+                    'ai_suggested',
+                ]),
+            ],
+            'price_confidence' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'approval_status' => [
+                'nullable',
+                Rule::in(['pending', 'approved', 'rejected', 'expired']),
+            ],
+            'approval_notes' => ['nullable', 'string'],
             'restrictions' => ['nullable', 'array'],
             'metadata' => ['nullable', 'array'],
         ]);
@@ -1353,6 +1522,42 @@ class InsuranceManagementController extends Controller
                 'is_covered' => $validated['is_covered'] ?? true,
                 'coverage_status' =>
                     $validated['coverage_status'] ?? 'covered',
+                'standard_selling_price_snapshot' =>
+                    $validated['standard_selling_price_snapshot'] ?? null,
+                'price_difference_amount' =>
+                    $validated['price_difference_amount'] ??
+                    (
+                        array_key_exists('standard_selling_price_snapshot', $validated)
+                            ? (float) $validated['agreed_unit_price']
+                                - (float) $validated['standard_selling_price_snapshot']
+                            : null
+                    ),
+                'price_difference_percentage' =>
+                    $validated['price_difference_percentage'] ??
+                    (
+                        ! empty($validated['standard_selling_price_snapshot'])
+                            ? (
+                                (
+                                    (float) $validated['agreed_unit_price']
+                                    - (float) $validated['standard_selling_price_snapshot']
+                                ) / (float) $validated['standard_selling_price_snapshot']
+                            ) * 100
+                            : null
+                    ),
+                'pricing_source' =>
+                    $validated['pricing_source'] ?? 'contract_price_list',
+                'price_confidence' => $validated['price_confidence'] ?? null,
+                'approval_status' =>
+                    $validated['approval_status'] ?? 'pending',
+                'approved_by' =>
+                    ($validated['approval_status'] ?? null) === 'approved'
+                        ? $request->user()?->id
+                        : null,
+                'approved_at' =>
+                    ($validated['approval_status'] ?? null) === 'approved'
+                        ? now()
+                        : null,
+                'approval_notes' => $validated['approval_notes'] ?? null,
                 'restrictions' =>
                     $validated['restrictions'] ?? null,
                 'metadata' => array_merge(
@@ -1926,6 +2131,12 @@ class InsuranceManagementController extends Controller
             'priority' => $priceList->priority,
             'status' => $priceList->status,
             'is_default' => (bool) $priceList->is_default,
+            'source_type' => $priceList->source_type,
+            'source_document_path' => $priceList->source_document_path,
+            'approval_status' => $priceList->approval_status,
+            'approved_by' => $priceList->approved_by,
+            'approved_at' => $priceList->approved_at?->toISOString(),
+            'approval_notes' => $priceList->approval_notes,
             'metadata' => $priceList->metadata,
             'product_prices_count' =>
                 $priceList->product_prices_count ?? null,
@@ -1990,6 +2201,31 @@ class InsuranceManagementController extends Controller
             'is_covered' => (bool) $productPrice->is_covered,
             'coverage_status' =>
                 $productPrice->coverage_status,
+            'standard_selling_price_snapshot' =>
+                $productPrice->standard_selling_price_snapshot !== null
+                    ? (float) $productPrice->standard_selling_price_snapshot
+                    : null,
+            'price_difference_amount' =>
+                $productPrice->price_difference_amount !== null
+                    ? (float) $productPrice->price_difference_amount
+                    : null,
+            'price_difference_percentage' =>
+                $productPrice->price_difference_percentage !== null
+                    ? (float) $productPrice->price_difference_percentage
+                    : null,
+            'pricing_source' => $productPrice->pricing_source,
+            'price_confidence' =>
+                $productPrice->price_confidence !== null
+                    ? (float) $productPrice->price_confidence
+                    : null,
+            'last_used_at' =>
+                $productPrice->last_used_at?->toISOString(),
+            'use_count' => (int) ($productPrice->use_count ?? 0),
+            'approval_status' => $productPrice->approval_status,
+            'approved_by' => $productPrice->approved_by,
+            'approved_at' =>
+                $productPrice->approved_at?->toISOString(),
+            'approval_notes' => $productPrice->approval_notes,
             'restrictions' => $productPrice->restrictions,
             'metadata' => $productPrice->metadata,
             'product' =>
@@ -2280,6 +2516,31 @@ class InsuranceManagementController extends Controller
             'name' => $partner->name,
             'code' => $partner->code,
             'partner_type' => $partner->partner_type,
+            'pricing_mode' => $partner->pricing_mode,
+            'contract_start_date' =>
+                $partner->contract_start_date?->toDateString(),
+            'contract_expiry_date' =>
+                $partner->contract_expiry_date?->toDateString(),
+            'default_customer_contribution_percent' =>
+                $partner->default_customer_contribution_percent !== null
+                    ? (float) $partner->default_customer_contribution_percent
+                    : null,
+            'default_insurer_contribution_percent' =>
+                $partner->default_insurer_contribution_percent !== null
+                    ? (float) $partner->default_insurer_contribution_percent
+                    : null,
+            'coverage_limit' =>
+                $partner->coverage_limit !== null
+                    ? (float) $partner->coverage_limit
+                    : null,
+            'required_documentation' => $partner->required_documentation,
+            'invoice_claim_settings' => $partner->invoice_claim_settings,
+            'external_portal_reference' =>
+                $partner->external_portal_reference,
+            'requires_price_approval' =>
+                (bool) $partner->requires_price_approval,
+            'created_by' => $partner->created_by,
+            'updated_by' => $partner->updated_by,
             'registration_number' => $partner->registration_number,
             'tax_identification_number' =>
                 $partner->tax_identification_number,
