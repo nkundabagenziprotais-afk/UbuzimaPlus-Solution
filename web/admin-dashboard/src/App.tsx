@@ -49,6 +49,10 @@ import {
   openPosSession,
   zeroizePosSession,
 } from './lib/posSessionApi';
+import {
+  getInsurancePartners,
+  type InsurancePartner,
+} from './lib/insuranceApi';
 import { PharmaCoreEditor } from './components/PharmaCoreEditor';
 import { ProductInventoryPreview, type InventoryView } from './components/ProductInventoryPreview';
 import { InventoryModuleHome } from './components/InventoryModuleHome';
@@ -242,47 +246,59 @@ type AdhocReportWorkspaceKey =
   | 'decision-note'
   | 'operation-checklist'
   | 'priority-follow-up';
-type PosInsuranceInstitutionRate = {
-  id: string;
-  name: string;
-  customerContributionPercent: number;
-};
+const adminStateStorageKey = 'ubuzima.admin.state.v1';
 
-type PosInsuranceRate = {
-  id: string;
-  name: string;
-  masterCustomerContributionPercent: number;
-  institutions: PosInsuranceInstitutionRate[];
-};
+function storedAdminState(): Record<string, string> {
+  try {
+    return JSON.parse(sessionStorage.getItem(adminStateStorageKey) || '{}');
+  } catch {
+    return {};
+  }
+}
 
-const posInsuranceRates: PosInsuranceRate[] = [
-  {
-    id: 'rssb',
-    name: 'RSSB',
-    masterCustomerContributionPercent: 15,
-    institutions: [
-      { id: 'rssb-public', name: 'Public Institution', customerContributionPercent: 10 },
-      { id: 'rssb-private', name: 'Private Employer Group', customerContributionPercent: 20 },
-    ],
-  },
-  {
-    id: 'mmi',
-    name: 'MMI',
-    masterCustomerContributionPercent: 20,
-    institutions: [
-      { id: 'mmi-defense', name: 'Defence Institution', customerContributionPercent: 10 },
-      { id: 'mmi-affiliate', name: 'Affiliate Employer', customerContributionPercent: 25 },
-    ],
-  },
-  {
-    id: 'radiant',
-    name: 'Radiant Insurance',
-    masterCustomerContributionPercent: 30,
-    institutions: [
-      { id: 'radiant-corporate', name: 'Corporate Scheme', customerContributionPercent: 15 },
-    ],
-  },
-];
+function rememberAdminState(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(
+      adminStateStorageKey,
+      JSON.stringify({
+        ...storedAdminState(),
+        [key]: value,
+      }),
+    );
+  } catch {
+    // Browser storage is optional.
+  }
+}
+
+function storedAdminValue(key: string, fallback: string): string {
+  return storedAdminState()[key] || fallback;
+}
+
+function posPartnerCustomerContributionPercent(
+  partner: InsurancePartner | null | undefined,
+): number {
+  const partnerRecord = partner as unknown as Record<string, unknown> | null;
+  const rawMetadata = partnerRecord?.metadata;
+  const metadata =
+    rawMetadata && typeof rawMetadata === 'object'
+      ? (rawMetadata as Record<string, unknown>)
+      : {};
+
+  const rawValue =
+    metadata.customer_contribution_percent ??
+    metadata.customerContributionPercent ??
+    metadata.default_customer_contribution_percent ??
+    metadata.defaultCustomerContributionPercent ??
+    0;
+
+  const value = Number(rawValue);
+
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, value));
+}
 
 type PosSaleSummary = {
   lineCount: number;
@@ -305,9 +321,8 @@ function calculatePosSaleSummary(input: {
   paymentMethod: 'cash' | 'momo' | 'card' | 'insurance' | 'credit';
   insuranceProviderId: string;
   insuranceInstitutionId: string;
+  insuranceCustomerContributionPercent?: number;
 }): PosSaleSummary {
-  const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === input.insuranceProviderId) ?? posInsuranceRates[0];
-  const selectedInstitution = selectedInsurance.institutions.find((institution) => institution.id === input.insuranceInstitutionId) ?? null;
 
   const lineCount = input.cartItems.length;
   const totalQuantity = input.cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -318,7 +333,13 @@ function calculatePosSaleSummary(input: {
 
   const customerContributionPercent =
     input.paymentMethod === 'insurance'
-      ? selectedInstitution?.customerContributionPercent ?? selectedInsurance.masterCustomerContributionPercent
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            Number(input.insuranceCustomerContributionPercent ?? 0),
+          ),
+        )
       : 100;
 
   const insuranceContributionPercent =
@@ -541,8 +562,6 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
   insurance: [
     { key: 'insurance-overview', label: 'Insurance Overview', target: 'overview' },
     { key: 'insurance-partners', label: 'Insurance Partners', target: 'partners' },
-    { key: 'insurance-institutions', label: 'Institutions', target: 'institutions' },
-    { key: 'insurance-schemes', label: 'Insurance Schemes', target: 'schemes' },
     { key: 'insurance-price-lists', label: 'Price Lists', target: 'price-lists' },
     { key: 'insurance-product-prices', label: 'Product Prices', target: 'product-prices' },
     { key: 'insurance-contribution-rules', label: 'Contribution Rules', target: 'contribution-rules' },
@@ -3719,7 +3738,7 @@ function App() {
   const [activePharmaFeature, setActivePharmaFeature] = useState<PharmaFeatureKey>('ai-model');
   const [activeAiWorkspace, setActiveAiWorkspace] = useState<AiWorkspaceKey>('model-registry');
   const [activeAdminPanelWorkspace, setActiveAdminPanelWorkspace] = useState<AdminPanelWorkspaceKey>('backend-api');
-  const [activeInsuranceWorkspace, setActiveInsuranceWorkspace] = useState<InsuranceWorkspaceKey>('overview');
+  const [activeInsuranceWorkspace, setActiveInsuranceWorkspace] = useState<InsuranceWorkspaceKey>(() => storedAdminValue('insuranceWorkspace', 'overview') as InsuranceWorkspaceKey);
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>('overview');
   const [isPosDayOpen, setIsPosDayOpen] = useState(false);
   const [posSession, setPosSession] = useState<PosSession | null>(null);
@@ -3789,12 +3808,19 @@ function App() {
   const [isLoadingPosInventory, setIsLoadingPosInventory] = useState(false);
   const [posInventoryError, setPosInventoryError] = useState('');
   const [posInventoryLoadedAt, setPosInventoryLoadedAt] = useState('');
+  const [posInsurancePartners, setPosInsurancePartners] = useState<
+    InsurancePartner[]
+  >([]);
+  const [isLoadingPosInsurancePartners, setIsLoadingPosInsurancePartners] =
+    useState(false);
+  const [posInsurancePartnersError, setPosInsurancePartnersError] =
+    useState('');
   const [posSaleSummary, setPosSaleSummary] = useState<PosSaleSummary>(() =>
     calculatePosSaleSummary({
       cartItems: [],
       discountAmount: '0',
       paymentMethod: 'cash',
-      insuranceProviderId: 'rssb',
+      insuranceProviderId: '',
       insuranceInstitutionId: '',
     }),
   );
@@ -4084,6 +4110,38 @@ function App() {
       observer.disconnect();
     };
   }, [activeAdminPanelWorkspace, activeAdhocReportWorkspace, activeAiWorkspace, activeErpWorkspace, activeFinanceWorkspace, activeInsuranceWorkspace, activePharmaFeature, activePosWorkspace, activeSection, activeSupplierWorkspace, loginMethod, profile, staffLoginLanguage]);
+
+  useEffect(() => {
+    rememberAdminState('section', activeSection);
+    rememberAdminState('insuranceWorkspace', activeInsuranceWorkspace);
+  }, [activeSection, activeInsuranceWorkspace]);
+
+  useEffect(() => {
+    const scrollKey = `ubuzima.admin.scroll.${activeSection}.${activeInsuranceWorkspace}`;
+
+    const restore = window.setTimeout(() => {
+      const stored = sessionStorage.getItem(scrollKey);
+      if (stored) {
+        window.scrollTo(0, Number(stored) || 0);
+      }
+    }, 120);
+
+    const save = () => {
+      sessionStorage.setItem(scrollKey, String(window.scrollY));
+    };
+
+    window.addEventListener('beforeunload', save);
+    window.addEventListener('pagehide', save);
+
+    return () => {
+      window.clearTimeout(restore);
+      save();
+      window.removeEventListener('beforeunload', save);
+      window.removeEventListener('pagehide', save);
+    };
+  }, [activeSection, activeInsuranceWorkspace]);
+
+
 
   useEffect(() => {
     let cancelled = false;
@@ -5434,7 +5492,12 @@ function App() {
       amount: string;
     }> = [];
 
-    const selectedInsurance = posInsuranceRates.find((insurance) => insurance.id === posInsuranceProvider) ?? posInsuranceRates[0];
+    const selectedInsurancePartner =
+      posInsurancePartners.find(
+        (partner) => String(partner.id) === String(posInsuranceProvider),
+      ) ?? null;
+    const selectedInsuranceCustomerContribution =
+      posPartnerCustomerContributionPercent(selectedInsurancePartner);
 
     const normalizedPosTerminalSearch = posTerminalSearch.trim().toLowerCase();
     const posVisibleProducts = normalizedPosTerminalSearch
@@ -5458,8 +5521,46 @@ function App() {
         : `${posProducts.length} fast product tile${posProducts.length === 1 ? '' : 's'} ready`;
 
 
+    async function loadPosInsurancePartners() {
+      if (!session?.token) return;
+
+      setIsLoadingPosInsurancePartners(true);
+      setPosInsurancePartnersError('');
+
+      try {
+        const response = await getInsurancePartners(
+          session.token,
+          posTenantSlug,
+          {
+            status: 'active',
+            perPage: 100,
+          },
+        );
+
+        const activePartners = (response.data || []).filter(
+          (partner) => String(partner.status || '').toLowerCase() === 'active',
+        );
+
+        setPosInsurancePartners(activePartners);
+
+        if (!posInsuranceProvider && activePartners.length > 0) {
+          setPosInsuranceProvider(String(activePartners[0].id));
+        }
+      } catch (err) {
+        setPosInsurancePartnersError(
+          err instanceof Error
+            ? err.message
+            : 'Unable to load insurance partners for POS.',
+        );
+      } finally {
+        setIsLoadingPosInsurancePartners(false);
+      }
+    }
+
     async function loadCurrentPosInventory() {
       if (!session?.token) return;
+
+      void loadPosInsurancePartners();
 
       setIsLoadingPosInventory(true);
       setPosInventoryError('');
@@ -5555,6 +5656,8 @@ function App() {
           paymentMethod: posPaymentMethod,
           insuranceProviderId: posInsuranceProvider,
           insuranceInstitutionId: posInsuranceInstitution,
+          insuranceCustomerContributionPercent:
+            selectedInsuranceCustomerContribution,
         }),
       );
       setPosSummaryRefreshKey((current) => current + 1);
@@ -5577,6 +5680,8 @@ function App() {
           paymentMethod: posPaymentMethod,
           insuranceProviderId: posInsuranceProvider,
           insuranceInstitutionId: posInsuranceInstitution,
+          insuranceCustomerContributionPercent:
+            selectedInsuranceCustomerContribution,
         }),
       );
       setPosSummaryRefreshKey((current) => current + 1);
@@ -6349,14 +6454,10 @@ async function confirmTransaction() {
     }
 
     if (activePosWorkspace === 'pos') {
-      const selectedInsuranceInstitution = selectedInsurance.institutions.find(
-        (institution) => institution.id === posInsuranceInstitution,
-      );
-      const rawCustomerContributionPercent = Number(
-        selectedInsuranceInstitution?.customerContributionPercent ??
-        selectedInsurance.masterCustomerContributionPercent ??
-        100,
-      );
+      const insuranceCustomerContributionPercent =
+        selectedInsuranceCustomerContribution;
+      const rawCustomerContributionPercent =
+        insuranceCustomerContributionPercent;
       const posSummaryCustomerContributionPercent = posPaymentMethod === 'insurance'
         ? Math.min(Math.max(rawCustomerContributionPercent, 0), 100)
         : 100;
@@ -7091,7 +7192,15 @@ async function confirmTransaction() {
                       <select
                         value={posPaymentMethod}
                         onChange={(event) => {
-                          setPosPaymentMethod(event.target.value as typeof posPaymentMethod);
+                          const nextPaymentMethod =
+                            event.target.value as typeof posPaymentMethod;
+
+                          setPosPaymentMethod(nextPaymentMethod);
+
+                          if (nextPaymentMethod === 'insurance') {
+                            void loadPosInsurancePartners();
+                          }
+
                           setPosTransactionConfirmed(false);
                         }}
                       >
@@ -7106,7 +7215,7 @@ async function confirmTransaction() {
                     {posPaymentMethod === 'insurance' && (
                       <>
                         <label>
-                          <span>Insurance provider</span>
+                          <span>Insurance partner</span>
                           <select
                             value={posInsuranceProvider}
                             onChange={(event) => {
@@ -7114,31 +7223,34 @@ async function confirmTransaction() {
                               setPosInsuranceInstitution('');
                               setPosTransactionConfirmed(false);
                             }}
+                            disabled={isLoadingPosInsurancePartners}
                           >
-                            {posInsuranceRates.map((insurance) => (
-                              <option key={insurance.id} value={insurance.id}>
-                                {insurance.name} · master Cust {insurance.masterCustomerContributionPercent}%
+                            <option value="">
+                              {isLoadingPosInsurancePartners
+                                ? 'Loading insurance partners…'
+                                : posInsurancePartners.length
+                                  ? 'Select insurance partner'
+                                  : 'No active insurance partners'}
+                            </option>
+                            {posInsurancePartners.map((partner) => (
+                              <option key={partner.id} value={partner.id}>
+                                {partner.name}
                               </option>
                             ))}
                           </select>
-                        </label>
-
-                        <label>
-                          <span>Institution / company</span>
-                          <select
-                            value={posInsuranceInstitution}
-                            onChange={(event) => {
-                              setPosInsuranceInstitution(event.target.value);
-                              setPosTransactionConfirmed(false);
-                            }}
-                          >
-                            <option value="">Use insurance master rate</option>
-                            {selectedInsurance.institutions.map((institution) => (
-                              <option key={institution.id} value={institution.id}>
-                                {institution.name} · Cust {institution.customerContributionPercent}%
-                              </option>
-                            ))}
-                          </select>
+                          {posInsurancePartnersError ? (
+                            <small>{posInsurancePartnersError}</small>
+                          ) : selectedInsurancePartner ? (
+                            <small>
+                              Customer contribution{' '}
+                              {selectedInsuranceCustomerContribution}%
+                            </small>
+                          ) : (
+                            <small>
+                              Active insurance partners are loaded from
+                              Insurance Management.
+                            </small>
+                          )}
                         </label>
                       </>
                     )}
@@ -8551,7 +8663,7 @@ async function confirmTransaction() {
               <DedicatedModuleHeader
                 eyebrow="Insurance administration"
                 title="Insurance Workspace"
-                description="Manage partners, institutions, schemes, pricing, contributions, claims, reconciliation, and audit evidence in focused pages."
+                description="Manage partners, pricing, contributions, claims, reconciliation, and audit evidence in focused pages."
                 dashboardLabel={
                   isAdminProfile
                     ? 'Main Dashboard'

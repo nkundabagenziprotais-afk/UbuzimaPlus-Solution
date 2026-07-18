@@ -390,15 +390,11 @@ export function InsuranceManagementWorkspace({
         ]);
       } else if (activeWorkspace === 'partners') {
         await loadPartners();
-      } else if (activeWorkspace === 'institutions') {
-        await loadInstitutions();
-      } else if (activeWorkspace === 'schemes') {
-        await loadSchemes();
-      } else if (activeWorkspace === 'price-lists') {
+      } else if (normalizedWorkspace === 'price-lists') {
         await loadPriceLists();
-      } else if (activeWorkspace === 'product-prices') {
+      } else if (normalizedWorkspace === 'product-prices') {
         await loadProductPrices();
-      } else if (activeWorkspace === 'contribution-rules') {
+      } else if (normalizedWorkspace === 'contribution-rules') {
         await loadContributionRules();
       }
     } catch (err) {
@@ -429,7 +425,7 @@ export function InsuranceManagementWorkspace({
   }, [activeWorkspace, search, status, perPage]);
 
   useEffect(() => {
-    if (activeWorkspace === 'sales-register') {
+    if (normalizedWorkspace === 'sales-register') {
       void loadSalesRegister();
     }
   }, [
@@ -1219,16 +1215,6 @@ export function InsuranceManagementWorkspace({
                   'Register payer identity, contribution defaults and operating status.',
                 ],
                 [
-                  '2. Institution mapping',
-                  'Link employer or institutional groups to their insurance partner.',
-                ],
-                [
-                  '3. Scheme configuration',
-                  'Define customer contribution, insurer contribution and authorization policy.',
-                ],
-                [
-                  '4. Price-list control',
-                  'Create dated and prioritized insurer tariffs.',
                 ],
                 [
                   '5. Product coverage',
@@ -1498,7 +1484,7 @@ export function InsuranceManagementWorkspace({
             </label>
 
             <label>
-              Customer contribution %
+              Customer contribution percentage
               <input
                 type="number"
                 min="0"
@@ -1518,7 +1504,7 @@ export function InsuranceManagementWorkspace({
             </label>
 
             <label>
-              Insurer contribution %
+              Insurer contribution percentage
               <input
                 type="number"
                 min="0"
@@ -2203,33 +2189,7 @@ export function InsuranceManagementWorkspace({
                   </option>
                 ))}
               </select>
-            </label>
-
-            <label>
-              Institution
-              <select
-                value={schemeForm.insurance_institution_id}
-                onChange={(event) =>
-                  setSchemeForm((current) => ({
-                    ...current,
-                    insurance_institution_id:
-                      event.target.value,
-                  }))
-                }
-              >
-                <option value="">Partner-level scheme</option>
-                {institutions.rows.map((institution) => (
-                  <option
-                    key={institution.id}
-                    value={institution.id}
-                  >
-                    {institution.code} — {institution.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
+            </label><label>
               Scheme code
               <input
                 required
@@ -2354,7 +2314,6 @@ export function InsuranceManagementWorkspace({
           <table>
             <thead>
               <tr>
-                <th>Scheme</th>
                 <th>Partner</th>
                 <th>Institution</th>
                 <th>Contribution split</th>
@@ -2454,30 +2413,7 @@ export function InsuranceManagementWorkspace({
                   </option>
                 ))}
               </select>
-            </label>
-
-            <label>
-              Scheme
-              <select
-                value={priceListForm.insurance_scheme_id}
-                onChange={(event) =>
-                  setPriceListForm((current) => ({
-                    ...current,
-                    insurance_scheme_id:
-                      event.target.value,
-                  }))
-                }
-              >
-                <option value="">Partner-wide price list</option>
-                {schemes.rows.map((scheme) => (
-                  <option key={scheme.id} value={scheme.id}>
-                    {scheme.code} — {scheme.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
+            </label><label>
               Price-list code
               <input
                 required
@@ -2638,7 +2574,6 @@ export function InsuranceManagementWorkspace({
               <tr>
                 <th>Price list</th>
                 <th>Partner</th>
-                <th>Scheme</th>
                 <th>Currency</th>
                 <th>Priority</th>
                 <th>Effective period</th>
@@ -2864,7 +2799,7 @@ export function InsuranceManagementWorkspace({
             </label>
 
             <label>
-              Customer contribution %
+              Customer contribution percentage
               <input
                 type="number"
                 min="0"
@@ -2884,7 +2819,7 @@ export function InsuranceManagementWorkspace({
             </label>
 
             <label>
-              Insurer contribution %
+              Insurer contribution percentage
               <input
                 type="number"
                 min="0"
@@ -2934,8 +2869,8 @@ export function InsuranceManagementWorkspace({
               <tr>
                 <th>Product</th>
                 <th>Price list</th>
-                <th>Covered price</th>
-                <th>Standard price</th>
+                <th>Insurance covered unit price</th>
+                <th>Standard pharmacy unit price</th>
                 <th>Difference</th>
                 <th>Contribution split</th>
                 <th>Source</th>
@@ -3046,7 +2981,7 @@ export function InsuranceManagementWorkspace({
           <div className="section-heading">
             <div>
               <span>Insurance sale evidence</span>
-              <h3>Sales register by partner, institution and scheme</h3>
+              <h3>Sales register by partner</h3>
               <p>
                 Review accumulated insured sales used to prepare claim
                 invoices and supporting annexes.
@@ -3071,48 +3006,6 @@ export function InsuranceManagementWorkspace({
                 {partners.rows.map((partner) => (
                   <option key={partner.id} value={partner.id}>
                     {partner.code} — {partner.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Institution
-              <select
-                value={salesRegisterFilters.insurance_institution_id}
-                onChange={(event) => {
-                  setPage(1);
-                  setSalesRegisterFilters((current) => ({
-                    ...current,
-                    insurance_institution_id: event.target.value,
-                  }));
-                }}
-              >
-                <option value="">All institutions</option>
-                {institutions.rows.map((institution) => (
-                  <option key={institution.id} value={institution.id}>
-                    {institution.code} — {institution.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Scheme
-              <select
-                value={salesRegisterFilters.insurance_scheme_id}
-                onChange={(event) => {
-                  setPage(1);
-                  setSalesRegisterFilters((current) => ({
-                    ...current,
-                    insurance_scheme_id: event.target.value,
-                  }));
-                }}
-              >
-                <option value="">All schemes</option>
-                {schemes.rows.map((scheme) => (
-                  <option key={scheme.id} value={scheme.id}>
-                    {scheme.code} — {scheme.name}
                   </option>
                 ))}
               </select>
@@ -3225,8 +3118,7 @@ export function InsuranceManagementWorkspace({
               <tr>
                 <th>Sale</th>
                 <th>Date</th>
-                <th>Partner / Institution</th>
-                <th>Scheme</th>
+                <th>Partner</th>
                 <th>Member / Customer</th>
                 <th>Product</th>
                 <th>Qty</th>
@@ -3248,7 +3140,6 @@ export function InsuranceManagementWorkspace({
                     <strong>{entry.partner?.name || '—'}</strong>
                     <small>{entry.institution?.name || 'No institution'}</small>
                   </td>
-                  <td>{entry.scheme?.name || '—'}</td>
                   <td>
                     <strong>{entry.member_number || '—'}</strong>
                     <small>{entry.customer_name || 'No customer snapshot'}</small>
@@ -3320,54 +3211,7 @@ export function InsuranceManagementWorkspace({
                   </option>
                 ))}
               </select>
-            </label>
-
-            <label>
-              Institution
-              <select
-                value={ruleForm.insurance_institution_id}
-                onChange={(event) =>
-                  setRuleForm((current) => ({
-                    ...current,
-                    insurance_institution_id:
-                      event.target.value,
-                  }))
-                }
-              >
-                <option value="">No institution override</option>
-                {institutions.rows.map((institution) => (
-                  <option
-                    key={institution.id}
-                    value={institution.id}
-                  >
-                    {institution.code} — {institution.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Scheme
-              <select
-                value={ruleForm.insurance_scheme_id}
-                onChange={(event) =>
-                  setRuleForm((current) => ({
-                    ...current,
-                    insurance_scheme_id:
-                      event.target.value,
-                  }))
-                }
-              >
-                <option value="">No scheme override</option>
-                {schemes.rows.map((scheme) => (
-                  <option key={scheme.id} value={scheme.id}>
-                    {scheme.code} — {scheme.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
+            </label><label>
               Product ID
               <input
                 type="number"
@@ -3611,21 +3455,22 @@ export function InsuranceManagementWorkspace({
     );
   }
 
+  const normalizedWorkspace =
+    activeWorkspace === 'institutions' || activeWorkspace === 'schemes'
+      ? 'partners'
+      : activeWorkspace;
+
   let content = overview();
 
-  if (activeWorkspace === 'partners') {
+  if (normalizedWorkspace === 'partners') {
     content = partnersRegister();
-  } else if (activeWorkspace === 'institutions') {
-    content = institutionsRegister();
-  } else if (activeWorkspace === 'schemes') {
-    content = schemesRegister();
-  } else if (activeWorkspace === 'price-lists') {
+  } else if (normalizedWorkspace === 'price-lists') {
     content = priceListsRegister();
-  } else if (activeWorkspace === 'product-prices') {
+  } else if (normalizedWorkspace === 'product-prices') {
     content = productPricesRegister();
-  } else if (activeWorkspace === 'contribution-rules') {
+  } else if (normalizedWorkspace === 'contribution-rules') {
     content = contributionRulesRegister();
-  } else if (activeWorkspace === 'claims-readiness') {
+  } else if (normalizedWorkspace === 'claims-readiness') {
     content = (
       <InsuranceClaimsReconciliationWorkspace
         token={token}
@@ -3634,7 +3479,7 @@ export function InsuranceManagementWorkspace({
       />
     );
   } else if (
-    activeWorkspace === 'reconciliation-readiness'
+    normalizedWorkspace === 'reconciliation-readiness'
   ) {
     content = (
       <InsuranceClaimsReconciliationWorkspace
@@ -3643,9 +3488,9 @@ export function InsuranceManagementWorkspace({
         mode="reconciliation"
       />
     );
-  } else if (activeWorkspace === 'sales-register') {
+  } else if (normalizedWorkspace === 'sales-register') {
     content = salesRegisterWorkspace();
-  } else if (activeWorkspace === 'audit-readiness') {
+  } else if (normalizedWorkspace === 'audit-readiness') {
     content = readinessWorkspace(
       'Insurance audit readiness',
       'Configuration mutations are already audited by the backend. The frontend audit register will later expose searchable before-and-after evidence.',
@@ -3711,8 +3556,6 @@ export function InsuranceManagementWorkspace({
         {[
           ['overview', 'Overview'],
           ['partners', 'Partners'],
-          ['institutions', 'Institutions'],
-          ['schemes', 'Schemes'],
           ['price-lists', 'Price Lists'],
           ['product-prices', 'Product Prices'],
           ['contribution-rules', 'Contribution Rules'],
