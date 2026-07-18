@@ -227,20 +227,28 @@ async function insuranceRequest<T>(
     body?: unknown;
   } = {},
 ): Promise<T> {
+  const hasBody = options.body !== undefined;
+  const isFormData =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    Authorization: `Bearer ${token}`,
+    'X-Tenant-Slug': tenantSlug,
+  };
+
+  if (hasBody && !isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method || 'GET',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
-      'X-Tenant-Slug': tenantSlug,
-      ...(options.body !== undefined
-        ? { 'Content-Type': 'application/json' }
-        : {}),
-    },
-    body:
-      options.body !== undefined
-        ? JSON.stringify(options.body)
-        : undefined,
+    headers,
+    body: hasBody
+      ? isFormData
+        ? (options.body as BodyInit)
+        : JSON.stringify(options.body)
+      : undefined,
   });
 
   const data = await response.json().catch(() => ({}));
