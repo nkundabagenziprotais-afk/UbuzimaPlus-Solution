@@ -1169,6 +1169,32 @@ class InsuranceClaimController extends Controller
             'paid_amount' =>
                 (float) $claim->paid_amount,
             'status' => $claim->status,
+            'invoice_due_date' =>
+                $claim->invoice_due_date?->toDateString(),
+            'invoice_submission_status' =>
+                $claim->invoice_submission_status,
+            'invoice_submitted_at' =>
+                $claim->invoice_submitted_at?->toISOString(),
+            'invoice_submitted_by' =>
+                $claim->invoice_submitted_by,
+            'invoice_submission_reference' =>
+                $claim->invoice_submission_reference,
+            'invoice_submission_channel' =>
+                $claim->invoice_submission_channel,
+            'reminder_lead_days' =>
+                $claim->reminder_lead_days,
+            'reminder_frequency' =>
+                $claim->reminder_frequency,
+            'next_reminder_at' =>
+                $claim->next_reminder_at?->toISOString(),
+            'last_reminder_at' =>
+                $claim->last_reminder_at?->toISOString(),
+            'reminder_count' =>
+                $claim->reminder_count,
+            'invoice_document_path' =>
+                $claim->invoice_document_path,
+            'annex_document_path' =>
+                $claim->annex_document_path,
             'metadata' =>
                 $claim->metadata ?? [],
             'lines_count' =>

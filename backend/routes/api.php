@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\V1\SolutionController;
 use App\Http\Controllers\Api\V1\TenantPublicStatusController;
 use App\Http\Controllers\Api\V1\PharmaCo360\CoreProfileController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceManagementController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsurancePartnerDocumentController;
+use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimSubmissionController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceReconciliationController;
@@ -398,6 +400,21 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 'updatePartner',
             ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.providers.manage');
 
+            Route::get('/partners/{insurancePartner}/documents', [
+                InsurancePartnerDocumentController::class,
+                'index',
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.providers.view');
+
+            Route::post('/partners/{insurancePartner}/documents', [
+                InsurancePartnerDocumentController::class,
+                'store',
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.providers.manage');
+
+            Route::patch('/partners/{insurancePartner}/documents/{document}', [
+                InsurancePartnerDocumentController::class,
+                'update',
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.providers.manage');
+
             Route::get('/schemes', [
                 InsuranceManagementController::class,
                 'schemes',
@@ -512,6 +529,11 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 'claims',
             ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.view');
 
+            Route::get('/sales-register', [
+                InsuranceClaimSubmissionController::class,
+                'salesRegister',
+            ])->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.analytics.view');
+
             Route::post('/claims/from-sale', [
                 InsuranceClaimController::class,
                 'createFromSale',
@@ -522,6 +544,30 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
                 [
                     InsuranceClaimController::class,
                     'submitClaim',
+                ]
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.edit');
+
+            Route::post(
+                '/claims/{insuranceClaim}/submission-settings',
+                [
+                    InsuranceClaimSubmissionController::class,
+                    'updateSettings',
+                ]
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.edit');
+
+            Route::post(
+                '/claims/{insuranceClaim}/submission-events',
+                [
+                    InsuranceClaimSubmissionController::class,
+                    'recordEvent',
+                ]
+            )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.edit');
+
+            Route::post(
+                '/claims/{insuranceClaim}/mark-invoice-submitted',
+                [
+                    InsuranceClaimSubmissionController::class,
+                    'markSubmitted',
                 ]
             )->middleware('App\Http\Middleware\EnsureAnyPermission:pharmaco.insurance.manage,insurance.claims.edit');
 
