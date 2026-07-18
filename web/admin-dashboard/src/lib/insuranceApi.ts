@@ -246,6 +246,10 @@ async function insuranceRequest<T>(
   return data as T;
 }
 
+function ensureArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value as T[] : [];
+}
+
 function normalizeList<T>(
   response: RawListResponse<T>,
   collectionKey:
@@ -533,8 +537,8 @@ export async function getInsuranceClaims(
   );
   return {
     tenant: response.tenant,
-    data: response.claims ?? [],
-    pagination: response.meta,
+    data: ensureArray<InsuranceClaim>(response.claims ?? response.data ?? []),
+    pagination: response.meta ?? response.pagination,
   };
 }
 
@@ -604,11 +608,12 @@ export async function getInsuranceReconciliationBatches(
   );
   return {
     tenant: response.tenant,
-    data:
+    data: ensureArray<InsuranceReconciliationBatch>(
       response.data ??
       response.batches ??
       response.reconciliation_batches ??
       [],
+    ),
     pagination: response.pagination ?? response.meta,
   };
 }
@@ -671,9 +676,15 @@ export async function getEligibleInsuranceBatchPayments(
   tenantSlug: string,
   batchId: number,
 ): Promise<{ payments: InsurancePaymentOption[] }> {
-  return insuranceRequest(
+  const response = await insuranceRequest<any>(
     token,
     tenantSlug,
     `/pharmaco/insurance/reconciliation-batches/${batchId}/eligible-payments`,
   );
+
+  return {
+    payments: ensureArray<InsurancePaymentOption>(
+      response.payments ?? response.data ?? [],
+    ),
+  };
 }

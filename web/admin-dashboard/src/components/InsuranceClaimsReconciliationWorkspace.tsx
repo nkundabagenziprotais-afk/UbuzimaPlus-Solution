@@ -30,6 +30,10 @@ const money = (value: number | string | null | undefined) =>
 const label = (value?: string | null) =>
   (value || 'unknown').replaceAll('_', ' ');
 
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value as T[] : [];
+}
+
 export function InsuranceClaimsReconciliationWorkspace({
   token,
   tenantSlug,
@@ -74,7 +78,7 @@ export function InsuranceClaimsReconciliationWorkspace({
         tenantSlug,
         { perPage: 200, status: 'active' },
       );
-      setPartners(partnerResponse.data);
+      setPartners(asArray<InsurancePartner>(partnerResponse.data));
 
       if (mode === 'claims') {
         const response = await getInsuranceClaims(token, tenantSlug, {
@@ -83,7 +87,7 @@ export function InsuranceClaimsReconciliationWorkspace({
           partnerId: partnerId ? Number(partnerId) : undefined,
           perPage: 100,
         });
-        setClaims(response.data);
+        setClaims(asArray<InsuranceClaim>(response.data));
       } else {
         const [batchResponse, claimResponse] = await Promise.all([
           getInsuranceReconciliationBatches(
@@ -106,9 +110,14 @@ export function InsuranceClaimsReconciliationWorkspace({
             },
           ),
         ]);
-        setBatches(batchResponse.data);
+        const safeBatches = asArray<InsuranceReconciliationBatch>(
+          batchResponse.data,
+        );
+        const safeClaims = asArray<InsuranceClaim>(claimResponse.data);
+
+        setBatches(safeBatches);
         setEligibleClaims(
-          claimResponse.data.filter(
+          safeClaims.filter(
             (claim) =>
               ['approved', 'partially_approved', 'partially_paid', 'paid']
                 .includes(claim.status)
@@ -138,8 +147,11 @@ export function InsuranceClaimsReconciliationWorkspace({
     void load();
   }, [load]);
 
+  const safeClaims = asArray<InsuranceClaim>(claims);
+  const safeBatches = asArray<InsuranceReconciliationBatch>(batches);
+
   const claimTotals = useMemo(
-    () => claims.reduce(
+    () => safeClaims.reduce(
       (totals, claim) => ({
         claimed: totals.claimed + Number(claim.claimed_amount ?? 0),
         approved: totals.approved + Number(claim.approved_amount ?? 0),
@@ -147,18 +159,18 @@ export function InsuranceClaimsReconciliationWorkspace({
       }),
       { claimed: 0, approved: 0, paid: 0 },
     ),
-    [claims],
+    [safeClaims],
   );
 
   const batchTotals = useMemo(
-    () => batches.reduce(
+    () => safeBatches.reduce(
       (totals, batch) => ({
         approved: totals.approved + Number(batch.approved_amount ?? 0),
         paid: totals.paid + Number(batch.paid_amount ?? 0),
       }),
       { approved: 0, paid: 0 },
     ),
-    [batches],
+    [safeBatches],
   );
 
   async function openClaim(id: number) {
@@ -360,8 +372,8 @@ export function InsuranceClaimsReconciliationWorkspace({
       {mode === 'claims' ? (
         <>
           <div className="insurance-live-summary">
-            <article><span>Claims</span><strong>{claims.length}</strong></article>
-            <article><span>Claimed</span><strong>{money(claimTotals.claimed)}  RWF</strong></article>
+            <article><span>Claims</span><strong>{safeClaims.length}</strong></article>
+            <article><span>Claimed</span><strong>{money(claimTotals.claimed)} RWF</strong></article>
             <article><span>Approved</span><strong>{money(claimTotals.approved)} RWF</strong></article>
             <article><span>Paid</span><strong>{money(claimTotals.paid)} RWF</strong></article>
           </div>
@@ -374,7 +386,7 @@ export function InsuranceClaimsReconciliationWorkspace({
                   <th>Status</th><th>Claimed</th><th>Approved</th><th>Paid</th><th />
                 </tr></thead>
                 <tbody>
-                  {claims.map((claim) => (
+                  {safeClaims.map((claim) => (
                     <tr key={claim.id}>
                       <td><strong>{claim.claim_number}</strong><small>{claim.service_date || '—'}</small></td>
                       <td>{claim.partner?.name || '—'}</td>
@@ -386,7 +398,7 @@ export function InsuranceClaimsReconciliationWorkspace({
                       <td><button type="button" onClick={() => void openClaim(claim.id)}>Open</button></td>
                     </tr>
                   ))}
-                  {!claims.length && <tr><td colSpan={8}>No matching claims.</td></tr>}
+                  {!safeClaims.length && <tr><td colSpan={8}>No matching claims.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -453,7 +465,7 @@ export function InsuranceClaimsReconciliationWorkspace({
       ) : (
         <>
           <div className="insurance-live-summary">
-            <article><span>Batches</span><strong>{batches.length}</strong></article>
+            <article><span>Batches</span><strong>{safeBatches.length}</strong></article>
             <article><span>Approved</span><strong>{money(batchTotals.approved)} RWF</strong></article>
             <article><span>Paid</span><strong>{money(batchTotals.paid)} RWF</strong></article>
             <article><span>Outstanding</span><strong>{money(batchTotals.approved - batchTotals.paid)} RWF</strong></article>
@@ -510,7 +522,7 @@ export function InsuranceClaimsReconciliationWorkspace({
                     <th>Approved</th><th>Paid</th><th>Status</th><th />
                   </tr></thead>
                   <tbody>
-                    {batches.map((batch) => (
+                    {safeBatches.map((batch) => (
                       <tr key={batch.id}>
                         <td><strong>{batch.batch_number}</strong></td>
                         <td>{batch.partner?.name || '—'}</td>
@@ -530,7 +542,11 @@ export function InsuranceClaimsReconciliationWorkspace({
                               batch.id,
                             )
                               .then((response) =>
-                                setEligiblePayments(response.payments),
+                                setEligiblePayments(
+                                  asArray<InsurancePaymentOption>(
+                                    response.payments,
+                                  ),
+                                ),
                               )
                               .catch((reason) =>
                                 setError(
@@ -545,7 +561,7 @@ export function InsuranceClaimsReconciliationWorkspace({
                         </button></td>
                       </tr>
                     ))}
-                    {!batches.length && <tr><td colSpan={8}>No matching batches.</td></tr>}
+                    {!safeBatches.length && <tr><td colSpan={8}>No matching batches.</td></tr>}
                   </tbody>
                 </table>
               </div>
