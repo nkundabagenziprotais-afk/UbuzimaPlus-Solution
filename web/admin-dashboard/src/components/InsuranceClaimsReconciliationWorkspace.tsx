@@ -12,9 +12,12 @@ import {
   getInsurancePartners,
   getEligibleInsuranceBatchPayments,
   getInsuranceReconciliationBatches,
+  markInsuranceClaimInvoiceSubmitted,
+  recordInsuranceClaimSubmissionEvent,
   reconcileInsuranceBatch,
   submitInsuranceClaim,
   submitInsuranceReconciliationBatch,
+  updateInsuranceClaimSubmissionSettings,
 } from '../lib/insuranceApi';
 
 type Props = {
@@ -58,6 +61,17 @@ export function InsuranceClaimsReconciliationWorkspace({
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] =
     useState(new Date().toISOString().slice(0, 10));
+
+  const [invoiceDueDate, setInvoiceDueDate] = useState('');
+  const [reminderLeadDays, setReminderLeadDays] = useState('3');
+  const [reminderFrequency, setReminderFrequency] = useState('daily');
+  const [submissionChannel, setSubmissionChannel] = useState('email');
+  const [invoiceSubmissionReference, setInvoiceSubmissionReference] =
+    useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [submissionNotes, setSubmissionNotes] = useState('');
 
   const [batchPartner, setBatchPartner] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
@@ -178,8 +192,155 @@ export function InsuranceClaimsReconciliationWorkspace({
     try {
       const response = await getInsuranceClaim(token, tenantSlug, id);
       setSelectedClaim(response.claim);
+      setInvoiceDueDate(response.claim.invoice_due_date || '');
+      setReminderLeadDays(
+        response.claim.reminder_lead_days !== null &&
+        response.claim.reminder_lead_days !== undefined
+          ? String(response.claim.reminder_lead_days)
+          : '3',
+      );
+      setReminderFrequency(response.claim.reminder_frequency || 'daily');
+      setInvoiceSubmissionReference(
+        response.claim.invoice_submission_reference || '',
+      );
+      setSubmissionChannel(
+        response.claim.invoice_submission_channel || 'email',
+      );
+      setRecipientName(response.claim.partner?.contact_name || '');
+      setRecipientEmail(
+        response.claim.partner?.contact_email ||
+        response.claim.partner?.email ||
+        '',
+      );
+      setRecipientPhone(
+        response.claim.partner?.contact_phone ||
+        response.claim.partner?.phone ||
+        '',
+      );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to open claim.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveInvoiceSubmissionSettings() {
+    if (!selectedClaim) return;
+
+    setBusy(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await updateInsuranceClaimSubmissionSettings(
+        token,
+        tenantSlug,
+        selectedClaim.id,
+        {
+          invoice_due_date: invoiceDueDate || null,
+          reminder_lead_days: Number(reminderLeadDays || 0),
+          reminder_frequency: reminderFrequency,
+          invoice_submission_reference:
+            invoiceSubmissionReference.trim() || null,
+        },
+      );
+
+      setSelectedClaim((current) =>
+        current
+          ? {
+              ...current,
+              ...response.claim,
+            }
+          : current,
+      );
+      setNotice(response.message || 'Invoice reminder settings saved.');
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to save invoice reminder settings.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recordSubmissionEvent(markSubmitted = false) {
+    if (!selectedClaim) return;
+
+    setBusy(true);
+    setError('');
+    setNotice('');
+
+    const payload = {
+      invoice_submission_channel: submissionChannel,
+      submission_channel: submissionChannel,
+      invoice_submission_reference:
+        invoiceSubmissionReference.trim() || null,
+      submission_reference:
+        invoiceSubmissionReference.trim() || null,
+      recipient_name: recipientName.trim() || null,
+      recipient_email: recipientEmail.trim() || null,
+      recipient_phone: recipientPhone.trim() || null,
+      notes: submissionNotes.trim() || null,
+      message_body:
+        submissionChannel === 'whatsapp'
+          ? `Insurance claim ${selectedClaim.claim_number} is ready for submission.`
+          : null,
+    };
+
+    try {
+      const response = markSubmitted
+        ? await markInsuranceClaimInvoiceSubmitted(
+            token,
+            tenantSlug,
+            selectedClaim.id,
+            payload,
+          )
+        : await recordInsuranceClaimSubmissionEvent(
+            token,
+            tenantSlug,
+            selectedClaim.id,
+            {
+              ...payload,
+              event_type: 'submission',
+              submission_status: 'recorded',
+            },
+          );
+
+      if (markSubmitted) {
+        const submittedResponse = response as {
+          claim?: Partial<InsuranceClaim>;
+        };
+
+        if (submittedResponse.claim) {
+          setSelectedClaim((current) =>
+            current
+              ? {
+                  ...current,
+                  ...submittedResponse.claim,
+                }
+              : current,
+          );
+        }
+      }
+
+      setNotice(
+        response.message ||
+          (markSubmitted
+            ? 'Invoice marked as submitted.'
+            : 'Submission event recorded.'),
+      );
+      setSubmissionNotes('');
+      await load();
+      await openClaim(selectedClaim.id);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to record claim submission event.',
+      );
     } finally {
       setBusy(false);
     }
@@ -415,6 +576,222 @@ export function InsuranceClaimsReconciliationWorkspace({
                     <div><dt>Approved</dt><dd>{money(selectedClaim.approved_amount)} RWF</dd></div>
                     <div><dt>Paid</dt><dd>{money(selectedClaim.paid_amount)} RWF</dd></div>
                   </dl>
+
+                  <section className="insurance-card insurance-compact-card">
+                    <div className="insurance-section-heading">
+                      <div>
+                        <span>Claim invoice workflow</span>
+                        <h4>Invoice submission and reminders</h4>
+                      </div>
+                      <span className={`insurance-status-pill ${
+                        selectedClaim.invoice_submission_status || 'pending'
+                      }`}>
+                        {label(
+                          selectedClaim.invoice_submission_status ||
+                            'pending',
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="insurance-live-form">
+                      <label>
+                        Invoice due date
+                        <input
+                          type="date"
+                          value={invoiceDueDate}
+                          onChange={(event) =>
+                            setInvoiceDueDate(event.target.value)
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Reminder lead days
+                        <input
+                          type="number"
+                          min="0"
+                          max="365"
+                          value={reminderLeadDays}
+                          onChange={(event) =>
+                            setReminderLeadDays(event.target.value)
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Reminder frequency
+                        <select
+                          value={reminderFrequency}
+                          onChange={(event) =>
+                            setReminderFrequency(event.target.value)
+                          }
+                        >
+                          <option value="hourly">Hourly</option>
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        Submission channel
+                        <select
+                          value={submissionChannel}
+                          onChange={(event) =>
+                            setSubmissionChannel(event.target.value)
+                          }
+                        >
+                          <option value="email">Email</option>
+                          <option value="whatsapp">WhatsApp</option>
+                          <option value="print">Print / hard copy</option>
+                          <option value="portal">Insurer portal</option>
+                          <option value="manual">Manual</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        Submission reference
+                        <input
+                          value={invoiceSubmissionReference}
+                          onChange={(event) =>
+                            setInvoiceSubmissionReference(
+                              event.target.value,
+                            )
+                          }
+                          placeholder="Email subject, portal ref, dispatch ref"
+                        />
+                      </label>
+
+                      <label>
+                        Recipient name
+                        <input
+                          value={recipientName}
+                          onChange={(event) =>
+                            setRecipientName(event.target.value)
+                          }
+                          placeholder="Optional"
+                        />
+                      </label>
+
+                      <label>
+                        Recipient email
+                        <input
+                          type="email"
+                          value={recipientEmail}
+                          onChange={(event) =>
+                            setRecipientEmail(event.target.value)
+                          }
+                          placeholder="Optional"
+                        />
+                      </label>
+
+                      <label>
+                        Recipient phone
+                        <input
+                          value={recipientPhone}
+                          onChange={(event) =>
+                            setRecipientPhone(event.target.value)
+                          }
+                          placeholder="Optional"
+                        />
+                      </label>
+
+                      <label>
+                        Notes
+                        <textarea
+                          value={submissionNotes}
+                          onChange={(event) =>
+                            setSubmissionNotes(event.target.value)
+                          }
+                          placeholder="Optional submission notes"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="insurance-action-row">
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={busy}
+                        onClick={() =>
+                          void saveInvoiceSubmissionSettings()
+                        }
+                      >
+                        Save reminder settings
+                      </button>
+
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={busy}
+                        onClick={() => void recordSubmissionEvent(false)}
+                      >
+                        Record {label(submissionChannel)} event
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void recordSubmissionEvent(true)}
+                      >
+                        Mark invoice submitted
+                      </button>
+
+                      {submissionChannel === 'whatsapp' &&
+                      recipientPhone ? (
+                        <a
+                          className="button-link"
+                          href={`https://wa.me/${recipientPhone.replace(
+                            /[^0-9]/g,
+                            '',
+                          )}?text=${encodeURIComponent(
+                            `Insurance claim ${selectedClaim.claim_number} is ready for submission.`,
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open WhatsApp
+                        </a>
+                      ) : null}
+
+                      {submissionChannel === 'print' ? (
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => window.print()}
+                        >
+                          Print hard copy
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <dl>
+                      <div>
+                        <dt>Due date</dt>
+                        <dd>{selectedClaim.invoice_due_date || 'Not set'}</dd>
+                      </div>
+                      <div>
+                        <dt>Next reminder</dt>
+                        <dd>{selectedClaim.next_reminder_at || 'Not scheduled'}</dd>
+                      </div>
+                      <div>
+                        <dt>Submitted at</dt>
+                        <dd>
+                          {selectedClaim.invoice_submitted_at ||
+                            'Not submitted'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Submission channel</dt>
+                        <dd>
+                          {label(
+                            selectedClaim.invoice_submission_channel ||
+                              'not selected',
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
 
                   {(selectedClaim.lines || []).map((line) => (
                     <div className="insurance-claim-line" key={line.id}>
