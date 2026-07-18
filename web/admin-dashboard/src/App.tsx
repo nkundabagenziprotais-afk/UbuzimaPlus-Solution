@@ -2997,6 +2997,22 @@ function writeAdminRouteSnapshot(snapshot: AdminRouteSnapshot): void {
   }
 }
 
+function hasAdminRouteRestoreRequest(): boolean {
+  const snapshot = readAdminRouteSnapshot();
+  return Boolean(snapshot.section);
+}
+
+function restoredAdminSection(): AdminSectionKey | null {
+  const snapshot = readAdminRouteSnapshot();
+  const section = snapshot.section;
+
+  if (section && section in sectionMeta) {
+    return section as AdminSectionKey;
+  }
+
+  return null;
+}
+
 function loadStoredActiveSection(): AdminSectionKey {
   const snapshot = readAdminRouteSnapshot();
   const stored =
@@ -3804,7 +3820,7 @@ function App() {
   const [isLoadingPharmaCore, setIsLoadingPharmaCore] = useState(false);
   const [pharmaCoreError, setPharmaCoreError] = useState('');
   const [activeSection, setActiveSection] = useState<AdminSectionKey>(loadStoredActiveSection);
-  const [hasAppliedRoleLanding, setHasAppliedRoleLanding] = useState(false);
+  const [hasAppliedRoleLanding, setHasAppliedRoleLanding] = useState(() => hasAdminRouteRestoreRequest());
   const [navigationStack, setNavigationStack] = useState<AdminSectionKey[]>([]);
   const [activeErpWorkspace, setActiveErpWorkspace] = useState<ErpWorkspaceKey>('erp-overview');
   const [activeSolution, setActiveSolution] = useState<SolutionKey>('pharmaco');
@@ -4453,6 +4469,13 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem(activeSectionStorageKey, activeSection);
+
+    const existing = readAdminRouteSnapshot();
+    writeAdminRouteSnapshot({
+      ...existing,
+      section: activeSection,
+      scrollY: String(window.scrollY),
+    });
   }, [activeSection]);
 
   useEffect(() => {
@@ -4525,10 +4548,36 @@ function App() {
           ?? 'overview';
 
     if (!hasAppliedRoleLanding) {
+      const restoredSection = restoredAdminSection();
+
+      if (
+        restoredSection &&
+        visibleSectionKeys.has(restoredSection)
+      ) {
+        if (restoredSection !== activeSection) {
+          setActiveSection(restoredSection);
+        }
+
+        setHasAppliedRoleLanding(true);
+        return;
+      }
+
       if (fallbackSection !== activeSection) {
         setActiveSection(fallbackSection);
       }
 
+      setHasAppliedRoleLanding(true);
+      return;
+    }
+
+    const restoredSection = restoredAdminSection();
+
+    if (
+      restoredSection &&
+      visibleSectionKeys.has(restoredSection) &&
+      activeSection !== restoredSection
+    ) {
+      setActiveSection(restoredSection);
       setHasAppliedRoleLanding(true);
       return;
     }
