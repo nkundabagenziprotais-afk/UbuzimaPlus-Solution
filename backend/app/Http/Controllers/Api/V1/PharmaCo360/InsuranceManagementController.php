@@ -182,6 +182,7 @@ class InsuranceManagementController extends Controller
             'contact_name' => ['nullable', 'string', 'max:191'],
             'contact_email' => ['nullable', 'email', 'max:191'],
             'contact_phone' => ['nullable', 'string', 'max:80'],
+            'alternative_phone' => ['nullable', 'string', 'max:80'],
             'claims_email' => ['nullable', 'email', 'max:191'],
             'currency' => ['nullable', 'string', 'size:3'],
             'status' => [
@@ -232,6 +233,7 @@ class InsuranceManagementController extends Controller
             'contact_name' => $validated['contact_name'] ?? null,
             'contact_email' => $validated['contact_email'] ?? null,
             'contact_phone' => $validated['contact_phone'] ?? null,
+            'alternative_phone' => $validated['alternative_phone'] ?? null,
             'claims_email' => $validated['claims_email'] ?? null,
             'currency' => strtoupper($validated['currency'] ?? 'RWF'),
             'status' => $validated['status'] ?? 'active',
@@ -327,6 +329,7 @@ class InsuranceManagementController extends Controller
             'contact_name' => ['nullable', 'string', 'max:191'],
             'contact_email' => ['nullable', 'email', 'max:191'],
             'contact_phone' => ['nullable', 'string', 'max:80'],
+            'alternative_phone' => ['nullable', 'string', 'max:80'],
             'claims_email' => ['nullable', 'email', 'max:191'],
             'currency' => ['sometimes', 'string', 'size:3'],
             'status' => [
@@ -713,6 +716,7 @@ class InsuranceManagementController extends Controller
             'contact_name' => ['nullable', 'string', 'max:191'],
             'contact_email' => ['nullable', 'email', 'max:191'],
             'contact_phone' => ['nullable', 'string', 'max:80'],
+            'alternative_phone' => ['nullable', 'string', 'max:80'],
             'status' => [
                 'nullable',
                 Rule::in(['active', 'inactive', 'suspended']),
@@ -808,6 +812,7 @@ class InsuranceManagementController extends Controller
             'contact_name' => ['nullable', 'string', 'max:191'],
             'contact_email' => ['nullable', 'email', 'max:191'],
             'contact_phone' => ['nullable', 'string', 'max:80'],
+            'alternative_phone' => ['nullable', 'string', 'max:80'],
             'status' => [
                 'sometimes',
                 Rule::in(['active', 'inactive', 'suspended']),
@@ -2547,6 +2552,7 @@ class InsuranceManagementController extends Controller
             'contact_name' => $partner->contact_name,
             'contact_email' => $partner->contact_email,
             'contact_phone' => $partner->contact_phone,
+            'alternative_phone' => $partner->alternative_phone,
             'claims_email' => $partner->claims_email,
             'currency' => $partner->currency,
             'status' => $partner->status,

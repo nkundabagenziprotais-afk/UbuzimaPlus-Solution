@@ -171,6 +171,7 @@ export function InsuranceManagementWorkspace({
     requires_price_approval: false,
     contact_name: '',
     phone: '',
+    alternative_phone: '',
     email: '',
     customer_contribution_percent: '15',
     insurer_contribution_percent: '85',
@@ -187,6 +188,7 @@ export function InsuranceManagementWorkspace({
     institution_type: 'employer',
     contact_name: '',
     phone: '',
+    alternative_phone: '',
     email: '',
     status: 'active',
   });
@@ -433,6 +435,7 @@ export function InsuranceManagementWorkspace({
       requires_price_approval: false,
       contact_name: '',
       phone: '',
+      alternative_phone: '',
       email: '',
       customer_contribution_percent: '15',
       insurer_contribution_percent: '85',
@@ -458,8 +461,9 @@ export function InsuranceManagementWorkspace({
       requires_price_approval:
         Boolean(partner.requires_price_approval),
       contact_name: partner.contact_name || '',
-      phone: partner.phone || '',
-      email: partner.email || '',
+      phone: partner.contact_phone || partner.phone || '',
+      alternative_phone: partner.alternative_phone || '',
+      email: partner.contact_email || partner.email || '',
       customer_contribution_percent:
         partner.default_customer_contribution_percent !== null &&
         partner.default_customer_contribution_percent !== undefined
@@ -499,8 +503,9 @@ export function InsuranceManagementWorkspace({
       requires_price_approval:
         Boolean(partner.requires_price_approval),
       contact_name: partner.contact_name || '',
-      phone: partner.phone || '',
-      email: partner.email || '',
+      phone: partner.contact_phone || partner.phone || '',
+      alternative_phone: partner.alternative_phone || '',
+      email: partner.contact_email || partner.email || '',
       customer_contribution_percent:
         partner.default_customer_contribution_percent !== null &&
         partner.default_customer_contribution_percent !== undefined
@@ -569,8 +574,9 @@ export function InsuranceManagementWorkspace({
         partnerForm.external_portal_reference.trim() || null,
       requires_price_approval: partnerForm.requires_price_approval,
       contact_name: partnerForm.contact_name.trim() || null,
-      phone: partnerForm.phone.trim() || null,
-      email: partnerForm.email.trim() || null,
+      contact_phone: partnerForm.phone.trim() || null,
+      alternative_phone: partnerForm.alternative_phone.trim() || null,
+      contact_email: partnerForm.email.trim() || null,
       default_customer_contribution_percent: Number(
         partnerForm.customer_contribution_percent,
       ),
@@ -1241,6 +1247,20 @@ export function InsuranceManagementWorkspace({
             </label>
 
             <label>
+              Alternative phone
+              <input
+                value={partnerForm.alternative_phone}
+                onChange={(event) =>
+                  setPartnerForm((current) => ({
+                    ...current,
+                    alternative_phone: event.target.value,
+                  }))
+                }
+                placeholder="Optional backup phone"
+              />
+            </label>
+
+            <label>
               Email
               <input
                 type="email"
@@ -1380,9 +1400,17 @@ export function InsuranceManagementWorkspace({
                   <td>
                     <strong>{partner.contact_name || '—'}</strong>
                     <small>
-                      {partner.phone ||
-                        partner.email ||
-                        'No contact'}
+                      {partner.contact_phone ||
+                        partner.phone ||
+                        'No primary phone'}
+                      {partner.alternative_phone ? (
+                        <small>Alt: {partner.alternative_phone}</small>
+                      ) : null}
+                      <small>
+                        {partner.contact_email ||
+                          partner.email ||
+                          'No email'}
+                      </small>
                     </small>
                   </td>
                   <td>

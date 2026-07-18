@@ -30,6 +30,7 @@ class InsurancePartner extends Model
         'contact_name',
         'contact_email',
         'contact_phone',
+        'alternative_phone',
         'claims_email',
         'currency',
         'status',

@@ -27,6 +27,9 @@ export type InsurancePartner = {
   external_portal_reference?: string | null;
   requires_price_approval?: boolean;
   contact_name?: string | null;
+  contact_phone?: string | null;
+  alternative_phone?: string | null;
+  contact_email?: string | null;
   phone?: string | null;
   email?: string | null;
   status: string;
