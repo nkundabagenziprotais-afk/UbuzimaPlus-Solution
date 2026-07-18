@@ -30,8 +30,6 @@ export type InsurancePartner = {
   phone?: string | null;
   email?: string | null;
   status: string;
-  default_customer_contribution_percent?: number | string | null;
-  default_insurer_contribution_percent?: number | string | null;
   requires_preauthorization?: boolean;
   created_at?: string | null;
   updated_at?: string | null;
