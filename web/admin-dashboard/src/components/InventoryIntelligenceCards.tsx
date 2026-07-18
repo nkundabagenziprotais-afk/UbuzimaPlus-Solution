@@ -110,6 +110,7 @@ export function InventoryIntelligenceCards({
   // validation, permission, tenant, or upstream data errors.
   // Normalize every nested collection and numeric total before render.
   const weeklyMovements = data?.weekly_movements;
+  const liveSummary = data?.live_summary;
 
   const weeklyMovementDays = Array.isArray(
     weeklyMovements?.days,
@@ -125,10 +126,14 @@ export function InventoryIntelligenceCards({
 
   const weeklyMovementTotals = {
     receipts: Number(
-      weeklyMovements?.totals?.receipts ?? 0,
+      weeklyMovements?.totals?.receipts
+      ?? liveSummary?.positive_quantity
+      ?? 0,
     ),
     issues: Number(
-      weeklyMovements?.totals?.issues ?? 0,
+      weeklyMovements?.totals?.issues
+      ?? liveSummary?.negative_quantity
+      ?? 0,
     ),
     adjustments: Number(
       weeklyMovements?.totals?.adjustments ?? 0,
@@ -137,7 +142,9 @@ export function InventoryIntelligenceCards({
       weeklyMovements?.totals?.net ?? 0,
     ),
     transactions: Number(
-      weeklyMovements?.totals?.transactions ?? 0,
+      weeklyMovements?.totals?.transactions
+      ?? liveSummary?.movement_count
+      ?? 0,
     ),
   };
 
@@ -258,7 +265,9 @@ export function InventoryIntelligenceCards({
     .join(" ");
 
   const nearExpiryExposure =
-    nearExpiryTrend.latest_value ?? 0;
+    nearExpiryTrend.latest_value
+    ?? liveSummary?.near_expiry_value
+    ?? 0;
 
   const issueReceiptRatio =
     weeklyMovementTotals.receipts > 0
@@ -580,10 +589,18 @@ export function InventoryIntelligenceCards({
                 ))}
 
               {weeklyMovementRecent
-                .length === 0 && (
+                .length === 0 && weeklyMovementTotals.transactions > 0 && (
                 <p>
-                  No signed stock movements were recorded
-                  during this week.
+                  {weeklyMovementTotals.transactions.toLocaleString("en-RW")}
+                  {" "}signed stock movements exist this week. Recent movement
+                  details will appear once product history is loaded.
+                </p>
+              )}
+
+              {weeklyMovementRecent
+                .length === 0 && weeklyMovementTotals.transactions === 0 && (
+                <p>
+                  No signed stock movements were recorded during this week.
                 </p>
               )}
             </div>

@@ -32812,3 +32812,39 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+.insurance-analytics-card-grid,
+.inventory-intelligence-decision-grid {
+  width: 100%;
+  align-items: stretch;
+}
+
+.insurance-analytics-card-grid article,
+.inventory-intelligence-decision-card,
+.insurance-chart-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.insurance-analytics-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.insurance-analytics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+}
+
+.insurance-analytics-card-grid article strong,
+.inventory-intelligence-decision-card strong {
+  overflow-wrap: anywhere;
+}
+
+.inventory-intelligence-decision-grid {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.inventory-home-chart-panel,
+.inventory-intelligence-card {
+  min-width: 0;
+  overflow: hidden;
+}
