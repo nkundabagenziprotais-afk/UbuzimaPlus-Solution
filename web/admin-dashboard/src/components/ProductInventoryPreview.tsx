@@ -1228,7 +1228,7 @@ export function ProductInventoryPreview({
   const inventoryUnitCost = Number(inventoryCreateForm.unit_cost || 0);
   const inventoryMarginPercent = Number(inventoryCreateForm.margin_percent || selectedInventoryDefaultMargin || 0);
   const inventoryCalculatedSellingPrice = inventoryUnitCost > 0
-    ? Math.round(inventoryUnitCost * (1 + inventoryMarginPercent / 100))
+    ? Math.round(inventoryUnitCost * inventoryMarginPercent)
     : 0;
   const nearExpiryRows = inventoryArray(nearExpiryBatches?.batches);
 
@@ -1297,7 +1297,7 @@ export function ProductInventoryPreview({
             batch.selling_price ??
             (batch.unit_cost === null || batch.unit_cost === undefined
               ? null
-              : Math.round(batch.unit_cost * (1 + defaultMargin / 100)));
+              : Math.round(batch.unit_cost * defaultMargin));
           const days = remainingDays(batch.expiry_date);
 
           return {
@@ -5239,7 +5239,7 @@ export function ProductInventoryPreview({
                 onExport: () =>
                   exportCsv(
                     'product-inventory.csv',
-                    ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Unit cost', 'Margin %', 'Selling price', 'Expiry', 'Remaining days', 'Status'],
+                    ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Unit cost', 'Margin multiplier', 'Selling price', 'Expiry', 'Remaining days', 'Status'],
                     productInventoryRows.map(({ batch, defaultMargin, computedSellingPrice, days }) => [
                       batch.product.name,
                       batch.product.sku,
@@ -5264,7 +5264,7 @@ export function ProductInventoryPreview({
                   : allBatches.map((batch) => ({
                       batch,
                       defaultMargin: productMarginRate(batch.product),
-                      computedSellingPrice: Number(batch.unit_cost || 0) * (1 + (productMarginRate(batch.product) / 100)),
+                      computedSellingPrice: Number(batch.unit_cost || 0) * productMarginRate(batch.product),
                       days: remainingDays(batch.expiry_date),
                     }));
 
@@ -5358,14 +5358,14 @@ export function ProductInventoryPreview({
                 <div className="section-heading">
                   <div>
                     <h3>{editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Product Master'}</h3>
-                    <span>{editingInventoryBatch ? `Update mode active for batch ${editingInventoryBatch.batch_number}. Save changes using the Update Inventory button.` : 'Product identity comes from Product Master. Inventory adds batch, location, quantity, cost, margin and selling price.'}</span>
+                    <span>{editingInventoryBatch ? `Update mode active for batch ${editingInventoryBatch.batch_number}. Save changes using the Update Inventory button.` : 'Product identity comes from Product Master. Inventory adds batch, location, quantity, cost, margin multiplier and selling price.'}</span>
                   </div>
                 </div>
 
                 <InventoryPopupForm
                   id="inventory-popup-action-5"
                   title={editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Product Master'}
-                  description="Record or update quantity, batch, expiry, location, supplier, cost, margin and selling price."
+                  description="Record or update quantity, batch, expiry, location, supplier, cost, margin multiplier and selling price."
                   open={isInventoryReceiveFlowOpen || Boolean(editingInventoryBatch)}
                   onClose={() => { setIsInventoryReceiveFlowOpen(false); setEditingInventoryBatch(null); setInventoryCreateForm(emptyInventoryCreateForm); setInventoryProductSearchTerm(''); setInventoryProductOptions([]); setIsInventoryProductSearchOpen(false); }}
 >
@@ -5563,7 +5563,7 @@ export function ProductInventoryPreview({
                   </label>
 
                   <label>
-                    Margin %
+                    Margin multiplier
                     <input
                       type="number"
                       min="0"
@@ -5580,7 +5580,7 @@ export function ProductInventoryPreview({
                       min="0"
                       value={inventoryCreateForm.selling_price}
                       onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, selling_price: event.target.value })}
-                      placeholder={inventoryCalculatedSellingPrice ? String(inventoryCalculatedSellingPrice) : 'Calculated after cost + margin'}
+                      placeholder={inventoryCalculatedSellingPrice ? String(inventoryCalculatedSellingPrice) : 'Calculated as cost × margin multiplier'}
                     />
                   </label>
 
