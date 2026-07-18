@@ -14,6 +14,7 @@ import {
   InsurancePriceList,
   InsuranceProductPrice,
   InsuranceScheme,
+  InsuranceSalesRegisterEntry,
   bootstrapInsuranceDefaults,
   createInsuranceContributionRule,
   createInsuranceInstitution,
@@ -30,6 +31,7 @@ import {
   getInsurancePriceLists,
   getInsuranceProductPrices,
   getInsuranceSchemes,
+  getInsuranceSalesRegister,
 } from '../lib/insuranceApi';
 import { InsuranceClaimsReconciliationWorkspace } from './InsuranceClaimsReconciliationWorkspace';
 
@@ -43,6 +45,7 @@ export type InsuranceWorkspaceKey =
   | 'contribution-rules'
   | 'claims-readiness'
   | 'reconciliation-readiness'
+  | 'sales-register'
   | 'audit-readiness';
 
 type Props = {
@@ -151,11 +154,21 @@ export function InsuranceManagementWorkspace({
     useState<RegisterState<InsuranceProductPrice>>(emptyRegister);
   const [contributionRules, setContributionRules] =
     useState<RegisterState<InsuranceContributionRule>>(emptyRegister);
+  const [salesRegister, setSalesRegister] =
+    useState<RegisterState<InsuranceSalesRegisterEntry>>(emptyRegister);
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
+  const [salesRegisterFilters, setSalesRegisterFilters] = useState({
+    insurance_partner_id: '',
+    insurance_institution_id: '',
+    insurance_scheme_id: '',
+    claim_status: '',
+    from: '',
+    to: '',
+  });
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -415,6 +428,24 @@ export function InsuranceManagementWorkspace({
     setPage(1);
   }, [activeWorkspace, search, status, perPage]);
 
+  useEffect(() => {
+    if (activeWorkspace === 'sales-register') {
+      void loadSalesRegister();
+    }
+  }, [
+    activeWorkspace,
+    page,
+    perPage,
+    salesRegisterFilters.insurance_partner_id,
+    salesRegisterFilters.insurance_institution_id,
+    salesRegisterFilters.insurance_scheme_id,
+    salesRegisterFilters.claim_status,
+    salesRegisterFilters.from,
+    salesRegisterFilters.to,
+    tenantSlug,
+    token,
+  ]);
+
   async function handleBootstrap() {
     setIsSaving(true);
     setNotice('');
@@ -573,6 +604,48 @@ export function InsuranceManagementWorkspace({
       );
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function loadSalesRegister(): Promise<void> {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await getInsuranceSalesRegister(
+        token,
+        tenantSlug,
+        {
+          perPage,
+          page,
+          insurance_partner_id: salesRegisterFilters.insurance_partner_id
+            ? Number(salesRegisterFilters.insurance_partner_id)
+            : undefined,
+          insurance_institution_id:
+            salesRegisterFilters.insurance_institution_id
+              ? Number(salesRegisterFilters.insurance_institution_id)
+              : undefined,
+          insurance_scheme_id: salesRegisterFilters.insurance_scheme_id
+            ? Number(salesRegisterFilters.insurance_scheme_id)
+            : undefined,
+          claim_status: salesRegisterFilters.claim_status || undefined,
+          from: salesRegisterFilters.from || undefined,
+          to: salesRegisterFilters.to || undefined,
+        },
+      );
+
+      setSalesRegister({
+        rows: response.data,
+        pagination: response.pagination ?? null,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to load insurance sales register.',
+      );
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -2950,6 +3023,265 @@ export function InsuranceManagementWorkspace({
     );
   }
 
+  function salesRegisterWorkspace() {
+    const totals = salesRegister.rows.reduce(
+      (summary, row) => ({
+        gross:
+          summary.gross + Number(row.gross_amount ?? 0),
+        customer:
+          summary.customer +
+          Number(row.customer_contribution_amount ?? 0),
+        insurer:
+          summary.insurer + Number(row.insurer_claim_amount ?? 0),
+      }),
+      { gross: 0, customer: 0, insurer: 0 },
+    );
+
+    return (
+      <>
+        <section className="insurance-form-card">
+          <div className="section-heading">
+            <div>
+              <span>Insurance sale evidence</span>
+              <h3>Sales register by partner, institution and scheme</h3>
+              <p>
+                Review accumulated insured sales used to prepare claim
+                invoices and supporting annexes.
+              </p>
+            </div>
+          </div>
+
+          <div className="insurance-form-grid">
+            <label>
+              Partner
+              <select
+                value={salesRegisterFilters.insurance_partner_id}
+                onChange={(event) => {
+                  setPage(1);
+                  setSalesRegisterFilters((current) => ({
+                    ...current,
+                    insurance_partner_id: event.target.value,
+                  }));
+                }}
+              >
+                <option value="">All partners</option>
+                {partners.rows.map((partner) => (
+                  <option key={partner.id} value={partner.id}>
+                    {partner.code} — {partner.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Institution
+              <select
+                value={salesRegisterFilters.insurance_institution_id}
+                onChange={(event) => {
+                  setPage(1);
+                  setSalesRegisterFilters((current) => ({
+                    ...current,
+                    insurance_institution_id: event.target.value,
+                  }));
+                }}
+              >
+                <option value="">All institutions</option>
+                {institutions.rows.map((institution) => (
+                  <option key={institution.id} value={institution.id}>
+                    {institution.code} — {institution.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Scheme
+              <select
+                value={salesRegisterFilters.insurance_scheme_id}
+                onChange={(event) => {
+                  setPage(1);
+                  setSalesRegisterFilters((current) => ({
+                    ...current,
+                    insurance_scheme_id: event.target.value,
+                  }));
+                }}
+              >
+                <option value="">All schemes</option>
+                {schemes.rows.map((scheme) => (
+                  <option key={scheme.id} value={scheme.id}>
+                    {scheme.code} — {scheme.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Claim status
+              <select
+                value={salesRegisterFilters.claim_status}
+                onChange={(event) => {
+                  setPage(1);
+                  setSalesRegisterFilters((current) => ({
+                    ...current,
+                    claim_status: event.target.value,
+                  }));
+                }}
+              >
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="draft">Draft</option>
+                <option value="submitted">Submitted</option>
+                <option value="approved">Approved</option>
+                <option value="partially_paid">Partially paid</option>
+                <option value="paid">Paid</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </label>
+
+            <label>
+              From
+              <input
+                type="date"
+                value={salesRegisterFilters.from}
+                onChange={(event) => {
+                  setPage(1);
+                  setSalesRegisterFilters((current) => ({
+                    ...current,
+                    from: event.target.value,
+                  }));
+                }}
+              />
+            </label>
+
+            <label>
+              To
+              <input
+                type="date"
+                value={salesRegisterFilters.to}
+                onChange={(event) => {
+                  setPage(1);
+                  setSalesRegisterFilters((current) => ({
+                    ...current,
+                    to: event.target.value,
+                  }));
+                }}
+              />
+            </label>
+          </div>
+
+          <div className="insurance-action-row">
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => void loadSalesRegister()}
+            >
+              {isLoading ? 'Loading…' : 'Refresh sales register'}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                setPage(1);
+                setSalesRegisterFilters({
+                  insurance_partner_id: '',
+                  insurance_institution_id: '',
+                  insurance_scheme_id: '',
+                  claim_status: '',
+                  from: '',
+                  to: '',
+                });
+              }}
+            >
+              Clear filters
+            </button>
+          </div>
+        </section>
+
+        <div className="insurance-live-summary">
+          <article>
+            <span>Rows</span>
+            <strong>{salesRegister.rows.length}</strong>
+          </article>
+          <article>
+            <span>Gross sales</span>
+            <strong>{money(totals.gross)} RWF</strong>
+          </article>
+          <article>
+            <span>Customer contribution</span>
+            <strong>{money(totals.customer)} RWF</strong>
+          </article>
+          <article>
+            <span>Insurer claim</span>
+            <strong>{money(totals.insurer)} RWF</strong>
+          </article>
+        </div>
+
+        <div className="insurance-table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Sale</th>
+                <th>Date</th>
+                <th>Partner / Institution</th>
+                <th>Scheme</th>
+                <th>Member / Customer</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Gross</th>
+                <th>Customer</th>
+                <th>Insurer</th>
+                <th>Claim</th>
+              </tr>
+            </thead>
+            <tbody>
+              {salesRegister.rows.map((entry) => (
+                <tr key={entry.id}>
+                  <td>
+                    <strong>{entry.sale_number || '—'}</strong>
+                    <small>{entry.uuid || ''}</small>
+                  </td>
+                  <td>{entry.sale_date || '—'}</td>
+                  <td>
+                    <strong>{entry.partner?.name || '—'}</strong>
+                    <small>{entry.institution?.name || 'No institution'}</small>
+                  </td>
+                  <td>{entry.scheme?.name || '—'}</td>
+                  <td>
+                    <strong>{entry.member_number || '—'}</strong>
+                    <small>{entry.customer_name || 'No customer snapshot'}</small>
+                  </td>
+                  <td>{entry.product_name || '—'}</td>
+                  <td>{money(entry.quantity)}</td>
+                  <td>{money(entry.gross_amount)}</td>
+                  <td>{money(entry.customer_contribution_amount)}</td>
+                  <td>{money(entry.insurer_claim_amount)}</td>
+                  <td>
+                    <strong>{entry.claim_number || 'Not generated'}</strong>
+                    <small>{entry.claim_status || 'pending'}</small>
+                  </td>
+                </tr>
+              ))}
+
+              {!salesRegister.rows.length && (
+                <tr>
+                  <td colSpan={11}>
+                    No insurance sales register entries match the current
+                    filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <PaginationControls
+          pagination={salesRegister.pagination}
+          onPageChange={setPage}
+        />
+      </>
+    );
+  }
+
   function contributionRulesRegister() {
     return (
       <>
@@ -3308,6 +3640,8 @@ export function InsuranceManagementWorkspace({
         mode="reconciliation"
       />
     );
+  } else if (activeWorkspace === 'sales-register') {
+    content = salesRegisterWorkspace();
   } else if (activeWorkspace === 'audit-readiness') {
     content = readinessWorkspace(
       'Insurance audit readiness',
@@ -3381,6 +3715,7 @@ export function InsuranceManagementWorkspace({
           ['contribution-rules', 'Contribution Rules'],
           ['claims-readiness', 'Claims'],
           ['reconciliation-readiness', 'Reconciliation'],
+          ['sales-register', 'Sales Register'],
           ['audit-readiness', 'Audit'],
         ].map(([key, label]) => (
           <button

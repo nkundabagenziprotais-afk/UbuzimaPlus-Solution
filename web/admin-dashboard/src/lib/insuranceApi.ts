@@ -177,6 +177,12 @@ export type InsuranceListOptions = {
   schemeId?: number | '';
   priceListId?: number | '';
   productId?: number | '';
+  insurance_partner_id?: number;
+  insurance_institution_id?: number;
+  insurance_scheme_id?: number;
+  claim_status?: string;
+  from?: string;
+  to?: string;
 };
 
 function buildQuery(options: InsuranceListOptions = {}): string {
