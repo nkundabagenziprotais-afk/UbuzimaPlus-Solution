@@ -1759,8 +1759,12 @@ export function InsuranceManagementWorkspace({
             )}
           </section>
 
-          <div className="insurance-action-grid insurance-action-grid-2x2">
-            <button disabled={isSaving} type="submit">
+          <div className="insurance-partner-action-panel">
+            <button
+              className="insurance-primary-action"
+              disabled={isSaving}
+              type="submit"
+            >
               {isSaving
                 ? 'Saving…'
                 : editingPartnerId
@@ -1770,20 +1774,20 @@ export function InsuranceManagementWorkspace({
 
             <button
               type="button"
-              className="secondary"
-              onClick={resetPartnerForm}
-              disabled={isSaving}
+              className="secondary insurance-document-action"
+              onClick={() => void submitPartnerDocument()}
+              disabled={isSaving || !selectedDocumentPartner}
             >
-              {editingPartnerId ? 'Cancel edit' : 'Clear form'}
+              {isSaving ? 'Uploading…' : 'Upload Document'}
             </button>
 
             <button
               type="button"
               className="secondary"
-              onClick={() => void submitPartnerDocument()}
-              disabled={isSaving || !selectedDocumentPartner}
+              onClick={resetPartnerForm}
+              disabled={isSaving}
             >
-              {isSaving ? 'Uploading…' : 'Upload / attach document'}
+              {editingPartnerId ? 'Cancel Edit' : 'Clear Form'}
             </button>
 
             <button
@@ -1796,7 +1800,7 @@ export function InsuranceManagementWorkspace({
               }
               disabled={isSaving || !selectedDocumentPartner}
             >
-              Refresh documents
+              Refresh Documents
             </button>
           </div>
         </form>
