@@ -459,47 +459,47 @@ export async function loadBusinessOverviewLiveData(
   let inventorySummary: UnknownRecord = {};
   let inventoryBatches: UnknownRecord[] = [];
 
-  const [salesResult, inventorySummaryResult] = await Promise.allSettled([
-    fetchBusinessOverviewJson(
+  // Sales is the primary Business Overview source and must not be blocked by inventory.
+  try {
+    const salesResponse = await fetchBusinessOverviewJson(
       token,
       tenantSlug,
       '/pharmaco/sales',
       'Sales register',
       10000,
-    ),
-    fetchBusinessOverviewJson(
-      token,
-      tenantSlug,
-      '/pharmaco/inventory/summary',
-      'Inventory summary',
-      10000,
-    ),
-  ]);
+    );
 
-  if (salesResult.status === 'fulfilled') {
-    sales = extractSales(salesResult.value);
+    sales = extractSales(salesResponse);
     salesLoaded = true;
-  } else {
+  } catch (err) {
     errors.push(
-      salesResult.reason instanceof Error
-        ? salesResult.reason.message
+      err instanceof Error
+        ? err.message
         : 'Unable to load live and historical POS sales.',
     );
   }
 
-  if (inventorySummaryResult.status === 'fulfilled') {
-    inventorySummary = extractInventorySummary(inventorySummaryResult.value);
+  // Inventory summary is secondary. If it times out, keep Sales visible.
+  try {
+    const inventoryResponse = await fetchBusinessOverviewJson(
+      token,
+      tenantSlug,
+      '/pharmaco/inventory/summary',
+      'Inventory summary',
+      6000,
+    );
+
+    inventorySummary = extractInventorySummary(inventoryResponse);
     inventorySummaryLoaded = true;
-  } else {
+  } catch (err) {
     errors.push(
-      inventorySummaryResult.reason instanceof Error
-        ? inventorySummaryResult.reason.message
+      err instanceof Error
+        ? err.message
         : 'Unable to load inventory summary.',
     );
   }
 
-  // Inventory batch register intentionally skipped during initial dashboard loading.
-  // The batch register can be large and can block rendering; use inventory summary here.
+  // Do not load full inventory batches in Business Overview initial render.
   inventoryBatchesLoaded = false;
   inventoryBatches = [];
 

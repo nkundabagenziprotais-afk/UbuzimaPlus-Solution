@@ -72,7 +72,7 @@ export function BusinessOverviewReviewPage({
 
         if (!cancelled) {
           setLiveData(data);
-          setLoaderStatus('success');
+          setLoaderStatus(data.error ? `success-with-warning: ${data.error}` : 'success');
 
           if (debugEnabled) {
             console.log('Business Overview live data diagnostic', {
