@@ -99,6 +99,7 @@ import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
+import { BusinessOverviewReviewPage } from './components/business-overview/BusinessOverviewReviewPage';
 import {
   InsuranceManagementWorkspace,
   type InsuranceWorkspaceKey,
@@ -8681,6 +8682,10 @@ async function confirmTransaction() {
           return null;
         }
 
+        if (window.location.hash === '#business-overview-review') {
+          return <BusinessOverviewReviewPage />;
+        }
+
         return (
           <section className="section-page dashboard-overview-page dashboard-operating-page">
             <section className="dashboard-operating-hero dashboard-operating-hero--compact">
@@ -8735,6 +8740,21 @@ async function confirmTransaction() {
             </section>
 
             <section className="dashboard-operating-grid dashboard-operating-grid--focused">
+              <button
+                type="button"
+                className="dashboard-operating-card dashboard-operating-card--metrics priority"
+                onClick={() => {
+                  window.location.hash = 'business-overview-review';
+                  window.location.reload();
+                }}
+              >
+                <span>Business Overview Review</span>
+                <div className="dashboard-card-metrics">
+                  <span><b>360°</b><small>Business view</small></span>
+                  <span><b>Goals</b><small>Revenue and profit</small></span>
+                  <span><b>Test</b><small>Admin preview</small></span>
+                </div>
+              </button>
               {dashboardCardVisibility.inventory && profileHasGranularPermission(profile, granularMenuPermissionMap.inventory) && (
                 <button
                   type="button"
