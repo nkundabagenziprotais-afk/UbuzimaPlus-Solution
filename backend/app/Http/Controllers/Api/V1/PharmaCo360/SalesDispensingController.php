@@ -986,6 +986,13 @@ class SalesDispensingController extends Controller
             'items.*.product_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
             'items.*.unit_price' => ['required', 'numeric', 'gte:0'],
+            'items.*.original_unit_price' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.used_unit_price' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.unit_price_difference' => ['nullable', 'numeric'],
+            'items.*.price_override_applied' => ['sometimes', 'boolean'],
+            'items.*.original_selling_unit_price' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.used_selling_unit_price' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.selling_unit_price_difference' => ['nullable', 'numeric'],
             'items.*.discount_amount' => ['nullable', 'numeric', 'gte:0'],
             'items.*.tax_amount' => ['nullable', 'numeric', 'gte:0'],
         ]);
@@ -1393,6 +1400,77 @@ class SalesDispensingController extends Controller
                             . 'submitted checkout items.',
                         ],
                     ]);
+                }
+
+                foreach ($sale->items->values() as $index => $saleItem) {
+                    $submittedItem = $submittedItems[$index] ?? [];
+
+                    $usedUnitPrice = round(
+                        (float) (
+                            $submittedItem['used_unit_price']
+                            ?? $submittedItem['unit_price']
+                            ?? $saleItem->unit_price
+                        ),
+                        2
+                    );
+
+                    $originalUnitPrice = round(
+                        (float) (
+                            $submittedItem['original_unit_price']
+                            ?? $usedUnitPrice
+                        ),
+                        2
+                    );
+
+                    $unitPriceDifference = round(
+                        (float) (
+                            $submittedItem['unit_price_difference']
+                            ?? ($usedUnitPrice - $originalUnitPrice)
+                        ),
+                        2
+                    );
+
+                    $originalSellingUnitPrice = round(
+                        (float) (
+                            $submittedItem['original_selling_unit_price']
+                            ?? $originalUnitPrice
+                        ),
+                        2
+                    );
+
+                    $usedSellingUnitPrice = round(
+                        (float) (
+                            $submittedItem['used_selling_unit_price']
+                            ?? $usedUnitPrice
+                        ),
+                        2
+                    );
+
+                    $sellingUnitPriceDifference = round(
+                        (float) (
+                            $submittedItem['selling_unit_price_difference']
+                            ?? ($usedSellingUnitPrice - $originalSellingUnitPrice)
+                        ),
+                        2
+                    );
+
+                    $saleItem->metadata = [
+                        ...($saleItem->metadata ?? []),
+                        'original_unit_price' => $originalUnitPrice,
+                        'used_unit_price' => $usedUnitPrice,
+                        'unit_price_difference' => $unitPriceDifference,
+                        'price_override_applied' =>
+                            (bool) (
+                                $submittedItem['price_override_applied']
+                                ?? abs($unitPriceDifference) > 0.0001
+                            ),
+                        'original_selling_unit_price' => $originalSellingUnitPrice,
+                        'used_selling_unit_price' => $usedSellingUnitPrice,
+                        'selling_unit_price_difference' =>
+                            $sellingUnitPriceDifference,
+                    ];
+
+                    $saleItem->save();
                 }
 
                 $confirmationItems = $sale->items

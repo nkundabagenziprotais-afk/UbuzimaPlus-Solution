@@ -33201,3 +33201,99 @@ thead
   border-radius: 999px;
   min-height: 34px;
 }
+
+/* POS price override and payment summary polish */
+.pos-summary-field-card--business-date strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.pos-summary-field-card--business-date span {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pos-quantity-price-override-card {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding: 1rem;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.pos-quantity-price-override-card label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.pos-quantity-price-override-card span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pos-quantity-price-override-card input {
+  min-height: 42px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.pos-quantity-price-override-card small {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+/* POS price override and payment summary polish */
+.pos-summary-field-card--business-date strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.pos-summary-field-card--business-date span {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pos-quantity-price-override-card {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding: 1rem;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.pos-quantity-price-override-card label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.pos-quantity-price-override-card span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pos-quantity-price-override-card input {
+  min-height: 42px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.pos-quantity-price-override-card small {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}

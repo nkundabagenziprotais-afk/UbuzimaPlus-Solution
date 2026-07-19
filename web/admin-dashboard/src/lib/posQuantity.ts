@@ -12,6 +12,7 @@ export type PosQuantityCalculation = {
   convertedSellingUnitQuantity: number;
   totalBaseQuantity: number;
   baseUnitPrice: number;
+  systemBaseUnitPrice: number;
   sellingUnitSubtotal: number;
   otherQuantitySubtotal: number;
   totalPrice: number;
@@ -54,6 +55,7 @@ export function calculatePosQuantity(
     convertedSellingUnitQuantity,
     totalBaseQuantity,
     baseUnitPrice,
+    systemBaseUnitPrice: baseUnitPrice,
     sellingUnitSubtotal,
     otherQuantitySubtotal,
     totalPrice: sellingUnitSubtotal + otherQuantitySubtotal,
