@@ -8676,7 +8676,7 @@ async function confirmTransaction() {
       );
     }
 
-    if ((window.location.hash === '#business-overview-review' || window.location.search.includes('business-overview-review=1')) && profileHasAdminAuthority(profile)) {
+    if ((window.location.hash === '#business-overview-review' || window.location.search.includes('business-overview-review=1')) && profile) {
       return <BusinessOverviewReviewPage />;
     }
 
