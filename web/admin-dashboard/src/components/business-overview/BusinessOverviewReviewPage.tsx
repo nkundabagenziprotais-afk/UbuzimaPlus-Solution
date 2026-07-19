@@ -47,6 +47,9 @@ export function BusinessOverviewReviewPage({
     emptyBusinessOverviewLiveData(),
   );
   const [isLoading, setIsLoading] = useState(false);
+  const debugEnabled =
+    typeof window !== 'undefined' &&
+    window.location.search.includes('boDebug=1');
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +59,13 @@ export function BusinessOverviewReviewPage({
       const data = await loadBusinessOverviewLiveData(token, tenantSlug);
       if (!cancelled) {
         setLiveData(data);
+        if (debugEnabled) {
+          console.log('Business Overview live data diagnostic', {
+            tenantSlug,
+            tokenPresent: Boolean(token),
+            data,
+          });
+        }
         setIsLoading(false);
       }
     }
@@ -65,7 +75,7 @@ export function BusinessOverviewReviewPage({
     return () => {
       cancelled = true;
     };
-  }, [token, tenantSlug]);
+  }, [token, tenantSlug, debugEnabled]);
 
   const kpis = useMemo(
     () =>
@@ -106,6 +116,25 @@ export function BusinessOverviewReviewPage({
         <div className="bo-v3-live-alert">
           Some live sources could not be loaded: {liveData.error}
         </div>
+      )}
+
+      {debugEnabled && (
+        <pre className="bo-v3-live-debug">
+{JSON.stringify({
+  tenantSlug,
+  tokenPresent: Boolean(token),
+  isLoading,
+  salesLoaded: liveData.salesLoaded,
+  inventoryLoaded: liveData.inventoryLoaded,
+  error: liveData.error,
+  kpis: liveData.kpis,
+  revenueRows: liveData.revenueRows,
+  inventoryRows: liveData.inventoryRows,
+  paymentMix: liveData.paymentMix,
+  topProducts: liveData.topProducts,
+  trendPoints: liveData.trend.length,
+}, null, 2)}
+        </pre>
       )}
 
       <section className="bo-v3-filter-strip">

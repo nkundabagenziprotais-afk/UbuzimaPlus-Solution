@@ -37757,3 +37757,18 @@ thead
   text-align: right !important;
   font-variant-numeric: tabular-nums !important;
 }
+
+/* Business Overview runtime diagnostic, visible only when boDebug=1 */
+.bo-v3-live-debug {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #0f172a;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
