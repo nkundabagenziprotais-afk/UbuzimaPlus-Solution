@@ -1797,6 +1797,46 @@ export async function getPharmaSale(
   return getJsonWithTenant<PharmaSaleResponse>(token, `/pharmaco/sales/${saleId}`, tenantSlug);
 }
 
+export type VoidPharmaSalePayload = {
+  reason: string;
+};
+
+export type VoidPharmaSaleResponse = {
+  message: string;
+  sale: PharmaSale;
+};
+
+export async function voidPharmaSaleItem(
+  token: string,
+  tenantSlug: string,
+  saleId: number,
+  itemId: number,
+  payload: VoidPharmaSalePayload,
+): Promise<VoidPharmaSaleResponse> {
+  return sendJsonWithTenant<VoidPharmaSaleResponse>(
+    token,
+    `/pharmaco/sales/${saleId}/items/${itemId}/void`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
+export async function voidPharmaSale(
+  token: string,
+  tenantSlug: string,
+  saleId: number,
+  payload: VoidPharmaSalePayload,
+): Promise<VoidPharmaSaleResponse> {
+  return sendJsonWithTenant<VoidPharmaSaleResponse>(
+    token,
+    `/pharmaco/sales/${saleId}/void`,
+    tenantSlug,
+    'POST',
+    payload,
+  );
+}
+
 
 export type ConfirmPharmaSalePayload = {
   items: Array<{

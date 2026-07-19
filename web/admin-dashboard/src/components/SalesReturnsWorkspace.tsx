@@ -15,6 +15,8 @@ import {
   type PharmaSale,
   getPharmaSale,
   getPharmaSales,
+  voidPharmaSale,
+  voidPharmaSaleItem,
 } from '../lib/api';
 
 import {
@@ -1004,6 +1006,102 @@ function SalesReturnsWorkspaceContent({
     URL.revokeObjectURL(url);
   }
 
+
+
+  async function deleteTransactionItem(
+    saleId: number,
+    itemId: number,
+  ) {
+    if (!canManageRefunds) {
+      setError('Only Admin or Owner users can delete transaction items.');
+      return;
+    }
+
+    const reason = window.prompt(
+      'Enter the reason for deleting this item from the transaction. This will be stored as an audit correction.',
+    );
+
+    if (!reason || reason.trim().length < 5) {
+      setError('Enter a clear item deletion reason of at least 5 characters.');
+      return;
+    }
+
+    if (!window.confirm('Delete this item through a controlled correction? Stock and transaction totals will be adjusted.')) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError('');
+
+    try {
+      const response = await voidPharmaSaleItem(
+        token,
+        tenantSlug,
+        saleId,
+        itemId,
+        { reason: reason.trim() },
+      );
+
+      setNotice(response.message);
+      setSaleDetail(response.sale);
+      await loadWorkspace();
+      await loadSaleDetail(saleId);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to delete the transaction item.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function deleteTransactionRecord(saleId: number) {
+    if (!canManageRefunds) {
+      setError('Only Admin or Owner users can delete transaction records.');
+      return;
+    }
+
+    const reason = window.prompt(
+      'Enter the reason for deleting this transaction record. This will be stored as an audit correction.',
+    );
+
+    if (!reason || reason.trim().length < 5) {
+      setError('Enter a clear deletion reason of at least 5 characters.');
+      return;
+    }
+
+    if (!window.confirm('Delete this transaction record through a controlled correction?')) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError('');
+
+    try {
+      const response = await voidPharmaSale(
+        token,
+        tenantSlug,
+        saleId,
+        { reason: reason.trim() },
+      );
+
+      setNotice(response.message);
+      await loadWorkspace();
+      setSelectedSaleId(null);
+      setSaleDetail(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to delete the transaction record.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   function selectSale(saleId: number) {
     setSelectedSaleId(saleId);
     setNotice('');
@@ -1806,7 +1904,8 @@ function SalesReturnsWorkspaceContent({
                 <thead>
                   <tr>
                     <th>SN</th>
-                    <th>Date</th>
+                    <th>Transaction Timestamp</th>
+                    <th>Business Date</th>
                     <th>Sale Number</th>
                     <th>Customer</th>
                     <th>Sale Type</th>
@@ -1822,7 +1921,7 @@ function SalesReturnsWorkspaceContent({
                 <tbody>
                   {managedVisibleSales.length === 0 ? (
                     <tr>
-                      <td colSpan={11}>
+                      <td colSpan={12}>
                         No sales match the selected
                         filters.
                       </td>
@@ -1839,6 +1938,15 @@ function SalesReturnsWorkspaceContent({
 
                             <td>
                               {managedSalesDate(
+                                record.sold_at ??
+                                record.created_at,
+                              )}
+                            </td>
+
+                            <td>
+                              {managedSalesDate(
+                                (sale as { business_date?: string | null }).business_date ??
+                                sale.payments?.[0]?.business_date ??
                                 record.sold_at ??
                                 record.created_at,
                               )}
@@ -1927,6 +2035,21 @@ function SalesReturnsWorkspaceContent({
                                 >
                                   Return Request
                                 </button>
+
+                                {canManageRefunds ? (
+                                  <button
+                                    type="button"
+                                    className="danger"
+                                    disabled={isSaving || sale.status === 'voided'}
+                                    onClick={() =>
+                                      void deleteTransactionRecord(
+                                        sale.id,
+                                      )
+                                    }
+                                  >
+                                    Delete Transaction
+                                  </button>
+                                ) : null}
                               </div>
                             </td>
                           </tr>
@@ -2922,6 +3045,7 @@ function SalesReturnsWorkspaceContent({
                           <th>Line Total</th>
                           <th>Rx Control</th>
                           <th>Status</th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
 
@@ -3039,6 +3163,30 @@ function SalesReturnsWorkspaceContent({
                                   <td>
                                     {managedSalesLabel(
                                       record.status,
+                                    )}
+                                  </td>
+
+                                  <td>
+                                    {canManageRefunds ? (
+                                      <button
+                                        type="button"
+                                        className="danger"
+                                        disabled={
+                                          isSaving ||
+                                          record.status === 'voided' ||
+                                          selectedSale.status === 'voided'
+                                        }
+                                        onClick={() =>
+                                          void deleteTransactionItem(
+                                            selectedSale.id,
+                                            item.id,
+                                          )
+                                        }
+                                      >
+                                        Delete Item
+                                      </button>
+                                    ) : (
+                                      '—'
                                     )}
                                   </td>
                                 </tr>
