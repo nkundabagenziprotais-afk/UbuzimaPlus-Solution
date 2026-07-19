@@ -119,7 +119,7 @@ export function BusinessOverviewReviewPage() {
       </section>
 
       <section className="bo-v3-analytics-grid">
-        <article className="bo-v3-panel bo-v3-panel-table">
+        <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-daily">
           <header>
             <h3>Daily Revenue Operation</h3>
             <select defaultValue="today">
@@ -148,7 +148,15 @@ export function BusinessOverviewReviewPage() {
               <select defaultValue="day"><option value="day">By Day</option></select>
             </div>
           </header>
-          <div className="bo-v3-line-chart bo-v3-line-chart--linear">
+          <div className="bo-v3-chart-shell">
+            <div className="bo-v3-y-axis">
+              <span>2.0M</span>
+              <span>1.5M</span>
+              <span>1.0M</span>
+              <span>0.5M</span>
+              <span>0</span>
+            </div>
+            <div className="bo-v3-line-chart bo-v3-line-chart--linear">
             <svg viewBox="0 0 420 180" role="img" aria-label="Net sales trend line">
               <defs>
                 <linearGradient id="boTrendFill" x1="0" x2="0" y1="0" y2="1">
@@ -169,14 +177,21 @@ export function BusinessOverviewReviewPage() {
                 return <circle key={`${x}-${y}`} cx={x} cy={y} r="3.5" />;
               })}
             </svg>
+            </div>
+          </div>
+          <div className="bo-v3-x-axis">
+            <span>May 1</span>
+            <span>May 7</span>
+            <span>May 14</span>
+            <span>May 23</span>
           </div>
           <div className="bo-v3-chart-legend">
-            <span>May 1 – May 23, 2025</span>
-            <span>Apr 1 – Apr 23, 2025</span>
+            <span>Transaction value · Current period</span>
+            <span>Comparison period</span>
           </div>
         </article>
 
-        <article className="bo-v3-panel bo-v3-panel-products">
+        <article className="bo-v3-panel bo-v3-panel-products bo-v3-panel-top-products">
           <header>
             <h3>Top Contributing Products (MTD)</h3>
             <select defaultValue="revenue"><option value="revenue">By Revenue</option></select>
@@ -196,7 +211,7 @@ export function BusinessOverviewReviewPage() {
           <button type="button" className="bo-v3-panel-button">View All Products</button>
         </article>
 
-        <article className="bo-v3-panel bo-v3-panel-payment">
+        <article className="bo-v3-panel bo-v3-panel-payment bo-v3-panel-payment-mix">
           <header>
             <h3>Payment Mix (MTD)</h3>
           </header>
@@ -219,7 +234,7 @@ export function BusinessOverviewReviewPage() {
           </div>
         </article>
 
-        <article className="bo-v3-panel bo-v3-panel-table">
+        <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-expenses">
           <header><h3>Expenses & Profitability (MTD)</h3></header>
           <table>
             <tbody>
@@ -233,7 +248,7 @@ export function BusinessOverviewReviewPage() {
           <button type="button" className="bo-v3-panel-button">View Details</button>
         </article>
 
-        <article className="bo-v3-panel bo-v3-panel-table">
+        <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-inventory-risk">
           <header><h3>Inventory Risk Overview</h3></header>
           <table>
             <tbody>
@@ -246,7 +261,7 @@ export function BusinessOverviewReviewPage() {
           <button type="button" className="bo-v3-panel-button">View Inventory Analytics</button>
         </article>
 
-        <article className="bo-v3-panel bo-v3-panel-table">
+        <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-insurance">
           <header><h3>Insurance & Receivables (MTD)</h3></header>
           <table>
             <tbody>
@@ -259,7 +274,7 @@ export function BusinessOverviewReviewPage() {
           <button type="button" className="bo-v3-panel-button">View Insurance Analytics</button>
         </article>
 
-        <article className="bo-v3-panel bo-v3-panel-goals">
+        <article className="bo-v3-panel bo-v3-panel-goals bo-v3-panel-business-goals">
           <header><h3>Business Goal Tracking (May 2025)</h3></header>
           <div className="bo-v3-goal-row">
             <div><span>Revenue Goal</span><strong>31,250,000 / 50,000,000</strong></div>
@@ -322,10 +337,6 @@ export function BusinessOverviewReviewPage() {
           </div>
         </section>
       </section>
-
-      <footer className="bo-v3-footer">
-        All amounts in UGX · Business Date: May 23, 2025 11:45 AM · Business Overview
-      </footer>
     </section>
   );
 }

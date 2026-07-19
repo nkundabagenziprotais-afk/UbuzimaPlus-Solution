@@ -37341,3 +37341,360 @@ thead
     text-align: left !important;
   }
 }
+
+/* Business Overview final exact amendment: alignment, fitting, no footer */
+.bo-v3-module-card p {
+  display: none !important;
+}
+
+.bo-v3-footer {
+  display: none !important;
+}
+
+/* KPI readability: reasonable height, larger readable text */
+.bo-v3-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)) !important;
+  gap: 1rem !important;
+  align-items: stretch !important;
+}
+
+.bo-v3-kpi-card {
+  min-height: 128px !important;
+  height: 100% !important;
+  padding: 1rem 1.1rem !important;
+}
+
+.bo-v3-kpi-card small {
+  font-size: 0.86rem !important;
+  line-height: 1.35 !important;
+}
+
+.bo-v3-kpi-card strong {
+  text-align: right !important;
+  font-size: clamp(1.45rem, 1.7vw, 1.9rem) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.bo-v3-kpi-card span {
+  text-align: right !important;
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+/* Professional analytics grid: no vacant spaces and equal heights per row */
+.bo-v3-analytics-grid {
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+  align-items: stretch !important;
+  grid-auto-flow: row dense !important;
+}
+
+.bo-v3-panel,
+.bo-v3-insight-panel,
+.bo-v3-actions-panel {
+  height: 100% !important;
+  min-width: 0 !important;
+  border-radius: 18px !important;
+}
+
+/* Row 1: Daily Revenue + Sales Trend + Top Products */
+.bo-v3-panel-daily {
+  grid-column: span 3 !important;
+  min-height: 360px !important;
+}
+
+.bo-v3-panel-chart {
+  grid-column: span 5 !important;
+  min-height: 360px !important;
+}
+
+.bo-v3-panel-top-products {
+  grid-column: span 4 !important;
+  min-height: 360px !important;
+}
+
+/* Row 2: Payment + Expenses + Inventory */
+.bo-v3-panel-payment-mix,
+.bo-v3-panel-expenses,
+.bo-v3-panel-inventory-risk {
+  grid-column: span 4 !important;
+  min-height: 330px !important;
+}
+
+/* Row 3: Insurance + Goals + AI Insight */
+.bo-v3-panel-insurance,
+.bo-v3-panel-business-goals,
+.bo-v3-insight-panel {
+  grid-column: span 4 !important;
+  min-height: 350px !important;
+  grid-row: auto !important;
+}
+
+/* Recommended Actions full row */
+.bo-v3-actions-panel {
+  grid-column: 1 / -1 !important;
+  min-height: 210px !important;
+}
+
+/* Tables: all numbers right aligned and contained inside cards */
+.bo-v3-panel table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+.bo-v3-panel th,
+.bo-v3-panel td {
+  padding: 0.62rem 0 !important;
+  font-size: 0.88rem !important;
+  line-height: 1.35 !important;
+  vertical-align: middle !important;
+}
+
+.bo-v3-panel th {
+  width: 58% !important;
+  max-width: 58% !important;
+  padding-right: 0.85rem !important;
+  color: #405a7b !important;
+  text-align: left !important;
+  font-weight: 750 !important;
+  white-space: normal !important;
+}
+
+.bo-v3-panel td {
+  width: 42% !important;
+  max-width: 42% !important;
+  color: #071f3a !important;
+  text-align: right !important;
+  font-weight: 900 !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+/* Daily Revenue Operation right-side numeric alignment */
+.bo-v3-panel-daily td,
+.bo-v3-panel-expenses td,
+.bo-v3-panel-inventory-risk td,
+.bo-v3-panel-insurance td {
+  text-align: right !important;
+}
+
+/* Sales Trend: line chart with transaction value labels */
+.bo-v3-chart-shell {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 0.7rem;
+  flex: 1;
+  min-height: 230px;
+}
+
+.bo-v3-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.9rem 0 0.65rem;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-v3-line-chart--linear {
+  min-height: 230px !important;
+  padding: 0.9rem !important;
+  border: 1px solid #edf3f8 !important;
+  border-radius: 14px !important;
+  background:
+    repeating-linear-gradient(to top, #edf3f8 0, #edf3f8 1px, transparent 1px, transparent 42px),
+    linear-gradient(180deg, #ffffff, #f8fbff) !important;
+}
+
+.bo-v3-line-chart--linear svg {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 210px !important;
+}
+
+.bo-v3-x-axis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-left: 56px;
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.bo-v3-x-axis span:last-child {
+  text-align: right;
+}
+
+.bo-v3-chart-legend {
+  justify-content: flex-end !important;
+  gap: 1rem !important;
+  font-size: 0.78rem !important;
+  margin-top: 0.45rem !important;
+}
+
+/* Top products: prevent numbers going outside the card */
+.bo-v3-products {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.bo-v3-product-row {
+  grid-template-columns: minmax(0, 1.35fr) minmax(90px, 0.75fr) minmax(88px, auto) !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.bo-v3-product-row > div:first-child {
+  min-width: 0 !important;
+}
+
+.bo-v3-product-row strong {
+  min-width: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  font-size: 0.84rem !important;
+  line-height: 1.35 !important;
+}
+
+.bo-v3-product-row em {
+  max-width: 100% !important;
+  color: #071f3a !important;
+  text-align: right !important;
+  font-size: 0.82rem !important;
+  font-style: normal !important;
+  font-weight: 900 !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Payment Mix numbers */
+.bo-v3-panel-payment li {
+  grid-template-columns: auto minmax(0, 1fr) minmax(54px, auto) !important;
+  font-size: 0.86rem !important;
+}
+
+.bo-v3-panel-payment li em {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Business Goal numbers */
+.bo-v3-goal-row {
+  grid-template-columns: minmax(0, 1.1fr) minmax(120px, 0.9fr) minmax(58px, auto) !important;
+  gap: 0.85rem !important;
+}
+
+.bo-v3-goal-row strong,
+.bo-v3-goal-row em {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* AI card readable and height aligned */
+.bo-v3-insight-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 1rem !important;
+}
+
+.bo-v3-insight-panel h4 {
+  font-size: 0.88rem !important;
+}
+
+.bo-v3-insight-panel p,
+.bo-v3-insight-panel li {
+  font-size: 0.84rem !important;
+  line-height: 1.5 !important;
+}
+
+.bo-v3-insight-panel button {
+  margin-top: auto !important;
+}
+
+/* Recommended actions: no excessive height, readable */
+.bo-v3-actions-panel > div {
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)) !important;
+  gap: 0.9rem !important;
+  align-items: stretch !important;
+}
+
+.bo-v3-action-card {
+  min-height: 140px !important;
+  height: 100% !important;
+  padding: 0.95rem !important;
+}
+
+.bo-v3-action-card strong {
+  font-size: 0.9rem !important;
+  line-height: 1.35 !important;
+}
+
+.bo-v3-action-card p {
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+/* Responsive safety */
+@media (max-width: 1500px) {
+  .bo-v3-panel-daily,
+  .bo-v3-panel-chart,
+  .bo-v3-panel-top-products,
+  .bo-v3-panel-payment-mix,
+  .bo-v3-panel-expenses,
+  .bo-v3-panel-inventory-risk,
+  .bo-v3-panel-insurance,
+  .bo-v3-panel-business-goals,
+  .bo-v3-insight-panel {
+    grid-column: span 6 !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .bo-v3-panel-daily,
+  .bo-v3-panel-chart,
+  .bo-v3-panel-top-products,
+  .bo-v3-panel-payment-mix,
+  .bo-v3-panel-expenses,
+  .bo-v3-panel-inventory-risk,
+  .bo-v3-panel-insurance,
+  .bo-v3-panel-business-goals,
+  .bo-v3-insight-panel,
+  .bo-v3-actions-panel {
+    grid-column: 1 / -1 !important;
+  }
+
+  .bo-v3-chart-shell,
+  .bo-v3-product-row,
+  .bo-v3-goal-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-v3-y-axis,
+  .bo-v3-x-axis {
+    display: none !important;
+  }
+
+  .bo-v3-panel th,
+  .bo-v3-panel td {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+
+  .bo-v3-product-row em,
+  .bo-v3-goal-row strong,
+  .bo-v3-goal-row em {
+    text-align: left !important;
+  }
+}
