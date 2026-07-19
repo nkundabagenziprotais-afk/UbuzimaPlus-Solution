@@ -75,6 +75,7 @@ import { CustomerPrescriptionManagementWorkspace } from './components/CustomerPr
 import { WorkspacePopupFormManager } from './components/WorkspacePopupFormManager';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
 import { ProcurementModuleHome } from './components/ProcurementModuleHome';
+import { RraPurchaseCodeWorkspace } from './components/RraPurchaseCodeWorkspace';
 import { ProcurementSupplierWorkspace } from './components/ProcurementSupplierWorkspace';
 import { ProcurementPurchaseOrderWorkspace } from './components/ProcurementPurchaseOrderWorkspace';
 import { ProcurementReceivingWorkspace } from './components/ProcurementReceivingWorkspace';
@@ -227,6 +228,7 @@ type SupplierWorkspaceKey =
   | 'outstanding-purchase-orders'
   | 'receive-purchase-order'
   | 'received-purchase-orders'
+  | 'rra-purchase-code'
   | 'general-items-overview'
   | 'general-item-categories'
   | 'general-item-master'
@@ -590,6 +592,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'supplier-outstanding-po', label: 'Outstanding Purchase Order List', target: 'outstanding-purchase-orders' },
     { key: 'supplier-receive-po', label: 'Receive Purchase Order', target: 'receive-purchase-order' },
     { key: 'supplier-received-po', label: 'Received Purchase Order List', target: 'received-purchase-orders' },
+    { key: 'supplier-rra-purchase-code', label: 'RRA Purchase Code', target: 'rra-purchase-code' },
     { key: 'general-items-overview', label: 'General Items Overview', target: 'general-items-overview' },
     { key: 'general-item-categories', label: 'General Item Categories', target: 'general-item-categories' },
     { key: 'general-item-master', label: 'General Item Master', target: 'general-item-master' },
@@ -2905,6 +2908,7 @@ const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; 
   { key: 'outstanding-purchase-orders', label: 'Outstanding PO List', description: 'Draft, approved, partial, and delayed POs' },
   { key: 'receive-purchase-order', label: 'Receive Purchase Order', description: 'PO-linked stock receiving and batch capture' },
   { key: 'received-purchase-orders', label: 'Received PO List', description: 'Received register and export tools' },
+  { key: 'rra-purchase-code', label: 'RRA Purchase Code', description: 'Buyer details, Seller TIN, OTP capture, and purchase code history' },
   { key: 'general-items-overview', label: 'General Items Management', description: 'Non-sale operational stock overview and controls' },
   { key: 'general-item-categories', label: 'General Item Categories', description: 'Admin-controlled categories for consistent analytics' },
   { key: 'general-item-master', label: 'General Item Master', description: 'Reusable non-pharmaceutical purchasing records' },
@@ -8352,6 +8356,13 @@ async function confirmTransaction() {
                     ? 'received'
                     : 'outstanding'
               }
+            />
+          )}
+
+          {activeSupplierWorkspace === 'rra-purchase-code' && (
+            <RraPurchaseCodeWorkspace
+              token={session!.token}
+              profile={profile!}
             />
           )}
 
