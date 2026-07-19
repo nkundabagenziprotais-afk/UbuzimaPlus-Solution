@@ -7825,10 +7825,6 @@ async function confirmTransaction() {
                   <div>
                     <span></span>
                     <h3></h3>
-                    <p className="muted">
-                      Practical signals derived from current sales, collections, balances,
-                      and transaction patterns.
-                    </p>
                   </div>
                   <button
                     type="button"
