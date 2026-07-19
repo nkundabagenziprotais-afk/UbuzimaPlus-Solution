@@ -33077,3 +33077,34 @@ thead
     min-height: auto;
   }
 }
+
+/* Sales register wide-table support */
+.managed-sales-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.managed-sales-main-table,
+.managed-dispensed-table,
+.managed-return-request-table {
+  min-width: 1180px;
+}
+
+.managed-sales-main-table th,
+.managed-sales-main-table td,
+.managed-dispensed-table th,
+.managed-dispensed-table td,
+.managed-return-request-table th,
+.managed-return-request-table td {
+  white-space: nowrap;
+}
+
+.managed-sales-main-table td:nth-child(4),
+.managed-sales-main-table th:nth-child(4),
+.managed-dispensed-table td:nth-child(2),
+.managed-dispensed-table th:nth-child(2) {
+  white-space: normal;
+  min-width: 180px;
+}
