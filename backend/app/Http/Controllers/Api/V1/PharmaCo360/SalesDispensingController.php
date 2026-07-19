@@ -134,9 +134,9 @@ class SalesDispensingController extends Controller
             $quantity = (float) $saleItem->quantity;
             $lineTotal = (float) $saleItem->line_total;
             $metadata = $saleItem->metadata ?? [];
-            $stockDeducted = (bool) ($metadata['stock_deducted'] ?? false);
+            $stockDeducted = (bool) ($metadata['stock_deducted'] ?? true);
 
-            if ($stockDeducted && $saleItem->stock_batch_id) {
+            if ($stockDeducted && $saleItem->stock_batch_id && $quantity > 0) {
                 $batch = StockBatch::query()
                     ->where('tenant_id', $tenant->id)
                     ->lockForUpdate()
@@ -273,9 +273,9 @@ class SalesDispensingController extends Controller
 
                 $quantity = (float) $saleItem->quantity;
                 $metadata = $saleItem->metadata ?? [];
-                $stockDeducted = (bool) ($metadata['stock_deducted'] ?? false);
+                $stockDeducted = (bool) ($metadata['stock_deducted'] ?? true);
 
-                if ($stockDeducted && $saleItem->stock_batch_id) {
+                if ($stockDeducted && $saleItem->stock_batch_id && $quantity > 0) {
                     $batch = StockBatch::query()
                         ->where('tenant_id', $tenant->id)
                         ->lockForUpdate()

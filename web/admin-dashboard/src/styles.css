@@ -33108,3 +33108,75 @@ thead
   white-space: normal;
   min-width: 180px;
 }
+
+/* Transaction register readability: wide table with controlled wrapping */
+.managed-sales-main-table {
+  min-width: 1420px;
+  table-layout: auto;
+}
+
+.managed-sales-main-table th,
+.managed-sales-main-table td {
+  vertical-align: top;
+  line-height: 1.35;
+}
+
+.managed-sales-main-table th {
+  white-space: nowrap;
+}
+
+.managed-sales-main-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.managed-sales-main-table td:nth-child(1),
+.managed-sales-main-table td:nth-child(2),
+.managed-sales-main-table td:nth-child(3),
+.managed-sales-main-table td:nth-child(6),
+.managed-sales-main-table td:nth-child(7),
+.managed-sales-main-table td:nth-child(8),
+.managed-sales-main-table td:nth-child(10),
+.managed-sales-main-table td:nth-child(11),
+.managed-sales-main-table td:nth-child(12) {
+  white-space: nowrap;
+}
+
+.managed-sales-main-table td:nth-child(4),
+.managed-sales-main-table td:nth-child(5),
+.managed-sales-main-table td:nth-child(9) {
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.managed-sales-main-table td:nth-child(12) {
+  min-width: 220px;
+}
+
+.managed-sales-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.managed-sales-row-actions button {
+  white-space: nowrap;
+}
+
+.managed-dispensed-table {
+  min-width: 1320px;
+}
+
+.managed-dispensed-table td:nth-child(2) {
+  min-width: 220px;
+  max-width: 320px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.managed-dispensed-table td:last-child {
+  min-width: 150px;
+  white-space: nowrap;
+}
