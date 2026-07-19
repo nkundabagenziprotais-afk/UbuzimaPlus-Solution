@@ -60,7 +60,15 @@ export function BusinessOverviewReviewPage({
       setLoaderStatus('started');
 
       try {
-        const data = await loadBusinessOverviewLiveData(token, tenantSlug);
+        const data = await Promise.race([
+          loadBusinessOverviewLiveData(token, tenantSlug),
+          new Promise<BusinessOverviewLiveData>((_, reject) => {
+            window.setTimeout(
+              () => reject(new Error('Business Overview live data loader timed out after 15s.')),
+              15000,
+            );
+          }),
+        ]);
 
         if (!cancelled) {
           setLiveData(data);

@@ -104,10 +104,18 @@ function asArray(value: unknown): UnknownRecord[] {
 
 function numberValue(value: unknown): number {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
+
   if (typeof value === 'string') {
-    const parsed = Number(value.replace(/,/g, ''));
+    const cleaned = value
+      .replace(/[^0-9.-]/g, '')
+      .trim();
+
+    if (!cleaned || cleaned === '-' || cleaned === '.' || cleaned === '-.') return 0;
+
+    const parsed = Number(cleaned);
     return Number.isFinite(parsed) ? parsed : 0;
   }
+
   return 0;
 }
 
@@ -451,32 +459,43 @@ export async function loadBusinessOverviewLiveData(
   let inventorySummary: UnknownRecord = {};
   let inventoryBatches: UnknownRecord[] = [];
 
-  try {
-    const salesResponse = await fetchBusinessOverviewJson(
+  const [salesResult, inventorySummaryResult] = await Promise.allSettled([
+    fetchBusinessOverviewJson(
       token,
       tenantSlug,
       '/pharmaco/sales',
       'Sales register',
       10000,
-    );
-    sales = extractSales(salesResponse);
-    salesLoaded = true;
-  } catch (err) {
-    errors.push(err instanceof Error ? err.message : 'Unable to load live sales data.');
-  }
-
-  try {
-    const inventoryResponse = await fetchBusinessOverviewJson(
+    ),
+    fetchBusinessOverviewJson(
       token,
       tenantSlug,
       '/pharmaco/inventory/summary',
       'Inventory summary',
       10000,
+    ),
+  ]);
+
+  if (salesResult.status === 'fulfilled') {
+    sales = extractSales(salesResult.value);
+    salesLoaded = true;
+  } else {
+    errors.push(
+      salesResult.reason instanceof Error
+        ? salesResult.reason.message
+        : 'Unable to load live and historical POS sales.',
     );
-    inventorySummary = extractInventorySummary(inventoryResponse);
+  }
+
+  if (inventorySummaryResult.status === 'fulfilled') {
+    inventorySummary = extractInventorySummary(inventorySummaryResult.value);
     inventorySummaryLoaded = true;
-  } catch (err) {
-    errors.push(err instanceof Error ? err.message : 'Unable to load inventory summary.');
+  } else {
+    errors.push(
+      inventorySummaryResult.reason instanceof Error
+        ? inventorySummaryResult.reason.message
+        : 'Unable to load inventory summary.',
+    );
   }
 
   // Inventory batch register intentionally skipped during initial dashboard loading.
