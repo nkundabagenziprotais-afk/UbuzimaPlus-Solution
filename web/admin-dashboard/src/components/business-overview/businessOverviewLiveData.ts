@@ -2,47 +2,57 @@ type UnknownRecord = Record<string, unknown>;
 
 const API_BASE = '/api/v1';
 
-async function fetchBusinessOverviewJson(
+function fetchBusinessOverviewJson(
   token: string,
   tenantSlug: string,
   endpoint: string,
   label: string,
   timeoutMs = 10000,
 ): Promise<unknown> {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
 
-  try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-        'X-Tenant': tenantSlug,
-        'X-Tenant-Slug': tenantSlug,
-      },
-      signal: controller.signal,
-    });
+    request.open('GET', `${API_BASE}${endpoint}`, true);
+    request.timeout = timeoutMs;
+    request.setRequestHeader('Accept', 'application/json');
+    request.setRequestHeader('Authorization', `Bearer ${token}`);
+    request.setRequestHeader('X-Tenant', tenantSlug);
+    request.setRequestHeader('X-Tenant-Slug', tenantSlug);
 
-    const contentType = response.headers.get('content-type') || '';
-    const body = contentType.includes('application/json')
-      ? await response.json()
-      : await response.text();
+    request.onload = () => {
+      const bodyText = request.responseText || '';
 
-    if (!response.ok) {
-      throw new Error(`${label} failed with HTTP ${response.status}: ${typeof body === 'string' ? body.slice(0, 180) : JSON.stringify(body).slice(0, 180)}`);
-    }
+      let body: unknown = bodyText;
+      try {
+        body = bodyText ? JSON.parse(bodyText) : null;
+      } catch {
+        body = bodyText;
+      }
 
-    return body;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error(`${label} request timed out after ${timeoutMs / 1000}s`);
-    }
+      if (request.status < 200 || request.status >= 300) {
+        reject(
+          new Error(
+            `${label} failed with HTTP ${request.status}: ${
+              typeof body === 'string' ? body.slice(0, 180) : JSON.stringify(body).slice(0, 180)
+            }`,
+          ),
+        );
+        return;
+      }
 
-    throw error;
-  } finally {
-    window.clearTimeout(timer);
-  }
+      resolve(body);
+    };
+
+    request.onerror = () => {
+      reject(new Error(`${label} network request failed.`));
+    };
+
+    request.ontimeout = () => {
+      reject(new Error(`${label} request timed out after ${timeoutMs / 1000}s`));
+    };
+
+    request.send();
+  });
 }
 
 export type BusinessOverviewLiveRow = {
