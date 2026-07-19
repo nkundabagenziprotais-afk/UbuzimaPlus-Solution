@@ -96,22 +96,6 @@ function saleDateKey(sale: UnknownRecord): string {
   return date.toISOString().slice(0, 10);
 }
 
-function paymentDateKey(payment: UnknownRecord, sale: UnknownRecord): string {
-  const raw =
-    stringValue(payment.business_date) ||
-    stringValue(sale.business_date) ||
-    stringValue(payment.received_at) ||
-    stringValue(sale.sold_at) ||
-    stringValue(sale.created_at);
-
-  if (!raw) return 'Unknown';
-
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return raw.slice(0, 10);
-
-  return date.toISOString().slice(0, 10);
-}
-
 function paymentMethodLabel(method: string): string {
   const normalized = method.toLowerCase();
   if (normalized === 'momo' || normalized.includes('mobile')) return 'Mobile Money';
@@ -258,6 +242,14 @@ export async function loadBusinessOverviewLiveData(
     };
   }
 
+  if (!tenantSlug) {
+    return {
+      ...empty,
+      loaded: true,
+      error: 'Tenant context is required to load live dashboard data.',
+    };
+  }
+
   let salesLoaded = false;
   let inventoryLoaded = false;
   let error: string | null = null;
@@ -266,7 +258,7 @@ export async function loadBusinessOverviewLiveData(
   let inventorySummary: UnknownRecord = {};
 
   try {
-    const salesResponse = await getPharmaSales(token, tenantSlug ?? undefined);
+    const salesResponse = await getPharmaSales(token, tenantSlug);
     sales = extractSales(salesResponse);
     salesLoaded = true;
   } catch (err) {
@@ -274,7 +266,7 @@ export async function loadBusinessOverviewLiveData(
   }
 
   try {
-    const inventoryResponse = await getPharmaInventorySummary(token, tenantSlug ?? undefined);
+    const inventoryResponse = await getPharmaInventorySummary(token, tenantSlug);
     inventorySummary = extractInventorySummary(inventoryResponse);
     inventoryLoaded = true;
   } catch (err) {

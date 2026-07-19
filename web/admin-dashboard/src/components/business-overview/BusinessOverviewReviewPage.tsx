@@ -234,7 +234,7 @@ export function BusinessOverviewReviewPage({
             <span>{liveData.trend[0]?.label ?? 'Start'}</span>
             <span></span>
             <span></span>
-            <span>{liveData.trend.at(-1)?.label ?? 'End'}</span>
+            <span>{liveData.trend[liveData.trend.length - 1]?.label ?? 'End'}</span>
           </div>
           <div className="bo-v3-chart-legend">
             <span>Transaction value</span>
