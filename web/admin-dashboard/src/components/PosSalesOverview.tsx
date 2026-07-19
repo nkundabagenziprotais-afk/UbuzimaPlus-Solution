@@ -852,11 +852,6 @@ export function PosSalesOverview({
               AI-assisted business analytics
             </span>
             <h2></h2>
-            <p>
-              Practical signals derived from current sales,
-              collections, balances, and transaction
-              patterns.
-            </p>
           </div>
 
           <span className="pos-overview-live-indicator">
