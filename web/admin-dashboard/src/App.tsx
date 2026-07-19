@@ -8676,7 +8676,15 @@ async function confirmTransaction() {
       );
     }
 
-    if ((window.location.hash === '#business-overview-review' || window.location.search.includes('business-overview-review=1')) && profile) {
+    const isBusinessOverviewRoute =
+      profile &&
+      (
+        window.location.hash === '#business-overview-review' ||
+        window.location.search.includes('business-overview-review=1') ||
+        window.location.hash.includes('section=overview')
+      );
+
+    if (isBusinessOverviewRoute) {
       return <BusinessOverviewReviewPage />;
     }
 
@@ -8685,12 +8693,7 @@ case 'overview':
         if (!profileHasAdminAuthority(profile)) {
           return null;
         }
-
-        if ((window.location.hash === '#business-overview-review' || window.location.search.includes('business-overview-review=1'))) {
-          return <BusinessOverviewReviewPage />;
-        }
-
-        return (
+return (
           <section className="section-page dashboard-overview-page dashboard-operating-page">
             <section className="dashboard-operating-hero dashboard-operating-hero--compact">
               <div>
