@@ -8676,8 +8676,12 @@ async function confirmTransaction() {
       );
     }
 
+    if (window.location.hash === '#business-overview-review' && profileHasAdminAuthority(profile)) {
+      return <BusinessOverviewReviewPage />;
+    }
+
     switch (activeSection) {
-      case 'overview':
+case 'overview':
         if (!profileHasAdminAuthority(profile)) {
           return null;
         }
