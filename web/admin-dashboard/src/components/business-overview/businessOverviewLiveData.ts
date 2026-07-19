@@ -469,19 +469,10 @@ export async function loadBusinessOverviewLiveData(
     errors.push(err instanceof Error ? err.message : 'Unable to load inventory summary.');
   }
 
-  try {
-    const batchResponse = await fetchBusinessOverviewJson(
-      token,
-      tenantSlug,
-      '/pharmaco/inventory/batches',
-      'Inventory batch register',
-      8000,
-    );
-    inventoryBatches = extractInventoryBatches(batchResponse);
-    inventoryBatchesLoaded = true;
-  } catch (err) {
-    errors.push(err instanceof Error ? err.message : 'Unable to load inventory batch register.');
-  }
+  // Inventory batch register intentionally skipped during initial dashboard loading.
+  // The batch register can be large and can block rendering; use inventory summary here.
+  inventoryBatchesLoaded = false;
+  inventoryBatches = [];
 
   const validSales = sales.filter((sale) => !isVoidedOrReturnedSale(sale));
   const returnedSales = sales.filter(isVoidedOrReturnedSale);
