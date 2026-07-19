@@ -23,7 +23,6 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   getCorporateMailOverview,
   getPharmaBranches,
   getPharmaInventoryBatches,
-  getAllPharmaInventoryBatches,
   getPharmacyProfile,
   login,
   logout,
@@ -75,7 +74,6 @@ import { CustomerPrescriptionManagementWorkspace } from './components/CustomerPr
 import { WorkspacePopupFormManager } from './components/WorkspacePopupFormManager';
 import { ProcurementWorkflow } from './components/ProcurementWorkflow';
 import { ProcurementModuleHome } from './components/ProcurementModuleHome';
-import { RraPurchaseCodeWorkspace } from './components/RraPurchaseCodeWorkspace';
 import { ProcurementSupplierWorkspace } from './components/ProcurementSupplierWorkspace';
 import { ProcurementPurchaseOrderWorkspace } from './components/ProcurementPurchaseOrderWorkspace';
 import { ProcurementReceivingWorkspace } from './components/ProcurementReceivingWorkspace';
@@ -101,6 +99,7 @@ import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
+import { BusinessOverviewReviewPage } from './components/business-overview/BusinessOverviewReviewPage';
 import {
   InsuranceManagementWorkspace,
   type InsuranceWorkspaceKey,
@@ -228,7 +227,6 @@ type SupplierWorkspaceKey =
   | 'outstanding-purchase-orders'
   | 'receive-purchase-order'
   | 'received-purchase-orders'
-  | 'rra-purchase-code'
   | 'general-items-overview'
   | 'general-item-categories'
   | 'general-item-master'
@@ -592,7 +590,6 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'supplier-outstanding-po', label: 'Outstanding Purchase Order List', target: 'outstanding-purchase-orders' },
     { key: 'supplier-receive-po', label: 'Receive Purchase Order', target: 'receive-purchase-order' },
     { key: 'supplier-received-po', label: 'Received Purchase Order List', target: 'received-purchase-orders' },
-    { key: 'supplier-rra-purchase-code', label: 'RRA Purchase Code', target: 'rra-purchase-code' },
     { key: 'general-items-overview', label: 'General Items Overview', target: 'general-items-overview' },
     { key: 'general-item-categories', label: 'General Item Categories', target: 'general-item-categories' },
     { key: 'general-item-master', label: 'General Item Master', target: 'general-item-master' },
@@ -2908,7 +2905,6 @@ const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; 
   { key: 'outstanding-purchase-orders', label: 'Outstanding PO List', description: 'Draft, approved, partial, and delayed POs' },
   { key: 'receive-purchase-order', label: 'Receive Purchase Order', description: 'PO-linked stock receiving and batch capture' },
   { key: 'received-purchase-orders', label: 'Received PO List', description: 'Received register and export tools' },
-  { key: 'rra-purchase-code', label: 'RRA Purchase Code', description: 'Buyer details, Seller TIN, OTP capture, and purchase code history' },
   { key: 'general-items-overview', label: 'General Items Management', description: 'Non-sale operational stock overview and controls' },
   { key: 'general-item-categories', label: 'General Item Categories', description: 'Admin-controlled categories for consistent analytics' },
   { key: 'general-item-master', label: 'General Item Master', description: 'Reusable non-pharmaceutical purchasing records' },
@@ -3912,13 +3908,6 @@ function App() {
     strength: string;
     quantity: number;
     unitPrice: number;
-    originalUnitPrice: number;
-    usedUnitPrice: number;
-    unitPriceDifference: number;
-    priceOverrideApplied: boolean;
-    originalSellingUnitPrice: number;
-    usedSellingUnitPrice: number;
-    sellingUnitPriceDifference: number;
     batchId: number;
     productId: number;
     batchNumber: string;
@@ -3987,7 +3976,6 @@ function App() {
   } | null>(null);
   const [posSellingUnitQuantity, setPosSellingUnitQuantity] = useState('1');
   const [posOtherQuantity, setPosOtherQuantity] = useState('0');
-  const [posSellingAmount, setPosSellingAmount] = useState('');
   const [activeSupplierWorkspace, setActiveSupplierWorkspace] = useState<SupplierWorkspaceKey>(() => (readAdminRouteSnapshot().supplier || storedAdminValue('supplierWorkspace', 'overview')) as SupplierWorkspaceKey);
   const [activeFinanceWorkspace, setActiveFinanceWorkspace] = useState<FinanceWorkspaceKey>(() => (readAdminRouteSnapshot().finance || storedAdminValue('financeWorkspace', 'overview')) as FinanceWorkspaceKey);
   const [activeAdhocReportWorkspace, setActiveAdhocReportWorkspace] = useState<AdhocReportWorkspaceKey>(() => (readAdminRouteSnapshot().reports || storedAdminValue('reportsWorkspace', 'overview')) as AdhocReportWorkspaceKey);
@@ -5914,14 +5902,7 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getAllPharmaInventoryBatches(
-          session!.token,
-          posTenantSlug,
-          undefined,
-          {
-            sellableOnly: true,
-          },
-        );
+        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
@@ -5945,32 +5926,11 @@ function App() {
         .reduce<typeof posCartItems>((items, item) => {
           const quantity = Math.max(1, Number(item.quantity || 1));
           const availableQuantity = Math.max(1, Number(item.availableQuantity || quantity));
-          const unitPrice = Math.max(0, Number(item.unitPrice || 0));
-          const originalUnitPrice = Math.max(0, Number(item.originalUnitPrice ?? unitPrice));
-          const usedUnitPrice = Math.max(0, Number(item.usedUnitPrice ?? unitPrice));
-          const originalSellingUnitPrice = Math.max(
-            0,
-            Number(item.originalSellingUnitPrice ?? item.usedSellingUnitPrice ?? unitPrice),
-          );
-          const usedSellingUnitPrice = Math.max(
-            0,
-            Number(item.usedSellingUnitPrice ?? unitPrice),
-          );
 
           const normalizedItem = {
             ...item,
             quantity: Math.min(quantity, availableQuantity),
-            unitPrice,
-            originalUnitPrice,
-            usedUnitPrice,
-            unitPriceDifference: usedUnitPrice - originalUnitPrice,
-            priceOverrideApplied:
-              Boolean(item.priceOverrideApplied) ||
-              Math.abs(usedUnitPrice - originalUnitPrice) > 0.0001,
-            originalSellingUnitPrice,
-            usedSellingUnitPrice,
-            sellingUnitPriceDifference:
-              usedSellingUnitPrice - originalSellingUnitPrice,
+            unitPrice: Math.max(0, Number(item.unitPrice || 0)),
             availableQuantity,
             batchId: Number(item.batchId || 0),
             productId: Number(item.productId || 0),
@@ -6071,9 +6031,12 @@ function App() {
       }
 
       setPosQuantityProduct(product);
-      setPosSellingAmount(String(product.unitPrice || 0));
+
+      // The cashier enters only the selling-unit quantity.
+      // Base-unit conversion remains visible but read-only.
       setPosSellingUnitQuantity('1');
       setPosOtherQuantity('0');
+
       setPosNotice('');
     }
 
@@ -6081,7 +6044,6 @@ function App() {
       setPosQuantityProduct(null);
       setPosSellingUnitQuantity('1');
       setPosOtherQuantity('0');
-      setPosSellingAmount('');
     }
 
     function addConfiguredPosProductToCart() {
@@ -6089,28 +6051,13 @@ function App() {
 
       if (!product) return;
 
-      const systemSellingUnitPrice = Math.max(0, Number(product.unitPrice || 0));
-      const usedSellingUnitPrice = Math.max(
-        0,
-        Number(posSellingAmount || systemSellingUnitPrice),
-      );
-
-      const quantityInput = {
+      const calculation = calculatePosQuantity({
         sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
         otherQuantity: product.allowOtherQuantity
           ? Number(posOtherQuantity || 0)
           : 0,
         quantityPerSellingUnit: product.quantityPerSellingUnit,
-      };
-
-      const calculation = calculatePosQuantity({
-        ...quantityInput,
-        sellingUnitPrice: usedSellingUnitPrice,
-      });
-
-      const systemCalculation = calculatePosQuantity({
-        ...quantityInput,
-        sellingUnitPrice: systemSellingUnitPrice,
+        sellingUnitPrice: product.unitPrice,
       });
 
       if (calculation.totalBaseQuantity <= 0) {
@@ -6136,20 +6083,6 @@ function App() {
         return;
       }
 
-      const priceAudit = {
-        unitPrice: calculation.baseUnitPrice,
-        originalUnitPrice: systemCalculation.baseUnitPrice,
-        usedUnitPrice: calculation.baseUnitPrice,
-        unitPriceDifference:
-          calculation.baseUnitPrice - systemCalculation.baseUnitPrice,
-        priceOverrideApplied:
-          Math.abs(calculation.baseUnitPrice - systemCalculation.baseUnitPrice) > 0.0001,
-        originalSellingUnitPrice: systemSellingUnitPrice,
-        usedSellingUnitPrice,
-        sellingUnitPriceDifference:
-          usedSellingUnitPrice - systemSellingUnitPrice,
-      };
-
       let nextItems: typeof posCartItems;
 
       if (existing) {
@@ -6159,7 +6092,7 @@ function App() {
             ? {
                 ...item,
                 quantity: requestedTotalQuantity,
-                ...priceAudit,
+                unitPrice: calculation.baseUnitPrice,
                 availableQuantity: product.availableQuantity,
                 sellingUnit: product.sellingUnit,
                 baseUnit: product.baseUnit,
@@ -6181,7 +6114,7 @@ function App() {
             name: product.name,
             strength: product.strength,
             quantity: calculation.totalBaseQuantity,
-            ...priceAudit,
+            unitPrice: calculation.baseUnitPrice,
             batchId: product.batchId,
             productId: product.productId,
             batchNumber: product.batchNumber,
@@ -6197,16 +6130,16 @@ function App() {
         ];
       }
 
-      commitPosCounterItems(nextItems);
-      closePosQuantityPopup();
+      const snapshot = buildPosCounterCartSnapshot(nextItems);
+      commitPosCounterItems(snapshot.items);
 
       setPosNotice(
         `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}` +
-          (calculation.otherQuantity > 0
-            ? ` + ${calculation.otherQuantity.toLocaleString('en-RW')} ${product.baseUnit}`
-            : '') +
-          `. Selling amount: RWF ${usedSellingUnitPrice.toLocaleString('en-RW')}.`,
+        `${calculation.otherQuantity > 0 ? ` + ${calculation.otherQuantity.toLocaleString('en-RW')} ${product.baseUnit}` : ''}` +
+        ` = ${calculation.totalBaseQuantity.toLocaleString('en-RW')} ${product.baseUnit}.`,
       );
+
+      closePosQuantityPopup();
     }
 
     function updateCartQuantity(code: string, quantity: number) {
@@ -6629,26 +6562,6 @@ async function confirmTransaction() {
                 product_id: item.productId,
                 quantity: item.quantity,
                 unit_price: item.unitPrice,
-                original_unit_price: item.originalUnitPrice ?? item.unitPrice,
-                used_unit_price: item.usedUnitPrice ?? item.unitPrice,
-                unit_price_difference:
-                  item.unitPriceDifference ??
-                  ((item.usedUnitPrice ?? item.unitPrice) -
-                    (item.originalUnitPrice ?? item.unitPrice)),
-                price_override_applied:
-                  item.priceOverrideApplied ??
-                  Math.abs(
-                    (item.usedUnitPrice ?? item.unitPrice) -
-                      (item.originalUnitPrice ?? item.unitPrice),
-                  ) > 0.0001,
-                original_selling_unit_price:
-                  item.originalSellingUnitPrice ?? item.unitPrice,
-                used_selling_unit_price:
-                  item.usedSellingUnitPrice ?? item.unitPrice,
-                selling_unit_price_difference:
-                  item.sellingUnitPriceDifference ??
-                  ((item.usedSellingUnitPrice ?? item.unitPrice) -
-                    (item.originalSellingUnitPrice ?? item.unitPrice)),
                 discount_amount: 0,
                 tax_amount: 0,
                 stock_batch_id: item.batchId,
@@ -6675,29 +6588,8 @@ async function confirmTransaction() {
         setPosConfirmedSale(checkoutResponse.sale);
         setPosConfirmedPayment(checkoutResponse.payment);
         setPosTransactionConfirmed(true);
-
-        setPosCartItems([]);
-        setPosRenderedCartItems([]);
-        setPosCounterItems([]);
-        setPosRenderedCartMetrics({
-          lineCount: 0,
-          totalQuantity: 0,
-          subtotal: 0,
-        });
-        setPosCounterCart({
-          items: [],
-          lineCount: 0,
-          totalQuantity: 0,
-          subtotal: 0,
-        });
-        setPosQuantityProduct(null);
-        setPosSellingUnitQuantity('1');
-        setPosOtherQuantity('0');
-        setPosSellingAmount('');
-
-        await refreshPosHandoverInsights(
-          (activeCheckoutSession as { business_date?: string | null } | null)?.business_date ?? null,
-        );
+          setPosCartItems([]);
+          await refreshPosHandoverInsights((activeCheckoutSession as { business_date?: string | null } | null)?.business_date ?? null);
         setPosCheckoutKey(createPosCheckoutKey());
 
         const recentResponse = await getPharmaSales(
@@ -6758,66 +6650,6 @@ async function confirmTransaction() {
     }
 
 
-  function posSalePriceImpactSummary(
-    sale: (typeof posRecentSales)[number],
-  ): {
-    originalPrice: string;
-    usedPrice: string;
-    difference: string;
-  } {
-    const items = Array.isArray(
-      (sale as { items?: unknown }).items,
-    )
-      ? ((sale as { items?: Array<{
-          quantity?: number | string;
-          unit_price?: number | string;
-          metadata?: Record<string, unknown>;
-        }> }).items ?? [])
-      : [];
-
-    if (items.length === 0) {
-      return {
-        originalPrice: '—',
-        usedPrice: '—',
-        difference: '—',
-      };
-    }
-
-    const totals = items.reduce(
-      (summary, item) => {
-        const quantity = Number(item.quantity ?? 0);
-        const unitPrice = Number(item.unit_price ?? 0);
-        const metadata = item.metadata ?? {};
-        const originalUnitPrice = Number(
-          metadata.original_unit_price ?? unitPrice,
-        );
-        const usedUnitPrice = Number(
-          metadata.used_unit_price ?? unitPrice,
-        );
-
-        return {
-          original:
-            summary.original + originalUnitPrice * quantity,
-          used:
-            summary.used + usedUnitPrice * quantity,
-        };
-      },
-      {
-        original: 0,
-        used: 0,
-      },
-    );
-
-    const difference = totals.used - totals.original;
-
-    return {
-      originalPrice: `RWF ${totals.original.toLocaleString('en-RW')}`,
-      usedPrice: `RWF ${totals.used.toLocaleString('en-RW')}`,
-      difference:
-        `${difference >= 0 ? '+' : '-'}RWF ${Math.abs(difference).toLocaleString('en-RW')}`,
-    };
-  }
-
   const posRecentTransactionRows = posRecentSales
     .filter((sale) => {
       if (
@@ -6877,10 +6709,7 @@ async function confirmTransaction() {
       return right.id - left.id;
     })
     .slice(0, 25)
-    .map((sale) => {
-      const priceImpact = posSalePriceImpactSummary(sale);
-
-      return {
+    .map((sale) => ({
       dateTime: (sale as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at || sale.sold_at || sale.created_at
         ? new Date(
             sale.sold_at
@@ -6902,11 +6731,7 @@ async function confirmTransaction() {
       status: sale.payment_status.replaceAll('_', ' '),
       amount:
         `RWF ${Number(sale.total_amount).toLocaleString('en-RW')}`,
-      originalPrice: priceImpact.originalPrice,
-      usedPrice: priceImpact.usedPrice,
-      priceDifference: priceImpact.difference,
-    };
-    });
+    }));
 
   const renderPosWorkspaceTopMenu = (
     workspace: PosWorkspaceKey,
@@ -7215,18 +7040,13 @@ async function confirmTransaction() {
               </section>
 
               {posQuantityProduct && (() => {
-                const quantityPreviewSellingUnitPrice = Math.max(
-                  0,
-                  Number(posSellingAmount || posQuantityProduct.unitPrice || 0),
-                );
-
                 const quantityPreview = calculatePosQuantity({
                   sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
                   otherQuantity: posQuantityProduct.allowOtherQuantity
                     ? Number(posOtherQuantity || 0)
                     : 0,
                   quantityPerSellingUnit: posQuantityProduct.quantityPerSellingUnit,
-                  sellingUnitPrice: quantityPreviewSellingUnitPrice,
+                  sellingUnitPrice: posQuantityProduct.unitPrice,
                 });
 
                 return (
@@ -7331,22 +7151,6 @@ async function confirmTransaction() {
                             {posQuantityProduct.baseUnit}
                           </strong>
                         </article>
-                      </section>
-
-                      <section className="pos-quantity-price-override-card" aria-label="Selling amount override">
-                        <label>
-                          <span>Selling amount</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={posSellingAmount}
-                            onChange={(event) => setPosSellingAmount(event.target.value)}
-                          />
-                          <small>
-                            Defaults to system price. Adjust only when the agreed customer price is different.
-                          </small>
-                        </label>
                       </section>
 
                       <section className="pos-quantity-total-strip">
@@ -7857,7 +7661,7 @@ async function confirmTransaction() {
                         <span>Transaction timestamp</span>
                         <strong>{posSummaryTimestamp}</strong>
                       </article>
-                    <article className="pos-summary-field-card pos-summary-field-card--operational pos-summary-field-card--business-date">
+                    <article>
                       <span>Business Date</span>
                       <strong>
                         {posRecentTransactionsWithUsers[0]?.business_date
@@ -8014,6 +7818,10 @@ async function confirmTransaction() {
                   <div>
                     <span></span>
                     <h3></h3>
+                    <p className="muted">
+                      Practical signals derived from current sales, collections, balances,
+                      and transaction patterns.
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -8155,21 +7963,18 @@ async function confirmTransaction() {
                       <th>Customer</th>
                       <th>Method</th>
                       <th>Status</th>
-                      <th>Original Price</th>
-                      <th>Used Price</th>
-                      <th>Difference</th>
                       <th>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {posRecentTransactionRows.length === 0 ? (
                       <tr>
-                        <td colSpan={10}>
+                        <td colSpan={7}>
                           No matching transactions are available. Confirm a sale or refresh the synchronized sales feed.
                         </td>
                       </tr>
                     ) : (
-                      posRecentTransactionRows.map(({ dateTime, businessDate, saleNumber, customer, method, status, originalPrice, usedPrice, priceDifference, amount }) => (
+                      posRecentTransactionRows.map(({ dateTime, businessDate, saleNumber, customer, method, status, amount }) => (
                         <tr key={saleNumber}>
                           <td>{dateTime}</td>
                           <td>{businessDate}</td>
@@ -8177,9 +7982,6 @@ async function confirmTransaction() {
                           <td>{customer}</td>
                           <td>{method}</td>
                           <td>{status}</td>
-                          <td>{originalPrice}</td>
-                          <td>{usedPrice}</td>
-                          <td>{priceDifference}</td>
                           <td>{amount}</td>
                         </tr>
                       ))
@@ -8356,13 +8158,6 @@ async function confirmTransaction() {
                     ? 'received'
                     : 'outstanding'
               }
-            />
-          )}
-
-          {activeSupplierWorkspace === 'rra-purchase-code' && (
-            <RraPurchaseCodeWorkspace
-              token={session!.token}
-              profile={profile!}
             />
           )}
 
@@ -8887,6 +8682,10 @@ async function confirmTransaction() {
           return null;
         }
 
+        if (window.location.hash === '#business-overview-review') {
+          return <BusinessOverviewReviewPage />;
+        }
+
         return (
           <section className="section-page dashboard-overview-page dashboard-operating-page">
             <section className="dashboard-operating-hero dashboard-operating-hero--compact">
@@ -8941,6 +8740,21 @@ async function confirmTransaction() {
             </section>
 
             <section className="dashboard-operating-grid dashboard-operating-grid--focused">
+              <button
+                type="button"
+                className="dashboard-operating-card dashboard-operating-card--metrics priority"
+                onClick={() => {
+                  window.location.hash = 'business-overview-review';
+                  window.location.reload();
+                }}
+              >
+                <span>Business Overview Review</span>
+                <div className="dashboard-card-metrics">
+                  <span><b>360°</b><small>Business view</small></span>
+                  <span><b>Goals</b><small>Revenue and profit</small></span>
+                  <span><b>Test</b><small>Admin preview</small></span>
+                </div>
+              </button>
               {dashboardCardVisibility.inventory && profileHasGranularPermission(profile, granularMenuPermissionMap.inventory) && (
                 <button
                   type="button"
