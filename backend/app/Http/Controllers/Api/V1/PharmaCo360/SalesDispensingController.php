@@ -99,6 +99,286 @@ class SalesDispensingController extends Controller
         ]);
     }
 
+    public function voidSaleItem(
+        Request $request,
+        PharmacoSale $sale,
+        int $item
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $sale->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ]);
+
+        $updatedSale = DB::transaction(function () use ($request, $tenant, $sale, $item, $validated) {
+            $lockedSale = PharmacoSale::query()
+                ->where('tenant_id', $tenant->id)
+                ->lockForUpdate()
+                ->with(['items', 'payments'])
+                ->findOrFail($sale->id);
+
+            $saleItem = \App\Models\PharmacoSaleItem::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('pharmaco_sale_id', $lockedSale->id)
+                ->lockForUpdate()
+                ->findOrFail($item);
+
+            if ($saleItem->status === 'voided' || (bool) (($saleItem->metadata ?? [])['voided'] ?? false)) {
+                abort(409, 'This transaction item is already voided.');
+            }
+
+            $quantity = (float) $saleItem->quantity;
+            $lineTotal = (float) $saleItem->line_total;
+            $metadata = $saleItem->metadata ?? [];
+            $stockDeducted = (bool) ($metadata['stock_deducted'] ?? false);
+
+            if ($stockDeducted && $saleItem->stock_batch_id) {
+                $batch = StockBatch::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->lockForUpdate()
+                    ->find($saleItem->stock_batch_id);
+
+                if ($batch) {
+                    $beforeQuantity = (float) $batch->quantity_on_hand;
+                    $afterQuantity = $beforeQuantity + $quantity;
+
+                    $batch->quantity_on_hand = $afterQuantity;
+                    $batch->status = $afterQuantity > 0 ? 'active' : $batch->status;
+                    $batch->save();
+
+                    StockMovement::query()->create([
+                        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        'tenant_id' => $tenant->id,
+                        'branch_id' => $lockedSale->branch_id,
+                        'stock_location_id' => $batch->stock_location_id,
+                        'product_id' => $saleItem->product_id,
+                        'stock_batch_id' => $batch->id,
+                        'pos_session_id' => $lockedSale->pos_session_id,
+                        'business_date' => $lockedSale->business_date,
+                        'entry_mode' => $lockedSale->entry_mode ?? 'live',
+                        'historical_approval_id' => $lockedSale->historical_approval_id,
+                        'movement_type' => 'sale_item_voided',
+                        'quantity' => $quantity,
+                        'running_balance' => $afterQuantity,
+                        'reference_type' => 'pharmaco_sale',
+                        'reference_number' => $lockedSale->sale_number,
+                        'reason' => 'Stock restored after admin transaction item deletion.',
+                        'performed_by' => $request->user()?->id,
+                        'occurred_at' => now(),
+                        'metadata' => [
+                            'sale_id' => $lockedSale->id,
+                            'sale_item_id' => $saleItem->id,
+                            'void_reason' => $validated['reason'],
+                            'before_quantity' => $beforeQuantity,
+                            'after_quantity' => $afterQuantity,
+                            'corrected_by' => $request->user()?->id,
+                            'corrected_at' => now()->toISOString(),
+                        ],
+                    ]);
+                }
+            }
+
+            $saleItem->status = 'voided';
+            $saleItem->metadata = [
+                ...$metadata,
+                'voided' => true,
+                'voided_at' => now()->toISOString(),
+                'voided_by' => $request->user()?->id,
+                'void_reason' => $validated['reason'],
+                'original_quantity' => $quantity,
+                'original_line_total' => $lineTotal,
+            ];
+            $saleItem->save();
+
+            $activeItems = \App\Models\PharmacoSaleItem::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('pharmaco_sale_id', $lockedSale->id)
+                ->where('status', '!=', 'voided')
+                ->get();
+
+            $subtotal = (float) $activeItems->sum('line_total');
+            $discount = (float) $activeItems->sum('discount_amount');
+            $tax = (float) $activeItems->sum('tax_amount');
+            $total = max($subtotal, 0.0);
+            $paid = (float) $lockedSale->payments()->where('status', '!=', 'voided')->sum('amount');
+
+            $lockedSale->subtotal_amount = $subtotal;
+            $lockedSale->discount_amount = $discount;
+            $lockedSale->tax_amount = $tax;
+            $lockedSale->total_amount = $total;
+            $lockedSale->paid_amount = $paid;
+            $lockedSale->balance_amount = max($total - $paid, 0.0);
+            $lockedSale->payment_status = $total <= 0
+                ? 'voided'
+                : ($paid >= $total ? 'paid' : ($paid > 0 ? 'partial' : 'unpaid'));
+            $lockedSale->status = $activeItems->isEmpty() ? 'voided' : $lockedSale->status;
+            $lockedSale->metadata = [
+                ...($lockedSale->metadata ?? []),
+                'last_correction_at' => now()->toISOString(),
+                'last_correction_by' => $request->user()?->id,
+                'last_correction_reason' => $validated['reason'],
+            ];
+            $lockedSale->save();
+
+            return $lockedSale->fresh([
+                'branch',
+                'customer',
+                'prescription.customer',
+                'items.product.category',
+                'items.stockBatch',
+                'items.stockLocation',
+                'payments',
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Transaction item deleted through a controlled correction.',
+            'sale' => $this->serializeSale($updatedSale, includeDetails: true),
+        ]);
+    }
+
+    public function voidSale(
+        Request $request,
+        PharmacoSale $sale
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        if ((int) $sale->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ]);
+
+        $updatedSale = DB::transaction(function () use ($request, $tenant, $sale, $validated) {
+            $lockedSale = PharmacoSale::query()
+                ->where('tenant_id', $tenant->id)
+                ->lockForUpdate()
+                ->with(['items', 'payments'])
+                ->findOrFail($sale->id);
+
+            if ($lockedSale->status === 'voided') {
+                abort(409, 'This transaction is already voided.');
+            }
+
+            foreach ($lockedSale->items as $saleItem) {
+                if ($saleItem->status === 'voided') {
+                    continue;
+                }
+
+                $quantity = (float) $saleItem->quantity;
+                $metadata = $saleItem->metadata ?? [];
+                $stockDeducted = (bool) ($metadata['stock_deducted'] ?? false);
+
+                if ($stockDeducted && $saleItem->stock_batch_id) {
+                    $batch = StockBatch::query()
+                        ->where('tenant_id', $tenant->id)
+                        ->lockForUpdate()
+                        ->find($saleItem->stock_batch_id);
+
+                    if ($batch) {
+                        $beforeQuantity = (float) $batch->quantity_on_hand;
+                        $afterQuantity = $beforeQuantity + $quantity;
+
+                        $batch->quantity_on_hand = $afterQuantity;
+                        $batch->status = $afterQuantity > 0 ? 'active' : $batch->status;
+                        $batch->save();
+
+                        StockMovement::query()->create([
+                            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'tenant_id' => $tenant->id,
+                            'branch_id' => $lockedSale->branch_id,
+                            'stock_location_id' => $batch->stock_location_id,
+                            'product_id' => $saleItem->product_id,
+                            'stock_batch_id' => $batch->id,
+                            'pos_session_id' => $lockedSale->pos_session_id,
+                            'business_date' => $lockedSale->business_date,
+                            'entry_mode' => $lockedSale->entry_mode ?? 'live',
+                            'historical_approval_id' => $lockedSale->historical_approval_id,
+                            'movement_type' => 'sale_voided',
+                            'quantity' => $quantity,
+                            'running_balance' => $afterQuantity,
+                            'reference_type' => 'pharmaco_sale',
+                            'reference_number' => $lockedSale->sale_number,
+                            'reason' => 'Stock restored after admin transaction deletion.',
+                            'performed_by' => $request->user()?->id,
+                            'occurred_at' => now(),
+                            'metadata' => [
+                                'sale_id' => $lockedSale->id,
+                                'sale_item_id' => $saleItem->id,
+                                'void_reason' => $validated['reason'],
+                                'before_quantity' => $beforeQuantity,
+                                'after_quantity' => $afterQuantity,
+                                'corrected_by' => $request->user()?->id,
+                                'corrected_at' => now()->toISOString(),
+                            ],
+                        ]);
+                    }
+                }
+
+                $saleItem->status = 'voided';
+                $saleItem->metadata = [
+                    ...$metadata,
+                    'voided' => true,
+                    'voided_at' => now()->toISOString(),
+                    'voided_by' => $request->user()?->id,
+                    'void_reason' => $validated['reason'],
+                ];
+                $saleItem->save();
+            }
+
+            foreach ($lockedSale->payments as $payment) {
+                $payment->status = 'voided';
+                $payment->metadata = [
+                    ...($payment->metadata ?? []),
+                    'voided' => true,
+                    'voided_at' => now()->toISOString(),
+                    'voided_by' => $request->user()?->id,
+                    'void_reason' => $validated['reason'],
+                ];
+                $payment->save();
+            }
+
+            $lockedSale->status = 'voided';
+            $lockedSale->payment_status = 'voided';
+            $lockedSale->subtotal_amount = 0;
+            $lockedSale->discount_amount = 0;
+            $lockedSale->tax_amount = 0;
+            $lockedSale->total_amount = 0;
+            $lockedSale->paid_amount = 0;
+            $lockedSale->balance_amount = 0;
+            $lockedSale->metadata = [
+                ...($lockedSale->metadata ?? []),
+                'voided' => true,
+                'voided_at' => now()->toISOString(),
+                'voided_by' => $request->user()?->id,
+                'void_reason' => $validated['reason'],
+            ];
+            $lockedSale->save();
+
+            return $lockedSale->fresh([
+                'branch',
+                'customer',
+                'prescription.customer',
+                'items.product.category',
+                'items.stockBatch',
+                'items.stockLocation',
+                'payments',
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Transaction deleted through a controlled correction.',
+            'sale' => $this->serializeSale($updatedSale, includeDetails: true),
+        ]);
+    }
+
+
     public function sale(Request $request, PharmacoSale $sale): JsonResponse
     {
         $tenant = $request->attributes->get('tenant');

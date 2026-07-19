@@ -1405,6 +1405,18 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         'tenant.module:pharmaco.sales',
     ]);
 
+    Route::post('/sales/{sale}/items/{item}/void', [SalesDispensingController::class, 'voidSaleItem'])
+        ->middleware([
+            'App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.transactions.delete,pharmaco.transactions.correct,pharmaco.pos.refund,tenant.roles.manage,roles.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
+    Route::post('/sales/{sale}/void', [SalesDispensingController::class, 'voidSale'])
+        ->middleware([
+            'App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.transactions.delete,pharmaco.transactions.correct,pharmaco.pos.refund,tenant.roles.manage,roles.manage',
+            'tenant.module:pharmaco.sales',
+        ]);
+
     Route::get('/sales/{sale}', [SalesDispensingController::class, 'sale'])
         ->middleware([
             'permission:pharmaco.sales.manage',
