@@ -33637,3 +33637,307 @@ thead
     max-width: 60vw;
   }
 }
+
+/* Business Overview executive redesign v2 - no page logo */
+.business-overview-page--executive-v2 {
+  --bo-navy: #071f3a;
+  --bo-blue: #2563eb;
+  --bo-green: #059669;
+  --bo-teal: #0f9f9a;
+  --bo-purple: #7c3aed;
+  --bo-amber: #f59e0b;
+  --bo-red: #ef4444;
+  --bo-border: #dbe7f3;
+  --bo-muted: #64748b;
+  padding: 0.5rem;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(5, 150, 105, 0.08), transparent 34%),
+    linear-gradient(180deg, #f7fbff 0%, #f4faf7 100%);
+}
+
+.business-overview-executive-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 1.35rem;
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(7, 31, 58, 0.98), rgba(8, 55, 90, 0.96)),
+    radial-gradient(circle at top right, rgba(5, 150, 105, 0.32), transparent 36%);
+  color: #ffffff;
+  box-shadow: 0 22px 50px rgba(7, 31, 58, 0.18);
+  margin-bottom: 1rem;
+}
+
+.business-overview-title-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.business-overview-command-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.business-overview-command-strip span,
+.business-overview-command-strip em,
+.business-overview-hero-tags span {
+  border-radius: 999px;
+  padding: 0.34rem 0.72rem;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.business-overview-command-strip span {
+  color: #d1fae5;
+  background: rgba(5, 150, 105, 0.22);
+  border: 1px solid rgba(167, 243, 208, 0.32);
+}
+
+.business-overview-command-strip em {
+  color: #dbeafe;
+  background: rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(191, 219, 254, 0.24);
+}
+
+.business-overview-executive-hero h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2.15rem, 3.4vw, 3.35rem);
+  line-height: 1.03;
+  letter-spacing: -0.055em;
+}
+
+.business-overview-executive-hero p {
+  margin: 0.75rem 0 0;
+  max-width: 820px;
+  color: #c9e2f2;
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.business-overview-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.business-overview-hero-tags span {
+  color: #e7f8ff;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.business-overview-executive-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(145px, 1fr));
+  gap: 0.75rem;
+}
+
+.business-overview-executive-summary-grid article {
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+.business-overview-executive-summary-grid small {
+  color: #c9e2f2;
+  font-size: 0.74rem;
+}
+
+.business-overview-executive-summary-grid strong {
+  display: block;
+  margin: 0.3rem 0;
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.business-overview-executive-summary-grid span {
+  color: #8cf1c7;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.business-overview-filters--executive {
+  grid-template-columns: repeat(4, minmax(165px, 1fr)) minmax(130px, auto);
+  border-radius: 22px;
+  margin-bottom: 1.15rem;
+}
+
+.business-overview-section-heading--executive {
+  margin: 1.2rem 0 0.8rem;
+}
+
+.business-overview-section-heading--executive h2 {
+  font-size: 1.28rem;
+}
+
+.business-overview-module-grid--executive {
+  grid-template-columns: repeat(5, minmax(210px, 1fr));
+  gap: 0.85rem;
+}
+
+.business-overview-module-card--executive {
+  min-height: 150px;
+  padding: 1rem;
+  border-radius: 20px;
+  align-items: flex-start;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.96));
+}
+
+.business-overview-module-card--executive h3 {
+  font-size: 0.96rem;
+  line-height: 1.25;
+}
+
+.business-overview-module-card--executive p {
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.business-overview-kpi-grid--executive-v2 {
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.business-overview-kpi-card--executive {
+  min-height: 142px;
+  padding: 1.05rem;
+  border-radius: 20px;
+}
+
+.business-overview-kpi-card--executive small {
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.business-overview-kpi-card--executive strong {
+  font-size: clamp(1.55rem, 2.1vw, 1.95rem);
+  line-height: 1.1;
+  margin: 0.55rem 0 0.35rem;
+}
+
+.business-overview-kpi-card--executive span {
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.business-overview-panel-grid--executive {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.business-overview-panel-grid--executive .business-overview-panel {
+  min-height: 286px;
+  padding: 1.05rem;
+  border-radius: 22px;
+}
+
+.business-overview-panel-grid--executive .business-overview-panel h3 {
+  font-size: 1rem;
+}
+
+.business-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.business-overview-table tr {
+  border-bottom: 1px solid #edf3f8;
+}
+
+.business-overview-table tr:last-child {
+  border-bottom: 0;
+}
+
+.business-overview-table th,
+.business-overview-table td {
+  padding: 0.62rem 0;
+  vertical-align: middle;
+}
+
+.business-overview-table th {
+  color: #315172;
+  font-weight: 700;
+  text-align: left;
+}
+
+.business-overview-table td {
+  color: #071f3a;
+  font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.business-overview-table tr.strong th,
+.business-overview-table tr.strong td {
+  font-weight: 950;
+}
+
+.business-overview-chart--executive {
+  min-height: 225px;
+  border: 1px solid #edf3f8;
+}
+
+.business-overview-insight--executive p {
+  font-size: 0.84rem;
+  line-height: 1.62;
+}
+
+.business-overview-actions--executive {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.business-overview-action--executive {
+  min-height: 148px;
+  border-radius: 20px;
+}
+
+.business-overview-action--executive strong {
+  font-size: 0.95rem;
+}
+
+.business-overview-action--executive p {
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 1440px) {
+  .business-overview-module-grid--executive {
+    grid-template-columns: repeat(3, minmax(210px, 1fr));
+  }
+
+  .business-overview-kpi-grid--executive-v2 {
+    grid-template-columns: repeat(3, minmax(210px, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .business-overview-executive-hero,
+  .business-overview-filters--executive,
+  .business-overview-module-grid--executive,
+  .business-overview-kpi-grid--executive-v2,
+  .business-overview-actions--executive {
+    grid-template-columns: 1fr;
+  }
+
+  .business-overview-executive-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
