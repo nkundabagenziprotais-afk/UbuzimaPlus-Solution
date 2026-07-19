@@ -320,6 +320,8 @@ export function PosSessionAdminControl({
           <thead>
             <tr>
               <th>Session</th>
+              <th>Type</th>
+              <th>Business Date</th>
               <th>Cashier / Branch</th>
               <th>Status</th>
               <th>Expected</th>
@@ -341,6 +343,16 @@ export function PosSessionAdminControl({
                     {" · "}
                     {session.business_date}
                   </small>
+                </td>
+                <td>
+                  <span className="pos-admin-session-type">
+                    {(session as { session_mode?: string | null }).session_mode === 'historical'
+                      ? 'Historical'
+                      : 'Live'}
+                  </span>
+                </td>
+                <td>
+                  {(session as { business_date?: string | null }).business_date || '—'}
                 </td>
 
                 <td>

@@ -5818,6 +5818,7 @@ function App() {
 
     const salesSummaryRows: Array<{
       dateTime: string;
+      businessDate: string;
       saleNumber: string;
       customer: string;
       method: string;
@@ -6715,6 +6716,12 @@ async function confirmTransaction() {
               ?? '',
           ).toLocaleString('en-RW')
         : 'Not recorded',
+      businessDate:
+        normalizeUbuzimaTransactionDate(
+          (sale as { business_date?: string | null }).business_date
+            ?? (sale as { payments?: Array<{ business_date?: string | null }> }).payments?.[0]?.business_date
+            ?? null,
+        ) ?? '—',
       saleNumber: sale.sale_number,
       customer:
         sale.customer?.full_name
@@ -7949,7 +7956,8 @@ async function confirmTransaction() {
                 <table className="system-table">
                   <thead>
                     <tr>
-                      <th>Date / Time</th>
+                      <th>Transaction timestamp</th>
+                      <th>Business Date</th>
                       <th>Sale No.</th>
                       <th>Customer</th>
                       <th>Method</th>
@@ -7960,14 +7968,15 @@ async function confirmTransaction() {
                   <tbody>
                     {posRecentTransactionRows.length === 0 ? (
                       <tr>
-                        <td colSpan={6}>
+                        <td colSpan={7}>
                           No matching transactions are available. Confirm a sale or refresh the synchronized sales feed.
                         </td>
                       </tr>
                     ) : (
-                      posRecentTransactionRows.map(({ dateTime, saleNumber, customer, method, status, amount }) => (
+                      posRecentTransactionRows.map(({ dateTime, businessDate, saleNumber, customer, method, status, amount }) => (
                         <tr key={saleNumber}>
                           <td>{dateTime}</td>
+                          <td>{businessDate}</td>
                           <td>{saleNumber}</td>
                           <td>{customer}</td>
                           <td>{method}</td>
