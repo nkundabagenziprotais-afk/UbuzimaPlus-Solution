@@ -1,4 +1,5 @@
 import {
+  getAllPharmaInventoryBatches,
   getPharmaInventorySummary,
   getPharmaSales,
 } from '../../lib/api';
@@ -41,13 +42,8 @@ export type BusinessOverviewLiveData = {
   trend: BusinessOverviewTrendPoint[];
 };
 
-const moneyFormatter = new Intl.NumberFormat('en-RW', {
-  maximumFractionDigits: 0,
-});
-
-const percentFormatter = new Intl.NumberFormat('en-RW', {
-  maximumFractionDigits: 1,
-});
+const moneyFormatter = new Intl.NumberFormat('en-RW', { maximumFractionDigits: 0 });
+const percentFormatter = new Intl.NumberFormat('en-RW', { maximumFractionDigits: 1 });
 
 function asRecord(value: unknown): UnknownRecord {
   return value && typeof value === 'object' ? (value as UnknownRecord) : {};
@@ -62,6 +58,14 @@ function numberValue(value: unknown): number {
   if (typeof value === 'string') {
     const parsed = Number(value.replace(/,/g, ''));
     return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function firstNumber(record: UnknownRecord, keys: string[]): number {
+  for (const key of keys) {
+    const value = numberValue(record[key]);
+    if (value !== 0) return value;
   }
   return 0;
 }
@@ -113,8 +117,8 @@ function isCompletedPayment(payment: UnknownRecord): boolean {
 }
 
 function isVoidedOrReturnedSale(sale: UnknownRecord): boolean {
-  const status = `${stringValue(sale.status)} ${stringValue(sale.payment_status)}`.toLowerCase();
-  return status.includes('void') || status.includes('return') || status.includes('refund') || status.includes('reversal');
+  const status = `${stringValue(sale.status)} ${stringValue(sale.payment_status)} ${stringValue(sale.sale_type)}`.toLowerCase();
+  return status.includes('void') || status.includes('return') || status.includes('refund') || status.includes('reversal') || status.includes('cancel');
 }
 
 function saleTotal(sale: UnknownRecord): number {
@@ -131,6 +135,27 @@ function saleDiscount(sale: UnknownRecord): number {
   return numberValue(sale.discount_amount) || numberValue(sale.discount_total) || numberValue(sale.discount);
 }
 
+function salePaidAmount(sale: UnknownRecord): number {
+  return numberValue(sale.paid_amount);
+}
+
+function salePaymentMethod(sale: UnknownRecord): string {
+  return (
+    stringValue(sale.payment_method) ||
+    stringValue(sale.payment_mode) ||
+    stringValue(sale.collection_method) ||
+    stringValue(sale.payment_type) ||
+    'Other'
+  );
+}
+
+function isHistoricalSale(sale: UnknownRecord): boolean {
+  return (
+    String(sale.is_historical ?? '').toLowerCase() === 'true' ||
+    stringValue(sale.entry_mode).toLowerCase() === 'historical'
+  );
+}
+
 function extractSales(response: unknown): UnknownRecord[] {
   const record = asRecord(response);
   return (
@@ -143,6 +168,15 @@ function extractSales(response: unknown): UnknownRecord[] {
 function extractInventorySummary(response: unknown): UnknownRecord {
   const record = asRecord(response);
   return asRecord(record.summary && typeof record.summary === 'object' ? record.summary : record);
+}
+
+function extractInventoryBatches(response: unknown): UnknownRecord[] {
+  const record = asRecord(response);
+  return (
+    asArray(record.batches).length ? asArray(record.batches)
+      : asArray(record.data).length ? asArray(record.data)
+      : asArray(record.items)
+  );
 }
 
 function buildTrend(sales: UnknownRecord[]): BusinessOverviewTrendPoint[] {
@@ -165,9 +199,8 @@ function buildTopProducts(sales: UnknownRecord[]): BusinessOverviewProductRow[] 
 
   for (const sale of sales) {
     if (isVoidedOrReturnedSale(sale)) continue;
-    const items = asArray(sale.items);
 
-    for (const item of items) {
+    for (const item of asArray(sale.items)) {
       const product = asRecord(item.product);
       const name =
         stringValue(product.name) ||
@@ -185,10 +218,7 @@ function buildTopProducts(sales: UnknownRecord[]): BusinessOverviewProductRow[] 
     }
   }
 
-  const rows = [...grouped.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
+  const rows = [...grouped.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   const max = Math.max(...rows.map(([, value]) => value), 1);
 
   return rows.map(([name, value]) => ({
@@ -196,6 +226,117 @@ function buildTopProducts(sales: UnknownRecord[]): BusinessOverviewProductRow[] 
     value: formatMoney(value),
     percent: Math.max(6, Math.round((value / max) * 100)),
   }));
+}
+
+function batchQuantity(batch: UnknownRecord): number {
+  return firstNumber(batch, [
+    'quantity_on_hand',
+    'available_quantity',
+    'quantity_available',
+    'current_quantity',
+    'remaining_quantity',
+    'stock_quantity',
+    'quantity',
+  ]);
+}
+
+function batchUnitValue(batch: UnknownRecord): number {
+  return firstNumber(batch, [
+    'selling_price',
+    'retail_price',
+    'unit_price',
+    'unit_cost',
+    'cost_price',
+    'purchase_price',
+    'cost',
+  ]);
+}
+
+function batchInventoryValue(batch: UnknownRecord): number {
+  return (
+    firstNumber(batch, ['stock_value', 'inventory_value', 'retail_value', 'cost_value', 'total_value']) ||
+    batchQuantity(batch) * batchUnitValue(batch)
+  );
+}
+
+function batchExpiryDate(batch: UnknownRecord): Date | null {
+  const raw =
+    stringValue(batch.expiry_date) ||
+    stringValue(batch.expires_at) ||
+    stringValue(batch.expiration_date);
+
+  if (!raw) return null;
+
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function productKeyForBatch(batch: UnknownRecord): string {
+  const product = asRecord(batch.product);
+  return (
+    stringValue(product.id) ||
+    stringValue(batch.product_id) ||
+    stringValue(product.name) ||
+    stringValue(batch.product_name) ||
+    stringValue(batch.id)
+  );
+}
+
+function productLowStockThreshold(batch: UnknownRecord): number {
+  const product = asRecord(batch.product);
+  return (
+    firstNumber(product, ['minimum_stock_level', 'reorder_level', 'minimum_quantity']) ||
+    firstNumber(batch, ['minimum_stock_level', 'reorder_level', 'minimum_quantity'])
+  );
+}
+
+function computeBatchFallback(batches: UnknownRecord[]) {
+  const now = new Date();
+  const nearExpiryLimit = new Date(now);
+  nearExpiryLimit.setDate(nearExpiryLimit.getDate() + 180);
+
+  let inventoryValue = 0;
+  let totalQuantity = 0;
+  let expired = 0;
+  let nearExpiry = 0;
+
+  const quantityByProduct = new Map<string, number>();
+  const thresholdByProduct = new Map<string, number>();
+
+  for (const batch of batches) {
+    const quantity = batchQuantity(batch);
+    totalQuantity += quantity;
+    inventoryValue += batchInventoryValue(batch);
+
+    const expiry = batchExpiryDate(batch);
+    if (expiry) {
+      if (expiry < now) expired += 1;
+      else if (expiry <= nearExpiryLimit) nearExpiry += 1;
+    }
+
+    const productKey = productKeyForBatch(batch);
+    const threshold = productLowStockThreshold(batch);
+
+    if (productKey) {
+      quantityByProduct.set(productKey, (quantityByProduct.get(productKey) ?? 0) + quantity);
+      if (threshold > 0) thresholdByProduct.set(productKey, threshold);
+    }
+  }
+
+  let lowStock = 0;
+  for (const [productKey, quantity] of quantityByProduct.entries()) {
+    const threshold = thresholdByProduct.get(productKey) ?? 0;
+    if (threshold > 0 && quantity <= threshold) lowStock += 1;
+  }
+
+  return {
+    inventoryValue,
+    totalQuantity,
+    stockBatches: batches.length,
+    expired,
+    nearExpiry,
+    lowStock,
+  };
 }
 
 export function emptyBusinessOverviewLiveData(): BusinessOverviewLiveData {
@@ -218,6 +359,8 @@ export function emptyBusinessOverviewLiveData(): BusinessOverviewLiveData {
     ].map((label) => ({ label, value: '—' })),
     inventoryRows: [
       'Total Inventory Value',
+      'Total Quantity On Hand',
+      'Stock Batches',
       'Low Stock Items',
       'Expiring Items',
       'Expired Batches',
@@ -251,26 +394,36 @@ export async function loadBusinessOverviewLiveData(
   }
 
   let salesLoaded = false;
-  let inventoryLoaded = false;
-  let error: string | null = null;
+  let inventorySummaryLoaded = false;
+  let inventoryBatchesLoaded = false;
+  const errors: string[] = [];
 
   let sales: UnknownRecord[] = [];
   let inventorySummary: UnknownRecord = {};
+  let inventoryBatches: UnknownRecord[] = [];
 
   try {
     const salesResponse = await getPharmaSales(token, tenantSlug);
     sales = extractSales(salesResponse);
     salesLoaded = true;
   } catch (err) {
-    error = err instanceof Error ? err.message : 'Unable to load live sales data.';
+    errors.push(err instanceof Error ? err.message : 'Unable to load live sales data.');
   }
 
   try {
     const inventoryResponse = await getPharmaInventorySummary(token, tenantSlug);
     inventorySummary = extractInventorySummary(inventoryResponse);
-    inventoryLoaded = true;
+    inventorySummaryLoaded = true;
   } catch (err) {
-    error = error ?? (err instanceof Error ? err.message : 'Unable to load live inventory data.');
+    errors.push(err instanceof Error ? err.message : 'Unable to load inventory summary.');
+  }
+
+  try {
+    const batchResponse = await getAllPharmaInventoryBatches(token, tenantSlug);
+    inventoryBatches = extractInventoryBatches(batchResponse);
+    inventoryBatchesLoaded = true;
+  } catch (err) {
+    errors.push(err instanceof Error ? err.message : 'Unable to load inventory batch register.');
   }
 
   const validSales = sales.filter((sale) => !isVoidedOrReturnedSale(sale));
@@ -281,13 +434,30 @@ export async function loadBusinessOverviewLiveData(
   const returns = returnedSales.reduce((sum, sale) => sum + saleTotal(sale), 0);
   const netSales = Math.max(grossSales - discounts - returns, 0);
 
-  const completedPayments = validSales.flatMap((sale) =>
-    asArray(sale.payments)
-      .filter(isCompletedPayment)
-      .map((payment) => ({ payment, sale })),
-  );
+  const paymentGrouped = new Map<string, number>();
+  let collections = 0;
 
-  const collections = completedPayments.reduce((sum, row) => sum + numberValue(row.payment.amount), 0);
+  for (const sale of validSales) {
+    const completedPayments = asArray(sale.payments).filter(isCompletedPayment);
+
+    if (completedPayments.length > 0) {
+      for (const payment of completedPayments) {
+        const amount = numberValue(payment.amount);
+        collections += amount;
+        const label = paymentMethodLabel(stringValue(payment.payment_method, 'Other'));
+        paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
+      }
+    } else {
+      const amount = salePaidAmount(sale);
+      collections += amount;
+
+      if (amount > 0) {
+        const label = paymentMethodLabel(salePaymentMethod(sale));
+        paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
+      }
+    }
+  }
+
   const outstandingBalance = Math.max(netSales - collections, 0);
 
   const creditSales = validSales
@@ -297,12 +467,6 @@ export async function loadBusinessOverviewLiveData(
   const insuranceSales = validSales
     .filter((sale) => stringValue(sale.sale_type).toLowerCase().includes('insurance'))
     .reduce((sum, sale) => sum + saleTotal(sale), 0);
-
-  const paymentGrouped = new Map<string, number>();
-  for (const { payment } of completedPayments) {
-    const label = paymentMethodLabel(stringValue(payment.payment_method, 'Other'));
-    paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + numberValue(payment.amount));
-  }
 
   const paymentTotal = Math.max(collections, 1);
   const paymentMix = [...paymentGrouped.entries()]
@@ -316,20 +480,30 @@ export async function loadBusinessOverviewLiveData(
   const trend = buildTrend(validSales);
   const topProducts = buildTopProducts(validSales);
 
-  const inventoryValue =
+  const batchFallback = computeBatchFallback(inventoryBatches);
+
+  const summaryInventoryValue =
     numberValue(inventorySummary.estimated_stock_value) ||
     numberValue(inventorySummary.estimated_stock_retail_value) ||
     numberValue(inventorySummary.estimated_stock_cost_value);
 
-  const lowStock = numberValue(inventorySummary.low_stock_products_count);
-  const nearExpiry = numberValue(inventorySummary.near_expiry_batches_180_days_count);
-  const expired = numberValue(inventorySummary.expired_batches_count);
+  const inventoryValue = summaryInventoryValue || batchFallback.inventoryValue;
+  const totalQuantity = numberValue(inventorySummary.total_quantity_on_hand) || batchFallback.totalQuantity;
+  const stockBatches = numberValue(inventorySummary.stock_batches_count) || batchFallback.stockBatches;
+  const lowStock = numberValue(inventorySummary.low_stock_products_count) || batchFallback.lowStock;
+  const nearExpiry = numberValue(inventorySummary.near_expiry_batches_180_days_count) || batchFallback.nearExpiry;
+  const expired = numberValue(inventorySummary.expired_batches_count) || batchFallback.expired;
+
+  const inventoryLoaded = inventorySummaryLoaded || inventoryBatchesLoaded;
+
+  const livePosCount = validSales.filter((sale) => !isHistoricalSale(sale)).length;
+  const historicalPosCount = validSales.filter(isHistoricalSale).length;
 
   return {
     loaded: true,
     salesLoaded,
     inventoryLoaded,
-    error,
+    error: errors.length ? errors.join(' ') : null,
     kpis: {
       'Gross Revenue': salesLoaded ? formatMoney(grossSales) : '—',
       'Net Revenue': salesLoaded ? formatMoney(netSales) : '—',
@@ -337,7 +511,8 @@ export async function loadBusinessOverviewLiveData(
       'Outstanding Balance': salesLoaded ? formatMoney(outstandingBalance) : '—',
       'Transaction Count': salesLoaded ? formatCount(validSales.length) : '—',
       'Average Transaction Value': salesLoaded && validSales.length ? formatMoney(netSales / validSales.length) : '—',
-      'Items Sold': salesLoaded ? formatCount(validSales.reduce((sum, sale) => sum + asArray(sale.items).reduce((inner, item) => inner + numberValue(item.quantity), 0), 0)) : '—',
+      'Live POS Sales': salesLoaded ? formatCount(livePosCount) : '—',
+      'Historical POS Sales': salesLoaded ? formatCount(historicalPosCount) : '—',
       'Gross Profit': '—',
       'Estimated Net Profit': '—',
       'Operating Expenses': '—',
@@ -351,10 +526,13 @@ export async function loadBusinessOverviewLiveData(
       'Expiring Items': inventoryLoaded ? formatCount(nearExpiry) : '—',
     },
     kpiHelpers: {
-      'Gross Revenue': salesLoaded ? 'Live sales register' : 'Live sales source unavailable',
-      'Net Revenue': salesLoaded ? 'Sales less discounts and reversals' : 'Live sales source unavailable',
-      Collections: salesLoaded ? 'Completed POS payments' : 'Live payment source unavailable',
-      'Outstanding Balance': salesLoaded ? 'Sales value not yet collected' : 'Live receivable source unavailable',
+      'Gross Revenue': salesLoaded ? 'Live and Historical POS sales register' : 'Sales source unavailable',
+      'Net Revenue': salesLoaded ? 'Sales less discounts and reversals' : 'Sales source unavailable',
+      Collections: salesLoaded ? 'Completed payments or paid amount from Live/Historical POS' : 'Payment source unavailable',
+      'Outstanding Balance': salesLoaded ? 'Sales value not yet collected' : 'Receivable source unavailable',
+      'Inventory Value': inventoryLoaded ? 'Inventory summary with batch-register fallback' : 'Inventory source unavailable',
+      'Low Stock Items': inventoryLoaded ? 'Inventory summary or batch threshold fallback' : 'Inventory source unavailable',
+      'Expiring Items': inventoryLoaded ? 'Inventory summary or batch expiry fallback' : 'Inventory source unavailable',
     },
     revenueRows: [
       { label: 'Gross Sales', value: salesLoaded ? formatMoney(grossSales) : '—' },
@@ -368,6 +546,8 @@ export async function loadBusinessOverviewLiveData(
     ],
     inventoryRows: [
       { label: 'Total Inventory Value', value: inventoryLoaded ? formatMoney(inventoryValue) : '—' },
+      { label: 'Total Quantity On Hand', value: inventoryLoaded ? formatCount(totalQuantity) : '—' },
+      { label: 'Stock Batches', value: inventoryLoaded ? formatCount(stockBatches) : '—' },
       { label: 'Low Stock Items', value: inventoryLoaded ? formatCount(lowStock) : '—' },
       { label: 'Expiring Items', value: inventoryLoaded ? formatCount(nearExpiry) : '—' },
       { label: 'Expired Batches', value: inventoryLoaded ? formatCount(expired) : '—' },
