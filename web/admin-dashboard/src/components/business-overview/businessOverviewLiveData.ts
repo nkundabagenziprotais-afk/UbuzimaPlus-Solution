@@ -86,6 +86,24 @@ function formatPercent(value: number): string {
   return `${percentFormatter.format(value)}%`;
 }
 
+function withTimeout<T>(label: string, promise: Promise<T>, timeoutMs = 12000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${label} request timed out after ${timeoutMs / 1000}s`));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
 function saleDateKey(sale: UnknownRecord): string {
   const raw =
     stringValue(sale.business_date) ||
@@ -403,7 +421,10 @@ export async function loadBusinessOverviewLiveData(
   let inventoryBatches: UnknownRecord[] = [];
 
   try {
-    const salesResponse = await getPharmaSales(token, tenantSlug);
+    const salesResponse = await withTimeout(
+      'Sales register',
+      getPharmaSales(token, tenantSlug),
+    );
     sales = extractSales(salesResponse);
     salesLoaded = true;
   } catch (err) {
@@ -411,7 +432,10 @@ export async function loadBusinessOverviewLiveData(
   }
 
   try {
-    const inventoryResponse = await getPharmaInventorySummary(token, tenantSlug);
+    const inventoryResponse = await withTimeout(
+      'Inventory summary',
+      getPharmaInventorySummary(token, tenantSlug),
+    );
     inventorySummary = extractInventorySummary(inventoryResponse);
     inventorySummaryLoaded = true;
   } catch (err) {
@@ -419,7 +443,11 @@ export async function loadBusinessOverviewLiveData(
   }
 
   try {
-    const batchResponse = await getAllPharmaInventoryBatches(token, tenantSlug);
+    const batchResponse = await withTimeout(
+      'Inventory batch register',
+      getAllPharmaInventoryBatches(token, tenantSlug),
+      8000,
+    );
     inventoryBatches = extractInventoryBatches(batchResponse);
     inventoryBatchesLoaded = true;
   } catch (err) {
