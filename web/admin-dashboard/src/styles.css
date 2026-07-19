@@ -36916,3 +36916,428 @@ thead
     min-height: auto;
   }
 }
+
+/* Business Overview exact customer layout corrections */
+.bo-v3-page {
+  padding: 1rem;
+  font-size: 14px;
+}
+
+/* Remove module-card paragraph space completely */
+.bo-v3-module-card p {
+  display: none !important;
+}
+
+.bo-v3-module-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+.bo-v3-module-card {
+  min-height: 112px;
+  height: 100%;
+  padding: 1rem;
+}
+
+.bo-v3-module-card > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.bo-v3-module-heading h3 {
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.bo-v3-module-card button {
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+}
+
+/* KPI cards: readable, balanced, no excessive height */
+.bo-v3-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+  gap: 0.9rem;
+  align-items: stretch;
+}
+
+.bo-v3-kpi-card {
+  min-height: 122px;
+  height: 100%;
+  padding: 1rem;
+  justify-content: center;
+}
+
+.bo-v3-kpi-card small {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.bo-v3-kpi-card strong {
+  margin: 0.45rem 0 0.35rem;
+  text-align: right;
+  font-size: clamp(1.45rem, 1.8vw, 1.85rem);
+  line-height: 1.12;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-v3-kpi-card span {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-align: right;
+}
+
+/* Hide any remaining source badges */
+.bo-v3-source,
+.bo-v3-source-live,
+.bo-v3-source-preview,
+.bo-v3-source-config {
+  display: none !important;
+}
+
+/* Full-width professional panel layout with no vacant row gaps */
+.bo-v3-analytics-grid {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+  grid-auto-flow: row dense;
+}
+
+.bo-v3-panel,
+.bo-v3-insight-panel,
+.bo-v3-actions-panel {
+  height: 100%;
+  border-radius: 18px;
+}
+
+/* Row 1: Daily Revenue, Sales Trend, Top Products = 12 columns */
+.bo-v3-panel-table:first-child {
+  grid-column: span 3;
+  min-height: 345px;
+}
+
+.bo-v3-panel-chart {
+  grid-column: span 5;
+  min-height: 345px;
+}
+
+.bo-v3-panel-products {
+  grid-column: span 4;
+  min-height: 345px;
+}
+
+/* Row 2: Payment, Expenses, Inventory = 12 columns */
+.bo-v3-panel-payment {
+  grid-column: span 4;
+  min-height: 320px;
+}
+
+.bo-v3-panel-table:nth-of-type(5),
+.bo-v3-panel-table:nth-of-type(6) {
+  grid-column: span 4;
+  min-height: 320px;
+}
+
+/* Row 3: Insurance, Goals, AI = 12 columns */
+.bo-v3-panel-table:nth-of-type(7) {
+  grid-column: span 4;
+  min-height: 330px;
+}
+
+.bo-v3-panel-goals {
+  grid-column: span 4;
+  min-height: 330px;
+}
+
+.bo-v3-insight-panel {
+  grid-column: span 4;
+  min-height: 330px;
+  grid-row: auto;
+}
+
+/* Recommended actions full width */
+.bo-v3-actions-panel {
+  grid-column: 1 / -1;
+  min-height: 220px;
+}
+
+.bo-v3-actions-panel > div {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+/* Panel content alignment and readability */
+.bo-v3-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.bo-v3-panel header,
+.bo-v3-insight-panel header {
+  min-height: 38px;
+  margin-bottom: 0.85rem;
+}
+
+.bo-v3-panel h3,
+.bo-v3-insight-panel h3,
+.bo-v3-actions-panel h3 {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.bo-v3-panel table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.bo-v3-panel th,
+.bo-v3-panel td {
+  padding: 0.58rem 0;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.bo-v3-panel th {
+  width: 58%;
+  color: #405a7b;
+  font-weight: 750;
+  text-align: left;
+  white-space: normal;
+}
+
+.bo-v3-panel td {
+  width: 42%;
+  color: #071f3a;
+  font-weight: 900;
+  text-align: right !important;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.bo-v3-panel tr.positive th,
+.bo-v3-panel tr.positive td,
+.bo-v3-panel tr.strong.positive th,
+.bo-v3-panel tr.strong.positive td,
+.bo-v3-panel .positive {
+  color: #059669;
+}
+
+/* Linear Sales Trend */
+.bo-v3-line-chart--linear {
+  flex: 1;
+  display: block;
+  min-height: 235px;
+  padding: 0.9rem;
+  border: 1px solid #edf3f8;
+  border-radius: 14px;
+  background:
+    repeating-linear-gradient(to top, #edf3f8 0, #edf3f8 1px, transparent 1px, transparent 42px),
+    linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.bo-v3-line-chart--linear svg {
+  width: 100%;
+  height: 100%;
+  min-height: 205px;
+  overflow: visible;
+}
+
+.bo-v3-trend-area {
+  fill: url(#boTrendFill);
+}
+
+.bo-v3-trend-line {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bo-v3-line-chart--linear circle {
+  fill: #ffffff;
+  stroke: #2563eb;
+  stroke-width: 3;
+}
+
+/* Top products: use full width and remove empty visual gaps */
+.bo-v3-products {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.bo-v3-product-row {
+  grid-template-columns: minmax(210px, 1.35fr) minmax(120px, 0.85fr) minmax(95px, auto);
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.bo-v3-product-row strong {
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.bo-v3-product-row em {
+  font-size: 0.82rem;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Payment mix and donut readability */
+.bo-v3-payment-body {
+  grid-template-columns: minmax(160px, 0.9fr) minmax(180px, 1fr);
+  gap: 1rem;
+  align-items: center;
+  flex: 1;
+}
+
+.bo-v3-donut {
+  width: 176px;
+  height: 176px;
+}
+
+.bo-v3-donut > div {
+  width: 102px;
+  height: 102px;
+}
+
+.bo-v3-donut strong {
+  font-size: 0.95rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-v3-panel-payment li {
+  font-size: 0.84rem;
+  grid-template-columns: auto minmax(110px, 1fr) minmax(55px, auto);
+}
+
+.bo-v3-panel-payment li em {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Goal tracking alignment */
+.bo-v3-goal-row {
+  grid-template-columns: minmax(210px, 1.15fr) minmax(160px, 1fr) minmax(60px, auto);
+  gap: 0.9rem;
+}
+
+.bo-v3-goal-row span,
+.bo-v3-goal-row strong,
+.bo-v3-goal-row em {
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.bo-v3-goal-row strong,
+.bo-v3-goal-row em {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* AI insight height matches row and remains readable */
+.bo-v3-insight-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.bo-v3-insight-panel section {
+  margin-top: 0.75rem;
+}
+
+.bo-v3-insight-panel h4 {
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.bo-v3-insight-panel p,
+.bo-v3-insight-panel li {
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.bo-v3-insight-panel button {
+  margin-top: auto;
+}
+
+/* Recommended actions */
+.bo-v3-action-card {
+  display: flex;
+  min-height: 145px;
+  height: 100%;
+  flex-direction: column;
+  padding: 0.95rem;
+}
+
+.bo-v3-action-card strong {
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.bo-v3-action-card p {
+  flex: 1;
+  margin: 0.35rem 0 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.bo-v3-action-card button {
+  align-self: flex-start;
+  margin-top: auto;
+  font-size: 0.78rem;
+}
+
+/* Responsive */
+@media (max-width: 1500px) {
+  .bo-v3-panel-table:first-child,
+  .bo-v3-panel-chart,
+  .bo-v3-panel-products,
+  .bo-v3-panel-payment,
+  .bo-v3-panel-table:nth-of-type(5),
+  .bo-v3-panel-table:nth-of-type(6),
+  .bo-v3-panel-table:nth-of-type(7),
+  .bo-v3-panel-goals,
+  .bo-v3-insight-panel {
+    grid-column: span 6;
+  }
+
+  .bo-v3-panel {
+    min-height: 310px;
+  }
+}
+
+@media (max-width: 900px) {
+  .bo-v3-panel-table:first-child,
+  .bo-v3-panel-chart,
+  .bo-v3-panel-products,
+  .bo-v3-panel-payment,
+  .bo-v3-panel-table:nth-of-type(5),
+  .bo-v3-panel-table:nth-of-type(6),
+  .bo-v3-panel-table:nth-of-type(7),
+  .bo-v3-panel-goals,
+  .bo-v3-insight-panel,
+  .bo-v3-actions-panel {
+    grid-column: 1 / -1;
+  }
+
+  .bo-v3-product-row,
+  .bo-v3-payment-body,
+  .bo-v3-goal-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bo-v3-product-row em,
+  .bo-v3-goal-row strong,
+  .bo-v3-goal-row em {
+    text-align: left !important;
+  }
+}

@@ -97,7 +97,6 @@ export function BusinessOverviewReviewPage() {
                 <h3>{module.title}</h3>
                 <span>›</span>
               </div>
-              <p>{module.description}</p>
               <button type="button">Open Analytics →</button>
             </div>
           </article>
@@ -149,10 +148,27 @@ export function BusinessOverviewReviewPage() {
               <select defaultValue="day"><option value="day">By Day</option></select>
             </div>
           </header>
-          <div className="bo-v3-line-chart">
-            {salesTrend.map((height, index) => (
-              <span key={`${height}-${index}`} style={{ height: `${height}%` }} />
-            ))}
+          <div className="bo-v3-line-chart bo-v3-line-chart--linear">
+            <svg viewBox="0 0 420 180" role="img" aria-label="Net sales trend line">
+              <defs>
+                <linearGradient id="boTrendFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="#2563eb" stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+              <path
+                className="bo-v3-trend-area"
+                d="M0 142 L26 105 L52 124 L78 52 L104 132 L130 61 L156 112 L182 121 L208 44 L234 96 L260 83 L286 137 L312 73 L338 96 L364 41 L390 129 L420 78 L420 180 L0 180 Z"
+              />
+              <path
+                className="bo-v3-trend-line"
+                d="M0 142 L26 105 L52 124 L78 52 L104 132 L130 61 L156 112 L182 121 L208 44 L234 96 L260 83 L286 137 L312 73 L338 96 L364 41 L390 129 L420 78"
+              />
+              {[0, 26, 52, 78, 104, 130, 156, 182, 208, 234, 260, 286, 312, 338, 364, 390, 420].map((x, index) => {
+                const y = [142, 105, 124, 52, 132, 61, 112, 121, 44, 96, 83, 137, 73, 96, 41, 129, 78][index];
+                return <circle key={`${x}-${y}`} cx={x} cy={y} r="3.5" />;
+              })}
+            </svg>
           </div>
           <div className="bo-v3-chart-legend">
             <span>May 1 – May 23, 2025</span>
@@ -308,7 +324,7 @@ export function BusinessOverviewReviewPage() {
       </section>
 
       <footer className="bo-v3-footer">
-        All amounts in UGX · Business Date: May 23, 2025 11:45 AM
+        All amounts in UGX · Business Date: May 23, 2025 11:45 AM · Business Overview
       </footer>
     </section>
   );
