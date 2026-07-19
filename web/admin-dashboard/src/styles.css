@@ -36617,3 +36617,302 @@ thead
     grid-column: span 12;
   }
 }
+
+/* Business Overview customer-ready alignment and equal-card polish */
+.bo-v3-page {
+  padding: 0.9rem;
+}
+
+.bo-v3-filter-strip,
+.bo-v3-module-grid,
+.bo-v3-kpi-grid,
+.bo-v3-analytics-grid,
+.bo-v3-actions-panel > div {
+  align-items: stretch;
+}
+
+.bo-v3-filter-strip {
+  grid-template-columns: repeat(4, minmax(190px, 1fr)) repeat(3, minmax(170px, 0.85fr));
+}
+
+.bo-v3-filter-strip label,
+.bo-v3-filter-strip article {
+  height: 100%;
+  min-height: 70px;
+}
+
+.bo-v3-filter-strip article {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.bo-v3-filter-strip article strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-v3-module-grid {
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+}
+
+.bo-v3-module-card {
+  height: 100%;
+  min-height: 150px;
+}
+
+.bo-v3-module-card > div {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.bo-v3-module-card p {
+  flex: 1;
+  min-height: 46px;
+}
+
+.bo-v3-module-card button {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.bo-v3-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.bo-v3-kpi-card {
+  display: flex;
+  min-height: 145px;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.bo-v3-kpi-heading {
+  min-height: auto;
+}
+
+.bo-v3-kpi-heading small {
+  width: 100%;
+}
+
+.bo-v3-kpi-card strong {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-v3-kpi-card span {
+  text-align: center;
+}
+
+.bo-v3-source,
+.bo-v3-source-live,
+.bo-v3-source-preview,
+.bo-v3-source-config {
+  display: none !important;
+}
+
+.bo-v3-analytics-grid {
+  grid-auto-flow: row dense;
+}
+
+.bo-v3-panel,
+.bo-v3-insight-panel,
+.bo-v3-actions-panel {
+  height: 100%;
+}
+
+.bo-v3-panel {
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
+}
+
+.bo-v3-panel header,
+.bo-v3-insight-panel header {
+  flex: 0 0 auto;
+}
+
+.bo-v3-panel table,
+.bo-v3-products,
+.bo-v3-payment-body,
+.bo-v3-goal-row {
+  flex: 1;
+}
+
+.bo-v3-panel th,
+.bo-v3-panel td {
+  vertical-align: middle;
+}
+
+.bo-v3-panel td,
+.bo-v3-filter-strip article strong,
+.bo-v3-product-row em,
+.bo-v3-goal-row em,
+.bo-v3-goal-row strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-v3-panel td {
+  min-width: 110px;
+}
+
+.bo-v3-panel th {
+  max-width: 62%;
+}
+
+.bo-v3-panel-button {
+  margin-top: auto;
+}
+
+.bo-v3-panel-chart,
+.bo-v3-panel-products,
+.bo-v3-panel-payment,
+.bo-v3-panel-goals {
+  min-height: 330px;
+}
+
+.bo-v3-line-chart {
+  flex: 1;
+  min-height: 220px;
+}
+
+.bo-v3-products {
+  align-content: start;
+}
+
+.bo-v3-product-row {
+  grid-template-columns: minmax(190px, 1.35fr) minmax(120px, 0.9fr) minmax(95px, auto);
+}
+
+.bo-v3-payment-body {
+  align-content: center;
+}
+
+.bo-v3-goal-row {
+  grid-template-columns: minmax(210px, 1.15fr) minmax(160px, 1fr) minmax(55px, auto);
+}
+
+.bo-v3-insight-panel {
+  display: flex;
+  min-height: 660px;
+  flex-direction: column;
+}
+
+.bo-v3-insight-panel section {
+  flex: 0 0 auto;
+}
+
+.bo-v3-insight-panel button {
+  margin-top: auto;
+}
+
+.bo-v3-actions-panel {
+  min-height: 220px;
+}
+
+.bo-v3-actions-panel > div {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.bo-v3-action-card {
+  display: flex;
+  min-height: 155px;
+  height: 100%;
+  flex-direction: column;
+}
+
+.bo-v3-action-card p {
+  flex: 1;
+  min-height: auto;
+}
+
+.bo-v3-action-card button {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.bo-v3-footer {
+  font-size: 0.76rem;
+}
+
+@media (min-width: 1601px) {
+  .bo-v3-panel {
+    grid-column: span 3;
+  }
+
+  .bo-v3-panel-chart,
+  .bo-v3-panel-products,
+  .bo-v3-panel-payment,
+  .bo-v3-panel-goals {
+    grid-column: span 4;
+  }
+
+  .bo-v3-insight-panel {
+    grid-column: span 4;
+  }
+
+  .bo-v3-actions-panel {
+    grid-column: span 8;
+  }
+}
+
+@media (max-width: 1600px) {
+  .bo-v3-filter-strip {
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+  }
+
+  .bo-v3-panel,
+  .bo-v3-panel-chart,
+  .bo-v3-panel-products,
+  .bo-v3-panel-payment,
+  .bo-v3-panel-goals,
+  .bo-v3-insight-panel,
+  .bo-v3-actions-panel {
+    grid-column: span 6;
+  }
+
+  .bo-v3-insight-panel {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .bo-v3-filter-strip {
+    grid-template-columns: repeat(2, minmax(190px, 1fr));
+  }
+
+  .bo-v3-product-row,
+  .bo-v3-goal-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bo-v3-product-row em,
+  .bo-v3-goal-row em,
+  .bo-v3-goal-row strong {
+    text-align: left;
+  }
+}
+
+@media (max-width: 760px) {
+  .bo-v3-filter-strip,
+  .bo-v3-module-grid,
+  .bo-v3-kpi-grid,
+  .bo-v3-actions-panel > div {
+    grid-template-columns: 1fr;
+  }
+
+  .bo-v3-filter-strip article strong,
+  .bo-v3-kpi-card strong,
+  .bo-v3-kpi-card span {
+    text-align: left;
+  }
+
+  .bo-v3-panel {
+    min-height: auto;
+  }
+}

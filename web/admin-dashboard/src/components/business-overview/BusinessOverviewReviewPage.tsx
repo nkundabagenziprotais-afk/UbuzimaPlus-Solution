@@ -9,9 +9,6 @@ function toneClass(tone?: string) {
   return tone ? `is-${tone}` : 'is-neutral';
 }
 
-function sourceClass(source: string) {
-  return `bo-v3-source bo-v3-source-${source.toLowerCase()}`;
-}
 
 const salesTrend = [22, 46, 32, 78, 28, 72, 42, 35, 83, 48, 55, 24, 62, 46, 84, 30, 67];
 
@@ -114,7 +111,6 @@ export function BusinessOverviewReviewPage() {
             <article key={kpi.label} className={`bo-v3-kpi-card ${toneClass(kpi.tone)}`}>
               <div className="bo-v3-kpi-heading">
                 <small>{kpi.label}</small>
-                <em className={sourceClass(kpi.source)}>{kpi.source}</em>
               </div>
               <strong>{kpi.value}</strong>
               <span>{kpi.trend ? `${kpi.trend} ` : ''}{kpi.helper}</span>
