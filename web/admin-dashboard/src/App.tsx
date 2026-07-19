@@ -8685,7 +8685,14 @@ async function confirmTransaction() {
       );
 
     if (isBusinessOverviewRoute) {
-      return <BusinessOverviewReviewPage />;
+      return <BusinessOverviewReviewPage
+        token={session?.token ?? ''}
+        tenantSlug={
+          ((profile as { tenant_slug?: string | null }).tenant_slug ??
+            (profile as { tenant?: { slug?: string | null } | null }).tenant?.slug ??
+            null)
+        }
+      />;
     }
 
     switch (activeSection) {

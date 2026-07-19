@@ -1,37 +1,33 @@
+import { useEffect, useMemo, useState } from 'react';
 import {
   businessOverviewKpis,
   businessOverviewModules,
   recommendedActions,
 } from './businessOverviewMockData';
+import {
+  emptyBusinessOverviewLiveData,
+  loadBusinessOverviewLiveData,
+  type BusinessOverviewLiveData,
+  type BusinessOverviewLiveRow,
+} from './businessOverviewLiveData';
+
+type BusinessOverviewReviewPageProps = {
+  token?: string;
+  tenantSlug?: string | null;
+};
 
 function toneClass(tone?: string) {
   return tone ? `is-${tone}` : 'is-neutral';
 }
 
-const emptyRows = {
-  revenue: [
-    'Gross Sales',
-    'Discounts',
-    'Returns / Reversals',
-    'Net Sales',
-    'Collections',
-    'Credit Sales',
-    'Insurance Sales',
-    'Net Cash Inflow',
-  ],
-  expenses: ['Operating Expenses', 'Gross Profit', 'Estimated Net Profit', 'Gross Margin', 'Net Margin'],
-  inventory: ['Total Inventory Value', 'Low Stock Items', 'Expiring Items', 'Out of Stock Revenue Risk'],
-  insurance: ['Insurance Sales', 'Insurer Receivable', 'Top Insurer', 'AR Over 30 Days'],
-};
-
-function EmptyTable({ rows }: { rows: string[] }) {
+function LiveRowsTable({ rows }: { rows: BusinessOverviewLiveRow[] }) {
   return (
     <table>
       <tbody>
         {rows.map((row) => (
-          <tr key={row}>
-            <th>{row}</th>
-            <td>—</td>
+          <tr key={row.label}>
+            <th>{row.label}</th>
+            <td>{row.value}</td>
           </tr>
         ))}
       </tbody>
@@ -39,7 +35,60 @@ function EmptyTable({ rows }: { rows: string[] }) {
   );
 }
 
-export function BusinessOverviewReviewPage() {
+function EmptyState({ children }: { children: string }) {
+  return <div className="bo-v3-empty-state-card">{children}</div>;
+}
+
+export function BusinessOverviewReviewPage({
+  token = '',
+  tenantSlug = null,
+}: BusinessOverviewReviewPageProps) {
+  const [liveData, setLiveData] = useState<BusinessOverviewLiveData>(() =>
+    emptyBusinessOverviewLiveData(),
+  );
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setIsLoading(true);
+      const data = await loadBusinessOverviewLiveData(token, tenantSlug);
+      if (!cancelled) {
+        setLiveData(data);
+        setIsLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, tenantSlug]);
+
+  const kpis = useMemo(
+    () =>
+      businessOverviewKpis.map((kpi) => ({
+        ...kpi,
+        value: liveData.kpis[kpi.label] ?? kpi.value,
+        helper: liveData.kpiHelpers[kpi.label] ?? kpi.helper,
+      })),
+    [liveData],
+  );
+
+  const maxTrend = Math.max(...liveData.trend.map((point) => point.value), 1);
+  const trendPath =
+    liveData.trend.length > 1
+      ? liveData.trend
+          .map((point, index) => {
+            const x = (index / Math.max(liveData.trend.length - 1, 1)) * 420;
+            const y = 170 - (point.value / maxTrend) * 145;
+            return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
+          })
+          .join(' ')
+      : '';
+
   return (
     <section className="bo-v3-page">
       <header className="bo-v3-header">
@@ -52,6 +101,12 @@ export function BusinessOverviewReviewPage() {
           <p>360° view of revenue, cash, expenses, profitability, goals, and operational risks.</p>
         </div>
       </header>
+
+      {liveData.error && (
+        <div className="bo-v3-live-alert">
+          Some live sources could not be loaded: {liveData.error}
+        </div>
+      )}
 
       <section className="bo-v3-filter-strip">
         <label>
@@ -117,12 +172,12 @@ export function BusinessOverviewReviewPage() {
       <section>
         <h2 className="bo-v3-section-title">Key Performance Indicators</h2>
         <div className="bo-v3-kpi-grid">
-          {businessOverviewKpis.map((kpi) => (
+          {kpis.map((kpi) => (
             <article key={kpi.label} className={`bo-v3-kpi-card ${toneClass(kpi.tone)}`}>
               <div className="bo-v3-kpi-heading">
                 <small>{kpi.label}</small>
               </div>
-              <strong>{kpi.value}</strong>
+              <strong>{isLoading ? '…' : kpi.value}</strong>
               <span>{kpi.helper}</span>
             </article>
           ))}
@@ -137,7 +192,7 @@ export function BusinessOverviewReviewPage() {
               <option value="current">Current</option>
             </select>
           </header>
-          <EmptyTable rows={emptyRows.revenue} />
+          <LiveRowsTable rows={liveData.revenueRows} />
         </article>
 
         <article className="bo-v3-panel bo-v3-panel-chart">
@@ -155,25 +210,31 @@ export function BusinessOverviewReviewPage() {
 
           <div className="bo-v3-chart-shell">
             <div className="bo-v3-y-axis">
-              <span>—</span>
-              <span>—</span>
-              <span>—</span>
-              <span>—</span>
+              <span>{maxTrend > 1 ? maxTrend.toLocaleString('en-RW') : '—'}</span>
+              <span></span>
+              <span></span>
+              <span></span>
               <span>0</span>
             </div>
             <div className="bo-v3-line-chart bo-v3-line-chart--linear bo-v3-empty-chart">
-              <svg viewBox="0 0 420 180" role="img" aria-label="No sales trend data available">
-                <path className="bo-v3-trend-line-empty" d="M0 120 L420 120" />
+              <svg viewBox="0 0 420 180" role="img" aria-label="Sales trend data">
+                {liveData.trend.length > 1 ? (
+                  <path className="bo-v3-trend-line" d={trendPath} />
+                ) : (
+                  <path className="bo-v3-trend-line-empty" d="M0 120 L420 120" />
+                )}
               </svg>
-              <div className="bo-v3-empty-state">No live sales trend data connected</div>
+              {liveData.trend.length <= 1 && (
+                <div className="bo-v3-empty-state">No live sales trend data connected</div>
+              )}
             </div>
           </div>
 
           <div className="bo-v3-x-axis">
-            <span>Start</span>
+            <span>{liveData.trend[0]?.label ?? 'Start'}</span>
             <span></span>
             <span></span>
-            <span>End</span>
+            <span>{liveData.trend.at(-1)?.label ?? 'End'}</span>
           </div>
           <div className="bo-v3-chart-legend">
             <span>Transaction value</span>
@@ -187,7 +248,26 @@ export function BusinessOverviewReviewPage() {
               <option value="revenue">By Revenue</option>
             </select>
           </header>
-          <div className="bo-v3-empty-state-card">No live product contribution data connected</div>
+
+          {liveData.topProducts.length > 0 ? (
+            <div className="bo-v3-products">
+              {liveData.topProducts.map((product) => (
+                <div key={product.name} className="bo-v3-product-row">
+                  <div>
+                    <span className="bo-v3-product-thumb" />
+                    <strong>{product.name}</strong>
+                  </div>
+                  <div className="bo-v3-product-bar">
+                    <span style={{ width: `${product.percent}%` }} />
+                  </div>
+                  <em>{product.value}</em>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState>No live product contribution data connected</EmptyState>
+          )}
+
           <button type="button" className="bo-v3-panel-button">View All Products</button>
         </article>
 
@@ -196,18 +276,24 @@ export function BusinessOverviewReviewPage() {
             <h3>Payment Mix (MTD)</h3>
           </header>
           <div className="bo-v3-payment-body">
-            <div className="bo-v3-donut bo-v3-donut-empty">
+            <div className={`bo-v3-donut ${liveData.paymentMix.length ? '' : 'bo-v3-donut-empty'}`}>
               <div>
                 <small>Total</small>
-                <strong>—</strong>
+                <strong>{liveData.kpis.Collections ?? '—'}</strong>
               </div>
             </div>
             <ul>
-              {['Cash', 'Mobile Money', 'Card', 'Insurance', 'Credit'].map((item) => (
-                <li key={item}>
+              {(liveData.paymentMix.length ? liveData.paymentMix : [
+                { label: 'Cash', value: '—', percent: 0 },
+                { label: 'Mobile Money', value: '—', percent: 0 },
+                { label: 'Card', value: '—', percent: 0 },
+                { label: 'Insurance', value: '—', percent: 0 },
+                { label: 'Credit', value: '—', percent: 0 },
+              ]).map((item) => (
+                <li key={item.label}>
                   <span className="bo-v3-dot cash" />
-                  <strong>{item}</strong>
-                  <em>—</em>
+                  <strong>{item.label}</strong>
+                  <em>{item.value}</em>
                 </li>
               ))}
             </ul>
@@ -216,19 +302,30 @@ export function BusinessOverviewReviewPage() {
 
         <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-expenses">
           <header><h3>Expenses & Profitability (MTD)</h3></header>
-          <EmptyTable rows={emptyRows.expenses} />
+          <LiveRowsTable rows={[
+            { label: 'Operating Expenses', value: '—' },
+            { label: 'Gross Profit', value: liveData.kpis['Gross Profit'] ?? '—' },
+            { label: 'Estimated Net Profit', value: liveData.kpis['Estimated Net Profit'] ?? '—' },
+            { label: 'Gross Margin', value: '—' },
+            { label: 'Net Margin', value: '—' },
+          ]} />
           <button type="button" className="bo-v3-panel-button">View Details</button>
         </article>
 
         <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-inventory-risk">
           <header><h3>Inventory Risk Overview</h3></header>
-          <EmptyTable rows={emptyRows.inventory} />
+          <LiveRowsTable rows={liveData.inventoryRows} />
           <button type="button" className="bo-v3-panel-button">View Inventory Analytics</button>
         </article>
 
         <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-insurance">
           <header><h3>Insurance & Receivables (MTD)</h3></header>
-          <EmptyTable rows={emptyRows.insurance} />
+          <LiveRowsTable rows={[
+            { label: 'Insurance Sales', value: liveData.revenueRows.find((row) => row.label === 'Insurance Sales')?.value ?? '—' },
+            { label: 'Insurer Receivable', value: '—' },
+            { label: 'Top Insurer', value: '—' },
+            { label: 'AR Over 30 Days', value: '—' },
+          ]} />
           <button type="button" className="bo-v3-panel-button">View Insurance Analytics</button>
         </article>
 
@@ -255,15 +352,17 @@ export function BusinessOverviewReviewPage() {
 
           <section>
             <h4>Business insights</h4>
-            <p>Connect live operational data to activate automated insights, risks, and recommended actions.</p>
+            <p>
+              Sales and inventory values are loaded from available live operational sources.
+              Expenses, goals, and insurer receivables require their dedicated live data sources.
+            </p>
           </section>
 
           <section>
-            <h4>Required data sources</h4>
+            <h4>Connected live sources</h4>
             <ul>
-              <li>POS sales and collections</li>
-              <li>Inventory value, stock, and expiry</li>
-              <li>Expenses, receivables, and goals</li>
+              <li>Sales register: {liveData.salesLoaded ? 'Connected' : 'Not available'}</li>
+              <li>Inventory summary: {liveData.inventoryLoaded ? 'Connected' : 'Not available'}</li>
             </ul>
           </section>
 

@@ -37698,3 +37698,62 @@ thead
     text-align: left !important;
   }
 }
+
+/* Business Overview live-data and empty-state polish */
+.bo-v3-live-alert {
+  margin: 0 0 0.85rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  color: #92400e;
+  background: #fffbeb;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.bo-v3-empty-state,
+.bo-v3-empty-state-card {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  border: 1px dashed #cbd8e6;
+  border-radius: 14px;
+  color: #64748b;
+  background: #f8fbff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 1rem;
+}
+
+.bo-v3-empty-chart {
+  position: relative;
+}
+
+.bo-v3-empty-chart .bo-v3-empty-state {
+  position: absolute;
+  inset: 1rem;
+  min-height: auto;
+  background: rgba(248, 251, 255, 0.86);
+}
+
+.bo-v3-trend-line-empty {
+  fill: none;
+  stroke: #94a3b8;
+  stroke-width: 3;
+  stroke-dasharray: 8 8;
+}
+
+.bo-v3-donut-empty {
+  background: conic-gradient(#cbd5e1 0 100%) !important;
+}
+
+.bo-v3-panel td,
+.bo-v3-panel-payment li em,
+.bo-v3-goal-row strong,
+.bo-v3-goal-row em,
+.bo-v3-filter-strip article strong,
+.bo-v3-kpi-card strong {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
