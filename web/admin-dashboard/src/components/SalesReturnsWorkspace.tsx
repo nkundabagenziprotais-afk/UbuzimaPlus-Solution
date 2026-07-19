@@ -124,6 +124,39 @@ function normalizePermission(
     .replace(/[-\s]+/g, '.');
 }
 
+
+function profileCanDeleteTransactions(profile: AccessProfile): boolean {
+  const profileRecord = profile as unknown as Record<string, unknown>;
+
+  const permissions = new Set(
+    Array.isArray(profile.permissions)
+      ? profile.permissions.map((permission) => String(permission))
+      : [],
+  );
+
+  const roles = Array.isArray(profile.roles)
+    ? profile.roles.map((role) => String(role).toLowerCase())
+    : [];
+
+  const roleNames = Array.isArray(profileRecord.role_names)
+    ? profileRecord.role_names.map((role) => String(role).toLowerCase())
+    : [];
+
+  return [
+    'pharmaco.transactions.delete',
+    'pharmaco.transactions.correct',
+    'pharmaco.pos.refund',
+    'pharmaco.sales.manage',
+    'pharmaco.sales.refund',
+    'tenant.admin',
+    'platform.admin',
+    'tenant.roles.manage',
+    'roles.manage',
+  ].some((permission) => permissions.has(permission))
+    || roles.some((role) => ['admin', 'owner', 'administrator', 'super admin'].includes(role))
+    || roleNames.some((role) => ['admin', 'owner', 'administrator', 'super admin'].includes(role));
+}
+
 function profileCanManageRefunds(
   profile: AccessProfile,
 ): boolean {
@@ -378,6 +411,9 @@ function SalesReturnsWorkspaceContent({
   const tenantSlug = tenantSlugFrom(profile);
   const canManageRefunds =
     profileCanManageRefunds(profile);
+
+
+  const canDeleteTransactions = profileCanDeleteTransactions(profile);
 
   const context = useMemo<SalesReturnsRequestContext>(
     () => ({
@@ -1012,7 +1048,7 @@ function SalesReturnsWorkspaceContent({
     saleId: number,
     itemId: number,
   ) {
-    if (!canManageRefunds) {
+    if (!canDeleteTransactions) {
       setError('Only Admin or Owner users can delete transaction items.');
       return;
     }
@@ -1058,7 +1094,7 @@ function SalesReturnsWorkspaceContent({
   }
 
   async function deleteTransactionRecord(saleId: number) {
-    if (!canManageRefunds) {
+    if (!canDeleteTransactions) {
       setError('Only Admin or Owner users can delete transaction records.');
       return;
     }
@@ -2036,7 +2072,7 @@ function SalesReturnsWorkspaceContent({
                                   Return Request
                                 </button>
 
-                                {canManageRefunds ? (
+                                {canDeleteTransactions ? (
                                   <button
                                     type="button"
                                     className="danger"
@@ -3167,7 +3203,7 @@ function SalesReturnsWorkspaceContent({
                                   </td>
 
                                   <td>
-                                    {canManageRefunds ? (
+                                    {canDeleteTransactions ? (
                                       <button
                                         type="button"
                                         className="danger"

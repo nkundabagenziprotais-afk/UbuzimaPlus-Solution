@@ -1407,13 +1407,13 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
     Route::post('/sales/{sale}/items/{item}/void', [SalesDispensingController::class, 'voidSaleItem'])
         ->middleware([
-            'App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.transactions.delete,pharmaco.transactions.correct,pharmaco.pos.refund,tenant.roles.manage,roles.manage',
+            'App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.transactions.delete,pharmaco.transactions.correct,pharmaco.pos.refund,pharmaco.sales.manage,pharmaco.sales.refund,tenant.admin,platform.admin,tenant.roles.manage,roles.manage',
             'tenant.module:pharmaco.sales',
         ]);
 
     Route::post('/sales/{sale}/void', [SalesDispensingController::class, 'voidSale'])
         ->middleware([
-            'App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.transactions.delete,pharmaco.transactions.correct,pharmaco.pos.refund,tenant.roles.manage,roles.manage',
+            'App\\Http\\Middleware\\EnsureAnyPermission:pharmaco.transactions.delete,pharmaco.transactions.correct,pharmaco.pos.refund,pharmaco.sales.manage,pharmaco.sales.refund,tenant.admin,platform.admin,tenant.roles.manage,roles.manage',
             'tenant.module:pharmaco.sales',
         ]);
 

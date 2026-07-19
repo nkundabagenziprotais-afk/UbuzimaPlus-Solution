@@ -23,6 +23,7 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   getCorporateMailOverview,
   getPharmaBranches,
   getPharmaInventoryBatches,
+  getAllPharmaInventoryBatches,
   getPharmacyProfile,
   login,
   logout,
@@ -5901,7 +5902,14 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
+        const response = await getAllPharmaInventoryBatches(
+          session!.token,
+          posTenantSlug,
+          undefined,
+          {
+            sellableOnly: true,
+          },
+        );
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
