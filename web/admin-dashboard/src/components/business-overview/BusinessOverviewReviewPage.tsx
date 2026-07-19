@@ -1,5 +1,4 @@
 import {
-  businessGoalSnapshot,
   businessOverviewKpis,
   businessOverviewModules,
   recommendedActions,
@@ -9,24 +8,36 @@ function toneClass(tone?: string) {
   return tone ? `is-${tone}` : 'is-neutral';
 }
 
+const emptyRows = {
+  revenue: [
+    'Gross Sales',
+    'Discounts',
+    'Returns / Reversals',
+    'Net Sales',
+    'Collections',
+    'Credit Sales',
+    'Insurance Sales',
+    'Net Cash Inflow',
+  ],
+  expenses: ['Operating Expenses', 'Gross Profit', 'Estimated Net Profit', 'Gross Margin', 'Net Margin'],
+  inventory: ['Total Inventory Value', 'Low Stock Items', 'Expiring Items', 'Out of Stock Revenue Risk'],
+  insurance: ['Insurance Sales', 'Insurer Receivable', 'Top Insurer', 'AR Over 30 Days'],
+};
 
-const salesTrend = [22, 46, 32, 78, 28, 72, 42, 35, 83, 48, 55, 24, 62, 46, 84, 30, 67];
-
-const paymentMix = [
-  { label: 'Cash', value: '61.7%', className: 'cash' },
-  { label: 'Mobile Money', value: '18.9%', className: 'momo' },
-  { label: 'Card', value: '10.4%', className: 'card' },
-  { label: 'Insurance', value: '6.2%', className: 'insurance' },
-  { label: 'Credit', value: '2.8%', className: 'credit' },
-];
-
-const topProducts = [
-  { name: 'Panadol Extra (24s)', value: '1,820,000', percent: 92 },
-  { name: 'Amoxicillin 500mg (100s)', value: '1,450,000', percent: 78 },
-  { name: 'Vitamin C 1000mg (30s)', value: '1,120,000', percent: 62 },
-  { name: 'Brufen 400mg (30s)', value: '980,000', percent: 54 },
-  { name: 'ORS Sachets (20s)', value: '760,000', percent: 42 },
-];
+function EmptyTable({ rows }: { rows: string[] }) {
+  return (
+    <table>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row}>
+            <th>{row}</th>
+            <td>—</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 export function BusinessOverviewReviewPage() {
   return (
@@ -45,8 +56,8 @@ export function BusinessOverviewReviewPage() {
       <section className="bo-v3-filter-strip">
         <label>
           <span>Date Range</span>
-          <select defaultValue="may">
-            <option value="may">May 1 – May 23, 2025</option>
+          <select defaultValue="current">
+            <option value="current">Current Period</option>
           </select>
         </label>
 
@@ -67,24 +78,24 @@ export function BusinessOverviewReviewPage() {
 
         <label>
           <span>Compare</span>
-          <select defaultValue="previous">
-            <option value="previous">Apr 1 – Apr 23, 2025</option>
+          <select defaultValue="none">
+            <option value="none">No Comparison</option>
           </select>
         </label>
 
         <article>
           <small>Revenue Goal</small>
-          <strong>50,000,000</strong>
+          <strong>—</strong>
         </article>
 
         <article>
           <small>Profit Goal</small>
-          <strong>8,000,000</strong>
+          <strong>—</strong>
         </article>
 
         <article>
           <small>Expense Mode</small>
-          <strong>Actual</strong>
+          <strong>—</strong>
         </article>
       </section>
 
@@ -112,7 +123,7 @@ export function BusinessOverviewReviewPage() {
                 <small>{kpi.label}</small>
               </div>
               <strong>{kpi.value}</strong>
-              <span>{kpi.trend ? `${kpi.trend} ` : ''}{kpi.helper}</span>
+              <span>{kpi.helper}</span>
             </article>
           ))}
         </div>
@@ -122,92 +133,61 @@ export function BusinessOverviewReviewPage() {
         <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-daily">
           <header>
             <h3>Daily Revenue Operation</h3>
-            <select defaultValue="today">
-              <option value="today">Today</option>
+            <select defaultValue="current">
+              <option value="current">Current</option>
             </select>
           </header>
-          <table>
-            <tbody>
-              <tr><th>Gross Sales</th><td>1,650,000</td></tr>
-              <tr><th>Discounts</th><td>-120,000</td></tr>
-              <tr><th>Returns / Reversals</th><td>-45,000</td></tr>
-              <tr className="positive"><th>Net Sales</th><td>1,485,000</td></tr>
-              <tr><th>Collections</th><td>1,210,000</td></tr>
-              <tr><th>Credit Sales</th><td>210,000</td></tr>
-              <tr><th>Insurance Sales</th><td>65,000</td></tr>
-              <tr className="strong positive"><th>Net Cash Inflow</th><td>1,385,000</td></tr>
-            </tbody>
-          </table>
+          <EmptyTable rows={emptyRows.revenue} />
         </article>
 
         <article className="bo-v3-panel bo-v3-panel-chart">
           <header>
             <h3>Sales Trend</h3>
             <div>
-              <select defaultValue="net-sales"><option value="net-sales">Net Sales</option></select>
-              <select defaultValue="day"><option value="day">By Day</option></select>
+              <select defaultValue="transaction-value">
+                <option value="transaction-value">Transaction Value</option>
+              </select>
+              <select defaultValue="day">
+                <option value="day">By Day</option>
+              </select>
             </div>
           </header>
+
           <div className="bo-v3-chart-shell">
             <div className="bo-v3-y-axis">
-              <span>2.0M</span>
-              <span>1.5M</span>
-              <span>1.0M</span>
-              <span>0.5M</span>
+              <span>—</span>
+              <span>—</span>
+              <span>—</span>
+              <span>—</span>
               <span>0</span>
             </div>
-            <div className="bo-v3-line-chart bo-v3-line-chart--linear">
-            <svg viewBox="0 0 420 180" role="img" aria-label="Net sales trend line">
-              <defs>
-                <linearGradient id="boTrendFill" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity="0.02" />
-                </linearGradient>
-              </defs>
-              <path
-                className="bo-v3-trend-area"
-                d="M0 142 L26 105 L52 124 L78 52 L104 132 L130 61 L156 112 L182 121 L208 44 L234 96 L260 83 L286 137 L312 73 L338 96 L364 41 L390 129 L420 78 L420 180 L0 180 Z"
-              />
-              <path
-                className="bo-v3-trend-line"
-                d="M0 142 L26 105 L52 124 L78 52 L104 132 L130 61 L156 112 L182 121 L208 44 L234 96 L260 83 L286 137 L312 73 L338 96 L364 41 L390 129 L420 78"
-              />
-              {[0, 26, 52, 78, 104, 130, 156, 182, 208, 234, 260, 286, 312, 338, 364, 390, 420].map((x, index) => {
-                const y = [142, 105, 124, 52, 132, 61, 112, 121, 44, 96, 83, 137, 73, 96, 41, 129, 78][index];
-                return <circle key={`${x}-${y}`} cx={x} cy={y} r="3.5" />;
-              })}
-            </svg>
+            <div className="bo-v3-line-chart bo-v3-line-chart--linear bo-v3-empty-chart">
+              <svg viewBox="0 0 420 180" role="img" aria-label="No sales trend data available">
+                <path className="bo-v3-trend-line-empty" d="M0 120 L420 120" />
+              </svg>
+              <div className="bo-v3-empty-state">No live sales trend data connected</div>
             </div>
           </div>
+
           <div className="bo-v3-x-axis">
-            <span>May 1</span>
-            <span>May 7</span>
-            <span>May 14</span>
-            <span>May 23</span>
+            <span>Start</span>
+            <span></span>
+            <span></span>
+            <span>End</span>
           </div>
           <div className="bo-v3-chart-legend">
-            <span>Transaction value · Current period</span>
-            <span>Comparison period</span>
+            <span>Transaction value</span>
           </div>
         </article>
 
         <article className="bo-v3-panel bo-v3-panel-products bo-v3-panel-top-products">
           <header>
             <h3>Top Contributing Products (MTD)</h3>
-            <select defaultValue="revenue"><option value="revenue">By Revenue</option></select>
+            <select defaultValue="revenue">
+              <option value="revenue">By Revenue</option>
+            </select>
           </header>
-          <div className="bo-v3-products">
-            {topProducts.map((product) => (
-              <div key={product.name} className="bo-v3-product-row">
-                <div>
-                  <span className="bo-v3-product-thumb" />
-                  <strong>{product.name}</strong>
-                </div>
-                <div className="bo-v3-product-bar"><span style={{ width: `${product.percent}%` }} /></div>
-                <em>{product.value}</em>
-              </div>
-            ))}
-          </div>
+          <div className="bo-v3-empty-state-card">No live product contribution data connected</div>
           <button type="button" className="bo-v3-panel-button">View All Products</button>
         </article>
 
@@ -216,18 +196,18 @@ export function BusinessOverviewReviewPage() {
             <h3>Payment Mix (MTD)</h3>
           </header>
           <div className="bo-v3-payment-body">
-            <div className="bo-v3-donut">
+            <div className="bo-v3-donut bo-v3-donut-empty">
               <div>
                 <small>Total</small>
-                <strong>24,650,000</strong>
+                <strong>—</strong>
               </div>
             </div>
             <ul>
-              {paymentMix.map((item) => (
-                <li key={item.label}>
-                  <span className={`bo-v3-dot ${item.className}`} />
-                  <strong>{item.label}</strong>
-                  <em>{item.value}</em>
+              {['Cash', 'Mobile Money', 'Card', 'Insurance', 'Credit'].map((item) => (
+                <li key={item}>
+                  <span className="bo-v3-dot cash" />
+                  <strong>{item}</strong>
+                  <em>—</em>
                 </li>
               ))}
             </ul>
@@ -236,55 +216,33 @@ export function BusinessOverviewReviewPage() {
 
         <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-expenses">
           <header><h3>Expenses & Profitability (MTD)</h3></header>
-          <table>
-            <tbody>
-              <tr><th>Operating Expenses</th><td>5,450,000</td></tr>
-              <tr><th>Gross Profit</th><td>10,230,000</td></tr>
-              <tr><th>Est. Net Profit</th><td>4,830,000</td></tr>
-              <tr><th>Gross Margin</th><td>36.0%</td></tr>
-              <tr><th>Net Margin</th><td>17.0%</td></tr>
-            </tbody>
-          </table>
+          <EmptyTable rows={emptyRows.expenses} />
           <button type="button" className="bo-v3-panel-button">View Details</button>
         </article>
 
         <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-inventory-risk">
           <header><h3>Inventory Risk Overview</h3></header>
-          <table>
-            <tbody>
-              <tr><th>Total Inventory Value</th><td>42,750,000</td></tr>
-              <tr><th>Low Stock Items</th><td className="warning">124</td></tr>
-              <tr><th>Expiring Items (30 days)</th><td className="warning">68</td></tr>
-              <tr><th>Out of Stock Revenue Risk</th><td className="danger">12,450,000</td></tr>
-            </tbody>
-          </table>
+          <EmptyTable rows={emptyRows.inventory} />
           <button type="button" className="bo-v3-panel-button">View Inventory Analytics</button>
         </article>
 
         <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-insurance">
           <header><h3>Insurance & Receivables (MTD)</h3></header>
-          <table>
-            <tbody>
-              <tr><th>Insurance Sales</th><td>1,615,000</td></tr>
-              <tr><th>Insurer Receivable</th><td>3,850,000</td></tr>
-              <tr><th>Top Insurer</th><td>Jubilee Assurance</td></tr>
-              <tr><th>AR Over 30 Days</th><td>2,150,000</td></tr>
-            </tbody>
-          </table>
+          <EmptyTable rows={emptyRows.insurance} />
           <button type="button" className="bo-v3-panel-button">View Insurance Analytics</button>
         </article>
 
         <article className="bo-v3-panel bo-v3-panel-goals bo-v3-panel-business-goals">
-          <header><h3>Business Goal Tracking (May 2025)</h3></header>
+          <header><h3>Business Goal Tracking</h3></header>
           <div className="bo-v3-goal-row">
-            <div><span>Revenue Goal</span><strong>31,250,000 / 50,000,000</strong></div>
-            <div className="bo-v3-progress"><span style={{ width: `${businessGoalSnapshot.revenueGoalProgress}%` }} /></div>
-            <em>{businessGoalSnapshot.revenueGoalProgress}%</em>
+            <div><span>Revenue Goal</span><strong>—</strong></div>
+            <div className="bo-v3-progress"><span style={{ width: '0%' }} /></div>
+            <em>—</em>
           </div>
           <div className="bo-v3-goal-row">
-            <div><span>Profit Goal</span><strong>9,850,000 / 8,000,000</strong></div>
-            <div className="bo-v3-progress"><span style={{ width: `${businessGoalSnapshot.profitGoalProgress}%` }} /></div>
-            <em>{businessGoalSnapshot.profitGoalProgress}%</em>
+            <div><span>Profit Goal</span><strong>—</strong></div>
+            <div className="bo-v3-progress"><span style={{ width: '0%' }} /></div>
+            <em>—</em>
           </div>
           <button type="button" className="bo-v3-panel-button">View Goals & Forecast</button>
         </article>
@@ -296,28 +254,16 @@ export function BusinessOverviewReviewPage() {
           </header>
 
           <section>
-            <h4>What changed?</h4>
-            <p>Net revenue is up 17.3% compared to the previous period.</p>
+            <h4>Business insights</h4>
+            <p>Connect live operational data to activate automated insights, risks, and recommended actions.</p>
           </section>
 
           <section>
-            <h4>Why it matters?</h4>
-            <p>Growth is driven by strong product sales and higher collections.</p>
-          </section>
-
-          <section>
-            <h4>Risks detected</h4>
+            <h4>Required data sources</h4>
             <ul>
-              <li>Outstanding balance is increasing.</li>
-              <li>12 products are out of stock that contributed 12.45M in sales last month.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h4>Recommended actions</h4>
-            <ul>
-              <li>Focus on collections and follow up credit customers.</li>
-              <li>Replenish high-revenue out-of-stock items.</li>
+              <li>POS sales and collections</li>
+              <li>Inventory value, stock, and expiry</li>
+              <li>Expenses, receivables, and goals</li>
             </ul>
           </section>
 
@@ -327,7 +273,7 @@ export function BusinessOverviewReviewPage() {
         <section className="bo-v3-actions-panel">
           <h3>Recommended Actions</h3>
           <div>
-            {recommendedActions.slice(0, 6).map((item) => (
+            {recommendedActions.map((item) => (
               <article key={item.title} className={`bo-v3-action-card ${toneClass(item.tone)}`}>
                 <strong>{item.title}</strong>
                 <p>{item.description}</p>
