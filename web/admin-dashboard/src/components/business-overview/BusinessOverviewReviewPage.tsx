@@ -55,59 +55,80 @@ export function BusinessOverviewReviewPage({
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      setIsLoading(true);
-      setLoaderStatus('started');
+    setLoaderStatus('effect-mounted');
 
-      try {
-        const data = await Promise.race([
-          loadBusinessOverviewLiveData(token, tenantSlug),
-          new Promise<BusinessOverviewLiveData>((_, reject) => {
-            window.setTimeout(
-              () => reject(new Error('Business Overview live data loader timed out after 15s.')),
-              15000,
-            );
-          }),
-        ]);
-
-        if (!cancelled) {
-          setLiveData(data);
-          setLoaderStatus(data.error ? `success-with-warning: ${data.error}` : 'success');
-
-          if (debugEnabled) {
-            console.log('Business Overview live data diagnostic', {
-              tenantSlug,
-              tokenPresent: Boolean(token),
-              data,
-            });
-          }
-        }
-      } catch (error) {
-        if (!cancelled) {
-          const message = error instanceof Error ? error.message : 'Unknown Business Overview loader failure.';
-
-          setLiveData({
-            ...emptyBusinessOverviewLiveData(),
-            loaded: true,
-            error: message,
-          });
-          setLoaderStatus(`failed: ${message}`);
-
-          if (debugEnabled) {
-            console.error('Business Overview live data loader failed', error);
-          }
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+    if (!token || !tenantSlug) {
+      setLiveData({
+        ...emptyBusinessOverviewLiveData(),
+        loaded: true,
+        error: !token
+          ? 'Authentication token is missing for Business Overview live data.'
+          : 'Tenant slug is missing for Business Overview live data.',
+      });
+      setLoaderStatus(!token ? 'failed: missing token' : 'failed: missing tenant slug');
+      setIsLoading(false);
+      return () => {
+        cancelled = true;
+      };
     }
 
-    load();
+    setIsLoading(true);
+    setLoaderStatus('started');
+
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) {
+        setLiveData({
+          ...emptyBusinessOverviewLiveData(),
+          loaded: true,
+          error: 'Business Overview live data loader timed out after 15s.',
+        });
+        setLoaderStatus('failed: Business Overview live data loader timed out after 15s.');
+        setIsLoading(false);
+      }
+    }, 15000);
+
+    loadBusinessOverviewLiveData(token, tenantSlug)
+      .then((data) => {
+        if (cancelled) return;
+
+        window.clearTimeout(timeout);
+        setLiveData(data);
+        setLoaderStatus(data.error ? `success-with-warning: ${data.error}` : 'success');
+        setIsLoading(false);
+
+        if (debugEnabled) {
+          console.log('Business Overview live data diagnostic', {
+            tenantSlug,
+            tokenPresent: Boolean(token),
+            data,
+          });
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        window.clearTimeout(timeout);
+
+        const message = error instanceof Error
+          ? error.message
+          : 'Unknown Business Overview loader failure.';
+
+        setLiveData({
+          ...emptyBusinessOverviewLiveData(),
+          loaded: true,
+          error: message,
+        });
+        setLoaderStatus(`failed: ${message}`);
+        setIsLoading(false);
+
+        if (debugEnabled) {
+          console.error('Business Overview live data loader failed', error);
+        }
+      });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
     };
   }, [token, tenantSlug, debugEnabled]);
 
