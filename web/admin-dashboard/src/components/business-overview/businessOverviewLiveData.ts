@@ -1,10 +1,49 @@
-import {
-  getAllPharmaInventoryBatches,
-  getPharmaInventorySummary,
-  getPharmaSales,
-} from '../../lib/api';
-
 type UnknownRecord = Record<string, unknown>;
+
+const API_BASE = '/api/v1';
+
+async function fetchBusinessOverviewJson(
+  token: string,
+  tenantSlug: string,
+  endpoint: string,
+  label: string,
+  timeoutMs = 10000,
+): Promise<unknown> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        'X-Tenant': tenantSlug,
+        'X-Tenant-Slug': tenantSlug,
+      },
+      signal: controller.signal,
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    const body = contentType.includes('application/json')
+      ? await response.json()
+      : await response.text();
+
+    if (!response.ok) {
+      throw new Error(`${label} failed with HTTP ${response.status}: ${typeof body === 'string' ? body.slice(0, 180) : JSON.stringify(body).slice(0, 180)}`);
+    }
+
+    return body;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`${label} request timed out after ${timeoutMs / 1000}s`);
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
 
 export type BusinessOverviewLiveRow = {
   label: string;
@@ -84,24 +123,6 @@ function formatCount(value: number): string {
 
 function formatPercent(value: number): string {
   return `${percentFormatter.format(value)}%`;
-}
-
-function withTimeout<T>(label: string, promise: Promise<T>, timeoutMs = 12000): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      reject(new Error(`${label} request timed out after ${timeoutMs / 1000}s`));
-    }, timeoutMs);
-
-    promise
-      .then((value) => {
-        window.clearTimeout(timer);
-        resolve(value);
-      })
-      .catch((error) => {
-        window.clearTimeout(timer);
-        reject(error);
-      });
-  });
 }
 
 function saleDateKey(sale: UnknownRecord): string {
@@ -421,9 +442,12 @@ export async function loadBusinessOverviewLiveData(
   let inventoryBatches: UnknownRecord[] = [];
 
   try {
-    const salesResponse = await withTimeout(
+    const salesResponse = await fetchBusinessOverviewJson(
+      token,
+      tenantSlug,
+      '/pharmaco/sales',
       'Sales register',
-      getPharmaSales(token, tenantSlug),
+      10000,
     );
     sales = extractSales(salesResponse);
     salesLoaded = true;
@@ -432,9 +456,12 @@ export async function loadBusinessOverviewLiveData(
   }
 
   try {
-    const inventoryResponse = await withTimeout(
+    const inventoryResponse = await fetchBusinessOverviewJson(
+      token,
+      tenantSlug,
+      '/pharmaco/inventory/summary',
       'Inventory summary',
-      getPharmaInventorySummary(token, tenantSlug),
+      10000,
     );
     inventorySummary = extractInventorySummary(inventoryResponse);
     inventorySummaryLoaded = true;
@@ -443,9 +470,11 @@ export async function loadBusinessOverviewLiveData(
   }
 
   try {
-    const batchResponse = await withTimeout(
+    const batchResponse = await fetchBusinessOverviewJson(
+      token,
+      tenantSlug,
+      '/pharmaco/inventory/batches',
       'Inventory batch register',
-      getAllPharmaInventoryBatches(token, tenantSlug),
       8000,
     );
     inventoryBatches = extractInventoryBatches(batchResponse);
