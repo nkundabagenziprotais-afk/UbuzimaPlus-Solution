@@ -8690,6 +8690,8 @@ async function confirmTransaction() {
         tenantSlug={
           ((profile as { tenant_slug?: string | null }).tenant_slug ??
             (profile as { tenant?: { slug?: string | null } | null }).tenant?.slug ??
+            (profile as { active_tenant?: { slug?: string | null } | null }).active_tenant?.slug ??
+            (profile as { tenant_assignments?: Array<{ tenant?: { slug?: string | null } | null }> | null }).tenant_assignments?.[0]?.tenant?.slug ??
             null)
         }
       />;
