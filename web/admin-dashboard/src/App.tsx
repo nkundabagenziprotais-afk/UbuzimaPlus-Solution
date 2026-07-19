@@ -8676,7 +8676,7 @@ async function confirmTransaction() {
       );
     }
 
-    if (window.location.hash === '#business-overview-review' && profileHasAdminAuthority(profile)) {
+    if ((window.location.hash === '#business-overview-review' || window.location.search.includes('business-overview-review=1')) && profileHasAdminAuthority(profile)) {
       return <BusinessOverviewReviewPage />;
     }
 
@@ -8686,7 +8686,7 @@ case 'overview':
           return null;
         }
 
-        if (window.location.hash === '#business-overview-review') {
+        if ((window.location.hash === '#business-overview-review' || window.location.search.includes('business-overview-review=1'))) {
           return <BusinessOverviewReviewPage />;
         }
 
@@ -8748,8 +8748,7 @@ case 'overview':
                 type="button"
                 className="dashboard-operating-card dashboard-operating-card--metrics priority"
                 onClick={() => {
-                  window.location.hash = 'business-overview-review';
-                  window.location.reload();
+                  window.location.href = `${window.location.pathname}?business-overview-review=1`;
                 }}
               >
                 <span>Business Overview Review</span>
