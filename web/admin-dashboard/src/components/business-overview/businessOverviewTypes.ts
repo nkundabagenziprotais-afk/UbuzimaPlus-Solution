@@ -3,7 +3,7 @@ export type BusinessOverviewModule = {
   title: string;
   description: string;
   accent: 'blue' | 'green' | 'teal' | 'purple' | 'amber' | 'red';
-  routeLabel: string;
+  status: 'Live' | 'Preview' | 'Config';
 };
 
 export type BusinessKpi = {
@@ -12,6 +12,7 @@ export type BusinessKpi = {
   helper: string;
   trend?: string;
   tone?: 'positive' | 'negative' | 'neutral' | 'warning';
+  source: 'Live' | 'Preview' | 'Config';
 };
 
 export type BusinessAction = {

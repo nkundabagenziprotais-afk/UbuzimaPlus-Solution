@@ -8751,6 +8751,21 @@ case 'overview':
                   window.location.href = `${window.location.pathname}?business-overview-review=1`;
                 }}
               >
+                <span>Business Overview</span>
+                <div className="dashboard-card-metrics">
+                  <span><b>360°</b><small>Business view</small></span>
+                  <span><b>Goals</b><small>Revenue and profit</small></span>
+                  <span><b>Live</b><small>Admin preview</small></span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="dashboard-operating-card dashboard-operating-card--metrics priority"
+                onClick={() => {
+                  window.location.href = `${window.location.pathname}?business-overview-review=1`;
+                }}
+              >
                 <span>Business Overview Review</span>
                 <div className="dashboard-card-metrics">
                   <span><b>360°</b><small>Business view</small></span>

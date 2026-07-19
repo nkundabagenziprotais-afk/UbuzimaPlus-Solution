@@ -9,40 +9,53 @@ function toneClass(tone?: string) {
   return tone ? `business-overview-${tone}` : 'business-overview-neutral';
 }
 
+function sourceClass(source: string) {
+  return `business-overview-source business-overview-source-${source.toLowerCase()}`;
+}
+
 export function BusinessOverviewReviewPage() {
   return (
-    <section className="business-overview-page">
-      <header className="business-overview-hero">
-        <div>
-          <p className="business-overview-eyebrow">Admin / Test Preview</p>
-          <h1>
-            Business Overview <span>Business Driving Engine</span>
-          </h1>
-          <p>
-            360° view of revenue, cash, expenses, profitability, goals, and operational risks.
-          </p>
+    <section className="business-overview-page business-overview-page--platform">
+      <header className="business-overview-hero business-overview-hero--executive">
+        <div className="business-overview-brand-block">
+          <img
+            src="/admin/assets/ubuzima-logo.png"
+            alt="UbuzimaPlus"
+            className="business-overview-logo"
+          />
+          <div>
+            <p className="business-overview-eyebrow">Business Overview · Admin/Test</p>
+            <h1>
+              Business Driving Engine
+              <span>360° operational intelligence</span>
+            </h1>
+            <p>
+              Executive view of revenue, cash, inventory, expenses, profitability, goals,
+              risks and recommended actions across pharmacy operations.
+            </p>
+          </div>
         </div>
 
-        <div className="business-overview-goal-cards">
+        <div className="business-overview-goal-cards business-overview-goal-cards--executive">
           <article>
-            <small>Revenue Goal</small>
+            <small>Monthly Revenue Goal</small>
             <strong>50,000,000</strong>
-            <span>{businessGoalSnapshot.revenueGoalProgress}% MTD Progress</span>
+            <span>{businessGoalSnapshot.revenueGoalProgress}% progress</span>
           </article>
           <article>
-            <small>Profit Goal</small>
+            <small>Monthly Profit Goal</small>
             <strong>8,000,000</strong>
-            <span>{businessGoalSnapshot.profitGoalProgress}% MTD Progress</span>
+            <span>{businessGoalSnapshot.profitGoalProgress}% progress</span>
           </article>
           <article>
-            <small>Expense Mode</small>
-            <strong>Actual</strong>
-            <span>Preview estimate</span>
+            <small>Operating Mode</small>
+            <strong>UAT Review</strong>
+            <span>Live + preview model</span>
           </article>
         </div>
       </header>
 
-      <div className="business-overview-filters">
+      <div className="business-overview-filters business-overview-filters--compact">
         <label>
           Date Range
           <select defaultValue="may">
@@ -68,34 +81,45 @@ export function BusinessOverviewReviewPage() {
         <label>
           Compare With
           <select defaultValue="previous">
-            <option value="previous">Apr 1 – Apr 23, 2025</option>
+            <option value="previous">Previous comparable period</option>
           </select>
         </label>
 
         <button type="button">Apply Filters</button>
       </div>
 
-      <section className="business-overview-module-grid" aria-label="Business modules">
+      <section className="business-overview-module-grid business-overview-module-grid--professional">
         {businessOverviewModules.map((module) => (
           <article key={module.id} className={`business-overview-module-card is-${module.accent}`}>
+            <span className="business-overview-module-icon">{module.title.slice(0, 2)}</span>
             <div>
-              <span className="business-overview-module-icon">{module.title.slice(0, 2)}</span>
-            </div>
-            <div>
-              <h3>{module.title}</h3>
+              <div className="business-overview-module-title-row">
+                <h3>{module.title}</h3>
+                <em className={sourceClass(module.status)}>{module.status}</em>
+              </div>
               <p>{module.description}</p>
-              <button type="button">{module.routeLabel} →</button>
+              <button type="button">Open Analytics →</button>
             </div>
           </article>
         ))}
       </section>
 
       <section>
-        <h2 className="business-overview-section-title">Key Performance Indicators</h2>
-        <div className="business-overview-kpi-grid">
+        <div className="business-overview-section-heading">
+          <div>
+            <p className="business-overview-eyebrow">Executive scorecard</p>
+            <h2>Key Performance Indicators</h2>
+          </div>
+          <span>Values marked Preview/Config will become live once Expenses and Goals modules are connected.</span>
+        </div>
+
+        <div className="business-overview-kpi-grid business-overview-kpi-grid--executive">
           {businessOverviewKpis.map((kpi) => (
             <article key={kpi.label} className={`business-overview-kpi-card ${toneClass(kpi.tone)}`}>
-              <small>{kpi.label}</small>
+              <div className="business-overview-kpi-topline">
+                <small>{kpi.label}</small>
+                <em className={sourceClass(kpi.source)}>{kpi.source}</em>
+              </div>
               <strong>{kpi.value}</strong>
               <span>{kpi.trend ? `${kpi.trend} · ` : ''}{kpi.helper}</span>
             </article>
@@ -103,9 +127,12 @@ export function BusinessOverviewReviewPage() {
         </div>
       </section>
 
-      <section className="business-overview-panel-grid">
+      <section className="business-overview-panel-grid business-overview-panel-grid--professional">
         <article className="business-overview-panel">
-          <header><h3>Daily Revenue Operation</h3><span>Today</span></header>
+          <header>
+            <h3>Daily Revenue Operation</h3>
+            <span>Live operating view</span>
+          </header>
           <dl className="business-overview-ledger">
             <div><dt>Gross Sales</dt><dd>1,650,000</dd></div>
             <div><dt>Discounts</dt><dd>-120,000</dd></div>
@@ -114,21 +141,26 @@ export function BusinessOverviewReviewPage() {
             <div><dt>Collections</dt><dd>1,210,000</dd></div>
             <div><dt>Credit Sales</dt><dd>210,000</dd></div>
             <div><dt>Insurance Sales</dt><dd>65,000</dd></div>
-            <div className="positive strong"><dt>Net Cash Inflow</dt><dd>1,385,000</dd></div>
           </dl>
         </article>
 
         <article className="business-overview-panel business-overview-panel-wide">
-          <header><h3>Sales Trend</h3><span>Net Sales by Day</span></header>
-          <div className="business-overview-chart">
-            {[38, 58, 44, 77, 49, 68, 53, 82, 61, 71, 46, 88].map((height) => (
-              <span key={height} style={{ height: `${height}%` }} />
+          <header>
+            <h3>Sales Trend</h3>
+            <span>Net sales by day</span>
+          </header>
+          <div className="business-overview-chart business-overview-chart--professional">
+            {[38, 58, 44, 77, 49, 68, 53, 82, 61, 71, 46, 88].map((height, index) => (
+              <span key={`${height}-${index}`} style={{ height: `${height}%` }} />
             ))}
           </div>
         </article>
 
         <article className="business-overview-panel">
-          <header><h3>Top Contributing Products</h3><span>By Revenue</span></header>
+          <header>
+            <h3>Top Contributing Products</h3>
+            <span>Revenue contribution</span>
+          </header>
           <ul className="business-overview-list">
             <li><span>Panadol Extra</span><strong>1,820,000</strong></li>
             <li><span>Amoxicillin 500mg</span><strong>1,450,000</strong></li>
@@ -139,7 +171,10 @@ export function BusinessOverviewReviewPage() {
         </article>
 
         <article className="business-overview-panel">
-          <header><h3>Expenses & Profitability</h3><span>MTD</span></header>
+          <header>
+            <h3>Expenses & Profitability</h3>
+            <span>Preview model</span>
+          </header>
           <dl className="business-overview-ledger">
             <div><dt>Operating Expenses</dt><dd>5,400,000</dd></div>
             <div><dt>Gross Profit</dt><dd>10,230,000</dd></div>
@@ -150,41 +185,43 @@ export function BusinessOverviewReviewPage() {
         </article>
 
         <article className="business-overview-panel">
-          <header><h3>Inventory Risk Overview</h3><span>Preview</span></header>
+          <header>
+            <h3>Inventory Risk Overview</h3>
+            <span>Live + risk estimate</span>
+          </header>
           <dl className="business-overview-ledger">
             <div><dt>Total Inventory Value</dt><dd>42,750,000</dd></div>
             <div><dt>Low Stock Items</dt><dd className="warning">124</dd></div>
             <div><dt>Expiring Items</dt><dd className="warning">68</dd></div>
-            <div><dt>Out of Stock Revenue Risk</dt><dd className="danger">12,450,000</dd></div>
-          </dl>
-        </article>
-
-        <article className="business-overview-panel">
-          <header><h3>Insurance & Receivables</h3><span>MTD</span></header>
-          <dl className="business-overview-ledger">
-            <div><dt>Insurance Sales</dt><dd>1,615,000</dd></div>
-            <div><dt>Insurer Receivable</dt><dd>3,850,000</dd></div>
-            <div><dt>Top Insurer</dt><dd>Jubilee Assurance</dd></div>
-            <div><dt>AR Over 30 Days</dt><dd>2,150,000</dd></div>
+            <div><dt>Out-of-stock Revenue Risk</dt><dd className="danger">12,450,000</dd></div>
           </dl>
         </article>
 
         <article className="business-overview-panel business-overview-insight">
-          <header><h3>AI / Business Insight</h3><span>Review summary</span></header>
+          <header>
+            <h3>AI / Business Insight</h3>
+            <span>Executive summary</span>
+          </header>
           <h4>What changed?</h4>
-          <p>Net revenue is up 17.3% compared to the previous period.</p>
+          <p>Revenue and collections are growing, but credit exposure is also increasing.</p>
           <h4>Why it matters</h4>
-          <p>Growth is driven by stronger product sales and higher collections.</p>
+          <p>The business can meet the monthly goal only if collections and fast-moving stock availability remain strong.</p>
           <h4>Risks detected</h4>
-          <p>Outstanding balance is increasing, while 12 high-value products are at stock risk.</p>
-          <h4>Recommended actions</h4>
-          <p>Focus on collections, replenish fast-moving items, and review operating expenses.</p>
+          <p>Outstanding balance, operating expense trend, and high-revenue stock risk need management attention.</p>
+          <h4>Recommended action</h4>
+          <p>Prioritize collections, replenish revenue-driving items, and approve the expense/goals model.</p>
         </article>
       </section>
 
       <section>
-        <h2 className="business-overview-section-title">Recommended Actions</h2>
-        <div className="business-overview-actions">
+        <div className="business-overview-section-heading">
+          <div>
+            <p className="business-overview-eyebrow">Management action queue</p>
+            <h2>Recommended Actions</h2>
+          </div>
+        </div>
+
+        <div className="business-overview-actions business-overview-actions--professional">
           {recommendedActions.map((item) => (
             <article key={item.title} className={`business-overview-action ${toneClass(item.tone)}`}>
               <strong>{item.title}</strong>
@@ -196,7 +233,7 @@ export function BusinessOverviewReviewPage() {
       </section>
 
       <footer className="business-overview-footer">
-        All amounts in UGX · Business Date: May 23, 2025 11:45 AM · Admin/Test Review
+        Business Overview UAT · Amounts in UGX · Admin/Test preview · Live data integration in progress
       </footer>
     </section>
   );
