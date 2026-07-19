@@ -215,16 +215,53 @@ function isHistoricalSale(sale: UnknownRecord): boolean {
 
 function extractSales(response: unknown): UnknownRecord[] {
   const record = asRecord(response);
-  return (
-    asArray(record.sales).length ? asArray(record.sales)
-      : asArray(record.data).length ? asArray(record.data)
-      : asArray(record.items)
-  );
+  const data = asRecord(record.data);
+  const payload = asRecord(record.payload);
+  const result = asRecord(record.result);
+
+  const candidates = [
+    record.sales,
+    data.sales,
+    payload.sales,
+    result.sales,
+    record.transactions,
+    data.transactions,
+    payload.transactions,
+    result.transactions,
+    record.records,
+    data.records,
+    record.items,
+    data.items,
+    record.data,
+  ];
+
+  for (const candidate of candidates) {
+    const rows = asArray(candidate);
+    if (rows.length > 0) return rows;
+  }
+
+  return [];
 }
 
 function extractInventorySummary(response: unknown): UnknownRecord {
   const record = asRecord(response);
-  return asRecord(record.summary && typeof record.summary === 'object' ? record.summary : record);
+  const data = asRecord(record.data);
+  const payload = asRecord(record.payload);
+  const result = asRecord(record.result);
+
+  return asRecord(
+    record.summary && typeof record.summary === 'object'
+      ? record.summary
+      : data.summary && typeof data.summary === 'object'
+        ? data.summary
+        : payload.summary && typeof payload.summary === 'object'
+          ? payload.summary
+          : result.summary && typeof result.summary === 'object'
+            ? result.summary
+            : data && Object.keys(data).length
+              ? data
+              : record,
+  );
 }
 
 function extractInventoryBatches(response: unknown): UnknownRecord[] {

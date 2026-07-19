@@ -8681,7 +8681,12 @@ async function confirmTransaction() {
       (
         window.location.hash === '#business-overview-review' ||
         window.location.search.includes('business-overview-review=1') ||
-        window.location.hash.includes('section=overview')
+        window.location.hash.includes('section=overview') ||
+        activeSection === 'overview' ||
+        localStorage.getItem('ubuzima.admin.section') === 'overview' ||
+        localStorage.getItem('ubuzima.admin.section') === 'dashboard' ||
+        localStorage.getItem('ubuzima_admin_active_section') === 'overview' ||
+        localStorage.getItem('ubuzima_admin_active_section') === 'dashboard'
       );
 
     if (isBusinessOverviewRoute) {
