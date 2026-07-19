@@ -47,6 +47,7 @@ export function BusinessOverviewReviewPage({
     emptyBusinessOverviewLiveData(),
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [loaderStatus, setLoaderStatus] = useState('not-started');
   const debugEnabled =
     typeof window !== 'undefined' &&
     window.location.search.includes('boDebug=1');
@@ -56,17 +57,42 @@ export function BusinessOverviewReviewPage({
 
     async function load() {
       setIsLoading(true);
-      const data = await loadBusinessOverviewLiveData(token, tenantSlug);
-      if (!cancelled) {
-        setLiveData(data);
-        if (debugEnabled) {
-          console.log('Business Overview live data diagnostic', {
-            tenantSlug,
-            tokenPresent: Boolean(token),
-            data,
-          });
+      setLoaderStatus('started');
+
+      try {
+        const data = await loadBusinessOverviewLiveData(token, tenantSlug);
+
+        if (!cancelled) {
+          setLiveData(data);
+          setLoaderStatus('success');
+
+          if (debugEnabled) {
+            console.log('Business Overview live data diagnostic', {
+              tenantSlug,
+              tokenPresent: Boolean(token),
+              data,
+            });
+          }
         }
-        setIsLoading(false);
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : 'Unknown Business Overview loader failure.';
+
+          setLiveData({
+            ...emptyBusinessOverviewLiveData(),
+            loaded: true,
+            error: message,
+          });
+          setLoaderStatus(`failed: ${message}`);
+
+          if (debugEnabled) {
+            console.error('Business Overview live data loader failed', error);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -124,6 +150,8 @@ export function BusinessOverviewReviewPage({
   tenantSlug,
   tokenPresent: Boolean(token),
   isLoading,
+  loaderStatus,
+  loaded: liveData.loaded,
   salesLoaded: liveData.salesLoaded,
   inventoryLoaded: liveData.inventoryLoaded,
   error: liveData.error,
