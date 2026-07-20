@@ -38635,3 +38635,195 @@ thead
     grid-column: span 1;
   }
 }
+
+/* Business Overview final analytics and local-panel filter refinements */
+.bo-exec-context-strip,
+.bo-exec-insights {
+  display: none !important;
+}
+
+.bo-exec-grid {
+  grid-auto-rows: minmax(24rem, auto);
+}
+
+.bo-exec-panel {
+  height: 100%;
+  overflow: visible;
+}
+
+.bo-exec-daily,
+.bo-exec-trend,
+.bo-exec-products {
+  min-height: 24rem;
+}
+
+.bo-exec-panel header {
+  align-items: start;
+}
+
+.bo-exec-panel-controls {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(7.6rem, auto);
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.bo-exec-panel input[type="date"],
+.bo-exec-panel select {
+  font-size: 0.76rem;
+  min-height: 2rem;
+  max-width: 10rem;
+}
+
+.bo-exec-kpi-card em {
+  min-height: 2.1rem;
+  line-height: 1.25;
+}
+
+.bo-exec-line-chart {
+  min-height: 10rem;
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.82), rgba(255, 255, 255, 0.95)),
+    repeating-linear-gradient(0deg, rgba(148, 163, 184, 0.12) 0 1px, transparent 1px 2rem);
+  padding: 0.75rem;
+  display: grid;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.bo-exec-line-chart.compact {
+  min-height: 6.9rem;
+  margin-bottom: 0.55rem;
+}
+
+.bo-exec-line-chart.movement {
+  min-height: 10rem;
+  text-align: center;
+}
+
+.bo-exec-line-chart svg {
+  width: 100%;
+  height: 100%;
+  min-height: 5.4rem;
+  overflow: visible;
+}
+
+.bo-exec-line-chart path {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 6px 10px rgba(37, 99, 235, 0.18));
+}
+
+.bo-exec-line-chart strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-exec-line-chart small {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.bo-exec-chart-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.bo-exec-chart-footer strong {
+  color: #0f172a;
+  text-align: center;
+}
+
+.bo-exec-payment li {
+  grid-template-columns: auto minmax(6rem, 1fr) minmax(8rem, auto);
+}
+
+.bo-exec-payment li b {
+  white-space: nowrap;
+}
+
+.bo-exec-products table {
+  table-layout: auto;
+}
+
+.bo-exec-total-inventory-movement {
+  grid-column: span 2;
+}
+
+.bo-exec-stock-gauge {
+  min-height: 24rem;
+}
+
+.bo-exec-gauge-body {
+  min-height: 15rem;
+}
+
+.bo-exec-panel table {
+  font-size: 0.78rem;
+}
+
+.bo-exec-panel th {
+  white-space: normal;
+}
+
+.bo-exec-panel td {
+  white-space: nowrap;
+}
+
+@media (min-width: 1281px) {
+  .bo-exec-daily,
+  .bo-exec-trend,
+  .bo-exec-products {
+    height: 24rem;
+  }
+
+  .bo-exec-payment,
+  .bo-exec-inventory-risk,
+  .bo-exec-near-expiry,
+  .bo-exec-total-inventory-movement,
+  .bo-exec-stock-gauge {
+    height: 100%;
+  }
+}
+
+@media (max-width: 1280px) {
+  .bo-exec-grid {
+    grid-auto-rows: auto;
+  }
+
+  .bo-exec-panel-controls {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .bo-exec-panel input[type="date"],
+  .bo-exec-panel select {
+    max-width: none;
+    width: 100%;
+  }
+
+  .bo-exec-total-inventory-movement {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .bo-exec-panel header {
+    display: grid;
+  }
+
+  .bo-exec-panel-controls {
+    grid-template-columns: 1fr;
+  }
+}
