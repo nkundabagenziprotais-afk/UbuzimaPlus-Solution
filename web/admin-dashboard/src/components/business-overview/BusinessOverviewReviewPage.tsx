@@ -966,7 +966,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--risk">
+        <article className={`bo-pro-card bo-pro-card--risk ${isLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Inventory Risk Overview</h2>
@@ -1010,7 +1010,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--insurance bo-pro-order-insurance">
+        <article className={`bo-pro-card bo-pro-card--insurance bo-pro-order-insurance ${isLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Insurance & Receivables</h2>
@@ -1031,7 +1031,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--wide bo-pro-order-near-expiry">
+        <article className={`bo-pro-card bo-pro-card--wide bo-pro-order-near-expiry ${isLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Near Expiry Inventory Movement</h2>
@@ -1053,7 +1053,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--wide bo-pro-order-inventory-movement">
+        <article className={`bo-pro-card bo-pro-card--wide bo-pro-order-inventory-movement ${isLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Total Inventory Movement</h2>

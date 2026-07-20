@@ -41651,3 +41651,77 @@ thead
     font-size: 0.66rem !important;
   }
 }
+
+/* Business Overview: force visible loading + readable 7-day chart labels */
+.bo-pro-card.is-loading {
+  position: relative;
+}
+
+.bo-pro-card.is-loading::after {
+  content: "Loading selected period…";
+  position: absolute;
+  top: 0.72rem;
+  right: 0.82rem;
+  z-index: 5;
+  padding: 0.26rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+}
+
+/* Strong SVG-specific selectors for the 7-day cards only */
+.bo-pro-page .bo-pro-card.bo-pro-order-insurance .bo-pro-line-chart svg text.bo-pro-data-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-near-expiry .bo-pro-line-chart svg text.bo-pro-data-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-inventory-movement .bo-pro-line-chart svg text.bo-pro-data-label {
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  fill: #0f172a !important;
+  text-anchor: middle !important;
+}
+
+.bo-pro-page .bo-pro-card.bo-pro-order-insurance .bo-pro-line-chart svg text.bo-pro-axis-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-near-expiry .bo-pro-line-chart svg text.bo-pro-axis-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-inventory-movement .bo-pro-line-chart svg text.bo-pro-axis-label {
+  font-size: 14px !important;
+  font-weight: 850 !important;
+  fill: #475569 !important;
+  text-anchor: middle !important;
+}
+
+.bo-pro-page .bo-pro-card.bo-pro-order-insurance .bo-pro-chart-footer,
+.bo-pro-page .bo-pro-card.bo-pro-order-near-expiry .bo-pro-chart-footer,
+.bo-pro-page .bo-pro-card.bo-pro-order-inventory-movement .bo-pro-chart-footer {
+  font-size: 0.84rem !important;
+  font-weight: 850 !important;
+}
+
+.bo-pro-page .bo-pro-card.bo-pro-order-insurance .bo-pro-line-chart,
+.bo-pro-page .bo-pro-card.bo-pro-order-near-expiry .bo-pro-line-chart,
+.bo-pro-page .bo-pro-card.bo-pro-order-inventory-movement .bo-pro-line-chart {
+  min-height: 11.4rem !important;
+}
+
+.bo-pro-page .bo-pro-card.bo-pro-order-insurance .bo-pro-line-chart svg,
+.bo-pro-page .bo-pro-card.bo-pro-order-near-expiry .bo-pro-line-chart svg,
+.bo-pro-page .bo-pro-card.bo-pro-order-inventory-movement .bo-pro-line-chart svg {
+  min-height: 8.5rem !important;
+}
+
+/* Keep Inventory Risk text visible inside the available width */
+.bo-pro-page .bo-pro-card.bo-pro-card--risk .bo-pro-table-wrap {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  max-width: 100% !important;
+}
+
+.bo-pro-page .bo-pro-card.bo-pro-card--risk th,
+.bo-pro-page .bo-pro-card.bo-pro-card--risk td {
+  font-size: 0.74rem !important;
+  line-height: 1.22 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
