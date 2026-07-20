@@ -41226,3 +41226,295 @@ thead
     min-height: 13.5rem !important;
   }
 }
+
+/* Business Overview final correction: exact Sales Trend axis, card widths, and text containment */
+
+/* Controlled card order */
+.bo-pro-card--daily { order: 1; }
+.bo-pro-card--products { order: 2; }
+.bo-pro-card--trend { order: 3; }
+.bo-pro-card--payment { order: 4; }
+.bo-pro-card--profit { order: 5; }
+.bo-pro-card--risk { order: 6; }
+.bo-pro-order-insurance { order: 7; }
+.bo-pro-order-near-expiry { order: 8; }
+.bo-pro-order-inventory-movement { order: 9; }
+
+/* Sales Trend: full-width, normal card font scale, all month days visible */
+.bo-pro-card--trend {
+  grid-column: 1 / -1 !important;
+  min-height: 21rem !important;
+  height: auto !important;
+}
+
+.bo-pro-card--trend header h2 {
+  font-size: 0.95rem !important;
+  line-height: 1.15 !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart {
+  min-height: 15rem !important;
+  padding: 0.65rem 0.8rem 0.45rem !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart svg {
+  width: 100% !important;
+  min-height: 10.75rem !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart path {
+  stroke-width: 2.8 !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart circle {
+  r: 3;
+}
+
+.bo-pro-card--trend .bo-pro-data-label {
+  font-size: 0.52rem !important;
+  font-weight: 750 !important;
+  fill: #0f172a !important;
+  text-anchor: middle !important;
+  dominant-baseline: middle !important;
+}
+
+.bo-pro-card--trend .bo-pro-axis-label {
+  font-size: 0.48rem !important;
+  font-weight: 700 !important;
+  fill: #475569 !important;
+  text-anchor: middle !important;
+  dominant-baseline: middle !important;
+}
+
+.bo-pro-card--trend .bo-pro-chart-footer {
+  font-size: 0.72rem !important;
+}
+
+/* First row: Daily compact, Top Products gets remaining width */
+.bo-pro-card--daily {
+  grid-column: span 4 !important;
+  min-height: 22rem !important;
+  height: auto !important;
+}
+
+.bo-pro-card--products {
+  grid-column: span 8 !important;
+  min-height: 22rem !important;
+  height: auto !important;
+}
+
+/* Payment + Profit can share a row */
+.bo-pro-card--payment,
+.bo-pro-card--profit {
+  grid-column: span 6 !important;
+  min-height: 22rem !important;
+  height: auto !important;
+}
+
+/* Inventory Risk and Insurance are same section/width */
+.bo-pro-card--risk,
+.bo-pro-order-insurance {
+  grid-column: span 6 !important;
+  min-height: 22rem !important;
+  height: auto !important;
+}
+
+/* Movement cards keep same width style as Insurance, in their own positions */
+.bo-pro-order-near-expiry,
+.bo-pro-order-inventory-movement {
+  grid-column: span 6 !important;
+  min-height: 22rem !important;
+  height: auto !important;
+}
+
+/* Make Insurance, Inventory Risk, and Movement cards share the same internal feel */
+.bo-pro-order-insurance .bo-pro-line-chart,
+.bo-pro-order-near-expiry .bo-pro-line-chart,
+.bo-pro-order-inventory-movement .bo-pro-line-chart {
+  min-height: 10.25rem !important;
+  padding: 0.6rem !important;
+}
+
+.bo-pro-order-insurance .bo-pro-line-chart svg,
+.bo-pro-order-near-expiry .bo-pro-line-chart svg,
+.bo-pro-order-inventory-movement .bo-pro-line-chart svg {
+  min-height: 7rem !important;
+}
+
+.bo-pro-order-insurance .bo-pro-metric-list.compact,
+.bo-pro-order-near-expiry .bo-pro-metric-list.compact,
+.bo-pro-order-inventory-movement .bo-pro-metric-list.compact {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+}
+
+.bo-pro-order-insurance .bo-pro-metric-list.compact article,
+.bo-pro-order-near-expiry .bo-pro-metric-list.compact article,
+.bo-pro-order-inventory-movement .bo-pro-metric-list.compact article {
+  min-height: 3.45rem !important;
+  padding: 0.56rem !important;
+}
+
+/* Inventory Risk fit: text/table must stay inside card */
+.bo-pro-card--risk .bo-pro-risk-stack {
+  display: grid !important;
+  grid-template-columns: 8rem minmax(0, 1fr) !important;
+  gap: 0.75rem !important;
+  align-items: start !important;
+  min-width: 0 !important;
+}
+
+.bo-pro-card--risk .bo-pro-donut {
+  width: 8rem !important;
+  max-width: 8rem !important;
+}
+
+.bo-pro-card--risk .bo-pro-table-wrap {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: auto !important;
+  max-height: 15rem !important;
+}
+
+.bo-pro-card--risk table {
+  min-width: 30rem !important;
+}
+
+/* Universal text containment inside cards */
+.bo-pro-card,
+.bo-pro-card * {
+  box-sizing: border-box;
+}
+
+.bo-pro-card {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.bo-pro-card h2,
+.bo-pro-card p,
+.bo-pro-card span,
+.bo-pro-card strong,
+.bo-pro-card small,
+.bo-pro-card em,
+.bo-pro-card b,
+.bo-pro-card td,
+.bo-pro-card th {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.bo-pro-card th,
+.bo-pro-card td {
+  white-space: normal !important;
+  line-height: 1.22 !important;
+}
+
+/* Tables should fit/scroll inside cards, never push card width */
+.bo-pro-table-wrap {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+
+.bo-pro-table-wrap table,
+.bo-pro-fit-table table {
+  max-width: none !important;
+}
+
+/* SN/# column fixed small */
+.bo-pro-table-wrap th:first-child,
+.bo-pro-table-wrap td:first-child,
+.bo-pro-fit-table th:first-child,
+.bo-pro-fit-table td:first-child {
+  width: 3rem !important;
+  min-width: 3rem !important;
+  max-width: 3rem !important;
+  text-align: center !important;
+}
+
+/* Top Products: product name gets useful width */
+.bo-pro-card--products table {
+  min-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+.bo-pro-card--products th:nth-child(2),
+.bo-pro-card--products td:nth-child(2) {
+  width: auto !important;
+  text-align: left !important;
+}
+
+.bo-pro-card--products th:nth-child(3),
+.bo-pro-card--products td:nth-child(3) {
+  width: 8.5rem !important;
+}
+
+.bo-pro-card--products th:nth-child(4),
+.bo-pro-card--products td:nth-child(4),
+.bo-pro-card--products th:nth-child(5),
+.bo-pro-card--products td:nth-child(5) {
+  width: 5rem !important;
+}
+
+/* Stock Value Gauge remains removed */
+.bo-pro-card--gauge {
+  display: none !important;
+}
+
+/* Responsive */
+@media (max-width: 1500px) {
+  .bo-pro-card--daily,
+  .bo-pro-card--products,
+  .bo-pro-card--payment,
+  .bo-pro-card--profit,
+  .bo-pro-card--risk,
+  .bo-pro-order-insurance,
+  .bo-pro-order-near-expiry,
+  .bo-pro-order-inventory-movement {
+    grid-column: span 6 !important;
+  }
+
+  .bo-pro-card--trend {
+    grid-column: 1 / -1 !important;
+  }
+
+  .bo-pro-card--risk .bo-pro-risk-stack {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-card--risk .bo-pro-donut {
+    justify-self: center !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .bo-pro-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-card--daily,
+  .bo-pro-card--products,
+  .bo-pro-card--trend,
+  .bo-pro-card--payment,
+  .bo-pro-card--profit,
+  .bo-pro-card--risk,
+  .bo-pro-order-insurance,
+  .bo-pro-order-near-expiry,
+  .bo-pro-order-inventory-movement {
+    grid-column: span 1 !important;
+    min-height: auto !important;
+  }
+
+  .bo-pro-order-insurance .bo-pro-metric-list.compact,
+  .bo-pro-order-near-expiry .bo-pro-metric-list.compact,
+  .bo-pro-order-inventory-movement .bo-pro-metric-list.compact {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-card--trend .bo-pro-axis-label {
+    font-size: 0.46rem !important;
+  }
+}

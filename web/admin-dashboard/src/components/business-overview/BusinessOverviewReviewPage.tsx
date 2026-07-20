@@ -165,10 +165,11 @@ function trendPointDate(point: unknown): string | null {
 
 function monthDateSeries(dateIso: string): string[] {
   const source = new Date(`${dateIso}T00:00:00`);
-  if (Number.isNaN(source.getTime())) return datesBetween(currentMonthStartIso(), todayIso(), 31);
+  const fallback = new Date(`${todayIso()}T00:00:00`);
+  const base = Number.isNaN(source.getTime()) ? fallback : source;
 
-  const start = new Date(source.getFullYear(), source.getMonth(), 1);
-  const end = new Date(source.getFullYear(), source.getMonth() + 1, 0);
+  const start = new Date(base.getFullYear(), base.getMonth(), 1);
+  const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
   const dates: string[] = [];
   const cursor = new Date(start);
 
@@ -184,10 +185,11 @@ function buildDailyTrendSeries(
   points: BusinessOverviewLiveData['trend'],
   startDate: string,
   endDate: string,
-  maxDays = 31,
+  _maxDays = 31,
 ): Array<{ date: string; label: string; value: number }> {
-  const monthDates = monthDateSeries(startDate || endDate || todayIso());
-  const dates = monthDates.slice(0, Math.max(maxDays, monthDates.length));
+  // Business request: x-axis must show every day of the month.
+  // Missing days intentionally display zero.
+  const dates = monthDateSeries(startDate || endDate || todayIso());
   const valueMap = new Map<string, number>();
 
   points.forEach((point) => {
@@ -449,33 +451,30 @@ function LineChart({
   startDate?: string;
   endDate?: string;
 }) {
-  const width = 420;
-  const height = 128;
+  const width = 900;
+  const height = 140;
   const max = Math.max(...values, 1);
-  const step = values.length > 15 ? 5 : values.length > 9 ? 2 : 1;
 
   const points = values.map((value, index) => {
     const x = values.length > 1 ? (index / (values.length - 1)) * width : 0;
-    const y = height - (value / max) * (height - 20) - 10;
+    const y = height - (value / max) * (height - 24) - 12;
 
     return { value, x, y, label: labels?.[index] ?? String(index + 1) };
   });
 
   return (
     <div className="bo-pro-line-chart">
-      <svg viewBox="0 0 420 166" role="img" aria-label={label}>
+      <svg viewBox="0 0 900 178" role="img" aria-label={label}>
         <path d={linePath(values, width, height)} />
         {points.map((point, index) => (
           <g key={`${label}-${index}`}>
-            <circle cx={point.x} cy={point.y} r="3.5" />
-            <text className="bo-pro-data-label" x={point.x} y={Math.max(point.y - 10, 12)}>
+            <circle cx={point.x} cy={point.y} r="3" />
+            <text className="bo-pro-data-label" x={point.x} y={Math.max(point.y - 9, 12)}>
               {formatCompact(point.value)}
             </text>
-            {(index === 0 || index === points.length - 1 || index % step === 0) && (
-              <text className="bo-pro-axis-label" x={point.x} y="158">
-                {point.label}
-              </text>
-            )}
+            <text className="bo-pro-axis-label" x={point.x} y="168">
+              {point.label}
+            </text>
           </g>
         ))}
       </svg>
