@@ -10,6 +10,7 @@ import {
   type BusinessOverviewLiveData,
   type BusinessOverviewLiveRow,
 } from './businessOverviewLiveData';
+import { loadBusinessOverviewDataAdapter } from './businessOverviewDataAdapter';
 
 type BusinessOverviewReviewPageProps = {
   token?: string;
@@ -186,6 +187,13 @@ export function BusinessOverviewReviewPage({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [loaderStatus, setLoaderStatus] = useState('not-started');
+  const [draftStartDate, setDraftStartDate] = useState('2026-06-01');
+  const [draftEndDate, setDraftEndDate] = useState('2026-06-30');
+  const [appliedDateRange, setAppliedDateRange] = useState({
+    startDate: '2026-06-01',
+    endDate: '2026-06-30',
+  });
+  const [loadSequence, setLoadSequence] = useState(0);
   const debugEnabled =
     typeof window !== 'undefined' &&
     window.location.search.includes('boDebug=1');
@@ -200,6 +208,8 @@ export function BusinessOverviewReviewPage({
   const debugSnapshot = {
     tenantSlug,
     tokenPresent: Boolean(token),
+    appliedDateRange,
+    loadSequence,
     isLoading,
     loaderStatus: effectiveLoaderStatus,
     loaded: liveData.loaded,
@@ -227,24 +237,34 @@ export function BusinessOverviewReviewPage({
       });
       setLoaderStatus(!token ? 'failed: missing token' : 'failed: missing tenant slug');
       setIsLoading(false);
+      setLoadSequence((value) => value + 1);
       return () => {
         cancelled = true;
       };
     }
 
     setIsLoading(true);
-    setLoaderStatus('started: loading live sales summary report');
+    setLoaderStatus('loading business-date range');
 
-    fetchBusinessOverviewSalesSummary(token, tenantSlug)
+    loadBusinessOverviewDataAdapter({
+      token,
+      tenantSlug,
+      startDate: appliedDateRange.startDate,
+      endDate: appliedDateRange.endDate,
+    })
       .then((data) => {
         if (cancelled) return;
 
         setLiveData({ ...data });
-        setLoaderStatus('success');
+        setLoaderStatus(data.error ? `success-with-warning: ${data.error}` : 'success');
         setIsLoading(false);
+        setLoadSequence((value) => value + 1);
 
         if (debugEnabled) {
-          console.log('Business Overview direct sales summary data', data);
+          console.log('Business Overview adapter data', {
+            dateRange: appliedDateRange,
+            data,
+          });
         }
       })
       .catch((error) => {
@@ -252,7 +272,7 @@ export function BusinessOverviewReviewPage({
 
         const message = error instanceof Error
           ? error.message
-          : 'Unable to load Business Overview sales summary.';
+          : 'Unable to load Business Overview data.';
 
         setLiveData({
           ...emptyBusinessOverviewLiveData(),
@@ -261,12 +281,13 @@ export function BusinessOverviewReviewPage({
         });
         setLoaderStatus(`failed: ${message}`);
         setIsLoading(false);
+        setLoadSequence((value) => value + 1);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [token, tenantSlug, debugEnabled]);
+  }, [token, tenantSlug, appliedDateRange, debugEnabled]);
 
   const kpis = useMemo(
     () =>
@@ -317,18 +338,47 @@ export function BusinessOverviewReviewPage({
 
       <section className="bo-v3-filter-strip">
         <label>
-          <span>Date Range</span>
-          <select defaultValue="current">
-            <option value="current">Current Period</option>
+          <span>Start Date</span>
+          <input
+            type="date"
+            value={draftStartDate}
+            onChange={(event) => {
+              const value = event.target.value;
+              setDraftStartDate(value);
+              if (draftEndDate < value) setDraftEndDate(value);
+            }}
+          />
+        </label>
+
+        <label>
+          <span>End Date</span>
+          <input
+            type="date"
+            value={draftEndDate}
+            onChange={(event) => setDraftEndDate(event.target.value)}
+          />
+        </label>
+
+        <label>
+          <span>Date Basis</span>
+          <select value="business-date" onChange={() => undefined}>
+            <option value="business-date">Business Date</option>
           </select>
         </label>
 
         <label>
-          <span>Business Date</span>
-          <select defaultValue="business-date">
-            <option value="business-date">Business Date</option>
-            <option value="transaction-time">Transaction Timestamp</option>
-          </select>
+          <span>Apply Range</span>
+          <button
+            type="button"
+            onClick={() =>
+              setAppliedDateRange({
+                startDate: draftStartDate,
+                endDate: draftEndDate,
+              })
+            }
+          >
+            Apply Dates
+          </button>
         </label>
 
         <label>
