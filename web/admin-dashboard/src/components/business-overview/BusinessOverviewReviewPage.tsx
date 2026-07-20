@@ -52,6 +52,13 @@ export function BusinessOverviewReviewPage({
     typeof window !== 'undefined' &&
     window.location.search.includes('boDebug=1');
 
+  const effectiveLoaderStatus =
+    isLoading && loaderStatus === 'started'
+      ? 'started: loading live sales register'
+      : liveData.loaded && loaderStatus === 'not-started'
+        ? 'success-with-warning: loaded state returned without loader status update'
+        : loaderStatus;
+
   useEffect(() => {
     let cancelled = false;
 
