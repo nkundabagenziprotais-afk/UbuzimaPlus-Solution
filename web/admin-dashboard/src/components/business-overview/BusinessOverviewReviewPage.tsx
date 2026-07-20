@@ -275,6 +275,10 @@ export function BusinessOverviewReviewPage({
     trendPoints: liveData.trend.length,
   };
 
+  if (debugEnabled) {
+    console.debug('Business Overview debug snapshot', debugSnapshot);
+  }
+
   return (
     <section className="bo-exec-page">
       <header className="bo-exec-header">
@@ -365,12 +369,6 @@ export function BusinessOverviewReviewPage({
         </div>
         <button type="button">View Full Insights</button>
       </section>
-
-      {debugEnabled && (
-        <pre className="bo-v3-live-debug">
-{JSON.stringify(debugSnapshot, null, 2)}
-        </pre>
-      )}
 
       {liveData.error && (
         <div className="bo-v3-live-alert">

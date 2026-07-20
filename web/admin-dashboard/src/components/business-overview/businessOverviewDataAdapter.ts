@@ -319,9 +319,20 @@ function inventoryFromValuation(response: InventoryValuationResponse) {
   const expired = numberValue(inventory.expired_batches);
   const healthy = numberValue(inventory.healthy_stock_batches) || Math.max(stockBatches - lowStock - expiring - expired, 0);
 
-  const lowStockValue = numberValue(inventory.low_stock_value);
-  const expiringValue = numberValue(inventory.expiring_soon_value);
-  const expiredValue = numberValue(inventory.expired_value);
+  const averageBatchValue = stockBatches > 0 ? inventoryValue / stockBatches : 0;
+
+  const lowStockValue =
+    numberValue(inventory.low_stock_value) ||
+    (lowStock > 0 ? 0 : 0);
+
+  const expiringValue =
+    numberValue(inventory.expiring_soon_value) ||
+    (expiring > 0 ? expiring * averageBatchValue : 0);
+
+  const expiredValue =
+    numberValue(inventory.expired_value) ||
+    (expired > 0 ? expired * averageBatchValue : 0);
+
   const healthyValue =
     numberValue(inventory.healthy_stock_value) ||
     Math.max(inventoryValue - lowStockValue - expiringValue - expiredValue, 0);
