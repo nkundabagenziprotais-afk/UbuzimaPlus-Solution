@@ -51,21 +51,43 @@ return new class extends Migration
 
     public function up(): void
     {
-        if (! Schema::hasTable('permissions') || ! Schema::hasTable('roles')) {
+        if (
+            ! Schema::hasTable('permissions')
+            || ! Schema::hasTable('roles')
+            || ! Schema::hasTable('permission_role')
+        ) {
             return;
         }
 
         $now = now();
 
+        $permissionsHasName = Schema::hasColumn('permissions', 'name');
+        $permissionsHasGroup = Schema::hasColumn('permissions', 'permission_group');
+        $permissionsHasCreatedAt = Schema::hasColumn('permissions', 'created_at');
+        $permissionsHasUpdatedAt = Schema::hasColumn('permissions', 'updated_at');
+
         foreach ($this->permissions as $code => $definition) {
+            $values = [];
+
+            if ($permissionsHasName) {
+                $values['name'] = $definition['name'];
+            }
+
+            if ($permissionsHasGroup) {
+                $values['permission_group'] = $definition['group'];
+            }
+
+            if ($permissionsHasUpdatedAt) {
+                $values['updated_at'] = $now;
+            }
+
+            if ($permissionsHasCreatedAt) {
+                $values['created_at'] = $now;
+            }
+
             DB::table('permissions')->updateOrInsert(
                 ['code' => $code],
-                [
-                    'name' => $definition['name'],
-                    'permission_group' => $definition['group'],
-                    'updated_at' => $now,
-                    'created_at' => DB::raw('COALESCE(created_at, CURRENT_TIMESTAMP)'),
-                ],
+                $values,
             );
         }
 
@@ -96,14 +118,25 @@ return new class extends Migration
 
         $roleIds = $roleQuery->pluck('id');
 
+        $pivotHasCreatedAt = Schema::hasColumn('permission_role', 'created_at');
+        $pivotHasUpdatedAt = Schema::hasColumn('permission_role', 'updated_at');
+
         foreach ($roleIds as $roleId) {
             foreach ($permissionIds as $permissionId) {
-                DB::table('permission_role')->insertOrIgnore([
+                $payload = [
                     'role_id' => $roleId,
                     'permission_id' => $permissionId,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
+                ];
+
+                if ($pivotHasCreatedAt) {
+                    $payload['created_at'] = $now;
+                }
+
+                if ($pivotHasUpdatedAt) {
+                    $payload['updated_at'] = $now;
+                }
+
+                DB::table('permission_role')->insertOrIgnore($payload);
             }
         }
     }
