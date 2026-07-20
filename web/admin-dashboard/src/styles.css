@@ -40415,3 +40415,339 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+/* Business Overview final production layout stabilization */
+.bo-pro-page {
+  padding: clamp(0.85rem, 1.2vw, 1.35rem);
+}
+
+.bo-pro-header {
+  align-items: start;
+  margin-bottom: 0.95rem;
+}
+
+.bo-pro-date-panel {
+  max-width: 46rem;
+}
+
+/* KPI cards: responsive, no cramped text, no fixed overflow */
+.bo-pro-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr)) !important;
+  gap: 0.78rem !important;
+  align-items: stretch;
+}
+
+.bo-pro-kpi-card {
+  min-height: 6.25rem !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.bo-pro-kpi-card strong {
+  white-space: nowrap;
+}
+
+.bo-pro-kpi-card em {
+  display: block !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  -webkit-line-clamp: unset !important;
+  line-height: 1.28 !important;
+}
+
+/* Main dashboard: controlled 12-column layout.
+   This allows wide cards where needed and two-card rows for dense sections. */
+.bo-pro-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  grid-auto-flow: row dense;
+  gap: 0.95rem !important;
+  align-items: start !important;
+}
+
+/* Remove earlier forced equal heights that caused poor fitting */
+.bo-pro-card,
+.bo-pro-card--daily,
+.bo-pro-card--trend,
+.bo-pro-card--products,
+.bo-pro-card--payment,
+.bo-pro-card--profit,
+.bo-pro-card--risk {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+/* Professional section sizing */
+.bo-pro-card--daily {
+  grid-column: span 4;
+}
+
+.bo-pro-card--trend {
+  grid-column: span 8;
+}
+
+.bo-pro-card--products,
+.bo-pro-card--payment,
+.bo-pro-card--profit,
+.bo-pro-card--risk,
+.bo-pro-order-near-expiry,
+.bo-pro-order-inventory-movement,
+.bo-pro-order-insurance,
+.bo-pro-card--gauge {
+  grid-column: span 6 !important;
+}
+
+/* Card shell */
+.bo-pro-card {
+  padding: 0.95rem !important;
+  border-radius: 1.1rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.bo-pro-card header {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.55rem !important;
+  margin-bottom: 0 !important;
+}
+
+.bo-pro-card header h2 {
+  font-size: 1rem !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.02em;
+}
+
+.bo-pro-card header p {
+  display: none !important;
+}
+
+/* Controls always live on the second row and wrap cleanly */
+.bo-pro-controls {
+  width: 100%;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(8.6rem, 1fr)) !important;
+  grid-auto-flow: row !important;
+  gap: 0.48rem !important;
+}
+
+.bo-pro-card header > input[type="date"] {
+  width: min(100%, 12rem);
+  justify-self: start;
+}
+
+.bo-pro-card input[type="date"],
+.bo-pro-card select {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 2.05rem !important;
+  font-size: 0.74rem !important;
+}
+
+/* Charts: enough room for labels, never squeezed */
+.bo-pro-line-chart {
+  min-height: 13.25rem !important;
+  padding: 0.7rem 0.7rem 0.5rem !important;
+}
+
+.bo-pro-line-chart svg {
+  min-height: 9rem !important;
+}
+
+.bo-pro-line-chart text {
+  font-size: 0.58rem !important;
+}
+
+/* Tables: fit text, scroll when needed, no overlap */
+.bo-pro-table-wrap {
+  width: 100%;
+  min-height: 0;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  flex: 1 1 auto;
+}
+
+.bo-pro-table-wrap table,
+.bo-pro-fit-table table {
+  width: 100%;
+  min-width: 34rem;
+  table-layout: auto !important;
+  border-collapse: collapse;
+}
+
+.bo-pro-card--payment .bo-pro-table-wrap table,
+.bo-pro-card--profit .bo-pro-table-wrap table {
+  min-width: 28rem;
+}
+
+.bo-pro-card--products .bo-pro-table-wrap table {
+  min-width: 38rem;
+}
+
+.bo-pro-fit-table th,
+.bo-pro-fit-table td,
+.bo-pro-table-wrap th,
+.bo-pro-table-wrap td {
+  padding: 0.42rem 0.36rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1.25;
+  white-space: normal !important;
+  word-break: normal;
+  vertical-align: middle;
+}
+
+.bo-pro-table-wrap th,
+.bo-pro-table-wrap td:first-child,
+.bo-pro-table-wrap td:nth-child(2),
+.bo-pro-fit-table th:first-child,
+.bo-pro-fit-table td:first-child {
+  text-align: left !important;
+}
+
+.bo-pro-table-wrap td:not(:first-child):not(:nth-child(2)),
+.bo-pro-fit-table td:not(:first-child),
+.bo-pro-fit-table th:not(:first-child) {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Daily card: compact but readable */
+.bo-pro-card--daily .bo-pro-metric-list {
+  grid-template-columns: 1fr !important;
+  gap: 0.5rem;
+}
+
+.bo-pro-card--daily .bo-pro-metric-list article {
+  min-height: 3.55rem;
+}
+
+/* Product / payment / expense sections rely on clean tables */
+.bo-pro-card--products .bo-pro-line-chart,
+.bo-pro-card--payment .bo-pro-payment-layout,
+.bo-pro-card--profit .bo-pro-line-chart {
+  display: none !important;
+}
+
+/* Inventory risk: chart above table for visibility */
+.bo-pro-risk-stack {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.72rem !important;
+  align-items: start !important;
+}
+
+.bo-pro-risk-stack .bo-pro-donut {
+  width: min(9rem, 100%) !important;
+  justify-self: center;
+}
+
+.bo-pro-risk-stack .bo-pro-table-wrap table {
+  min-width: 34rem;
+}
+
+/* Movement cards: two cards same row on large screens */
+.bo-pro-order-near-expiry,
+.bo-pro-order-inventory-movement {
+  grid-column: span 6 !important;
+}
+
+.bo-pro-movement-layout {
+  display: grid !important;
+  grid-template-columns: minmax(13rem, 0.9fr) minmax(18rem, 1.1fr) !important;
+  gap: 0.78rem !important;
+  align-items: stretch !important;
+}
+
+.bo-pro-movement-layout .bo-pro-line-chart {
+  min-height: 11.5rem !important;
+}
+
+.bo-pro-metric-list.compact {
+  gap: 0.48rem;
+}
+
+.bo-pro-metric-list.compact article {
+  min-height: 3.45rem !important;
+}
+
+/* Gauge and insurance sections should not be cramped */
+.bo-pro-gauge-layout {
+  display: grid !important;
+  grid-template-columns: minmax(10rem, 0.75fr) minmax(14rem, 1.25fr) !important;
+  gap: 0.85rem !important;
+}
+
+.bo-pro-order-insurance .bo-pro-line-chart {
+  min-height: 11.75rem !important;
+}
+
+/* Medium screens: two clean columns */
+@media (max-width: 1500px) {
+  .bo-pro-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .bo-pro-card--daily,
+  .bo-pro-card--trend,
+  .bo-pro-card--products,
+  .bo-pro-card--payment,
+  .bo-pro-card--profit,
+  .bo-pro-card--risk,
+  .bo-pro-order-near-expiry,
+  .bo-pro-order-inventory-movement,
+  .bo-pro-order-insurance,
+  .bo-pro-card--gauge {
+    grid-column: span 1 !important;
+  }
+
+  .bo-pro-card--daily .bo-pro-metric-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Tablets and small screens: one column, no hidden content */
+@media (max-width: 980px) {
+  .bo-pro-header,
+  .bo-pro-date-panel,
+  .bo-pro-grid,
+  .bo-pro-movement-layout,
+  .bo-pro-gauge-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-card {
+    grid-column: span 1 !important;
+  }
+
+  .bo-pro-card--daily .bo-pro-metric-list,
+  .bo-pro-metric-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-line-chart {
+    min-height: 12rem !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .bo-pro-page {
+    padding: 0.7rem;
+  }
+
+  .bo-pro-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-card {
+    padding: 0.75rem !important;
+  }
+
+  .bo-pro-table-wrap table,
+  .bo-pro-fit-table table {
+    min-width: 30rem;
+  }
+}
