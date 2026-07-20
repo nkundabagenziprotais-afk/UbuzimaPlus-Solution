@@ -41611,3 +41611,43 @@ thead
     justify-self: center;
   }
 }
+
+/* Business Overview: improve 7-day movement/receivables chart label readability */
+.bo-pro-order-insurance .bo-pro-data-label,
+.bo-pro-order-near-expiry .bo-pro-data-label,
+.bo-pro-order-inventory-movement .bo-pro-data-label {
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  fill: #0f172a !important;
+}
+
+.bo-pro-order-insurance .bo-pro-axis-label,
+.bo-pro-order-near-expiry .bo-pro-axis-label,
+.bo-pro-order-inventory-movement .bo-pro-axis-label {
+  font-size: 0.72rem !important;
+  font-weight: 850 !important;
+  fill: #475569 !important;
+}
+
+.bo-pro-order-insurance .bo-pro-chart-footer,
+.bo-pro-order-near-expiry .bo-pro-chart-footer,
+.bo-pro-order-inventory-movement .bo-pro-chart-footer {
+  font-size: 0.78rem !important;
+}
+
+.bo-pro-order-insurance .bo-pro-line-chart svg,
+.bo-pro-order-near-expiry .bo-pro-line-chart svg,
+.bo-pro-order-inventory-movement .bo-pro-line-chart svg {
+  min-height: 7.8rem !important;
+}
+
+@media (max-width: 980px) {
+  .bo-pro-order-insurance .bo-pro-data-label,
+  .bo-pro-order-near-expiry .bo-pro-data-label,
+  .bo-pro-order-inventory-movement .bo-pro-data-label,
+  .bo-pro-order-insurance .bo-pro-axis-label,
+  .bo-pro-order-near-expiry .bo-pro-axis-label,
+  .bo-pro-order-inventory-movement .bo-pro-axis-label {
+    font-size: 0.66rem !important;
+  }
+}

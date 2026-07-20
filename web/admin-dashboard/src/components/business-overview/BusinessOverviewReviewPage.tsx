@@ -496,6 +496,7 @@ export function BusinessOverviewReviewPage({
   const [draftStartDate, setDraftStartDate] = useState(initialRange.startDate);
   const [draftEndDate, setDraftEndDate] = useState(initialRange.endDate);
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(initialRange);
+  const [loadSequence, setLoadSequence] = useState(0);
 
   const [dailyDate, setDailyDate] = useState(todayIso());
   const [trendMetric, setTrendMetric] = useState<'value' | 'count'>('value');
@@ -546,6 +547,10 @@ export function BusinessOverviewReviewPage({
 
     setIsLoading(true);
     setLoaderStatus('loading');
+    setLiveData((current) => ({
+      ...current,
+      error: null,
+    }));
 
     loadBusinessOverviewDataAdapter({
       token,
@@ -586,7 +591,7 @@ export function BusinessOverviewReviewPage({
     return () => {
       cancelled = true;
     };
-  }, [token, tenantSlug, appliedDateRange, debugEnabled]);
+  }, [token, tenantSlug, appliedDateRange.startDate, appliedDateRange.endDate, loadSequence, debugEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -726,6 +731,7 @@ export function BusinessOverviewReviewPage({
     setDraftStartDate(nextRange.startDate);
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
+    setLoadSequence((value) => value + 1);
 
     setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
@@ -753,6 +759,7 @@ export function BusinessOverviewReviewPage({
     setDraftStartDate(nextRange.startDate);
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
+    setLoadSequence((value) => value + 1);
 
     setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
