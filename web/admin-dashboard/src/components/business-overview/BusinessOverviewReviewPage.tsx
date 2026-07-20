@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import {
   businessOverviewKpis,
   businessOverviewModules,
@@ -214,7 +214,7 @@ export function BusinessOverviewReviewPage({
     trendPoints: liveData.trend.length,
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let cancelled = false;
 
     if (!token || !tenantSlug) {
