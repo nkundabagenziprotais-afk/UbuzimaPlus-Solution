@@ -230,8 +230,12 @@ function extractSales(response: unknown): UnknownRecord[] {
     result.transactions,
     record.records,
     data.records,
+    payload.records,
+    result.records,
     record.items,
     data.items,
+    payload.items,
+    result.items,
     record.data,
   ];
 
@@ -516,25 +520,12 @@ export async function loadBusinessOverviewLiveData(
     );
   }
 
-  // Inventory summary is secondary. If it times out, keep Sales visible.
-  try {
-    const inventoryResponse = await fetchBusinessOverviewJson(
-      token,
-      tenantSlug,
-      '/pharmaco/inventory/summary',
-      'Inventory summary',
-      6000,
-    );
-
-    inventorySummary = extractInventorySummary(inventoryResponse);
-    inventorySummaryLoaded = true;
-  } catch (err) {
-    errors.push(
-      err instanceof Error
-        ? err.message
-        : 'Unable to load inventory summary.',
-    );
-  }
+  // Inventory summary endpoint is currently too slow for the customer-facing dashboard.
+  // Do not call it during initial Business Overview rendering.
+  // Inventory values stay unavailable until a lightweight backend summary endpoint is added.
+  inventorySummaryLoaded = false;
+  inventorySummary = {};
+  errors.push('Inventory summary is temporarily unavailable while the live inventory summary endpoint is optimized.');
 
   // Do not load full inventory batches in Business Overview initial render.
   inventoryBatchesLoaded = false;
