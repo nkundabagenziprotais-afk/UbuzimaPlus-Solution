@@ -41518,3 +41518,96 @@ thead
     font-size: 0.46rem !important;
   }
 }
+
+/* Business Overview fix: Daily card operation + Inventory Risk text fitting */
+.bo-pro-card--daily .bo-pro-metric-list article {
+  overflow: hidden;
+}
+
+.bo-pro-card--daily .bo-pro-metric-list span {
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.bo-pro-card--daily .bo-pro-metric-list strong {
+  font-size: 0.96rem;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Inventory Risk: use available inner card width; do not hide labels/counts */
+.bo-pro-card--risk {
+  overflow: hidden !important;
+}
+
+.bo-pro-card--risk .bo-pro-risk-stack {
+  grid-template-columns: 7.2rem minmax(0, 1fr) !important;
+  gap: 0.65rem !important;
+  width: 100%;
+  min-width: 0;
+}
+
+.bo-pro-card--risk .bo-pro-donut {
+  width: 7.2rem !important;
+  max-width: 7.2rem !important;
+}
+
+.bo-pro-card--risk .bo-pro-table-wrap {
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  max-height: 15.8rem !important;
+}
+
+.bo-pro-card--risk table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+.bo-pro-card--risk th,
+.bo-pro-card--risk td {
+  font-size: 0.7rem !important;
+  line-height: 1.2 !important;
+  padding: 0.34rem 0.28rem !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+.bo-pro-card--risk th:nth-child(1),
+.bo-pro-card--risk td:nth-child(1) {
+  width: 36% !important;
+  text-align: left !important;
+}
+
+.bo-pro-card--risk th:nth-child(2),
+.bo-pro-card--risk td:nth-child(2) {
+  width: 23% !important;
+  text-align: right !important;
+}
+
+.bo-pro-card--risk th:nth-child(3),
+.bo-pro-card--risk td:nth-child(3) {
+  width: 27% !important;
+  text-align: right !important;
+}
+
+.bo-pro-card--risk th:nth-child(4),
+.bo-pro-card--risk td:nth-child(4) {
+  width: 14% !important;
+  text-align: right !important;
+}
+
+@media (max-width: 1500px) {
+  .bo-pro-card--risk .bo-pro-risk-stack {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-card--risk .bo-pro-donut {
+    justify-self: center;
+  }
+}

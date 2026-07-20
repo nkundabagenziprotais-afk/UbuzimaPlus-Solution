@@ -517,6 +517,8 @@ export function BusinessOverviewReviewPage({
   const [inventoryMovementEndDate, setInventoryMovementEndDate] = useState(todayIso());
 
   const [liveData, setLiveData] = useState<BusinessOverviewLiveData>(() => emptyBusinessOverviewLiveData());
+  const [dailyLiveData, setDailyLiveData] = useState<BusinessOverviewLiveData>(() => emptyBusinessOverviewLiveData());
+  const [isDailyLoading, setIsDailyLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loaderStatus, setLoaderStatus] = useState('not-started');
 
@@ -585,6 +587,50 @@ export function BusinessOverviewReviewPage({
       cancelled = true;
     };
   }, [token, tenantSlug, appliedDateRange, debugEnabled]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!token || !tenantSlug || !dailyDate) {
+      setDailyLiveData(emptyBusinessOverviewLiveData());
+      setIsDailyLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setIsDailyLoading(true);
+
+    loadBusinessOverviewDataAdapter({
+      token,
+      tenantSlug,
+      startDate: dailyDate,
+      endDate: dailyDate,
+    })
+      .then((data) => {
+        if (cancelled) return;
+        setDailyLiveData({ ...data });
+        setIsDailyLoading(false);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        setDailyLiveData({
+          ...emptyBusinessOverviewLiveData(),
+          loaded: true,
+          error: error instanceof Error
+            ? error.message
+            : 'Unable to load daily Business Overview data.',
+        });
+        setIsDailyLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, tenantSlug, dailyDate]);
+
+  const dailyMetricSource = dailyLiveData.loaded ? dailyLiveData : liveData;
 
   const riskSegments = useMemo(() => buildInventoryRisk(liveData), [liveData]);
   const products = useMemo(() => productRows(liveData), [liveData]);
@@ -790,10 +836,10 @@ export function BusinessOverviewReviewPage({
           </header>
 
           <div className="bo-pro-metric-list">
-            <article><span>Gross Sales</span><strong>{kpiValue(liveData, 'Gross Revenue')}</strong></article>
-            <article><span>Collections</span><strong>{kpiValue(liveData, 'Collections')}</strong></article>
-            <article><span>Transactions</span><strong>{kpiValue(liveData, 'Transaction Count')}</strong></article>
-            <article><span>Average Sale</span><strong>{kpiValue(liveData, 'Average Transaction Value')}</strong></article>
+            <article><span>Gross Sales</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Gross Revenue')}</strong></article>
+            <article><span>Collections</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Collections')}</strong></article>
+            <article><span>Transactions</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Transaction Count')}</strong></article>
+            <article><span>Average Sale</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Average Transaction Value')}</strong></article>
           </div>
         </article>
 
