@@ -54,10 +54,27 @@ export function BusinessOverviewReviewPage({
 
   const effectiveLoaderStatus =
     isLoading && loaderStatus === 'started'
-      ? 'started: loading live sales register'
+      ? 'started: loading live sales summary report'
       : liveData.loaded && loaderStatus === 'not-started'
         ? 'success-with-warning: loaded state returned without loader status update'
         : loaderStatus;
+
+  const debugSnapshot = {
+    tenantSlug,
+    tokenPresent: Boolean(token),
+    isLoading,
+    loaderStatus: effectiveLoaderStatus,
+    loaded: liveData.loaded,
+    salesLoaded: liveData.salesLoaded,
+    inventoryLoaded: liveData.inventoryLoaded,
+    error: liveData.error,
+    kpis: liveData.kpis,
+    revenueRows: liveData.revenueRows,
+    inventoryRows: liveData.inventoryRows,
+    paymentMix: liveData.paymentMix,
+    topProducts: liveData.topProducts,
+    trendPoints: liveData.trend.length,
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -174,7 +191,7 @@ export function BusinessOverviewReviewPage({
         </div>
       </header>
 
-      {liveData.error && (
+      {debugEnabled && liveData.error && (
         <div className="bo-v3-live-alert">
           Some live sources could not be loaded: {liveData.error}
         </div>
@@ -182,26 +199,7 @@ export function BusinessOverviewReviewPage({
 
       {debugEnabled && (
         <pre className="bo-v3-live-debug">
-{JSON.stringify({
-  tenantSlug,
-  tokenPresent: Boolean(token),
-  isLoading,
-  loaderStatus: isLoading && loaderStatus === 'started'
-    ? 'started: loading live sales register'
-    : liveData.loaded && loaderStatus === 'not-started'
-      ? 'loaded-but-status-not-updated'
-      : loaderStatus,
-  loaded: liveData.loaded,
-  salesLoaded: liveData.salesLoaded,
-  inventoryLoaded: liveData.inventoryLoaded,
-  error: liveData.error,
-  kpis: liveData.kpis,
-  revenueRows: liveData.revenueRows,
-  inventoryRows: liveData.inventoryRows,
-  paymentMix: liveData.paymentMix,
-  topProducts: liveData.topProducts,
-  trendPoints: liveData.trend.length,
-}, null, 2)}
+{JSON.stringify(debugSnapshot, null, 2)}
         </pre>
       )}
 
