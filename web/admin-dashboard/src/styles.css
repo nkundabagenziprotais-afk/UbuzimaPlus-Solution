@@ -41725,3 +41725,34 @@ thead
   white-space: normal !important;
   overflow-wrap: anywhere !important;
 }
+
+/* Business Overview: make selected-period reload visible on dependent cards */
+.bo-pro-card.is-loading {
+  position: relative !important;
+  opacity: 0.78;
+}
+
+.bo-pro-card.is-loading::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.48);
+  pointer-events: none;
+}
+
+.bo-pro-card.is-loading::after {
+  content: "Loading selected period…";
+  position: absolute;
+  top: 0.72rem;
+  right: 0.82rem;
+  z-index: 5;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+}

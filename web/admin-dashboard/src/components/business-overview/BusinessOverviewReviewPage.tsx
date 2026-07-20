@@ -547,10 +547,11 @@ export function BusinessOverviewReviewPage({
 
     setIsLoading(true);
     setLoaderStatus('loading');
-    setLiveData((current) => ({
-      ...current,
+    setLiveData({
+      ...emptyBusinessOverviewLiveData(),
+      loaded: false,
       error: null,
-    }));
+    });
 
     loadBusinessOverviewDataAdapter({
       token,
@@ -721,6 +722,8 @@ export function BusinessOverviewReviewPage({
     })),
   );
 
+  const dashboardIsLoading = isLoading || !liveData.loaded;
+
   const applyGlobalDates = () => {
     const nextRange = {
       startDate: draftStartDate,
@@ -732,6 +735,13 @@ export function BusinessOverviewReviewPage({
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
     setLoadSequence((value) => value + 1);
+    setIsLoading(true);
+    setLoaderStatus('loading');
+    setLiveData({
+      ...emptyBusinessOverviewLiveData(),
+      loaded: false,
+      error: null,
+    });
 
     setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
@@ -760,6 +770,13 @@ export function BusinessOverviewReviewPage({
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
     setLoadSequence((value) => value + 1);
+    setIsLoading(true);
+    setLoaderStatus('loading');
+    setLiveData({
+      ...emptyBusinessOverviewLiveData(),
+      loaded: false,
+      error: null,
+    });
 
     setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
@@ -966,7 +983,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--risk ${isLoading ? 'is-loading' : ''}`}>
+        <article className={`bo-pro-card bo-pro-card--risk ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Inventory Risk Overview</h2>
@@ -1010,7 +1027,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--insurance bo-pro-order-insurance ${isLoading ? 'is-loading' : ''}`}>
+        <article className={`bo-pro-card bo-pro-card--insurance bo-pro-order-insurance ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Insurance & Receivables</h2>
@@ -1031,7 +1048,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--wide bo-pro-order-near-expiry ${isLoading ? 'is-loading' : ''}`}>
+        <article className={`bo-pro-card bo-pro-card--wide bo-pro-order-near-expiry ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Near Expiry Inventory Movement</h2>
@@ -1053,7 +1070,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--wide bo-pro-order-inventory-movement ${isLoading ? 'is-loading' : ''}`}>
+        <article className={`bo-pro-card bo-pro-card--wide bo-pro-order-inventory-movement ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Total Inventory Movement</h2>
