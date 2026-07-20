@@ -539,7 +539,7 @@ export function BusinessOverviewReviewPage({
         </div>
       )}
 
-      <section className="bo-exec-kpi-grid">
+      <section className="bo-exec-kpi-grid bo-exec-reference-kpis">
         {kpiCards.map((card) => (
           <article key={card.label} className={`bo-exec-kpi-card is-${card.tone}`}>
             <span>{card.icon}</span>
@@ -552,7 +552,7 @@ export function BusinessOverviewReviewPage({
         ))}
       </section>
 
-      <section className="bo-exec-grid">
+      <section className="bo-exec-grid bo-exec-reference-grid">
         <article className="bo-exec-panel bo-exec-daily">
           <header>
             <h3>Daily Revenue Operation</h3>
