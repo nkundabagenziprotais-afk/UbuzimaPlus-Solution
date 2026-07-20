@@ -2,6 +2,26 @@ type UnknownRecord = Record<string, unknown>;
 
 const API_BASE = '/api/v1';
 
+function businessOverviewSalesEndpoint(): string {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
+
+  const params = new URLSearchParams({
+    per_page: '100',
+    limit: '100',
+    page: '1',
+    business_date_from: startOfMonth,
+    business_date_to: today,
+    date_from: startOfMonth,
+    date_to: today,
+  });
+
+  return `/pharmaco/sales?${params.toString()}`;
+}
+
 function fetchBusinessOverviewJson(
   token: string,
   tenantSlug: string,
@@ -505,9 +525,9 @@ export async function loadBusinessOverviewLiveData(
     const salesResponse = await fetchBusinessOverviewJson(
       token,
       tenantSlug,
-      '/pharmaco/sales',
+      businessOverviewSalesEndpoint(),
       'Sales register',
-      10000,
+      25000,
     );
 
     sales = extractSales(salesResponse);

@@ -179,7 +179,11 @@ export function BusinessOverviewReviewPage({
   tenantSlug,
   tokenPresent: Boolean(token),
   isLoading,
-  loaderStatus: liveData.loaded && loaderStatus === 'not-started' ? 'loaded-but-status-not-updated' : loaderStatus,
+  loaderStatus: isLoading && loaderStatus === 'started'
+    ? 'started: loading live sales register'
+    : liveData.loaded && loaderStatus === 'not-started'
+      ? 'loaded-but-status-not-updated'
+      : loaderStatus,
   loaded: liveData.loaded,
   salesLoaded: liveData.salesLoaded,
   inventoryLoaded: liveData.inventoryLoaded,
