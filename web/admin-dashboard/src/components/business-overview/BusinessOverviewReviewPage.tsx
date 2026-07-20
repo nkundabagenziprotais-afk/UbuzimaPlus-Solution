@@ -16,6 +16,144 @@ type BusinessOverviewReviewPageProps = {
   tenantSlug?: string | null;
 };
 
+type BusinessOverviewSalesSummary = {
+  sale_count?: number | string;
+  total_sales_amount?: number | string;
+  paid_amount?: number | string;
+  balance_amount?: number | string;
+  payments_collected?: number | string;
+  payment_methods?: Array<{
+    payment_method?: string;
+    payment_count?: number | string;
+    total_amount?: number | string;
+  }>;
+};
+
+function boNumber(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function boMoney(value: number): string {
+  return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 0 }).format(Math.round(value));
+}
+
+function boPercent(value: number): string {
+  return `${new Intl.NumberFormat('en-RW', { maximumFractionDigits: 1 }).format(value)}%`;
+}
+
+function boPaymentLabel(method: string): string {
+  const normalized = method.toLowerCase();
+  if (normalized === 'momo' || normalized.includes('mobile')) return 'Mobile Money';
+  if (normalized.includes('card')) return 'Card';
+  if (normalized.includes('insurance')) return 'Insurance';
+  if (normalized.includes('credit')) return 'Credit';
+  if (normalized.includes('bank')) return 'Bank';
+  if (normalized.includes('cash')) return 'Cash';
+  return method ? method.replace(/_/g, ' ') : 'Other';
+}
+
+function buildBusinessOverviewFromSalesSummary(sales: BusinessOverviewSalesSummary): BusinessOverviewLiveData {
+  const empty = emptyBusinessOverviewLiveData();
+
+  const grossSales = boNumber(sales.total_sales_amount);
+  const collections = boNumber(sales.payments_collected) || boNumber(sales.paid_amount);
+  const outstandingBalance = boNumber(sales.balance_amount);
+  const transactionCount = boNumber(sales.sale_count);
+  const averageTransactionValue = transactionCount > 0 ? grossSales / transactionCount : 0;
+  const paymentTotal = Math.max(collections, 1);
+
+  const paymentMix = (sales.payment_methods ?? [])
+    .map((method) => {
+      const amount = boNumber(method.total_amount);
+      return {
+        label: boPaymentLabel(String(method.payment_method ?? 'Other')),
+        value: boPercent((amount / paymentTotal) * 100),
+        percent: Math.round((amount / paymentTotal) * 100),
+      };
+    })
+    .filter((row) => row.percent > 0);
+
+  return {
+    ...empty,
+    loaded: true,
+    salesLoaded: true,
+    inventoryLoaded: false,
+    error: null,
+    kpis: {
+      'Gross Revenue': boMoney(grossSales),
+      'Net Revenue': boMoney(grossSales),
+      Collections: boMoney(collections),
+      'Outstanding Balance': boMoney(outstandingBalance),
+      'Transaction Count': boMoney(transactionCount),
+      'Average Transaction Value': transactionCount ? boMoney(averageTransactionValue) : '—',
+      'Live POS Sales': boMoney(transactionCount),
+      'Historical POS Sales': '—',
+      'Gross Profit': '—',
+      'Estimated Net Profit': '—',
+      'Operating Expenses': '—',
+      'Expense / Revenue Ratio': '—',
+      'Break-even Daily Cash': '—',
+      'Daily Cash for Revenue Goal': '—',
+      'Daily Cash for Profit Goal': '—',
+      'Cash Variance': '—',
+      'Inventory Value': '—',
+      'Low Stock Items': '—',
+      'Expiring Items': '—',
+    },
+    kpiHelpers: {
+      'Gross Revenue': 'Live sales summary report',
+      'Net Revenue': 'Live sales summary report',
+      Collections: 'Payments collected from live sales summary',
+      'Outstanding Balance': 'Balance amount from live sales summary',
+      'Inventory Value': 'Inventory summary pending optimized live endpoint',
+      'Low Stock Items': 'Inventory summary pending optimized live endpoint',
+      'Expiring Items': 'Inventory summary pending optimized live endpoint',
+    },
+    revenueRows: [
+      { label: 'Gross Sales', value: boMoney(grossSales) },
+      { label: 'Discounts', value: boMoney(0) },
+      { label: 'Returns / Reversals', value: boMoney(0) },
+      { label: 'Net Sales', value: boMoney(grossSales) },
+      { label: 'Collections', value: boMoney(collections) },
+      { label: 'Credit Sales', value: '—' },
+      { label: 'Insurance Sales', value: '—' },
+      { label: 'Net Cash Inflow', value: boMoney(collections) },
+    ],
+    paymentMix,
+  };
+}
+
+async function fetchBusinessOverviewSalesSummary(
+  token: string,
+  tenantSlug: string,
+): Promise<BusinessOverviewLiveData> {
+  const response = await fetch('/api/v1/pharmaco/reports/sales-summary', {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Tenant': tenantSlug,
+      'X-Tenant-Slug': tenantSlug,
+    },
+  });
+
+  const json = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      typeof json?.message === 'string'
+        ? json.message
+        : `Sales summary failed with HTTP ${response.status}`,
+    );
+  }
+
+  return buildBusinessOverviewFromSalesSummary(json?.sales ?? {});
+}
+
 function toneClass(tone?: string) {
   return tone ? `is-${tone}` : 'is-neutral';
 }
@@ -79,8 +217,6 @@ export function BusinessOverviewReviewPage({
   useEffect(() => {
     let cancelled = false;
 
-    setLoaderStatus('effect-mounted');
-
     if (!token || !tenantSlug) {
       setLiveData({
         ...emptyBusinessOverviewLiveData(),
@@ -97,45 +233,26 @@ export function BusinessOverviewReviewPage({
     }
 
     setIsLoading(true);
-    setLoaderStatus('started');
+    setLoaderStatus('started: loading live sales summary report');
 
-    const timeout = window.setTimeout(() => {
-      if (!cancelled) {
-        setLiveData({
-          ...emptyBusinessOverviewLiveData(),
-          loaded: true,
-          error: 'Business Overview live data loader timed out after 15s.',
-        });
-        setLoaderStatus('failed: Business Overview live data loader timed out after 15s.');
-        setIsLoading(false);
-      }
-    }, 15000);
-
-    loadBusinessOverviewLiveData(token, tenantSlug)
+    fetchBusinessOverviewSalesSummary(token, tenantSlug)
       .then((data) => {
         if (cancelled) return;
 
-        window.clearTimeout(timeout);
-        setLiveData(data);
-        setLoaderStatus(data.error ? `success-with-warning: ${data.error}` : 'success');
+        setLiveData({ ...data });
+        setLoaderStatus('success');
         setIsLoading(false);
 
         if (debugEnabled) {
-          console.log('Business Overview live data diagnostic', {
-            tenantSlug,
-            tokenPresent: Boolean(token),
-            data,
-          });
+          console.log('Business Overview direct sales summary data', data);
         }
       })
       .catch((error) => {
         if (cancelled) return;
 
-        window.clearTimeout(timeout);
-
         const message = error instanceof Error
           ? error.message
-          : 'Unknown Business Overview loader failure.';
+          : 'Unable to load Business Overview sales summary.';
 
         setLiveData({
           ...emptyBusinessOverviewLiveData(),
@@ -144,15 +261,10 @@ export function BusinessOverviewReviewPage({
         });
         setLoaderStatus(`failed: ${message}`);
         setIsLoading(false);
-
-        if (debugEnabled) {
-          console.error('Business Overview live data loader failed', error);
-        }
       });
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timeout);
     };
   }, [token, tenantSlug, debugEnabled]);
 
