@@ -518,17 +518,6 @@ export async function loadBusinessOverviewLiveData(
     };
   }
 
-  let salesLoaded = false;
-  let inventorySummaryLoaded = false;
-  let inventoryBatchesLoaded = false;
-  const errors: string[] = [];
-
-  let sales: UnknownRecord[] = [];
-  let salesSummary: UnknownRecord = {};
-  let inventorySummary: UnknownRecord = {};
-  let inventoryBatches: UnknownRecord[] = [];
-
-  // Use the lightweight aggregated report endpoint, not the heavy Sales Register list.
   try {
     const salesSummaryResponse = await fetchBusinessOverviewJson(
       token,
@@ -538,219 +527,132 @@ export async function loadBusinessOverviewLiveData(
       12000,
     );
 
-    salesSummary = extractSalesSummary(salesSummaryResponse);
-    salesLoaded = true;
-  } catch (err) {
-    errors.push(
-      err instanceof Error
-        ? err.message
-        : 'Unable to load live sales summary report.',
-    );
-  }
+    const salesSummary = extractSalesSummary(salesSummaryResponse);
+    const paymentMethods = asArray(salesSummary.payment_methods);
 
-  // Inventory summary endpoint is currently too slow for the customer-facing dashboard.
-  // Do not call it during initial Business Overview rendering.
-  // Inventory values stay unavailable until a lightweight backend summary endpoint is added.
-  inventorySummaryLoaded = false;
-  inventorySummary = {};
-  errors.push('Inventory summary is currently unavailable. Sales and cash performance are shown from the live sales summary report.');
-
-  // Do not load full inventory batches in Business Overview initial render.
-  inventoryBatchesLoaded = false;
-  inventoryBatches = [];
-
-  const validSales = sales.filter((sale) => !isVoidedOrReturnedSale(sale));
-  const returnedSales = sales.filter(isVoidedOrReturnedSale);
-
-  const summarySaleCount = firstNumber(salesSummary, [
-    'sale_count',
-    'transaction_count',
-    'transactions',
-    'sales_count',
-  ]);
-
-  const rowGrossSales = validSales.reduce((sum, sale) => sum + saleTotal(sale), 0);
-  const rowDiscounts = validSales.reduce((sum, sale) => sum + saleDiscount(sale), 0);
-  const rowReturns = returnedSales.reduce((sum, sale) => sum + saleTotal(sale), 0);
-
-  const grossSales =
-    firstNumber(salesSummary, [
+    const grossSales = firstNumber(salesSummary, [
       'total_sales_amount',
       'gross_sales',
       'sales_total',
       'total_amount',
       'total_sales',
-    ]) || rowGrossSales;
+    ]);
 
-  const discounts =
-    firstNumber(salesSummary, [
+    const discounts = firstNumber(salesSummary, [
       'discount_amount',
       'discounts',
       'discount_total',
       'total_discount',
-    ]) || rowDiscounts;
+    ]);
 
-  const returns =
-    firstNumber(salesSummary, [
+    const returns = firstNumber(salesSummary, [
       'returns_amount',
       'reversal_amount',
       'refund_amount',
       'returned_amount',
-    ]) || rowReturns;
+    ]);
 
-  const netSales =
-    firstNumber(salesSummary, [
+    const netSales = firstNumber(salesSummary, [
       'net_sales_amount',
       'net_sales',
       'net_revenue',
     ]) || Math.max(grossSales - discounts - returns, 0);
 
-  let collections =
-    firstNumber(salesSummary, [
-      'paid_amount',
+    const collections = firstNumber(salesSummary, [
       'payments_collected',
+      'paid_amount',
       'collections_total',
       'collected_amount',
     ]);
 
-  const paymentGrouped = new Map<string, number>();
-  const summaryPaymentMethods = asArray(salesSummary.payment_methods);
+    const outstandingBalance = firstNumber(salesSummary, [
+      'balance_amount',
+      'open_balance',
+      'outstanding_balance',
+    ]) || Math.max(netSales - collections, 0);
 
-  for (const method of summaryPaymentMethods) {
-    const label = paymentMethodLabel(stringValue(method.payment_method, 'Other'));
-    const amount = firstNumber(method, ['total_amount', 'amount', 'paid_amount']);
-    if (amount > 0) {
-      paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
-    }
+    const transactionCount = firstNumber(salesSummary, [
+      'sale_count',
+      'transaction_count',
+      'transactions',
+      'sales_count',
+    ]);
+
+    const averageTransactionValue = transactionCount > 0 ? netSales / transactionCount : 0;
+    const paymentTotal = Math.max(collections, 1);
+
+    const paymentMix = paymentMethods
+      .map((method) => {
+        const label = paymentMethodLabel(stringValue(method.payment_method, 'Other'));
+        const amount = firstNumber(method, ['total_amount', 'amount', 'paid_amount']);
+
+        return {
+          label,
+          value: formatPercent((amount / paymentTotal) * 100),
+          percent: Math.round((amount / paymentTotal) * 100),
+        };
+      })
+      .filter((row) => row.percent > 0);
+
+    const inventoryRows = empty.inventoryRows;
+
+    return {
+      loaded: true,
+      salesLoaded: true,
+      inventoryLoaded: false,
+      error: null,
+      kpis: {
+        'Gross Revenue': formatMoney(grossSales),
+        'Net Revenue': formatMoney(netSales),
+        Collections: formatMoney(collections),
+        'Outstanding Balance': formatMoney(outstandingBalance),
+        'Transaction Count': formatCount(transactionCount),
+        'Average Transaction Value': transactionCount ? formatMoney(averageTransactionValue) : '—',
+        'Live POS Sales': formatCount(transactionCount),
+        'Historical POS Sales': '—',
+        'Gross Profit': '—',
+        'Estimated Net Profit': '—',
+        'Operating Expenses': '—',
+        'Expense / Revenue Ratio': '—',
+        'Break-even Daily Cash': '—',
+        'Daily Cash for Revenue Goal': '—',
+        'Daily Cash for Profit Goal': '—',
+        'Cash Variance': '—',
+        'Inventory Value': '—',
+        'Low Stock Items': '—',
+        'Expiring Items': '—',
+      },
+      kpiHelpers: {
+        'Gross Revenue': 'Aggregated live sales summary report',
+        'Net Revenue': 'Sales summary total after available adjustments',
+        Collections: 'Payments collected from sales summary report',
+        'Outstanding Balance': 'Balance amount from sales summary report',
+        'Inventory Value': 'Inventory summary pending optimized live endpoint',
+        'Low Stock Items': 'Inventory summary pending optimized live endpoint',
+        'Expiring Items': 'Inventory summary pending optimized live endpoint',
+      },
+      revenueRows: [
+        { label: 'Gross Sales', value: formatMoney(grossSales) },
+        { label: 'Discounts', value: formatMoney(discounts) },
+        { label: 'Returns / Reversals', value: formatMoney(returns) },
+        { label: 'Net Sales', value: formatMoney(netSales) },
+        { label: 'Collections', value: formatMoney(collections) },
+        { label: 'Credit Sales', value: '—' },
+        { label: 'Insurance Sales', value: '—' },
+        { label: 'Net Cash Inflow', value: formatMoney(collections) },
+      ],
+      inventoryRows,
+      paymentMix,
+      topProducts: [],
+      trend: [],
+    };
+  } catch (err) {
+    return {
+      ...empty,
+      loaded: true,
+      error: err instanceof Error
+        ? err.message
+        : 'Unable to load Business Overview sales summary.',
+    };
   }
-
-  if (collections <= 0) {
-    for (const sale of validSales) {
-      const completedPayments = asArray(sale.payments).filter(isCompletedPayment);
-
-      if (completedPayments.length > 0) {
-        for (const payment of completedPayments) {
-          const amount = numberValue(payment.amount);
-          collections += amount;
-          const label = paymentMethodLabel(stringValue(payment.payment_method, 'Other'));
-          paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
-        }
-      } else {
-        const amount = salePaidAmount(sale);
-        collections += amount;
-
-        if (amount > 0) {
-          const label = paymentMethodLabel(salePaymentMethod(sale));
-          paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
-        }
-      }
-    }
-  }
-
-  const outstandingBalance =
-    firstNumber(salesSummary, ['balance_amount', 'open_balance', 'outstanding_balance']) ||
-    Math.max(netSales - collections, 0);
-
-  const creditSales =
-    firstNumber(salesSummary, ['credit_sales', 'credit_amount']) ||
-    validSales
-      .filter((sale) => stringValue(sale.payment_status).toLowerCase().includes('credit'))
-      .reduce((sum, sale) => sum + saleTotal(sale), 0);
-
-  const insuranceSales =
-    firstNumber(salesSummary, ['insurance_sales', 'insurance_amount']) ||
-    validSales
-      .filter((sale) => stringValue(sale.sale_type).toLowerCase().includes('insurance'))
-      .reduce((sum, sale) => sum + saleTotal(sale), 0);
-
-  const paymentTotal = Math.max(collections, 1);
-  const paymentMix = [...paymentGrouped.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, amount]) => ({
-      label,
-      value: formatPercent((amount / paymentTotal) * 100),
-      percent: Math.round((amount / paymentTotal) * 100),
-    }));
-
-  const trend = buildTrend(validSales);
-  const topProducts = buildTopProducts(validSales);
-  const transactionCount = summarySaleCount || validSales.length;
-  const averageTransactionValue = transactionCount > 0 ? netSales / transactionCount : 0;
-
-  const batchFallback = computeBatchFallback(inventoryBatches);
-
-  const summaryInventoryValue =
-    numberValue(inventorySummary.estimated_stock_value) ||
-    numberValue(inventorySummary.estimated_stock_retail_value) ||
-    numberValue(inventorySummary.estimated_stock_cost_value);
-
-  const inventoryValue = summaryInventoryValue || batchFallback.inventoryValue;
-  const totalQuantity = numberValue(inventorySummary.total_quantity_on_hand) || batchFallback.totalQuantity;
-  const stockBatches = numberValue(inventorySummary.stock_batches_count) || batchFallback.stockBatches;
-  const lowStock = numberValue(inventorySummary.low_stock_products_count) || batchFallback.lowStock;
-  const nearExpiry = numberValue(inventorySummary.near_expiry_batches_180_days_count) || batchFallback.nearExpiry;
-  const expired = numberValue(inventorySummary.expired_batches_count) || batchFallback.expired;
-
-  const inventoryLoaded = inventorySummaryLoaded || inventoryBatchesLoaded;
-
-  const livePosCount = validSales.filter((sale) => !isHistoricalSale(sale)).length;
-  const historicalPosCount = validSales.filter(isHistoricalSale).length;
-
-  return {
-    loaded: true,
-    salesLoaded,
-    inventoryLoaded,
-    error: errors.length ? errors.join(' ') : null,
-    kpis: {
-      'Gross Revenue': salesLoaded ? formatMoney(grossSales) : '—',
-      'Net Revenue': salesLoaded ? formatMoney(netSales) : '—',
-      Collections: salesLoaded ? formatMoney(collections) : '—',
-      'Outstanding Balance': salesLoaded ? formatMoney(outstandingBalance) : '—',
-      'Transaction Count': salesLoaded ? formatCount(transactionCount) : '—',
-      'Average Transaction Value': salesLoaded && transactionCount ? formatMoney(averageTransactionValue) : '—',
-      'Live POS Sales': salesLoaded ? formatCount(livePosCount) : '—',
-      'Historical POS Sales': salesLoaded ? formatCount(historicalPosCount) : '—',
-      'Gross Profit': '—',
-      'Estimated Net Profit': '—',
-      'Operating Expenses': '—',
-      'Expense / Revenue Ratio': '—',
-      'Break-even Daily Cash': '—',
-      'Daily Cash for Revenue Goal': '—',
-      'Daily Cash for Profit Goal': '—',
-      'Cash Variance': '—',
-      'Inventory Value': inventoryLoaded ? formatMoney(inventoryValue) : '—',
-      'Low Stock Items': inventoryLoaded ? formatCount(lowStock) : '—',
-      'Expiring Items': inventoryLoaded ? formatCount(nearExpiry) : '—',
-    },
-    kpiHelpers: {
-      'Gross Revenue': salesLoaded ? 'Aggregated sales summary report' : 'Sales source unavailable',
-      'Net Revenue': salesLoaded ? 'Sales less discounts and reversals' : 'Sales source unavailable',
-      Collections: salesLoaded ? 'Completed payments or paid amount from Live/Historical POS' : 'Payment source unavailable',
-      'Outstanding Balance': salesLoaded ? 'Sales value not yet collected' : 'Receivable source unavailable',
-      'Inventory Value': inventoryLoaded ? 'Inventory summary with batch-register fallback' : 'Inventory source unavailable',
-      'Low Stock Items': inventoryLoaded ? 'Inventory summary or batch threshold fallback' : 'Inventory source unavailable',
-      'Expiring Items': inventoryLoaded ? 'Inventory summary or batch expiry fallback' : 'Inventory source unavailable',
-    },
-    revenueRows: [
-      { label: 'Gross Sales', value: salesLoaded ? formatMoney(grossSales) : '—' },
-      { label: 'Discounts', value: salesLoaded ? formatMoney(discounts) : '—' },
-      { label: 'Returns / Reversals', value: salesLoaded ? formatMoney(returns) : '—' },
-      { label: 'Net Sales', value: salesLoaded ? formatMoney(netSales) : '—' },
-      { label: 'Collections', value: salesLoaded ? formatMoney(collections) : '—' },
-      { label: 'Credit Sales', value: salesLoaded ? formatMoney(creditSales) : '—' },
-      { label: 'Insurance Sales', value: salesLoaded ? formatMoney(insuranceSales) : '—' },
-      { label: 'Net Cash Inflow', value: salesLoaded ? formatMoney(collections) : '—' },
-    ],
-    inventoryRows: [
-      { label: 'Total Inventory Value', value: inventoryLoaded ? formatMoney(inventoryValue) : '—' },
-      { label: 'Total Quantity On Hand', value: inventoryLoaded ? formatCount(totalQuantity) : '—' },
-      { label: 'Stock Batches', value: inventoryLoaded ? formatCount(stockBatches) : '—' },
-      { label: 'Low Stock Items', value: inventoryLoaded ? formatCount(lowStock) : '—' },
-      { label: 'Expiring Items', value: inventoryLoaded ? formatCount(nearExpiry) : '—' },
-      { label: 'Expired Batches', value: inventoryLoaded ? formatCount(expired) : '—' },
-    ],
-    paymentMix,
-    topProducts,
-    trend,
-  };
 }
