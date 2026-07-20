@@ -40751,3 +40751,101 @@ thead
     min-width: 30rem;
   }
 }
+
+/* Business Overview trend-axis and final executive fit improvements */
+.bo-pro-card--trend {
+  grid-column: 1 / -1 !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart {
+  min-height: 18rem !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart svg {
+  min-height: 13.25rem !important;
+}
+
+.bo-pro-line-chart .bo-pro-data-label {
+  fill: #0f172a;
+  font-size: 0.62rem !important;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.bo-pro-line-chart .bo-pro-axis-label {
+  fill: #64748b;
+  font-size: 0.62rem !important;
+  font-weight: 850;
+  text-anchor: middle;
+}
+
+.bo-pro-chart-footer {
+  font-size: 0.74rem !important;
+}
+
+/* SN/# columns should not consume table width */
+.bo-pro-table-wrap th:first-child,
+.bo-pro-table-wrap td:first-child,
+.bo-pro-fit-table th:first-child,
+.bo-pro-fit-table td:first-child {
+  width: 3rem !important;
+  min-width: 3rem !important;
+  max-width: 3rem !important;
+  text-align: center !important;
+}
+
+/* Product table needs readable product names and right-aligned numbers */
+.bo-pro-card--products table th:nth-child(2),
+.bo-pro-card--products table td:nth-child(2) {
+  width: 42%;
+  text-align: left !important;
+}
+
+.bo-pro-card--products table th:nth-child(3),
+.bo-pro-card--products table td:nth-child(3),
+.bo-pro-card--products table th:nth-child(4),
+.bo-pro-card--products table td:nth-child(4),
+.bo-pro-card--products table th:nth-child(5),
+.bo-pro-card--products table td:nth-child(5) {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Inventory sections should be visibly populated and not appear collapsed */
+.bo-pro-card--risk,
+.bo-pro-order-near-expiry,
+.bo-pro-order-inventory-movement {
+  min-height: 23rem !important;
+}
+
+.bo-pro-risk-stack {
+  align-content: start;
+}
+
+.bo-pro-risk-stack .bo-pro-donut {
+  margin-bottom: 0.35rem;
+}
+
+.bo-pro-order-near-expiry .bo-pro-line-chart,
+.bo-pro-order-inventory-movement .bo-pro-line-chart {
+  min-height: 12.25rem !important;
+}
+
+/* Remove Stock Value Gauge if any old CSS/markup survives cache */
+.bo-pro-card--gauge {
+  display: none !important;
+}
+
+/* With Sales Trend full width, remaining operational cards flow in clean two-card rows */
+@media (min-width: 981px) {
+  .bo-pro-card--products,
+  .bo-pro-card--payment,
+  .bo-pro-card--profit,
+  .bo-pro-card--risk,
+  .bo-pro-order-near-expiry,
+  .bo-pro-order-inventory-movement,
+  .bo-pro-order-insurance {
+    grid-column: span 6 !important;
+  }
+}

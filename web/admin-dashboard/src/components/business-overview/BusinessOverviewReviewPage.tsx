@@ -114,6 +114,84 @@ function amountFromKpiOrRow(data: BusinessOverviewLiveData, kpiLabel: string, ro
   return parseAmount(kpi !== '—' ? kpi : rowValue(data.inventoryRows, rowLabel));
 }
 
+function datesBetween(startDate: string, endDate: string, maxDays = 31): string[] {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return [todayIso()];
+  }
+
+  const dates: string[] = [];
+  const cursor = new Date(start);
+
+  while (cursor <= end && dates.length < maxDays) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates.length > 0 ? dates : [todayIso()];
+}
+
+function dayOfMonthLabel(dateIso: string): string {
+  const day = Number(dateIso.slice(-2));
+  return Number.isFinite(day) ? String(day) : dateIso;
+}
+
+function trendPointDate(point: unknown): string | null {
+  if (!point || typeof point !== 'object') return null;
+
+  const record = point as Record<string, unknown>;
+  const candidates = [
+    record.business_date,
+    record.date,
+    record.day,
+    record.label,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const match = candidate.match(/\d{4}-\d{2}-\d{2}/);
+      if (match) return match[0];
+
+      if (/^\d{1,2}$/.test(candidate)) {
+        return candidate.padStart(2, '0');
+      }
+    }
+  }
+
+  return null;
+}
+
+function buildDailyTrendSeries(
+  points: BusinessOverviewLiveData['trend'],
+  startDate: string,
+  endDate: string,
+  maxDays = 31,
+): Array<{ date: string; label: string; value: number }> {
+  const dates = datesBetween(startDate, endDate, maxDays);
+  const valueMap = new Map<string, number>();
+
+  points.forEach((point) => {
+    const key = trendPointDate(point);
+    if (!key) return;
+
+    const fullDate = key.length === 2
+      ? dates.find((date) => date.endsWith(`-${key}`))
+      : key;
+
+    if (fullDate) {
+      valueMap.set(fullDate, point.value);
+    }
+  });
+
+  return dates.map((date) => ({
+    date,
+    label: dayOfMonthLabel(date),
+    value: valueMap.get(date) ?? 0,
+  }));
+}
+
 function chartValues(points: BusinessOverviewLiveData['trend'], fallback: number): number[] {
   if (points.length > 0) return points.map((point) => point.value);
 
@@ -160,20 +238,64 @@ function pieGradient(segments: Array<{ percent: number; color: string }>): strin
   return `conic-gradient(${stops.join(', ')})`;
 }
 
-function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
-  const totalInventory = amountFromKpiOrRow(data, 'Inventory Value', 'Total Inventory Value');
-  const lowStockValue = amountFromKpiOrRow(data, 'Low Stock Value', 'Low Stock Value');
-  const nearExpiryValue = amountFromKpiOrRow(data, 'Near Expiry Value', 'Near Expiry Value');
-  const expiredValue = amountFromKpiOrRow(data, 'Expired Stock Value', 'Expired Value');
-  const healthyValueFromData = amountFromKpiOrRow(data, 'Healthy Stock Value', 'Healthy Stock Value');
+function numericRow(data: BusinessOverviewLiveData, labels: string[]): number {
+  for (const label of labels) {
+    const value = parseAmount(kpiValue(data, label));
+    if (value > 0) return value;
+  }
 
-  const lowStockCount = rowValue(data.inventoryRows, 'Low Stock Count') || kpiValue(data, 'Low Stock Items');
-  const nearExpiryCount = rowValue(data.inventoryRows, 'Near Expiry Count') || kpiValue(data, 'Expiring Items');
-  const expiredCount = rowValue(data.inventoryRows, 'Expired Count');
-  const healthyCount = rowValue(data.inventoryRows, 'Healthy Stock Count');
-  const stockBatchCount = rowValue(data.inventoryRows, 'Stock Batches Count');
+  for (const label of labels) {
+    const value = parseAmount(rowValue(data.inventoryRows, label));
+    if (value > 0) return value;
+  }
+
+  return 0;
+}
+
+function textRow(data: BusinessOverviewLiveData, labels: string[], fallback = '0'): string {
+  for (const label of labels) {
+    const kpi = kpiValue(data, label);
+    if (kpi !== '—') return kpi;
+  }
+
+  for (const label of labels) {
+    const row = rowValue(data.inventoryRows, label);
+    if (row !== '—') return row;
+  }
+
+  return fallback;
+}
+
+function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
+  const totalInventory = numericRow(data, [
+    'Inventory Value',
+    'Total Inventory Value',
+    'Stock Batches Value',
+  ]);
+
+  const lowStockValue = numericRow(data, [
+    'Low Stock Value',
+    'Low Stock Items Value',
+  ]);
+
+  const nearExpiryValue = numericRow(data, [
+    'Near Expiry Value',
+    'Expiring Value',
+    'Expiring Items Value',
+  ]);
+
+  const expiredValue = numericRow(data, [
+    'Expired Stock Value',
+    'Expired Value',
+    'Expired Batches Value',
+  ]);
 
   const slowValue = 0;
+
+  const healthyValueFromData = numericRow(data, [
+    'Healthy Stock Value',
+  ]);
+
   const healthyValue =
     healthyValueFromData ||
     Math.max(totalInventory - lowStockValue - nearExpiryValue - expiredValue - slowValue, 0);
@@ -183,21 +305,21 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
   return [
     {
       label: 'Expired / quarantined',
-      countLabel: `${expiredCount === '—' ? '0' : expiredCount} batches`,
+      countLabel: `${textRow(data, ['Expired Count', 'Expired Batches'], '0')} batches`,
       value: expiredValue,
       percent: safeRatio(expiredValue, total),
       tone: 'expired',
     },
     {
       label: 'Near expiry',
-      countLabel: `${nearExpiryCount === '—' ? '0' : nearExpiryCount} batches`,
+      countLabel: `${textRow(data, ['Near Expiry Count', 'Expiring Items'], '0')} batches`,
       value: nearExpiryValue,
       percent: safeRatio(nearExpiryValue, total),
       tone: 'near-expiry',
     },
     {
       label: 'Low stock',
-      countLabel: `${lowStockCount === '—' ? '0' : lowStockCount} items`,
+      countLabel: `${textRow(data, ['Low Stock Count', 'Low Stock Items'], '0')} items`,
       value: lowStockValue,
       percent: safeRatio(lowStockValue, total),
       tone: 'low-stock',
@@ -211,7 +333,7 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
     },
     {
       label: 'Healthy stock',
-      countLabel: healthyCount !== '—' ? `${healthyCount} batches` : `${stockBatchCount === '—' ? '0' : stockBatchCount} batches`,
+      countLabel: `${textRow(data, ['Healthy Stock Count', 'Stock Batches Count', 'Stock Batches'], '0')} batches`,
       value: healthyValue,
       percent: safeRatio(healthyValue, total),
       tone: 'healthy',
@@ -299,39 +421,43 @@ function analyticsText(label: string, values: {
 function LineChart({
   values,
   label,
+  labels,
   startDate,
   endDate,
 }: {
   values: number[];
   label: string;
+  labels?: string[];
   startDate?: string;
   endDate?: string;
 }) {
   const width = 420;
   const height = 128;
   const max = Math.max(...values, 1);
+  const step = values.length > 15 ? 5 : values.length > 9 ? 2 : 1;
 
   const points = values.map((value, index) => {
     const x = values.length > 1 ? (index / (values.length - 1)) * width : 0;
-    const y = height - (value / max) * (height - 16) - 8;
+    const y = height - (value / max) * (height - 20) - 10;
 
-    return { value, x, y };
+    return { value, x, y, label: labels?.[index] ?? String(index + 1) };
   });
 
   return (
     <div className="bo-pro-line-chart">
-      <svg viewBox="0 0 420 148" role="img" aria-label={label}>
-        <path d={linePath(values)} />
+      <svg viewBox="0 0 420 166" role="img" aria-label={label}>
+        <path d={linePath(values, width, height)} />
         {points.map((point, index) => (
           <g key={`${label}-${index}`}>
             <circle cx={point.x} cy={point.y} r="3.5" />
-            <text
-              x={point.x}
-              y={Math.max(point.y - 10, 12)}
-              transform={`rotate(-90 ${point.x} ${Math.max(point.y - 10, 12)})`}
-            >
+            <text className="bo-pro-data-label" x={point.x} y={Math.max(point.y - 10, 12)}>
               {formatCompact(point.value)}
             </text>
+            {(index === 0 || index === points.length - 1 || index % step === 0) && (
+              <text className="bo-pro-axis-label" x={point.x} y="158">
+                {point.label}
+              </text>
+            )}
           </g>
         ))}
       </svg>
@@ -356,10 +482,10 @@ export function BusinessOverviewReviewPage({
 
   const [dailyDate, setDailyDate] = useState(todayIso());
   const [trendMetric, setTrendMetric] = useState<'value' | 'count'>('value');
-  const [trendStartDate, setTrendStartDate] = useState(initialRange.startDate);
-  const [trendEndDate, setTrendEndDate] = useState(initialRange.endDate);
-  const [productStartDate, setProductStartDate] = useState(initialRange.startDate);
-  const [productEndDate, setProductEndDate] = useState(initialRange.endDate);
+  const [trendStartDate, setTrendStartDate] = useState(currentMonthStartIso());
+  const [trendEndDate, setTrendEndDate] = useState(todayIso());
+  const [productStartDate, setProductStartDate] = useState(currentMonthStartIso());
+  const [productEndDate, setProductEndDate] = useState(todayIso());
   const [paymentStartDate, setPaymentStartDate] = useState(currentMonthStartIso());
   const [paymentEndDate, setPaymentEndDate] = useState(todayIso());
   const [expenseStartDate, setExpenseStartDate] = useState(currentMonthStartIso());
@@ -368,10 +494,10 @@ export function BusinessOverviewReviewPage({
   const [inventoryRiskEndDate, setInventoryRiskEndDate] = useState(todayIso());
   const [insuranceStartDate, setInsuranceStartDate] = useState(currentMonthStartIso());
   const [insuranceEndDate, setInsuranceEndDate] = useState(todayIso());
-  const [nearExpiryStartDate, setNearExpiryStartDate] = useState(initialRange.startDate);
-  const [nearExpiryEndDate, setNearExpiryEndDate] = useState(initialRange.endDate);
-  const [inventoryMovementStartDate, setInventoryMovementStartDate] = useState(initialRange.startDate);
-  const [inventoryMovementEndDate, setInventoryMovementEndDate] = useState(initialRange.endDate);
+  const [nearExpiryStartDate, setNearExpiryStartDate] = useState(currentMonthStartIso());
+  const [nearExpiryEndDate, setNearExpiryEndDate] = useState(todayIso());
+  const [inventoryMovementStartDate, setInventoryMovementStartDate] = useState(currentMonthStartIso());
+  const [inventoryMovementEndDate, setInventoryMovementEndDate] = useState(todayIso());
 
   const [liveData, setLiveData] = useState<BusinessOverviewLiveData>(() => emptyBusinessOverviewLiveData());
   const [isLoading, setIsLoading] = useState(false);
@@ -493,9 +619,14 @@ export function BusinessOverviewReviewPage({
     { label: 'Expired Stock Value', value: kpiValue(liveData, 'Expired Stock Value'), icon: '♢', tone: 'red' },
   ];
 
-  const salesTrendValues = trendMetric === 'count'
-    ? chartValues([], transactions)
-    : chartValues(liveData.trend, grossRevenue);
+  const salesTrendSeries = buildDailyTrendSeries(
+    trendMetric === 'count' ? [] : liveData.trend,
+    trendStartDate,
+    trendEndDate,
+    31,
+  );
+  const salesTrendValues = salesTrendSeries.map((point) => point.value);
+  const salesTrendLabels = salesTrendSeries.map((point) => point.label);
   const insuranceTrendValues = chartValues([], outstanding);
   const nearExpiryTrendValues = chartValues([], nearExpiryValue);
   const inventoryMovementTrendValues = chartValues([], totalInventoryValue);
@@ -666,6 +797,7 @@ export function BusinessOverviewReviewPage({
           <LineChart
             values={salesTrendValues}
             label={trendMetric === 'count' ? 'Transaction Count' : 'Transaction Value'}
+            labels={salesTrendLabels}
             startDate={trendStartDate}
             endDate={trendEndDate}
           />
@@ -873,28 +1005,6 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--gauge">
-          <header>
-            <div>
-              <h2>Stock Value Gauge</h2>
-            </div>
-          </header>
-
-          <div className="bo-pro-gauge-layout">
-            <div className="bo-pro-gauge">
-              <i style={{ transform: `rotate(${-86 + Math.min(Math.max(healthyRatio, 0), 100) * 1.72}deg)` }} />
-              <strong>{formatPercent(healthyRatio)}</strong>
-              <small>Healthy Stock Value Ratio</small>
-            </div>
-
-            <div className="bo-pro-metric-list compact">
-              <article><span>Healthy Stock Value</span><strong>{formatMoney(healthyStockValue)}</strong></article>
-              <article><span>At Risk Value</span><strong>{formatMoney(atRiskValue)}</strong></article>
-              <article><span>Total Inventory Value</span><strong>{formatMoney(totalInventoryValue)}</strong></article>
-              <article><span>Risk Ratio</span><strong>{formatPercent(atRiskRatio)}</strong></article>
-            </div>
-          </div>
-        </article>
       </section>
     </section>
   );
