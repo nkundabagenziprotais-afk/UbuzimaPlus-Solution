@@ -90,6 +90,13 @@ function formatPercent(value: number): string {
   return `${new Intl.NumberFormat('en-RW', { maximumFractionDigits: 1 }).format(value)}%`;
 }
 
+function formatCompact(value: number): string {
+  return new Intl.NumberFormat('en-RW', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(Math.round(value));
+}
+
 function safeRatio(numerator: number, denominator: number): number {
   return denominator > 0 ? (numerator / denominator) * 100 : 0;
 }
@@ -241,7 +248,6 @@ function analyticsText(label: string, values: {
   const collectionRatio = safeRatio(values.collections, values.net);
   const outstandingRatio = safeRatio(values.outstanding, values.net);
   const healthyRatio = safeRatio(values.healthy, values.inventory);
-  const riskRatio = safeRatio(values.atRisk, values.inventory);
   const lowRatio = safeRatio(values.low, values.inventory);
   const nearExpiryRatio = safeRatio(values.nearExpiry, values.inventory);
   const expiredRatio = safeRatio(values.expired, values.inventory);
@@ -249,46 +255,44 @@ function analyticsText(label: string, values: {
   switch (label) {
     case 'Gross Revenue':
       return values.gross > 0
-        ? `${formatPercent(collectionRatio)} collected against selected-period sales`
-        : 'No sales value recorded for this business-date range';
+        ? `Period sales base · ${formatPercent(collectionRatio)} collected`
+        : 'No sales in selected period';
     case 'Net Revenue':
       return values.net === values.gross
-        ? 'No available discount or reversal impact in summary'
-        : 'Adjusted revenue after available deductions';
+        ? 'No adjustment impact detected'
+        : 'After discounts and reversals';
     case 'Collections':
-      return `${formatPercent(collectionRatio)} of net revenue collected`;
+      return `${formatPercent(collectionRatio)} collection coverage`;
     case 'Outstanding Balance':
       return values.outstanding > 0
-        ? `${formatPercent(outstandingRatio)} of net revenue remains open`
-        : 'No open balance pressure detected';
+        ? `${formatPercent(outstandingRatio)} still open`
+        : 'No open balance pressure';
     case 'Transaction Count':
       return values.transactions > 0
-        ? `${formatNumber(values.transactions)} completed sales captured`
-        : 'No completed transaction in selected range';
+        ? `${formatNumber(values.transactions)} completed transactions`
+        : 'No transaction activity';
     case 'Average Transaction Value':
       return values.averageSale > 0
-        ? `Average basket value is ${formatMoney(values.averageSale)}`
-        : 'Average basket unavailable without sales';
+        ? `Average basket ${formatMoney(values.averageSale)}`
+        : 'Basket value unavailable';
     case 'Total Inventory Value':
-      return 'Inventory valuation as of selected end date';
+      return 'As-at inventory valuation';
     case 'Healthy Stock Value':
-      return `${formatPercent(healthyRatio)} of stock value is healthy`;
+      return `${formatPercent(healthyRatio)} healthy stock value`;
     case 'Low Stock Value':
       return lowRatio > 0
-        ? `${formatPercent(lowRatio)} of stock value needs replenishment attention`
-        : 'Low-stock value exposure is not material';
+        ? `${formatPercent(lowRatio)} replenishment exposure`
+        : 'Low-stock value stable';
     case 'Near Expiry Value':
       return nearExpiryRatio > 0
-        ? `${formatPercent(nearExpiryRatio)} of stock value is near expiry`
-        : 'No near-expiry value exposure from available valuation';
+        ? `${formatPercent(nearExpiryRatio)} expiry exposure`
+        : 'No material expiry value';
     case 'Expired Stock Value':
       return expiredRatio > 0
-        ? `${formatPercent(expiredRatio)} of stock value requires quarantine/action`
-        : 'No expired value exposure from available valuation';
+        ? `${formatPercent(expiredRatio)} quarantine exposure`
+        : 'No expired value exposure';
     default:
-      return riskRatio > 0
-        ? `${formatPercent(riskRatio)} of stock value is currently at risk`
-        : 'Live analytics from selected operational records';
+      return 'Operational analytics';
   }
 }
 
@@ -303,10 +307,33 @@ function LineChart({
   startDate?: string;
   endDate?: string;
 }) {
+  const width = 420;
+  const height = 128;
+  const max = Math.max(...values, 1);
+
+  const points = values.map((value, index) => {
+    const x = values.length > 1 ? (index / (values.length - 1)) * width : 0;
+    const y = height - (value / max) * (height - 16) - 8;
+
+    return { value, x, y };
+  });
+
   return (
     <div className="bo-pro-line-chart">
-      <svg viewBox="0 0 420 128" role="img" aria-label={label}>
+      <svg viewBox="0 0 420 148" role="img" aria-label={label}>
         <path d={linePath(values)} />
+        {points.map((point, index) => (
+          <g key={`${label}-${index}`}>
+            <circle cx={point.x} cy={point.y} r="3.5" />
+            <text
+              x={point.x}
+              y={Math.max(point.y - 10, 12)}
+              transform={`rotate(-90 ${point.x} ${Math.max(point.y - 10, 12)})`}
+            >
+              {formatCompact(point.value)}
+            </text>
+          </g>
+        ))}
       </svg>
       <div className="bo-pro-chart-footer">
         <span>{startDate ?? 'Start'}</span>
@@ -327,16 +354,20 @@ export function BusinessOverviewReviewPage({
   const [draftEndDate, setDraftEndDate] = useState(initialRange.endDate);
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(initialRange);
 
-  const [dailyDate, setDailyDate] = useState(initialRange.endDate);
+  const [dailyDate, setDailyDate] = useState(todayIso());
   const [trendMetric, setTrendMetric] = useState<'value' | 'count'>('value');
   const [trendStartDate, setTrendStartDate] = useState(initialRange.startDate);
   const [trendEndDate, setTrendEndDate] = useState(initialRange.endDate);
   const [productStartDate, setProductStartDate] = useState(initialRange.startDate);
   const [productEndDate, setProductEndDate] = useState(initialRange.endDate);
-  const [paymentDate, setPaymentDate] = useState(initialRange.endDate);
-  const [expenseDate, setExpenseDate] = useState(initialRange.endDate);
-  const [inventoryRiskDate, setInventoryRiskDate] = useState(initialRange.endDate);
-  const [insuranceDate, setInsuranceDate] = useState(initialRange.endDate);
+  const [paymentStartDate, setPaymentStartDate] = useState(currentMonthStartIso());
+  const [paymentEndDate, setPaymentEndDate] = useState(todayIso());
+  const [expenseStartDate, setExpenseStartDate] = useState(currentMonthStartIso());
+  const [expenseEndDate, setExpenseEndDate] = useState(todayIso());
+  const [inventoryRiskStartDate, setInventoryRiskStartDate] = useState(currentMonthStartIso());
+  const [inventoryRiskEndDate, setInventoryRiskEndDate] = useState(todayIso());
+  const [insuranceStartDate, setInsuranceStartDate] = useState(currentMonthStartIso());
+  const [insuranceEndDate, setInsuranceEndDate] = useState(todayIso());
   const [nearExpiryStartDate, setNearExpiryStartDate] = useState(initialRange.startDate);
   const [nearExpiryEndDate, setNearExpiryEndDate] = useState(initialRange.endDate);
   const [inventoryMovementStartDate, setInventoryMovementStartDate] = useState(initialRange.startDate);
@@ -465,8 +496,6 @@ export function BusinessOverviewReviewPage({
   const salesTrendValues = trendMetric === 'count'
     ? chartValues([], transactions)
     : chartValues(liveData.trend, grossRevenue);
-  const productTrendValues = chartValues(liveData.trend, grossRevenue);
-  const expenseTrendValues = chartValues([], 0);
   const insuranceTrendValues = chartValues([], outstanding);
   const nearExpiryTrendValues = chartValues([], nearExpiryValue);
   const inventoryMovementTrendValues = chartValues([], totalInventoryValue);
@@ -480,7 +509,6 @@ export function BusinessOverviewReviewPage({
       }))
     : [{ label: 'No collections', percent: 100, amount: 0, color: '#e5e7eb' }];
 
-  const paymentPieBackground = pieGradient(paymentSegments);
   const riskPieBackground = pieGradient(
     riskSegments.map((segment) => ({
       percent: segment.percent,
@@ -505,15 +533,19 @@ export function BusinessOverviewReviewPage({
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
 
-    setDailyDate(nextRange.endDate);
+    setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
     setTrendEndDate(nextRange.endDate);
     setProductStartDate(nextRange.startDate);
     setProductEndDate(nextRange.endDate);
-    setPaymentDate(nextRange.endDate);
-    setExpenseDate(nextRange.endDate);
-    setInventoryRiskDate(nextRange.endDate);
-    setInsuranceDate(nextRange.endDate);
+    setPaymentStartDate(nextRange.startDate);
+    setPaymentEndDate(nextRange.endDate);
+    setExpenseStartDate(nextRange.startDate);
+    setExpenseEndDate(nextRange.endDate);
+    setInventoryRiskStartDate(nextRange.startDate);
+    setInventoryRiskEndDate(nextRange.endDate);
+    setInsuranceStartDate(nextRange.startDate);
+    setInsuranceEndDate(nextRange.endDate);
     setNearExpiryStartDate(nextRange.startDate);
     setNearExpiryEndDate(nextRange.endDate);
     setInventoryMovementStartDate(nextRange.startDate);
@@ -528,15 +560,19 @@ export function BusinessOverviewReviewPage({
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
 
-    setDailyDate(nextRange.endDate);
+    setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
     setTrendEndDate(nextRange.endDate);
     setProductStartDate(nextRange.startDate);
     setProductEndDate(nextRange.endDate);
-    setPaymentDate(nextRange.endDate);
-    setExpenseDate(nextRange.endDate);
-    setInventoryRiskDate(nextRange.endDate);
-    setInsuranceDate(nextRange.endDate);
+    setPaymentStartDate(nextRange.startDate);
+    setPaymentEndDate(nextRange.endDate);
+    setExpenseStartDate(nextRange.startDate);
+    setExpenseEndDate(nextRange.endDate);
+    setInventoryRiskStartDate(nextRange.startDate);
+    setInventoryRiskEndDate(nextRange.endDate);
+    setInsuranceStartDate(nextRange.startDate);
+    setInsuranceEndDate(nextRange.endDate);
     setNearExpiryStartDate(nextRange.startDate);
     setNearExpiryEndDate(nextRange.endDate);
     setInventoryMovementStartDate(nextRange.startDate);
@@ -583,27 +619,7 @@ export function BusinessOverviewReviewPage({
           {liveData.error}
         </div>
       )}
-
-      <section className="bo-pro-status-strip">
-        <article>
-          <span>Selected Range</span>
-          <strong>{appliedDateRange.startDate} → {appliedDateRange.endDate}</strong>
-        </article>
-        <article>
-          <span>Data Status</span>
-          <strong>{isLoading ? 'Loading live records…' : loaderStatus}</strong>
-        </article>
-        <article>
-          <span>Sales Source</span>
-          <strong>{liveData.salesLoaded ? 'Live sales summary' : 'Pending'}</strong>
-        </article>
-        <article>
-          <span>Inventory Source</span>
-          <strong>{liveData.inventoryLoaded ? 'Inventory valuation' : 'Pending'}</strong>
-        </article>
-      </section>
-
-      <section className="bo-pro-kpi-grid">
+<section className="bo-pro-kpi-grid">
         {kpiCards.map((card) => (
           <article key={card.label} className={`bo-pro-kpi-card is-${card.tone}`}>
             <span>{card.icon}</span>
@@ -621,7 +637,6 @@ export function BusinessOverviewReviewPage({
           <header>
             <div>
               <h2>Daily Revenue Operation</h2>
-              <p>Focused operational snapshot for the selected business date.</p>
             </div>
             <input type="date" value={dailyDate} onChange={(event) => setDailyDate(event.target.value)} />
           </header>
@@ -638,7 +653,6 @@ export function BusinessOverviewReviewPage({
           <header>
             <div>
               <h2>Sales Trend</h2>
-              <p>Monthly business-date trend by transaction value or count.</p>
             </div>
             <div className="bo-pro-controls">
               <select value={trendMetric} onChange={(event) => setTrendMetric(event.target.value as 'value' | 'count')}>
@@ -661,17 +675,13 @@ export function BusinessOverviewReviewPage({
           <header>
             <div>
               <h2>Top Contributing Products</h2>
-              <p>Product contribution view for sales growth and demand planning.</p>
             </div>
             <div className="bo-pro-controls">
               <input type="date" value={productStartDate} onChange={(event) => setProductStartDate(event.target.value)} />
               <input type="date" value={productEndDate} onChange={(event) => setProductEndDate(event.target.value)} />
             </div>
           </header>
-
-          <LineChart values={productTrendValues} label="Contribution Trend" startDate={productStartDate} endDate={productEndDate} />
-
-          <div className="bo-pro-table-wrap">
+<div className="bo-pro-table-wrap">
             <table>
               <thead>
                 <tr>
@@ -705,29 +715,34 @@ export function BusinessOverviewReviewPage({
           <header>
             <div>
               <h2>Payment Mix</h2>
-              <p>Collection distribution by payment channel.</p>
             </div>
-            <input type="date" value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} />
+            <div className="bo-pro-controls">
+              <input type="date" value={paymentStartDate} onChange={(event) => setPaymentStartDate(event.target.value)} />
+              <input type="date" value={paymentEndDate} onChange={(event) => setPaymentEndDate(event.target.value)} />
+            </div>
           </header>
 
-          <div className="bo-pro-payment-layout">
-            <div className="bo-pro-donut" style={{ background: paymentPieBackground }}>
-              <div>
-                <strong>{kpiValue(liveData, 'Collections')}</strong>
-                <small>Total collected</small>
-              </div>
-            </div>
-
-            <div className="bo-pro-segment-list">
-              {paymentSegments.map((segment) => (
-                <article key={segment.label}>
-                  <span style={{ background: segment.color }} />
-                  <strong>{segment.label}</strong>
-                  <b>{formatMoney(segment.amount)}</b>
-                  <em>{formatPercent(segment.percent)}</em>
-                </article>
-              ))}
-            </div>
+          <div className="bo-pro-table-wrap bo-pro-fit-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>SN</th>
+                  <th>Method</th>
+                  <th>Amount</th>
+                  <th>% Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paymentSegments.map((segment, index) => (
+                  <tr key={segment.label}>
+                    <td>{index + 1}</td>
+                    <td>{segment.label}</td>
+                    <td>{formatMoney(segment.amount)}</td>
+                    <td>{formatPercent(segment.percent)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </article>
 
@@ -735,14 +750,13 @@ export function BusinessOverviewReviewPage({
           <header>
             <div>
               <h2>Expenses & Profitability</h2>
-              <p>Profitability view for executive follow-up.</p>
             </div>
-            <input type="date" value={expenseDate} onChange={(event) => setExpenseDate(event.target.value)} />
+            <div className="bo-pro-controls">
+              <input type="date" value={expenseStartDate} onChange={(event) => setExpenseStartDate(event.target.value)} />
+              <input type="date" value={expenseEndDate} onChange={(event) => setExpenseEndDate(event.target.value)} />
+            </div>
           </header>
-
-          <LineChart values={expenseTrendValues} label="Profitability Trend" startDate={expenseDate} endDate={expenseDate} />
-
-          <div className="bo-pro-metric-list compact">
+<div className="bo-pro-metric-list compact">
             <article><span>Operating Expenses</span><strong>{kpiValue(liveData, 'Operating Expenses')}</strong></article>
             <article><span>Gross Profit</span><strong>{kpiValue(liveData, 'Gross Profit')}</strong></article>
             <article><span>Estimated Net Profit</span><strong>{kpiValue(liveData, 'Estimated Net Profit')}</strong></article>
@@ -754,12 +768,14 @@ export function BusinessOverviewReviewPage({
           <header>
             <div>
               <h2>Inventory Risk Overview</h2>
-              <p>Risk exposure by inventory category with count and value.</p>
             </div>
-            <input type="date" value={inventoryRiskDate} onChange={(event) => setInventoryRiskDate(event.target.value)} />
+            <div className="bo-pro-controls">
+              <input type="date" value={inventoryRiskStartDate} onChange={(event) => setInventoryRiskStartDate(event.target.value)} />
+              <input type="date" value={inventoryRiskEndDate} onChange={(event) => setInventoryRiskEndDate(event.target.value)} />
+            </div>
           </header>
 
-          <div className="bo-pro-risk-layout">
+          <div className="bo-pro-risk-stack">
             <div className="bo-pro-donut risk" style={{ background: riskPieBackground }}>
               <div>
                 <strong>{formatMoney(atRiskValue)}</strong>
@@ -767,29 +783,43 @@ export function BusinessOverviewReviewPage({
               </div>
             </div>
 
-            <div className="bo-pro-segment-list">
-              {riskSegments.map((segment) => (
-                <article key={segment.label} className={`is-${segment.tone}`}>
-                  <span />
-                  <strong>{segment.label}</strong>
-                  <b>{formatMoney(segment.value)}</b>
-                  <em>{segment.countLabel}</em>
-                </article>
-              ))}
+            <div className="bo-pro-table-wrap bo-pro-fit-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Count</th>
+                    <th>Value</th>
+                    <th>% Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {riskSegments.map((segment) => (
+                    <tr key={segment.label}>
+                      <td>{segment.label}</td>
+                      <td>{segment.countLabel}</td>
+                      <td>{formatMoney(segment.value)}</td>
+                      <td>{formatPercent(segment.percent)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--insurance">
+        <article className="bo-pro-card bo-pro-card--insurance bo-pro-order-insurance">
           <header>
             <div>
               <h2>Insurance & Receivables</h2>
-              <p>Receivable pressure, insurance sales, and open balance.</p>
             </div>
-            <input type="date" value={insuranceDate} onChange={(event) => setInsuranceDate(event.target.value)} />
+            <div className="bo-pro-controls">
+              <input type="date" value={insuranceStartDate} onChange={(event) => setInsuranceStartDate(event.target.value)} />
+              <input type="date" value={insuranceEndDate} onChange={(event) => setInsuranceEndDate(event.target.value)} />
+            </div>
           </header>
 
-          <LineChart values={insuranceTrendValues} label="Receivable Trend" startDate={insuranceDate} endDate={insuranceDate} />
+          <LineChart values={insuranceTrendValues} label="Receivable Trend" startDate={insuranceStartDate} endDate={insuranceEndDate} />
 
           <div className="bo-pro-metric-list compact">
             <article><span>Insurance Sales</span><strong>{rowValue(liveData.revenueRows, 'Insurance Sales')}</strong></article>
@@ -799,11 +829,10 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--wide">
+        <article className="bo-pro-card bo-pro-card--wide bo-pro-order-near-expiry">
           <header>
             <div>
               <h2>Near Expiry Inventory Movement</h2>
-              <p>Movement view for inventory nearing expiry.</p>
             </div>
             <div className="bo-pro-controls">
               <input type="date" value={nearExpiryStartDate} onChange={(event) => setNearExpiryStartDate(event.target.value)} />
@@ -822,11 +851,10 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--wide">
+        <article className="bo-pro-card bo-pro-card--wide bo-pro-order-inventory-movement">
           <header>
             <div>
               <h2>Total Inventory Movement</h2>
-              <p>Total stock value movement for the selected period.</p>
             </div>
             <div className="bo-pro-controls">
               <input type="date" value={inventoryMovementStartDate} onChange={(event) => setInventoryMovementStartDate(event.target.value)} />
@@ -849,7 +877,6 @@ export function BusinessOverviewReviewPage({
           <header>
             <div>
               <h2>Stock Value Gauge</h2>
-              <p>Healthy stock value against total inventory value.</p>
             </div>
           </header>
 

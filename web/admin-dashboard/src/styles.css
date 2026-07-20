@@ -40206,3 +40206,212 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+/* Business Overview customer-facing refinement pass */
+.bo-pro-status-strip {
+  display: none !important;
+}
+
+.bo-pro-kpi-card {
+  min-height: 5.6rem;
+  padding: 0.72rem;
+}
+
+.bo-pro-kpi-card em {
+  display: -webkit-box;
+  min-height: 1.75rem;
+  max-height: 2.45rem;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 0.68rem;
+  line-height: 1.22;
+}
+
+.bo-pro-card {
+  min-height: 19.5rem;
+}
+
+.bo-pro-card--daily,
+.bo-pro-card--trend,
+.bo-pro-card--products {
+  min-height: 20rem;
+  height: 20rem;
+}
+
+.bo-pro-card--payment,
+.bo-pro-card--profit,
+.bo-pro-card--risk {
+  min-height: 20rem;
+  height: 20rem;
+}
+
+.bo-pro-card header {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.58rem;
+}
+
+.bo-pro-card header > div:first-child {
+  display: block;
+}
+
+.bo-pro-card header h2 {
+  font-size: 0.95rem;
+  line-height: 1.15;
+}
+
+.bo-pro-card header p {
+  display: none !important;
+}
+
+.bo-pro-card header > input[type="date"],
+.bo-pro-card header > .bo-pro-controls {
+  justify-self: stretch;
+}
+
+.bo-pro-controls {
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(7.2rem, 1fr);
+  width: 100%;
+}
+
+.bo-pro-card input[type="date"],
+.bo-pro-card select {
+  max-width: none;
+  width: 100%;
+  min-height: 1.95rem;
+  font-size: 0.72rem;
+}
+
+.bo-pro-line-chart {
+  min-height: 12.2rem;
+  padding: 0.6rem 0.6rem 0.45rem;
+}
+
+.bo-pro-line-chart svg {
+  min-height: 8.5rem;
+}
+
+.bo-pro-line-chart circle {
+  fill: #2563eb;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.bo-pro-line-chart text {
+  fill: #334155;
+  font-size: 0.56rem;
+  font-weight: 850;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.bo-pro-chart-footer {
+  font-size: 0.68rem;
+}
+
+.bo-pro-metric-list article {
+  min-height: 3.75rem;
+  padding: 0.58rem;
+}
+
+.bo-pro-metric-list strong {
+  font-size: 0.95rem;
+}
+
+.bo-pro-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.bo-pro-fit-table table {
+  table-layout: fixed;
+}
+
+.bo-pro-fit-table th,
+.bo-pro-fit-table td {
+  padding: 0.34rem 0.26rem;
+  font-size: 0.72rem;
+  white-space: normal;
+  word-break: normal;
+  vertical-align: middle;
+}
+
+.bo-pro-fit-table td:first-child,
+.bo-pro-fit-table th:first-child {
+  text-align: left;
+}
+
+.bo-pro-fit-table td:not(:first-child),
+.bo-pro-fit-table th:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-pro-risk-stack {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  min-height: 0;
+}
+
+.bo-pro-risk-stack .bo-pro-donut {
+  width: min(8.5rem, 100%);
+}
+
+.bo-pro-order-near-expiry,
+.bo-pro-order-inventory-movement {
+  grid-column: span 1;
+}
+
+.bo-pro-order-near-expiry {
+  order: 7;
+}
+
+.bo-pro-order-inventory-movement {
+  order: 8;
+}
+
+.bo-pro-order-insurance {
+  order: 9;
+}
+
+.bo-pro-card--gauge {
+  order: 10;
+}
+
+.bo-pro-movement-layout {
+  grid-template-columns: minmax(12rem, 0.85fr) minmax(16rem, 1.15fr);
+}
+
+@media (min-width: 1501px) {
+  .bo-pro-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .bo-pro-order-near-expiry,
+  .bo-pro-order-inventory-movement,
+  .bo-pro-order-insurance,
+  .bo-pro-card--gauge {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 1120px) {
+  .bo-pro-card--daily,
+  .bo-pro-card--trend,
+  .bo-pro-card--products,
+  .bo-pro-card--payment,
+  .bo-pro-card--profit,
+  .bo-pro-card--risk {
+    height: auto;
+  }
+
+  .bo-pro-risk-stack {
+    grid-template-columns: 1fr;
+  }
+}
