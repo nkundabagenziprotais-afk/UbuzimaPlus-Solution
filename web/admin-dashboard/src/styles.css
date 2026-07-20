@@ -38827,3 +38827,577 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+/* Business Overview attached-reference executive layout pass */
+.bo-exec-page {
+  --bo-blue: #2563eb;
+  --bo-indigo: #4f46e5;
+  --bo-green: #10b981;
+  --bo-amber: #f59e0b;
+  --bo-orange: #f97316;
+  --bo-red: #dc2626;
+  --bo-purple: #7c3aed;
+  --bo-border: rgba(148, 163, 184, 0.28);
+  --bo-muted: #64748b;
+  --bo-ink: #0f172a;
+
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.08), transparent 30rem),
+    linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);
+  min-height: 100%;
+  color: var(--bo-ink);
+}
+
+/* Remove sections the customer said are not needed */
+.bo-exec-context-strip,
+.bo-exec-insights,
+.bo-v3-live-debug {
+  display: none !important;
+}
+
+/* Top dashboard header */
+.bo-exec-header {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(34rem, auto);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 0.85rem;
+}
+
+.bo-exec-header h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2vw, 2.15rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: #0f172a;
+}
+
+.bo-exec-header p {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: var(--bo-muted);
+  font-weight: 650;
+}
+
+/* Global date controls */
+.bo-exec-date-card {
+  display: grid;
+  grid-template-columns: minmax(8.75rem, 1fr) minmax(8.75rem, 1fr) auto auto;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  border: 1px solid var(--bo-border);
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+}
+
+.bo-exec-date-card label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.bo-exec-date-card label span {
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 900;
+  color: var(--bo-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
+.bo-exec-date-card input,
+.bo-exec-date-card button,
+.bo-exec-panel input,
+.bo-exec-panel select {
+  min-height: 2.15rem;
+  border-radius: 0.68rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.bo-exec-date-card input,
+.bo-exec-panel input,
+.bo-exec-panel select {
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background: #fff;
+  color: #0f172a;
+  padding: 0.42rem 0.62rem;
+}
+
+.bo-exec-date-card button,
+.bo-exec-panel button {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #0f172a;
+  color: #fff;
+  padding: 0.45rem 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.bo-exec-date-card button.secondary,
+.bo-exec-panel button {
+  background: #fff;
+  color: #0f172a;
+}
+
+/* KPI grid like executive card dashboard */
+.bo-exec-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.bo-exec-kpi-card {
+  min-height: 6.35rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  padding: 0.78rem;
+  border-radius: 1.1rem;
+  border: 1px solid var(--bo-border);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.055);
+  overflow: visible;
+}
+
+.bo-exec-kpi-card > span {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.72rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
+.bo-exec-kpi-card small {
+  display: block;
+  font-size: 0.73rem;
+  line-height: 1.15;
+  font-weight: 900;
+  color: #334155;
+}
+
+.bo-exec-kpi-card strong {
+  display: block;
+  margin-top: 0.24rem;
+  text-align: right;
+  font-size: clamp(1.02rem, 1.36vw, 1.42rem);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+}
+
+.bo-exec-kpi-card em {
+  display: block;
+  margin-top: 0.35rem;
+  min-height: 2.1rem;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  font-style: normal;
+  color: #64748b;
+  font-weight: 750;
+}
+
+.bo-exec-kpi-card.is-amber > span { background: #fff7ed; color: var(--bo-amber); }
+.bo-exec-kpi-card.is-blue > span { background: #eff6ff; color: var(--bo-blue); }
+.bo-exec-kpi-card.is-green > span { background: #ecfdf5; color: var(--bo-green); }
+.bo-exec-kpi-card.is-purple > span { background: #f5f3ff; color: var(--bo-purple); }
+.bo-exec-kpi-card.is-orange > span { background: #fff7ed; color: var(--bo-orange); }
+.bo-exec-kpi-card.is-red > span { background: #fef2f2; color: var(--bo-red); }
+
+/* Main dashboard layout: same professional card rhythm */
+.bo-exec-grid {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(24rem, 1.45fr) minmax(24rem, 1.45fr);
+  grid-auto-rows: minmax(24rem, auto);
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.bo-exec-panel {
+  height: 100%;
+  min-height: 24rem;
+  padding: 0.78rem;
+  border-radius: 1.1rem;
+  border: 1px solid var(--bo-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.055);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.bo-exec-panel header {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto;
+  gap: 0.65rem;
+  align-items: start;
+  margin-bottom: 0.65rem;
+}
+
+.bo-exec-panel h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.18;
+  letter-spacing: -0.018em;
+  color: #0f172a;
+}
+
+.bo-exec-panel-controls {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(7.2rem, auto);
+  gap: 0.42rem;
+  align-items: center;
+  justify-content: end;
+}
+
+.bo-exec-panel input[type="date"],
+.bo-exec-panel select {
+  width: 100%;
+  max-width: 9.7rem;
+  font-size: 0.74rem;
+}
+
+.bo-exec-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.bo-exec-panel th,
+.bo-exec-panel td {
+  padding: 0.38rem 0.25rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  vertical-align: middle;
+}
+
+.bo-exec-panel th {
+  text-align: left;
+  white-space: normal;
+  color: #475569;
+  font-weight: 760;
+}
+
+.bo-exec-panel td,
+.bo-exec-panel table td,
+.bo-exec-payment li b,
+.bo-exec-risk-list article b,
+.bo-exec-risk-list article em,
+.bo-exec-line-chart strong,
+.bo-exec-gauge-body td {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+
+/* Line charts */
+.bo-exec-line-chart {
+  min-height: 10rem;
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.84), rgba(255, 255, 255, 0.96)),
+    repeating-linear-gradient(0deg, rgba(148, 163, 184, 0.12) 0 1px, transparent 1px 2rem);
+  padding: 0.72rem;
+  display: grid;
+  align-items: center;
+  gap: 0.35rem;
+  overflow: visible;
+}
+
+.bo-exec-line-chart.compact {
+  min-height: 6.85rem;
+  margin-bottom: 0.55rem;
+}
+
+.bo-exec-line-chart.movement {
+  min-height: 10rem;
+  text-align: center;
+}
+
+.bo-exec-line-chart svg {
+  width: 100%;
+  min-height: 5.4rem;
+  overflow: visible;
+}
+
+.bo-exec-line-chart path {
+  fill: none;
+  stroke: var(--bo-blue);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 6px 10px rgba(37, 99, 235, 0.18));
+}
+
+.bo-exec-chart-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  font-size: 0.72rem;
+  color: var(--bo-muted);
+  font-weight: 850;
+}
+
+.bo-exec-chart-footer strong {
+  color: #0f172a;
+  text-align: center;
+}
+
+/* Payment pie */
+.bo-exec-payment-body {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.bo-exec-payment-donut,
+.bo-exec-risk-donut {
+  width: min(10rem, 100%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  position: relative;
+  margin-inline: auto;
+}
+
+.bo-exec-payment-donut::after,
+.bo-exec-risk-donut::after {
+  content: "";
+  position: absolute;
+  inset: 29%;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.bo-exec-payment-donut strong,
+.bo-exec-payment-donut small,
+.bo-exec-risk-donut strong,
+.bo-exec-risk-donut small {
+  position: relative;
+  z-index: 1;
+}
+
+.bo-exec-payment ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.bo-exec-payment li {
+  display: grid;
+  grid-template-columns: auto minmax(5.5rem, 1fr) minmax(8rem, auto);
+  gap: 0.48rem;
+  align-items: center;
+  font-size: 0.78rem;
+  color: #334155;
+  font-weight: 760;
+}
+
+.bo-exec-payment li span {
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 999px;
+}
+
+/* Inventory risk pie and rows */
+.bo-exec-risk-body {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.bo-exec-risk-list {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.bo-exec-risk-list article {
+  display: grid;
+  grid-template-columns: auto minmax(6.2rem, 1fr) minmax(6.8rem, auto) 3.4rem;
+  gap: 0.42rem;
+  align-items: center;
+  padding: 0.38rem 0.52rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 0.7rem;
+  font-size: 0.76rem;
+}
+
+.bo-exec-risk-list article span {
+  width: 0.56rem;
+  height: 0.56rem;
+  border-radius: 999px;
+}
+
+.bo-exec-risk-list article strong {
+  color: #475569;
+}
+
+.bo-exec-risk-list .is-expired span { background: #dc2626; }
+.bo-exec-risk-list .is-near-expiry span { background: #f97316; }
+.bo-exec-risk-list .is-low-stock span { background: #eab308; }
+.bo-exec-risk-list .is-slow span { background: #7c3aed; }
+.bo-exec-risk-list .is-healthy span { background: #10b981; }
+
+/* Movement and gauge cards */
+.bo-exec-near-expiry,
+.bo-exec-total-inventory-movement {
+  grid-column: span 2;
+}
+
+.bo-exec-movement-body {
+  display: grid;
+  grid-template-columns: minmax(13.5rem, 0.82fr) minmax(18rem, 1.18fr);
+  gap: 0.8rem;
+  align-items: stretch;
+}
+
+.bo-exec-stock-gauge {
+  min-height: 24rem;
+}
+
+.bo-exec-gauge-body {
+  min-height: 15rem;
+  display: grid;
+  grid-template-columns: 10.5rem minmax(13rem, 1fr) minmax(10rem, 0.75fr);
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.bo-exec-gauge {
+  min-height: 9.2rem;
+  display: grid;
+  place-items: end center;
+  position: relative;
+  padding-bottom: 0.8rem;
+}
+
+.bo-exec-gauge::before {
+  content: "";
+  width: 9.8rem;
+  height: 4.9rem;
+  border-radius: 9.8rem 9.8rem 0 0;
+  background: conic-gradient(from 270deg, #10b981 0 55%, #f59e0b 55% 75%, #ef4444 75% 100%);
+  mask: radial-gradient(circle at 50% 100%, transparent 0 42%, black 43%);
+  -webkit-mask: radial-gradient(circle at 50% 100%, transparent 0 42%, black 43%);
+}
+
+.bo-exec-gauge i {
+  position: absolute;
+  bottom: 3rem;
+  width: 3.9rem;
+  height: 3px;
+  background: #0f172a;
+  border-radius: 999px;
+  transform-origin: 95% 50%;
+}
+
+.bo-exec-gauge strong {
+  font-size: 1.18rem;
+  color: var(--bo-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-exec-gauge small,
+.bo-exec-gauge-body p {
+  color: var(--bo-muted);
+  font-size: 0.76rem;
+  font-weight: 760;
+  line-height: 1.42;
+}
+
+.bo-exec-panel button {
+  margin-top: auto;
+}
+
+/* Responsive fitting */
+@media (max-width: 1500px) {
+  .bo-exec-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .bo-exec-grid {
+    grid-template-columns: minmax(18rem, 1fr) minmax(24rem, 1fr);
+  }
+
+  .bo-exec-near-expiry,
+  .bo-exec-total-inventory-movement {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 1120px) {
+  .bo-exec-header {
+    grid-template-columns: 1fr;
+  }
+
+  .bo-exec-date-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bo-exec-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bo-exec-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+  }
+
+  .bo-exec-panel,
+  .bo-exec-daily,
+  .bo-exec-trend,
+  .bo-exec-products {
+    min-height: auto;
+  }
+
+  .bo-exec-near-expiry,
+  .bo-exec-total-inventory-movement {
+    grid-column: span 1;
+  }
+
+  .bo-exec-panel-controls {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .bo-exec-panel input[type="date"],
+  .bo-exec-panel select {
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .bo-exec-page {
+    padding: 0.7rem;
+  }
+
+  .bo-exec-date-card,
+  .bo-exec-kpi-grid,
+  .bo-exec-payment-body,
+  .bo-exec-risk-body,
+  .bo-exec-movement-body,
+  .bo-exec-gauge-body {
+    grid-template-columns: 1fr;
+  }
+
+  .bo-exec-panel header,
+  .bo-exec-panel-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .bo-exec-kpi-card {
+    min-height: auto;
+  }
+}
