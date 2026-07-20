@@ -161,6 +161,13 @@ class AuthRbacSeeder extends Seeder
                     'pharmaco.inventory.view',
                     'pharmaco.product_master.view',
                     'pharmaco.product_inventory.receive',
+                    // Pharmacist daily inventory duties.
+                    'pharmaco.product_inventory.update',
+                    'pharmaco.inventory.adjust',
+                    'pharmaco.inventory.transfer',
+                    'pharmaco.inventory.stock_count',
+                    'pharmaco.inventory.batch_expiry.manage',
+                    'pharmaco.inventory.valuation.view',
                     'pharmaco.insurance.manage',
                     'insurance.dashboard.view',
                     'insurance.configuration.view',
