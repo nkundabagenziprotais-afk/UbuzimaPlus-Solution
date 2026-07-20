@@ -35,6 +35,34 @@ type LiveAnalyticsResponse = {
   payment_methods?: SalesPaymentMethod[];
 };
 
+type SaleRegisterPayment = {
+  amount?: number | string;
+  payment_method?: string;
+  status?: string;
+};
+
+type SaleRegisterRow = {
+  business_date?: string;
+  sold_at?: string;
+  created_at?: string;
+  status?: string;
+  payment_status?: string;
+  total_amount?: number | string;
+  grand_total?: number | string;
+  net_amount?: number | string;
+  paid_amount?: number | string;
+  balance_amount?: number | string;
+  discount_amount?: number | string;
+  payments?: SaleRegisterPayment[];
+};
+
+type SaleRegisterResponse = {
+  sales?: SaleRegisterRow[];
+  data?: SaleRegisterRow[] | { sales?: SaleRegisterRow[]; data?: SaleRegisterRow[] };
+  items?: SaleRegisterRow[];
+  records?: SaleRegisterRow[];
+};
+
 type InventoryValuationResponse = {
   inventory?: {
     batch_count?: number | string;
@@ -45,6 +73,12 @@ type InventoryValuationResponse = {
     low_stock_batches?: number | string;
     expired_batches?: number | string;
     expiring_soon_batches?: number | string;
+    healthy_stock_batches?: number | string;
+    low_stock_value?: number | string;
+    expired_value?: number | string;
+    expiring_soon_value?: number | string;
+    healthy_stock_value?: number | string;
+    locations?: unknown[];
   };
 };
 
@@ -66,6 +100,12 @@ type DashboardState = {
   lowStockItems: number;
   expiringItems: number;
   expiredBatches: number;
+  healthyStockItems: number;
+  stockBatchValue: number;
+  lowStockValue: number;
+  expiringValue: number;
+  expiredValue: number;
+  healthyStockValue: number;
   inventoryLoaded: boolean;
 };
 
@@ -89,6 +129,12 @@ const emptyDashboardState: DashboardState = {
   lowStockItems: 0,
   expiringItems: 0,
   expiredBatches: 0,
+  healthyStockItems: 0,
+  stockBatchValue: 0,
+  lowStockValue: 0,
+  expiringValue: 0,
+  expiredValue: 0,
+  healthyStockValue: 0,
   inventoryLoaded: false,
 };
 
@@ -148,6 +194,135 @@ async function fetchTenantJson<T>(
   }
 
   return json as T;
+}
+
+function extractSalesRows(response: SaleRegisterResponse): SaleRegisterRow[] {
+  const data = response.data;
+
+  if (Array.isArray(response.sales)) return response.sales;
+  if (Array.isArray(response.items)) return response.items;
+  if (Array.isArray(response.records)) return response.records;
+  if (Array.isArray(data)) return data;
+  if (data && !Array.isArray(data)) {
+    if (Array.isArray(data.sales)) return data.sales;
+    if (Array.isArray(data.data)) return data.data;
+  }
+
+  return [];
+}
+
+function saleBusinessDate(sale: SaleRegisterRow): string {
+  return String(sale.business_date || sale.sold_at || sale.created_at || '').slice(0, 10);
+}
+
+function saleTotal(sale: SaleRegisterRow): number {
+  return (
+    toNumber(sale.total_amount) ||
+    toNumber(sale.grand_total) ||
+    toNumber(sale.net_amount)
+  );
+}
+
+function salePaid(sale: SaleRegisterRow): number {
+  const explicitPaid = toNumber(sale.paid_amount);
+  if (explicitPaid > 0) return explicitPaid;
+
+  return (sale.payments ?? []).reduce((sum, payment) => sum + toNumber(payment.amount), 0);
+}
+
+function saleBalance(sale: SaleRegisterRow): number {
+  const explicitBalance = toNumber(sale.balance_amount);
+  if (explicitBalance > 0) return explicitBalance;
+
+  return Math.max(saleTotal(sale) - salePaid(sale), 0);
+}
+
+function isActiveSale(sale: SaleRegisterRow): boolean {
+  const status = String(sale.status ?? '').toLowerCase();
+  return !status.includes('void') && !status.includes('cancel') && !status.includes('return');
+}
+
+function buildSalesStateFromRows(
+  rows: SaleRegisterRow[],
+  startDate: string,
+  endDate: string,
+): Pick<
+  DashboardState,
+  | 'periodLabel'
+  | 'grossSales'
+  | 'netSales'
+  | 'collections'
+  | 'outstandingBalance'
+  | 'transactionCount'
+  | 'averageTransactionValue'
+  | 'paymentMethods'
+> {
+  const filtered = rows.filter((sale) => {
+    const date = saleBusinessDate(sale);
+    return isActiveSale(sale) && date >= startDate && date <= endDate;
+  });
+
+  const grossSales = filtered.reduce((sum, sale) => sum + saleTotal(sale), 0);
+  const collections = filtered.reduce((sum, sale) => sum + salePaid(sale), 0);
+  const outstandingBalance = filtered.reduce((sum, sale) => sum + saleBalance(sale), 0);
+  const transactionCount = filtered.length;
+  const averageTransactionValue = transactionCount > 0 ? grossSales / transactionCount : 0;
+
+  const paymentGroups = new Map<string, number>();
+
+  for (const sale of filtered) {
+    const payments = sale.payments ?? [];
+
+    if (payments.length > 0) {
+      for (const payment of payments) {
+        const method = String(payment.payment_method ?? 'Other');
+        paymentGroups.set(method, (paymentGroups.get(method) ?? 0) + toNumber(payment.amount));
+      }
+    }
+  }
+
+  const paymentMethods: SalesPaymentMethod[] = [...paymentGroups.entries()].map(([payment_method, total_amount]) => ({
+    payment_method,
+    total_amount,
+  }));
+
+  return {
+    periodLabel: startDate === endDate ? startDate : `${startDate} → ${endDate}`,
+    grossSales,
+    netSales: grossSales,
+    collections,
+    outstandingBalance,
+    transactionCount,
+    averageTransactionValue,
+    paymentMethods,
+  };
+}
+
+function buildSalesRegisterEndpoint(startDate: string, endDate: string): string {
+  const params = new URLSearchParams({
+    per_page: '500',
+    limit: '500',
+    page: '1',
+    business_date_from: startDate,
+    business_date_to: endDate,
+    date_from: startDate,
+    date_to: endDate,
+    start_date: startDate,
+    end_date: endDate,
+    date_basis: 'business_date',
+  });
+
+  return `/pharmaco/sales?${params.toString()}`;
+}
+
+function buildInventoryEndpoint(asOfDate: string): string {
+  const params = new URLSearchParams({
+    as_of_date: asOfDate,
+    business_date: asOfDate,
+    date_basis: 'business_date',
+  });
+
+  return `/pharmaco/reports/inventory-valuation?${params.toString()}`;
 }
 
 function buildSalesEndpoint(startDate: string, endDate: string): string {
@@ -235,17 +410,45 @@ function buildInventoryState(response: InventoryValuationResponse): Pick<
   | 'lowStockItems'
   | 'expiringItems'
   | 'expiredBatches'
+  | 'healthyStockItems'
+  | 'stockBatchValue'
+  | 'lowStockValue'
+  | 'expiringValue'
+  | 'expiredValue'
+  | 'healthyStockValue'
   | 'inventoryLoaded'
 > {
   const inventory = response.inventory ?? {};
 
+  const inventoryValue = toNumber(inventory.total_cost_value) || toNumber(inventory.total_retail_value);
+  const lowStockItems = toNumber(inventory.low_stock_batches);
+  const expiringItems = toNumber(inventory.expiring_soon_batches);
+  const expiredBatches = toNumber(inventory.expired_batches);
+  const stockBatches = toNumber(inventory.batch_count);
+  const healthyStockItems =
+    toNumber(inventory.healthy_stock_batches) ||
+    Math.max(stockBatches - lowStockItems - expiringItems - expiredBatches, 0);
+
+  const lowStockValue = toNumber(inventory.low_stock_value);
+  const expiringValue = toNumber(inventory.expiring_soon_value);
+  const expiredValue = toNumber(inventory.expired_value);
+  const healthyStockValue =
+    toNumber(inventory.healthy_stock_value) ||
+    Math.max(inventoryValue - lowStockValue - expiringValue - expiredValue, 0);
+
   return {
-    inventoryValue: toNumber(inventory.total_cost_value) || toNumber(inventory.total_retail_value),
+    inventoryValue,
     inventoryQuantity: toNumber(inventory.total_quantity_on_hand),
-    stockBatches: toNumber(inventory.batch_count),
-    lowStockItems: toNumber(inventory.low_stock_batches),
-    expiringItems: toNumber(inventory.expiring_soon_batches),
-    expiredBatches: toNumber(inventory.expired_batches),
+    stockBatches,
+    lowStockItems,
+    expiringItems,
+    expiredBatches,
+    healthyStockItems,
+    stockBatchValue: inventoryValue,
+    lowStockValue,
+    expiringValue,
+    expiredValue,
+    healthyStockValue,
     inventoryLoaded: true,
   };
 }
@@ -283,26 +486,55 @@ export function BusinessOverviewReviewPage({
       });
 
       try {
-        const [salesResult, inventoryResult] = await Promise.allSettled([
+        const [salesResult, salesRegisterResult, inventoryResult] = await Promise.allSettled([
           fetchTenantJson<SalesSummaryResponse | LiveAnalyticsResponse>(
             token,
             tenantSlug,
             buildSalesEndpoint(startDate, endDate),
           ),
+          fetchTenantJson<SaleRegisterResponse>(
+            token,
+            tenantSlug,
+            buildSalesRegisterEndpoint(startDate, endDate),
+          ),
           fetchTenantJson<InventoryValuationResponse>(
             token,
             tenantSlug,
-            '/pharmaco/reports/inventory-valuation',
+            buildInventoryEndpoint(endDate),
           ),
         ]);
 
         if (cancelled) return;
 
-        if (salesResult.status === 'rejected') {
-          throw salesResult.reason;
+        let salesState: Pick<
+          DashboardState,
+          | 'periodLabel'
+          | 'grossSales'
+          | 'netSales'
+          | 'collections'
+          | 'outstandingBalance'
+          | 'transactionCount'
+          | 'averageTransactionValue'
+          | 'paymentMethods'
+        >;
+
+        if (salesResult.status === 'fulfilled') {
+          salesState = buildSalesStateFromResponse(salesResult.value, startDate, endDate);
+        } else {
+          salesState = buildSalesStateFromRows([], startDate, endDate);
         }
 
-        const salesState = buildSalesStateFromResponse(salesResult.value, startDate, endDate);
+        if (
+          salesState.grossSales <= 0 &&
+          salesRegisterResult.status === 'fulfilled'
+        ) {
+          salesState = buildSalesStateFromRows(
+            extractSalesRows(salesRegisterResult.value),
+            startDate,
+            endDate,
+          );
+        }
+
         const inventoryState =
           inventoryResult.status === 'fulfilled'
             ? buildInventoryState(inventoryResult.value)
@@ -313,6 +545,12 @@ export function BusinessOverviewReviewPage({
                 lowStockItems: 0,
                 expiringItems: 0,
                 expiredBatches: 0,
+                healthyStockItems: 0,
+                stockBatchValue: 0,
+                lowStockValue: 0,
+                expiringValue: 0,
+                expiredValue: 0,
+                healthyStockValue: 0,
                 inventoryLoaded: false,
               };
 
@@ -399,10 +637,11 @@ export function BusinessOverviewReviewPage({
   const inventoryRows = [
     { label: 'Total Inventory Value', value: dashboard.inventoryLoaded ? money(dashboard.inventoryValue) : '—' },
     { label: 'Total Quantity On Hand', value: dashboard.inventoryLoaded ? money(dashboard.inventoryQuantity) : '—' },
-    { label: 'Stock Batches', value: dashboard.inventoryLoaded ? money(dashboard.stockBatches) : '—' },
-    { label: 'Low Stock Items', value: dashboard.inventoryLoaded ? money(dashboard.lowStockItems) : '—' },
-    { label: 'Expiring Items', value: dashboard.inventoryLoaded ? money(dashboard.expiringItems) : '—' },
-    { label: 'Expired Batches', value: dashboard.inventoryLoaded ? money(dashboard.expiredBatches) : '—' },
+    { label: 'Stock Batches', value: dashboard.inventoryLoaded ? `${money(dashboard.stockBatches)} batches · ${money(dashboard.stockBatchValue)}` : '—' },
+    { label: 'Healthy Stock', value: dashboard.inventoryLoaded ? `${money(dashboard.healthyStockItems)} batches · ${money(dashboard.healthyStockValue)}` : '—' },
+    { label: 'Low Stock Items', value: dashboard.inventoryLoaded ? `${money(dashboard.lowStockItems)} batches · ${money(dashboard.lowStockValue)}` : '—' },
+    { label: 'Expiring Items', value: dashboard.inventoryLoaded ? `${money(dashboard.expiringItems)} batches · ${money(dashboard.expiringValue)}` : '—' },
+    { label: 'Expired Batches', value: dashboard.inventoryLoaded ? `${money(dashboard.expiredBatches)} batches · ${money(dashboard.expiredValue)}` : '—' },
   ];
 
   const debugSnapshot = {
