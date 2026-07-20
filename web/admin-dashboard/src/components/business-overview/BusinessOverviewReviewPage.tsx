@@ -1,144 +1,35 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  businessOverviewKpis,
+  businessOverviewModules,
+  recommendedActions,
+} from './businessOverviewMockData';
+import {
+  emptyBusinessOverviewLiveData,
+  loadBusinessOverviewLiveData,
+  type BusinessOverviewLiveData,
+  type BusinessOverviewLiveRow,
+} from './businessOverviewLiveData';
 
 type BusinessOverviewReviewPageProps = {
   token?: string;
   tenantSlug?: string | null;
 };
 
-type SalesPaymentMethod = {
-  payment_method?: string;
-  payment_count?: number | string;
-  total_amount?: number | string;
-  amount?: number | string;
-};
-
-type SalesSummaryResponse = {
-  tenant?: { slug?: string; name?: string };
-  period?: { start_date?: string; end_date?: string };
-  sales?: {
-    sale_count?: number | string;
-    total_sales_amount?: number | string;
-    paid_amount?: number | string;
-    balance_amount?: number | string;
-    payments_collected?: number | string;
-    payment_methods?: SalesPaymentMethod[];
-  };
-};
-
-type LiveAnalyticsResponse = {
-  business_date?: string;
-  sales_total?: number | string;
-  collections_total?: number | string;
-  open_balance?: number | string;
-  transaction_count?: number | string;
-  average_transaction_value?: number | string;
-  payment_methods?: SalesPaymentMethod[];
-};
-
-type SaleRegisterPayment = {
-  amount?: number | string;
-  payment_method?: string;
-  status?: string;
-};
-
-type SaleRegisterRow = {
-  business_date?: string;
-  sold_at?: string;
-  created_at?: string;
-  status?: string;
-  payment_status?: string;
-  total_amount?: number | string;
-  grand_total?: number | string;
-  net_amount?: number | string;
+type BusinessOverviewSalesSummary = {
+  sale_count?: number | string;
+  total_sales_amount?: number | string;
   paid_amount?: number | string;
   balance_amount?: number | string;
-  discount_amount?: number | string;
-  payments?: SaleRegisterPayment[];
+  payments_collected?: number | string;
+  payment_methods?: Array<{
+    payment_method?: string;
+    payment_count?: number | string;
+    total_amount?: number | string;
+  }>;
 };
 
-type SaleRegisterResponse = {
-  sales?: SaleRegisterRow[];
-  data?: SaleRegisterRow[] | { sales?: SaleRegisterRow[]; data?: SaleRegisterRow[] };
-  items?: SaleRegisterRow[];
-  records?: SaleRegisterRow[];
-};
-
-type InventoryValuationResponse = {
-  inventory?: {
-    batch_count?: number | string;
-    product_count?: number | string;
-    total_quantity_on_hand?: number | string;
-    total_cost_value?: number | string;
-    total_retail_value?: number | string;
-    low_stock_batches?: number | string;
-    expired_batches?: number | string;
-    expiring_soon_batches?: number | string;
-    healthy_stock_batches?: number | string;
-    low_stock_value?: number | string;
-    expired_value?: number | string;
-    expiring_soon_value?: number | string;
-    healthy_stock_value?: number | string;
-    locations?: unknown[];
-  };
-};
-
-type DashboardState = {
-  status: 'idle' | 'loading' | 'success' | 'error';
-  error: string | null;
-  tenantSlug: string | null;
-  periodLabel: string;
-  grossSales: number;
-  netSales: number;
-  collections: number;
-  outstandingBalance: number;
-  transactionCount: number;
-  averageTransactionValue: number;
-  paymentMethods: SalesPaymentMethod[];
-  inventoryValue: number;
-  inventoryQuantity: number;
-  stockBatches: number;
-  lowStockItems: number;
-  expiringItems: number;
-  expiredBatches: number;
-  healthyStockItems: number;
-  stockBatchValue: number;
-  lowStockValue: number;
-  expiringValue: number;
-  expiredValue: number;
-  healthyStockValue: number;
-  inventoryLoaded: boolean;
-};
-
-const defaultBusinessDate = '2026-06-24';
-
-const emptyDashboardState: DashboardState = {
-  status: 'idle',
-  error: null,
-  tenantSlug: null,
-  periodLabel: '—',
-  grossSales: 0,
-  netSales: 0,
-  collections: 0,
-  outstandingBalance: 0,
-  transactionCount: 0,
-  averageTransactionValue: 0,
-  paymentMethods: [],
-  inventoryValue: 0,
-  inventoryQuantity: 0,
-  stockBatches: 0,
-  lowStockItems: 0,
-  expiringItems: 0,
-  expiredBatches: 0,
-  healthyStockItems: 0,
-  stockBatchValue: 0,
-  lowStockValue: 0,
-  expiringValue: 0,
-  expiredValue: 0,
-  healthyStockValue: 0,
-  inventoryLoaded: false,
-};
-
-function toNumber(value: unknown): number {
+function boNumber(value: unknown): number {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string') {
     const parsed = Number(value.replace(/[^0-9.-]/g, ''));
@@ -147,34 +38,101 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-function money(value: number): string {
+function boMoney(value: number): string {
   return new Intl.NumberFormat('en-RW', { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
-function percent(value: number): string {
+function boPercent(value: number): string {
   return `${new Intl.NumberFormat('en-RW', { maximumFractionDigits: 1 }).format(value)}%`;
 }
 
-function paymentLabel(method: unknown): string {
-  const raw = String(method ?? 'Other');
-  const normalized = raw.toLowerCase();
-
+function boPaymentLabel(method: string): string {
+  const normalized = method.toLowerCase();
   if (normalized === 'momo' || normalized.includes('mobile')) return 'Mobile Money';
-  if (normalized.includes('cash')) return 'Cash';
   if (normalized.includes('card')) return 'Card';
-  if (normalized.includes('bank')) return 'Bank';
   if (normalized.includes('insurance')) return 'Insurance';
   if (normalized.includes('credit')) return 'Credit';
-
-  return raw.replace(/_/g, ' ');
+  if (normalized.includes('bank')) return 'Bank';
+  if (normalized.includes('cash')) return 'Cash';
+  return method ? method.replace(/_/g, ' ') : 'Other';
 }
 
-async function fetchTenantJson<T>(
+function buildBusinessOverviewFromSalesSummary(sales: BusinessOverviewSalesSummary): BusinessOverviewLiveData {
+  const empty = emptyBusinessOverviewLiveData();
+
+  const grossSales = boNumber(sales.total_sales_amount);
+  const collections = boNumber(sales.payments_collected) || boNumber(sales.paid_amount);
+  const outstandingBalance = boNumber(sales.balance_amount);
+  const transactionCount = boNumber(sales.sale_count);
+  const averageTransactionValue = transactionCount > 0 ? grossSales / transactionCount : 0;
+  const paymentTotal = Math.max(collections, 1);
+
+  const paymentMix = (sales.payment_methods ?? [])
+    .map((method) => {
+      const amount = boNumber(method.total_amount);
+      return {
+        label: boPaymentLabel(String(method.payment_method ?? 'Other')),
+        value: boPercent((amount / paymentTotal) * 100),
+        percent: Math.round((amount / paymentTotal) * 100),
+      };
+    })
+    .filter((row) => row.percent > 0);
+
+  return {
+    ...empty,
+    loaded: true,
+    salesLoaded: true,
+    inventoryLoaded: false,
+    error: null,
+    kpis: {
+      'Gross Revenue': boMoney(grossSales),
+      'Net Revenue': boMoney(grossSales),
+      Collections: boMoney(collections),
+      'Outstanding Balance': boMoney(outstandingBalance),
+      'Transaction Count': boMoney(transactionCount),
+      'Average Transaction Value': transactionCount ? boMoney(averageTransactionValue) : '—',
+      'Live POS Sales': boMoney(transactionCount),
+      'Historical POS Sales': '—',
+      'Gross Profit': '—',
+      'Estimated Net Profit': '—',
+      'Operating Expenses': '—',
+      'Expense / Revenue Ratio': '—',
+      'Break-even Daily Cash': '—',
+      'Daily Cash for Revenue Goal': '—',
+      'Daily Cash for Profit Goal': '—',
+      'Cash Variance': '—',
+      'Inventory Value': '—',
+      'Low Stock Items': '—',
+      'Expiring Items': '—',
+    },
+    kpiHelpers: {
+      'Gross Revenue': 'Live sales summary report',
+      'Net Revenue': 'Live sales summary report',
+      Collections: 'Payments collected from live sales summary',
+      'Outstanding Balance': 'Balance amount from live sales summary',
+      'Inventory Value': 'Inventory summary pending optimized live endpoint',
+      'Low Stock Items': 'Inventory summary pending optimized live endpoint',
+      'Expiring Items': 'Inventory summary pending optimized live endpoint',
+    },
+    revenueRows: [
+      { label: 'Gross Sales', value: boMoney(grossSales) },
+      { label: 'Discounts', value: boMoney(0) },
+      { label: 'Returns / Reversals', value: boMoney(0) },
+      { label: 'Net Sales', value: boMoney(grossSales) },
+      { label: 'Collections', value: boMoney(collections) },
+      { label: 'Credit Sales', value: '—' },
+      { label: 'Insurance Sales', value: '—' },
+      { label: 'Net Cash Inflow', value: boMoney(collections) },
+    ],
+    paymentMix,
+  };
+}
+
+async function fetchBusinessOverviewSalesSummary(
   token: string,
   tenantSlug: string,
-  path: string,
-): Promise<T> {
-  const response = await fetch(`/api/v1${path}`, {
+): Promise<BusinessOverviewLiveData> {
+  const response = await fetch('/api/v1/pharmaco/reports/sales-summary', {
     headers: {
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
@@ -189,477 +147,148 @@ async function fetchTenantJson<T>(
     throw new Error(
       typeof json?.message === 'string'
         ? json.message
-        : `${path} failed with HTTP ${response.status}`,
+        : `Sales summary failed with HTTP ${response.status}`,
     );
   }
 
-  return json as T;
+  return buildBusinessOverviewFromSalesSummary(json?.sales ?? {});
 }
 
-function extractSalesRows(response: SaleRegisterResponse): SaleRegisterRow[] {
-  const data = response.data;
-
-  if (Array.isArray(response.sales)) return response.sales;
-  if (Array.isArray(response.items)) return response.items;
-  if (Array.isArray(response.records)) return response.records;
-  if (Array.isArray(data)) return data;
-  if (data && !Array.isArray(data)) {
-    if (Array.isArray(data.sales)) return data.sales;
-    if (Array.isArray(data.data)) return data.data;
-  }
-
-  return [];
+function toneClass(tone?: string) {
+  return tone ? `is-${tone}` : 'is-neutral';
 }
 
-function saleBusinessDate(sale: SaleRegisterRow): string {
-  return String(sale.business_date || sale.sold_at || sale.created_at || '').slice(0, 10);
-}
-
-function saleTotal(sale: SaleRegisterRow): number {
+function LiveRowsTable({ rows }: { rows: BusinessOverviewLiveRow[] }) {
   return (
-    toNumber(sale.total_amount) ||
-    toNumber(sale.grand_total) ||
-    toNumber(sale.net_amount)
+    <table>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.label}>
+            <th>{row.label}</th>
+            <td>{row.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
-function salePaid(sale: SaleRegisterRow): number {
-  const explicitPaid = toNumber(sale.paid_amount);
-  if (explicitPaid > 0) return explicitPaid;
-
-  return (sale.payments ?? []).reduce((sum, payment) => sum + toNumber(payment.amount), 0);
-}
-
-function saleBalance(sale: SaleRegisterRow): number {
-  const explicitBalance = toNumber(sale.balance_amount);
-  if (explicitBalance > 0) return explicitBalance;
-
-  return Math.max(saleTotal(sale) - salePaid(sale), 0);
-}
-
-function isActiveSale(sale: SaleRegisterRow): boolean {
-  const status = String(sale.status ?? '').toLowerCase();
-  return !status.includes('void') && !status.includes('cancel') && !status.includes('return');
-}
-
-function buildSalesStateFromRows(
-  rows: SaleRegisterRow[],
-  startDate: string,
-  endDate: string,
-): Pick<
-  DashboardState,
-  | 'periodLabel'
-  | 'grossSales'
-  | 'netSales'
-  | 'collections'
-  | 'outstandingBalance'
-  | 'transactionCount'
-  | 'averageTransactionValue'
-  | 'paymentMethods'
-> {
-  const filtered = rows.filter((sale) => {
-    const date = saleBusinessDate(sale);
-    return isActiveSale(sale) && date >= startDate && date <= endDate;
-  });
-
-  const grossSales = filtered.reduce((sum, sale) => sum + saleTotal(sale), 0);
-  const collections = filtered.reduce((sum, sale) => sum + salePaid(sale), 0);
-  const outstandingBalance = filtered.reduce((sum, sale) => sum + saleBalance(sale), 0);
-  const transactionCount = filtered.length;
-  const averageTransactionValue = transactionCount > 0 ? grossSales / transactionCount : 0;
-
-  const paymentGroups = new Map<string, number>();
-
-  for (const sale of filtered) {
-    const payments = sale.payments ?? [];
-
-    if (payments.length > 0) {
-      for (const payment of payments) {
-        const method = String(payment.payment_method ?? 'Other');
-        paymentGroups.set(method, (paymentGroups.get(method) ?? 0) + toNumber(payment.amount));
-      }
-    }
-  }
-
-  const paymentMethods: SalesPaymentMethod[] = [...paymentGroups.entries()].map(([payment_method, total_amount]) => ({
-    payment_method,
-    total_amount,
-  }));
-
-  return {
-    periodLabel: startDate === endDate ? startDate : `${startDate} → ${endDate}`,
-    grossSales,
-    netSales: grossSales,
-    collections,
-    outstandingBalance,
-    transactionCount,
-    averageTransactionValue,
-    paymentMethods,
-  };
-}
-
-function buildSalesRegisterEndpoint(startDate: string, endDate: string): string {
-  const params = new URLSearchParams({
-    per_page: '500',
-    limit: '500',
-    page: '1',
-    business_date_from: startDate,
-    business_date_to: endDate,
-    date_from: startDate,
-    date_to: endDate,
-    start_date: startDate,
-    end_date: endDate,
-    date_basis: 'business_date',
-  });
-
-  return `/pharmaco/sales?${params.toString()}`;
-}
-
-function buildInventoryEndpoint(asOfDate: string): string {
-  const params = new URLSearchParams({
-    as_of_date: asOfDate,
-    business_date: asOfDate,
-    date_basis: 'business_date',
-  });
-
-  return `/pharmaco/reports/inventory-valuation?${params.toString()}`;
-}
-
-function buildSalesEndpoint(startDate: string, endDate: string): string {
-  if (startDate === endDate) {
-    return `/pharmaco/business-analytics/live?business_date=${encodeURIComponent(startDate)}`;
-  }
-
-  const params = new URLSearchParams({
-    start_date: startDate,
-    end_date: endDate,
-    business_date_from: startDate,
-    business_date_to: endDate,
-    date_basis: 'business_date',
-  });
-
-  return `/pharmaco/reports/sales-summary?${params.toString()}`;
-}
-
-function buildSalesStateFromResponse(
-  response: SalesSummaryResponse | LiveAnalyticsResponse,
-  startDate: string,
-  endDate: string,
-): Pick<
-  DashboardState,
-  | 'periodLabel'
-  | 'grossSales'
-  | 'netSales'
-  | 'collections'
-  | 'outstandingBalance'
-  | 'transactionCount'
-  | 'averageTransactionValue'
-  | 'paymentMethods'
-> {
-  const maybeSummary = response as SalesSummaryResponse;
-  const maybeAnalytics = response as LiveAnalyticsResponse;
-
-  if (maybeSummary.sales) {
-    const sales = maybeSummary.sales;
-    const grossSales = toNumber(sales.total_sales_amount);
-    const collections = toNumber(sales.payments_collected) || toNumber(sales.paid_amount);
-    const outstandingBalance = toNumber(sales.balance_amount);
-    const transactionCount = toNumber(sales.sale_count);
-    const averageTransactionValue = transactionCount > 0 ? grossSales / transactionCount : 0;
-
-    return {
-      periodLabel:
-        maybeSummary.period?.start_date && maybeSummary.period?.end_date
-          ? `${maybeSummary.period.start_date} → ${maybeSummary.period.end_date}`
-          : `${startDate} → ${endDate}`,
-      grossSales,
-      netSales: grossSales,
-      collections,
-      outstandingBalance,
-      transactionCount,
-      averageTransactionValue,
-      paymentMethods: sales.payment_methods ?? [],
-    };
-  }
-
-  const grossSales = toNumber(maybeAnalytics.sales_total);
-  const collections = toNumber(maybeAnalytics.collections_total);
-  const outstandingBalance = toNumber(maybeAnalytics.open_balance);
-  const transactionCount = toNumber(maybeAnalytics.transaction_count);
-  const averageTransactionValue =
-    toNumber(maybeAnalytics.average_transaction_value) ||
-    (transactionCount > 0 ? grossSales / transactionCount : 0);
-
-  return {
-    periodLabel: maybeAnalytics.business_date ?? startDate,
-    grossSales,
-    netSales: grossSales,
-    collections,
-    outstandingBalance,
-    transactionCount,
-    averageTransactionValue,
-    paymentMethods: maybeAnalytics.payment_methods ?? [],
-  };
-}
-
-function buildInventoryState(response: InventoryValuationResponse): Pick<
-  DashboardState,
-  | 'inventoryValue'
-  | 'inventoryQuantity'
-  | 'stockBatches'
-  | 'lowStockItems'
-  | 'expiringItems'
-  | 'expiredBatches'
-  | 'healthyStockItems'
-  | 'stockBatchValue'
-  | 'lowStockValue'
-  | 'expiringValue'
-  | 'expiredValue'
-  | 'healthyStockValue'
-  | 'inventoryLoaded'
-> {
-  const inventory = response.inventory ?? {};
-
-  const inventoryValue = toNumber(inventory.total_cost_value) || toNumber(inventory.total_retail_value);
-  const lowStockItems = toNumber(inventory.low_stock_batches);
-  const expiringItems = toNumber(inventory.expiring_soon_batches);
-  const expiredBatches = toNumber(inventory.expired_batches);
-  const stockBatches = toNumber(inventory.batch_count);
-  const healthyStockItems =
-    toNumber(inventory.healthy_stock_batches) ||
-    Math.max(stockBatches - lowStockItems - expiringItems - expiredBatches, 0);
-
-  const lowStockValue = toNumber(inventory.low_stock_value);
-  const expiringValue = toNumber(inventory.expiring_soon_value);
-  const expiredValue = toNumber(inventory.expired_value);
-  const healthyStockValue =
-    toNumber(inventory.healthy_stock_value) ||
-    Math.max(inventoryValue - lowStockValue - expiringValue - expiredValue, 0);
-
-  return {
-    inventoryValue,
-    inventoryQuantity: toNumber(inventory.total_quantity_on_hand),
-    stockBatches,
-    lowStockItems,
-    expiringItems,
-    expiredBatches,
-    healthyStockItems,
-    stockBatchValue: inventoryValue,
-    lowStockValue,
-    expiringValue,
-    expiredValue,
-    healthyStockValue,
-    inventoryLoaded: true,
-  };
+function EmptyState({ children }: { children: string }) {
+  return <div className="bo-v3-empty-state-card">{children}</div>;
 }
 
 export function BusinessOverviewReviewPage({
   token = '',
   tenantSlug = null,
 }: BusinessOverviewReviewPageProps) {
-  const [startDate, setStartDate] = useState(defaultBusinessDate);
-  const [endDate, setEndDate] = useState(defaultBusinessDate);
-  const [dashboard, setDashboard] = useState<DashboardState>(emptyDashboardState);
+  const [liveData, setLiveData] = useState<BusinessOverviewLiveData>(() =>
+    emptyBusinessOverviewLiveData(),
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [loaderStatus, setLoaderStatus] = useState('not-started');
   const debugEnabled =
     typeof window !== 'undefined' &&
     window.location.search.includes('boDebug=1');
 
-  useLayoutEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      if (!token || !tenantSlug) {
-        setDashboard({
-          ...emptyDashboardState,
-          status: 'error',
-          error: !token ? 'Authentication token is missing.' : 'Tenant slug is missing.',
-          tenantSlug,
-        });
-        return;
-      }
-
-      setDashboard({
-        ...emptyDashboardState,
-        status: 'loading',
-        tenantSlug,
-        periodLabel: startDate === endDate ? startDate : `${startDate} → ${endDate}`,
-      });
-
-      try {
-        const [salesResult, salesRegisterResult, inventoryResult] = await Promise.allSettled([
-          fetchTenantJson<SalesSummaryResponse | LiveAnalyticsResponse>(
-            token,
-            tenantSlug,
-            buildSalesEndpoint(startDate, endDate),
-          ),
-          fetchTenantJson<SaleRegisterResponse>(
-            token,
-            tenantSlug,
-            buildSalesRegisterEndpoint(startDate, endDate),
-          ),
-          fetchTenantJson<InventoryValuationResponse>(
-            token,
-            tenantSlug,
-            buildInventoryEndpoint(endDate),
-          ),
-        ]);
-
-        if (cancelled) return;
-
-        let salesState: Pick<
-          DashboardState,
-          | 'periodLabel'
-          | 'grossSales'
-          | 'netSales'
-          | 'collections'
-          | 'outstandingBalance'
-          | 'transactionCount'
-          | 'averageTransactionValue'
-          | 'paymentMethods'
-        >;
-
-        if (salesResult.status === 'fulfilled') {
-          salesState = buildSalesStateFromResponse(salesResult.value, startDate, endDate);
-        } else {
-          salesState = buildSalesStateFromRows([], startDate, endDate);
-        }
-
-        if (
-          salesState.grossSales <= 0 &&
-          salesRegisterResult.status === 'fulfilled'
-        ) {
-          salesState = buildSalesStateFromRows(
-            extractSalesRows(salesRegisterResult.value),
-            startDate,
-            endDate,
-          );
-        }
-
-        const inventoryState =
-          inventoryResult.status === 'fulfilled'
-            ? buildInventoryState(inventoryResult.value)
-            : {
-                inventoryValue: 0,
-                inventoryQuantity: 0,
-                stockBatches: 0,
-                lowStockItems: 0,
-                expiringItems: 0,
-                expiredBatches: 0,
-                healthyStockItems: 0,
-                stockBatchValue: 0,
-                lowStockValue: 0,
-                expiringValue: 0,
-                expiredValue: 0,
-                healthyStockValue: 0,
-                inventoryLoaded: false,
-              };
-
-        const nextState: DashboardState = {
-          ...emptyDashboardState,
-          ...salesState,
-          ...inventoryState,
-          status: 'success',
-          error: null,
-          tenantSlug,
-        };
-
-        setDashboard(nextState);
-
-        if (debugEnabled) {
-          console.log('Business Overview business-date state', nextState);
-          if (inventoryResult.status === 'rejected') {
-            console.warn('Business Overview inventory valuation failed', inventoryResult.reason);
-          }
-        }
-      } catch (error) {
-        if (cancelled) return;
-
-        setDashboard({
-          ...emptyDashboardState,
-          status: 'error',
-          tenantSlug,
-          error: error instanceof Error
-            ? error.message
-            : 'Unable to load Business Overview live data.',
-        });
-      }
-    }
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token, tenantSlug, startDate, endDate, debugEnabled]);
-
-  const paymentTotal = Math.max(dashboard.collections, 1);
-
-  const paymentMix = useMemo(
-    () =>
-      dashboard.paymentMethods
-        .map((method) => {
-          const amount = toNumber(method.total_amount ?? method.amount);
-          const share = (amount / paymentTotal) * 100;
-
-          return {
-            label: paymentLabel(method.payment_method),
-            amount,
-            value: percent(share),
-            percent: Math.round(share),
-          };
-        })
-        .filter((row) => row.amount > 0),
-    [dashboard.paymentMethods, paymentTotal],
-  );
-
-  const kpis = [
-    { label: 'Gross Revenue', value: money(dashboard.grossSales), helper: 'Business-date sales source', tone: 'positive', source: 'Live' },
-    { label: 'Net Revenue', value: money(dashboard.netSales), helper: 'Business-date sales source', tone: 'positive', source: 'Live' },
-    { label: 'Collections', value: money(dashboard.collections), helper: 'Collections from selected business date/range', tone: 'positive', source: 'Live' },
-    { label: 'Outstanding Balance', value: money(dashboard.outstandingBalance), helper: 'Open balance from selected business date/range', tone: dashboard.outstandingBalance > 0 ? 'warning' : 'positive', source: 'Live' },
-    { label: 'Transaction Count', value: money(dashboard.transactionCount), helper: 'Sales count from selected business date/range', tone: 'neutral', source: 'Live' },
-    { label: 'Average Transaction Value', value: dashboard.transactionCount ? money(dashboard.averageTransactionValue) : '—', helper: 'Gross revenue divided by transactions', tone: 'neutral', source: 'Live' },
-    { label: 'Inventory Value', value: dashboard.inventoryLoaded ? money(dashboard.inventoryValue) : '—', helper: 'Inventory valuation report', tone: 'neutral', source: dashboard.inventoryLoaded ? 'Live' : 'Pending' },
-    { label: 'Low Stock Items', value: dashboard.inventoryLoaded ? money(dashboard.lowStockItems) : '—', helper: 'Inventory valuation report', tone: dashboard.lowStockItems > 0 ? 'warning' : 'neutral', source: dashboard.inventoryLoaded ? 'Live' : 'Pending' },
-  ];
-
-  const revenueRows = [
-    { label: 'Gross Sales', value: money(dashboard.grossSales) },
-    { label: 'Discounts', value: money(0) },
-    { label: 'Returns / Reversals', value: money(0) },
-    { label: 'Net Sales', value: money(dashboard.netSales) },
-    { label: 'Collections', value: money(dashboard.collections) },
-    { label: 'Credit Sales', value: '—' },
-    { label: 'Insurance Sales', value: '—' },
-    { label: 'Net Cash Inflow', value: money(dashboard.collections) },
-  ];
-
-  const inventoryRows = [
-    { label: 'Total Inventory Value', value: dashboard.inventoryLoaded ? money(dashboard.inventoryValue) : '—' },
-    { label: 'Total Quantity On Hand', value: dashboard.inventoryLoaded ? money(dashboard.inventoryQuantity) : '—' },
-    { label: 'Stock Batches', value: dashboard.inventoryLoaded ? `${money(dashboard.stockBatches)} batches · ${money(dashboard.stockBatchValue)}` : '—' },
-    { label: 'Healthy Stock', value: dashboard.inventoryLoaded ? `${money(dashboard.healthyStockItems)} batches · ${money(dashboard.healthyStockValue)}` : '—' },
-    { label: 'Low Stock Items', value: dashboard.inventoryLoaded ? `${money(dashboard.lowStockItems)} batches · ${money(dashboard.lowStockValue)}` : '—' },
-    { label: 'Expiring Items', value: dashboard.inventoryLoaded ? `${money(dashboard.expiringItems)} batches · ${money(dashboard.expiringValue)}` : '—' },
-    { label: 'Expired Batches', value: dashboard.inventoryLoaded ? `${money(dashboard.expiredBatches)} batches · ${money(dashboard.expiredValue)}` : '—' },
-  ];
+  const effectiveLoaderStatus =
+    isLoading && loaderStatus === 'started'
+      ? 'started: loading live sales summary report'
+      : liveData.loaded && loaderStatus === 'not-started'
+        ? 'success-with-warning: loaded state returned without loader status update'
+        : loaderStatus;
 
   const debugSnapshot = {
     tenantSlug,
     tokenPresent: Boolean(token),
-    startDate,
-    endDate,
-    status: dashboard.status,
-    loaded: dashboard.status === 'success',
-    salesLoaded: dashboard.status === 'success',
-    inventoryLoaded: dashboard.inventoryLoaded,
-    error: dashboard.error,
-    periodLabel: dashboard.periodLabel,
-    kpis: Object.fromEntries(kpis.map((kpi) => [kpi.label, kpi.value])),
-    revenueRows,
-    inventoryRows,
-    paymentMix,
+    isLoading,
+    loaderStatus: effectiveLoaderStatus,
+    loaded: liveData.loaded,
+    salesLoaded: liveData.salesLoaded,
+    inventoryLoaded: liveData.inventoryLoaded,
+    error: liveData.error,
+    kpis: liveData.kpis,
+    revenueRows: liveData.revenueRows,
+    inventoryRows: liveData.inventoryRows,
+    paymentMix: liveData.paymentMix,
+    topProducts: liveData.topProducts,
+    trendPoints: liveData.trend.length,
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!token || !tenantSlug) {
+      setLiveData({
+        ...emptyBusinessOverviewLiveData(),
+        loaded: true,
+        error: !token
+          ? 'Authentication token is missing for Business Overview live data.'
+          : 'Tenant slug is missing for Business Overview live data.',
+      });
+      setLoaderStatus(!token ? 'failed: missing token' : 'failed: missing tenant slug');
+      setIsLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setIsLoading(true);
+    setLoaderStatus('started: loading live sales summary report');
+
+    fetchBusinessOverviewSalesSummary(token, tenantSlug)
+      .then((data) => {
+        if (cancelled) return;
+
+        setLiveData({ ...data });
+        setLoaderStatus('success');
+        setIsLoading(false);
+
+        if (debugEnabled) {
+          console.log('Business Overview direct sales summary data', data);
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        const message = error instanceof Error
+          ? error.message
+          : 'Unable to load Business Overview sales summary.';
+
+        setLiveData({
+          ...emptyBusinessOverviewLiveData(),
+          loaded: true,
+          error: message,
+        });
+        setLoaderStatus(`failed: ${message}`);
+        setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, tenantSlug, debugEnabled]);
+
+  const kpis = useMemo(
+    () =>
+      businessOverviewKpis.map((kpi) => ({
+        ...kpi,
+        value: liveData.kpis[kpi.label] ?? kpi.value,
+        helper: liveData.kpiHelpers[kpi.label] ?? kpi.helper,
+      })),
+    [liveData],
+  );
+
+  const maxTrend = Math.max(...liveData.trend.map((point) => point.value), 1);
+  const trendPath =
+    liveData.trend.length > 1
+      ? liveData.trend
+          .map((point, index) => {
+            const x = (index / Math.max(liveData.trend.length - 1, 1)) * 420;
+            const y = 170 - (point.value / maxTrend) * 145;
+            return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
+          })
+          .join(' ')
+      : '';
 
   return (
     <section className="bo-v3-page">
@@ -674,48 +303,47 @@ export function BusinessOverviewReviewPage({
         </div>
       </header>
 
+      {debugEnabled && liveData.error && (
+        <div className="bo-v3-live-alert">
+          Some live sources could not be loaded: {liveData.error}
+        </div>
+      )}
+
       {debugEnabled && (
         <pre className="bo-v3-live-debug">
 {JSON.stringify(debugSnapshot, null, 2)}
         </pre>
       )}
 
-      {dashboard.status === 'error' && (
-        <div className="bo-v3-live-alert">{dashboard.error}</div>
-      )}
-
       <section className="bo-v3-filter-strip">
         <label>
-          <span>Business Date From</span>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(event) => {
-              const value = event.target.value;
-              setStartDate(value);
-              if (endDate < value) setEndDate(value);
-            }}
-          />
+          <span>Date Range</span>
+          <select defaultValue="current">
+            <option value="current">Current Period</option>
+          </select>
         </label>
 
         <label>
-          <span>Business Date To</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(event) => setEndDate(event.target.value)}
-          />
+          <span>Business Date</span>
+          <select defaultValue="business-date">
+            <option value="business-date">Business Date</option>
+            <option value="transaction-time">Transaction Timestamp</option>
+          </select>
         </label>
 
-        <article>
-          <small>Business Period</small>
-          <strong>{dashboard.periodLabel}</strong>
-        </article>
+        <label>
+          <span>Branch</span>
+          <select defaultValue="all">
+            <option value="all">All Branches</option>
+          </select>
+        </label>
 
-        <article>
-          <small>Branch</small>
-          <strong>All Branches</strong>
-        </article>
+        <label>
+          <span>Compare</span>
+          <select defaultValue="none">
+            <option value="none">No Comparison</option>
+          </select>
+        </label>
 
         <article>
           <small>Revenue Goal</small>
@@ -728,108 +356,238 @@ export function BusinessOverviewReviewPage({
         </article>
 
         <article>
-          <small>Status</small>
-          <strong>{dashboard.status === 'loading' ? 'Loading' : dashboard.status === 'success' ? 'Live' : 'Check'}</strong>
+          <small>Expense Mode</small>
+          <strong>—</strong>
         </article>
       </section>
 
-      <h2 className="bo-v3-section-title">Executive KPIs</h2>
-      <section className="bo-v3-kpi-grid">
-        {kpis.map((kpi) => (
-          <article key={kpi.label} className={`bo-v3-kpi-card is-${kpi.tone}`}>
-            <div className="bo-v3-kpi-heading">
-              <small>{kpi.label}</small>
-              <em className={kpi.source === 'Live' ? 'bo-v3-source bo-v3-source-live' : 'bo-v3-source bo-v3-source-config'}>
-                {kpi.source}
-              </em>
+      <section className="bo-v3-module-grid">
+        {businessOverviewModules.map((module) => (
+          <article key={module.id} className={`bo-v3-module-card is-${module.accent}`}>
+            <span className="bo-v3-module-icon">{module.title.slice(0, 2)}</span>
+            <div>
+              <div className="bo-v3-module-heading">
+                <h3>{module.title}</h3>
+                <span>›</span>
+              </div>
+              <button type="button">Open Analytics →</button>
             </div>
-            <strong>{dashboard.status === 'loading' ? '…' : kpi.value}</strong>
-            <span>{kpi.helper}</span>
           </article>
         ))}
       </section>
 
+      <section>
+        <h2 className="bo-v3-section-title">Key Performance Indicators</h2>
+        <div className="bo-v3-kpi-grid">
+          {kpis.map((kpi) => (
+            <article key={kpi.label} className={`bo-v3-kpi-card ${toneClass(kpi.tone)}`}>
+              <div className="bo-v3-kpi-heading">
+                <small>{kpi.label}</small>
+              </div>
+              <strong>{isLoading ? '…' : kpi.value}</strong>
+              <span>{kpi.helper}</span>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="bo-v3-analytics-grid">
-        <article className="bo-v3-panel">
+        <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-daily">
           <header>
             <h3>Daily Revenue Operation</h3>
-            <span>Business date basis</span>
+            <select defaultValue="current">
+              <option value="current">Current</option>
+            </select>
           </header>
-          <table>
-            <tbody>
-              {revenueRows.map((row) => (
-                <tr key={row.label} className={row.label === 'Net Sales' || row.label === 'Net Cash Inflow' ? 'strong positive' : undefined}>
-                  <th>{row.label}</th>
-                  <td>{dashboard.status === 'loading' ? '…' : row.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <LiveRowsTable rows={liveData.revenueRows} />
         </article>
 
-        <article className="bo-v3-panel bo-v3-panel-payment">
+        <article className="bo-v3-panel bo-v3-panel-chart">
           <header>
-            <h3>Payment Mix</h3>
-            <span>Collections</span>
+            <h3>Sales Trend</h3>
+            <div>
+              <select defaultValue="transaction-value">
+                <option value="transaction-value">Transaction Value</option>
+              </select>
+              <select defaultValue="day">
+                <option value="day">By Day</option>
+              </select>
+            </div>
+          </header>
+
+          <div className="bo-v3-chart-shell">
+            <div className="bo-v3-y-axis">
+              <span>{maxTrend > 1 ? maxTrend.toLocaleString('en-RW') : '—'}</span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span>0</span>
+            </div>
+            <div className="bo-v3-line-chart bo-v3-line-chart--linear bo-v3-empty-chart">
+              <svg viewBox="0 0 420 180" role="img" aria-label="Sales trend data">
+                {liveData.trend.length > 1 ? (
+                  <path className="bo-v3-trend-line" d={trendPath} />
+                ) : (
+                  <path className="bo-v3-trend-line-empty" d="M0 120 L420 120" />
+                )}
+              </svg>
+              {liveData.trend.length <= 1 && (
+                <div className="bo-v3-empty-state">No live sales trend data connected</div>
+              )}
+            </div>
+          </div>
+
+          <div className="bo-v3-x-axis">
+            <span>{liveData.trend[0]?.label ?? 'Start'}</span>
+            <span></span>
+            <span></span>
+            <span>{liveData.trend[liveData.trend.length - 1]?.label ?? 'End'}</span>
+          </div>
+          <div className="bo-v3-chart-legend">
+            <span>Transaction value</span>
+          </div>
+        </article>
+
+        <article className="bo-v3-panel bo-v3-panel-products bo-v3-panel-top-products">
+          <header>
+            <h3>Top Contributing Products (MTD)</h3>
+            <select defaultValue="revenue">
+              <option value="revenue">By Revenue</option>
+            </select>
+          </header>
+
+          {liveData.topProducts.length > 0 ? (
+            <div className="bo-v3-products">
+              {liveData.topProducts.map((product) => (
+                <div key={product.name} className="bo-v3-product-row">
+                  <div>
+                    <span className="bo-v3-product-thumb" />
+                    <strong>{product.name}</strong>
+                  </div>
+                  <div className="bo-v3-product-bar">
+                    <span style={{ width: `${product.percent}%` }} />
+                  </div>
+                  <em>{product.value}</em>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState>No live product contribution data connected</EmptyState>
+          )}
+
+          <button type="button" className="bo-v3-panel-button">View All Products</button>
+        </article>
+
+        <article className="bo-v3-panel bo-v3-panel-payment bo-v3-panel-payment-mix">
+          <header>
+            <h3>Payment Mix (MTD)</h3>
           </header>
           <div className="bo-v3-payment-body">
-            <div className="bo-v3-donut">
+            <div className={`bo-v3-donut ${liveData.paymentMix.length ? '' : 'bo-v3-donut-empty'}`}>
               <div>
-                <small>Collected</small>
-                <strong>{dashboard.status === 'loading' ? '…' : money(dashboard.collections)}</strong>
+                <small>Total</small>
+                <strong>{liveData.kpis.Collections ?? '—'}</strong>
               </div>
             </div>
             <ul>
-              {paymentMix.length === 0 ? (
-                <li>
+              {(liveData.paymentMix.length ? liveData.paymentMix : [
+                { label: 'Cash', value: '—', percent: 0 },
+                { label: 'Mobile Money', value: '—', percent: 0 },
+                { label: 'Card', value: '—', percent: 0 },
+                { label: 'Insurance', value: '—', percent: 0 },
+                { label: 'Credit', value: '—', percent: 0 },
+              ]).map((item) => (
+                <li key={item.label}>
                   <span className="bo-v3-dot cash" />
-                  <strong>No payment mix yet</strong>
-                  <em>—</em>
+                  <strong>{item.label}</strong>
+                  <em>{item.value}</em>
                 </li>
-              ) : (
-                paymentMix.map((row) => (
-                  <li key={row.label}>
-                    <span className="bo-v3-dot momo" />
-                    <strong>{row.label}</strong>
-                    <em>{row.value}</em>
-                  </li>
-                ))
-              )}
+              ))}
             </ul>
           </div>
         </article>
 
-        <article className="bo-v3-panel">
-          <header>
-            <h3>Inventory Risk Overview</h3>
-            <span>Inventory valuation</span>
-          </header>
-          <table>
-            <tbody>
-              {inventoryRows.map((row) => (
-                <tr key={row.label}>
-                  <th>{row.label}</th>
-                  <td>{row.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-expenses">
+          <header><h3>Expenses & Profitability (MTD)</h3></header>
+          <LiveRowsTable rows={[
+            { label: 'Operating Expenses', value: '—' },
+            { label: 'Gross Profit', value: liveData.kpis['Gross Profit'] ?? '—' },
+            { label: 'Estimated Net Profit', value: liveData.kpis['Estimated Net Profit'] ?? '—' },
+            { label: 'Gross Margin', value: '—' },
+            { label: 'Net Margin', value: '—' },
+          ]} />
+          <button type="button" className="bo-v3-panel-button">View Details</button>
         </article>
 
-        <article className="bo-v3-insight-panel">
-          <header>
-            <span>AI</span>
-            <h3>Business Notes</h3>
-          </header>
-          <section>
-            <h4>Revenue</h4>
-            <p>Sales and collections are connected on Business Date basis using the selected date range.</p>
-          </section>
-          <section>
-            <h4>Inventory</h4>
-            <p>Inventory is connected to the live valuation report.</p>
-          </section>
+        <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-inventory-risk">
+          <header><h3>Inventory Risk Overview</h3></header>
+          <LiveRowsTable rows={liveData.inventoryRows} />
+          <button type="button" className="bo-v3-panel-button">View Inventory Analytics</button>
         </article>
+
+        <article className="bo-v3-panel bo-v3-panel-table bo-v3-panel-insurance">
+          <header><h3>Insurance & Receivables (MTD)</h3></header>
+          <LiveRowsTable rows={[
+            { label: 'Insurance Sales', value: liveData.revenueRows.find((row) => row.label === 'Insurance Sales')?.value ?? '—' },
+            { label: 'Insurer Receivable', value: '—' },
+            { label: 'Top Insurer', value: '—' },
+            { label: 'AR Over 30 Days', value: '—' },
+          ]} />
+          <button type="button" className="bo-v3-panel-button">View Insurance Analytics</button>
+        </article>
+
+        <article className="bo-v3-panel bo-v3-panel-goals bo-v3-panel-business-goals">
+          <header><h3>Business Goal Tracking</h3></header>
+          <div className="bo-v3-goal-row">
+            <div><span>Revenue Goal</span><strong>—</strong></div>
+            <div className="bo-v3-progress"><span style={{ width: '0%' }} /></div>
+            <em>—</em>
+          </div>
+          <div className="bo-v3-goal-row">
+            <div><span>Profit Goal</span><strong>—</strong></div>
+            <div className="bo-v3-progress"><span style={{ width: '0%' }} /></div>
+            <em>—</em>
+          </div>
+          <button type="button" className="bo-v3-panel-button">View Goals & Forecast</button>
+        </article>
+
+        <aside className="bo-v3-insight-panel">
+          <header>
+            <span>✣</span>
+            <h3>AI / Business Insight</h3>
+          </header>
+
+          <section>
+            <h4>Business insights</h4>
+            <p>
+              Sales and inventory values are loaded from available live operational sources.
+              Expenses, goals, and insurer receivables require their dedicated live data sources.
+            </p>
+          </section>
+
+          <section>
+            <h4>Connected live sources</h4>
+            <ul>
+              <li>Sales register: {liveData.salesLoaded ? 'Connected' : 'Not available'}</li>
+              <li>Inventory summary: {liveData.inventoryLoaded ? 'Connected' : 'Not available'}</li>
+            </ul>
+          </section>
+
+          <button type="button">View All Insights</button>
+        </aside>
+
+        <section className="bo-v3-actions-panel">
+          <h3>Recommended Actions</h3>
+          <div>
+            {recommendedActions.map((item) => (
+              <article key={item.title} className={`bo-v3-action-card ${toneClass(item.tone)}`}>
+                <strong>{item.title}</strong>
+                <p>{item.description}</p>
+                <button type="button">{item.action}</button>
+              </article>
+            ))}
+          </div>
+        </section>
       </section>
     </section>
   );
