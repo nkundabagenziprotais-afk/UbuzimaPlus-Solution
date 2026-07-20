@@ -2,14 +2,19 @@ type UnknownRecord = Record<string, unknown>;
 
 const API_BASE = '/api/v1';
 
-function businessOverviewSalesEndpoint(): string {
+function businessOverviewSalesSummaryEndpoint(): string {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
+
   const params = new URLSearchParams({
-    per_page: '100',
-    limit: '100',
-    page: '1',
+    start_date: startOfMonth,
+    end_date: today,
   });
 
-  return `/pharmaco/sales?${params.toString()}`;
+  return `/pharmaco/reports/sales-summary?${params.toString()}`;
 }
 
 function fetchBusinessOverviewJson(
@@ -255,6 +260,27 @@ function extractSales(response: unknown): UnknownRecord[] {
   }
 
   return [];
+}
+
+function extractSalesSummary(response: unknown): UnknownRecord {
+  const record = asRecord(response);
+  const data = asRecord(record.data);
+  const payload = asRecord(record.payload);
+  const result = asRecord(record.result);
+
+  return asRecord(
+    record.sales && typeof record.sales === 'object'
+      ? record.sales
+      : data.sales && typeof data.sales === 'object'
+        ? data.sales
+        : payload.sales && typeof payload.sales === 'object'
+          ? payload.sales
+          : result.sales && typeof result.sales === 'object'
+            ? result.sales
+            : data && Object.keys(data).length
+              ? data
+              : record,
+  );
 }
 
 function extractInventorySummary(response: unknown): UnknownRecord {
@@ -507,26 +533,27 @@ export async function loadBusinessOverviewLiveData(
   const errors: string[] = [];
 
   let sales: UnknownRecord[] = [];
+  let salesSummary: UnknownRecord = {};
   let inventorySummary: UnknownRecord = {};
   let inventoryBatches: UnknownRecord[] = [];
 
-  // Sales is the primary Business Overview source and must not be blocked by inventory.
+  // Use the lightweight aggregated report endpoint, not the heavy Sales Register list.
   try {
-    const salesResponse = await fetchBusinessOverviewJson(
+    const salesSummaryResponse = await fetchBusinessOverviewJson(
       token,
       tenantSlug,
-      businessOverviewSalesEndpoint(),
-      'Sales register',
-      25000,
+      businessOverviewSalesSummaryEndpoint(),
+      'Sales summary report',
+      12000,
     );
 
-    sales = extractSales(salesResponse);
+    salesSummary = extractSalesSummary(salesSummaryResponse);
     salesLoaded = true;
   } catch (err) {
     errors.push(
       err instanceof Error
         ? err.message
-        : 'Unable to load live and historical POS sales.',
+        : 'Unable to load live sales summary report.',
     );
   }
 
@@ -544,44 +571,106 @@ export async function loadBusinessOverviewLiveData(
   const validSales = sales.filter((sale) => !isVoidedOrReturnedSale(sale));
   const returnedSales = sales.filter(isVoidedOrReturnedSale);
 
-  const grossSales = validSales.reduce((sum, sale) => sum + saleTotal(sale), 0);
-  const discounts = validSales.reduce((sum, sale) => sum + saleDiscount(sale), 0);
-  const returns = returnedSales.reduce((sum, sale) => sum + saleTotal(sale), 0);
-  const netSales = Math.max(grossSales - discounts - returns, 0);
+  const summarySaleCount = firstNumber(salesSummary, [
+    'sale_count',
+    'transaction_count',
+    'transactions',
+    'sales_count',
+  ]);
+
+  const rowGrossSales = validSales.reduce((sum, sale) => sum + saleTotal(sale), 0);
+  const rowDiscounts = validSales.reduce((sum, sale) => sum + saleDiscount(sale), 0);
+  const rowReturns = returnedSales.reduce((sum, sale) => sum + saleTotal(sale), 0);
+
+  const grossSales =
+    firstNumber(salesSummary, [
+      'total_sales_amount',
+      'gross_sales',
+      'sales_total',
+      'total_amount',
+      'total_sales',
+    ]) || rowGrossSales;
+
+  const discounts =
+    firstNumber(salesSummary, [
+      'discount_amount',
+      'discounts',
+      'discount_total',
+      'total_discount',
+    ]) || rowDiscounts;
+
+  const returns =
+    firstNumber(salesSummary, [
+      'returns_amount',
+      'reversal_amount',
+      'refund_amount',
+      'returned_amount',
+    ]) || rowReturns;
+
+  const netSales =
+    firstNumber(salesSummary, [
+      'net_sales_amount',
+      'net_sales',
+      'net_revenue',
+    ]) || Math.max(grossSales - discounts - returns, 0);
+
+  let collections =
+    firstNumber(salesSummary, [
+      'paid_amount',
+      'payments_collected',
+      'collections_total',
+      'collected_amount',
+    ]);
 
   const paymentGrouped = new Map<string, number>();
-  let collections = 0;
+  const summaryPaymentMethods = asArray(salesSummary.payment_methods);
 
-  for (const sale of validSales) {
-    const completedPayments = asArray(sale.payments).filter(isCompletedPayment);
+  for (const method of summaryPaymentMethods) {
+    const label = paymentMethodLabel(stringValue(method.payment_method, 'Other'));
+    const amount = firstNumber(method, ['total_amount', 'amount', 'paid_amount']);
+    if (amount > 0) {
+      paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
+    }
+  }
 
-    if (completedPayments.length > 0) {
-      for (const payment of completedPayments) {
-        const amount = numberValue(payment.amount);
+  if (collections <= 0) {
+    for (const sale of validSales) {
+      const completedPayments = asArray(sale.payments).filter(isCompletedPayment);
+
+      if (completedPayments.length > 0) {
+        for (const payment of completedPayments) {
+          const amount = numberValue(payment.amount);
+          collections += amount;
+          const label = paymentMethodLabel(stringValue(payment.payment_method, 'Other'));
+          paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
+        }
+      } else {
+        const amount = salePaidAmount(sale);
         collections += amount;
-        const label = paymentMethodLabel(stringValue(payment.payment_method, 'Other'));
-        paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
-      }
-    } else {
-      const amount = salePaidAmount(sale);
-      collections += amount;
 
-      if (amount > 0) {
-        const label = paymentMethodLabel(salePaymentMethod(sale));
-        paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
+        if (amount > 0) {
+          const label = paymentMethodLabel(salePaymentMethod(sale));
+          paymentGrouped.set(label, (paymentGrouped.get(label) ?? 0) + amount);
+        }
       }
     }
   }
 
-  const outstandingBalance = Math.max(netSales - collections, 0);
+  const outstandingBalance =
+    firstNumber(salesSummary, ['balance_amount', 'open_balance', 'outstanding_balance']) ||
+    Math.max(netSales - collections, 0);
 
-  const creditSales = validSales
-    .filter((sale) => stringValue(sale.payment_status).toLowerCase().includes('credit'))
-    .reduce((sum, sale) => sum + saleTotal(sale), 0);
+  const creditSales =
+    firstNumber(salesSummary, ['credit_sales', 'credit_amount']) ||
+    validSales
+      .filter((sale) => stringValue(sale.payment_status).toLowerCase().includes('credit'))
+      .reduce((sum, sale) => sum + saleTotal(sale), 0);
 
-  const insuranceSales = validSales
-    .filter((sale) => stringValue(sale.sale_type).toLowerCase().includes('insurance'))
-    .reduce((sum, sale) => sum + saleTotal(sale), 0);
+  const insuranceSales =
+    firstNumber(salesSummary, ['insurance_sales', 'insurance_amount']) ||
+    validSales
+      .filter((sale) => stringValue(sale.sale_type).toLowerCase().includes('insurance'))
+      .reduce((sum, sale) => sum + saleTotal(sale), 0);
 
   const paymentTotal = Math.max(collections, 1);
   const paymentMix = [...paymentGrouped.entries()]
@@ -594,6 +683,8 @@ export async function loadBusinessOverviewLiveData(
 
   const trend = buildTrend(validSales);
   const topProducts = buildTopProducts(validSales);
+  const transactionCount = summarySaleCount || validSales.length;
+  const averageTransactionValue = transactionCount > 0 ? netSales / transactionCount : 0;
 
   const batchFallback = computeBatchFallback(inventoryBatches);
 
@@ -624,8 +715,8 @@ export async function loadBusinessOverviewLiveData(
       'Net Revenue': salesLoaded ? formatMoney(netSales) : '—',
       Collections: salesLoaded ? formatMoney(collections) : '—',
       'Outstanding Balance': salesLoaded ? formatMoney(outstandingBalance) : '—',
-      'Transaction Count': salesLoaded ? formatCount(validSales.length) : '—',
-      'Average Transaction Value': salesLoaded && validSales.length ? formatMoney(netSales / validSales.length) : '—',
+      'Transaction Count': salesLoaded ? formatCount(transactionCount) : '—',
+      'Average Transaction Value': salesLoaded && transactionCount ? formatMoney(averageTransactionValue) : '—',
       'Live POS Sales': salesLoaded ? formatCount(livePosCount) : '—',
       'Historical POS Sales': salesLoaded ? formatCount(historicalPosCount) : '—',
       'Gross Profit': '—',
@@ -641,7 +732,7 @@ export async function loadBusinessOverviewLiveData(
       'Expiring Items': inventoryLoaded ? formatCount(nearExpiry) : '—',
     },
     kpiHelpers: {
-      'Gross Revenue': salesLoaded ? 'Live and Historical POS sales register' : 'Sales source unavailable',
+      'Gross Revenue': salesLoaded ? 'Aggregated sales summary report' : 'Sales source unavailable',
       'Net Revenue': salesLoaded ? 'Sales less discounts and reversals' : 'Sales source unavailable',
       Collections: salesLoaded ? 'Completed payments or paid amount from Live/Historical POS' : 'Payment source unavailable',
       'Outstanding Balance': salesLoaded ? 'Sales value not yet collected' : 'Receivable source unavailable',
