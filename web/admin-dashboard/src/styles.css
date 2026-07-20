@@ -37772,3 +37772,64 @@ thead
   line-height: 1.45;
   white-space: pre-wrap;
 }
+
+/* Business Overview production presentation refinements */
+.bo-v3-kpi-card strong {
+  font-size: clamp(1.15rem, 1.6vw, 1.65rem);
+  line-height: 1.1;
+}
+
+.bo-v3-kpi-card small,
+.bo-v3-kpi-card span {
+  line-height: 1.35;
+}
+
+.bo-v3-panel {
+  min-height: auto;
+}
+
+.bo-v3-analytics-grid .bo-v3-panel,
+.bo-v3-analytics-grid .bo-v3-insight-panel {
+  padding-block: 1rem;
+}
+
+.bo-v3-panel table th {
+  white-space: normal;
+}
+
+.bo-v3-panel table td,
+.bo-v3-kpi-card strong,
+.bo-v3-donut strong,
+.bo-v3-products strong,
+.bo-v3-live-debug {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-v3-panel table td {
+  min-width: 8rem;
+}
+
+.bo-v3-filter-strip input[type="date"] {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+}
+
+.bo-v3-filter-strip button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  background: #0f172a;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bo-v3-filter-strip button:hover {
+  filter: brightness(1.08);
+}

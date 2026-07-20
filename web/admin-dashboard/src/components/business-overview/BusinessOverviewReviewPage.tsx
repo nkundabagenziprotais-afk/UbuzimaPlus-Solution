@@ -187,11 +187,18 @@ export function BusinessOverviewReviewPage({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [loaderStatus, setLoaderStatus] = useState('not-started');
-  const [draftStartDate, setDraftStartDate] = useState('2026-06-01');
-  const [draftEndDate, setDraftEndDate] = useState('2026-06-30');
+  const savedDateRange =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('ubuzima.businessOverview.dateRange') || 'null')
+      : null;
+  const defaultStartDate = savedDateRange?.startDate || '2026-06-01';
+  const defaultEndDate = savedDateRange?.endDate || '2026-07-20';
+
+  const [draftStartDate, setDraftStartDate] = useState(defaultStartDate);
+  const [draftEndDate, setDraftEndDate] = useState(defaultEndDate);
   const [appliedDateRange, setAppliedDateRange] = useState({
-    startDate: '2026-06-01',
-    endDate: '2026-06-30',
+    startDate: defaultStartDate,
+    endDate: defaultEndDate,
   });
   const [loadSequence, setLoadSequence] = useState(0);
   const debugEnabled =
@@ -360,21 +367,18 @@ export function BusinessOverviewReviewPage({
         </label>
 
         <label>
-          <span>Date Basis</span>
-          <select value="business-date" onChange={() => undefined}>
-            <option value="business-date">Business Date</option>
-          </select>
-        </label>
-
-        <label>
           <span>Apply Range</span>
           <button
             type="button"
             onClick={() =>
-              setAppliedDateRange({
-                startDate: draftStartDate,
-                endDate: draftEndDate,
-              })
+              {
+                const nextRange = {
+                  startDate: draftStartDate,
+                  endDate: draftEndDate,
+                };
+                localStorage.setItem('ubuzima.businessOverview.dateRange', JSON.stringify(nextRange));
+                setAppliedDateRange(nextRange);
+              }
             }
           >
             Apply Dates
