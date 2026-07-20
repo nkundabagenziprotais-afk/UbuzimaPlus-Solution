@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 
 type BusinessOverviewReviewPageProps = {
   token?: string;
@@ -261,7 +261,7 @@ export function BusinessOverviewReviewPage({
     typeof window !== 'undefined' &&
     window.location.search.includes('boDebug=1');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let cancelled = false;
 
     async function load() {
