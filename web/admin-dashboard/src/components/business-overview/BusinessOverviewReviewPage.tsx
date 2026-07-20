@@ -163,13 +163,31 @@ function trendPointDate(point: unknown): string | null {
   return null;
 }
 
+function monthDateSeries(dateIso: string): string[] {
+  const source = new Date(`${dateIso}T00:00:00`);
+  if (Number.isNaN(source.getTime())) return datesBetween(currentMonthStartIso(), todayIso(), 31);
+
+  const start = new Date(source.getFullYear(), source.getMonth(), 1);
+  const end = new Date(source.getFullYear(), source.getMonth() + 1, 0);
+  const dates: string[] = [];
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
+}
+
 function buildDailyTrendSeries(
   points: BusinessOverviewLiveData['trend'],
   startDate: string,
   endDate: string,
   maxDays = 31,
 ): Array<{ date: string; label: string; value: number }> {
-  const dates = datesBetween(startDate, endDate, maxDays);
+  const monthDates = monthDateSeries(startDate || endDate || todayIso());
+  const dates = monthDates.slice(0, Math.max(maxDays, monthDates.length));
   const valueMap = new Map<string, number>();
 
   points.forEach((point) => {
