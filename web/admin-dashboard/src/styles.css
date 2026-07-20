@@ -41088,3 +41088,141 @@ thead
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Business Overview correction: normalize Sales Trend and restore movement card positioning */
+
+/* Sales Trend: full-width, but normal dashboard font size and reasonable height */
+.bo-pro-card--trend {
+  grid-column: 1 / -1 !important;
+  min-height: 22.5rem !important;
+  height: auto !important;
+}
+
+.bo-pro-card--trend header h2 {
+  font-size: 0.95rem !important;
+  line-height: 1.15 !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart {
+  min-height: 15.75rem !important;
+  padding: 0.7rem 0.8rem 0.45rem !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart svg {
+  min-height: 11.5rem !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart path {
+  stroke-width: 3 !important;
+}
+
+.bo-pro-card--trend .bo-pro-data-label,
+.bo-pro-card--trend .bo-pro-axis-label {
+  font-size: 0.58rem !important;
+  font-weight: 800 !important;
+}
+
+.bo-pro-card--trend .bo-pro-chart-footer {
+  font-size: 0.72rem !important;
+}
+
+/* Do not place Insurance, Near Expiry, and Total Inventory Movement as one 3-card section */
+.bo-pro-order-insurance {
+  grid-column: 1 / -1 !important;
+  min-height: 22rem !important;
+  height: auto !important;
+}
+
+/* Movement cards keep their own row/section and use Insurance-style internal presentation */
+.bo-pro-order-near-expiry,
+.bo-pro-order-inventory-movement {
+  grid-column: span 6 !important;
+  min-height: 22rem !important;
+  height: auto !important;
+}
+
+.bo-pro-order-near-expiry .bo-pro-movement-layout,
+.bo-pro-order-inventory-movement .bo-pro-movement-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.7rem !important;
+}
+
+.bo-pro-order-near-expiry .bo-pro-line-chart,
+.bo-pro-order-inventory-movement .bo-pro-line-chart {
+  order: 1;
+  min-height: 10.5rem !important;
+  padding: 0.6rem !important;
+}
+
+.bo-pro-order-near-expiry .bo-pro-line-chart svg,
+.bo-pro-order-inventory-movement .bo-pro-line-chart svg {
+  min-height: 7rem !important;
+}
+
+.bo-pro-order-near-expiry .bo-pro-metric-list.compact,
+.bo-pro-order-inventory-movement .bo-pro-metric-list.compact {
+  order: 2;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+}
+
+.bo-pro-order-near-expiry .bo-pro-metric-list.compact article,
+.bo-pro-order-inventory-movement .bo-pro-metric-list.compact article {
+  min-height: 3.45rem !important;
+  padding: 0.56rem !important;
+}
+
+/* Keep Insurance layout balanced and readable */
+.bo-pro-order-insurance .bo-pro-line-chart {
+  min-height: 10.5rem !important;
+  padding: 0.6rem !important;
+}
+
+.bo-pro-order-insurance .bo-pro-line-chart svg {
+  min-height: 7rem !important;
+}
+
+.bo-pro-order-insurance .bo-pro-metric-list.compact {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+}
+
+.bo-pro-order-insurance .bo-pro-metric-list.compact article {
+  min-height: 3.45rem !important;
+  padding: 0.56rem !important;
+}
+
+/* Medium screens: keep movement cards as two-card row, Insurance as full row */
+@media (max-width: 1500px) {
+  .bo-pro-order-insurance {
+    grid-column: 1 / -1 !important;
+  }
+
+  .bo-pro-order-near-expiry,
+  .bo-pro-order-inventory-movement {
+    grid-column: span 6 !important;
+  }
+}
+
+/* Small screens: all cards stack naturally */
+@media (max-width: 980px) {
+  .bo-pro-order-insurance,
+  .bo-pro-order-near-expiry,
+  .bo-pro-order-inventory-movement {
+    grid-column: span 1 !important;
+    min-height: auto !important;
+  }
+
+  .bo-pro-order-insurance .bo-pro-metric-list.compact,
+  .bo-pro-order-near-expiry .bo-pro-metric-list.compact,
+  .bo-pro-order-inventory-movement .bo-pro-metric-list.compact {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-card--trend .bo-pro-line-chart {
+    min-height: 13.5rem !important;
+  }
+}
