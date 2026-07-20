@@ -547,11 +547,10 @@ export function BusinessOverviewReviewPage({
 
     setIsLoading(true);
     setLoaderStatus('loading');
-    setLiveData({
-      ...emptyBusinessOverviewLiveData(),
-      loaded: false,
+    setLiveData((current) => ({
+      ...current,
       error: null,
-    });
+    }));
 
     loadBusinessOverviewDataAdapter({
       token,
@@ -722,7 +721,7 @@ export function BusinessOverviewReviewPage({
     })),
   );
 
-  const dashboardIsLoading = isLoading || !liveData.loaded;
+  const dashboardIsLoading = isLoading;
 
   const applyGlobalDates = () => {
     const nextRange = {
@@ -737,11 +736,10 @@ export function BusinessOverviewReviewPage({
     setLoadSequence((value) => value + 1);
     setIsLoading(true);
     setLoaderStatus('loading');
-    setLiveData({
-      ...emptyBusinessOverviewLiveData(),
-      loaded: false,
+    setLiveData((current) => ({
+      ...current,
       error: null,
-    });
+    }));
 
     setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
@@ -772,11 +770,10 @@ export function BusinessOverviewReviewPage({
     setLoadSequence((value) => value + 1);
     setIsLoading(true);
     setLoaderStatus('loading');
-    setLiveData({
-      ...emptyBusinessOverviewLiveData(),
-      loaded: false,
+    setLiveData((current) => ({
+      ...current,
       error: null,
-    });
+    }));
 
     setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
@@ -798,7 +795,7 @@ export function BusinessOverviewReviewPage({
   };
 
   return (
-    <section className="bo-pro-page">
+    <section className={`bo-pro-page ${isLoading ? 'is-loading' : ''}`}>
       <header className="bo-pro-header">
         <div>
           <span className="bo-pro-eyebrow">Executive dashboard</span>
