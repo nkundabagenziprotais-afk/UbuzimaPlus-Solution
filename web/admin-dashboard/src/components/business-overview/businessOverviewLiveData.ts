@@ -3,18 +3,9 @@ type UnknownRecord = Record<string, unknown>;
 const API_BASE = '/api/v1';
 
 function businessOverviewSalesSummaryEndpoint(): string {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10);
-  const today = now.toISOString().slice(0, 10);
-
-  const params = new URLSearchParams({
-    start_date: startOfMonth,
-    end_date: today,
-  });
-
-  return `/pharmaco/reports/sales-summary?${params.toString()}`;
+  // Use backend default reporting period.
+  // Verified live: /pharmaco/reports/sales-summary returns the current operational sales window.
+  return '/pharmaco/reports/sales-summary';
 }
 
 function fetchBusinessOverviewJson(
@@ -562,7 +553,7 @@ export async function loadBusinessOverviewLiveData(
   // Inventory values stay unavailable until a lightweight backend summary endpoint is added.
   inventorySummaryLoaded = false;
   inventorySummary = {};
-  errors.push('Inventory summary is currently unavailable. Sales and cash performance are shown from the live POS sales register.');
+  errors.push('Inventory summary is currently unavailable. Sales and cash performance are shown from the live sales summary report.');
 
   // Do not load full inventory batches in Business Overview initial render.
   inventoryBatchesLoaded = false;
