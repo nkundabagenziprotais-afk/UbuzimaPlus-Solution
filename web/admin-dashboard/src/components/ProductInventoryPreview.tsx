@@ -4369,11 +4369,7 @@ export function ProductInventoryPreview({
       {activeInventoryView === 'overview' && renderSimpleMightyInventoryCommandCenter()}
 
       {activeInventoryView !== 'overview' && (
-        <section className="inventory-active-page-marker" data-active-inventory-view={activeInventoryView}>
-          <span>Inventory page</span>
-          <strong>{activeInventoryMeta.label}</strong>
-          <small>{activeInventoryMeta.description}</small>
-        </section>
+        <></>
       )}
 
       <section className="module-workspace-shell inventory-workspace-shell">
@@ -4615,7 +4611,7 @@ export function ProductInventoryPreview({
           )}
 
           
-          {null}
+          <></>
 
           {activeInventoryView === 'low-stock' && (() => {
             const productSource = allProducts;

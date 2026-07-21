@@ -42972,3 +42972,51 @@ thead
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* Final Product Inventory recovery:
+   Keep Product Inventory visible. Remove only the obsolete page marker / blank spacer. */
+.section-page:has(.inventory-data-table--product-register) .module-page-navigation-context,
+.section-page:has(.inventory-data-table--product-register) .module-workspace-shell,
+.section-page:has(.inventory-data-table--product-register) .module-section-stage,
+.section-page:has(.inventory-data-table--product-register) .inventory-section,
+.section-page:has(.inventory-data-table--product-register) .inventory-table-management-panel,
+.section-page:has(.inventory-data-table--product-register) .admin-table-settings-panel__content,
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel,
+.section-page:has(.inventory-data-table--product-register) .inventory-data-table--product-register {
+  display: revert !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: initial !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .inventory-active-page-marker,
+.section-page:has(.inventory-data-table--product-register) .inventory-active-page-marker * {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .panel-heading-row {
+  margin-bottom: 0.5rem !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .module-section-stage,
+.section-page:has(.inventory-data-table--product-register) .inventory-section {
+  gap: 0.65rem !important;
+}
+
+/* Do not let old blank create/flow panels create empty rounded cards */
+.section-page:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:empty,
+.section-page:has(.inventory-data-table--product-register) .inventory-create-from-master-panel.is-hidden,
+.section-page:has(.inventory-data-table--product-register) .inventory-guided-flow-launch-panel:empty {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
