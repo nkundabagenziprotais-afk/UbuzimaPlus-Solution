@@ -733,15 +733,7 @@ export function BusinessOverviewReviewPage({
     setDraftStartDate(nextRange.startDate);
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
-    setLoadSequence((value) => value + 1);
-    setIsLoading(true);
-    setLoaderStatus('loading');
-    setLiveData((current) => ({
-      ...current,
-      error: null,
-    }));
 
-    setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
     setTrendEndDate(nextRange.endDate);
     setProductStartDate(nextRange.startDate);
@@ -758,6 +750,16 @@ export function BusinessOverviewReviewPage({
     setNearExpiryEndDate(nextRange.endDate);
     setInventoryMovementStartDate(nextRange.startDate);
     setInventoryMovementEndDate(nextRange.endDate);
+
+    setDailyDate(todayIso());
+
+    setIsLoading(true);
+    setLoaderStatus('loading');
+    setLiveData((current) => ({
+      ...current,
+      error: null,
+    }));
+    setLoadSequence((value) => value + 1);
   };
 
   const resetGlobalDates = () => {
@@ -767,13 +769,6 @@ export function BusinessOverviewReviewPage({
     setDraftStartDate(nextRange.startDate);
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
-    setLoadSequence((value) => value + 1);
-    setIsLoading(true);
-    setLoaderStatus('loading');
-    setLiveData((current) => ({
-      ...current,
-      error: null,
-    }));
 
     setDailyDate(todayIso());
     setTrendStartDate(nextRange.startDate);
@@ -792,6 +787,14 @@ export function BusinessOverviewReviewPage({
     setNearExpiryEndDate(nextRange.endDate);
     setInventoryMovementStartDate(nextRange.startDate);
     setInventoryMovementEndDate(nextRange.endDate);
+
+    setIsLoading(true);
+    setLoaderStatus('loading');
+    setLiveData((current) => ({
+      ...current,
+      error: null,
+    }));
+    setLoadSequence((value) => value + 1);
   };
 
   return (
@@ -848,7 +851,7 @@ export function BusinessOverviewReviewPage({
       </section>
 
       <section className="bo-pro-grid">
-        <article className="bo-pro-card bo-pro-card--daily">
+        <article className={`bo-pro-card bo-pro-card--daily ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Daily Revenue Operation</h2>
@@ -864,7 +867,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--trend">
+        <article className={`bo-pro-card bo-pro-card--trend ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Sales Trend</h2>
@@ -887,7 +890,7 @@ export function BusinessOverviewReviewPage({
           />
         </article>
 
-        <article className="bo-pro-card bo-pro-card--products">
+        <article className={`bo-pro-card bo-pro-card--products ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Top Contributing Products</h2>
@@ -927,7 +930,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--payment">
+        <article className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Payment Mix</h2>
@@ -962,7 +965,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className="bo-pro-card bo-pro-card--profit">
+        <article className={`bo-pro-card bo-pro-card--profit ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Expenses & Profitability</h2>
