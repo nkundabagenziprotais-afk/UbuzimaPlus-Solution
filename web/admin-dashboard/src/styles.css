@@ -42094,3 +42094,65 @@ thead
 .bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(3) td:first-child { color: #b45309; }
 .bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(4) td:first-child { color: #475569; }
 .bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(5) td:first-child { color: #047857; }
+
+/* Business Overview date policy: cards use global dates; only week selectors remain visible */
+.bo-pro-card header input[type="date"],
+.bo-pro-card .bo-pro-card-tools input[type="date"],
+.bo-pro-card .bo-pro-card-controls input[type="date"] {
+  display: none !important;
+}
+
+.bo-pro-card header select[aria-label$="week"],
+.bo-pro-card .bo-pro-card-tools select[aria-label$="week"],
+.bo-pro-card .bo-pro-card-controls select[aria-label$="week"] {
+  min-width: 15rem;
+}
+
+/* Professional scrollable trend charts */
+.bo-pro-line-chart {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scroll-snap-type: x proximity;
+}
+
+.bo-pro-line-chart svg {
+  min-width: max(58rem, 100%) !important;
+}
+
+.bo-pro-card--trend .bo-pro-line-chart svg {
+  min-width: 72rem !important;
+}
+
+.bo-pro-line-chart .bo-pro-data-label {
+  font-size: 0.64rem !important;
+  font-weight: 900 !important;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 2px;
+}
+
+/* Inventory Risk: high-contrast criticality colours */
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(1) {
+  border-left: 0.38rem solid #dc2626;
+  background: rgba(220, 38, 38, 0.10) !important;
+}
+
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(2) {
+  border-left: 0.38rem solid #f97316;
+  background: rgba(249, 115, 22, 0.10) !important;
+}
+
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(3) {
+  border-left: 0.38rem solid #facc15;
+  background: rgba(250, 204, 21, 0.16) !important;
+}
+
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(4) {
+  border-left: 0.38rem solid #7c3aed;
+  background: rgba(124, 58, 237, 0.10) !important;
+}
+
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(5) {
+  border-left: 0.38rem solid #16a34a;
+  background: rgba(22, 163, 74, 0.10) !important;
+}

@@ -229,6 +229,46 @@ function selectedDateKeys(startDate: string, endDate: string): string[] {
   return dates;
 }
 
+function weekOptionsForRange(startDate: string, endDate: string): Array<{ value: string; label: string; startDate: string; endDate: string }> {
+  const dates = selectedDateKeys(startDate, endDate);
+
+  if (!dates.length) {
+    return [{ value: 'all', label: 'Full selected range', startDate, endDate }];
+  }
+
+  const options = [
+    {
+      value: 'all',
+      label: 'Full selected range',
+      startDate: dates[0],
+      endDate: dates[dates.length - 1],
+    },
+  ];
+
+  for (let index = 0; index < dates.length; index += 7) {
+    const weekDates = dates.slice(index, index + 7);
+    const weekNumber = Math.floor(index / 7) + 1;
+
+    options.push({
+      value: `week-${weekNumber}`,
+      label: `Week ${weekNumber}: ${weekDates[0]} → ${weekDates[weekDates.length - 1]}`,
+      startDate: weekDates[0],
+      endDate: weekDates[weekDates.length - 1],
+    });
+  }
+
+  return options;
+}
+
+function rangeForWeekSelection(
+  startDate: string,
+  endDate: string,
+  weekSelection: string,
+): { startDate: string; endDate: string } {
+  return weekOptionsForRange(startDate, endDate).find((option) => option.value === weekSelection) ??
+    { value: 'all', label: 'Full selected range', startDate, endDate };
+}
+
 function trendPointDate(point: unknown): string | null {
   if (!point || typeof point !== 'object') return null;
 
@@ -668,6 +708,11 @@ export function BusinessOverviewReviewPage({
 
   const [dailyDate, setDailyDate] = useState(todayIso());
   const [trendMetric, setTrendMetric] = useState<'value' | 'count'>('value');
+  const [salesTrendWeekSelection, setSalesTrendWeekSelection] = useState('all');
+  const [insuranceWeekSelection, setInsuranceWeekSelection] = useState('all');
+  const [nearExpiryWeekSelection, setNearExpiryWeekSelection] = useState('all');
+  const [inventoryMovementWeekSelection, setInventoryMovementWeekSelection] = useState('all');
+
   const [trendStartDate, setTrendStartDate] = useState(currentMonthStartIso());
   const [trendEndDate, setTrendEndDate] = useState(todayIso());
   const [productStartDate, setProductStartDate] = useState(currentMonthStartIso());
@@ -875,12 +920,18 @@ export function BusinessOverviewReviewPage({
     { label: 'Expired Stock Value', value: dataLabelValue(displayLiveData, ['Expired Stock Value', 'Expired Value', 'Expired Batches Value']), icon: '♢', tone: 'red' },
   ];
 
+  const globalWeekOptions = weekOptionsForRange(appliedDateRange.startDate, appliedDateRange.endDate);
+  const salesTrendRange = rangeForWeekSelection(appliedDateRange.startDate, appliedDateRange.endDate, salesTrendWeekSelection);
+  const insuranceTrendRange = rangeForWeekSelection(appliedDateRange.startDate, appliedDateRange.endDate, insuranceWeekSelection);
+  const nearExpiryTrendRange = rangeForWeekSelection(appliedDateRange.startDate, appliedDateRange.endDate, nearExpiryWeekSelection);
+  const inventoryMovementTrendRange = rangeForWeekSelection(appliedDateRange.startDate, appliedDateRange.endDate, inventoryMovementWeekSelection);
+
   const salesTrendSeries = buildDailyTrendSeries(
     displayLiveData.trend,
-    trendStartDate,
-    trendEndDate,
+    salesTrendRange.startDate,
+    salesTrendRange.endDate,
     trendMetric,
-    Math.max(selectedDateKeys(trendStartDate, trendEndDate).length, 1),
+    Math.max(selectedDateKeys(salesTrendRange.startDate, salesTrendRange.endDate).length, 1),
   );
   const salesTrendValues = salesTrendSeries.map((point) => point.value);
   const salesTrendLabels = salesTrendSeries.map((point) => point.label);
@@ -889,7 +940,7 @@ export function BusinessOverviewReviewPage({
   const inventoryMovementTrendValues = movementChartValues(
     Math.max(totalInventoryValue - atRiskValue, 0),
     totalInventoryValue,
-    Math.max(selectedDateKeys(inventoryMovementStartDate, inventoryMovementEndDate).length, 1),
+    Math.max(selectedDateKeys(inventoryMovementTrendRange.startDate, inventoryMovementTrendRange.endDate).length, 1),
   );
 
   const paymentSegments = displayLiveData.paymentMix.length
@@ -933,45 +984,34 @@ export function BusinessOverviewReviewPage({
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
 
-    if (trendUsesGlobalDates) {
-      setTrendStartDate(nextRange.startDate);
-      setTrendEndDate(nextRange.endDate);
-    }
+    setTrendStartDate(nextRange.startDate);
+    setTrendEndDate(nextRange.endDate);
 
-    if (productUsesGlobalDates) {
-      setProductStartDate(nextRange.startDate);
-      setProductEndDate(nextRange.endDate);
-    }
+    setProductStartDate(nextRange.startDate);
+    setProductEndDate(nextRange.endDate);
 
-    if (paymentUsesGlobalDates) {
-      setPaymentStartDate(nextRange.startDate);
-      setPaymentEndDate(nextRange.endDate);
-    }
+    setPaymentStartDate(nextRange.startDate);
+    setPaymentEndDate(nextRange.endDate);
 
-    if (expenseUsesGlobalDates) {
-      setExpenseStartDate(nextRange.startDate);
-      setExpenseEndDate(nextRange.endDate);
-    }
+    setExpenseStartDate(nextRange.startDate);
+    setExpenseEndDate(nextRange.endDate);
 
-    if (inventoryRiskUsesGlobalDates) {
-      setInventoryRiskStartDate(nextRange.startDate);
-      setInventoryRiskEndDate(nextRange.endDate);
-    }
+    setInventoryRiskStartDate(nextRange.startDate);
+    setInventoryRiskEndDate(nextRange.endDate);
 
-    if (insuranceUsesGlobalDates) {
-      setInsuranceStartDate(nextRange.startDate);
-      setInsuranceEndDate(nextRange.endDate);
-    }
+    setInsuranceStartDate(nextRange.startDate);
+    setInsuranceEndDate(nextRange.endDate);
 
-    if (nearExpiryUsesGlobalDates) {
-      setNearExpiryStartDate(nextRange.startDate);
-      setNearExpiryEndDate(nextRange.endDate);
-    }
+    setNearExpiryStartDate(nextRange.startDate);
+    setNearExpiryEndDate(nextRange.endDate);
 
-    if (inventoryMovementUsesGlobalDates) {
-      setInventoryMovementStartDate(nextRange.startDate);
-      setInventoryMovementEndDate(nextRange.endDate);
-    }
+    setInventoryMovementStartDate(nextRange.startDate);
+    setInventoryMovementEndDate(nextRange.endDate);
+
+    setSalesTrendWeekSelection('all');
+    setInsuranceWeekSelection('all');
+    setNearExpiryWeekSelection('all');
+    setInventoryMovementWeekSelection('all');
 
     if (options.resetDaily) {
       setDailyDate(todayIso());
@@ -994,15 +1034,6 @@ export function BusinessOverviewReviewPage({
   };
 
   const resetGlobalDates = () => {
-    setTrendUsesGlobalDates(true);
-    setProductUsesGlobalDates(true);
-    setPaymentUsesGlobalDates(true);
-    setExpenseUsesGlobalDates(true);
-    setInventoryRiskUsesGlobalDates(true);
-    setInsuranceUsesGlobalDates(true);
-    setNearExpiryUsesGlobalDates(true);
-    setInventoryMovementUsesGlobalDates(true);
-
     applyDateRange(defaultDateRange(), { resetDaily: true });
   };
 
@@ -1085,16 +1116,26 @@ export function BusinessOverviewReviewPage({
                 <option value="value">Transaction Value</option>
                 <option value="count">Transaction Count</option>
               </select>
-              <input type="date" value={trendStartDate} onChange={(event) => { setTrendUsesGlobalDates(false); setTrendStartDate(event.target.value); }} />
-              <input type="date" value={trendEndDate} onChange={(event) => { setTrendUsesGlobalDates(false); setTrendEndDate(event.target.value); }} />
+
+              <select
+                aria-label="Sales Trend week"
+                value={salesTrendWeekSelection}
+                onChange={(event) => setSalesTrendWeekSelection(event.target.value)}
+              >
+                {globalWeekOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <input type="date" value={trendStartDate} onChange={(event) => { setTrendStartDate(event.target.value); }} />
+              <input type="date" value={trendEndDate} onChange={(event) => { setTrendEndDate(event.target.value); }} />
             </div>
           </header>
           <LineChart
             values={salesTrendValues}
             label={trendMetric === 'count' ? 'Transaction Count' : 'Transaction Value'}
             labels={salesTrendLabels}
-            startDate={trendStartDate}
-            endDate={trendEndDate}
+            startDate={salesTrendRange.startDate}
+            endDate={salesTrendRange.endDate}
           />
         </article>
 
@@ -1104,8 +1145,8 @@ export function BusinessOverviewReviewPage({
               <h2>Top Contributing Products</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={productStartDate} onChange={(event) => { setProductUsesGlobalDates(false); setProductStartDate(event.target.value); }} />
-              <input type="date" value={productEndDate} onChange={(event) => { setProductUsesGlobalDates(false); setProductEndDate(event.target.value); }} />
+              <input type="date" value={productStartDate} onChange={(event) => { setProductStartDate(event.target.value); }} />
+              <input type="date" value={productEndDate} onChange={(event) => { setProductEndDate(event.target.value); }} />
             </div>
           </header>
 <div className="bo-pro-table-wrap">
@@ -1144,8 +1185,8 @@ export function BusinessOverviewReviewPage({
               <h2>Payment Mix</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={paymentStartDate} onChange={(event) => { setPaymentUsesGlobalDates(false); setPaymentStartDate(event.target.value); }} />
-              <input type="date" value={paymentEndDate} onChange={(event) => { setPaymentUsesGlobalDates(false); setPaymentEndDate(event.target.value); }} />
+              <input type="date" value={paymentStartDate} onChange={(event) => { setPaymentStartDate(event.target.value); }} />
+              <input type="date" value={paymentEndDate} onChange={(event) => { setPaymentEndDate(event.target.value); }} />
             </div>
           </header>
 
@@ -1179,8 +1220,8 @@ export function BusinessOverviewReviewPage({
               <h2>Expenses & Profitability</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={expenseStartDate} onChange={(event) => { setExpenseUsesGlobalDates(false); setExpenseStartDate(event.target.value); }} />
-              <input type="date" value={expenseEndDate} onChange={(event) => { setExpenseUsesGlobalDates(false); setExpenseEndDate(event.target.value); }} />
+              <input type="date" value={expenseStartDate} onChange={(event) => { setExpenseStartDate(event.target.value); }} />
+              <input type="date" value={expenseEndDate} onChange={(event) => { setExpenseEndDate(event.target.value); }} />
             </div>
           </header>
 <div className="bo-pro-metric-list compact">
@@ -1197,8 +1238,8 @@ export function BusinessOverviewReviewPage({
               <h2>Inventory Risk Overview</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={inventoryRiskStartDate} onChange={(event) => { setInventoryRiskUsesGlobalDates(false); setInventoryRiskStartDate(event.target.value); }} />
-              <input type="date" value={inventoryRiskEndDate} onChange={(event) => { setInventoryRiskUsesGlobalDates(false); setInventoryRiskEndDate(event.target.value); }} />
+              <input type="date" value={inventoryRiskStartDate} onChange={(event) => { setInventoryRiskStartDate(event.target.value); }} />
+              <input type="date" value={inventoryRiskEndDate} onChange={(event) => { setInventoryRiskEndDate(event.target.value); }} />
             </div>
           </header>
 
@@ -1241,12 +1282,22 @@ export function BusinessOverviewReviewPage({
               <h2>Insurance & Receivables</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={insuranceStartDate} onChange={(event) => { setInsuranceUsesGlobalDates(false); setInsuranceStartDate(event.target.value); }} />
-              <input type="date" value={insuranceEndDate} onChange={(event) => { setInsuranceUsesGlobalDates(false); setInsuranceEndDate(event.target.value); }} />
+
+              <select
+                aria-label="Insurance week"
+                value={insuranceWeekSelection}
+                onChange={(event) => setInsuranceWeekSelection(event.target.value)}
+              >
+                {globalWeekOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <input type="date" value={insuranceStartDate} onChange={(event) => { setInsuranceStartDate(event.target.value); }} />
+              <input type="date" value={insuranceEndDate} onChange={(event) => { setInsuranceEndDate(event.target.value); }} />
             </div>
           </header>
 
-          <LineChart values={insuranceTrendValues} label="Receivable Trend" startDate={insuranceStartDate} endDate={insuranceEndDate} />
+          <LineChart values={insuranceTrendValues} label="Receivable Trend" startDate={insuranceTrendRange.startDate} endDate={insuranceTrendRange.endDate} />
 
           <div className="bo-pro-metric-list compact">
             <article><span>Insurance Sales</span><strong>{dataLabelValue(displayLiveData, ['Insurance Sales'], '—')}</strong></article>
@@ -1262,8 +1313,18 @@ export function BusinessOverviewReviewPage({
               <h2>Near Expiry Inventory Movement</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={nearExpiryStartDate} onChange={(event) => { setNearExpiryUsesGlobalDates(false); setNearExpiryStartDate(event.target.value); }} />
-              <input type="date" value={nearExpiryEndDate} onChange={(event) => { setNearExpiryUsesGlobalDates(false); setNearExpiryEndDate(event.target.value); }} />
+
+              <select
+                aria-label="Near Expiry week"
+                value={nearExpiryWeekSelection}
+                onChange={(event) => setNearExpiryWeekSelection(event.target.value)}
+              >
+                {globalWeekOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <input type="date" value={nearExpiryStartDate} onChange={(event) => { setNearExpiryStartDate(event.target.value); }} />
+              <input type="date" value={nearExpiryEndDate} onChange={(event) => { setNearExpiryEndDate(event.target.value); }} />
             </div>
           </header>
 
@@ -1274,7 +1335,7 @@ export function BusinessOverviewReviewPage({
               <article><span>Net Change</span><strong>{formatMoney(0)} · {formatPercent(0)}</strong></article>
               <article><span>Near Expiry Count</span><strong>{dataLabelValue(displayLiveData, ['Near Expiry Count', 'Expiring Items'])}</strong></article>
             </div>
-            <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" startDate={nearExpiryStartDate} endDate={nearExpiryEndDate} />
+            <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" startDate={nearExpiryTrendRange.startDate} endDate={nearExpiryTrendRange.endDate} />
           </div>
         </article>
 
@@ -1284,8 +1345,18 @@ export function BusinessOverviewReviewPage({
               <h2>Total Inventory Movement</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={inventoryMovementStartDate} onChange={(event) => { setInventoryMovementUsesGlobalDates(false); setInventoryMovementStartDate(event.target.value); }} />
-              <input type="date" value={inventoryMovementEndDate} onChange={(event) => { setInventoryMovementUsesGlobalDates(false); setInventoryMovementEndDate(event.target.value); }} />
+
+              <select
+                aria-label="Total Inventory Movement week"
+                value={inventoryMovementWeekSelection}
+                onChange={(event) => setInventoryMovementWeekSelection(event.target.value)}
+              >
+                {globalWeekOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <input type="date" value={inventoryMovementStartDate} onChange={(event) => { setInventoryMovementStartDate(event.target.value); }} />
+              <input type="date" value={inventoryMovementEndDate} onChange={(event) => { setInventoryMovementEndDate(event.target.value); }} />
             </div>
           </header>
 
@@ -1296,7 +1367,7 @@ export function BusinessOverviewReviewPage({
               <article><span>Total Quantity</span><strong>{dataLabelValue(displayLiveData, ['Total Quantity On Hand', 'Total Quantity'])}</strong></article>
               <article><span>Stock Batches</span><strong>{dataLabelValue(displayLiveData, ['Stock Batches Count', 'Stock Batches'])}</strong></article>
             </div>
-            <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" startDate={inventoryMovementStartDate} endDate={inventoryMovementEndDate} />
+            <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" startDate={inventoryMovementTrendRange.startDate} endDate={inventoryMovementTrendRange.endDate} />
           </div>
         </article>
 
