@@ -25,6 +25,40 @@ type RiskSegment = {
 };
 
 const dateRangeStorageKey = 'ubuzima.businessOverview.executiveDateRange.v2';
+const businessOverviewCachePrefix = 'business-overview-cache';
+
+function businessOverviewCacheKey(tenantSlug: string | null | undefined, range: DateRange): string {
+  return `${businessOverviewCachePrefix}:${tenantSlug || 'tenant'}:${range.startDate}:${range.endDate}`;
+}
+
+function readBusinessOverviewCache(
+  tenantSlug: string | null | undefined,
+  range: DateRange,
+): BusinessOverviewLiveData | null {
+  try {
+    const raw = localStorage.getItem(businessOverviewCacheKey(tenantSlug, range));
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as BusinessOverviewLiveData;
+    return parsed && parsed.loaded ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeBusinessOverviewCache(
+  tenantSlug: string | null | undefined,
+  range: DateRange,
+  data: BusinessOverviewLiveData,
+): void {
+  try {
+    if (!data.loaded || (!data.salesLoaded && !data.inventoryLoaded)) return;
+    localStorage.setItem(businessOverviewCacheKey(tenantSlug, range), JSON.stringify(data));
+  } catch {
+    // Cache is an optimization only.
+  }
+}
+
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -557,10 +591,19 @@ export function BusinessOverviewReviewPage({
 
     setIsLoading(true);
     setLoaderStatus('loading');
-    setLiveData((current) => ({
-      ...current,
-      error: null,
-    }));
+
+    const cachedData = readBusinessOverviewCache(tenantSlug, appliedDateRange);
+    if (cachedData) {
+      setLiveData({
+        ...cachedData,
+        error: null,
+      });
+    } else {
+      setLiveData((current) => ({
+        ...current,
+        error: null,
+      }));
+    }
 
     loadBusinessOverviewDataAdapter({
       token,
@@ -575,6 +618,7 @@ export function BusinessOverviewReviewPage({
 
         if (data.loaded && (data.salesLoaded || data.inventoryLoaded)) {
           setLastGoodLiveData({ ...data });
+          writeBusinessOverviewCache(tenantSlug, appliedDateRange, data);
         }
 
         setLoaderStatus(data.error ? `success-with-warning: ${data.error}` : 'success');
@@ -652,7 +696,7 @@ export function BusinessOverviewReviewPage({
 
   const dailyMetricSource = dailyLiveData.loaded ? dailyLiveData : liveData;
 
-  const displayLiveData = liveData.loaded || !lastGoodLiveData.loaded
+  const displayLiveData = liveData.loaded
     ? liveData
     : lastGoodLiveData;
 

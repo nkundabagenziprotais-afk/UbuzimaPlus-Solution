@@ -291,6 +291,64 @@ function salesFromRows(rows: SaleRow[], startDate: string, endDate: string) {
   };
 }
 
+function textValue(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return textValue(record.name || record.product_name || record.title || record.label);
+  }
+  return '';
+}
+
+function buildTopProductsFromRows(rows: unknown[]): Array<{ name: string; label: string; value: string; quantity?: string; percent: number }> {
+  const groups = new Map<string, { name: string; sales: number; quantity: number }>();
+
+  rows.forEach((row) => {
+    const record = row && typeof row === 'object' ? (row as Record<string, unknown>) : {};
+
+    const name =
+      textValue(record.product_name) ||
+      textValue(record.productName) ||
+      textValue(record.product) ||
+      textValue(record.item_name) ||
+      textValue(record.name);
+
+    if (!name) return;
+
+    const sales =
+      numberValue(record.total_amount) ||
+      numberValue(record.total_sales_amount) ||
+      numberValue(record.net_amount) ||
+      numberValue(record.amount) ||
+      numberValue(record.line_total) ||
+      numberValue(record.total);
+
+    const quantity =
+      numberValue(record.quantity) ||
+      numberValue(record.qty) ||
+      numberValue(record.units) ||
+      1;
+
+    const current = groups.get(name) ?? { name, sales: 0, quantity: 0 };
+    current.sales += sales;
+    current.quantity += quantity;
+    groups.set(name, current);
+  });
+
+  const totalSales = [...groups.values()].reduce((sum, row) => sum + row.sales, 0) || 1;
+
+  return [...groups.values()]
+    .sort((left, right) => right.sales - left.sales)
+    .slice(0, 5)
+    .map((row) => ({
+      name: row.name,
+      label: row.name,
+      value: formatMoney(row.sales),
+      quantity: formatCount(row.quantity),
+      percent: Math.round((row.sales / totalSales) * 100),
+    }));
+}
+
 function buildPaymentMix(paymentMethods: UnknownRecord[], collections: number): BusinessOverviewPaymentMixRow[] {
   const total = Math.max(collections, 1);
 
@@ -449,6 +507,10 @@ export async function loadBusinessOverviewDataAdapter({
     fetchTenantJson<InventoryValuationResponse>(token, tenantSlug, buildInventoryEndpoint(endDate)),
   ]);
 
+  const registerRows = registerResult.status === 'fulfilled'
+    ? extractSalesRows(registerResult.value)
+    : [];
+
   if (summaryResult.status === 'rejected' && registerResult.status === 'rejected') {
     throw summaryResult.reason;
   }
@@ -459,7 +521,7 @@ export async function loadBusinessOverviewDataAdapter({
       : salesFromRows([], startDate, endDate);
 
   if (sales.grossSales <= 0 && registerResult.status === 'fulfilled') {
-    sales = salesFromRows(extractSalesRows(registerResult.value), startDate, endDate);
+    sales = salesFromRows(registerRows, startDate, endDate);
   }
 
   const inventory =
@@ -538,7 +600,7 @@ export async function loadBusinessOverviewDataAdapter({
       { label: 'Expired Value', value: inventoryLoaded ? formatMoney(inventory!.expiredValue) : '—' },
     ],
     paymentMix,
-    topProducts: [],
+    topProducts: buildTopProductsFromRows(registerRows),
     trend: sales.trend,
   };
 }

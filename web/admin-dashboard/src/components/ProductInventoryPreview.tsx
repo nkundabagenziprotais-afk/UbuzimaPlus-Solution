@@ -1851,7 +1851,7 @@ export function ProductInventoryPreview({
         });
 
         setInventoryNotice(
-          `${response.message} ${selectedInventoryProduct?.name ?? 'Product'} is now available in Product Inventory. Batch ${response.batch.batch_number} received.`,
+          `Inventory created successfully. ${selectedInventoryProduct?.name ?? 'Product'} is now available in Product Inventory. Batch ${response.batch.batch_number} received.`,
         );
       }
 
@@ -1861,6 +1861,14 @@ export function ProductInventoryPreview({
       setInventoryProductSearchTerm('');
       setInventoryProductOptions([]);
       setIsInventoryProductSearchOpen(false);
+
+      window.setTimeout(() => {
+        document.querySelector('.inventory-preview-panel')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 50);
+
       await loadInventoryPreview();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create inventory from Product Master.');
