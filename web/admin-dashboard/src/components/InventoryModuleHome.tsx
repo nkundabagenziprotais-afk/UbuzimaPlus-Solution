@@ -476,6 +476,12 @@ export function InventoryModuleHome({
   const [analyticsBatches, setAnalyticsBatches] = useState<unknown>(null);
   const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(null);
   const [analyticsLocations, setAnalyticsLocations] = useState<unknown>(null);
+  const [analyticsCategoryFilter, setAnalyticsCategoryFilter] = useState('all');
+  const [analyticsProductFilter, setAnalyticsProductFilter] = useState('all');
+  const [analyticsLocationFilter, setAnalyticsLocationFilter] = useState('all');
+  const [analyticsExpiryFromFilter, setAnalyticsExpiryFromFilter] = useState('');
+  const [analyticsExpiryToFilter, setAnalyticsExpiryToFilter] = useState('');
+
 
   const [analyticsLoading, setAnalyticsLoading] =
     useState(true);
@@ -1001,7 +1007,7 @@ export function InventoryModuleHome({
       )}
 
       {sectionVisibility.analytics && (
-        <section className="inventory-home-analytics inventory-analytics-photo-dashboard">
+        <section className="inventory-home-analytics inventory-analytics-requested-dashboard">
           {analyticsLoading && (
             <div className="inventory-professional-state">
               Loading Inventory analytics…
@@ -1020,39 +1026,182 @@ export function InventoryModuleHome({
             const nearExpiryRows = inventoryArrayFromResponse(analyticsNearExpiry, ['batches', 'items', 'rows']);
             const locationRows = inventoryArrayFromResponse(analyticsLocations, ['locations', 'items', 'rows']);
 
-            const totalValue =
-              findNumericSignal(valuation, ['total_inventory_value', 'inventory_value', 'total_stock_value', 'total_cost_value']) ??
-              findNumericSignal(summary, ['total_inventory_value', 'inventory_value', 'total_stock_value']) ??
-              batchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0);
-
-            const stockOnHand =
-              findNumericSignal(summary, ['total_quantity_on_hand', 'quantity_on_hand', 'total_quantity']) ??
-              batchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0);
-
-            const lowStockCount =
-              findNumericSignal(summary, ['low_stock_products_count', 'low_stock_count', 'products_below_reorder']) ?? 0;
-
-            const nearExpiryCount =
-              findNumericSignal(summary, ['near_expiry_batches_180_days_count', 'near_expiry_count', 'expiring_batches_count']) ??
-              nearExpiryRows.length;
-
-            const expiredSummaryCount =
-              findNumericSignal(summary, ['expired_batches_count', 'expired_count', 'expired_items_count']) ?? 0;
-
-            const productCount =
-              productRows.length ||
-              (findNumericSignal(summary, ['products_count', 'product_count', 'total_products']) ?? 0);
-
-            const categoryTotals = new Map<string, number>();
-
-            batchRows.forEach((batch) => {
-              const product = inventoryNestedRecord(batch, 'product');
+            const productNameFor = (batch: UnknownRecord): string => inventoryBatchProductName(batch);
+            const productRecordFor = (batch: UnknownRecord): UnknownRecord => inventoryNestedRecord(batch, 'product');
+            const categoryFor = (batch: UnknownRecord): string => {
+              const product = productRecordFor(batch);
               const nestedCategory = inventoryNestedRecord(product, 'category');
-              const category = inventoryText(
+
+              return inventoryText(
                 product,
                 ['category_name', 'category'],
                 inventoryText(nestedCategory, ['name'], 'Uncategorised'),
               );
+            };
+
+            const locationFor = (batch: UnknownRecord): string => {
+              const location = inventoryNestedRecord(batch, 'location');
+
+              return inventoryText(
+                location,
+                ['name', 'location_name'],
+                inventoryText(batch, ['location_name', 'stock_location_name'], 'Unassigned'),
+              );
+            };
+
+            const expiryFor = (batch: UnknownRecord): string =>
+              inventoryText(batch, ['expiry_date', 'expires_at'], '');
+
+            const productOptions = Array.from(
+              new Set(
+                batchRows
+                  .map((batch) => productNameFor(batch))
+                  .filter((name) => name && name !== '—'),
+              ),
+            ).sort();
+
+            const categoryOptions = Array.from(
+              new Set(
+                batchRows
+                  .map((batch) => categoryFor(batch))
+                  .filter((name) => name && name !== '—'),
+              ),
+            ).sort();
+
+            const locationOptions = Array.from(
+              new Set(
+                batchRows
+                  .map((batch) => locationFor(batch))
+                  .filter((name) => name && name !== '—'),
+              ),
+            ).sort();
+
+            const filteredBatchRows = batchRows.filter((batch) => {
+              const categoryMatches = analyticsCategoryFilter === 'all' || categoryFor(batch) === analyticsCategoryFilter;
+              const productMatches = analyticsProductFilter === 'all' || productNameFor(batch) === analyticsProductFilter;
+              const locationMatches = analyticsLocationFilter === 'all' || locationFor(batch) === analyticsLocationFilter;
+
+              const expiryText = expiryFor(batch);
+              const expiryTime = expiryText ? new Date(expiryText).getTime() : Number.NaN;
+              const fromMatches = !analyticsExpiryFromFilter ||
+                (Number.isFinite(expiryTime) && expiryTime >= new Date(analyticsExpiryFromFilter).getTime());
+              const toMatches = !analyticsExpiryToFilter ||
+                (Number.isFinite(expiryTime) && expiryTime <= new Date(analyticsExpiryToFilter).getTime());
+
+              return categoryMatches && productMatches && locationMatches && fromMatches && toMatches;
+            });
+
+            const totalValue =
+              findNumericSignal(valuation, ['total_inventory_value', 'inventory_value', 'total_stock_value', 'total_cost_value']) ??
+              findNumericSignal(summary, ['total_inventory_value', 'inventory_value', 'total_stock_value']) ??
+              filteredBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0);
+
+            const stockOnHandCount =
+              findNumericSignal(summary, ['total_quantity_on_hand', 'quantity_on_hand', 'total_quantity']) ??
+              filteredBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0);
+
+            const reorderLevelFor = (batch: UnknownRecord): number => {
+              const product = productRecordFor(batch);
+
+              return inventoryNumber(product, ['reorder_level', 'minimum_stock_level', 'min_stock_level']) ||
+                inventoryNumber(batch, ['reorder_level', 'minimum_stock_level', 'min_stock_level']);
+            };
+
+            const lowStockRows = filteredBatchRows
+              .map((batch) => ({
+                batch,
+                product: productNameFor(batch),
+                batchNumber: inventoryText(batch, ['batch_number', 'lot_number'], '0'),
+                quantity: inventoryBatchQuantity(batch),
+                reorderLevel: reorderLevelFor(batch),
+                value: inventoryBatchValue(batch),
+              }))
+              .filter((row) => row.reorderLevel > 0 && row.quantity <= row.reorderLevel)
+              .sort((left, right) => right.value - left.value);
+
+            const nearExpirySourceRows = (nearExpiryRows.length ? nearExpiryRows : filteredBatchRows)
+              .filter((batch) => expiryFor(batch) !== '')
+              .map((batch) => ({
+                batch,
+                product: productNameFor(batch),
+                batchNumber: inventoryText(batch, ['batch_number', 'lot_number'], '0'),
+                expiry: expiryFor(batch) || '0',
+                quantity: inventoryBatchQuantity(batch),
+                value: inventoryBatchValue(batch),
+              }));
+
+            const expiredRows = filteredBatchRows
+              .filter((batch) => {
+                const expiryText = expiryFor(batch);
+                const expiryTime = expiryText ? new Date(expiryText).getTime() : Number.NaN;
+
+                return Number.isFinite(expiryTime) && expiryTime < Date.now() && inventoryBatchQuantity(batch) > 0;
+              })
+              .map((batch) => ({
+                batch,
+                product: productNameFor(batch),
+                batchNumber: inventoryText(batch, ['batch_number', 'lot_number'], '0'),
+                expiry: expiryFor(batch) || '0',
+                quantity: inventoryBatchQuantity(batch),
+                value: inventoryBatchValue(batch),
+              }));
+
+            const highValueLowStockRows = lowStockRows
+              .filter((row) => row.value > 0)
+              .sort((left, right) => right.value - left.value);
+
+            const stockReceivedValue = 0;
+            const stockReceivedCount = 0;
+            const stockIssuedValue = 0;
+            const stockIssuedCount = 0;
+            const turnoverValue = 0;
+            const turnoverCount = 0;
+
+            const lowStockValue = lowStockRows.reduce((sum, row) => sum + row.value, 0);
+            const lowStockCount =
+              findNumericSignal(summary, ['low_stock_products_count', 'low_stock_count', 'products_below_reorder']) ??
+              lowStockRows.length;
+
+            const nearExpiryValue = nearExpirySourceRows.reduce((sum, row) => sum + row.value, 0);
+            const nearExpiryCount =
+              findNumericSignal(summary, ['near_expiry_batches_180_days_count', 'near_expiry_count', 'expiring_batches_count']) ??
+              nearExpirySourceRows.length;
+
+            const expiredValue = expiredRows.reduce((sum, row) => sum + row.value, 0);
+            const expiredCount =
+              findNumericSignal(summary, ['expired_batches_count', 'expired_count', 'expired_items_count']) ??
+              expiredRows.length;
+
+            const healthyValue = Math.max(totalValue - lowStockValue - nearExpiryValue - expiredValue, 0);
+            const riskTotal = Math.max(totalValue, lowStockValue + nearExpiryValue + expiredValue + healthyValue, 1);
+            const riskRows = [
+              ['Expired / quarantined', expiredCount, expiredValue],
+              ['Near expiry', nearExpiryCount, nearExpiryValue],
+              ['Low stock', lowStockCount, lowStockValue],
+              ['Healthy stock', stockOnHandCount, healthyValue],
+            ];
+
+            const kpiCards = [
+              ['Total Inventory Value', formatCurrency(totalValue)],
+              ['Stock on Hand Count', formatCompactNumber(stockOnHandCount)],
+              ['Stock Received Value', formatCurrency(stockReceivedValue)],
+              ['Stock Received Count', formatCompactNumber(stockReceivedCount)],
+              ['Stock Issued Value', formatCurrency(stockIssuedValue)],
+              ['Stock Issued Count', formatCompactNumber(stockIssuedCount)],
+              ['Low Stock Value', formatCurrency(lowStockValue)],
+              ['Low Stock Count', formatCompactNumber(lowStockCount)],
+              ['Near Expiry Value', formatCurrency(nearExpiryValue)],
+              ['Near Expiry Count', formatCompactNumber(nearExpiryCount)],
+              ['Expired Value', formatCurrency(expiredValue)],
+              ['Expired Count', formatCompactNumber(expiredCount)],
+              ['Turnover Value', formatCurrency(turnoverValue)],
+              ['Turnover Count', formatCompactNumber(turnoverCount)],
+            ];
+
+            const categoryTotals = new Map<string, number>();
+
+            filteredBatchRows.forEach((batch) => {
+              const category = categoryFor(batch);
 
               categoryTotals.set(category, (categoryTotals.get(category) ?? 0) + inventoryBatchValue(batch));
             });
@@ -1060,85 +1209,97 @@ export function InventoryModuleHome({
             const categoryRows = Array.from(categoryTotals.entries())
               .map(([label, value]) => ({ label, value }))
               .sort((left, right) => right.value - left.value)
-              .slice(0, 6);
+              .slice(0, 8);
 
             const maxCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
-
-            const nearExpiryTableRows = (nearExpiryRows.length ? nearExpiryRows : batchRows)
-              .filter((batch) => inventoryText(batch, ['expiry_date', 'expires_at'], '') !== '')
-              .slice(0, 5);
-
-            const expiredTableRows = batchRows
-              .filter((batch) => {
-                const expiryText = inventoryText(batch, ['expiry_date', 'expires_at'], '');
-                const expiryTime = expiryText ? new Date(expiryText).getTime() : Number.NaN;
-
-                return Number.isFinite(expiryTime) && expiryTime < Date.now() && inventoryBatchQuantity(batch) > 0;
-              })
-              .slice(0, 5);
-
-            const highValueRows = [...batchRows]
-              .map((batch) => ({
-                batch,
-                value: inventoryBatchValue(batch),
-                quantity: inventoryBatchQuantity(batch),
-              }))
-              .filter((row) => row.value > 0 || row.quantity > 0)
-              .sort((left, right) => right.value - left.value)
-              .slice(0, 5);
-
-            const expiredCount = expiredSummaryCount || expiredTableRows.length;
-
-            const kpis = [
-              { label: 'Total Inventory Value', value: formatCurrency(totalValue), detail: 'Live valuation', tone: 'green' },
-              { label: 'Stock on Hand', value: formatCompactNumber(stockOnHand), detail: 'Units available', tone: 'blue' },
-              { label: 'Stock Received', value: '0', detail: 'Movement pending', tone: 'cyan' },
-              { label: 'Stock Issued', value: '0', detail: 'Movement pending', tone: 'purple' },
-              { label: 'Low Stock', value: formatCompactNumber(lowStockCount), detail: 'Items', tone: 'amber' },
-              { label: 'Near Expiry', value: formatCompactNumber(nearExpiryCount), detail: 'Items', tone: 'orange' },
-              { label: 'Expired', value: formatCompactNumber(expiredCount), detail: 'Items', tone: 'red' },
-              { label: 'Turnover', value: '0', detail: 'Movement pending', tone: 'slate' },
-            ];
-
             const trendValues = [0, 0, 0, 0, 0, 0, totalValue];
             const trendMax = Math.max(...trendValues, 1);
 
+            const tableRows = <T,>(
+              rows: T[],
+              render: (row: T, index: number) => React.ReactNode,
+            ) => (
+              <div className="inventory-analytics-request-table-scroll">
+                <table>
+                  {render(rows[0] as T, -1)}
+                  <tbody>
+                    {rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={6}>0 records</td>
+                      </tr>
+                    ) : rows.map((row, index) => render(row, index))}
+                  </tbody>
+                </table>
+              </div>
+            );
+
             return (
               <>
-                <div className="inventory-analytics-photo-filters">
-                  <label><span>Date Range</span><input value="Live period" readOnly /></label>
-                  <label><span>Business Date Mode</span><input value="Business Date" readOnly /></label>
-                  <label><span>Branch</span><input value="All Branches" readOnly /></label>
-                  <label><span>Category</span><input value={categoryRows.length ? `${categoryRows.length} categories` : '0'} readOnly /></label>
-                  <label><span>Product</span><input value={productCount ? `${productCount} products` : '0'} readOnly /></label>
-                  <label><span>Stock Location</span><input value={locationRows.length ? `${locationRows.length} locations` : '0'} readOnly /></label>
-                  <label><span>Supplier</span><input value="0" readOnly /></label>
-                  <label><span>ABC Class</span><input value="All Classes" readOnly /></label>
+                <div className="inventory-analytics-request-filters">
+                  <label>
+                    <span>Category</span>
+                    <select value={analyticsCategoryFilter} onChange={(event) => setAnalyticsCategoryFilter(event.target.value)}>
+                      <option value="all">All categories</option>
+                      {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                  </label>
 
-                  <div className="inventory-analytics-photo-filter-actions">
-                    <button type="button">Reset</button>
-                    <button type="button">Apply Filters</button>
-                  </div>
+                  <label>
+                    <span>Product</span>
+                    <select value={analyticsProductFilter} onChange={(event) => setAnalyticsProductFilter(event.target.value)}>
+                      <option value="all">All products</option>
+                      {productOptions.map((product) => <option key={product} value={product}>{product}</option>)}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Stock Location</span>
+                    <select value={analyticsLocationFilter} onChange={(event) => setAnalyticsLocationFilter(event.target.value)}>
+                      <option value="all">All locations</option>
+                      {locationOptions.map((location) => <option key={location} value={location}>{location}</option>)}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Expiry From</span>
+                    <input type="date" value={analyticsExpiryFromFilter} onChange={(event) => setAnalyticsExpiryFromFilter(event.target.value)} />
+                  </label>
+
+                  <label>
+                    <span>Expiry To</span>
+                    <input type="date" value={analyticsExpiryToFilter} onChange={(event) => setAnalyticsExpiryToFilter(event.target.value)} />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAnalyticsCategoryFilter('all');
+                      setAnalyticsProductFilter('all');
+                      setAnalyticsLocationFilter('all');
+                      setAnalyticsExpiryFromFilter('');
+                      setAnalyticsExpiryToFilter('');
+                    }}
+                  >
+                    Reset Filters
+                  </button>
                 </div>
 
-                <div className="inventory-analytics-photo-kpis">
-                  {kpis.map((card) => (
-                    <article key={card.label} className={`is-${card.tone}`}>
-                      <small>{card.label}</small>
-                      <strong>{card.value}</strong>
-                      <span>{card.detail}</span>
+                <div className="inventory-analytics-request-kpis">
+                  {kpiCards.map(([label, value]) => (
+                    <article key={label}>
+                      <small>{label}</small>
+                      <strong>{value}</strong>
                     </article>
                   ))}
                 </div>
 
-                <div className="inventory-analytics-photo-chart-grid">
-                  <article className="inventory-analytics-photo-panel inventory-analytics-photo-panel--trend">
+                <div className="inventory-analytics-request-grid">
+                  <article className="inventory-analytics-request-card">
                     <header>
-                      <h3>1. Stock Value Trend</h3>
-                      <span>Live valuation</span>
+                      <h3>Stock Value Trend</h3>
                     </header>
 
-                    <div className="inventory-analytics-photo-bars" aria-label="Stock Value Trend">
+                    <div className="inventory-analytics-request-bars">
                       {trendValues.map((value, index) => (
                         <div key={`stock-trend-${index}`}>
                           <i style={{ height: `${Math.max((value / trendMax) * 100, value > 0 ? 12 : 4)}%` }} />
@@ -1146,15 +1307,67 @@ export function InventoryModuleHome({
                         </div>
                       ))}
                     </div>
+
+                    <div className="inventory-analytics-request-table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Period</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {trendValues.map((value, index) => (
+                            <tr key={`trend-row-${index}`}>
+                              <td>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</td>
+                              <td>{formatCurrency(value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </article>
 
-                  <article className="inventory-analytics-photo-panel">
+                  <article className="inventory-analytics-request-card">
                     <header>
-                      <h3>2. Inventory Value by Category</h3>
-                      <span>Live category value</span>
+                      <h3>Inventory Risk Overview</h3>
                     </header>
 
-                    <div className="inventory-analytics-photo-category">
+                    <div className="inventory-analytics-risk-summary">
+                      <strong>{formatCurrency(lowStockValue + nearExpiryValue + expiredValue)}</strong>
+                      <span>{(((lowStockValue + nearExpiryValue + expiredValue) / riskTotal) * 100).toFixed(1)}% at risk</span>
+                    </div>
+
+                    <div className="inventory-analytics-request-table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Category</th>
+                            <th>Count</th>
+                            <th>Value</th>
+                            <th>% Share</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {riskRows.map(([label, count, value]) => (
+                            <tr key={String(label)}>
+                              <td>{label}</td>
+                              <td>{formatCompactNumber(Number(count))}</td>
+                              <td>{formatCurrency(Number(value))}</td>
+                              <td>{((Number(value) / riskTotal) * 100).toFixed(1)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </article>
+
+                  <article className="inventory-analytics-request-card">
+                    <header>
+                      <h3>Inventory Value by Category</h3>
+                    </header>
+
+                    <div className="inventory-analytics-request-category-bars">
                       {categoryRows.length === 0 ? (
                         <div><span>0</span><i><em style={{ width: '0%' }} /></i><strong>0</strong></div>
                       ) : categoryRows.map((row) => (
@@ -1167,97 +1380,159 @@ export function InventoryModuleHome({
                     </div>
                   </article>
 
-                  <article className="inventory-analytics-photo-panel">
+                  <article className="inventory-analytics-request-card">
                     <header>
-                      <h3>3. Stock Status Summary</h3>
-                      <span>Live status</span>
+                      <h3>Low Stock Watch List</h3>
                     </header>
 
-                    <div className="inventory-analytics-photo-status">
-                      <div><small>In Stock</small><strong>{formatCompactNumber(batchRows.length)}</strong></div>
-                      <div><small>Low Stock</small><strong>{formatCompactNumber(lowStockCount)}</strong></div>
-                      <div><small>Near Expiry</small><strong>{formatCompactNumber(nearExpiryCount)}</strong></div>
-                      <div><small>Expired</small><strong>{formatCompactNumber(expiredCount)}</strong></div>
-                    </div>
+                    {tableRows(lowStockRows, (row, index) => index === -1 ? (
+                      <thead key="head">
+                        <tr>
+                          <th>Product</th>
+                          <th>Batch</th>
+                          <th>On Hand</th>
+                          <th>Reorder</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                    ) : (
+                      <tr key={`${row.product}-${row.batchNumber}-${index}`}>
+                        <td>{row.product}</td>
+                        <td>{row.batchNumber}</td>
+                        <td>{formatCompactNumber(row.quantity)}</td>
+                        <td>{formatCompactNumber(row.reorderLevel)}</td>
+                        <td>{formatCurrency(row.value)}</td>
+                      </tr>
+                    ))}
                   </article>
 
-                  <article className="inventory-analytics-photo-panel">
+                  <article className="inventory-analytics-request-card">
                     <header>
-                      <h3>4. ABC Classification</h3>
-                      <span>Live value ranking</span>
+                      <h3>Near Expiry Review</h3>
                     </header>
 
-                    <div className="inventory-analytics-photo-abc">
-                      <div><strong>A Items</strong><span>{categoryRows[0] ? formatCurrency(categoryRows[0].value) : '0'}</span></div>
-                      <div><strong>B Items</strong><span>{categoryRows[1] ? formatCurrency(categoryRows[1].value) : '0'}</span></div>
-                      <div><strong>C Items</strong><span>{categoryRows.slice(2).length ? formatCurrency(categoryRows.slice(2).reduce((sum, row) => sum + row.value, 0)) : '0'}</span></div>
+                    {tableRows(nearExpirySourceRows, (row, index) => index === -1 ? (
+                      <thead key="head">
+                        <tr>
+                          <th>Product</th>
+                          <th>Batch</th>
+                          <th>Expiry</th>
+                          <th>Qty</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                    ) : (
+                      <tr key={`${row.product}-${row.batchNumber}-${index}`}>
+                        <td>{row.product}</td>
+                        <td>{row.batchNumber}</td>
+                        <td>{row.expiry}</td>
+                        <td>{formatCompactNumber(row.quantity)}</td>
+                        <td>{formatCurrency(row.value)}</td>
+                      </tr>
+                    ))}
+                  </article>
+
+                  <article className="inventory-analytics-request-card">
+                    <header>
+                      <h3>Expired Items</h3>
+                    </header>
+
+                    {tableRows(expiredRows, (row, index) => index === -1 ? (
+                      <thead key="head">
+                        <tr>
+                          <th>Product</th>
+                          <th>Batch</th>
+                          <th>Expiry</th>
+                          <th>Qty</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                    ) : (
+                      <tr key={`${row.product}-${row.batchNumber}-${index}`}>
+                        <td>{row.product}</td>
+                        <td>{row.batchNumber}</td>
+                        <td>{row.expiry}</td>
+                        <td>{formatCompactNumber(row.quantity)}</td>
+                        <td>{formatCurrency(row.value)}</td>
+                      </tr>
+                    ))}
+                  </article>
+
+                  <article className="inventory-analytics-request-card">
+                    <header>
+                      <h3>Top Fast Moving Products</h3>
+                    </header>
+
+                    <div className="inventory-analytics-request-table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Qty Sold</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td colSpan={3}>0 records</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </article>
-                </div>
 
-                <div className="inventory-analytics-photo-table-grid">
-                  <article>
-                    <header><h3>5. Low Stock Watch List</h3><span>{formatCompactNumber(lowStockCount)} items</span></header>
-                    <div className="inventory-analytics-photo-list"><p>{lowStockCount > 0 ? 'Open Reorder Priorities for item-level records.' : '0 records'}</p></div>
-                    <button type="button" onClick={() => onOpenWorkspace('low-stock')}>View All Low Stock Items →</button>
-                  </article>
+                  <article className="inventory-analytics-request-card">
+                    <header>
+                      <h3>Slow Moving / Non-Moving Products</h3>
+                    </header>
 
-                  <article>
-                    <header><h3>6. Near Expiry Review</h3><span>{formatCompactNumber(nearExpiryTableRows.length)} rows</span></header>
-                    <div className="inventory-analytics-photo-list">
-                      {nearExpiryTableRows.length === 0 ? <p>0 records</p> : nearExpiryTableRows.map((batch, index) => (
-                        <span key={`${inventoryText(batch, ['id', 'batch_number'], 'batch')}-${index}`}>
-                          {inventoryBatchProductName(batch)} · {inventoryText(batch, ['batch_number'], '0')} · {inventoryText(batch, ['expiry_date', 'expires_at'], '0')}
-                        </span>
-                      ))}
+                    <div className="inventory-analytics-request-table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Last Movement</th>
+                            <th>On Hand</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td colSpan={3}>0 records</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
-                    <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>View All Near Expiry Items →</button>
                   </article>
 
-                  <article>
-                    <header><h3>7. Expired Items</h3><span>{formatCompactNumber(expiredTableRows.length)} rows</span></header>
-                    <div className="inventory-analytics-photo-list">
-                      {expiredTableRows.length === 0 ? <p>0 records</p> : expiredTableRows.map((batch, index) => (
-                        <span key={`${inventoryText(batch, ['id', 'batch_number'], 'batch')}-${index}`}>
-                          {inventoryBatchProductName(batch)} · {inventoryText(batch, ['batch_number'], '0')} · {inventoryText(batch, ['expiry_date', 'expires_at'], '0')}
-                        </span>
-                      ))}
-                    </div>
-                    <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>View All Expired Items →</button>
+                  <article className="inventory-analytics-request-card">
+                    <header>
+                      <h3>High Value – Low Stock Risk</h3>
+                    </header>
+
+                    {tableRows(highValueLowStockRows, (row, index) => index === -1 ? (
+                      <thead key="head">
+                        <tr>
+                          <th>Product</th>
+                          <th>Batch</th>
+                          <th>On Hand</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                    ) : (
+                      <tr key={`${row.product}-${row.batchNumber}-${index}`}>
+                        <td>{row.product}</td>
+                        <td>{row.batchNumber}</td>
+                        <td>{formatCompactNumber(row.quantity)}</td>
+                        <td>{formatCurrency(row.value)}</td>
+                      </tr>
+                    ))}
                   </article>
 
-                  <article>
-                    <header><h3>8. Top Fast Moving Products</h3><span>Movement</span></header>
-                    <div className="inventory-analytics-photo-list"><p>0 records</p></div>
-                    <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>View Product Inventory →</button>
-                  </article>
+                  <article className="inventory-analytics-request-card inventory-analytics-request-insight">
+                    <header>
+                      <h3>Inventory Insight</h3>
+                    </header>
 
-                  <article>
-                    <header><h3>9. Slow Moving / Non-Moving Products</h3><span>Stock balance</span></header>
-                    <div className="inventory-analytics-photo-list">
-                      {highValueRows.length === 0 ? <p>0 records</p> : highValueRows.map(({ batch, quantity }, index) => (
-                        <span key={`${inventoryText(batch, ['id', 'batch_number'], 'batch')}-${index}`}>
-                          {inventoryBatchProductName(batch)} · On hand {formatCompactNumber(quantity)}
-                        </span>
-                      ))}
-                    </div>
-                    <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>View Slow / Non Moving Products →</button>
-                  </article>
-
-                  <article>
-                    <header><h3>10. High Value – Low Stock Risk</h3><span>Top values</span></header>
-                    <div className="inventory-analytics-photo-list">
-                      {highValueRows.length === 0 ? <p>0 records</p> : highValueRows.map(({ batch, value, quantity }, index) => (
-                        <span key={`${inventoryText(batch, ['id', 'batch_number'], 'batch')}-${index}`}>
-                          {inventoryBatchProductName(batch)} · {formatCurrency(value)} · On hand {formatCompactNumber(quantity)}
-                        </span>
-                      ))}
-                    </div>
-                    <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>View At Risk Items →</button>
-                  </article>
-
-                  <article className="inventory-analytics-photo-insight">
-                    <header><h3>Inventory Insight</h3><span>Rule-based live signals</span></header>
                     <ul>
                       <li>{lowStockCount > 0 ? 'Low-stock pressure exists and needs reorder review.' : 'Low-stock pressure: 0'}</li>
                       <li>{nearExpiryCount > 0 ? 'Near-expiry batches require FEFO action.' : 'Near-expiry pressure: 0'}</li>
