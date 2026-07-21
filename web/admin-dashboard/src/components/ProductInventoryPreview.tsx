@@ -11,6 +11,8 @@ import {
   PharmaStockBatch,
   PharmaStockLocation,
   getPharmaInventoryBatches,
+  getPharmaSuppliers,
+  type PharmaSupplier,
   getAllPharmaInventoryBatches,
   getPharmaNearExpiryBatches,
   getPharmaInventoryLocations,
@@ -969,6 +971,7 @@ export function ProductInventoryPreview({
   const [shelfViewMode, setShelfViewMode] = useState<ShelfViewMode>('grid');
   const [tableFontSizes, setTableFontSizes] = useState<Record<InventoryView, InventoryTableFontSize>>(loadStoredInventoryTableFontSizes);
   const [inventoryCreateForm, setInventoryCreateForm] = useState<InventoryCreateFormState>(emptyInventoryCreateForm);
+  const [inventorySupplierRegister, setInventorySupplierRegister] = useState<PharmaSupplier[]>([]);
 
   const [
     inventoryProductMasterReturnPending,
@@ -1235,6 +1238,70 @@ export function ProductInventoryPreview({
     ['default_margin_percent', 'margin_percent', 'allowed_margin'],
     0,
   );
+  const inventoryStockLocationOptions = useMemo(() => {
+    const source = (locations as unknown as { locations?: unknown[] } | null)?.locations ?? [];
+
+    return source
+      .map((location) => location as Record<string, unknown>)
+      .filter((location) => location.id !== undefined && location.id !== null);
+  }, [locations]);
+
+  const recentInventoryInvoiceNumbers = useMemo(() => {
+    const references = new Set<string>();
+
+    allBatches.forEach((batch) => {
+      const record = batch as unknown as Record<string, unknown>;
+      const value = String(record.reference_number ?? record.invoice_number ?? record.invoiceNumber ?? '').trim();
+
+      if (value) references.add(value);
+    });
+
+    return Array.from(references).slice(0, 15);
+  }, [allBatches]);
+
+  const procurementSupplierNames = useMemo(() => {
+    const names = new Set<string>();
+
+    inventorySupplierRegister.forEach((supplier) => {
+      const record = supplier as unknown as Record<string, unknown>;
+      const name = String(record.name ?? record.supplier_name ?? record.display_name ?? '').trim();
+
+      if (name) names.add(name);
+    });
+
+    allBatches.forEach((batch) => {
+      const supplier = String(batch.supplier_name ?? '').trim();
+
+      if (supplier) names.add(supplier);
+    });
+
+    return Array.from(names).sort((left, right) => left.localeCompare(right));
+  }, [allBatches, inventorySupplierRegister]);
+
+  useEffect(() => {
+    if (!tenantSlug || !token) return;
+
+    getPharmaSuppliers(token, tenantSlug)
+      .then((response) => setInventorySupplierRegister(response.suppliers ?? []))
+      .catch(() => setInventorySupplierRegister([]));
+  }, [tenantSlug, token]);
+
+  useEffect(() => {
+    if (inventoryStockLocationOptions.length !== 1 || inventoryCreateForm.stock_location_id) {
+      return;
+    }
+
+    const onlyLocation = inventoryStockLocationOptions[0];
+    const locationId = String(onlyLocation.id ?? '');
+
+    if (!locationId) return;
+
+    setInventoryCreateForm((current) => ({
+      ...current,
+      stock_location_id: current.stock_location_id || locationId,
+    }));
+  }, [inventoryCreateForm.stock_location_id, inventoryStockLocationOptions]);
+
   const inventoryUnitCost = Number(inventoryCreateForm.unit_cost || 0);
   const inventoryMarginPercent = Number(inventoryCreateForm.margin_percent || selectedInventoryDefaultMargin || 0);
   const inventoryCalculatedSellingPrice = inventoryUnitCost > 0
@@ -1987,7 +2054,7 @@ export function ProductInventoryPreview({
     }
 
     if (inventoryReceiveSource === 'purchase-code' && !(inventoryCreateForm.reference_number ?? '').trim()) {
-      setInventoryNotice('Enter the purchase code or purchase order reference before receiving stock.');
+      setInventoryNotice('Enter the Invoice Number or Purchase Code before receiving stock.');
       return;
     }
 
@@ -4312,7 +4379,7 @@ export function ProductInventoryPreview({
       <section className="module-workspace-shell inventory-workspace-shell">
         {showInternalNavigation && (
           <aside className="module-section-rail" aria-label="Inventory module sections">
-            <span>Inventory</span>
+            <span>Receive Manually</span>
             {inventoryViews.map((view) => (
               <button
                 key={view.key}
@@ -5440,36 +5507,6 @@ export function ProductInventoryPreview({
               {null}
 
 
-              {!isInventoryReceiveFlowOpen && !editingInventoryBatch && (
-                <section className="inventory-guided-flow-launch-panel">
-                  <div>
-                    <p className="eyebrow">Guided receiving</p>
-                    <h3>Receive stock only when you are ready</h3>
-                  </div>
-                  <div className="inventory-guided-flow-actions">
-                    <button
-                      type="button"
-                      className="primary"
-                      onClick={() => {
-                        setInventoryReceiveSource('purchase-code');
-                        startSimpleMightyInventoryFlow('receive-stock');
-                      }}
-                    >
-                      Receive from Purchase Code
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setInventoryReceiveSource('manual');
-                        startSimpleMightyInventoryFlow('receive-stock');
-                      }}
-                    >
-                      Inventory
-                    </button>
-                  </div>
-                </section>
-              )}
-
               <section className={`inventory-create-from-master-panel inventory-guided-flow-panel ${(isInventoryReceiveFlowOpen || editingInventoryBatch) ? 'is-open' : 'is-hidden'}`} data-inventory-popup-host>
                 <div className="section-heading">
                   <div>
@@ -5500,7 +5537,7 @@ export function ProductInventoryPreview({
                       className={inventoryReceiveSource === 'manual' ? 'active inventory-source-option inventory-source-option--manual' : 'inventory-source-option inventory-source-option--manual'}
                       onClick={() => setInventoryReceiveSource('manual')}
                     >
-                      <strong>Inventory</strong>
+                      <strong>Receive Manually</strong>
                       <span>Select an approved Inventory item before quantity, batch and expiry are recorded.</span>
                     </button>
                   </div>
@@ -6033,6 +6070,28 @@ export function ProductInventoryPreview({
                     <option value="stock-value-asc">Stock value · Low to high</option>
                   </select>
                 </label>
+
+                <button
+                  type="button"
+                  className="inventory-register-filter-action inventory-register-filter-action--primary"
+                  onClick={() => {
+                    setInventoryReceiveSource('purchase-code');
+                    startSimpleMightyInventoryFlow('receive-stock');
+                  }}
+                >
+                  Receive from Purchase Code
+                </button>
+
+                <button
+                  type="button"
+                  className="inventory-register-filter-action"
+                  onClick={() => {
+                    setInventoryReceiveSource('manual');
+                    startSimpleMightyInventoryFlow('receive-stock');
+                  }}
+                >
+                  Receive Manually
+                </button>
 
                 <button
                   type="button"
