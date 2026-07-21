@@ -103,12 +103,26 @@ function saveDateRange(range: DateRange): void {
   }
 }
 
-function parseAmount(value: string | undefined): number {
-  if (!value || value === '—') return 0;
+function parseAmount(value: unknown): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
 
-  const target = value.includes('·') ? value.split('·').pop() || value : value;
-  const parsed = Number(target.replace(/[^0-9.-]/g, ''));
+  if (value === null || value === undefined) {
+    return 0;
+  }
 
+  const normalized = String(value)
+    .replace(/RWF/gi, '')
+    .replace(/[,%]/g, '')
+    .replace(/[^0-9.-]/g, '')
+    .trim();
+
+  if (!normalized || normalized === '-' || normalized === '.' || normalized === '-.') {
+    return 0;
+  }
+
+  const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -170,6 +184,49 @@ function datesBetween(startDate: string, endDate: string, maxDays = 31): string[
 function dayOfMonthLabel(dateIso: string): string {
   const day = Number(dateIso.slice(-2));
   return Number.isFinite(day) ? String(day) : dateIso;
+}
+
+function parseLocalBusinessDate(value: string): Date {
+  const [year, month, day] = value.split('-').map((part) => Number(part));
+
+  if (!year || !month || !day) {
+    return new Date();
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function formatBusinessDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function businessDateDayLabel(value: string): string {
+  const [, , day] = value.split('-');
+
+  return String(Number(day || 0) || value);
+}
+
+function selectedDateKeys(startDate: string, endDate: string): string[] {
+  const start = parseLocalBusinessDate(startDate);
+  const end = parseLocalBusinessDate(endDate);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return [startDate];
+  }
+
+  const dates: string[] = [];
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    dates.push(formatBusinessDate(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
 }
 
 function trendPointDate(point: unknown): string | null {
