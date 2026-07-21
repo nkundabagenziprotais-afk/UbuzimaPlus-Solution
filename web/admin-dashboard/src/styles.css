@@ -42291,3 +42291,73 @@ thead
   border-left: 0.38rem solid #16a34a;
   background: rgba(22, 163, 74, 0.10) !important;
 }
+
+/* Product Inventory Register: keep 15-row default viewport, but allow vertical scroll to more rows */
+.inventory-data-table--product-register {
+  min-width: 96rem;
+}
+
+.inventory-data-table--product-register tbody tr {
+  height: 3.05rem;
+}
+
+.inventory-section:has(.inventory-data-table--product-register) .inventory-table-shell,
+.inventory-section:has(.inventory-data-table--product-register) .inventory-table-scroll,
+.inventory-section:has(.inventory-data-table--product-register) [class*="table-shell"],
+.inventory-section:has(.inventory-data-table--product-register) [class*="table-wrap"] {
+  max-height: 52rem !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+/* Product Inventory: hide the old upper search/category area in this view; lower Stock on Hand filters remain visible */
+.inventory-section:has(.inventory-register-filter-panel) .inventory-register-filter-panel {
+  display: grid !important;
+}
+
+/* Final chart font override: previous stronger selectors were forcing 16px on movement charts */
+.bo-pro-page .bo-pro-line-chart svg text.bo-pro-data-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-insurance .bo-pro-line-chart svg text.bo-pro-data-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-near-expiry .bo-pro-line-chart svg text.bo-pro-data-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-inventory-movement .bo-pro-line-chart svg text.bo-pro-data-label,
+.bo-pro-page .bo-pro-card.bo-pro-card--trend .bo-pro-line-chart svg text.bo-pro-data-label {
+  font-size: 8.5px !important;
+  font-weight: 750 !important;
+  stroke-width: 1.2px !important;
+}
+
+.bo-pro-page .bo-pro-line-chart svg text.bo-pro-axis-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-insurance .bo-pro-line-chart svg text.bo-pro-axis-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-near-expiry .bo-pro-line-chart svg text.bo-pro-axis-label,
+.bo-pro-page .bo-pro-card.bo-pro-order-inventory-movement .bo-pro-line-chart svg text.bo-pro-axis-label,
+.bo-pro-page .bo-pro-card.bo-pro-card--trend .bo-pro-line-chart svg text.bo-pro-axis-label {
+  font-size: 8.75px !important;
+  font-weight: 700 !important;
+}
+
+/* Do not hide or replace Inventory Risk numbers */
+.bo-pro-card--risk .bo-pro-table-wrap td,
+.bo-pro-card--risk .bo-pro-table-wrap th {
+  color: inherit;
+}
+
+/* Product Inventory repair: keep receiving / stock recording actions visible */
+.inventory-section:has(.inventory-data-table--product-register) > .inventory-guided-flow-launch-panel,
+.inventory-section:has(.inventory-register-filter-panel) > .inventory-guided-flow-launch-panel {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.inventory-section:has(.inventory-data-table--product-register) > .inventory-guided-flow-launch-panel .inventory-guided-flow-actions,
+.inventory-section:has(.inventory-register-filter-panel) > .inventory-guided-flow-launch-panel .inventory-guided-flow-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+/* Product Inventory repair: old upper product search/category stays hidden for Product Inventory only */
+.inventory-section:has(.inventory-data-table--product-register) .inventory-filter-bar:not(.inventory-register-filter-panel) {
+  display: none !important;
+}

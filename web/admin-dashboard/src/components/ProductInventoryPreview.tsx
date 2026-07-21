@@ -1510,7 +1510,7 @@ export function ProductInventoryPreview({
   const pagedProducts = visibleProducts.slice(0, rowLimitValue(rowLimit, visibleProducts.length));
   const pagedBatches = visibleBatches.slice(0, rowLimitValue(rowLimit, visibleBatches.length));
   const pagedNearExpiry = nearExpiryRows.slice(0, rowLimitValue(rowLimit, nearExpiryRows.length));
-  const pagedProductInventory = productInventoryRows.slice(0, rowLimitValue(rowLimit, productInventoryRows.length));
+  const pagedProductInventory = productInventoryRows;
   const pagedStockLocations = filteredStockLocations.slice(0, rowLimitValue(rowLimit, filteredStockLocations.length));
 
 
@@ -4547,7 +4547,7 @@ export function ProductInventoryPreview({
             </>
           )}
 
-          {activeInventoryView !== 'overview' && (
+          {activeInventoryView !== 'overview' && activeInventoryView !== 'product-inventory' && (
             <div className="inventory-filter-bar">
               <label>
                 Search
