@@ -41935,3 +41935,52 @@ thead
 .bo-pro-card.is-loading * {
   opacity: 1 !important;
 }
+
+/* Product Inventory Register: Stock on Hand filtering and sorting */
+.inventory-register-filter-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 0.7rem;
+  align-items: end;
+  margin: 0.85rem 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.inventory-register-filter-panel label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  font-size: 0.74rem;
+  font-weight: 850;
+  color: #475569;
+}
+
+.inventory-register-filter-panel input,
+.inventory-register-filter-panel select {
+  width: 100%;
+  min-height: 2.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 0.7rem;
+  padding: 0.35rem 0.55rem;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.82rem;
+}
+
+.inventory-register-filter-panel button {
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 0.7rem;
+  padding: 0.35rem 0.75rem;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.inventory-register-filter-panel button:hover {
+  background: #cbd5e1;
+}

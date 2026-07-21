@@ -984,6 +984,16 @@ export function ProductInventoryPreview({
   const [isDeletingProductMaster, setIsDeletingProductMaster] = useState(false);
   const [isCreatingInventory, setIsCreatingInventory] = useState(false);
   const [inventoryReceiveSource, setInventoryReceiveSource] = useState<'purchase-code' | 'manual'>('manual');
+  const [productInventoryRegisterSearchTerm, setProductInventoryRegisterSearchTerm] = useState('');
+  const [productInventoryLocationFilter, setProductInventoryLocationFilter] = useState('all');
+  const [productInventorySupplierFilter, setProductInventorySupplierFilter] = useState('all');
+  const [productInventoryStatusFilter, setProductInventoryStatusFilter] = useState('all');
+  const [productInventoryCreatedFrom, setProductInventoryCreatedFrom] = useState('');
+  const [productInventoryCreatedTo, setProductInventoryCreatedTo] = useState('');
+  const [productInventoryExpiryFrom, setProductInventoryExpiryFrom] = useState('');
+  const [productInventoryExpiryTo, setProductInventoryExpiryTo] = useState('');
+  const [productInventorySortMode, setProductInventorySortMode] = useState('created-desc');
+
   const [inventoryProductSearchTerm, setInventoryProductSearchTerm] = useState('');
   const [inventoryProductOptions, setInventoryProductOptions] = useState<PharmaProduct[]>([]);
   const [isInventoryProductSearchOpen, setIsInventoryProductSearchOpen] = useState(false);
@@ -1287,9 +1297,141 @@ export function ProductInventoryPreview({
       });
   }, [allBatches, searchTerm]);
 
+  const productInventoryDateValue = (value: unknown): number => {
+    if (!value) return 0;
+
+    const date = new Date(String(value));
+    const time = date.getTime();
+
+    return Number.isNaN(time) ? 0 : time;
+  };
+
+  const productInventoryCreatedAt = (batch: unknown): string => {
+    const record = batch as Record<string, unknown>;
+
+    return String(
+      record.created_at ??
+      record.createdAt ??
+      record.received_at ??
+      record.receivedAt ??
+      record.updated_at ??
+      record.updatedAt ??
+      '',
+    );
+  };
+
+  const productInventoryStockValue = (
+    batch: PharmaInventoryBatch,
+    computedSellingPrice: number | null,
+  ): number => {
+    const quantity = Number(batch.available_quantity || 0);
+    const unitValue = Number(computedSellingPrice ?? batch.selling_price ?? batch.unit_cost ?? 0);
+
+    return quantity * unitValue;
+  };
+
+  const productInventoryLocationOptions = useMemo(() => {
+    const options = new Map<string, string>();
+
+    allBatches.forEach((batch) => {
+      const key = String(batch.stock_location?.id ?? batch.stock_location?.code ?? batch.stock_location?.name ?? '');
+      if (!key) return;
+
+      options.set(
+        key,
+        `${batch.stock_location?.name ?? 'Location'}${batch.stock_location?.code ? ` (${batch.stock_location.code})` : ''}`,
+      );
+    });
+
+    return Array.from(options.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }, [allBatches]);
+
+  const productInventorySupplierOptions = useMemo(() => {
+    const suppliers = new Set<string>();
+
+    allBatches.forEach((batch) => {
+      const supplier = String(batch.supplier_name ?? '').trim();
+      if (supplier) suppliers.add(supplier);
+    });
+
+    return Array.from(suppliers).sort((left, right) => left.localeCompare(right));
+  }, [allBatches]);
+
   const productInventoryRows = useMemo(
     () => {
-      return visibleBatches
+      const normalizedSearch = productInventoryRegisterSearchTerm.trim().toLowerCase();
+      const createdFrom = productInventoryDateValue(productInventoryCreatedFrom);
+      const createdTo = productInventoryDateValue(productInventoryCreatedTo);
+      const expiryFrom = productInventoryDateValue(productInventoryExpiryFrom);
+      const expiryTo = productInventoryDateValue(productInventoryExpiryTo);
+
+      const rows = visibleBatches
+        .filter((batch) => {
+          const product = allProducts.find((item) => item.id === batch.product.id) ?? batch.product;
+          const days = remainingDays(batch.expiry_date);
+          const availableQuantity = Number(batch.available_quantity || 0);
+          const reorderLevel = Number(product?.reorder_level ?? batch.product?.reorder_level ?? 0);
+          const isLowStock = Boolean(product?.stock_summary?.is_below_reorder_level) ||
+            (reorderLevel > 0 && availableQuantity <= reorderLevel);
+          const isExpired = days !== null && days < 0;
+          const isNearExpiry = days !== null && days >= 0 && days <= 180;
+          const isOutOfStock = availableQuantity <= 0;
+
+          if (normalizedSearch) {
+            const searchable = [
+              batch.product.name,
+              batch.product.sku,
+              product?.generic_name,
+              product?.brand_name,
+              batch.batch_number,
+              batch.stock_location?.name,
+              batch.stock_location?.code,
+              batch.supplier_name,
+              batch.status,
+              productInventoryCreatedAt(batch),
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase();
+
+            if (!searchable.includes(normalizedSearch)) return false;
+          }
+
+          if (productInventoryLocationFilter !== 'all') {
+            const locationKeys = [
+              String(batch.stock_location?.id ?? ''),
+              String(batch.stock_location?.code ?? ''),
+              String(batch.stock_location?.name ?? ''),
+            ];
+
+            if (!locationKeys.includes(productInventoryLocationFilter)) return false;
+          }
+
+          if (
+            productInventorySupplierFilter !== 'all' &&
+            String(batch.supplier_name ?? '') !== productInventorySupplierFilter
+          ) {
+            return false;
+          }
+
+          const createdAt = productInventoryDateValue(productInventoryCreatedAt(batch));
+          if (createdFrom && (!createdAt || createdAt < createdFrom)) return false;
+          if (createdTo && (!createdAt || createdAt > createdTo)) return false;
+
+          const expiryAt = productInventoryDateValue(batch.expiry_date);
+          if (expiryFrom && (!expiryAt || expiryAt < expiryFrom)) return false;
+          if (expiryTo && (!expiryAt || expiryAt > expiryTo)) return false;
+
+          if (productInventoryStatusFilter === 'healthy' && (isExpired || isNearExpiry || isLowStock || isOutOfStock)) return false;
+          if (productInventoryStatusFilter === 'low-stock' && !isLowStock) return false;
+          if (productInventoryStatusFilter === 'near-expiry' && !isNearExpiry) return false;
+          if (productInventoryStatusFilter === 'expired' && !isExpired) return false;
+          if (productInventoryStatusFilter === 'out-of-stock' && !isOutOfStock) return false;
+
+          return true;
+        })
         .map((batch) => {
           const product = allProducts.find((item) => item.id === batch.product.id);
           const defaultMargin = metadataNumber(product?.metadata, ['default_margin', 'margin_percent', 'allowed_margin'], 0);
@@ -1308,8 +1450,55 @@ export function ProductInventoryPreview({
             days,
           };
         });
+
+      return rows.sort((left, right) => {
+        const leftCreated = productInventoryDateValue(productInventoryCreatedAt(left.batch));
+        const rightCreated = productInventoryDateValue(productInventoryCreatedAt(right.batch));
+        const leftQty = Number(left.batch.available_quantity || 0);
+        const rightQty = Number(right.batch.available_quantity || 0);
+        const leftExpiry = productInventoryDateValue(left.batch.expiry_date) || Number.MAX_SAFE_INTEGER;
+        const rightExpiry = productInventoryDateValue(right.batch.expiry_date) || Number.MAX_SAFE_INTEGER;
+        const leftStockValue = productInventoryStockValue(left.batch, left.computedSellingPrice);
+        const rightStockValue = productInventoryStockValue(right.batch, right.computedSellingPrice);
+
+        switch (productInventorySortMode) {
+          case 'created-asc':
+            return leftCreated - rightCreated;
+          case 'product-asc':
+            return left.batch.product.name.localeCompare(right.batch.product.name);
+          case 'product-desc':
+            return right.batch.product.name.localeCompare(left.batch.product.name);
+          case 'quantity-desc':
+            return rightQty - leftQty;
+          case 'quantity-asc':
+            return leftQty - rightQty;
+          case 'expiry-asc':
+            return leftExpiry - rightExpiry;
+          case 'expiry-desc':
+            return rightExpiry - leftExpiry;
+          case 'stock-value-desc':
+            return rightStockValue - leftStockValue;
+          case 'stock-value-asc':
+            return leftStockValue - rightStockValue;
+          case 'created-desc':
+          default:
+            return rightCreated - leftCreated;
+        }
+      });
     },
-    [allProducts, visibleBatches],
+    [
+      allProducts,
+      productInventoryCreatedFrom,
+      productInventoryCreatedTo,
+      productInventoryExpiryFrom,
+      productInventoryExpiryTo,
+      productInventoryLocationFilter,
+      productInventoryRegisterSearchTerm,
+      productInventorySortMode,
+      productInventoryStatusFilter,
+      productInventorySupplierFilter,
+      visibleBatches,
+    ],
   );
 
   const pagedProducts = visibleProducts.slice(0, rowLimitValue(rowLimit, visibleProducts.length));
@@ -5818,6 +6007,131 @@ export function ProductInventoryPreview({
               </section>
 
 {renderAdminTableManagement('product-register', 'Product Inventory Register')}
+
+              <div className="inventory-register-filter-panel">
+                <label>
+                  Search stock on hand
+                  <input
+                    type="search"
+                    value={productInventoryRegisterSearchTerm}
+                    onChange={(event) => setProductInventoryRegisterSearchTerm(event.target.value)}
+                    placeholder="Product, SKU, batch, supplier, location"
+                  />
+                </label>
+
+                <label>
+                  Location
+                  <select
+                    value={productInventoryLocationFilter}
+                    onChange={(event) => setProductInventoryLocationFilter(event.target.value)}
+                  >
+                    <option value="all">All locations</option>
+                    {productInventoryLocationOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Supplier
+                  <select
+                    value={productInventorySupplierFilter}
+                    onChange={(event) => setProductInventorySupplierFilter(event.target.value)}
+                  >
+                    <option value="all">All suppliers</option>
+                    {productInventorySupplierOptions.map((supplier) => (
+                      <option key={supplier} value={supplier}>{supplier}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Stock label
+                  <select
+                    value={productInventoryStatusFilter}
+                    onChange={(event) => setProductInventoryStatusFilter(event.target.value)}
+                  >
+                    <option value="all">All stock</option>
+                    <option value="healthy">Healthy</option>
+                    <option value="low-stock">Low stock</option>
+                    <option value="near-expiry">Near expiry</option>
+                    <option value="expired">Expired</option>
+                    <option value="out-of-stock">Out of stock</option>
+                  </select>
+                </label>
+
+                <label>
+                  Created from
+                  <input
+                    type="date"
+                    value={productInventoryCreatedFrom}
+                    onChange={(event) => setProductInventoryCreatedFrom(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Created to
+                  <input
+                    type="date"
+                    value={productInventoryCreatedTo}
+                    onChange={(event) => setProductInventoryCreatedTo(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Expiry from
+                  <input
+                    type="date"
+                    value={productInventoryExpiryFrom}
+                    onChange={(event) => setProductInventoryExpiryFrom(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Expiry to
+                  <input
+                    type="date"
+                    value={productInventoryExpiryTo}
+                    onChange={(event) => setProductInventoryExpiryTo(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Sort stock on hand
+                  <select
+                    value={productInventorySortMode}
+                    onChange={(event) => setProductInventorySortMode(event.target.value)}
+                  >
+                    <option value="created-desc">Created date · Newest first</option>
+                    <option value="created-asc">Created date · Oldest first</option>
+                    <option value="product-asc">Product · A-Z</option>
+                    <option value="product-desc">Product · Z-A</option>
+                    <option value="quantity-desc">Available quantity · High to low</option>
+                    <option value="quantity-asc">Available quantity · Low to high</option>
+                    <option value="expiry-asc">Expiry date · Earliest first</option>
+                    <option value="expiry-desc">Expiry date · Latest first</option>
+                    <option value="stock-value-desc">Stock value · High to low</option>
+                    <option value="stock-value-asc">Stock value · Low to high</option>
+                  </select>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductInventoryRegisterSearchTerm('');
+                    setProductInventoryLocationFilter('all');
+                    setProductInventorySupplierFilter('all');
+                    setProductInventoryStatusFilter('all');
+                    setProductInventoryCreatedFrom('');
+                    setProductInventoryCreatedTo('');
+                    setProductInventoryExpiryFrom('');
+                    setProductInventoryExpiryTo('');
+                    setProductInventorySortMode('created-desc');
+                  }}
+                >
+                  Clear table filters
+                </button>
+              </div>
 
               <div className={inventoryTableShellClass('product-register')} style={inventoryTableShellStyle('product-register') as any}>
                 <table className="inventory-data-table inventory-data-table--product-register">
