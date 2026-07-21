@@ -309,37 +309,111 @@ function buildPaymentMix(paymentMethods: UnknownRecord[], collections: number): 
 }
 
 function inventoryFromValuation(response: InventoryValuationResponse) {
-  const inventory = response.inventory ?? {};
+  const asRecord = (value: unknown): Record<string, unknown> =>
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  const root = asRecord(response);
+  const inventory = asRecord(
+    root.inventory ||
+    asRecord(root.data).inventory ||
+    root.data ||
+    root,
+  );
+
+  const getNumber = (...keys: string[]): number => {
+    for (const key of keys) {
+      const value = numberValue(inventory[key]);
+      if (value > 0) return value;
+    }
+
+    return 0;
+  };
+
+  const nestedNumber = (...paths: string[]): number => {
+    for (const path of paths) {
+      let current: unknown = inventory;
+
+      for (const part of path.split('.')) {
+        current = asRecord(current)[part];
+      }
+
+      const value = numberValue(current);
+      if (value > 0) return value;
+    }
+
+    return 0;
+  };
 
   const inventoryValue =
-    numberValue(inventory.total_cost_value) || numberValue(inventory.total_retail_value);
-  const stockBatches = numberValue(inventory.batch_count);
-  const lowStock = numberValue(inventory.low_stock_batches);
-  const expiring = numberValue(inventory.expiring_soon_batches);
-  const expired = numberValue(inventory.expired_batches);
-  const healthy = numberValue(inventory.healthy_stock_batches) || Math.max(stockBatches - lowStock - expiring - expired, 0);
+    getNumber('total_inventory_value', 'total_cost_value', 'total_retail_value');
+
+  const stockBatches = getNumber('batch_count', 'stock_batch_count', 'stock_batches');
+  const quantity = getNumber('total_quantity_on_hand', 'total_quantity', 'quantity_on_hand');
+
+  const lowStock = getNumber('low_stock_batches', 'low_stock_count', 'low_stock_items');
+  const expiring = getNumber('expiring_soon_batches', 'near_expiry_count', 'expiring_items');
+  const expired = getNumber('expired_batches', 'expired_count');
+
+  const healthy =
+    getNumber('healthy_stock_batches', 'healthy_stock_count') ||
+    nestedNumber(
+      'general_stock.batch_count',
+      'general_stock.batches',
+      'general_stock.count',
+      'risk_mix.healthy.batch_count',
+      'risk_mix.healthy.count',
+    ) ||
+    Math.max(stockBatches - lowStock - expiring - expired, 0);
 
   const averageBatchValue = stockBatches > 0 ? inventoryValue / stockBatches : 0;
 
   const lowStockValue =
-    numberValue(inventory.low_stock_value) ||
-    (lowStock > 0 ? 0 : 0);
+    getNumber('low_stock_value') ||
+    nestedNumber(
+      'risk_mix.low_stock.value',
+      'risk_mix.low_stock.inventory_value',
+      'risk_mix.low_stock.total_value',
+      'risk_mix.low.value',
+      'risk_mix.low.inventory_value',
+    ) ||
+    (lowStock > 0 ? lowStock * averageBatchValue : 0);
 
   const expiringValue =
-    numberValue(inventory.expiring_soon_value) ||
+    getNumber('expiring_soon_value', 'near_expiry_value') ||
+    nestedNumber(
+      'risk_mix.expiring_soon.value',
+      'risk_mix.expiring_soon.inventory_value',
+      'risk_mix.expiring.value',
+      'risk_mix.near_expiry.value',
+      'risk_mix.near_expiry.inventory_value',
+    ) ||
     (expiring > 0 ? expiring * averageBatchValue : 0);
 
   const expiredValue =
-    numberValue(inventory.expired_value) ||
+    getNumber('expired_value') ||
+    nestedNumber(
+      'risk_mix.expired.value',
+      'risk_mix.expired.inventory_value',
+      'risk_mix.expired.total_value',
+    ) ||
     (expired > 0 ? expired * averageBatchValue : 0);
 
   const healthyValue =
-    numberValue(inventory.healthy_stock_value) ||
+    getNumber('healthy_stock_value') ||
+    nestedNumber(
+      'general_stock.value',
+      'general_stock.inventory_value',
+      'general_stock.total_value',
+      'risk_mix.healthy.value',
+      'risk_mix.healthy.inventory_value',
+    ) ||
     Math.max(inventoryValue - lowStockValue - expiringValue - expiredValue, 0);
 
   return {
     inventoryValue,
-    quantity: numberValue(inventory.total_quantity_on_hand),
+    quantity,
     stockBatches,
     healthy,
     lowStock,
