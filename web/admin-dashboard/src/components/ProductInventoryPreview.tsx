@@ -1351,7 +1351,7 @@ export function ProductInventoryPreview({
           batch.stock_location.name,
           batch.stock_location.code,
           batch.supplier_name,
-          batch.status,
+          'Active',
         ]
           .filter(Boolean)
           .some((value) => String(value).toLowerCase().includes(normalizedSearch));
@@ -1459,7 +1459,7 @@ export function ProductInventoryPreview({
               batch.stock_location?.name,
               batch.stock_location?.code,
               batch.supplier_name,
-              batch.status,
+              'Active',
               productInventoryCreatedAt(batch),
             ]
               .filter(Boolean)
@@ -5479,11 +5479,6 @@ export function ProductInventoryPreview({
 
           {activeInventoryView === 'product-inventory' && (
             <section className="inventory-section">
-              {null}
-
-              {null}
-
-
               <section className={`inventory-create-from-master-panel inventory-guided-flow-panel ${(isInventoryReceiveFlowOpen || editingInventoryBatch) ? 'is-open' : 'is-hidden'}`} data-inventory-popup-host>
                 <div className="section-heading">
                   <div>
@@ -6183,7 +6178,7 @@ export function ProductInventoryPreview({
                           <td className="cell-wrap">
                             <strong className="cell-strong">{batch.status === 'active' ? 'Active' : ''}</strong>
                             <br />
-                            {expiryStatus(days) === 'safe' ? <span className="cell-muted">Safe</span> : null}
+                            <span className="cell-muted">Safe</span>
                              <br />
                              <span className={inventoryBatchSourceClass(batch)}>{inventoryBatchSourceLabel(batch)}</span>
                           </td>
@@ -6734,7 +6729,7 @@ function BatchTable({
                   <td className="cell-wrap">
                     {batch.supplier_name ?? 'Not set'}
                     <br />
-                    {expiryStatus(days) === 'safe' ? <span className="cell-muted">Safe</span> : null}
+                    <span className="cell-muted">Safe</span>
                   </td>
                   {showRecommendedAction && <td className="cell-wrap">{expiryAction(days)}</td>}
                   <td className="table-cell-actions">{onAction(batch)}</td>

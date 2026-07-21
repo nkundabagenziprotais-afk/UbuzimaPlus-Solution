@@ -42724,3 +42724,113 @@ thead
 .inventory-data-table--product-register .cell-muted:empty {
   display: none !important;
 }
+
+/* Product Inventory: remove the remaining blank/header area before table management */
+.dashboard-main:has(.inventory-data-table--product-register) .dashboard-title-card,
+.dashboard-main:has(.inventory-data-table--product-register) .dashboard-header .dashboard-title-card,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-page-header,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-page-titlebar,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-page-hero,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-preview-hero,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-product-hero,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-section-hero,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-guided-flow-launch-panel,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:empty,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-create-from-master-panel.is-hidden,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:not(:has(input)):not(:has(select)):not(:has(button)) {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-section {
+  gap: 0.75rem !important;
+}
+
+/* Product Inventory: status column only Active + Safe */
+.inventory-data-table--product-register .cell-muted {
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+
+.inventory-data-table--product-register .cell-muted:empty {
+  display: none !important;
+}
+
+/* Supplier Register: real horizontal scroll and no text wrapping */
+.procurement-supplier-table-scroll,
+.procurement-table-shell,
+.procurement-table-scroll,
+.supplier-register-table-wrap,
+.procurement-supplier-table-wrap,
+.supplier-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.procurement-supplier-register-table,
+.procurement-supplier-table-scroll table,
+.procurement-table-shell table,
+.procurement-table-scroll table,
+.supplier-register-table-wrap table,
+.procurement-supplier-table-wrap table,
+.supplier-table-wrap table {
+  min-width: 100rem !important;
+  width: max-content !important;
+  table-layout: auto !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.procurement-supplier-register-table th,
+.procurement-supplier-register-table td,
+.procurement-supplier-table-scroll th,
+.procurement-supplier-table-scroll td,
+.procurement-table-shell th,
+.procurement-table-shell td,
+.procurement-table-scroll th,
+.procurement-table-scroll td,
+.supplier-register-table-wrap th,
+.supplier-register-table-wrap td,
+.procurement-supplier-table-wrap th,
+.procurement-supplier-table-wrap td,
+.supplier-table-wrap th,
+.supplier-table-wrap td {
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+/* Supplier Register actions: 2 columns x 2 rows */
+.procurement-supplier-register-table td:last-child,
+.procurement-supplier-register-table .supplier-register-actions-cell,
+.procurement-supplier-table-scroll table td:last-child,
+.procurement-table-shell table td:last-child {
+  min-width: 15rem !important;
+}
+
+.procurement-supplier-register-table td:last-child > *,
+.procurement-supplier-register-table .supplier-register-actions-cell > *,
+.procurement-supplier-table-scroll table td:last-child > *,
+.procurement-table-shell table td:last-child > * {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.35rem !important;
+  align-items: stretch !important;
+}
+
+.procurement-supplier-register-table td:last-child button,
+.procurement-supplier-register-table .supplier-register-actions-cell button,
+.procurement-supplier-table-scroll table td:last-child button,
+.procurement-table-shell table td:last-child button {
+  width: 100% !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+  padding-inline: 0.45rem !important;
+  font-size: 0.76rem !important;
+}
