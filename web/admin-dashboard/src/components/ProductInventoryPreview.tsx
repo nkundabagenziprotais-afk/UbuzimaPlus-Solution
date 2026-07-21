@@ -424,7 +424,7 @@ function inventoryBatchSource(batch: PharmaStockBatch): 'manual' | 'purchase-cod
 function inventoryBatchSourceLabel(batch: PharmaStockBatch): string {
   const source = inventoryBatchSource(batch);
 
-  if (source === 'manual') return 'Manual Product Master Entry';
+  if (source === 'manual') return 'Product Master';
   if (source === 'purchase-code') return 'Purchase Code / PO Receiving';
 
   return '';
@@ -1437,7 +1437,10 @@ export function ProductInventoryPreview({
         })
         .map((batch) => {
           const product = allProducts.find((item) => item.id === batch.product.id);
-          const defaultMargin = metadataNumber(product?.metadata, ['default_margin', 'margin_percent', 'allowed_margin'], 0);
+          const defaultMargin =
+            Number((batch as unknown as Record<string, unknown>).margin_percent ?? 0) ||
+            Number((batch as unknown as Record<string, unknown>).margin_multiplier ?? 0) ||
+            metadataNumber(product?.metadata, ['default_margin', 'margin_percent', 'allowed_margin'], 0);
           const computedSellingPrice =
             batch.selling_price ??
             (batch.unit_cost === null || batch.unit_cost === undefined
@@ -5432,97 +5435,10 @@ export function ProductInventoryPreview({
 
           {activeInventoryView === 'product-inventory' && (
             <section className="inventory-section">
-              {renderTableToolbar({
-                title: 'Product Inventory',
-                subtitle: '',
-                selectedCount: selectedBatchIds.length,
-                onExport: () =>
-                  exportCsv(
-                    'product-inventory.csv',
-                    ['Product', 'SKU', 'Batch', 'Location', 'Available', 'Unit cost', 'Margin multiplier', 'Calculated selling price', 'Expiry', 'Remaining days', 'Status'],
-                    productInventoryRows.map(({ batch, defaultMargin, computedSellingPrice, days }) => [
-                      batch.product.name,
-                      batch.product.sku,
-                      batch.batch_number,
-                      batch.stock_location.code,
-                      batch.available_quantity,
-                      batch.unit_cost ?? '',
-                      defaultMargin,
-                      computedSellingPrice ?? '',
-                      formatDate(batch.expiry_date),
-                      days ?? '',
-                      `${batch.status} · ${expiryStatus(days)}`,
-                    ]),
-                  ),
-                onBulkEdit: () => markAction('Product Inventory bulk edit'),
-                onBulkDelete: () => markAction('Product Inventory bulk delete'),
-              })}
+              {null}
 
-              {(() => {
-                const metricRows = productInventoryRows.length > 0
-                  ? productInventoryRows
-                  : allBatches.map((batch) => ({
-                      batch,
-                      defaultMargin: productMarginRate(batch.product),
-                      computedSellingPrice: Number(batch.unit_cost || 0) * productMarginRate(batch.product),
-                      days: remainingDays(batch.expiry_date),
-                    }));
+              {null}
 
-                const inventoryBatchCount = metricRows.length;
-                const availableQuantity = metricRows.reduce(
-                  (total, { batch }) => total + Number(batch.available_quantity || 0),
-                  0,
-                );
-                const estimatedStockValue = metricRows.reduce(
-                  (total, { batch, computedSellingPrice }) =>
-                    total + (Number(batch.available_quantity || 0) * Number(computedSellingPrice || batch.unit_cost || 0)),
-                  0,
-                );
-                const nearExpiryRisk = metricRows.filter(({ days }) => days !== null && days >= 0 && days <= 180).length;
-
-                const cards = [
-                  {
-                    label: 'Inventory batches',
-                    value: formatNumber(inventoryBatchCount),
-                    helper: inventoryBatchCount > 0
-                      ? 'Commercial stock rows linked to Product Master'
-                      : 'No stock batch has been loaded yet',
-                  },
-                  {
-                    label: 'Available quantity',
-                    value: formatNumber(availableQuantity),
-                    helper: availableQuantity > 0
-                      ? 'Available units across inventory batches'
-                      : 'No available quantity has been recorded yet',
-                  },
-                  {
-                    label: 'Estimated stock value',
-                    value: formatRwf(estimatedStockValue),
-                    helper: estimatedStockValue > 0
-                      ? 'Quantity multiplied by selling price or cost'
-                      : 'Stock value appears after quantity and cost are recorded',
-                  },
-                  {
-                    label: 'Near-expiry risk',
-                    value: formatNumber(nearExpiryRisk),
-                    helper: nearExpiryRisk > 0
-                      ? 'Batches within 180 days of expiry'
-                      : 'No loaded batch is currently within 180 days of expiry',
-                  },
-                ];
-
-                return (
-                  <div className="inventory-product-inventory-card-grid">
-                    {cards.map((card) => (
-                      <article key={card.label} className="inventory-product-inventory-card">
-                        <span>{card.label}</span>
-                        <strong>{card.value}</strong>
-                        <small>{card.helper}</small>
-                      </article>
-                    ))}
-                  </div>
-                );
-              })()}
 
               {!isInventoryReceiveFlowOpen && !editingInventoryBatch && (
                 <section className="inventory-guided-flow-launch-panel">
@@ -5548,7 +5464,7 @@ export function ProductInventoryPreview({
                         startSimpleMightyInventoryFlow('receive-stock');
                       }}
                     >
-                      Manual Product Master Entry
+                      Product Master
                     </button>
                   </div>
                 </section>
@@ -5584,7 +5500,7 @@ export function ProductInventoryPreview({
                       className={inventoryReceiveSource === 'manual' ? 'active inventory-source-option inventory-source-option--manual' : 'inventory-source-option inventory-source-option--manual'}
                       onClick={() => setInventoryReceiveSource('manual')}
                     >
-                      <strong>Manual Product Master Entry</strong>
+                      <strong>Product Master</strong>
                       <span>Select an approved Product Master item before quantity, batch and expiry are recorded.</span>
                     </button>
                   </div>
@@ -5937,7 +5853,7 @@ export function ProductInventoryPreview({
                 data-chart-title-refinement="AQUILA_INVENTORY_WORK_PACKAGE_2H_CHART_AND_TITLE_REFINEMENT"
               >
                 <div className="inventory-section-title-card platform-heading-card">
-                  <h3>AI Inventory Opportunity Model</h3>
+                  <h3></h3>
                 </div>
 
                 <div className="inventory-opportunity-grid inventory-opportunity-grid--creative">

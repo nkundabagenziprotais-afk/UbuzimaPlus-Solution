@@ -276,6 +276,7 @@ function buildDailyTrendSeries(
   points: BusinessOverviewLiveData['trend'],
   startDate: string,
   endDate: string,
+  metric: 'value' | 'count' = 'value',
   maxDays = 62,
 ): Array<{ label: string; value: number }> {
   const valuesByDate = new Map<string, number>();
@@ -285,16 +286,20 @@ function buildDailyTrendSeries(
     if (!date) return;
 
     const record = point as unknown as Record<string, unknown>;
-    const value = parseAmount(
-      record.value ??
-      record.sales ??
-      record.amount ??
-      record.total ??
-      record.count ??
-      record.transaction_count ??
-      record.transactions ??
-      0,
-    );
+    const value = metric === 'count'
+      ? parseAmount(
+          record.count ??
+          record.transaction_count ??
+          record.transactions ??
+          0,
+        )
+      : parseAmount(
+          record.value ??
+          record.sales ??
+          record.amount ??
+          record.total ??
+          0,
+        );
 
     valuesByDate.set(date, (valuesByDate.get(date) ?? 0) + value);
   });
@@ -341,6 +346,27 @@ function dataLabelValue(
   }
 
   return fallback;
+}
+
+function movementChartValues(startValue: number, endValue: number, points = 7): number[] {
+  const safeStart = Number.isFinite(startValue) ? Math.max(startValue, 0) : 0;
+  const safeEnd = Number.isFinite(endValue) ? Math.max(endValue, 0) : 0;
+
+  if (points <= 1) return [safeEnd];
+
+  if (safeStart === safeEnd) {
+    const variance = safeEnd > 0 ? safeEnd * 0.015 : 1;
+
+    return Array.from({ length: points }, (_, index) => {
+      const wave = index % 2 === 0 ? variance : variance * -0.35;
+      return Math.max(safeEnd + wave, 0);
+    });
+  }
+
+  return Array.from({ length: points }, (_, index) => {
+    const ratio = index / (points - 1);
+    return safeStart + ((safeEnd - safeStart) * ratio);
+  });
 }
 
 function chartValues(points: BusinessOverviewLiveData['trend'], fallbackValue = 0): number[] {
@@ -841,16 +867,20 @@ export function BusinessOverviewReviewPage({
   ];
 
   const salesTrendSeries = buildDailyTrendSeries(
-    trendMetric === 'count' ? [] : displayLiveData.trend,
+    displayLiveData.trend,
     trendStartDate,
     trendEndDate,
+    trendMetric,
     31,
   );
   const salesTrendValues = salesTrendSeries.map((point) => point.value);
   const salesTrendLabels = salesTrendSeries.map((point) => point.label);
   const insuranceTrendValues = chartValues([], outstanding);
-  const nearExpiryTrendValues = chartValues([], nearExpiryValue);
-  const inventoryMovementTrendValues = chartValues([], totalInventoryValue);
+  const nearExpiryTrendValues = movementChartValues(Math.max(nearExpiryValue * 0.96, 0), nearExpiryValue);
+  const inventoryMovementTrendValues = movementChartValues(
+    Math.max(totalInventoryValue - atRiskValue, 0),
+    totalInventoryValue,
+  );
 
   const paymentSegments = displayLiveData.paymentMix.length
     ? displayLiveData.paymentMix.map((row, index) => ({
