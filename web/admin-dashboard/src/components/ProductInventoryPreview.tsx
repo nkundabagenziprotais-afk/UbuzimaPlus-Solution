@@ -1321,7 +1321,7 @@ export function ProductInventoryPreview({
   };
 
   const productInventoryStockValue = (
-    batch: PharmaInventoryBatch,
+    batch: { available_quantity?: number | string; selling_price?: number | string | null; unit_cost?: number | string | null },
     computedSellingPrice: number | null,
   ): number => {
     const quantity = Number(batch.available_quantity || 0);
@@ -1370,10 +1370,13 @@ export function ProductInventoryPreview({
       const rows = visibleBatches
         .filter((batch) => {
           const product = allProducts.find((item) => item.id === batch.product.id) ?? batch.product;
+          const productRecord = product as unknown as Record<string, unknown>;
+          const batchProductRecord = batch.product as unknown as Record<string, unknown>;
+          const stockSummary = productRecord.stock_summary as { is_below_reorder_level?: boolean } | undefined;
           const days = remainingDays(batch.expiry_date);
           const availableQuantity = Number(batch.available_quantity || 0);
-          const reorderLevel = Number(product?.reorder_level ?? batch.product?.reorder_level ?? 0);
-          const isLowStock = Boolean(product?.stock_summary?.is_below_reorder_level) ||
+          const reorderLevel = Number(productRecord.reorder_level ?? batchProductRecord.reorder_level ?? 0);
+          const isLowStock = Boolean(stockSummary?.is_below_reorder_level) ||
             (reorderLevel > 0 && availableQuantity <= reorderLevel);
           const isExpired = days !== null && days < 0;
           const isNearExpiry = days !== null && days >= 0 && days <= 180;
@@ -1383,8 +1386,8 @@ export function ProductInventoryPreview({
             const searchable = [
               batch.product.name,
               batch.product.sku,
-              product?.generic_name,
-              product?.brand_name,
+              productRecord.generic_name,
+              productRecord.brand_name,
               batch.batch_number,
               batch.stock_location?.name,
               batch.stock_location?.code,
