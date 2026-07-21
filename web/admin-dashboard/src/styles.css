@@ -43105,3 +43105,38 @@ thead
 .inventory-data-table--product-register td:nth-child(10) .cell-muted {
   color: #047857 !important;
 }
+
+/* Product Inventory: Stock on Hand filter panel in 3 rows x 4 columns */
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-auto-flow: row !important;
+  gap: 0.85rem 1rem !important;
+  align-items: end !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel > label,
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel > button,
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel > .inventory-register-filter-action {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel input,
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel select,
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel button {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 1100px) {
+  .section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel {
+    grid-template-columns: 1fr !important;
+  }
+}
