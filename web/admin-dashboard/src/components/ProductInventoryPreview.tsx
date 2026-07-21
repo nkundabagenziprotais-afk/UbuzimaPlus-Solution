@@ -113,7 +113,7 @@ const emptyProductMasterForm: ProductMasterFormState = {
   selling_unit: 'unit',
   price: '',
   product_margin_rate: '0',
-  source: 'Manual Product Master',
+  source: 'Manual Inventory',
   section: '',
   subsection: '',
   reorder_level: '0',
@@ -191,7 +191,7 @@ const inventoryViews: Array<{
   { key: 'shelf', label: 'Retail Product Shelf', description: 'Commercial shelf view with grid/list options' },
   { key: 'batches', label: 'Batch and Expiry Review', description: 'Editable batch, FEFO and expiry register' },
   { key: 'near-expiry', label: 'Near Expiry Watch List', description: 'Expiry risk, remaining days and recommended action' },
-  { key: 'product-master', label: 'Product Master', description: 'Supreme product information source' },
+  { key: 'product-master', label: 'Inventory', description: 'Supreme product information source' },
   { key: 'product-inventory', label: 'Product Inventory', description: 'Commercial stock source for POS and receiving' },
   { key: 'locations', label: 'Stock Locations', description: 'Branch stores, shelves and storage points' },
 ];
@@ -424,7 +424,7 @@ function inventoryBatchSource(batch: PharmaStockBatch): 'manual' | 'purchase-cod
 function inventoryBatchSourceLabel(batch: PharmaStockBatch): string {
   const source = inventoryBatchSource(batch);
 
-  if (source === 'manual') return 'Product Master';
+  if (source === 'manual') return 'Inventory';
   if (source === 'purchase-code') return 'Purchase Code / PO Receiving';
 
   return '';
@@ -1063,7 +1063,7 @@ export function ProductInventoryPreview({
   const [viewingStockLocation, setViewingStockLocation] = useState<PharmaStockLocation | null>(null);
   const [pendingDeleteStockLocation, setPendingDeleteStockLocation] = useState<PharmaStockLocation | null>(null);
   const [isSavingStockLocation, setIsSavingStockLocation] = useState(false);
-  const [activeInventoryOpportunity, setActiveInventoryOpportunity] = useState<string>('Stock-out opportunity');
+  const [activeInventoryOpportunity, setActiveInventoryOpportunity] = useState<string>('');
   const [inventoryNotice, setInventoryNotice] = useState('');
   const [detailPanel, setDetailPanel] = useState<{ title: string; fields: Array<[string, string]> } | null>(null);
   const [newShelfName, setNewShelfName] = useState('');
@@ -1538,7 +1538,7 @@ export function ProductInventoryPreview({
         setIsInventoryProductSearchOpen(true);
       }
     } catch (err) {
-      setInventoryNotice(err instanceof Error ? err.message : 'Unable to search Product Master products.');
+      setInventoryNotice(err instanceof Error ? err.message : 'Unable to search Inventory products.');
     } finally {
       setIsSearchingInventoryProducts(false);
     }
@@ -1559,7 +1559,7 @@ export function ProductInventoryPreview({
     setInventoryProductSearchTerm('');
     setInventoryProductOptions([product]);
     setIsInventoryProductSearchOpen(false);
-    setInventoryNotice(`${product.name} selected from Product Master. Complete inventory quantity, batch, location and pricing.`);
+    setInventoryNotice(`${product.name} selected from Inventory. Complete inventory quantity, batch, location and pricing.`);
   }
 
   function handleInventoryProductSearchChange(value: string) {
@@ -1851,7 +1851,7 @@ export function ProductInventoryPreview({
 
     // Controlled active inventory page loading contract:
     // load only the active page resources, not the whole inventory module at once.
-    // This keeps Product Master/Product Inventory from looking broken while avoiding
+    // This keeps Inventory/Product Inventory from looking broken while avoiding
     // the previous heavy auto-load that affected performance.
     void loadInventoryPreview(activeInventoryView, true);
   }, [activeInventoryView, tenantSlug]);
@@ -1872,7 +1872,7 @@ export function ProductInventoryPreview({
     ? {
         products: {
           value: formatNumber(inventorySummary.products_count),
-          status: 'Product Master',
+          status: 'Inventory',
           target: 'product-master' as InventoryView,
           trendSeed: inventorySummary.products_count,
         },
@@ -1982,7 +1982,7 @@ export function ProductInventoryPreview({
     }
 
     if (!inventoryCreateForm.product_id) {
-      setInventoryNotice('Select a Product Master item before receiving inventory.');
+      setInventoryNotice('Select a Inventory item before receiving inventory.');
       return;
     }
 
@@ -1997,7 +1997,7 @@ export function ProductInventoryPreview({
     }
 
     if (!inventoryCreateForm.product_id || !inventoryCreateForm.stock_location_id) {
-      setError('Select a Product Master item and stock location before creating inventory.');
+      setError('Select a Inventory item and stock location before creating inventory.');
       return;
     }
 
@@ -2042,7 +2042,7 @@ export function ProductInventoryPreview({
           receive_source: inventoryReceiveSource,
           reason: inventoryReceiveSource === 'purchase-code'
             ? 'Product Inventory received from purchase code'
-            : 'Product Inventory created from manual Product Master entry',
+            : 'Product Inventory created from manual Inventory entry',
         });
 
         setInventoryNotice(
@@ -2066,7 +2066,7 @@ export function ProductInventoryPreview({
 
       await loadInventoryPreview();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create inventory from Product Master.');
+      setError(err instanceof Error ? err.message : 'Unable to create inventory from Inventory.');
     } finally {
       setIsCreatingInventory(false);
     }
@@ -2146,7 +2146,7 @@ export function ProductInventoryPreview({
       selling_unit: metadataText(product, ['rhia_selling_unit'], product.unit),
       price: regulatoryPrice(product) ? String(regulatoryPrice(product)) : '',
       product_margin_rate: String(productMarginRate(product)),
-      source: metadataText(product, ['source'], 'Product Master'),
+      source: metadataText(product, ['source'], 'Inventory'),
       section: metadataText(product, ['rhia_section'], product.category?.name ?? ''),
       subsection: metadataText(product, ['rhia_subsection']),
       reorder_level: String(product.reorder_level ?? 0),
@@ -2189,7 +2189,7 @@ export function ProductInventoryPreview({
         product_margin_rate: Number(productMasterForm.product_margin_rate || 0),
         product_margin_percent: Number(productMasterForm.product_margin_rate || 0),
         default_margin_percent: Number(productMasterForm.product_margin_rate || 0),
-        source: productMasterForm.source || 'Manual Product Master',
+        source: productMasterForm.source || 'Manual Inventory',
         rhia_section: productMasterForm.section || null,
         rhia_subsection: productMasterForm.subsection || null,
         pricing_source: 'product_master',
@@ -2203,7 +2203,7 @@ export function ProductInventoryPreview({
 
     if (!hasInventoryAdminAccess) {
       setError(
-        'The product does not exist in Product Master. Inventory administration permission is required to create it.',
+        'The product does not exist in Inventory. Inventory administration permission is required to create it.',
       );
       return;
     }
@@ -2226,7 +2226,7 @@ export function ProductInventoryPreview({
 
     setError('');
     setInventoryNotice(
-      'Product Master creation opened from Inventory receiving. The current batch, quantity, location, cost, margin, selling price, supplier and reference draft remains preserved.',
+      'Inventory creation opened from Inventory receiving. The current batch, quantity, location, cost, margin, selling price, supplier and reference draft remains preserved.',
     );
   }
 
@@ -2298,14 +2298,14 @@ export function ProductInventoryPreview({
         setIsInventoryReceiveFlowOpen(true);
 
         setInventoryNotice(
-          `${response.product.name} was created in Product Master and selected automatically. Complete the preserved Inventory receiving draft.`,
+          `${response.product.name} was created in Inventory and selected automatically. Complete the preserved Inventory receiving draft.`,
         );
 
         return;
       }
 
       setInventoryNotice(
-        `${response.message} ${response.product.name} added to Product Master.`,
+        `${response.message} ${response.product.name} added to Inventory.`,
       );
 
       setProductMasterForm(
@@ -2320,7 +2320,7 @@ export function ProductInventoryPreview({
 
       await loadInventoryPreview();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create Product Master item.');
+      setError(err instanceof Error ? err.message : 'Unable to create Inventory item.');
     } finally {
       setIsSavingProductMaster(false);
     }
@@ -2340,11 +2340,11 @@ export function ProductInventoryPreview({
 
     try {
       const response = await updatePharmaProduct(token, tenantSlug, Number(selectedProductMasterEditId), productMasterPayload());
-      setInventoryNotice(`${response.message} ${response.product.name} updated in Product Master.`);
+      setInventoryNotice(`${response.message} ${response.product.name} updated in Inventory.`);
       setActiveProductMasterAction(null);
       await loadInventoryPreview();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update Product Master item.');
+      setError(err instanceof Error ? err.message : 'Unable to update Inventory item.');
     } finally {
       setIsSavingProductMaster(false);
     }
@@ -2354,7 +2354,7 @@ export function ProductInventoryPreview({
     setPendingDeleteProduct(null);
     setViewingProductMasterProduct(product);
     setActiveProductMasterAction('view');
-    setInventoryNotice(`${product.sku} opened for Product Master review.`);
+    setInventoryNotice(`${product.sku} opened for Inventory review.`);
   }
 
   function openProductMasterEditFromProduct(product: PharmaProduct) {
@@ -2374,7 +2374,7 @@ export function ProductInventoryPreview({
         ['Regulatory Price', formatRwf(regulatoryPrice(product))],
         ['Product Margin Rate', `${formatNumber(productMarginRate(product))}%`],
         ['Category', product.category?.name ?? 'Uncategorised'],
-        ['Source', metadataText(product, ['source'], 'Product Master')],
+        ['Source', metadataText(product, ['source'], 'Inventory')],
         ['Section', metadataText(product, ['rhia_section'], product.category?.name ?? 'Uncategorised')],
         ['Subsection', metadataText(product, ['rhia_subsection'], 'Not set')],
         ['Re-order Level', formatNumber(product.reorder_level)],
@@ -2404,11 +2404,11 @@ export function ProductInventoryPreview({
       ...productToMasterForm(product),
       drug_code: candidateSku,
       designation: `${product.name} Copy`,
-      source: 'Replicated from Product Master',
+      source: 'Replicated from Inventory',
       status: 'active',
     });
 
-    setInventoryNotice(`${product.sku} copied into a new Product Master form. Review the copied fields, then save as a new product.`);
+    setInventoryNotice(`${product.sku} copied into a new Inventory form. Review the copied fields, then save as a new product.`);
   }
 
   function requestDeleteProductMaster(product: PharmaProduct) {
@@ -2431,11 +2431,11 @@ export function ProductInventoryPreview({
 
     try {
       const response = await deletePharmaProduct(token, tenantSlug, pendingDeleteProduct.id);
-      setInventoryNotice(`${response.message} ${pendingDeleteProduct.name} was removed from Product Master.`);
+      setInventoryNotice(`${response.message} ${pendingDeleteProduct.name} was removed from Inventory.`);
       setPendingDeleteProduct(null);
       await loadInventoryPreview();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to delete Product Master item.');
+      setError(err instanceof Error ? err.message : 'Unable to delete Inventory item.');
     } finally {
       setIsDeletingProductMaster(false);
     }
@@ -2463,7 +2463,7 @@ export function ProductInventoryPreview({
     );
 
     if (!product) {
-      setError('No Product Master item matched your search.');
+      setError('No Inventory item matched your search.');
       return;
     }
 
@@ -2540,9 +2540,9 @@ export function ProductInventoryPreview({
     return (
       <section className="product-master-ai-assistant">
         <div>
-          <strong>AI Product Master Assistant</strong>
+          <strong>AI Inventory Assistant</strong>
           <span>
-            Suggestions are based on Product Master, RHIA imported fields, current inventory references and naming consistency.
+            Suggestions are based on Inventory, RHIA imported fields, current inventory references and naming consistency.
             Review before saving.
           </span>
         </div>
@@ -2773,7 +2773,7 @@ export function ProductInventoryPreview({
           <div>
             <h3>Confirm Product Deletion</h3>
             <p>
-              You are about to delete <strong>{pendingDeleteProduct.name}</strong> ({pendingDeleteProduct.sku}) from Product Master.
+              You are about to delete <strong>{pendingDeleteProduct.name}</strong> ({pendingDeleteProduct.sku}) from Inventory.
               This action will be blocked if the product has stock or purchase order history.
             </p>
           </div>
@@ -2797,7 +2797,7 @@ export function ProductInventoryPreview({
         <InventoryPopupForm
         id="inventory-popup-product-master-view"
         title="View Product"
-        description="Review Product Master information without leaving your current table position."
+        description="Review Inventory information without leaving your current table position."
         open
         onClose={() => {
           setActiveProductMasterAction(null);
@@ -2808,7 +2808,7 @@ export function ProductInventoryPreview({
           <div className="section-heading">
             <div>
               <h3>View Product</h3>
-              <span>Product Master information displayed from the same area used by action cards.</span>
+              <span>Inventory information displayed from the same area used by action cards.</span>
             </div>
             <button type="button" onClick={() => {
               setActiveProductMasterAction(null);
@@ -2827,7 +2827,7 @@ export function ProductInventoryPreview({
               ['Regulatory Price', formatRwf(regulatoryPrice(viewingProductMasterProduct))],
               ['Product Margin Rate', `${formatNumber(productMarginRate(viewingProductMasterProduct))}%`],
               ['Category', viewingProductMasterProduct.category?.name ?? 'Uncategorised'],
-              ['Source', metadataText(viewingProductMasterProduct, ['source'], 'Product Master')],
+              ['Source', metadataText(viewingProductMasterProduct, ['source'], 'Inventory')],
               ['Section', metadataText(viewingProductMasterProduct, ['rhia_section'], viewingProductMasterProduct.category?.name ?? 'Uncategorised')],
               ['Subsection', metadataText(viewingProductMasterProduct, ['rhia_subsection'], 'Not set')],
               ['Re-order Level', formatNumber(viewingProductMasterProduct.reorder_level)],
@@ -2858,7 +2858,7 @@ export function ProductInventoryPreview({
           <div className="section-heading">
             <div>
               <h3>{activeProductMasterAction === 'replicate' ? 'Replicate Product' : 'Create New Product'}</h3>
-              <span>{activeProductMasterAction === 'replicate' ? 'Copied Product Master fields. Review unique fields before saving.' : 'Fields start from the Product Master table structure.'}</span>
+              <span>{activeProductMasterAction === 'replicate' ? 'Copied Inventory fields. Review unique fields before saving.' : 'Fields start from the Inventory table structure.'}</span>
             </div>
             <button type="button" onClick={closeProductMasterCreation}>Cancel</button>
           </div>
@@ -2880,7 +2880,7 @@ export function ProductInventoryPreview({
                 </strong>
 
                 <span>
-                  Save this Product Master record to return automatically to the preserved Inventory draft with the new product selected.
+                  Save this Inventory record to return automatically to the preserved Inventory draft with the new product selected.
                 </span>
               </div>
             )}
@@ -2921,7 +2921,7 @@ export function ProductInventoryPreview({
           <div className="section-heading">
             <div>
               <h3>Edit Product</h3>
-              <span>Search and select a Product Master item, then update the table fields.</span>
+              <span>Search and select a Inventory item, then update the table fields.</span>
             </div>
             <button type="button" onClick={() => setActiveProductMasterAction(null)}>Cancel</button>
           </div>
@@ -2960,7 +2960,7 @@ export function ProductInventoryPreview({
                   }}
                   placeholder="Search by Internal SKU, designation, or generic description"
                   required/>
-                <button type="button" aria-label="Search Product Master" onClick={searchProductMasterForEdit}>Search</button>
+                <button type="button" aria-label="Search Inventory" onClick={searchProductMasterForEdit}>Search</button>
               </div>
 
               <datalist id="product-master-edit-options">
@@ -2993,7 +2993,7 @@ export function ProductInventoryPreview({
           <div className="section-heading">
             <div>
               <h3>Receive Stock</h3>
-              <span>Receiving uses Product Master identity. Complete commercial inventory fields under Product Inventory.</span>
+              <span>Receiving uses Inventory identity. Complete commercial inventory fields under Product Inventory.</span>
             </div>
             <button type="button" onClick={() => selectInventoryView('product-inventory')}>Open Product Inventory form</button>
           </div>
@@ -3006,7 +3006,7 @@ export function ProductInventoryPreview({
         <div className="section-heading">
           <div>
             <h3>AI Import</h3>
-            <span>RSSB/RHIA, FDA, and Excel import will compare extracted products against Product Master before approval.</span>
+            <span>RSSB/RHIA, FDA, and Excel import will compare extracted products against Inventory before approval.</span>
           </div>
           <button type="button" onClick={() => markAction('AI Import approval queue')}>Open AI review queue</button>
         </div>
@@ -3032,21 +3032,21 @@ export function ProductInventoryPreview({
       setPendingDeleteProduct(null);
       setViewingProductMasterProduct(null);
       setActiveProductMasterAction('create');
-      setInventoryNotice('Create Product Master flow opened. Complete only the required fields, then review before saving.');
+      setInventoryNotice('Create Inventory flow opened. Complete only the required fields, then review before saving.');
       return;
     }
 
     if (flow === 'product-master-review') {
       selectInventoryView('product-master');
       setActiveProductMasterAction(null);
-      setInventoryNotice('Product Master opened. Use the table actions when you need to view, edit, replicate, or delete a product.');
+      setInventoryNotice('Inventory opened. Use the table actions when you need to view, edit, replicate, or delete a product.');
       return;
     }
 
     if (flow === 'product-master-replicate') {
       selectInventoryView('product-master');
       setActiveProductMasterAction(null);
-      setInventoryNotice('Choose a Product Master row, then click Replicate. The copied form will open only after selecting the product.');
+      setInventoryNotice('Choose a Inventory row, then click Replicate. The copied form will open only after selecting the product.');
       return;
     }
 
@@ -3054,7 +3054,7 @@ export function ProductInventoryPreview({
       selectInventoryView('product-inventory');
       setIsInventoryReceiveFlowOpen(true);
       setActiveProductMasterAction(null);
-      setInventoryNotice('Receive Stock flow opened. Select a Product Master item, then complete batch, location, quantity, cost, and selling price.');
+      setInventoryNotice('Receive Stock flow opened. Select a Inventory item, then complete batch, location, quantity, cost, and selling price.');
       return;
     }
 
@@ -4368,7 +4368,7 @@ export function ProductInventoryPreview({
             <>
               <section className="inventory-card-control-row">
                 <details className="inventory-card-customizer">
-                  <summary>Edit Product Master cards</summary>
+                  <summary>Edit Inventory cards</summary>
                   <div className="inventory-card-customizer-grid">
                     {inventorySmartCardOptions.map((card) => (
                       <section key={card.key}>
@@ -4789,7 +4789,7 @@ export function ProductInventoryPreview({
                 <div className="low-stock-trigger-note">
                   <strong>Listing rule:</strong>
                   <span>
-                    A product is listed here only when its Product Master re-order level is greater than zero and Product Inventory available quantity is less than or equal to that level.
+                    A product is listed here only when its Inventory re-order level is greater than zero and Product Inventory available quantity is less than or equal to that level.
                   </span>
                 </div>
 
@@ -4837,7 +4837,7 @@ export function ProductInventoryPreview({
                       {lowStockRows.length === 0 ? (
                         <tr>
                           <td colSpan={14} className="cell-center">
-                            No low-stock products found. Set a Product Master re-order level above zero, then compare it with available Product Inventory quantity.
+                            No low-stock products found. Set a Inventory re-order level above zero, then compare it with available Product Inventory quantity.
                           </td>
                         </tr>
                       ) : (
@@ -5132,7 +5132,7 @@ export function ProductInventoryPreview({
                 <div className="low-stock-trigger-note">
                   <strong>Listing rule:</strong>
                   <span>
-                    This page lists stock batch records only. Product Master information is shown here only to identify and price the batch.
+                    This page lists stock batch records only. Inventory information is shown here only to identify and price the batch.
                   </span>
                 </div>
 
@@ -5365,7 +5365,7 @@ export function ProductInventoryPreview({
           {activeInventoryView === 'product-master' && products && (
             <section className="inventory-section">
               {renderTableToolbar({
-                title: 'Product Master',
+                title: 'Inventory',
                 subtitle: 'Core product records for pricing, margin, category, and inventory rules.',
                 selectedCount: selectedProductIds.length,
                 onExport: () =>
@@ -5389,8 +5389,8 @@ export function ProductInventoryPreview({
                       product.status,
                     ]),
                   ),
-                onBulkEdit: () => markAction('Product Master bulk edit'),
-                onBulkDelete: () => markAction('Product Master bulk delete'),
+                onBulkEdit: () => markAction('Inventory bulk edit'),
+                onBulkDelete: () => markAction('Inventory bulk delete'),
               })}
 
               <div className="inventory-action-card-grid inventory-action-card-grid--title-only product-master-action-cards">
@@ -5464,7 +5464,7 @@ export function ProductInventoryPreview({
                         startSimpleMightyInventoryFlow('receive-stock');
                       }}
                     >
-                      Product Master
+                      Inventory
                     </button>
                   </div>
                 </section>
@@ -5473,14 +5473,14 @@ export function ProductInventoryPreview({
               <section className={`inventory-create-from-master-panel inventory-guided-flow-panel ${(isInventoryReceiveFlowOpen || editingInventoryBatch) ? 'is-open' : 'is-hidden'}`} data-inventory-popup-host>
                 <div className="section-heading">
                   <div>
-                    <h3>{editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Product Master'}</h3>
-                    <span>{editingInventoryBatch ? `Update mode active for batch ${editingInventoryBatch.batch_number}. Save changes using the Update Inventory button.` : 'Product identity comes from Product Master. Inventory adds batch, location, quantity, cost, margin multiplier and selling price.'}</span>
+                    <h3>{editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Inventory'}</h3>
+                    <span>{editingInventoryBatch ? `Update mode active for batch ${editingInventoryBatch.batch_number}. Save changes using the Update Inventory button.` : 'Product identity comes from Inventory. Inventory adds batch, location, quantity, cost, margin multiplier and selling price.'}</span>
                   </div>
                 </div>
 
                 <InventoryPopupForm
                   id="inventory-popup-action-5"
-                  title={editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Product Master'}
+                  title={editingInventoryBatch ? 'Update inventory batch' : 'Create inventory from Inventory'}
                   description="Record or update quantity, batch, expiry, location, supplier, cost, margin multiplier and selling price."
                   open={isInventoryReceiveFlowOpen || Boolean(editingInventoryBatch)}
                   onClose={() => { setIsInventoryReceiveFlowOpen(false); setEditingInventoryBatch(null); setInventoryCreateForm(emptyInventoryCreateForm); setInventoryProductSearchTerm(''); setInventoryProductOptions([]); setIsInventoryProductSearchOpen(false); }}
@@ -5493,15 +5493,15 @@ export function ProductInventoryPreview({
                       onClick={() => setInventoryReceiveSource('purchase-code')}
                     >
                       <strong>Receive from Purchase Code</strong>
-                      <span>Use the purchase order/reference code and receive stock against Product Master items.</span>
+                      <span>Use the purchase order/reference code and receive stock against Inventory items.</span>
                     </button>
                     <button
                       type="button"
                       className={inventoryReceiveSource === 'manual' ? 'active inventory-source-option inventory-source-option--manual' : 'inventory-source-option inventory-source-option--manual'}
                       onClick={() => setInventoryReceiveSource('manual')}
                     >
-                      <strong>Product Master</strong>
-                      <span>Select an approved Product Master item before quantity, batch and expiry are recorded.</span>
+                      <strong>Inventory</strong>
+                      <span>Select an approved Inventory item before quantity, batch and expiry are recorded.</span>
                     </button>
                   </div>
 
@@ -5510,17 +5510,17 @@ export function ProductInventoryPreview({
                     <span>
                       {inventoryReceiveSource === 'purchase-code'
                         ? 'Use this when stock is received from a purchase order, delivery note, or procurement reference.'
-                        : 'Use this when recording inventory directly from Product Master without a purchase order reference.'}
+                        : 'Use this when recording inventory directly from Inventory without a purchase order reference.'}
                     </span>
                   </div>
 
                   <label className="inventory-product-master-combobox-label">
-                    Product from Product Master
+                    Product from Inventory
                     <div className="inventory-product-master-combobox">
                       <div className="inventory-product-master-search-row">
                         <textarea
                           value={inventoryProductSearchTerm}
-                          placeholder={selectedInventoryProduct ? 'Product selected. Use Change product to search another item.' : 'Search Product Master by product name, generic name, or Internal SKU'}
+                          placeholder={selectedInventoryProduct ? 'Product selected. Use Change product to search another item.' : 'Search Inventory by product name, generic name, or Internal SKU'}
                           onFocus={() => {
                             setIsInventoryProductSearchOpen(true);
                             if (inventoryProductOptions.length === 0) {
@@ -5544,7 +5544,7 @@ export function ProductInventoryPreview({
                           autoComplete="off"
                           enterKeyHint="search"
                           spellCheck={false}
-                          aria-label="Product from Product Master search"
+                          aria-label="Product from Inventory search"
                         ></textarea>
                         <button
                           type="button"
@@ -5593,11 +5593,11 @@ export function ProductInventoryPreview({
                               role="status"
                             >
                               <strong>
-                                Product does not exist in Product Master.
+                                Product does not exist in Inventory.
                               </strong>
 
                               <span>
-                                Create the Product Master record before recording quantity, batch, expiry or pharmaceutical stock.
+                                Create the Inventory record before recording quantity, batch, expiry or pharmaceutical stock.
                               </span>
 
                               {hasInventoryAdminAccess ? (
@@ -5607,11 +5607,11 @@ export function ProductInventoryPreview({
                                     openMissingInventoryProductCreation
                                   }
                                 >
-                                  Create Product in Product Master
+                                  Create Product in Inventory
                                 </button>
                               ) : (
                                 <small>
-                                  Inventory administration permission is required. Ask an authorised Product Master user to create the product.
+                                  Inventory administration permission is required. Ask an authorised Inventory user to create the product.
                                 </small>
                               )}
                             </div>
@@ -5741,7 +5741,7 @@ export function ProductInventoryPreview({
                     <strong>{selectedInventoryProduct?.name ?? 'No product selected'}</strong>
                     <span>Default margin: {formatNumber(selectedInventoryDefaultMargin)}%</span>
                     <span>Calculated price: {formatRwf(inventoryCalculatedSellingPrice || null)}</span>
-                    <small>Purchase Orders must also select products from Product Master. If missing, create or approve the product first.</small>
+                    <small>Purchase Orders must also select products from Inventory. If missing, create or approve the product first.</small>
                   </div>
 
                   <div className="inventory-form-actions">
@@ -5860,32 +5860,32 @@ export function ProductInventoryPreview({
                   {[
                     {
                       icon: 'RX',
-                      title: 'Missing reimbursable products',
+                      title: '',
                       tone: 'is-primary',
                     },
                     {
                       icon: 'SO',
-                      title: 'Stock-out opportunity',
+                      title: '',
                       tone: 'is-risk',
                     },
                     {
                       icon: 'MD',
-                      title: 'Market dynamics',
+                      title: '',
                       tone: 'is-market',
                     },
                     {
                       icon: 'MP',
-                      title: 'Margin and pricing opportunity',
+                      title: '',
                       tone: 'is-value',
                     },
                     {
                       icon: 'EX',
-                      title: 'Near-expiry pressure',
+                      title: '',
                       tone: 'is-warning',
                     },
                     {
                       icon: 'PO',
-                      title: 'Purchase planning',
+                      title: '',
                       tone: 'is-planning',
                     },
                   ].map((opportunity) => (
@@ -6506,7 +6506,7 @@ function ProductMasterTable({
   batches: PharmaStockBatch[];
 }) {
   return (
-    <ManagedInventoryTableBlock tableKey="product-master" title="Product Master">
+    <ManagedInventoryTableBlock tableKey="product-master" title="Inventory">
       <table className="inventory-data-table inventory-data-table--product-master">
         <colgroup>
           <col className="col-sn" />
@@ -6570,7 +6570,7 @@ function ProductMasterTable({
                   <td className="cell-number">{formatRwf(regulatoryPrice(product))}</td>
                   <td className="cell-number">{formatNumber(productMarginRate(product))}%</td>
                   <td className="cell-wrap">{product.category?.name ?? 'Uncategorised'}</td>
-                  <td className="cell-wrap">{metadataText(product, ['source'], 'Product Master')}</td>
+                  <td className="cell-wrap">{metadataText(product, ['source'], 'Inventory')}</td>
                   <td className="cell-wrap">{metadataText(product, ['rhia_section'], product.category?.name ?? 'Uncategorised')}</td>
                   <td className="cell-wrap">{metadataText(product, ['rhia_subsection'], 'Not set')}</td>
                   <td className="cell-number">{formatNumber(product.reorder_level)}</td>

@@ -42190,3 +42190,104 @@ thead
 .inventory-register-filter-panel {
   display: grid !important;
 }
+
+/* Final Product Inventory closure: hide upper legacy search/category/opportunity surfaces */
+.inventory-page:has(.inventory-register-filter-panel) > .inventory-search-panel,
+.inventory-page:has(.inventory-register-filter-panel) > .inventory-filter-panel,
+.inventory-page:has(.inventory-register-filter-panel) > .inventory-product-search-panel,
+.inventory-page:has(.inventory-register-filter-panel) > .inventory-product-filter-panel,
+.inventory-page:has(.inventory-register-filter-panel) > .inventory-opportunity-grid,
+.inventory-page:has(.inventory-register-filter-panel) > .inventory-action-card-grid,
+.inventory-preview-panel:has(.inventory-register-filter-panel) > .inventory-search-panel,
+.inventory-preview-panel:has(.inventory-register-filter-panel) > .inventory-filter-panel,
+.inventory-preview-panel:has(.inventory-register-filter-panel) > .inventory-product-search-panel,
+.inventory-preview-panel:has(.inventory-register-filter-panel) > .inventory-product-filter-panel,
+.inventory-preview-panel:has(.inventory-register-filter-panel) > .inventory-opportunity-grid,
+.inventory-preview-panel:has(.inventory-register-filter-panel) > .inventory-action-card-grid,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-product-search-panel,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-product-filter-panel,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-opportunity-grid,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-action-card-grid,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-guided-model,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-ai-model,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-ai-opportunity-model {
+  display: none !important;
+}
+
+/* Keep the new Stock on Hand table filter as the only visible Product Inventory search/filter control */
+.inventory-register-filter-panel {
+  display: grid !important;
+}
+
+/* Supplier/Register wide table standard */
+.supplier-register-table-wrap,
+.procurement-supplier-table-wrap,
+.supplier-table-wrap,
+.procurement-table-shell:has(table) {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.supplier-register-table-wrap table,
+.procurement-supplier-table-wrap table,
+.supplier-table-wrap table,
+.procurement-table-shell table {
+  min-width: 72rem;
+  table-layout: auto;
+}
+
+.supplier-register-table-wrap th,
+.supplier-register-table-wrap td,
+.procurement-supplier-table-wrap th,
+.procurement-supplier-table-wrap td,
+.supplier-table-wrap th,
+.supplier-table-wrap td,
+.procurement-table-shell th,
+.procurement-table-shell td {
+  white-space: nowrap;
+}
+
+/* Professional Business Overview trend chart cleanup */
+.bo-pro-line-chart {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.bo-pro-line-chart svg {
+  min-width: max(64rem, 100%) !important;
+}
+
+.bo-pro-line-chart .bo-pro-data-label {
+  font-size: 0.62rem !important;
+  font-weight: 850 !important;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.94);
+  stroke-width: 2px;
+}
+
+.bo-pro-line-chart .bo-pro-axis-label {
+  font-size: 0.68rem !important;
+  font-weight: 750 !important;
+}
+
+/* Inventory Risk high-contrast chart/table criticality */
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(1) {
+  border-left: 0.38rem solid #dc2626;
+  background: rgba(220, 38, 38, 0.10) !important;
+}
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(2) {
+  border-left: 0.38rem solid #f97316;
+  background: rgba(249, 115, 22, 0.10) !important;
+}
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(3) {
+  border-left: 0.38rem solid #facc15;
+  background: rgba(250, 204, 21, 0.18) !important;
+}
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(4) {
+  border-left: 0.38rem solid #7c3aed;
+  background: rgba(124, 58, 237, 0.10) !important;
+}
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(5) {
+  border-left: 0.38rem solid #16a34a;
+  background: rgba(22, 163, 74, 0.10) !important;
+}

@@ -335,6 +335,12 @@ function buildDailyTrendSeries(
         )
       : parseAmount(
           record.value ??
+          record.sales_value ??
+          record.salesValue ??
+          record.gross_sales ??
+          record.grossSales ??
+          record.net_sales ??
+          record.netSales ??
           record.sales ??
           record.amount ??
           record.total ??
@@ -524,14 +530,18 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
   return [
     {
       label: 'Expired / quarantined',
-      countLabel: `${readText(['Expired Count', 'Expired Batches'], '0')} batches`,
+      countLabel: expiredValue > 0 && readText(['Expired Count', 'Expired Batches'], '0') === '0'
+        ? 'value-bearing'
+        : `${readText(['Expired Count', 'Expired Batches'], '0')} batches`,
       value: expiredValue,
       percent: safeRatio(expiredValue, total),
       tone: 'expired',
     },
     {
       label: 'Near expiry',
-      countLabel: `${readText(['Near Expiry Count', 'Expiring Items'], '0')} batches`,
+      countLabel: nearExpiryValue > 0 && readText(['Near Expiry Count', 'Expiring Items'], '0') === '0'
+        ? 'value-bearing'
+        : `${readText(['Near Expiry Count', 'Expiring Items'], '0')} batches`,
       value: nearExpiryValue,
       percent: safeRatio(nearExpiryValue, total),
       tone: 'near-expiry',
@@ -669,7 +679,7 @@ function LineChart({
           <g key={`${label}-${index}`}>
             <circle cx={point.x} cy={point.y} r="3" />
             <text className="bo-pro-data-label" x={point.x} y={Math.max(point.y - 9, 12)}>
-              {formatCompact(point.value)}
+              {point.value > 0 ? formatCompact(point.value) : ''}
             </text>
             <text className="bo-pro-axis-label" x={point.x} y="168">
               {point.label}
