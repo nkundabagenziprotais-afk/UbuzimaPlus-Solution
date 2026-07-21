@@ -44733,3 +44733,128 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+/* Final Inventory Analytics amendments */
+.inventory-analytics-inline-loading {
+  border: 1px solid rgba(20, 184, 166, 0.22);
+  border-radius: 0.8rem;
+  background: #ecfdf5;
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 850;
+  padding: 0.65rem 0.8rem;
+}
+
+.inventory-analytics-request-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.inventory-analytics-request-card header button,
+.inventory-analytics-request-kpis article button {
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #0f766e;
+  font-size: 0.68rem;
+  font-weight: 850;
+  padding: 0.28rem 0.52rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.inventory-analytics-request-kpis article {
+  display: grid;
+  gap: 0.22rem;
+  align-content: start;
+}
+
+.inventory-analytics-request-kpis article button {
+  justify-self: start;
+  margin-top: 0.12rem;
+}
+
+.inventory-analytics-risk-bars {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.inventory-analytics-risk-bars div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 1.7fr minmax(5rem, auto);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.inventory-analytics-risk-bars span,
+.inventory-analytics-risk-bars strong {
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.inventory-analytics-risk-bars i {
+  display: block;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.inventory-analytics-risk-bars em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.inventory-analytics-risk-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.inventory-analytics-request-table-scroll {
+  max-height: 14.8rem !important;
+  overflow: auto !important;
+}
+
+.inventory-analytics-request-table-scroll table {
+  min-width: 100% !important;
+  width: 100% !important;
+  table-layout: auto !important;
+}
+
+.inventory-analytics-request-table-scroll th,
+.inventory-analytics-request-table-scroll td {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  line-height: 1.25 !important;
+  vertical-align: top !important;
+}
+
+.inventory-analytics-request-filters {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) auto !important;
+}
+
+@media (max-width: 1500px) {
+  .inventory-analytics-request-filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .inventory-analytics-request-filters {
+    grid-template-columns: 1fr !important;
+  }
+
+  .inventory-analytics-risk-bars div {
+    grid-template-columns: 1fr;
+  }
+}

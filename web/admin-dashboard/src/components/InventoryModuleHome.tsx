@@ -481,6 +481,8 @@ export function InventoryModuleHome({
   const [analyticsLocationFilter, setAnalyticsLocationFilter] = useState('all');
   const [analyticsExpiryFromFilter, setAnalyticsExpiryFromFilter] = useState('');
   const [analyticsExpiryToFilter, setAnalyticsExpiryToFilter] = useState('');
+  const [analyticsCreatedFromFilter, setAnalyticsCreatedFromFilter] = useState('');
+  const [analyticsCreatedToFilter, setAnalyticsCreatedToFilter] = useState('');
 
 
   const [analyticsLoading, setAnalyticsLoading] =
@@ -1008,19 +1010,7 @@ export function InventoryModuleHome({
 
       {sectionVisibility.analytics && (
         <section className="inventory-home-analytics inventory-analytics-requested-dashboard">
-          {analyticsLoading && (
-            <div className="inventory-professional-state">
-              Loading Inventory analytics…
-            </div>
-          )}
-
-          {!analyticsLoading && analyticsError && (
-            <div className="inventory-professional-state is-warning" role="alert">
-              {analyticsError}
-            </div>
-          )}
-
-          {!analyticsLoading && !analyticsError && (() => {
+          {(() => {
             const productRows = inventoryArrayFromResponse(analyticsProducts, ['products', 'items', 'rows']);
             const batchRows = inventoryArrayFromResponse(analyticsBatches, ['batches', 'items', 'rows']);
             const nearExpiryRows = inventoryArrayFromResponse(analyticsNearExpiry, ['batches', 'items', 'rows']);
@@ -1028,6 +1018,7 @@ export function InventoryModuleHome({
 
             const productNameFor = (batch: UnknownRecord): string => inventoryBatchProductName(batch);
             const productRecordFor = (batch: UnknownRecord): UnknownRecord => inventoryNestedRecord(batch, 'product');
+
             const categoryFor = (batch: UnknownRecord): string => {
               const product = productRecordFor(batch);
               const nestedCategory = inventoryNestedRecord(product, 'category');
@@ -1052,28 +1043,19 @@ export function InventoryModuleHome({
             const expiryFor = (batch: UnknownRecord): string =>
               inventoryText(batch, ['expiry_date', 'expires_at'], '');
 
+            const createdFor = (batch: UnknownRecord): string =>
+              inventoryText(batch, ['created_at', 'created_date', 'date_created', 'received_at', 'received_date'], '');
+
             const productOptions = Array.from(
-              new Set(
-                batchRows
-                  .map((batch) => productNameFor(batch))
-                  .filter((name) => name && name !== '—'),
-              ),
+              new Set(batchRows.map((batch) => productNameFor(batch)).filter((name) => name && name !== '—')),
             ).sort();
 
             const categoryOptions = Array.from(
-              new Set(
-                batchRows
-                  .map((batch) => categoryFor(batch))
-                  .filter((name) => name && name !== '—'),
-              ),
+              new Set(batchRows.map((batch) => categoryFor(batch)).filter((name) => name && name !== '—')),
             ).sort();
 
             const locationOptions = Array.from(
-              new Set(
-                batchRows
-                  .map((batch) => locationFor(batch))
-                  .filter((name) => name && name !== '—'),
-              ),
+              new Set(batchRows.map((batch) => locationFor(batch)).filter((name) => name && name !== '—')),
             ).sort();
 
             const filteredBatchRows = batchRows.filter((batch) => {
@@ -1083,12 +1065,25 @@ export function InventoryModuleHome({
 
               const expiryText = expiryFor(batch);
               const expiryTime = expiryText ? new Date(expiryText).getTime() : Number.NaN;
-              const fromMatches = !analyticsExpiryFromFilter ||
+              const expiryFromMatches = !analyticsExpiryFromFilter ||
                 (Number.isFinite(expiryTime) && expiryTime >= new Date(analyticsExpiryFromFilter).getTime());
-              const toMatches = !analyticsExpiryToFilter ||
+              const expiryToMatches = !analyticsExpiryToFilter ||
                 (Number.isFinite(expiryTime) && expiryTime <= new Date(analyticsExpiryToFilter).getTime());
 
-              return categoryMatches && productMatches && locationMatches && fromMatches && toMatches;
+              const createdText = createdFor(batch);
+              const createdTime = createdText ? new Date(createdText).getTime() : Number.NaN;
+              const createdFromMatches = !analyticsCreatedFromFilter ||
+                (Number.isFinite(createdTime) && createdTime >= new Date(analyticsCreatedFromFilter).getTime());
+              const createdToMatches = !analyticsCreatedToFilter ||
+                (Number.isFinite(createdTime) && createdTime <= new Date(analyticsCreatedToFilter).getTime());
+
+              return categoryMatches &&
+                productMatches &&
+                locationMatches &&
+                expiryFromMatches &&
+                expiryToMatches &&
+                createdFromMatches &&
+                createdToMatches;
             });
 
             const totalValue =
@@ -1174,35 +1169,36 @@ export function InventoryModuleHome({
 
             const healthyValue = Math.max(totalValue - lowStockValue - nearExpiryValue - expiredValue, 0);
             const riskTotal = Math.max(totalValue, lowStockValue + nearExpiryValue + expiredValue + healthyValue, 1);
+            const atRiskValue = lowStockValue + nearExpiryValue + expiredValue;
+
             const riskRows = [
-              ['Expired / quarantined', expiredCount, expiredValue],
-              ['Near expiry', nearExpiryCount, nearExpiryValue],
-              ['Low stock', lowStockCount, lowStockValue],
-              ['Healthy stock', stockOnHandCount, healthyValue],
+              { label: 'Expired / quarantined', count: expiredCount, value: expiredValue, color: '#dc2626' },
+              { label: 'Near expiry', count: nearExpiryCount, value: nearExpiryValue, color: '#f97316' },
+              { label: 'Low stock', count: lowStockCount, value: lowStockValue, color: '#eab308' },
+              { label: 'Healthy stock', count: stockOnHandCount, value: healthyValue, color: '#16a34a' },
             ];
 
             const kpiCards = [
-              ['Total Inventory Value', formatCurrency(totalValue)],
-              ['Stock on Hand Count', formatCompactNumber(stockOnHandCount)],
-              ['Stock Received Value', formatCurrency(stockReceivedValue)],
-              ['Stock Received Count', formatCompactNumber(stockReceivedCount)],
-              ['Stock Issued Value', formatCurrency(stockIssuedValue)],
-              ['Stock Issued Count', formatCompactNumber(stockIssuedCount)],
-              ['Low Stock Value', formatCurrency(lowStockValue)],
-              ['Low Stock Count', formatCompactNumber(lowStockCount)],
-              ['Near Expiry Value', formatCurrency(nearExpiryValue)],
-              ['Near Expiry Count', formatCompactNumber(nearExpiryCount)],
-              ['Expired Value', formatCurrency(expiredValue)],
-              ['Expired Count', formatCompactNumber(expiredCount)],
-              ['Turnover Value', formatCurrency(turnoverValue)],
-              ['Turnover Count', formatCompactNumber(turnoverCount)],
+              { label: 'Total Inventory Value', value: formatCurrency(totalValue), target: 'product-inventory' },
+              { label: 'Stock on Hand Count', value: formatCompactNumber(stockOnHandCount), target: 'product-inventory' },
+              { label: 'Stock Received Value', value: formatCurrency(stockReceivedValue), target: 'purchase-orders' },
+              { label: 'Stock Received Count', value: formatCompactNumber(stockReceivedCount), target: 'purchase-orders' },
+              { label: 'Stock Issued Value', value: formatCurrency(stockIssuedValue), target: 'product-inventory' },
+              { label: 'Stock Issued Count', value: formatCompactNumber(stockIssuedCount), target: 'product-inventory' },
+              { label: 'Low Stock Value', value: formatCurrency(lowStockValue), target: 'low-stock' },
+              { label: 'Low Stock Count', value: formatCompactNumber(lowStockCount), target: 'low-stock' },
+              { label: 'Near Expiry Value', value: formatCurrency(nearExpiryValue), target: 'near-expiry' },
+              { label: 'Near Expiry Count', value: formatCompactNumber(nearExpiryCount), target: 'near-expiry' },
+              { label: 'Expired Value', value: formatCurrency(expiredValue), target: 'near-expiry' },
+              { label: 'Expired Count', value: formatCompactNumber(expiredCount), target: 'near-expiry' },
+              { label: 'Turnover Value', value: formatCurrency(turnoverValue), target: 'product-inventory' },
+              { label: 'Turnover Count', value: formatCompactNumber(turnoverCount), target: 'product-inventory' },
             ];
 
             const categoryTotals = new Map<string, number>();
 
             filteredBatchRows.forEach((batch) => {
               const category = categoryFor(batch);
-
               categoryTotals.set(category, (categoryTotals.get(category) ?? 0) + inventoryBatchValue(batch));
             });
 
@@ -1215,26 +1211,20 @@ export function InventoryModuleHome({
             const trendValues = [0, 0, 0, 0, 0, 0, totalValue];
             const trendMax = Math.max(...trendValues, 1);
 
-            const tableRows = <T,>(
-              rows: T[],
-              render: (row: T, index: number) => React.ReactNode,
-            ) => (
-              <div className="inventory-analytics-request-table-scroll">
-                <table>
-                  {render(rows[0] as T, -1)}
-                  <tbody>
-                    {rows.length === 0 ? (
-                      <tr>
-                        <td colSpan={6}>0 records</td>
-                      </tr>
-                    ) : rows.map((row, index) => render(row, index))}
-                  </tbody>
-                </table>
-              </div>
-            );
-
             return (
               <>
+                {analyticsLoading && (
+                  <div className="inventory-analytics-inline-loading">
+                    Loading live data…
+                  </div>
+                )}
+
+                {analyticsError && (
+                  <div className="inventory-professional-state is-warning" role="alert">
+                    {analyticsError}
+                  </div>
+                )}
+
                 <div className="inventory-analytics-request-filters">
                   <label>
                     <span>Category</span>
@@ -1261,6 +1251,16 @@ export function InventoryModuleHome({
                   </label>
 
                   <label>
+                    <span>Created From</span>
+                    <input type="date" value={analyticsCreatedFromFilter} onChange={(event) => setAnalyticsCreatedFromFilter(event.target.value)} />
+                  </label>
+
+                  <label>
+                    <span>Created To</span>
+                    <input type="date" value={analyticsCreatedToFilter} onChange={(event) => setAnalyticsCreatedToFilter(event.target.value)} />
+                  </label>
+
+                  <label>
                     <span>Expiry From</span>
                     <input type="date" value={analyticsExpiryFromFilter} onChange={(event) => setAnalyticsExpiryFromFilter(event.target.value)} />
                   </label>
@@ -1276,6 +1276,8 @@ export function InventoryModuleHome({
                       setAnalyticsCategoryFilter('all');
                       setAnalyticsProductFilter('all');
                       setAnalyticsLocationFilter('all');
+                      setAnalyticsCreatedFromFilter('');
+                      setAnalyticsCreatedToFilter('');
                       setAnalyticsExpiryFromFilter('');
                       setAnalyticsExpiryToFilter('');
                     }}
@@ -1285,10 +1287,13 @@ export function InventoryModuleHome({
                 </div>
 
                 <div className="inventory-analytics-request-kpis">
-                  {kpiCards.map(([label, value]) => (
-                    <article key={label}>
-                      <small>{label}</small>
-                      <strong>{value}</strong>
+                  {kpiCards.map((card) => (
+                    <article key={card.label}>
+                      <small>{card.label}</small>
+                      <strong>{card.value}</strong>
+                      <button type="button" onClick={() => onOpenWorkspace(card.target as InventoryView)}>
+                        More
+                      </button>
                     </article>
                   ))}
                 </div>
@@ -1297,6 +1302,7 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Stock Value Trend</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
                     <div className="inventory-analytics-request-bars">
@@ -1331,11 +1337,29 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Inventory Risk Overview</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
                     <div className="inventory-analytics-risk-summary">
-                      <strong>{formatCurrency(lowStockValue + nearExpiryValue + expiredValue)}</strong>
-                      <span>{(((lowStockValue + nearExpiryValue + expiredValue) / riskTotal) * 100).toFixed(1)}% at risk</span>
+                      <strong>{formatCurrency(atRiskValue)}</strong>
+                      <span>{((atRiskValue / riskTotal) * 100).toFixed(1)}% at risk</span>
+                    </div>
+
+                    <div className="inventory-analytics-risk-bars">
+                      {riskRows.map((row) => (
+                        <div key={row.label}>
+                          <span>{row.label}</span>
+                          <i>
+                            <em
+                              style={{
+                                width: `${Math.max((row.value / riskTotal) * 100, row.value > 0 ? 4 : 0)}%`,
+                                backgroundColor: row.color,
+                              }}
+                            />
+                          </i>
+                          <strong>{formatCurrency(row.value)}</strong>
+                        </div>
+                      ))}
                     </div>
 
                     <div className="inventory-analytics-request-table-scroll">
@@ -1349,12 +1373,12 @@ export function InventoryModuleHome({
                           </tr>
                         </thead>
                         <tbody>
-                          {riskRows.map(([label, count, value]) => (
-                            <tr key={String(label)}>
-                              <td>{label}</td>
-                              <td>{formatCompactNumber(Number(count))}</td>
-                              <td>{formatCurrency(Number(value))}</td>
-                              <td>{((Number(value) / riskTotal) * 100).toFixed(1)}%</td>
+                          {riskRows.map((row) => (
+                            <tr key={row.label}>
+                              <td><span className="inventory-analytics-risk-dot" style={{ backgroundColor: row.color }} />{row.label}</td>
+                              <td>{formatCompactNumber(row.count)}</td>
+                              <td>{formatCurrency(row.value)}</td>
+                              <td>{((row.value / riskTotal) * 100).toFixed(1)}%</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1365,6 +1389,7 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Inventory Value by Category</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('product-master')}>More</button>
                     </header>
 
                     <div className="inventory-analytics-request-category-bars">
@@ -1383,84 +1408,109 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Low Stock Watch List</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('low-stock')}>More</button>
                     </header>
 
-                    {tableRows(lowStockRows, (row, index) => index === -1 ? (
-                      <thead key="head">
-                        <tr>
-                          <th>Product</th>
-                          <th>Batch</th>
-                          <th>On Hand</th>
-                          <th>Reorder</th>
-                          <th>Value</th>
-                        </tr>
-                      </thead>
-                    ) : (
-                      <tr key={`${row.product}-${row.batchNumber}-${index}`}>
-                        <td>{row.product}</td>
-                        <td>{row.batchNumber}</td>
-                        <td>{formatCompactNumber(row.quantity)}</td>
-                        <td>{formatCompactNumber(row.reorderLevel)}</td>
-                        <td>{formatCurrency(row.value)}</td>
-                      </tr>
-                    ))}
+                    <div className="inventory-analytics-request-table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Batch</th>
+                            <th>On Hand</th>
+                            <th>Reorder</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lowStockRows.length === 0 ? (
+                            <tr><td colSpan={5}>0 records</td></tr>
+                          ) : lowStockRows.map((row, index) => (
+                            <tr key={`${row.product}-${row.batchNumber}-${index}`}>
+                              <td>{row.product}</td>
+                              <td>{row.batchNumber}</td>
+                              <td>{formatCompactNumber(row.quantity)}</td>
+                              <td>{formatCompactNumber(row.reorderLevel)}</td>
+                              <td>{formatCurrency(row.value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </article>
 
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Near Expiry Review</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>More</button>
                     </header>
 
-                    {tableRows(nearExpirySourceRows, (row, index) => index === -1 ? (
-                      <thead key="head">
-                        <tr>
-                          <th>Product</th>
-                          <th>Batch</th>
-                          <th>Expiry</th>
-                          <th>Qty</th>
-                          <th>Value</th>
-                        </tr>
-                      </thead>
-                    ) : (
-                      <tr key={`${row.product}-${row.batchNumber}-${index}`}>
-                        <td>{row.product}</td>
-                        <td>{row.batchNumber}</td>
-                        <td>{row.expiry}</td>
-                        <td>{formatCompactNumber(row.quantity)}</td>
-                        <td>{formatCurrency(row.value)}</td>
-                      </tr>
-                    ))}
+                    <div className="inventory-analytics-request-table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Batch</th>
+                            <th>Expiry</th>
+                            <th>Qty</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {nearExpirySourceRows.length === 0 ? (
+                            <tr><td colSpan={5}>0 records</td></tr>
+                          ) : nearExpirySourceRows.map((row, index) => (
+                            <tr key={`${row.product}-${row.batchNumber}-${index}`}>
+                              <td>{row.product}</td>
+                              <td>{row.batchNumber}</td>
+                              <td>{row.expiry}</td>
+                              <td>{formatCompactNumber(row.quantity)}</td>
+                              <td>{formatCurrency(row.value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </article>
 
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Expired Items</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>More</button>
                     </header>
 
-                    {tableRows(expiredRows, (row, index) => index === -1 ? (
-                      <thead key="head">
-                        <tr>
-                          <th>Product</th>
-                          <th>Batch</th>
-                          <th>Expiry</th>
-                          <th>Qty</th>
-                          <th>Value</th>
-                        </tr>
-                      </thead>
-                    ) : (
-                      <tr key={`${row.product}-${row.batchNumber}-${index}`}>
-                        <td>{row.product}</td>
-                        <td>{row.batchNumber}</td>
-                        <td>{row.expiry}</td>
-                        <td>{formatCompactNumber(row.quantity)}</td>
-                        <td>{formatCurrency(row.value)}</td>
-                      </tr>
-                    ))}
+                    <div className="inventory-analytics-request-table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Batch</th>
+                            <th>Expiry</th>
+                            <th>Qty</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {expiredRows.length === 0 ? (
+                            <tr><td colSpan={5}>0 records</td></tr>
+                          ) : expiredRows.map((row, index) => (
+                            <tr key={`${row.product}-${row.batchNumber}-${index}`}>
+                              <td>{row.product}</td>
+                              <td>{row.batchNumber}</td>
+                              <td>{row.expiry}</td>
+                              <td>{formatCompactNumber(row.quantity)}</td>
+                              <td>{formatCurrency(row.value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </article>
 
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Top Fast Moving Products</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
                     <div className="inventory-analytics-request-table-scroll">
@@ -1473,9 +1523,7 @@ export function InventoryModuleHome({
                           </tr>
                         </thead>
                         <tbody>
-                          <tr>
-                            <td colSpan={3}>0 records</td>
-                          </tr>
+                          <tr><td colSpan={3}>0 records</td></tr>
                         </tbody>
                       </table>
                     </div>
@@ -1484,6 +1532,7 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Slow Moving / Non-Moving Products</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
                     <div className="inventory-analytics-request-table-scroll">
@@ -1496,9 +1545,7 @@ export function InventoryModuleHome({
                           </tr>
                         </thead>
                         <tbody>
-                          <tr>
-                            <td colSpan={3}>0 records</td>
-                          </tr>
+                          <tr><td colSpan={3}>0 records</td></tr>
                         </tbody>
                       </table>
                     </div>
@@ -1507,30 +1554,39 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>High Value – Low Stock Risk</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
-                    {tableRows(highValueLowStockRows, (row, index) => index === -1 ? (
-                      <thead key="head">
-                        <tr>
-                          <th>Product</th>
-                          <th>Batch</th>
-                          <th>On Hand</th>
-                          <th>Value</th>
-                        </tr>
-                      </thead>
-                    ) : (
-                      <tr key={`${row.product}-${row.batchNumber}-${index}`}>
-                        <td>{row.product}</td>
-                        <td>{row.batchNumber}</td>
-                        <td>{formatCompactNumber(row.quantity)}</td>
-                        <td>{formatCurrency(row.value)}</td>
-                      </tr>
-                    ))}
+                    <div className="inventory-analytics-request-table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Batch</th>
+                            <th>On Hand</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {highValueLowStockRows.length === 0 ? (
+                            <tr><td colSpan={4}>0 records</td></tr>
+                          ) : highValueLowStockRows.map((row, index) => (
+                            <tr key={`${row.product}-${row.batchNumber}-${index}`}>
+                              <td>{row.product}</td>
+                              <td>{row.batchNumber}</td>
+                              <td>{formatCompactNumber(row.quantity)}</td>
+                              <td>{formatCurrency(row.value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </article>
 
                   <article className="inventory-analytics-request-card inventory-analytics-request-insight">
                     <header>
                       <h3>Inventory Insight</h3>
+                      <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
                     <ul>
