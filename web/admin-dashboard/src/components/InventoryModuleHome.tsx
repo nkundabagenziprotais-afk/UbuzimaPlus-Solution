@@ -855,8 +855,16 @@ export function InventoryModuleHome({
       data-visual-fine-tuning="AQUILA_INVENTORY_WORK_PACKAGE_2G_VISUAL_FINE_TUNING"
       data-chart-title-refinement="AQUILA_INVENTORY_WORK_PACKAGE_2H_CHART_AND_TITLE_REFINEMENT"
     >
-      <header className="inventory-home-title-card platform-heading-card">
-        <h1>Pharmaceutical Inventory Operations</h1>
+      <header className="inventory-analytics-page-header platform-heading-card">
+        <div>
+          <p className="eyebrow">Inventory Analytics</p>
+          <h1>Inventory Analytics</h1>
+          <span>Real-time visibility of stock, value, movement, expiry risk, and performance.</span>
+        </div>
+
+        <button type="button" className="inventory-analytics-export-button">
+          Export Report
+        </button>
       </header>
 
       {canCustomize && (
@@ -968,67 +976,31 @@ export function InventoryModuleHome({
       )}
 
       {sectionVisibility.menu && (
-        <section className="pos-overview-modules inventory-home-menu-section">
-          <div className="inventory-home-section-title platform-heading-card">
-            <h2>Inventory Menu</h2>
-          </div>
+        <section className="inventory-analytics-shortcut-row" aria-label="Inventory shortcuts">
+          {availableWorkspaces
+            .filter((workspace) =>
+              ['product-inventory', 'product-master'].includes(workspace.key),
+            )
+            .map((workspace) => (
+              <button
+                key={workspace.key}
+                type="button"
+                className="inventory-analytics-shortcut-card"
+                onClick={() => onOpenWorkspace(workspace.key)}
+              >
+                <span className={`pos-overview-module-icon icon-${workspace.key}`} aria-hidden="true">
+                  {workspace.icon}
+                </span>
 
-          <div className="pos-overview-module-grid inventory-home-menu-grid">
-            {availableWorkspaces
-              .filter(
-                (workspace) =>
-                  workspaceVisibility[workspace.key],
-              )
-              .map((workspace) => (
-                <button
-                  key={workspace.key}
-                  type="button"
-                  className="pos-overview-module-card inventory-home-menu-card inventory-home-menu-card--title-only"
-                  onClick={() =>
-                    onOpenWorkspace(workspace.key)
-                  }
-                >
-                  <span className="pos-overview-module-index">
-                    {workspace.index}
-                  </span>
-
-                  <span
-                    className={`pos-overview-module-icon icon-${workspace.key}`}
-                    aria-hidden="true"
-                  >
-                    {workspace.icon}
-                  </span>
-
-                  <span className="pos-overview-module-content inventory-home-menu-title">
-                    <strong>{workspace.label}</strong>
-                  </span>
-
-                  <span
-                    className="pos-overview-module-arrow"
-                    aria-hidden="true"
-                  >
-                    →
-                  </span>
-                </button>
-              ))}
-          </div>
+                <strong>{workspace.label}</strong>
+                <small>{workspace.key === 'product-inventory' ? 'Live stock on hand' : 'Product master records'}</small>
+              </button>
+            ))}
         </section>
       )}
 
       {sectionVisibility.analytics && (
-        <section className="inventory-home-analytics inventory-analytics-dashboard-v2 inventory-analytics-dashboard-v3">
-          <div className="inventory-analytics-dashboard-header-v3">
-            <div>
-              <p className="eyebrow">Dashboard Analytics</p>
-              <h2>Inventory Analytics</h2>
-              <span>Real-time visibility of stock, value, expiry risk, and operating priorities.</span>
-            </div>
-
-            <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>
-              Open Stock on Hand
-            </button>
-          </div>
-
+        <section className="inventory-home-analytics inventory-analytics-dashboard-full">
           {analyticsLoading && (
             <div className="inventory-professional-state">
               Loading Inventory analytics…
@@ -1066,6 +1038,10 @@ export function InventoryModuleHome({
             const expiredCount =
               findNumericSignal(summary, ['expired_batches_count', 'expired_count', 'expired_items_count']) ?? 0;
 
+            const productCount =
+              productRows.length ||
+              (findNumericSignal(summary, ['products_count', 'product_count', 'total_products']) ?? 0);
+
             const topValueRows = [...batchRows]
               .map((batch) => ({
                 batch,
@@ -1080,49 +1056,68 @@ export function InventoryModuleHome({
               .filter((batch) => inventoryText(batch, ['expiry_date', 'expires_at'], '') !== '')
               .slice(0, 5);
 
+            const expiredTableRows = batchRows
+              .filter((batch) => {
+                const expiryText = inventoryText(batch, ['expiry_date', 'expires_at'], '');
+                const expiryTime = expiryText ? new Date(expiryText).getTime() : Number.NaN;
+
+                return Number.isFinite(expiryTime) && expiryTime < Date.now() && inventoryBatchQuantity(batch) > 0;
+              })
+              .slice(0, 5);
+
+            const categoryTotals = new Map<string, number>();
+
+            batchRows.forEach((batch) => {
+              const product = inventoryNestedRecord(batch, 'product');
+              const nestedCategory = inventoryNestedRecord(product, 'category');
+              const category = inventoryText(
+                product,
+                ['category_name', 'category'],
+                inventoryText(nestedCategory, ['name'], 'Uncategorised'),
+              );
+
+              categoryTotals.set(category, (categoryTotals.get(category) ?? 0) + inventoryBatchValue(batch));
+            });
+
+            const categoryRows = Array.from(categoryTotals.entries())
+              .map(([label, value]) => ({ label, value }))
+              .sort((left, right) => right.value - left.value)
+              .slice(0, 6);
+
+            const maximumCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
+
             const kpis = [
               ['Total Inventory Value', formatCurrency(totalValue), 'Live valuation'],
-              ['Stock on Hand', formatCompactNumber(stockOnHand), 'Units available'],
-              ['Products Monitored', formatCompactNumber(productRows.length || (findNumericSignal(summary, ['products_count', 'product_count', 'total_products']) ?? 0)), 'Product master'],
-              ['Stock Locations', formatCompactNumber(locationRows.length), 'Storage points'],
-              ['Low Stock Items', formatCompactNumber(lowStockCount), 'Reorder pressure'],
-              ['Near Expiry Items', formatCompactNumber(nearExpiryCount), 'Expiry window'],
-              ['Expired Items', formatCompactNumber(expiredCount), 'Requires review'],
+              ['Stock on Hand', formatCompactNumber(stockOnHand), 'Units'],
+              ['Stock Received', '—', 'Movement source unavailable'],
+              ['Stock Issued', '—', 'Movement source unavailable'],
+              ['Low Stock Items', formatCompactNumber(lowStockCount), 'Items'],
+              ['Near Expiry Items', formatCompactNumber(nearExpiryCount), 'Items'],
+              ['Expired Items', formatCompactNumber(expiredCount || expiredTableRows.length), 'Items'],
               ['Inventory Turnover', '—', 'Movement source unavailable'],
             ];
 
             return (
               <>
-                <div className="inventory-analytics-filter-bar-v3">
-                  <label>
-                    <span>Date Range</span>
-                    <input type="text" value="Live selected period" readOnly />
-                  </label>
-                  <label>
-                    <span>Business Date Mode</span>
-                    <input type="text" value="Business Date" readOnly />
-                  </label>
-                  <label>
-                    <span>Branch</span>
-                    <input type="text" value="All Branches" readOnly />
-                  </label>
-                  <label>
-                    <span>Product</span>
-                    <input type="text" value={productRows.length ? `${productRows.length} live products` : 'Source unavailable'} readOnly />
-                  </label>
-                  <label>
-                    <span>Stock Location</span>
-                    <input type="text" value={locationRows.length ? `${locationRows.length} locations` : 'Source unavailable'} readOnly />
-                  </label>
-                  <label>
-                    <span>ABC Class</span>
-                    <input type="text" value="Live value ranking" readOnly />
-                  </label>
+                <div className="inventory-analytics-filter-bar-full">
+                  <label><span>Date Range</span><input type="text" value="Live selected period" readOnly /></label>
+                  <label><span>Business Date Mode</span><input type="text" value="Business Date" readOnly /></label>
+                  <label><span>Branch</span><input type="text" value="All Branches" readOnly /></label>
+                  <label><span>Category</span><input type="text" value={categoryRows.length ? `${categoryRows.length} categories` : 'Source unavailable'} readOnly /></label>
+                  <label><span>Product</span><input type="text" value={productCount ? `${productCount} live products` : 'Source unavailable'} readOnly /></label>
+                  <label><span>Stock Location</span><input type="text" value={locationRows.length ? `${locationRows.length} locations` : 'Source unavailable'} readOnly /></label>
+                  <label><span>Supplier</span><input type="text" value="Source unavailable" readOnly /></label>
+                  <label><span>ABC Class</span><input type="text" value="All Classes" readOnly /></label>
+
+                  <div className="inventory-analytics-filter-actions-full">
+                    <button type="button">Reset</button>
+                    <button type="button">Apply Filters</button>
+                  </div>
                 </div>
 
-                <div className="inventory-analytics-kpi-grid-v2 inventory-analytics-kpi-grid-v3">
+                <div className="inventory-analytics-kpi-row-full">
                   {kpis.map(([label, value, detail]) => (
-                    <article key={label} className="inventory-analytics-kpi-card-v2">
+                    <article key={label}>
                       <small>{label}</small>
                       <strong>{value}</strong>
                       <span>{detail}</span>
@@ -1130,86 +1125,138 @@ export function InventoryModuleHome({
                   ))}
                 </div>
 
-                <div className="inventory-analytics-dashboard-grid-v2 inventory-analytics-dashboard-grid-v3">
-                  <article className="inventory-analytics-panel-v2 inventory-analytics-panel-v2--wide">
+                <div className="inventory-analytics-chart-grid-full">
+                  <article className="inventory-analytics-panel-full inventory-analytics-panel-full--trend">
                     <header>
                       <h3>1. Stock Value Trend</h3>
                       <span>Live valuation snapshot</span>
                     </header>
-                    <div className="inventory-analytics-trend-placeholder-v2">
+
+                    <div className="inventory-analytics-trend-card-full">
                       <strong>{formatCurrency(totalValue)}</strong>
-                      <span>Historical stock movement trend source unavailable.</span>
+                      <span>Historical movement snapshots are unavailable.</span>
                     </div>
                   </article>
 
-                  <article className="inventory-analytics-panel-v2">
+                  <article className="inventory-analytics-panel-full">
                     <header>
                       <h3>2. Inventory Value by Category</h3>
-                      <span>Source-limited</span>
+                      <span>Top categories</span>
                     </header>
-                    <div className="inventory-analytics-abc-v2">
-                      <div><strong>Total stock value</strong><span>{formatCurrency(totalValue)}</span></div>
-                      <div><strong>Products monitored</strong><span>{formatCompactNumber(productRows.length)}</span></div>
-                      <div><strong>Batches loaded</strong><span>{formatCompactNumber(batchRows.length)}</span></div>
+
+                    <div className="inventory-analytics-category-bars-full">
+                      {categoryRows.length === 0 ? (
+                        <p>Source unavailable.</p>
+                      ) : categoryRows.map((row) => (
+                        <div key={row.label}>
+                          <span>{row.label}</span>
+                          <i><em style={{ width: `${Math.max((row.value / maximumCategoryValue) * 100, 4)}%` }} /></i>
+                          <strong>{formatCurrency(row.value)}</strong>
+                        </div>
+                      ))}
                     </div>
                   </article>
 
-                  <article className="inventory-analytics-panel-v2">
+                  <article className="inventory-analytics-panel-full">
                     <header>
                       <h3>3. Stock Status Summary</h3>
                       <span>Live summary</span>
                     </header>
-                    <div className="inventory-analytics-status-grid-v2">
-                      <div><small>In Stock</small><strong>{formatCompactNumber(batchRows.length)}</strong></div>
-                      <div><small>Low Stock</small><strong>{formatCompactNumber(lowStockCount)}</strong></div>
-                      <div><small>Near Expiry</small><strong>{formatCompactNumber(nearExpiryCount)}</strong></div>
-                      <div><small>Expired</small><strong>{formatCompactNumber(expiredCount)}</strong></div>
+
+                    <div className="inventory-analytics-status-grid-full">
+                      <div><small>In Stock</small><strong>{formatCompactNumber(batchRows.length)}</strong><span>Batches</span></div>
+                      <div><small>Low Stock</small><strong>{formatCompactNumber(lowStockCount)}</strong><span>Items</span></div>
+                      <div><small>Near Expiry</small><strong>{formatCompactNumber(nearExpiryCount)}</strong><span>Items</span></div>
+                      <div><small>Expired</small><strong>{formatCompactNumber(expiredCount || expiredTableRows.length)}</strong><span>Items</span></div>
+                    </div>
+
+                    <div className="inventory-analytics-abc-strip-full">
+                      <span>A Items</span>
+                      <i />
+                      <span>B Items</span>
+                      <i />
+                      <span>C Items</span>
                     </div>
                   </article>
                 </div>
 
-                <div className="inventory-analytics-action-grid-v2 inventory-analytics-action-grid-v3">
+                <div className="inventory-analytics-table-grid-full">
                   <article>
-                    <header><h3>Low Stock Watch List</h3><span>Live count</span></header>
-                    <strong>{formatCompactNumber(lowStockCount)}</strong>
-                    <p>Open Reorder Priorities for item-level action.</p>
-                    <button type="button" onClick={() => onOpenWorkspace('low-stock')}>View Low Stock</button>
+                    <header><h3>5. Low Stock Watch List</h3><span>{formatCompactNumber(lowStockCount)} items</span></header>
+                    <div className="inventory-analytics-table-list-full">
+                      <p>Open Reorder Priorities for live item-level records.</p>
+                    </div>
+                    <button type="button" onClick={() => onOpenWorkspace('low-stock')}>View All Low Stock Items →</button>
                   </article>
 
                   <article>
-                    <header><h3>Near Expiry Review</h3><span>{formatCompactNumber(nearExpiryTableRows.length)} rows</span></header>
-                    <div className="inventory-analytics-mini-list-v3">
+                    <header><h3>6. Near Expiry Review</h3><span>{formatCompactNumber(nearExpiryTableRows.length)} rows</span></header>
+                    <div className="inventory-analytics-table-list-full">
                       {nearExpiryTableRows.length === 0 ? (
                         <p>Source unavailable.</p>
                       ) : nearExpiryTableRows.map((batch, index) => (
                         <span key={`${inventoryText(batch, ['id', 'batch_number'], 'batch')}-${index}`}>
-                          {inventoryBatchProductName(batch)} · {inventoryText(batch, ['expiry_date', 'expires_at'])}
+                          {inventoryBatchProductName(batch)} · {inventoryText(batch, ['batch_number'], '—')} · {inventoryText(batch, ['expiry_date', 'expires_at'])}
                         </span>
                       ))}
                     </div>
-                    <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>View Near Expiry</button>
+                    <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>View All Near Expiry Items →</button>
                   </article>
 
                   <article>
-                    <header><h3>High Value – Low Stock Risk</h3><span>Top values</span></header>
-                    <div className="inventory-analytics-mini-list-v3">
+                    <header><h3>7. Expired Items</h3><span>{formatCompactNumber(expiredTableRows.length)} rows</span></header>
+                    <div className="inventory-analytics-table-list-full">
+                      {expiredTableRows.length === 0 ? (
+                        <p>No live expired batch rows loaded.</p>
+                      ) : expiredTableRows.map((batch, index) => (
+                        <span key={`${inventoryText(batch, ['id', 'batch_number'], 'batch')}-${index}`}>
+                          {inventoryBatchProductName(batch)} · {inventoryText(batch, ['batch_number'], '—')} · {inventoryText(batch, ['expiry_date', 'expires_at'])}
+                        </span>
+                      ))}
+                    </div>
+                    <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>View All Expired Items →</button>
+                  </article>
+
+                  <article>
+                    <header><h3>8. Top Fast Moving Products</h3><span>Movement source</span></header>
+                    <div className="inventory-analytics-table-list-full"><p>Source unavailable.</p></div>
+                    <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>View Product Inventory →</button>
+                  </article>
+
+                  <article>
+                    <header><h3>9. Slow Moving / Non Moving Products</h3><span>Stock balance proxy</span></header>
+                    <div className="inventory-analytics-table-list-full">
                       {topValueRows.length === 0 ? (
                         <p>Source unavailable.</p>
-                      ) : topValueRows.map(({ batch, value }, index) => (
+                      ) : topValueRows.map(({ batch, quantity }, index) => (
                         <span key={`${inventoryText(batch, ['id', 'batch_number'], 'batch')}-${index}`}>
-                          {inventoryBatchProductName(batch)} · {formatCurrency(value)}
+                          {inventoryBatchProductName(batch)} · On hand {formatCompactNumber(quantity)}
                         </span>
                       ))}
                     </div>
-                    <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>View Stock on Hand</button>
+                    <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>View Slow / Non Moving Products →</button>
                   </article>
 
                   <article>
+                    <header><h3>10. High Value – Low Stock Risk</h3><span>Top values</span></header>
+                    <div className="inventory-analytics-table-list-full">
+                      {topValueRows.length === 0 ? (
+                        <p>Source unavailable.</p>
+                      ) : topValueRows.map(({ batch, value, quantity }, index) => (
+                        <span key={`${inventoryText(batch, ['id', 'batch_number'], 'batch')}-${index}`}>
+                          {inventoryBatchProductName(batch)} · {formatCurrency(value)} · On hand {formatCompactNumber(quantity)}
+                        </span>
+                      ))}
+                    </div>
+                    <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>View At Risk Items →</button>
+                  </article>
+
+                  <article className="inventory-analytics-insight-card-full">
                     <header><h3>Inventory Insight</h3><span>Rule-based live signals</span></header>
                     <ul>
                       <li>{lowStockCount > 0 ? 'Low-stock pressure exists and needs reorder review.' : 'No live low-stock pressure loaded.'}</li>
                       <li>{nearExpiryCount > 0 ? 'Near-expiry batches require FEFO action.' : 'No live near-expiry pressure loaded.'}</li>
-                      <li>{expiredCount > 0 ? 'Expired stock requires quarantine/write-off review.' : 'No live expired-stock pressure loaded.'}</li>
+                      <li>{(expiredCount || expiredTableRows.length) > 0 ? 'Expired stock requires quarantine/write-off review.' : 'No live expired-stock pressure loaded.'}</li>
                     </ul>
                   </article>
                 </div>
