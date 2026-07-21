@@ -258,69 +258,78 @@ function pieGradient(segments: Array<{ percent: number; color: string }>): strin
   return `conic-gradient(${stops.join(', ')})`;
 }
 
-function numericRow(data: BusinessOverviewLiveData, labels: string[]): number {
+function dataLabelValue(
+  data: BusinessOverviewLiveData,
+  labels: string[],
+  fallback = '—',
+): string {
   for (const label of labels) {
-    const value = parseAmount(kpiValue(data, label));
-    if (value > 0) return value;
+    const value = kpiValue(data, label);
+    if (value !== '—' && value !== '') return value;
   }
 
   for (const label of labels) {
-    const value = parseAmount(rowValue(data.inventoryRows, label));
-    if (value > 0) return value;
-  }
+    const inventoryValue = rowValue(data.inventoryRows, label);
+    if (inventoryValue !== '—' && inventoryValue !== '') return inventoryValue;
 
-  return 0;
-}
-
-function textRow(data: BusinessOverviewLiveData, labels: string[], fallback = '0'): string {
-  for (const label of labels) {
-    const kpi = kpiValue(data, label);
-    if (kpi !== '—') return kpi;
-  }
-
-  for (const label of labels) {
-    const row = rowValue(data.inventoryRows, label);
-    if (row !== '—') return row;
+    const revenueValue = rowValue(data.revenueRows, label);
+    if (revenueValue !== '—' && revenueValue !== '') return revenueValue;
   }
 
   return fallback;
 }
 
+function dataLabelNumber(data: BusinessOverviewLiveData, labels: string[]): number {
+  return parseAmount(dataLabelValue(data, labels, '0'));
+}
+
+function numericRow(data: BusinessOverviewLiveData, labels: string[]): number {
+  return dataLabelNumber(data, labels);
+}
+
+function textRow(data: BusinessOverviewLiveData, labels: string[], fallback = '0'): string {
+  return dataLabelValue(data, labels, fallback);
+}
+
 function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
-  const totalInventory = numericRow(data, [
+  const totalInventory = dataLabelNumber(data, [
     'Inventory Value',
     'Total Inventory Value',
     'Stock Batches Value',
   ]);
 
-  const lowStockValue = numericRow(data, [
+  const lowStockValue = dataLabelNumber(data, [
     'Low Stock Value',
     'Low Stock Items Value',
   ]);
 
-  const nearExpiryValue = numericRow(data, [
+  const nearExpiryValue = dataLabelNumber(data, [
     'Near Expiry Value',
+    'Near Expiry Stock Value',
     'Expiring Value',
     'Expiring Items Value',
   ]);
 
-  const expiredValue = numericRow(data, [
+  const expiredValue = dataLabelNumber(data, [
     'Expired Stock Value',
     'Expired Value',
     'Expired Batches Value',
   ]);
 
-  const slowValue = 0;
-
-  const healthyValueFromData = numericRow(data, [
+  const healthyValueFromData = dataLabelNumber(data, [
     'Healthy Stock Value',
   ]);
 
-  const healthyValue =
-    healthyValueFromData ||
+  const slowValue = 0;
+
+  const healthyValue = healthyValueFromData ||
     Math.max(totalInventory - lowStockValue - nearExpiryValue - expiredValue - slowValue, 0);
 
-  const total = Math.max(totalInventory, healthyValue + lowStockValue + nearExpiryValue + expiredValue + slowValue, 1);
+  const total = Math.max(
+    totalInventory,
+    healthyValue + lowStockValue + nearExpiryValue + expiredValue + slowValue,
+    1,
+  );
 
   return [
     {
@@ -653,7 +662,7 @@ export function BusinessOverviewReviewPage({
   const grossRevenue = parseAmount(kpiValue(displayLiveData, 'Gross Revenue'));
   const netRevenue = parseAmount(kpiValue(displayLiveData, 'Net Revenue'));
   const collections = parseAmount(kpiValue(displayLiveData, 'Collections'));
-  const outstanding = parseAmount(kpiValue(displayLiveData, 'Outstanding Balance'));
+  const outstanding = parseAmount(dataLabelValue(displayLiveData, ['Outstanding Balance', 'Balance Amount']));
   const transactions = parseAmount(kpiValue(displayLiveData, 'Transaction Count'));
   const averageSale = parseAmount(kpiValue(displayLiveData, 'Average Transaction Value'));
 
@@ -687,14 +696,14 @@ export function BusinessOverviewReviewPage({
     { label: 'Gross Revenue', value: kpiValue(displayLiveData, 'Gross Revenue'), icon: '↗', tone: 'amber' },
     { label: 'Net Revenue', value: kpiValue(displayLiveData, 'Net Revenue'), icon: '⌁', tone: 'blue' },
     { label: 'Collections', value: kpiValue(displayLiveData, 'Collections'), icon: '☷', tone: 'green' },
-    { label: 'Outstanding Balance', value: kpiValue(displayLiveData, 'Outstanding Balance'), icon: '♧', tone: 'blue' },
+    { label: 'Outstanding Balance', value: dataLabelValue(displayLiveData, ['Outstanding Balance', 'Balance Amount']), icon: '♧', tone: 'blue' },
     { label: 'Transaction Count', value: kpiValue(displayLiveData, 'Transaction Count'), icon: '▣', tone: 'green' },
     { label: 'Average Transaction Value', value: kpiValue(displayLiveData, 'Average Transaction Value'), icon: '◇', tone: 'blue' },
-    { label: 'Total Inventory Value', value: kpiValue(displayLiveData, 'Inventory Value'), icon: '⬢', tone: 'purple' },
-    { label: 'Healthy Stock Value', value: kpiValue(displayLiveData, 'Healthy Stock Value'), icon: '♡', tone: 'green' },
-    { label: 'Low Stock Value', value: kpiValue(displayLiveData, 'Low Stock Value'), icon: '□', tone: 'amber' },
-    { label: 'Near Expiry Value', value: kpiValue(displayLiveData, 'Near Expiry Value'), icon: '◷', tone: 'orange' },
-    { label: 'Expired Stock Value', value: kpiValue(displayLiveData, 'Expired Stock Value'), icon: '♢', tone: 'red' },
+    { label: 'Total Inventory Value', value: dataLabelValue(displayLiveData, ['Inventory Value', 'Total Inventory Value', 'Stock Batches Value']), icon: '⬢', tone: 'purple' },
+    { label: 'Healthy Stock Value', value: dataLabelValue(displayLiveData, ['Healthy Stock Value']), icon: '♡', tone: 'green' },
+    { label: 'Low Stock Value', value: dataLabelValue(displayLiveData, ['Low Stock Value', 'Low Stock Items Value']), icon: '□', tone: 'amber' },
+    { label: 'Near Expiry Value', value: dataLabelValue(displayLiveData, ['Near Expiry Value', 'Near Expiry Stock Value', 'Expiring Value', 'Expiring Items Value']), icon: '◷', tone: 'orange' },
+    { label: 'Expired Stock Value', value: dataLabelValue(displayLiveData, ['Expired Stock Value', 'Expired Value', 'Expired Batches Value']), icon: '♢', tone: 'red' },
   ];
 
   const salesTrendSeries = buildDailyTrendSeries(
@@ -1051,8 +1060,8 @@ export function BusinessOverviewReviewPage({
           <LineChart values={insuranceTrendValues} label="Receivable Trend" startDate={insuranceStartDate} endDate={insuranceEndDate} />
 
           <div className="bo-pro-metric-list compact">
-            <article><span>Insurance Sales</span><strong>{rowValue(displayLiveData.revenueRows, 'Insurance Sales')}</strong></article>
-            <article><span>Customer Credit Exposure</span><strong>{kpiValue(displayLiveData, 'Outstanding Balance')}</strong></article>
+            <article><span>Insurance Sales</span><strong>{dataLabelValue(displayLiveData, ['Insurance Sales'], '—')}</strong></article>
+            <article><span>Customer Credit Exposure</span><strong>{dataLabelValue(displayLiveData, ['Outstanding Balance', 'Balance Amount'])}</strong></article>
             <article><span>Insurer Receivable</span><strong>—</strong></article>
             <article><span>Overdue Receivables</span><strong>—</strong></article>
           </div>
@@ -1074,7 +1083,7 @@ export function BusinessOverviewReviewPage({
               <article><span>Near Expiry Value (Start)</span><strong>{formatMoney(nearExpiryValue)}</strong></article>
               <article><span>Near Expiry Value (End)</span><strong>{formatMoney(nearExpiryValue)}</strong></article>
               <article><span>Net Change</span><strong>{formatMoney(0)} · {formatPercent(0)}</strong></article>
-              <article><span>Near Expiry Count</span><strong>{rowValue(displayLiveData.inventoryRows, 'Near Expiry Count')}</strong></article>
+              <article><span>Near Expiry Count</span><strong>{dataLabelValue(displayLiveData, ['Near Expiry Count', 'Expiring Items'])}</strong></article>
             </div>
             <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" startDate={nearExpiryStartDate} endDate={nearExpiryEndDate} />
           </div>
@@ -1095,8 +1104,8 @@ export function BusinessOverviewReviewPage({
             <div className="bo-pro-metric-list compact">
               <article><span>Inventory Value (Start)</span><strong>{formatMoney(totalInventoryValue)}</strong></article>
               <article><span>Inventory Value (End)</span><strong>{formatMoney(totalInventoryValue)}</strong></article>
-              <article><span>Total Quantity</span><strong>{rowValue(displayLiveData.inventoryRows, 'Total Quantity On Hand')}</strong></article>
-              <article><span>Stock Batches</span><strong>{rowValue(displayLiveData.inventoryRows, 'Stock Batches Count')}</strong></article>
+              <article><span>Total Quantity</span><strong>{dataLabelValue(displayLiveData, ['Total Quantity On Hand', 'Total Quantity'])}</strong></article>
+              <article><span>Stock Batches</span><strong>{dataLabelValue(displayLiveData, ['Stock Batches Count', 'Stock Batches'])}</strong></article>
             </div>
             <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" startDate={inventoryMovementStartDate} endDate={inventoryMovementEndDate} />
           </div>
