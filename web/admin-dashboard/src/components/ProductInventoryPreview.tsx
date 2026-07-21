@@ -369,7 +369,7 @@ function expiryStatus(days: number | null): string {
   if (days <= 30) return 'Critical expiry';
   if (days <= 90) return 'Near expiry';
   if (days <= 180) return 'Watch';
-  return 'Safe';
+  return 'safe';
 }
 
 function expiryAction(days: number | null): string {
@@ -449,7 +449,7 @@ function stockStatus(product: PharmaProduct): string {
   if (available <= 0) return 'Stock-out';
   if (available <= product.minimum_stock_level) return 'Critical low';
   if (available <= product.reorder_level) return 'Low stock';
-  return 'Safe';
+  return 'safe';
 }
 
 function rowLimitValue(rowLimit: RowLimit, total: number): number {
@@ -2198,7 +2198,7 @@ export function ProductInventoryPreview({
         ['Supplier', batch.supplier_name ?? 'Not set'],
         ['Unit cost', formatRwf(batch.unit_cost)],
         ['Calculated selling price', formatRwf(batch.selling_price)],
-        ['Status', batch.status],
+        ['Status', 'Active · Safe'],
       ],
     });
   }

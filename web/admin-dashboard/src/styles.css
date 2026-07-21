@@ -42914,3 +42914,61 @@ thead
   font-size: 0.72rem !important;
   padding: 0.35rem 0.45rem !important;
 }
+
+/* Recovery: Product Inventory content must remain visible */
+.section-page:has(.inventory-data-table--product-register) .module-workspace-shell,
+.section-page:has(.inventory-data-table--product-register) .module-section-stage,
+.section-page:has(.inventory-data-table--product-register) .inventory-section,
+.section-page:has(.inventory-data-table--product-register) .inventory-table-management-panel,
+.section-page:has(.inventory-data-table--product-register) .admin-table-settings-panel__content,
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel,
+.section-page:has(.inventory-data-table--product-register) .inventory-data-table--product-register,
+.section-page:has(.inventory-data-table--product-register) .inventory-data-table--product-register table,
+.section-page:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:has(input),
+.section-page:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:has(select),
+.section-page:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:has(button) {
+  display: revert !important;
+  height: auto !important;
+  min-height: initial !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Recovery: only hide the small informational marker / duplicate page marker causing the gap */
+.section-page:has(.inventory-data-table--product-register) .inventory-active-page-marker,
+.section-page:has(.inventory-data-table--product-register) .inventory-active-page-marker * {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+/* Do not hide module navigation or the Product Inventory workspace */
+.section-page:has(.inventory-data-table--product-register) .module-page-navigation-context {
+  display: flex !important;
+  height: auto !important;
+  min-height: initial !important;
+  margin: initial !important;
+  padding: initial !important;
+}
+
+/* Reduce the blank space without removing the table/form */
+.section-page:has(.inventory-data-table--product-register) .panel-heading-row {
+  margin-bottom: 0.35rem !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .module-section-stage,
+.section-page:has(.inventory-data-table--product-register) .inventory-section {
+  gap: 0.45rem !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:empty,
+.section-page:has(.inventory-data-table--product-register) .inventory-create-from-master-panel.is-hidden {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
