@@ -1345,12 +1345,8 @@ export function BusinessOverviewReviewPage({
   const dashboardIsLoading = isLoading;
 
   const refreshInventoryRiskOverview = () => {
-    if (typeof localStorage !== 'undefined') {
-      Object.keys(localStorage)
-        .filter((key) => key.includes('business-overview-cache'))
-        .forEach((key) => localStorage.removeItem(key));
-    }
-
+    // Do not clear Business Overview cache here. The inventory valuation endpoint can fail
+    // independently, and the latest good inventory cache is used as a safety fallback.
     setIsLoading(true);
     setLoaderStatus('loading');
     setLiveData((current) => ({

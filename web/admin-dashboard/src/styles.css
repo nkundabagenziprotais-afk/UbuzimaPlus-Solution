@@ -43421,3 +43421,15 @@ thead
   cursor: wait;
   opacity: 0.65;
 }
+
+/* Inventory Risk refresh button: keep compact beside title */
+.bo-pro-risk-refresh-button {
+  font-size: 0.72rem !important;
+  line-height: 1 !important;
+  padding: 0.34rem 0.58rem !important;
+  min-height: 1.7rem !important;
+}
+
+.bo-pro-risk-heading-row {
+  align-items: center !important;
+}
