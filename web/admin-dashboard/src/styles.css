@@ -42156,3 +42156,37 @@ thead
   border-left: 0.38rem solid #16a34a;
   background: rgba(22, 163, 74, 0.10) !important;
 }
+
+/* Final Product Inventory cleanup: hide legacy opportunity cards and old product search/category header */
+.inventory-opportunity-model,
+.inventory-opportunity-grid,
+.inventory-action-card-grid,
+.product-master-action-cards,
+.inventory-guided-model,
+.inventory-ai-model,
+.inventory-ai-opportunity-model {
+  display: none !important;
+}
+
+/* Hide old Product Inventory search/category surface; keep Stock on Hand table filters visible */
+.inventory-page-header + .inventory-filter-panel,
+.inventory-page-header + .inventory-search-panel,
+.inventory-product-search-panel,
+.inventory-product-filter-panel,
+.inventory-product-toolbar,
+.inventory-product-register-toolbar {
+  display: none !important;
+}
+
+/* Hide legacy Search/Category area when it appears before the Product Inventory Register table */
+.inventory-section:has(.inventory-register-filter-panel) .inventory-filter-grid,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-search-grid,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-master-search,
+.inventory-section:has(.inventory-register-filter-panel) .inventory-category-filter {
+  display: none !important;
+}
+
+/* Keep the new Stock on Hand / Product Inventory Register filters visible */
+.inventory-register-filter-panel {
+  display: grid !important;
+}
