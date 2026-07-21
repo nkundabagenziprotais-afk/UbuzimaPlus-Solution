@@ -4368,10 +4368,6 @@ export function ProductInventoryPreview({
 
       {activeInventoryView === 'overview' && renderSimpleMightyInventoryCommandCenter()}
 
-      {activeInventoryView !== 'overview' && (
-        <></>
-      )}
-
       <section className="module-workspace-shell inventory-workspace-shell">
         {showInternalNavigation && (
           <aside className="module-section-rail" aria-label="Inventory module sections">
@@ -6175,8 +6171,7 @@ export function ProductInventoryPreview({
                             <strong className="cell-strong">{batch.status === 'active' ? 'Active' : ''}</strong>
                             <br />
                             <span className="cell-muted">Safe</span>
-                             <br />
-                             <span className={inventoryBatchSourceClass(batch)}>{inventoryBatchSourceLabel(batch)}</span>
+
                           </td>
                           <td className="table-cell-actions">{renderBatchActions(batch)}</td>
                         </tr>

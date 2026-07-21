@@ -43020,3 +43020,88 @@ thead
   padding: 0 !important;
   border: 0 !important;
 }
+
+/* Final Product Inventory layout repair:
+   Keep the table and filters visible, remove only the obsolete blank/launch block. */
+.section-page:has(.inventory-data-table--product-register) .module-workspace-shell,
+.section-page:has(.inventory-data-table--product-register) .module-section-stage,
+.section-page:has(.inventory-data-table--product-register) .inventory-section,
+.section-page:has(.inventory-data-table--product-register) .inventory-table-management-panel,
+.section-page:has(.inventory-data-table--product-register) .admin-table-settings-panel__content,
+.section-page:has(.inventory-data-table--product-register) .inventory-register-filter-panel,
+.section-page:has(.inventory-data-table--product-register) .inventory-data-table--product-register {
+  display: revert !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: initial !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .inventory-guided-flow-launch-panel,
+.section-page:has(.inventory-data-table--product-register) .inventory-active-page-marker,
+.section-page:has(.inventory-data-table--product-register) .inventory-active-page-marker * {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+/* Put Table Management and filters close together without the useless card gap. */
+.section-page:has(.inventory-data-table--product-register) .panel-heading-row {
+  margin-bottom: 0.55rem !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .module-section-stage,
+.section-page:has(.inventory-data-table--product-register) .inventory-section {
+  gap: 0.6rem !important;
+}
+
+/* Product Inventory filters: compact professional toolbar/grid. */
+.inventory-register-filter-panel {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)) !important;
+  gap: 0.75rem !important;
+  align-items: end !important;
+  padding: 1rem !important;
+  margin-top: 0 !important;
+}
+
+.inventory-register-filter-panel label {
+  min-width: 0 !important;
+}
+
+.inventory-register-filter-panel input,
+.inventory-register-filter-panel select {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.inventory-register-filter-action,
+.inventory-register-filter-panel button {
+  min-height: 2.7rem !important;
+  white-space: nowrap !important;
+}
+
+.inventory-register-filter-action--primary {
+  font-weight: 850 !important;
+}
+
+/* Product Inventory status: only Active and Safe; no source label in status cell. */
+.inventory-data-table--product-register td:nth-child(10) .inventory-batch-source-pill,
+.inventory-data-table--product-register td:nth-child(10) [class*="source"] {
+  display: none !important;
+}
+
+.inventory-data-table--product-register td:nth-child(10) .cell-strong,
+.inventory-data-table--product-register td:nth-child(10) .cell-muted {
+  display: inline-flex !important;
+  margin-right: 0.35rem !important;
+  font-weight: 850 !important;
+}
+
+.inventory-data-table--product-register td:nth-child(10) .cell-muted {
+  color: #047857 !important;
+}
