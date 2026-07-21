@@ -42045,3 +42045,92 @@ thead
     width: 100%;
   }
 }
+
+/* Business Overview: actual responsive date/header controls */
+.bo-pro-page .bo-pro-card header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.bo-pro-page .bo-pro-card header > div:last-child,
+.bo-pro-page .bo-pro-card header .bo-pro-card-controls,
+.bo-pro-page .bo-pro-card header .bo-pro-panel-controls {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bo-pro-page .bo-pro-card header input[type="date"],
+.bo-pro-page .bo-pro-card header select {
+  min-width: 8.75rem;
+  max-width: 11.5rem;
+  width: auto;
+  font-size: 0.78rem !important;
+  min-height: 2.15rem;
+}
+
+.bo-pro-page .bo-pro-card header label {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.bo-pro-page .bo-pro-card header h2,
+.bo-pro-page .bo-pro-card header p,
+.bo-pro-page .bo-pro-card header span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Top global date range / start-end date section */
+.bo-pro-page form,
+.bo-pro-page .bo-pro-date-card,
+.bo-pro-page .bo-pro-date-fields,
+.bo-pro-page .bo-pro-date-controls {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.bo-pro-page form input[type="date"],
+.bo-pro-page .bo-pro-date-card input[type="date"],
+.bo-pro-page .bo-pro-date-fields input[type="date"],
+.bo-pro-page .bo-pro-date-controls input[type="date"] {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .bo-pro-page .bo-pro-card header {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-page .bo-pro-card header > div:last-child,
+  .bo-pro-page .bo-pro-card header .bo-pro-card-controls,
+  .bo-pro-page .bo-pro-card header .bo-pro-panel-controls {
+    justify-content: stretch;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .bo-pro-page .bo-pro-card header input[type="date"],
+  .bo-pro-page .bo-pro-card header select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .bo-pro-page .bo-pro-card header > div:last-child,
+  .bo-pro-page .bo-pro-card header .bo-pro-card-controls,
+  .bo-pro-page .bo-pro-card header .bo-pro-panel-controls {
+    grid-template-columns: 1fr !important;
+  }
+}
