@@ -1089,7 +1089,14 @@ export function BusinessOverviewReviewPage({
     ? liveData
     : lastGoodLiveData;
 
-  const riskSegments = useMemo(() => buildInventoryRisk(displayLiveData), [displayLiveData]);
+  const inventoryRiskSourceData = businessOverviewInventoryHasNumbers(displayLiveData)
+    ? displayLiveData
+    : liveData;
+
+  const riskSegments = useMemo(
+    () => buildInventoryRisk(inventoryRiskSourceData),
+    [inventoryRiskSourceData],
+  );
   const products = useMemo(() => productRows(displayLiveData), [displayLiveData]);
 
   const grossRevenue = parseAmount(kpiValue(displayLiveData, 'Gross Revenue'));
@@ -1099,7 +1106,10 @@ export function BusinessOverviewReviewPage({
   const transactions = parseAmount(kpiValue(displayLiveData, 'Transaction Count'));
   const averageSale = parseAmount(kpiValue(displayLiveData, 'Average Transaction Value'));
 
-  const totalInventoryValue = amountFromKpiOrRow(liveData, 'Inventory Value', 'Total Inventory Value');
+  const totalInventoryValue = Math.max(
+    amountFromKpiOrRow(displayLiveData, 'Inventory Value', 'Total Inventory Value'),
+    amountFromKpiOrRow(liveData, 'Inventory Value', 'Total Inventory Value'),
+  );
   const healthyStockValue = riskSegments.find((segment) => segment.tone === 'healthy')?.value ?? 0;
   const lowStockValue = riskSegments.find((segment) => segment.tone === 'low-stock')?.value ?? 0;
   const nearExpiryValue = riskSegments.find((segment) => segment.tone === 'near-expiry')?.value ?? 0;
