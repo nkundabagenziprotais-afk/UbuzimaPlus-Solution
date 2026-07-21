@@ -194,7 +194,7 @@ const inventoryViews: Array<{
   { key: 'batches', label: 'Batch and Expiry Review', description: 'Editable batch, FEFO and expiry register' },
   { key: 'near-expiry', label: 'Near Expiry Watch List', description: 'Expiry risk, remaining days and recommended action' },
   { key: 'product-master', label: 'Inventory', description: 'Supreme product information source' },
-  { key: 'product-inventory', label: 'Product Inventory', description: 'Commercial stock source for POS and receiving' },
+  { key: 'product-inventory', label: 'Product Inventory', description: '' },
   { key: 'locations', label: 'Stock Locations', description: 'Branch stores, shelves and storage points' },
 ];
 
@@ -3121,7 +3121,7 @@ export function ProductInventoryPreview({
       selectInventoryView('product-inventory');
       setIsInventoryReceiveFlowOpen(true);
       setActiveProductMasterAction(null);
-      setInventoryNotice('Receive Stock flow opened. Select a Inventory item, then complete batch, location, quantity, cost, and selling price.');
+      setInventoryNotice('');
       return;
     }
 
@@ -5291,7 +5291,7 @@ export function ProductInventoryPreview({
                               <td className="cell-number">{formatBatchNumber(batch?.available_quantity ?? batch?.quantity ?? 0)}</td>
                               <td className="cell-nowrap">{batchExpiryDate(batch) || 'No expiry'}</td>
                               <td className="cell-number">{days === null ? 'N/A' : days}</td>
-                              <td className="cell-center">{renderExpiryLabelBadge(days)}</td>
+                              <td className="cell-center">{expiryStatus(days) === 'safe' ? <span className="inventory-status-pill is-safe">Safe</span> : null}</td>
                               <td className="cell-wrap">{batch?.supplier_name ?? 'Not set'}</td>
                               <td className="cell-wrap">{managedExpiryAiRecommendation(days)}</td>
                               <td className="table-cell-actions">{renderBatchActions(batch)}</td>
@@ -5415,7 +5415,7 @@ export function ProductInventoryPreview({
                               <td className="cell-number">{formatRwfAmount(batch.amount)}</td>
                               <td className="cell-nowrap">{formatDate(batch.expiry_date)}</td>
                               <td className="cell-number">{days ?? 'N/A'}</td>
-                              <td className="cell-center">{renderExpiryLabelBadge(days)}</td>
+                              <td className="cell-center">{expiryStatus(days) === 'safe' ? <span className="inventory-status-pill is-safe">Safe</span> : null}</td>
                               <td className="cell-wrap">{managedExpiryAiRecommendation(days)}</td>
                               <td className="table-cell-actions">{renderBatchActions(batch)}</td>
                             </tr>
@@ -5742,20 +5742,45 @@ export function ProductInventoryPreview({
 
                   <label>
                     Supplier
-                    <input
-                      value={inventoryCreateForm.supplier_name}
-                      onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, supplier_name: event.target.value })}
-                      placeholder="Supplier name"
-                    />
+                    <select
+                      className="inventory-procurement-supplier-select"
+                      value={procurementSupplierNames.includes(inventoryCreateForm.supplier_name) ? inventoryCreateForm.supplier_name : "__manual"}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setInventoryCreateForm({
+                          ...inventoryCreateForm,
+                          supplier_name: value === "__manual" ? "" : value,
+                        });
+                      }}
+                    >
+                      <option value="">Select supplier</option>
+                      {procurementSupplierNames.map((supplier) => (
+                        <option key={supplier} value={supplier}>{supplier}</option>
+                      ))}
+                      <option value="__manual">Supplier not listed / type manually</option>
+                    </select>
+                    {!procurementSupplierNames.includes(inventoryCreateForm.supplier_name) && (
+                      <input
+                        value={inventoryCreateForm.supplier_name}
+                        placeholder="Type supplier name"
+                        onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, supplier_name: event.target.value })}
+                      />
+                    )}
                   </label>
 
                   <label>
                     Reference / PO code
                     <input
                       value={inventoryCreateForm.reference_number}
+                      list="inventory-recent-invoice-numbers"
+                      placeholder="Enter or select invoice number"
                       onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, reference_number: event.target.value })}
-                      placeholder="PO or delivery note"
                     />
+                    <datalist id="inventory-recent-invoice-numbers">
+                      {recentInventoryInvoiceNumbers.map((invoiceNumber) => (
+                        <option key={invoiceNumber} value={invoiceNumber} />
+                      ))}
+                    </datalist>
                   </label>
 
 <label className="inventory-receiving-field inventory-receiving-field--stock-location">
@@ -6185,7 +6210,7 @@ export function ProductInventoryPreview({
                           <td className="cell-number">{formatNumber(defaultMargin)}%</td>
                           <td className="cell-number">{formatRwf(computedSellingPrice)}</td>
                           <td className="cell-wrap">
-                            <strong className="cell-strong">{batch.status}</strong>
+                            <strong className="cell-strong">{batch.status === 'active' ? 'Active' : batch.status}</strong>
                             <br />
                             <span className="cell-muted">{expiryStatus(days)}</span>
                              <br />

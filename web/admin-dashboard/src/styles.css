@@ -42418,3 +42418,54 @@ thead
   font-size: 8.75px !important;
   font-weight: 700 !important;
 }
+
+/* Product Inventory: remove helper/header spacing above Product Inventory Register */
+.inventory-section:has(.inventory-data-table--product-register) .inventory-guided-flow-launch-panel,
+.inventory-section:has(.inventory-data-table--product-register) .inventory-flow-status,
+.inventory-section:has(.inventory-data-table--product-register) .inventory-page-kicker,
+.inventory-section:has(.inventory-data-table--product-register) .inventory-section-subtitle {
+  display: none !important;
+}
+
+.inventory-section:has(.inventory-data-table--product-register) .inventory-register-filter-panel {
+  margin-top: 0 !important;
+}
+
+/* Product Inventory status: only Active / Safe should remain visible */
+.inventory-status-pill.is-safe {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  background: rgba(22, 163, 74, 0.12);
+  color: #047857;
+  font-weight: 900;
+}
+
+/* Supplier Register table standardization */
+.supplier-register-table-wrap,
+.procurement-supplier-table-wrap,
+.supplier-table-wrap,
+.procurement-table-shell:has(table) {
+  width: 100%;
+  overflow-x: auto !important;
+}
+
+.supplier-register-table-wrap table,
+.procurement-supplier-table-wrap table,
+.supplier-table-wrap table,
+.procurement-table-shell table {
+  min-width: 76rem;
+  table-layout: auto;
+}
+
+.supplier-register-table-wrap th,
+.supplier-register-table-wrap td,
+.procurement-supplier-table-wrap th,
+.procurement-supplier-table-wrap td,
+.supplier-table-wrap th,
+.supplier-table-wrap td,
+.procurement-table-shell th,
+.procurement-table-shell td {
+  white-space: nowrap !important;
+}
