@@ -222,6 +222,44 @@ function mergeBusinessOverviewInventoryData(
   };
 }
 
+function readLatestBusinessOverviewInventoryCache(
+  tenantSlug: string | null,
+): BusinessOverviewLiveData | null {
+  if (typeof localStorage === 'undefined' || !tenantSlug) {
+    return null;
+  }
+
+  const candidates = Object.keys(localStorage)
+    .filter((key) =>
+      key.includes('business-overview-cache') &&
+      key.includes(`:${tenantSlug}:`),
+    )
+    .sort((left, right) => {
+      const leftIsCurrent = left.includes('business-overview-cache-v6') ? 1 : 0;
+      const rightIsCurrent = right.includes('business-overview-cache-v6') ? 1 : 0;
+
+      if (leftIsCurrent !== rightIsCurrent) {
+        return rightIsCurrent - leftIsCurrent;
+      }
+
+      return right.localeCompare(left);
+    });
+
+  for (const key of candidates) {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) ?? '') as BusinessOverviewLiveData;
+
+      if (businessOverviewCacheIsUsable(parsed) && businessOverviewInventoryHasNumbers(parsed)) {
+        return parsed;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
 function businessOverviewCacheKey(tenantSlug: string | null | undefined, range: DateRange): string {
   return `${businessOverviewCachePrefix}:${tenantSlug || 'tenant'}:${range.startDate}:${range.endDate}`;
 }
@@ -1079,7 +1117,11 @@ export function BusinessOverviewReviewPage({
         if (cancelled) return;
 
         setLiveData((current) => {
-          const stableData = stabilizeBusinessOverviewInventoryData(data, current);
+          const currentStableData = stabilizeBusinessOverviewInventoryData(data, current);
+          const cachedInventoryData = readLatestBusinessOverviewInventoryCache(tenantSlug);
+          const stableData = cachedInventoryData
+            ? stabilizeBusinessOverviewInventoryData(currentStableData, cachedInventoryData)
+            : currentStableData;
 
           if (businessOverviewCacheIsUsable(stableData)) {
             writeBusinessOverviewCache(tenantSlug, appliedDateRange, stableData);
