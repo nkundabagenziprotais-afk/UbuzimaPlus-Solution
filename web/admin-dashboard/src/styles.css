@@ -42834,3 +42834,83 @@ thead
   padding-inline: 0.45rem !important;
   font-size: 0.76rem !important;
 }
+
+/* Restore Product Master actions/cards that were accidentally hidden by broad Product Inventory cleanup */
+.section-page:not(:has(.inventory-data-table--product-register)) .product-master-action-cards,
+.section-page:not(:has(.inventory-data-table--product-register)) .inventory-action-card-grid,
+.section-page:not(:has(.inventory-data-table--product-register)) .product-master-actions,
+.section-page:not(:has(.inventory-data-table--product-register)) .inventory-product-register-actions,
+.section-page:not(:has(.inventory-data-table--product-register)) .inventory-filter-bar {
+  display: grid !important;
+}
+
+.section-page:not(:has(.inventory-data-table--product-register)) .inventory-filter-bar {
+  display: flex !important;
+}
+
+/* Product Inventory only: remove the real blank/header area between Refresh and Table Management */
+.section-page:has(.inventory-data-table--product-register) .inventory-active-page-marker,
+.section-page:has(.inventory-data-table--product-register) .inventory-active-page-marker + *,
+.section-page:has(.inventory-data-table--product-register) .module-page-navigation-context,
+.section-page:has(.inventory-data-table--product-register) .module-workspace-shell > .module-section-stage > .inventory-section > .inventory-create-from-master-panel:empty,
+.section-page:has(.inventory-data-table--product-register) .module-workspace-shell > .module-section-stage > .inventory-section > .inventory-guided-flow-launch-panel {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+/* Keep Product Inventory table management directly after the panel heading */
+.section-page:has(.inventory-data-table--product-register) .module-section-stage,
+.section-page:has(.inventory-data-table--product-register) .inventory-section {
+  gap: 0.5rem !important;
+}
+
+.section-page:has(.inventory-data-table--product-register) .panel-heading-row {
+  margin-bottom: 0.4rem !important;
+}
+
+/* Supplier Register: actual live wrappers/classes */
+.procurement-register-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.procurement-register-table-wrap .procurement-register-table {
+  min-width: 115rem !important;
+  width: max-content !important;
+  table-layout: auto !important;
+}
+
+.procurement-register-table-wrap .procurement-register-table th,
+.procurement-register-table-wrap .procurement-register-table td {
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+.procurement-register-table .procurement-register-actions-column {
+  min-width: 15rem !important;
+  width: 15rem !important;
+}
+
+.procurement-register-table .procurement-row-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.35rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.procurement-register-table .procurement-row-actions button,
+.procurement-register-table .procurement-row-actions a {
+  width: 100% !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+  font-size: 0.72rem !important;
+  padding: 0.35rem 0.45rem !important;
+}

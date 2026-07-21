@@ -529,6 +529,10 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
       return `${new Intl.NumberFormat('en-US').format(Math.max(Math.round(value / averageBatchValue), 1))} ${unit}`;
     }
 
+    if (value > 0) {
+      return `1 ${unit}`;
+    }
+
     return `0 ${unit}`;
   };
 
