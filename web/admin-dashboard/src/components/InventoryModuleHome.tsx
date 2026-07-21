@@ -271,6 +271,26 @@ function numericValue(value: unknown): number | null {
   return null;
 }
 
+function formatCompactNumber(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '—';
+  }
+
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatCurrency(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '—';
+  }
+
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 function findNumericSignal(
   payload: unknown,
   candidateKeys: string[],
@@ -746,7 +766,7 @@ export function InventoryModuleHome({
                       )
                     }
                   />
-                  <span>AI Inventory Analytics</span>
+                  <span>Inventory Analytics</span>
                 </label>
               </section>
 
@@ -861,9 +881,13 @@ export function InventoryModuleHome({
       )}
 
       {sectionVisibility.analytics && (
-        <section className="inventory-home-analytics">
-          <div className="inventory-home-section-title platform-heading-card">
-            <h2>AI Inventory Analytics</h2>
+        <section className="inventory-home-analytics inventory-analytics-dashboard-v2">
+          <div className="inventory-home-section-title platform-heading-card inventory-analytics-dashboard-title">
+            <div>
+              <p className="eyebrow">Dashboard Analytics</p>
+              <h2>Inventory Analytics</h2>
+              <span>Live visibility of stock value, expiry risk, low-stock pressure, and operating priorities.</span>
+            </div>
           </div>
 
           {analyticsLoading && (
@@ -881,90 +905,246 @@ export function InventoryModuleHome({
             </div>
           )}
 
-          {!analyticsLoading && (
-            <div className="inventory-home-chart-grid">
-              {visibleCountMetrics.length > 0 && (
-                <>
-                <article className="inventory-home-chart-panel inventory-home-chart-panel--bars">
-                  <header>
-                    <small>Live stock profile</small>
-                    <strong>Inventory Coverage</strong>
-                  </header>
-
-                  <div className="inventory-horizontal-chart">
-                    {visibleCountMetrics.map((metric) => (
-                      <div
-                        key={metric.key}
-                        className={`inventory-chart-row is-${metric.key}`}
-                      >
-                        <div>
-                          <span>{metric.label}</span>
-                          <strong>{metric.value}</strong>
-                        </div>
-
-                        <div className="inventory-chart-track">
-                          <span
-                            style={{
-                              width: `${
-                                Math.max(
-                                  4,
-                                  (
-                                    metric.amount /
-                                    analyticsCountScale
-                                  ) * 100,
-                                )
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-        <InventoryIntelligenceCards
-          token={token}
-          profile={profile}
-          onOpenWorkspace={
-            onOpenWorkspace
-          }
-        />
-
-        <TrendAnalysisPanel
-          token={token}
-          profile={profile}
-          title="Inventory Trend Analysis"
-          defaultArea="inventory"
-        />
-
-
-                </>)}
-
-                            <InventoryExecutiveRisk
-                valuation={valuation}
-              />
-
-              {valuationMetric && (
-                <article className="inventory-home-chart-panel inventory-home-chart-panel--value">
-                  <header>
-                    <small>Current financial position</small>
-                    <strong>Stock Value Gauge</strong>
-                  </header>
-
-                  <div className="inventory-value-chart">
-                    <div
-                      className="inventory-value-plot"
-                      aria-label="Inventory value trend presentation"
+          {!analyticsLoading && !analyticsError && (
+            <>
+              <div className="inventory-analytics-kpi-grid-v2">
+                {analyticsMetrics
+                  .filter((metric) => metricVisibility[metric.key])
+                  .map((metric) => (
+                    <article
+                      key={metric.key}
+                      className={`inventory-analytics-kpi-card-v2 is-${metric.key}`}
                     >
-                      <span />
-                      <i />
-                    </div>
+                      <small>{metric.label}</small>
+                      <strong>{metric.value || '—'}</strong>
+                      <span>{metric.detail || 'Live source'}</span>
+                    </article>
+                  ))}
 
-                    <strong>{valuationMetric.value}</strong>
-                    <small>{valuationMetric.detail}</small>
+                <article className="inventory-analytics-kpi-card-v2 is-stock-on-hand">
+                  <small>Stock on Hand</small>
+                  <strong>
+                    {formatCompactNumber(
+                      findNumericSignal(summary, [
+                        'total_quantity_on_hand',
+                        'quantity_on_hand',
+                        'total_quantity',
+                      ]) ?? 0,
+                    )}
+                  </strong>
+                  <span>Live units available</span>
+                </article>
+
+                <article className="inventory-analytics-kpi-card-v2 is-expired">
+                  <small>Expired Items</small>
+                  <strong>
+                    {formatCompactNumber(
+                      findNumericSignal(summary, [
+                        'expired_batches_count',
+                        'expired_count',
+                        'expired_items_count',
+                      ]) ?? 0,
+                    )}
+                  </strong>
+                  <span>Requires review</span>
+                </article>
+
+                <article className="inventory-analytics-kpi-card-v2 is-turnover">
+                  <small>Inventory Turnover</small>
+                  <strong>—</strong>
+                  <span>Sales movement source unavailable</span>
+                </article>
+              </div>
+
+              <div className="inventory-analytics-dashboard-grid-v2">
+                <article className="inventory-analytics-panel-v2 inventory-analytics-panel-v2--wide">
+                  <header>
+                    <h3>Stock Value Trend</h3>
+                    <span>Current live valuation snapshot</span>
+                  </header>
+
+                  <div className="inventory-analytics-trend-placeholder-v2">
+                    <strong>
+                      {formatCurrency(
+                        findNumericSignal(valuation, [
+                          'total_inventory_value',
+                          'inventory_value',
+                          'total_stock_value',
+                          'total_cost_value',
+                        ]) ?? 0,
+                      )}
+                    </strong>
+                    <span>Historical stock movement trend source unavailable.</span>
                   </div>
                 </article>
-              )}
-            </div>
+
+                <article className="inventory-analytics-panel-v2">
+                  <header>
+                    <h3>Stock Status Summary</h3>
+                    <span>Live summary</span>
+                  </header>
+
+                  <div className="inventory-analytics-status-grid-v2">
+                    <div>
+                      <small>Products</small>
+                      <strong>
+                        {formatCompactNumber(
+                          findNumericSignal(summary, [
+                            'products_count',
+                            'product_count',
+                            'total_products',
+                          ]) ?? 0,
+                        )}
+                      </strong>
+                    </div>
+                    <div>
+                      <small>Low Stock</small>
+                      <strong>
+                        {formatCompactNumber(
+                          findNumericSignal(summary, [
+                            'low_stock_products_count',
+                            'low_stock_count',
+                            'products_below_reorder',
+                          ]) ?? 0,
+                        )}
+                      </strong>
+                    </div>
+                    <div>
+                      <small>Near Expiry</small>
+                      <strong>
+                        {formatCompactNumber(
+                          findNumericSignal(summary, [
+                            'near_expiry_batches_180_days_count',
+                            'near_expiry_count',
+                            'expiring_batches_count',
+                          ]) ?? 0,
+                        )}
+                      </strong>
+                    </div>
+                    <div>
+                      <small>Expired</small>
+                      <strong>
+                        {formatCompactNumber(
+                          findNumericSignal(summary, [
+                            'expired_batches_count',
+                            'expired_count',
+                            'expired_items_count',
+                          ]) ?? 0,
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="inventory-analytics-panel-v2">
+                  <header>
+                    <h3>ABC Classification</h3>
+                    <span>By live stock value</span>
+                  </header>
+
+                  <div className="inventory-analytics-abc-v2">
+                    <div>
+                      <strong>A Items</strong>
+                      <span>—</span>
+                    </div>
+                    <div>
+                      <strong>B Items</strong>
+                      <span>—</span>
+                    </div>
+                    <div>
+                      <strong>C Items</strong>
+                      <span>—</span>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <div className="inventory-analytics-action-grid-v2">
+                <article>
+                  <header>
+                    <h3>Low Stock Watch List</h3>
+                    <span>Live count</span>
+                  </header>
+                  <strong>
+                    {formatCompactNumber(
+                      findNumericSignal(summary, [
+                        'low_stock_products_count',
+                        'low_stock_count',
+                        'products_below_reorder',
+                      ]) ?? 0,
+                    )}
+                  </strong>
+                  <p>Open Reorder Priorities for item-level actions.</p>
+                  <button type="button" onClick={() => onOpenWorkspace('low-stock')}>
+                    View Low Stock
+                  </button>
+                </article>
+
+                <article>
+                  <header>
+                    <h3>Near Expiry Review</h3>
+                    <span>Live count</span>
+                  </header>
+                  <strong>
+                    {formatCompactNumber(
+                      findNumericSignal(summary, [
+                        'near_expiry_batches_180_days_count',
+                        'near_expiry_count',
+                        'expiring_batches_count',
+                      ]) ?? 0,
+                    )}
+                  </strong>
+                  <p>Open Expiry Management for batch-level FEFO review.</p>
+                  <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>
+                    View Near Expiry
+                  </button>
+                </article>
+
+                <article>
+                  <header>
+                    <h3>Stock on Hand</h3>
+                    <span>Product Inventory</span>
+                  </header>
+                  <strong>
+                    {formatCompactNumber(
+                      findNumericSignal(summary, [
+                        'total_quantity_on_hand',
+                        'quantity_on_hand',
+                        'total_quantity',
+                      ]) ?? 0,
+                    )}
+                  </strong>
+                  <p>Open Stock on Hand for full batch and margin columns.</p>
+                  <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>
+                    View Stock on Hand
+                  </button>
+                </article>
+
+                <article>
+                  <header>
+                    <h3>Inventory Insight</h3>
+                    <span>Rule-based live signals</span>
+                  </header>
+                  <ul>
+                    <li>
+                      {((findNumericSignal(summary, ['low_stock_products_count', 'low_stock_count']) ?? 0) > 0)
+                        ? 'Low-stock pressure exists and needs reorder review.'
+                        : 'No live low-stock pressure loaded.'}
+                    </li>
+                    <li>
+                      {((findNumericSignal(summary, ['near_expiry_batches_180_days_count', 'near_expiry_count']) ?? 0) > 0)
+                        ? 'Near-expiry batches require FEFO action.'
+                        : 'No live near-expiry pressure loaded.'}
+                    </li>
+                    <li>
+                      {((findNumericSignal(summary, ['expired_batches_count', 'expired_count']) ?? 0) > 0)
+                        ? 'Expired stock requires quarantine/write-off review.'
+                        : 'No live expired-stock pressure loaded.'}
+                    </li>
+                  </ul>
+                </article>
+              </div>
+            </>
           )}
         </section>
       )}

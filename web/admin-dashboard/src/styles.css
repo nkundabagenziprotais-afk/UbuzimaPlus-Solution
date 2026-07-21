@@ -43433,3 +43433,204 @@ thead
 .bo-pro-risk-heading-row {
   align-items: center !important;
 }
+
+/* Inventory Module Home: live Inventory Analytics dashboard */
+.inventory-analytics-dashboard-v2 {
+  display: grid;
+  gap: 1rem;
+}
+
+.inventory-analytics-dashboard-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inventory-analytics-dashboard-title h2 {
+  margin: 0.12rem 0;
+}
+
+.inventory-analytics-dashboard-title span {
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-kpi-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.inventory-analytics-kpi-card-v2,
+.inventory-analytics-panel-v2,
+.inventory-analytics-action-grid-v2 > article {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-analytics-kpi-card-v2 {
+  padding: 1rem;
+  min-height: 6rem;
+}
+
+.inventory-analytics-kpi-card-v2 small {
+  display: block;
+  color: #64748b;
+  font-weight: 850;
+}
+
+.inventory-analytics-kpi-card-v2 strong {
+  display: block;
+  margin: 0.25rem 0;
+  color: #0f172a;
+  font-size: 1.45rem;
+  font-weight: 950;
+}
+
+.inventory-analytics-kpi-card-v2 span {
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-dashboard-grid-v2 {
+  display: grid;
+  grid-template-columns: 1.3fr 0.9fr 0.8fr;
+  gap: 0.9rem;
+}
+
+.inventory-analytics-panel-v2,
+.inventory-analytics-action-grid-v2 > article {
+  padding: 1rem;
+}
+
+.inventory-analytics-panel-v2 header,
+.inventory-analytics-action-grid-v2 header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.inventory-analytics-panel-v2 h3,
+.inventory-analytics-action-grid-v2 h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.inventory-analytics-panel-v2 header span,
+.inventory-analytics-action-grid-v2 header span {
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-trend-placeholder-v2 {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #f8fafc, #ecfdf5);
+  text-align: center;
+}
+
+.inventory-analytics-trend-placeholder-v2 strong {
+  color: #0f172a;
+  font-size: 1.8rem;
+  font-weight: 950;
+}
+
+.inventory-analytics-trend-placeholder-v2 span {
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-status-grid-v2,
+.inventory-analytics-abc-v2 {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.inventory-analytics-status-grid-v2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inventory-analytics-status-grid-v2 > div,
+.inventory-analytics-abc-v2 > div {
+  border-radius: 0.8rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.8rem;
+}
+
+.inventory-analytics-status-grid-v2 small,
+.inventory-analytics-abc-v2 strong {
+  display: block;
+  color: #64748b;
+  font-weight: 850;
+}
+
+.inventory-analytics-status-grid-v2 strong,
+.inventory-analytics-abc-v2 span {
+  display: block;
+  margin-top: 0.2rem;
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 950;
+}
+
+.inventory-analytics-action-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.inventory-analytics-action-grid-v2 strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.6rem;
+  font-weight: 950;
+}
+
+.inventory-analytics-action-grid-v2 p,
+.inventory-analytics-action-grid-v2 li {
+  color: #475569;
+  font-weight: 750;
+}
+
+.inventory-analytics-action-grid-v2 button {
+  border: 0;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 900;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+}
+
+.inventory-analytics-action-grid-v2 ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+@media (max-width: 1300px) {
+  .inventory-analytics-kpi-grid-v2,
+  .inventory-analytics-action-grid-v2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-analytics-dashboard-grid-v2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .inventory-analytics-kpi-grid-v2,
+  .inventory-analytics-action-grid-v2 {
+    grid-template-columns: 1fr;
+  }
+}
