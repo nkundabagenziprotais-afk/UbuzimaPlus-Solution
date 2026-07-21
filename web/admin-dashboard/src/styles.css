@@ -43634,3 +43634,124 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+/* Inventory Analytics dashboard v3: screenshot-style live layout */
+.inventory-analytics-dashboard-v3 {
+  gap: 1rem;
+}
+
+.inventory-analytics-dashboard-header-v3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-analytics-dashboard-header-v3 h2 {
+  margin: 0.1rem 0;
+  color: #0f172a;
+}
+
+.inventory-analytics-dashboard-header-v3 span {
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-dashboard-header-v3 button {
+  border: 0;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 900;
+  padding: 0.6rem 0.95rem;
+  white-space: nowrap;
+}
+
+.inventory-analytics-filter-bar-v3 {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+}
+
+.inventory-analytics-filter-bar-v3 label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.inventory-analytics-filter-bar-v3 span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.inventory-analytics-filter-bar-v3 input {
+  width: 100%;
+  border: 1px solid #dbe3ef;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 850;
+  padding: 0.58rem 0.7rem;
+}
+
+.inventory-analytics-kpi-grid-v3 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.inventory-analytics-dashboard-grid-v3 {
+  grid-template-columns: 1.2fr 0.9fr 0.95fr;
+}
+
+.inventory-analytics-action-grid-v3 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.inventory-analytics-mini-list-v3 {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 6rem;
+  margin: 0.55rem 0;
+}
+
+.inventory-analytics-mini-list-v3 span,
+.inventory-analytics-mini-list-v3 p {
+  margin: 0;
+  color: #475569;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+@media (max-width: 1300px) {
+  .inventory-analytics-filter-bar-v3,
+  .inventory-analytics-kpi-grid-v3,
+  .inventory-analytics-action-grid-v3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-analytics-dashboard-grid-v3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .inventory-analytics-dashboard-header-v3 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inventory-analytics-filter-bar-v3,
+  .inventory-analytics-kpi-grid-v3,
+  .inventory-analytics-action-grid-v3 {
+    grid-template-columns: 1fr;
+  }
+}
