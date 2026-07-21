@@ -44101,3 +44101,367 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+/* Inventory Analytics photo-matched dashboard */
+.inventory-analytics-photo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1.1rem;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-analytics-photo-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.55rem;
+}
+
+.inventory-analytics-photo-header p {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-photo-export,
+.inventory-analytics-photo-filter-actions button,
+.inventory-analytics-photo-table-grid button {
+  border: 0;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 900;
+  padding: 0.58rem 0.9rem;
+  cursor: pointer;
+}
+
+.inventory-analytics-photo-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.inventory-analytics-photo-shortcut-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: #ffffff;
+  padding: 1rem;
+  text-align: left;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-analytics-photo-shortcut-card strong,
+.inventory-analytics-photo-shortcut-card small {
+  display: block;
+}
+
+.inventory-analytics-photo-shortcut-card strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.inventory-analytics-photo-shortcut-card small {
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-photo-dashboard {
+  display: grid;
+  gap: 1rem;
+}
+
+.inventory-analytics-photo-filters {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr)) auto;
+  gap: 0.7rem;
+  align-items: end;
+  padding: 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+}
+
+.inventory-analytics-photo-filters label {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.inventory-analytics-photo-filters span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.inventory-analytics-photo-filters input {
+  width: 100%;
+  border: 1px solid #dbe3ef;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 850;
+  padding: 0.58rem 0.7rem;
+}
+
+.inventory-analytics-photo-filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.inventory-analytics-photo-filter-actions button:first-child {
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #dbe3ef;
+}
+
+.inventory-analytics-photo-kpis {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.inventory-analytics-photo-kpis article,
+.inventory-analytics-photo-panel,
+.inventory-analytics-photo-table-grid article {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.inventory-analytics-photo-kpis article {
+  padding: 0.85rem;
+  border-top: 4px solid #0f766e;
+}
+
+.inventory-analytics-photo-kpis article.is-blue { border-top-color: #2563eb; }
+.inventory-analytics-photo-kpis article.is-cyan { border-top-color: #0891b2; }
+.inventory-analytics-photo-kpis article.is-purple { border-top-color: #7c3aed; }
+.inventory-analytics-photo-kpis article.is-amber { border-top-color: #f59e0b; }
+.inventory-analytics-photo-kpis article.is-orange { border-top-color: #f97316; }
+.inventory-analytics-photo-kpis article.is-red { border-top-color: #dc2626; }
+.inventory-analytics-photo-kpis article.is-slate { border-top-color: #475569; }
+
+.inventory-analytics-photo-kpis small {
+  display: block;
+  color: #64748b;
+  font-weight: 850;
+}
+
+.inventory-analytics-photo-kpis strong {
+  display: block;
+  margin: 0.2rem 0;
+  color: #0f172a;
+  font-size: 1.22rem;
+  font-weight: 950;
+}
+
+.inventory-analytics-photo-kpis span {
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-photo-chart-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.95fr 0.9fr 0.75fr;
+  gap: 0.9rem;
+}
+
+.inventory-analytics-photo-panel,
+.inventory-analytics-photo-table-grid article {
+  padding: 1rem;
+}
+
+.inventory-analytics-photo-panel header,
+.inventory-analytics-photo-table-grid header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.inventory-analytics-photo-panel h3,
+.inventory-analytics-photo-table-grid h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.98rem;
+}
+
+.inventory-analytics-photo-panel header span,
+.inventory-analytics-photo-table-grid header span {
+  color: #64748b;
+  font-weight: 750;
+}
+
+.inventory-analytics-photo-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.55rem;
+  align-items: end;
+  min-height: 13rem;
+}
+
+.inventory-analytics-photo-bars div {
+  display: grid;
+  align-items: end;
+  height: 100%;
+  min-height: 12rem;
+}
+
+.inventory-analytics-photo-bars i {
+  display: block;
+  min-height: 0.3rem;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: linear-gradient(180deg, #22c55e, #047857);
+}
+
+.inventory-analytics-photo-bars small {
+  display: block;
+  margin-top: 0.35rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.inventory-analytics-photo-category {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.inventory-analytics-photo-category div {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 1fr) 1.5fr minmax(4.8rem, auto);
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.inventory-analytics-photo-category span,
+.inventory-analytics-photo-category strong {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.inventory-analytics-photo-category i {
+  display: block;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.inventory-analytics-photo-category em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #047857, #22c55e);
+}
+
+.inventory-analytics-photo-status,
+.inventory-analytics-photo-abc {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.inventory-analytics-photo-status {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inventory-analytics-photo-status div,
+.inventory-analytics-photo-abc div {
+  border: 1px solid #dbe3ef;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+  padding: 0.75rem;
+}
+
+.inventory-analytics-photo-status small,
+.inventory-analytics-photo-abc strong {
+  display: block;
+  color: #64748b;
+  font-weight: 850;
+}
+
+.inventory-analytics-photo-status strong,
+.inventory-analytics-photo-abc span {
+  display: block;
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 950;
+}
+
+.inventory-analytics-photo-table-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.inventory-analytics-photo-table-grid article {
+  min-height: 13rem;
+}
+
+.inventory-analytics-photo-list {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 6.5rem;
+}
+
+.inventory-analytics-photo-list span,
+.inventory-analytics-photo-list p,
+.inventory-analytics-photo-insight li {
+  color: #475569;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.inventory-analytics-photo-insight {
+  background: linear-gradient(180deg, #ffffff, #f8f5ff) !important;
+}
+
+.inventory-analytics-photo-insight ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+@media (max-width: 1500px) {
+  .inventory-analytics-photo-filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .inventory-analytics-photo-filter-actions {
+    grid-column: 1 / -1;
+  }
+
+  .inventory-analytics-photo-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .inventory-analytics-photo-chart-grid,
+  .inventory-analytics-photo-table-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .inventory-analytics-photo-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inventory-analytics-photo-shortcuts,
+  .inventory-analytics-photo-filters,
+  .inventory-analytics-photo-kpis,
+  .inventory-analytics-photo-status {
+    grid-template-columns: 1fr;
+  }
+}
