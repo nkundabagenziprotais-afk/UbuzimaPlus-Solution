@@ -25,7 +25,63 @@ type RiskSegment = {
 };
 
 const dateRangeStorageKey = 'ubuzima.businessOverview.executiveDateRange.v2';
-const businessOverviewCachePrefix = 'business-overview-cache';
+const businessOverviewCachePrefix = 'business-overview-cache-v6';
+
+function businessOverviewInventoryCacheAmount(value: unknown): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  const parsed = Number(
+    String(value)
+      .replace(/RWF/gi, '')
+      .replace(/[,%]/g, '')
+      .replace(/[^0-9.-]/g, '')
+      .trim(),
+  );
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function businessOverviewInventoryHasNumbers(data: BusinessOverviewLiveData): boolean {
+  const labels = [
+    'Inventory Value',
+    'Total Inventory Value',
+    'Stock Batches Count',
+    'Stock Batches Value',
+    'Healthy Stock Value',
+    'Low Stock Value',
+    'Low Stock Items',
+    'Near Expiry Value',
+    'Expiring Items',
+    'Expired Stock Value',
+  ];
+
+  const kpiHasValue = labels.some((label) =>
+    businessOverviewInventoryCacheAmount(data.kpis[label]) > 0,
+  );
+
+  const rows = Array.isArray(data.inventoryRows) ? data.inventoryRows : [];
+  const rowHasValue = rows.some((row) => {
+    const record = row as unknown as Record<string, unknown>;
+
+    return labels.includes(String(record.label ?? '')) &&
+      businessOverviewInventoryCacheAmount(record.value) > 0;
+  });
+
+  return kpiHasValue || rowHasValue;
+}
+
+function businessOverviewCacheIsUsable(data: BusinessOverviewLiveData): boolean {
+  if (!data.loaded) return false;
+  if (data.inventoryLoaded && !businessOverviewInventoryHasNumbers(data)) return false;
+
+  return Boolean(data.salesLoaded || data.inventoryLoaded);
+}
 
 function businessOverviewCacheKey(tenantSlug: string | null | undefined, range: DateRange): string {
   return `${businessOverviewCachePrefix}:${tenantSlug || 'tenant'}:${range.startDate}:${range.endDate}`;
@@ -52,7 +108,7 @@ function writeBusinessOverviewCache(
   data: BusinessOverviewLiveData,
 ): void {
   try {
-    if (!data.loaded || (!data.salesLoaded && !data.inventoryLoaded)) return;
+    if (!businessOverviewCacheIsUsable(data)) return;
     localStorage.setItem(businessOverviewCacheKey(tenantSlug, range), JSON.stringify(data));
   } catch {
     // Cache is an optimization only.

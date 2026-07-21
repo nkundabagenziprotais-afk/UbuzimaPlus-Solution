@@ -542,7 +542,16 @@ export async function loadBusinessOverviewDataAdapter({
       ? inventoryFromValuation(inventoryResult.value)
       : null;
 
-  const inventoryLoaded = Boolean(inventory);
+  const inventoryLoaded = Boolean(inventory) && [
+    inventory?.inventoryValue,
+    inventory?.stockBatches,
+    inventory?.stockBatchValue,
+    inventory?.healthyValue,
+    inventory?.lowStockValue,
+    inventory?.expiringValue,
+    inventory?.expiredValue,
+    inventory?.quantity,
+  ].some((value) => Number(value ?? 0) > 0);
   const paymentMix = buildPaymentMix(sales.paymentMethods, sales.collections);
 
   return {
