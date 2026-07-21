@@ -647,8 +647,8 @@ export function BusinessOverviewReviewPage({
     ? liveData
     : lastGoodLiveData;
 
-  const riskSegments = useMemo(() => buildInventoryRisk(displayLiveData), [liveData]);
-  const products = useMemo(() => productRows(displayLiveData), [liveData]);
+  const riskSegments = useMemo(() => buildInventoryRisk(displayLiveData), [displayLiveData]);
+  const products = useMemo(() => productRows(displayLiveData), [displayLiveData]);
 
   const grossRevenue = parseAmount(kpiValue(displayLiveData, 'Gross Revenue'));
   const netRevenue = parseAmount(kpiValue(displayLiveData, 'Net Revenue'));

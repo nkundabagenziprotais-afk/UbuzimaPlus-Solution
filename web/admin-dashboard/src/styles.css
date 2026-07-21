@@ -41914,3 +41914,24 @@ thead
 .bo-pro-card.is-loading text {
   opacity: 1 !important;
 }
+
+/* Business Overview: silent background reload.
+   Do not show customer-facing loading overlays or dim cards. */
+.bo-pro-page.is-loading .bo-pro-card,
+.bo-pro-card.is-loading {
+  opacity: 1 !important;
+}
+
+.bo-pro-page.is-loading .bo-pro-card::before,
+.bo-pro-page.is-loading .bo-pro-card::after,
+.bo-pro-card.is-loading::before,
+.bo-pro-card.is-loading::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Keep values fully visible while background refresh runs */
+.bo-pro-page.is-loading .bo-pro-card *,
+.bo-pro-card.is-loading * {
+  opacity: 1 !important;
+}
