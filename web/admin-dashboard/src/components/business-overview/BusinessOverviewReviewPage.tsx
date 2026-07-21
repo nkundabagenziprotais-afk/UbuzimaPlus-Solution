@@ -972,7 +972,6 @@ export function BusinessOverviewReviewPage({
             />
           </label>
           <button type="button" onClick={applyGlobalDates}>Apply Dates</button>
-          <button type="button" className="secondary" onClick={resetGlobalDates}>Reset</button>
         </section>
       </header>
 
