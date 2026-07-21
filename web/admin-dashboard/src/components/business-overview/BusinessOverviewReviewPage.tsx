@@ -742,35 +742,50 @@ export function BusinessOverviewReviewPage({
 
   const dashboardIsLoading = isLoading;
 
-  const applyGlobalDates = () => {
+  const applyDateRange = (
+    requestedRange: DateRange,
+    options: { resetDaily?: boolean } = {},
+  ) => {
     const nextRange = {
-      startDate: draftStartDate,
-      endDate: draftEndDate < draftStartDate ? draftStartDate : draftEndDate,
+      startDate: requestedRange.startDate,
+      endDate: requestedRange.endDate < requestedRange.startDate
+        ? requestedRange.startDate
+        : requestedRange.endDate,
     };
 
     saveDateRange(nextRange);
+
     setDraftStartDate(nextRange.startDate);
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
 
     setTrendStartDate(nextRange.startDate);
     setTrendEndDate(nextRange.endDate);
+
     setProductStartDate(nextRange.startDate);
     setProductEndDate(nextRange.endDate);
+
     setPaymentStartDate(nextRange.startDate);
     setPaymentEndDate(nextRange.endDate);
+
     setExpenseStartDate(nextRange.startDate);
     setExpenseEndDate(nextRange.endDate);
+
     setInventoryRiskStartDate(nextRange.startDate);
     setInventoryRiskEndDate(nextRange.endDate);
+
     setInsuranceStartDate(nextRange.startDate);
     setInsuranceEndDate(nextRange.endDate);
+
     setNearExpiryStartDate(nextRange.startDate);
     setNearExpiryEndDate(nextRange.endDate);
+
     setInventoryMovementStartDate(nextRange.startDate);
     setInventoryMovementEndDate(nextRange.endDate);
 
-    setDailyDate(todayIso());
+    if (options.resetDaily) {
+      setDailyDate(todayIso());
+    }
 
     setIsLoading(true);
     setLoaderStatus('loading');
@@ -781,39 +796,15 @@ export function BusinessOverviewReviewPage({
     setLoadSequence((value) => value + 1);
   };
 
+  const applyGlobalDates = () => {
+    applyDateRange({
+      startDate: draftStartDate,
+      endDate: draftEndDate,
+    });
+  };
+
   const resetGlobalDates = () => {
-    const nextRange = defaultDateRange();
-
-    saveDateRange(nextRange);
-    setDraftStartDate(nextRange.startDate);
-    setDraftEndDate(nextRange.endDate);
-    setAppliedDateRange(nextRange);
-
-    setDailyDate(todayIso());
-    setTrendStartDate(nextRange.startDate);
-    setTrendEndDate(nextRange.endDate);
-    setProductStartDate(nextRange.startDate);
-    setProductEndDate(nextRange.endDate);
-    setPaymentStartDate(nextRange.startDate);
-    setPaymentEndDate(nextRange.endDate);
-    setExpenseStartDate(nextRange.startDate);
-    setExpenseEndDate(nextRange.endDate);
-    setInventoryRiskStartDate(nextRange.startDate);
-    setInventoryRiskEndDate(nextRange.endDate);
-    setInsuranceStartDate(nextRange.startDate);
-    setInsuranceEndDate(nextRange.endDate);
-    setNearExpiryStartDate(nextRange.startDate);
-    setNearExpiryEndDate(nextRange.endDate);
-    setInventoryMovementStartDate(nextRange.startDate);
-    setInventoryMovementEndDate(nextRange.endDate);
-
-    setIsLoading(true);
-    setLoaderStatus('loading');
-    setLiveData((current) => ({
-      ...current,
-      error: null,
-    }));
-    setLoadSequence((value) => value + 1);
+    applyDateRange(defaultDateRange(), { resetDaily: true });
   };
 
   return (

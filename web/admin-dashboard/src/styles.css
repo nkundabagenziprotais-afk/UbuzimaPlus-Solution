@@ -41935,3 +41935,113 @@ thead
 .bo-pro-card.is-loading * {
   opacity: 1 !important;
 }
+
+/* Business Overview: responsive date controls and silent refresh */
+.bo-pro-page.is-loading .bo-pro-card,
+.bo-pro-card.is-loading {
+  opacity: 1 !important;
+}
+
+.bo-pro-page.is-loading .bo-pro-card::before,
+.bo-pro-page.is-loading .bo-pro-card::after,
+.bo-pro-card.is-loading::before,
+.bo-pro-card.is-loading::after {
+  display: none !important;
+  content: none !important;
+}
+
+.bo-pro-date-card,
+.bo-pro-date-card *,
+.bo-pro-period-card,
+.bo-pro-period-card *,
+.bo-pro-filter-card,
+.bo-pro-filter-card * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.bo-pro-date-card,
+.bo-pro-period-card,
+.bo-pro-filter-card {
+  overflow: visible !important;
+  max-width: 100%;
+}
+
+.bo-pro-date-card input[type="date"],
+.bo-pro-period-card input[type="date"],
+.bo-pro-filter-card input[type="date"],
+.bo-pro-date-card select,
+.bo-pro-period-card select,
+.bo-pro-filter-card select {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 2.25rem;
+  font-size: 0.84rem !important;
+}
+
+.bo-pro-date-card label,
+.bo-pro-period-card label,
+.bo-pro-filter-card label {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.bo-pro-date-card form,
+.bo-pro-date-card .bo-pro-date-controls,
+.bo-pro-date-card .bo-pro-date-fields,
+.bo-pro-period-card form,
+.bo-pro-period-card .bo-pro-date-controls,
+.bo-pro-period-card .bo-pro-date-fields,
+.bo-pro-filter-card form,
+.bo-pro-filter-card .bo-pro-date-controls,
+.bo-pro-filter-card .bo-pro-date-fields {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(9.5rem, 1fr));
+  gap: 0.65rem;
+  align-items: end;
+  max-width: 100%;
+}
+
+.bo-pro-date-card .bo-pro-date-actions,
+.bo-pro-period-card .bo-pro-date-actions,
+.bo-pro-filter-card .bo-pro-date-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.bo-pro-date-card button,
+.bo-pro-period-card button,
+.bo-pro-filter-card button {
+  min-height: 2.25rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .bo-pro-date-card form,
+  .bo-pro-date-card .bo-pro-date-controls,
+  .bo-pro-date-card .bo-pro-date-fields,
+  .bo-pro-period-card form,
+  .bo-pro-period-card .bo-pro-date-controls,
+  .bo-pro-period-card .bo-pro-date-fields,
+  .bo-pro-filter-card form,
+  .bo-pro-filter-card .bo-pro-date-controls,
+  .bo-pro-filter-card .bo-pro-date-fields {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bo-pro-date-card .bo-pro-date-actions,
+  .bo-pro-period-card .bo-pro-date-actions,
+  .bo-pro-filter-card .bo-pro-date-actions {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .bo-pro-date-card button,
+  .bo-pro-period-card button,
+  .bo-pro-filter-card button {
+    width: 100%;
+  }
+}
