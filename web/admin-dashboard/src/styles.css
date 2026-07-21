@@ -42055,3 +42055,42 @@ thead
 .inventory-section:has(.inventory-data-table--product-register) .inventory-toolbar {
   display: none !important;
 }
+
+/* Product Inventory final cleanup: remove Product Master / AI opportunity / old search-category surfaces from Product Inventory view */
+.inventory-section:has(.inventory-data-table--product-register) .inventory-action-card-grid,
+.inventory-section:has(.inventory-data-table--product-register) .product-master-action-cards,
+.inventory-section:has(.inventory-data-table--product-register) .inventory-guided-flow-launch-panel,
+.inventory-section:has(.inventory-data-table--product-register) .inventory-search-panel,
+.inventory-section:has(.inventory-data-table--product-register) .inventory-filter-panel,
+.inventory-section:has(.inventory-data-table--product-register) .inventory-page-filter-panel {
+  display: none !important;
+}
+
+/* Keep Product Inventory table controls as the source of truth */
+.inventory-section:has(.inventory-data-table--product-register) .inventory-register-filter-panel {
+  display: grid !important;
+}
+
+/* Business Overview risk chart readability */
+.bo-pro-card--risk .bo-pro-donut {
+  background-color: #ffffff;
+}
+
+.bo-pro-card--risk .bo-pro-donut > div {
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+
+.bo-pro-card--risk .bo-pro-donut strong,
+.bo-pro-card--risk .bo-pro-donut span {
+  color: #0f172a !important;
+  text-shadow: 0 1px 0 #ffffff;
+}
+
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(1) td:first-child { color: #b91c1c; }
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(2) td:first-child { color: #c2410c; }
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(3) td:first-child { color: #b45309; }
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(4) td:first-child { color: #475569; }
+.bo-pro-card--risk .bo-pro-table-wrap tbody tr:nth-child(5) td:first-child { color: #047857; }
