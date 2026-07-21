@@ -518,6 +518,7 @@ export function BusinessOverviewReviewPage({
   const [inventoryMovementEndDate, setInventoryMovementEndDate] = useState(todayIso());
 
   const [liveData, setLiveData] = useState<BusinessOverviewLiveData>(() => emptyBusinessOverviewLiveData());
+  const [lastGoodLiveData, setLastGoodLiveData] = useState<BusinessOverviewLiveData>(() => emptyBusinessOverviewLiveData());
   const [dailyLiveData, setDailyLiveData] = useState<BusinessOverviewLiveData>(() => emptyBusinessOverviewLiveData());
   const [isDailyLoading, setIsDailyLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -562,6 +563,11 @@ export function BusinessOverviewReviewPage({
         if (cancelled) return;
 
         setLiveData({ ...data });
+
+        if (data.loaded && (data.salesLoaded || data.inventoryLoaded)) {
+          setLastGoodLiveData({ ...data });
+        }
+
         setLoaderStatus(data.error ? `success-with-warning: ${data.error}` : 'success');
         setIsLoading(false);
 
@@ -637,15 +643,19 @@ export function BusinessOverviewReviewPage({
 
   const dailyMetricSource = dailyLiveData.loaded ? dailyLiveData : liveData;
 
-  const riskSegments = useMemo(() => buildInventoryRisk(liveData), [liveData]);
-  const products = useMemo(() => productRows(liveData), [liveData]);
+  const displayLiveData = liveData.loaded || !lastGoodLiveData.loaded
+    ? liveData
+    : lastGoodLiveData;
 
-  const grossRevenue = parseAmount(kpiValue(liveData, 'Gross Revenue'));
-  const netRevenue = parseAmount(kpiValue(liveData, 'Net Revenue'));
-  const collections = parseAmount(kpiValue(liveData, 'Collections'));
-  const outstanding = parseAmount(kpiValue(liveData, 'Outstanding Balance'));
-  const transactions = parseAmount(kpiValue(liveData, 'Transaction Count'));
-  const averageSale = parseAmount(kpiValue(liveData, 'Average Transaction Value'));
+  const riskSegments = useMemo(() => buildInventoryRisk(displayLiveData), [liveData]);
+  const products = useMemo(() => productRows(displayLiveData), [liveData]);
+
+  const grossRevenue = parseAmount(kpiValue(displayLiveData, 'Gross Revenue'));
+  const netRevenue = parseAmount(kpiValue(displayLiveData, 'Net Revenue'));
+  const collections = parseAmount(kpiValue(displayLiveData, 'Collections'));
+  const outstanding = parseAmount(kpiValue(displayLiveData, 'Outstanding Balance'));
+  const transactions = parseAmount(kpiValue(displayLiveData, 'Transaction Count'));
+  const averageSale = parseAmount(kpiValue(displayLiveData, 'Average Transaction Value'));
 
   const totalInventoryValue = amountFromKpiOrRow(liveData, 'Inventory Value', 'Total Inventory Value');
   const healthyStockValue = riskSegments.find((segment) => segment.tone === 'healthy')?.value ?? 0;
@@ -674,21 +684,21 @@ export function BusinessOverviewReviewPage({
   };
 
   const kpiCards = [
-    { label: 'Gross Revenue', value: kpiValue(liveData, 'Gross Revenue'), icon: '↗', tone: 'amber' },
-    { label: 'Net Revenue', value: kpiValue(liveData, 'Net Revenue'), icon: '⌁', tone: 'blue' },
-    { label: 'Collections', value: kpiValue(liveData, 'Collections'), icon: '☷', tone: 'green' },
-    { label: 'Outstanding Balance', value: kpiValue(liveData, 'Outstanding Balance'), icon: '♧', tone: 'blue' },
-    { label: 'Transaction Count', value: kpiValue(liveData, 'Transaction Count'), icon: '▣', tone: 'green' },
-    { label: 'Average Transaction Value', value: kpiValue(liveData, 'Average Transaction Value'), icon: '◇', tone: 'blue' },
-    { label: 'Total Inventory Value', value: kpiValue(liveData, 'Inventory Value'), icon: '⬢', tone: 'purple' },
-    { label: 'Healthy Stock Value', value: kpiValue(liveData, 'Healthy Stock Value'), icon: '♡', tone: 'green' },
-    { label: 'Low Stock Value', value: kpiValue(liveData, 'Low Stock Value'), icon: '□', tone: 'amber' },
-    { label: 'Near Expiry Value', value: kpiValue(liveData, 'Near Expiry Value'), icon: '◷', tone: 'orange' },
-    { label: 'Expired Stock Value', value: kpiValue(liveData, 'Expired Stock Value'), icon: '♢', tone: 'red' },
+    { label: 'Gross Revenue', value: kpiValue(displayLiveData, 'Gross Revenue'), icon: '↗', tone: 'amber' },
+    { label: 'Net Revenue', value: kpiValue(displayLiveData, 'Net Revenue'), icon: '⌁', tone: 'blue' },
+    { label: 'Collections', value: kpiValue(displayLiveData, 'Collections'), icon: '☷', tone: 'green' },
+    { label: 'Outstanding Balance', value: kpiValue(displayLiveData, 'Outstanding Balance'), icon: '♧', tone: 'blue' },
+    { label: 'Transaction Count', value: kpiValue(displayLiveData, 'Transaction Count'), icon: '▣', tone: 'green' },
+    { label: 'Average Transaction Value', value: kpiValue(displayLiveData, 'Average Transaction Value'), icon: '◇', tone: 'blue' },
+    { label: 'Total Inventory Value', value: kpiValue(displayLiveData, 'Inventory Value'), icon: '⬢', tone: 'purple' },
+    { label: 'Healthy Stock Value', value: kpiValue(displayLiveData, 'Healthy Stock Value'), icon: '♡', tone: 'green' },
+    { label: 'Low Stock Value', value: kpiValue(displayLiveData, 'Low Stock Value'), icon: '□', tone: 'amber' },
+    { label: 'Near Expiry Value', value: kpiValue(displayLiveData, 'Near Expiry Value'), icon: '◷', tone: 'orange' },
+    { label: 'Expired Stock Value', value: kpiValue(displayLiveData, 'Expired Stock Value'), icon: '♢', tone: 'red' },
   ];
 
   const salesTrendSeries = buildDailyTrendSeries(
-    trendMetric === 'count' ? [] : liveData.trend,
+    trendMetric === 'count' ? [] : displayLiveData.trend,
     trendStartDate,
     trendEndDate,
     31,
@@ -699,8 +709,8 @@ export function BusinessOverviewReviewPage({
   const nearExpiryTrendValues = chartValues([], nearExpiryValue);
   const inventoryMovementTrendValues = chartValues([], totalInventoryValue);
 
-  const paymentSegments = liveData.paymentMix.length
-    ? liveData.paymentMix.map((row, index) => ({
+  const paymentSegments = displayLiveData.paymentMix.length
+    ? displayLiveData.paymentMix.map((row, index) => ({
         label: row.label,
         percent: row.percent,
         amount: (collections * row.percent) / 100,
@@ -832,9 +842,9 @@ export function BusinessOverviewReviewPage({
         </section>
       </header>
 
-      {liveData.error && (
+      {displayLiveData.error && (
         <div className="bo-pro-alert">
-          {liveData.error}
+          {displayLiveData.error}
         </div>
       )}
 <section className="bo-pro-kpi-grid">
@@ -1041,8 +1051,8 @@ export function BusinessOverviewReviewPage({
           <LineChart values={insuranceTrendValues} label="Receivable Trend" startDate={insuranceStartDate} endDate={insuranceEndDate} />
 
           <div className="bo-pro-metric-list compact">
-            <article><span>Insurance Sales</span><strong>{rowValue(liveData.revenueRows, 'Insurance Sales')}</strong></article>
-            <article><span>Customer Credit Exposure</span><strong>{kpiValue(liveData, 'Outstanding Balance')}</strong></article>
+            <article><span>Insurance Sales</span><strong>{rowValue(displayLiveData.revenueRows, 'Insurance Sales')}</strong></article>
+            <article><span>Customer Credit Exposure</span><strong>{kpiValue(displayLiveData, 'Outstanding Balance')}</strong></article>
             <article><span>Insurer Receivable</span><strong>—</strong></article>
             <article><span>Overdue Receivables</span><strong>—</strong></article>
           </div>
@@ -1064,7 +1074,7 @@ export function BusinessOverviewReviewPage({
               <article><span>Near Expiry Value (Start)</span><strong>{formatMoney(nearExpiryValue)}</strong></article>
               <article><span>Near Expiry Value (End)</span><strong>{formatMoney(nearExpiryValue)}</strong></article>
               <article><span>Net Change</span><strong>{formatMoney(0)} · {formatPercent(0)}</strong></article>
-              <article><span>Near Expiry Count</span><strong>{rowValue(liveData.inventoryRows, 'Near Expiry Count')}</strong></article>
+              <article><span>Near Expiry Count</span><strong>{rowValue(displayLiveData.inventoryRows, 'Near Expiry Count')}</strong></article>
             </div>
             <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" startDate={nearExpiryStartDate} endDate={nearExpiryEndDate} />
           </div>
@@ -1085,8 +1095,8 @@ export function BusinessOverviewReviewPage({
             <div className="bo-pro-metric-list compact">
               <article><span>Inventory Value (Start)</span><strong>{formatMoney(totalInventoryValue)}</strong></article>
               <article><span>Inventory Value (End)</span><strong>{formatMoney(totalInventoryValue)}</strong></article>
-              <article><span>Total Quantity</span><strong>{rowValue(liveData.inventoryRows, 'Total Quantity On Hand')}</strong></article>
-              <article><span>Stock Batches</span><strong>{rowValue(liveData.inventoryRows, 'Stock Batches Count')}</strong></article>
+              <article><span>Total Quantity</span><strong>{rowValue(displayLiveData.inventoryRows, 'Total Quantity On Hand')}</strong></article>
+              <article><span>Stock Batches</span><strong>{rowValue(displayLiveData.inventoryRows, 'Stock Batches Count')}</strong></article>
             </div>
             <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" startDate={inventoryMovementStartDate} endDate={inventoryMovementEndDate} />
           </div>
