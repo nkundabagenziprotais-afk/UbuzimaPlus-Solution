@@ -4614,31 +4614,8 @@ export function ProductInventoryPreview({
             </>
           )}
 
-          {activeInventoryView !== 'overview' && activeInventoryView !== 'product-inventory' && (
-            <div className="inventory-filter-bar">
-              <label>
-                Search
-                <input
-                  value={searchTerm}
-                  placeholder="Search product, SKU, batch, location or supplier"
-                  onChange={(event) => setSearchTerm(event.target.value)}/>
-              </label>
-
-              {['shelf', 'product-master', 'product-inventory'].includes(activeInventoryView) && (
-                <label>
-                  Category
-                  <select value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)}>
-                    <option value="all">All categories</option>
-                    {productCategories.map((category) => (
-                      <option key={category.code} value={category.code}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </div>
-          )}
+          
+          {null}
 
           {activeInventoryView === 'low-stock' && (() => {
             const productSource = allProducts;
@@ -5744,12 +5721,11 @@ export function ProductInventoryPreview({
                     Supplier
                     <select
                       className="inventory-procurement-supplier-select"
-                      value={procurementSupplierNames.includes(inventoryCreateForm.supplier_name) ? inventoryCreateForm.supplier_name : "__manual"}
+                      value={procurementSupplierNames.includes(inventoryCreateForm.supplier_name) ? inventoryCreateForm.supplier_name : ""}
                       onChange={(event) => {
-                        const value = event.target.value;
                         setInventoryCreateForm({
                           ...inventoryCreateForm,
-                          supplier_name: value === "__manual" ? "" : value,
+                          supplier_name: event.target.value,
                         });
                       }}
                     >
@@ -5757,14 +5733,9 @@ export function ProductInventoryPreview({
                       {procurementSupplierNames.map((supplier) => (
                         <option key={supplier} value={supplier}>{supplier}</option>
                       ))}
-                      <option value="__manual">Supplier not listed / type manually</option>
                     </select>
-                    {!procurementSupplierNames.includes(inventoryCreateForm.supplier_name) && (
-                      <input
-                        value={inventoryCreateForm.supplier_name}
-                        placeholder="Type supplier name"
-                        onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, supplier_name: event.target.value })}
-                      />
+                    {procurementSupplierNames.length === 0 && (
+                      <p className="inventory-field-helper">No suppliers found. Create the supplier under Procurement Supplier Register first.</p>
                     )}
                   </label>
 
@@ -6210,7 +6181,7 @@ export function ProductInventoryPreview({
                           <td className="cell-number">{formatNumber(defaultMargin)}%</td>
                           <td className="cell-number">{formatRwf(computedSellingPrice)}</td>
                           <td className="cell-wrap">
-                            <strong className="cell-strong">{batch.status === 'active' ? 'Active' : batch.status}</strong>
+                            <strong className="cell-strong">{batch.status === 'active' ? 'Active' : ''}</strong>
                             <br />
                             <span className="cell-muted">{expiryStatus(days)}</span>
                              <br />

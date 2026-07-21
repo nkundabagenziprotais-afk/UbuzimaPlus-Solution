@@ -42579,3 +42579,87 @@ thead
   font-weight: 700 !important;
   fill: #475569 !important;
 }
+
+/* Product Inventory: completely remove old upper heading/search/category/blank panel */
+.inventory-filter-bar {
+  display: none !important;
+}
+
+.inventory-page-header,
+.inventory-page-hero,
+.inventory-preview-hero,
+.inventory-product-hero,
+.inventory-section-hero,
+.inventory-page-titlebar {
+  display: none !important;
+}
+
+.inventory-section:has(.inventory-data-table--product-register) > .inventory-guided-flow-launch-panel,
+.inventory-section:has(.inventory-data-table--product-register) > .inventory-create-from-master-panel:empty,
+.inventory-section:has(.inventory-data-table--product-register) > .inventory-create-from-master-panel.is-hidden {
+  display: none !important;
+}
+
+/* Product Inventory form: prevent Invoice/Supplier overlap */
+.inventory-create-from-master-panel form,
+.inventory-create-from-master-panel .inventory-form-grid,
+.inventory-create-from-master-panel .inventory-guided-form-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)) !important;
+  gap: 1rem !important;
+  align-items: start !important;
+}
+
+.inventory-create-from-master-panel label,
+.inventory-create-from-master-panel .form-field {
+  min-width: 0 !important;
+}
+
+.inventory-create-from-master-panel input,
+.inventory-create-from-master-panel select {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Supplier Register real table behavior */
+.procurement-table-shell,
+.procurement-supplier-table-wrap,
+.supplier-register-table-wrap,
+.supplier-table-wrap {
+  width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.procurement-table-shell table,
+.procurement-supplier-table-wrap table,
+.supplier-register-table-wrap table,
+.supplier-table-wrap table {
+  min-width: 88rem !important;
+  width: max-content !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.procurement-table-shell th,
+.procurement-table-shell td,
+.procurement-supplier-table-wrap th,
+.procurement-supplier-table-wrap td,
+.supplier-register-table-wrap th,
+.supplier-register-table-wrap td,
+.supplier-table-wrap th,
+.supplier-table-wrap td {
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+/* Business Overview bars: smaller two-decimal labels */
+.bo-pro-bar-data-label {
+  font-size: 7.5px !important;
+  font-weight: 850 !important;
+}
+
+.bo-pro-bar-axis-label {
+  font-size: 7.5px !important;
+}

@@ -145,6 +145,21 @@ function formatCompact(value: number): string {
   }).format(Math.round(value));
 }
 
+function formatChartCompact(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return '';
+
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(2)}M`;
+  }
+
+  if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(2)}K`;
+  }
+
+  return value % 1 === 0 ? String(value) : value.toFixed(2);
+}
+
+
 function safeRatio(numerator: number, denominator: number): number {
   return denominator > 0 ? (numerator / denominator) * 100 : 0;
 }
@@ -722,7 +737,7 @@ function LineChart({
                 y={Math.max(y - 7, 12)}
                 textAnchor="middle"
               >
-                {safeValue > 0 ? formatCompact(safeValue) : ''}
+                {safeValue > 0 ? formatChartCompact(safeValue) : ''}
               </text>
               <text
                 className="bo-pro-axis-label bo-pro-bar-axis-label"
@@ -986,36 +1001,51 @@ export function BusinessOverviewReviewPage({
   const nearExpiryTrendRange = rangeForWeekSelection(appliedDateRange.startDate, appliedDateRange.endDate, nearExpiryWeekSelection);
   const inventoryMovementTrendRange = rangeForWeekSelection(appliedDateRange.startDate, appliedDateRange.endDate, inventoryMovementWeekSelection);
 
+  const salesTrendDateKeys = selectedDateKeys(salesTrendRange.startDate, salesTrendRange.endDate);
+  const salesTrendDateLabels = salesTrendDateKeys.map((date) => businessDateDayLabel(date));
+  const insuranceTrendDateKeys = selectedDateKeys(insuranceTrendRange.startDate, insuranceTrendRange.endDate);
+  const insuranceTrendDateLabels = insuranceTrendDateKeys.map((date) => businessDateDayLabel(date));
+  const nearExpiryTrendDateKeys = selectedDateKeys(nearExpiryTrendRange.startDate, nearExpiryTrendRange.endDate);
+  const nearExpiryTrendDateLabels = nearExpiryTrendDateKeys.map((date) => businessDateDayLabel(date));
+  const inventoryMovementTrendDateKeys = selectedDateKeys(inventoryMovementTrendRange.startDate, inventoryMovementTrendRange.endDate);
+  const inventoryMovementTrendDateLabels = inventoryMovementTrendDateKeys.map((date) => businessDateDayLabel(date));
+
   const selectedGlobalDateKeys = selectedDateKeys(appliedDateRange.startDate, appliedDateRange.endDate);
   const selectedGlobalDateLabels = selectedGlobalDateKeys.map((date) => businessDateDayLabel(date));
 
   const salesTrendSeries = buildDailyTrendSeries(
     displayLiveData.trend,
-    appliedDateRange.startDate,
-    appliedDateRange.endDate,
+    salesTrendRange.startDate,
+    salesTrendRange.endDate,
     trendMetric,
-    Math.max(selectedGlobalDateKeys.length, 1),
+    Math.max(salesTrendDateKeys.length, 1),
   );
   const salesTrendValues = salesTrendSeries.map((point) => point.value);
-  const salesTrendLabels = selectedGlobalDateLabels;
+  const salesTrendLabels = salesTrendDateLabels;
 
-  const insuranceTrendValues = movementChartValues(
-    Math.max(outstanding * 0.98, 0),
-    outstanding,
-    Math.max(selectedGlobalDateKeys.length, 1),
-  );
+  const insuranceTrendValues = outstanding > 0
+    ? movementChartValues(
+        Math.max(outstanding * 0.98, 0),
+        outstanding,
+        Math.max(insuranceTrendDateKeys.length, 1),
+      )
+    : insuranceTrendDateKeys.map(() => 0);
 
-  const nearExpiryTrendValues = movementChartValues(
-    Math.max(nearExpiryValue * 0.96, 0),
-    nearExpiryValue,
-    Math.max(selectedGlobalDateKeys.length, 1),
-  );
+  const nearExpiryTrendValues = nearExpiryValue > 0
+    ? movementChartValues(
+        Math.max(nearExpiryValue * 0.96, 0),
+        nearExpiryValue,
+        Math.max(nearExpiryTrendDateKeys.length, 1),
+      )
+    : nearExpiryTrendDateKeys.map(() => 0);
 
-  const inventoryMovementTrendValues = movementChartValues(
-    Math.max(totalInventoryValue - atRiskValue, 0),
-    totalInventoryValue,
-    Math.max(selectedGlobalDateKeys.length, 1),
-  );
+  const inventoryMovementTrendValues = totalInventoryValue > 0
+    ? movementChartValues(
+        Math.max(totalInventoryValue - atRiskValue, 0),
+        totalInventoryValue,
+        Math.max(inventoryMovementTrendDateKeys.length, 1),
+      )
+    : inventoryMovementTrendDateKeys.map(() => 0);
 
   const paymentSegments = displayLiveData.paymentMix.length
     ? displayLiveData.paymentMix.map((row, index) => ({
@@ -1208,8 +1238,8 @@ export function BusinessOverviewReviewPage({
             values={salesTrendValues}
             label={trendMetric === 'count' ? 'Transaction Count' : 'Transaction Value'}
             labels={salesTrendLabels}
-            startDate={appliedDateRange.startDate}
-            endDate={appliedDateRange.endDate}
+            startDate={salesTrendRange.startDate}
+            endDate={salesTrendRange.endDate}
             maxVisibleBars={30}
           />
         </article>
@@ -1372,7 +1402,7 @@ export function BusinessOverviewReviewPage({
             </div>
           </header>
 
-          <LineChart values={insuranceTrendValues} label="Receivable Trend" labels={selectedGlobalDateLabels} startDate={appliedDateRange.startDate} endDate={appliedDateRange.endDate} maxVisibleBars={14} />
+          <LineChart values={insuranceTrendValues} label="Receivable Trend" labels={insuranceTrendDateLabels} startDate={insuranceTrendRange.startDate} endDate={insuranceTrendRange.endDate} maxVisibleBars={14} />
 
           <div className="bo-pro-metric-list compact">
             <article><span>Insurance Sales</span><strong>{dataLabelValue(displayLiveData, ['Insurance Sales'], '—')}</strong></article>
@@ -1410,7 +1440,7 @@ export function BusinessOverviewReviewPage({
               <article><span>Net Change</span><strong>{formatMoney(0)} · {formatPercent(0)}</strong></article>
               <article><span>Near Expiry Count</span><strong>{dataLabelValue(displayLiveData, ['Near Expiry Count', 'Expiring Items'])}</strong></article>
             </div>
-            <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" labels={selectedGlobalDateLabels} startDate={appliedDateRange.startDate} endDate={appliedDateRange.endDate} maxVisibleBars={14} />
+            <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" labels={nearExpiryTrendDateLabels} startDate={nearExpiryTrendRange.startDate} endDate={nearExpiryTrendRange.endDate} maxVisibleBars={14} />
           </div>
         </article>
 
@@ -1442,7 +1472,7 @@ export function BusinessOverviewReviewPage({
               <article><span>Total Quantity</span><strong>{dataLabelValue(displayLiveData, ['Total Quantity On Hand', 'Total Quantity'])}</strong></article>
               <article><span>Stock Batches</span><strong>{dataLabelValue(displayLiveData, ['Stock Batches Count', 'Stock Batches'])}</strong></article>
             </div>
-            <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" labels={selectedGlobalDateLabels} startDate={appliedDateRange.startDate} endDate={appliedDateRange.endDate} maxVisibleBars={14} />
+            <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" labels={inventoryMovementTrendDateLabels} startDate={inventoryMovementTrendRange.startDate} endDate={inventoryMovementTrendRange.endDate} maxVisibleBars={14} />
           </div>
         </article>
 
