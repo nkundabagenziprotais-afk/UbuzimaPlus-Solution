@@ -42524,3 +42524,58 @@ thead
   font-weight: 700 !important;
   fill: #475569 !important;
 }
+
+/* Business Overview: bar chart renderer replacing trend lines */
+.bo-pro-bar-chart-shell {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 0.2rem 0 0.1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bo-pro-bar-chart {
+  display: block;
+  min-width: 100%;
+}
+
+.bo-pro-chart-baseline {
+  stroke: rgba(100, 116, 139, 0.34);
+  stroke-width: 1;
+}
+
+.bo-pro-bar {
+  fill: #0f766e;
+  opacity: 0.92;
+}
+
+.bo-pro-card--trend .bo-pro-bar {
+  fill: #2563eb;
+}
+
+.bo-pro-order-insurance .bo-pro-bar {
+  fill: #7c3aed;
+}
+
+.bo-pro-order-near-expiry .bo-pro-bar {
+  fill: #f97316;
+}
+
+.bo-pro-order-inventory-movement .bo-pro-bar {
+  fill: #0f766e;
+}
+
+.bo-pro-bar-data-label {
+  font-size: 8px !important;
+  font-weight: 850 !important;
+  fill: #0f172a !important;
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 1.1px;
+  paint-order: stroke;
+}
+
+.bo-pro-bar-axis-label {
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  fill: #475569 !important;
+}

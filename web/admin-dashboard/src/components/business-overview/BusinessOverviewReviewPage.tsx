@@ -653,40 +653,90 @@ function LineChart({
   labels,
   startDate,
   endDate,
+  maxVisibleBars = 14,
 }: {
   values: number[];
   label: string;
   labels?: string[];
   startDate?: string;
   endDate?: string;
+  maxVisibleBars?: number;
 }) {
-  const width = 900;
-  const height = 140;
-  const max = Math.max(...values, 1);
+  const safeValues = values.length ? values : [0];
+  const safeLabels = labels?.length ? labels : safeValues.map((_, index) => String(index + 1));
+  const pointCount = Math.max(safeValues.length, 1);
+  const maxValue = Math.max(...safeValues, 1);
 
-  const points = values.map((value, index) => {
-    const x = values.length > 1 ? (index / (values.length - 1)) * width : 0;
-    const y = height - (value / max) * (height - 24) - 12;
+  const barWidth = 34;
+  const gap = 18;
+  const leftPadding = 34;
+  const rightPadding = 26;
+  const topPadding = 28;
+  const bottomPadding = 34;
+  const chartHeight = 170;
 
-    return { value, x, y, label: labels?.[index] ?? String(index + 1) };
-  });
+  const width = Math.max(
+    leftPadding + rightPadding + pointCount * (barWidth + gap),
+    leftPadding + rightPadding + maxVisibleBars * (barWidth + gap),
+  );
+
+  const height = chartHeight + topPadding + bottomPadding;
 
   return (
-    <div className="bo-pro-line-chart">
-      <svg viewBox="0 0 900 178" role="img" aria-label={label}>
-        <path d={linePath(values, width, height)} />
-        {points.map((point, index) => (
-          <g key={`${label}-${index}`}>
-            <circle cx={point.x} cy={point.y} r="3" />
-            <text className="bo-pro-data-label" x={point.x} y={Math.max(point.y - 9, 12)}>
-              {point.value > 0 ? formatCompact(point.value) : ''}
-            </text>
-            <text className="bo-pro-axis-label" x={point.x} y="168">
-              {point.label}
-            </text>
-          </g>
-        ))}
+    <div className="bo-pro-bar-chart-shell" role="img" aria-label={label}>
+      <svg
+        className="bo-pro-bar-chart"
+        viewBox={`0 0 ${width} ${height}`}
+        width={width}
+        height={height}
+        preserveAspectRatio="xMinYMin meet"
+      >
+        <line
+          x1={leftPadding}
+          y1={topPadding + chartHeight}
+          x2={width - rightPadding}
+          y2={topPadding + chartHeight}
+          className="bo-pro-chart-baseline"
+        />
+
+        {safeValues.map((value, index) => {
+          const safeValue = Number.isFinite(value) ? Math.max(value, 0) : 0;
+          const barHeight = safeValue > 0 ? Math.max((safeValue / maxValue) * chartHeight, 3) : 0;
+          const x = leftPadding + index * (barWidth + gap);
+          const y = topPadding + chartHeight - barHeight;
+          const axisLabel = safeLabels[index] ?? String(index + 1);
+
+          return (
+            <g key={`${axisLabel}-${index}`}>
+              <rect
+                className="bo-pro-bar"
+                x={x}
+                y={y}
+                width={barWidth}
+                height={barHeight}
+                rx="7"
+              />
+              <text
+                className="bo-pro-data-label bo-pro-bar-data-label"
+                x={x + barWidth / 2}
+                y={Math.max(y - 7, 12)}
+                textAnchor="middle"
+              >
+                {safeValue > 0 ? formatCompact(safeValue) : ''}
+              </text>
+              <text
+                className="bo-pro-axis-label bo-pro-bar-axis-label"
+                x={x + barWidth / 2}
+                y={topPadding + chartHeight + 20}
+                textAnchor="middle"
+              >
+                {axisLabel}
+              </text>
+            </g>
+          );
+        })}
       </svg>
+
       <div className="bo-pro-chart-footer">
         <span>{startDate ?? 'Start'}</span>
         <strong>{label}</strong>
@@ -936,21 +986,35 @@ export function BusinessOverviewReviewPage({
   const nearExpiryTrendRange = rangeForWeekSelection(appliedDateRange.startDate, appliedDateRange.endDate, nearExpiryWeekSelection);
   const inventoryMovementTrendRange = rangeForWeekSelection(appliedDateRange.startDate, appliedDateRange.endDate, inventoryMovementWeekSelection);
 
+  const selectedGlobalDateKeys = selectedDateKeys(appliedDateRange.startDate, appliedDateRange.endDate);
+  const selectedGlobalDateLabels = selectedGlobalDateKeys.map((date) => businessDateDayLabel(date));
+
   const salesTrendSeries = buildDailyTrendSeries(
     displayLiveData.trend,
-    salesTrendRange.startDate,
-    salesTrendRange.endDate,
+    appliedDateRange.startDate,
+    appliedDateRange.endDate,
     trendMetric,
-    Math.max(selectedDateKeys(salesTrendRange.startDate, salesTrendRange.endDate).length, 1),
+    Math.max(selectedGlobalDateKeys.length, 1),
   );
   const salesTrendValues = salesTrendSeries.map((point) => point.value);
-  const salesTrendLabels = salesTrendSeries.map((point) => point.label);
-  const insuranceTrendValues = chartValues([], outstanding);
-  const nearExpiryTrendValues = movementChartValues(Math.max(nearExpiryValue * 0.96, 0), nearExpiryValue);
+  const salesTrendLabels = selectedGlobalDateLabels;
+
+  const insuranceTrendValues = movementChartValues(
+    Math.max(outstanding * 0.98, 0),
+    outstanding,
+    Math.max(selectedGlobalDateKeys.length, 1),
+  );
+
+  const nearExpiryTrendValues = movementChartValues(
+    Math.max(nearExpiryValue * 0.96, 0),
+    nearExpiryValue,
+    Math.max(selectedGlobalDateKeys.length, 1),
+  );
+
   const inventoryMovementTrendValues = movementChartValues(
     Math.max(totalInventoryValue - atRiskValue, 0),
     totalInventoryValue,
-    Math.max(selectedDateKeys(inventoryMovementTrendRange.startDate, inventoryMovementTrendRange.endDate).length, 1),
+    Math.max(selectedGlobalDateKeys.length, 1),
   );
 
   const paymentSegments = displayLiveData.paymentMix.length
@@ -1144,8 +1208,9 @@ export function BusinessOverviewReviewPage({
             values={salesTrendValues}
             label={trendMetric === 'count' ? 'Transaction Count' : 'Transaction Value'}
             labels={salesTrendLabels}
-            startDate={salesTrendRange.startDate}
-            endDate={salesTrendRange.endDate}
+            startDate={appliedDateRange.startDate}
+            endDate={appliedDateRange.endDate}
+            maxVisibleBars={30}
           />
         </article>
 
@@ -1307,7 +1372,7 @@ export function BusinessOverviewReviewPage({
             </div>
           </header>
 
-          <LineChart values={insuranceTrendValues} label="Receivable Trend" startDate={insuranceTrendRange.startDate} endDate={insuranceTrendRange.endDate} />
+          <LineChart values={insuranceTrendValues} label="Receivable Trend" labels={selectedGlobalDateLabels} startDate={appliedDateRange.startDate} endDate={appliedDateRange.endDate} maxVisibleBars={14} />
 
           <div className="bo-pro-metric-list compact">
             <article><span>Insurance Sales</span><strong>{dataLabelValue(displayLiveData, ['Insurance Sales'], '—')}</strong></article>
@@ -1345,7 +1410,7 @@ export function BusinessOverviewReviewPage({
               <article><span>Net Change</span><strong>{formatMoney(0)} · {formatPercent(0)}</strong></article>
               <article><span>Near Expiry Count</span><strong>{dataLabelValue(displayLiveData, ['Near Expiry Count', 'Expiring Items'])}</strong></article>
             </div>
-            <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" startDate={nearExpiryTrendRange.startDate} endDate={nearExpiryTrendRange.endDate} />
+            <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" labels={selectedGlobalDateLabels} startDate={appliedDateRange.startDate} endDate={appliedDateRange.endDate} maxVisibleBars={14} />
           </div>
         </article>
 
@@ -1377,7 +1442,7 @@ export function BusinessOverviewReviewPage({
               <article><span>Total Quantity</span><strong>{dataLabelValue(displayLiveData, ['Total Quantity On Hand', 'Total Quantity'])}</strong></article>
               <article><span>Stock Batches</span><strong>{dataLabelValue(displayLiveData, ['Stock Batches Count', 'Stock Batches'])}</strong></article>
             </div>
-            <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" startDate={inventoryMovementTrendRange.startDate} endDate={inventoryMovementTrendRange.endDate} />
+            <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" labels={selectedGlobalDateLabels} startDate={appliedDateRange.startDate} endDate={appliedDateRange.endDate} maxVisibleBars={14} />
           </div>
         </article>
 
