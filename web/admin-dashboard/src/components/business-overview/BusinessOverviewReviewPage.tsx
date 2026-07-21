@@ -1344,6 +1344,22 @@ export function BusinessOverviewReviewPage({
 
   const dashboardIsLoading = isLoading;
 
+  const refreshInventoryRiskOverview = () => {
+    if (typeof localStorage !== 'undefined') {
+      Object.keys(localStorage)
+        .filter((key) => key.includes('business-overview-cache'))
+        .forEach((key) => localStorage.removeItem(key));
+    }
+
+    setIsLoading(true);
+    setLoaderStatus('loading');
+    setLiveData((current) => ({
+      ...current,
+      error: null,
+    }));
+    setLoadSequence((value) => value + 1);
+  };
+
   const applyDateRange = (
     requestedRange: DateRange,
     options: { resetDaily?: boolean } = {},
@@ -1613,7 +1629,17 @@ export function BusinessOverviewReviewPage({
         <article className={`bo-pro-card bo-pro-card--risk ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
-              <h2>Inventory Risk Overview</h2>
+              <div className="bo-pro-risk-heading-row">
+                <h2>Inventory Risk Overview</h2>
+                <button
+                  type="button"
+                  className="bo-pro-risk-refresh-button"
+                  onClick={refreshInventoryRiskOverview}
+                  disabled={dashboardIsLoading}
+                >
+                  {dashboardIsLoading ? 'Refreshing…' : 'Refresh Risk'}
+                </button>
+              </div>
             </div>
             <div className="bo-pro-controls">
               <input type="date" value={inventoryRiskStartDate} onChange={(event) => { setInventoryRiskStartDate(event.target.value); }} />

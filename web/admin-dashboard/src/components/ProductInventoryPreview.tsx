@@ -960,6 +960,36 @@ export function ProductInventoryPreview({
     inventory_value: Number(summaryPayload.inventory_value ?? 0),
     batches_count: Number(summaryPayload.batches_count ?? 0),
   };
+  const resolveInventoryBatchMarginPercent = (batch: PharmaStockBatch, fallbackMargin = 0): number => {
+    const record = batch as unknown as Record<string, unknown>;
+    const savedMargin = Number(
+      record.margin_percent ??
+      record.marginPercent ??
+      record.profit_margin_percent ??
+      record.profit_margin ??
+      record.margin,
+    );
+
+    if (Number.isFinite(savedMargin) && savedMargin > 0) {
+      return savedMargin;
+    }
+
+    const unitCost = Number(batch.unit_cost ?? 0);
+    const sellingPrice = Number(batch.selling_price ?? 0);
+
+    if (unitCost > 0 && sellingPrice > 0) {
+      return ((sellingPrice - unitCost) / unitCost) * 100;
+    }
+
+    return fallbackMargin;
+  };
+
+  const formatInventoryBatchMarginPercent = (batch: PharmaStockBatch, fallbackMargin = 0): string => {
+    const margin = resolveInventoryBatchMarginPercent(batch, fallbackMargin);
+
+    return margin > 0 ? `${formatNumber(margin)}%` : '—';
+  };
+
   const [products, setProducts] = useState<PharmaProductsResponse | null>(null);
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
   const [batches, setBatches] = useState<PharmaInventoryBatchesResponse | null>(null);
@@ -1804,12 +1834,32 @@ export function ProductInventoryPreview({
           force,
         );
 
-        void loadInventoryResource(
-          'products',
-          setProducts,
-          () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
-          false,
-        );
+        await Promise.allSettled([
+          loadInventoryResource(
+            'products',
+            setProducts,
+            () => getPharmaProducts(token, tenantSlug, { perPage: productMasterInitialLoadLimit }),
+            false,
+          ),
+          loadInventoryResource(
+            'locations',
+            setLocations,
+            () => getPharmaInventoryLocations(token, tenantSlug),
+            false,
+          ),
+          loadInventoryResource(
+            'batches',
+            setBatches,
+            () => getAllPharmaInventoryBatches(token, tenantSlug),
+            false,
+          ),
+          loadInventoryResource(
+            'near-expiry-batches',
+            setNearExpiryBatches,
+            () => getPharmaNearExpiryBatches(token, tenantSlug, 180, { perPage: inventoryBatchInitialLoadLimit }),
+            false,
+          ),
+        ]);
 
         return;
       }
@@ -2088,6 +2138,7 @@ export function ProductInventoryPreview({
           quantity: Number(inventoryCreateForm.quantity || 0),
           expiry_date: inventoryCreateForm.expiry_date || null,
           unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
+          ...(inventoryCreateForm.margin_percent ? { margin_percent: Number(inventoryCreateForm.margin_percent) } : {}),
           selling_price: sellingPrice > 0 ? sellingPrice : null,
           supplier_name: inventoryCreateForm.supplier_name || null,
           reference_number: inventoryCreateForm.reference_number || null,
@@ -2103,6 +2154,7 @@ export function ProductInventoryPreview({
           quantity: Number(inventoryCreateForm.quantity || 0),
           expiry_date: inventoryCreateForm.expiry_date || null,
           unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
+          ...(inventoryCreateForm.margin_percent ? { margin_percent: Number(inventoryCreateForm.margin_percent) } : {}),
           selling_price: sellingPrice > 0 ? sellingPrice : null,
           supplier_name: inventoryCreateForm.supplier_name || null,
           reference_number: inventoryCreateForm.reference_number || null,
@@ -3143,85 +3195,336 @@ export function ProductInventoryPreview({
   }
 
   function renderSimpleMightyInventoryCommandCenter() {
-    const commandCards = [
-      {
-        key: 'receive-stock',
-        eyebrow: 'Flow',
-        title: 'Receive stock',
-        action: 'Start',
-        tone: 'primary',
-      },
-      {
-        key: 'product-master-create',
-        eyebrow: 'Master',
-        title: 'Add product',
-        action: 'Add',
-        tone: 'quiet',
-      },
-      {
-        key: 'product-master-review',
-        eyebrow: 'Register',
-        title: 'Product list',
-        action: 'Open',
-        tone: 'quiet',
-      },
-      {
-        key: 'product-master-replicate',
-        eyebrow: 'Fast',
-        title: 'Replicate',
-        action: 'Choose',
-        tone: 'quiet',
-      },
-      {
-        key: 'low-stock',
-        eyebrow: 'Queue',
-        title: 'Low stock',
-        action: 'Review',
-        tone: 'alert',
-      },
-      {
-        key: 'near-expiry',
-        eyebrow: 'Risk',
-        title: 'Expiry',
-        action: 'Review',
-        tone: 'alert',
-      },
-    ] as const;
+    const asRecord = (value: unknown): Record<string, unknown> =>
+      value && typeof value === 'object' && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : {};
+
+    const asArray = <T,>(value: unknown): T[] => Array.isArray(value) ? value as T[] : [];
+
+    const productRows = [
+      ...asArray<PharmaProduct>((products as unknown as Record<string, unknown> | null)?.products),
+      ...asArray<PharmaProduct>((products as unknown as Record<string, unknown> | null)?.data),
+    ].filter((product, index, rows) => rows.findIndex((item) => Number(item.id) === Number(product.id)) === index);
+
+    const batchRows = [
+      ...asArray<PharmaStockBatch>((batches as unknown as Record<string, unknown> | null)?.batches),
+      ...asArray<PharmaStockBatch>((batches as unknown as Record<string, unknown> | null)?.data),
+    ].filter((batch, index, rows) => rows.findIndex((item) => Number(item.id) === Number(batch.id)) === index);
+
+    const nearExpiryRows = [
+      ...asArray<PharmaStockBatch>((nearExpiryBatches as unknown as Record<string, unknown> | null)?.batches),
+      ...asArray<PharmaStockBatch>((nearExpiryBatches as unknown as Record<string, unknown> | null)?.data),
+    ].filter((batch, index, rows) => rows.findIndex((item) => Number(item.id) === Number(batch.id)) === index);
+
+    const locationRows = [
+      ...asArray<Record<string, unknown>>((locations as unknown as Record<string, unknown> | null)?.locations),
+      ...asArray<Record<string, unknown>>((locations as unknown as Record<string, unknown> | null)?.data),
+    ];
+
+    const money = (value: number) =>
+      value > 0
+        ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)
+        : '—';
+
+    const count = (value: number) =>
+      value > 0 ? new Intl.NumberFormat('en-US').format(value) : '—';
+
+    const batchAvailable = (batch: PharmaStockBatch) =>
+      Number(batch.available_quantity ?? batch.quantity_on_hand ?? 0) || 0;
+
+    const batchValue = (batch: PharmaStockBatch) => {
+      const quantity = batchAvailable(batch);
+      const unitCost = Number(batch.unit_cost ?? 0) || 0;
+      const sellingPrice = Number(batch.selling_price ?? 0) || 0;
+
+      return quantity * (unitCost || sellingPrice);
+    };
+
+    const batchDays = (batch: PharmaStockBatch) => batch.expiry_date ? remainingDays(batch.expiry_date) : null;
+
+    const liveTotalValue = batchRows.reduce((sum, batch) => sum + batchValue(batch), 0);
+    const totalInventoryValue =
+      inventorySummary.estimated_stock_value ||
+      inventorySummary.total_stock_value ||
+      inventorySummary.inventory_value ||
+      liveTotalValue;
+
+    const stockOnHandUnits =
+      inventorySummary.total_quantity_on_hand ||
+      batchRows.reduce((sum, batch) => sum + batchAvailable(batch), 0);
+
+    const expiredRows = batchRows.filter((batch) => {
+      const days = batchDays(batch);
+
+      return days !== null && days < 0 && batchAvailable(batch) > 0;
+    });
+
+    const nearRows = nearExpiryRows.length > 0
+      ? nearExpiryRows.filter((batch) => batchAvailable(batch) > 0)
+      : batchRows.filter((batch) => {
+          const days = batchDays(batch);
+
+          return days !== null && days >= 0 && days <= 180 && batchAvailable(batch) > 0;
+        });
+
+    const categoryMap = new Map<string, { value: number; count: number }>();
+    batchRows.forEach((batch) => {
+      const product = asRecord(batch.product);
+      const category = String(
+        product.category_name ??
+        asRecord(product.category).name ??
+        product.category ??
+        'Uncategorised',
+      );
+      const current = categoryMap.get(category) ?? { value: 0, count: 0 };
+      current.value += batchValue(batch);
+      current.count += 1;
+      categoryMap.set(category, current);
+    });
+
+    const categoryRows = Array.from(categoryMap.entries())
+      .map(([label, row]) => ({ label, ...row }))
+      .sort((left, right) => right.value - left.value)
+      .slice(0, 6);
+
+    const lowStockRows = productRows
+      .map((product) => {
+        const productBatches = batchRows.filter((batch) => Number(batch.product?.id ?? 0) === Number(product.id ?? 0));
+        const available = productBatches.reduce((sum, batch) => sum + batchAvailable(batch), 0);
+        const reorderLevel = Number((product as unknown as Record<string, unknown>).reorder_level ?? 0) || 0;
+        const nearestBatch = productBatches
+          .filter((batch) => batch.expiry_date)
+          .sort((left, right) => String(left.expiry_date).localeCompare(String(right.expiry_date)))[0] ?? null;
+
+        return {
+          product,
+          available,
+          reorderLevel,
+          nearestBatch,
+          value: productBatches.reduce((sum, batch) => sum + batchValue(batch), 0),
+        };
+      })
+      .filter((row) => row.reorderLevel > 0 && row.available <= row.reorderLevel)
+      .sort((left, right) => left.available - right.available)
+      .slice(0, 5);
+
+    const expiredTableRows = expiredRows
+      .sort((left, right) => String(left.expiry_date).localeCompare(String(right.expiry_date)))
+      .slice(0, 5);
+
+    const nearExpiryTableRows = nearRows
+      .sort((left, right) => String(left.expiry_date).localeCompare(String(right.expiry_date)))
+      .slice(0, 5);
+
+    const highValueRiskRows = batchRows
+      .map((batch) => ({
+        batch,
+        value: batchValue(batch),
+        available: batchAvailable(batch),
+      }))
+      .filter((row) => row.value > 0 && row.available > 0)
+      .sort((left, right) => right.value - left.value)
+      .slice(0, 5);
+
+    const slowMovingRows = batchRows
+      .map((batch) => ({
+        batch,
+        value: batchValue(batch),
+        available: batchAvailable(batch),
+        createdAt: String((batch as unknown as Record<string, unknown>).created_at ?? ''),
+      }))
+      .filter((row) => row.available > 0)
+      .sort((left, right) => right.available - left.available)
+      .slice(0, 5);
+
+    const statusCards = [
+      { label: 'In Stock', value: batchRows.filter((batch) => batchAvailable(batch) > 0).length, tone: 'good' },
+      { label: 'Low Stock', value: lowStockRows.length || inventorySummary.low_stock_products_count || inventorySummary.low_stock_count, tone: 'warning' },
+      { label: 'Near Expiry', value: nearRows.length || inventorySummary.near_expiry_batches_180_days_count || inventorySummary.near_expiry_count, tone: 'orange' },
+      { label: 'Expired', value: expiredRows.length, tone: 'danger' },
+    ];
+
+    const kpiCards = [
+      { label: 'Total Inventory Value', value: money(totalInventoryValue), helper: 'Live stock valuation', icon: '▣', tone: 'green' },
+      { label: 'Stock on Hand', value: count(stockOnHandUnits), helper: 'Units available', icon: '◫', tone: 'blue' },
+      { label: 'Stock Batches', value: count(batchRows.length || inventorySummary.stock_batches_count || inventorySummary.batches_count), helper: 'Loaded batches', icon: '▤', tone: 'teal' },
+      { label: 'Product Master', value: count(productRows.length || inventorySummary.products_count), helper: 'Live products', icon: 'RX', tone: 'purple' },
+      { label: 'Low Stock Items', value: count(lowStockRows.length || inventorySummary.low_stock_products_count || inventorySummary.low_stock_count), helper: 'Need replenishment', icon: '!', tone: 'amber' },
+      { label: 'Near Expiry Items', value: count(nearRows.length || inventorySummary.near_expiry_batches_180_days_count || inventorySummary.near_expiry_count), helper: 'Within expiry window', icon: '⌛', tone: 'orange' },
+      { label: 'Expired Items', value: count(expiredRows.length), helper: 'Requires action', icon: '×', tone: 'red' },
+      { label: 'Stock Locations', value: count(locationRows.length || inventorySummary.stock_locations_count), helper: 'Storage points', icon: '⌂', tone: 'cyan' },
+    ];
+
+    const maxCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
 
     return (
-      <section className="inventory-simple-command-center">
-        <div className="inventory-simple-command-heading">
+      <section className="pharma-inventory-analytics-dashboard" aria-label="Pharmaceutical Inventory Operations Analytics">
+        <div className="pharma-inventory-analytics-hero">
           <div>
-            <p className="eyebrow">Workflow launcher</p>
-            <h3>Choose the next action</h3>
-            <span>
-              Start with the action you need today. Forms stay closed until you open them.
-            </span>
+            <p className="eyebrow">Dashboard Analytics</p>
+            <h3>Pharmaceutical Inventory Operations</h3>
+            <span>Live visibility of stock value, quantity, expiry risk, low-stock pressure, and operational action lists.</span>
           </div>
-          <button type="button" onClick={() => loadInventoryPreview(activeInventoryView, true)} disabled={isLoading}>
-            {isLoading ? 'Refreshing…' : 'Refresh active page'}
+          <button type="button" onClick={() => loadInventoryPreview('overview', true)} disabled={isLoading}>
+            {isLoading ? 'Refreshing…' : 'Refresh analytics'}
           </button>
         </div>
 
-        <div className="inventory-simple-command-grid">
-          {commandCards.map((card) => (
-            <button
-              key={card.key}
-              type="button"
-              className={`inventory-simple-command-card inventory-simple-command-card--${card.tone}`}
-              onClick={() => startSimpleMightyInventoryFlow(card.key)}
-            >
-              <small>{card.eyebrow}</small>
-              <strong>{card.title}</strong>
-              <em>{card.action}</em>
-            </button>
+        <div className="pharma-inventory-kpi-grid">
+          {kpiCards.map((card) => (
+            <article key={card.label} className={`pharma-inventory-kpi-card pharma-inventory-kpi-card--${card.tone}`}>
+              <span>{card.icon}</span>
+              <div>
+                <small>{card.label}</small>
+                <strong>{card.value}</strong>
+                <em>{card.helper}</em>
+              </div>
+            </article>
           ))}
         </div>
 
-        <div className="inventory-simple-command-note">
-          <strong>Current page:</strong>
-          <span>{activeInventoryMeta.label}</span>
-          <small>{activeInventoryMeta.description}</small>
+        <div className="pharma-inventory-analytics-grid">
+          <article className="pharma-inventory-analytics-card pharma-inventory-analytics-card--wide">
+            <header>
+              <h4>Stock Value by Category</h4>
+              <span>{categoryRows.length ? 'Live category valuation' : 'No live category valuation loaded'}</span>
+            </header>
+            <div className="pharma-category-bars">
+              {categoryRows.length === 0 ? (
+                <p className="muted">—</p>
+              ) : categoryRows.map((row) => (
+                <div key={row.label} className="pharma-category-bar-row">
+                  <span>{row.label}</span>
+                  <div><i style={{ width: `${Math.max((row.value / maxCategoryValue) * 100, 3)}%` }} /></div>
+                  <strong>{money(row.value)}</strong>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="pharma-inventory-analytics-card">
+            <header>
+              <h4>Stock Status Summary</h4>
+              <span>Live batch/product signals</span>
+            </header>
+            <div className="pharma-status-grid">
+              {statusCards.map((card) => (
+                <div key={card.label} className={`pharma-status-card pharma-status-card--${card.tone}`}>
+                  <small>{card.label}</small>
+                  <strong>{count(card.value)}</strong>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="pharma-inventory-analytics-card">
+            <header>
+              <h4>ABC Classification</h4>
+              <span>By live stock value</span>
+            </header>
+            <div className="pharma-abc-stack">
+              <div><strong>A Items</strong><span>{categoryRows[0] ? money(categoryRows[0].value) : '—'}</span></div>
+              <div><strong>B Items</strong><span>{categoryRows[1] ? money(categoryRows[1].value) : '—'}</span></div>
+              <div><strong>C Items</strong><span>{categoryRows.slice(2).length ? money(categoryRows.slice(2).reduce((sum, row) => sum + row.value, 0)) : '—'}</span></div>
+            </div>
+          </article>
+        </div>
+
+        <div className="pharma-inventory-table-grid">
+          <article className="pharma-inventory-table-card">
+            <header><h4>Low Stock Watch List</h4><span>{count(lowStockRows.length)} items</span></header>
+            <div className="pharma-mini-table">
+              <div><strong>Product</strong><strong>On hand</strong><strong>Min.</strong><strong>Value</strong></div>
+              {lowStockRows.length === 0 ? (
+                <p className="muted">No live low-stock item loaded.</p>
+              ) : lowStockRows.map((row) => (
+                <div key={row.product.id}>
+                  <span>{row.product.name}</span>
+                  <span>{count(row.available)}</span>
+                  <span>{count(row.reorderLevel)}</span>
+                  <span>{money(row.value)}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="pharma-inventory-table-card">
+            <header><h4>Near Expiry Review</h4><span>{count(nearExpiryTableRows.length)} batches</span></header>
+            <div className="pharma-mini-table">
+              <div><strong>Product</strong><strong>Batch</strong><strong>Expiry</strong><strong>Value</strong></div>
+              {nearExpiryTableRows.length === 0 ? (
+                <p className="muted">No live near-expiry batch loaded.</p>
+              ) : nearExpiryTableRows.map((batch) => (
+                <div key={batch.id}>
+                  <span>{batch.product?.name ?? '—'}</span>
+                  <span>{batch.batch_number ?? '—'}</span>
+                  <span>{batch.expiry_date ?? '—'}</span>
+                  <span>{money(batchValue(batch))}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="pharma-inventory-table-card">
+            <header><h4>Expired Items</h4><span>{count(expiredTableRows.length)} batches</span></header>
+            <div className="pharma-mini-table">
+              <div><strong>Product</strong><strong>Batch</strong><strong>Expired</strong><strong>Value</strong></div>
+              {expiredTableRows.length === 0 ? (
+                <p className="muted">No live expired batch loaded.</p>
+              ) : expiredTableRows.map((batch) => (
+                <div key={batch.id}>
+                  <span>{batch.product?.name ?? '—'}</span>
+                  <span>{batch.batch_number ?? '—'}</span>
+                  <span>{batch.expiry_date ?? '—'}</span>
+                  <span>{money(batchValue(batch))}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="pharma-inventory-table-card">
+            <header><h4>High Value – Low Stock Risk</h4><span>Live valuation</span></header>
+            <div className="pharma-mini-table">
+              <div><strong>Product</strong><strong>Batch</strong><strong>On hand</strong><strong>Value</strong></div>
+              {highValueRiskRows.length === 0 ? (
+                <p className="muted">No live high-value stock risk loaded.</p>
+              ) : highValueRiskRows.map(({ batch, value, available }) => (
+                <div key={batch.id}>
+                  <span>{batch.product?.name ?? '—'}</span>
+                  <span>{batch.batch_number ?? '—'}</span>
+                  <span>{count(available)}</span>
+                  <span>{money(value)}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="pharma-inventory-table-card">
+            <header><h4>Slow / Non-Moving Stock Proxy</h4><span>By available balance</span></header>
+            <div className="pharma-mini-table">
+              <div><strong>Product</strong><strong>Batch</strong><strong>On hand</strong><strong>Value</strong></div>
+              {slowMovingRows.length === 0 ? (
+                <p className="muted">No live stock balance loaded.</p>
+              ) : slowMovingRows.map(({ batch, value, available }) => (
+                <div key={batch.id}>
+                  <span>{batch.product?.name ?? '—'}</span>
+                  <span>{batch.batch_number ?? '—'}</span>
+                  <span>{count(available)}</span>
+                  <span>{money(value)}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="pharma-inventory-insight-card">
+            <header><h4>Inventory Insight</h4><span>Rule-based live signals</span></header>
+            <ul>
+              <li>{expiredRows.length > 0 ? `${expiredRows.length} expired batch(es) require review.` : 'No live expired batch signal loaded.'}</li>
+              <li>{nearRows.length > 0 ? `${nearRows.length} batch(es) are in the near-expiry review window.` : 'No live near-expiry pressure loaded.'}</li>
+              <li>{lowStockRows.length > 0 ? `${lowStockRows.length} product(s) are below reorder level.` : 'No live reorder-level pressure loaded.'}</li>
+            </ul>
+          </article>
         </div>
       </section>
     );
@@ -3331,7 +3634,11 @@ export function ProductInventoryPreview({
       quantity: String(batch.available_quantity ?? 0),
       expiry_date: batch.expiry_date ?? '',
       unit_cost: batch.unit_cost === null || batch.unit_cost === undefined ? '' : String(batch.unit_cost),
-      margin_percent: '',
+      margin_percent: (() => {
+        const margin = resolveInventoryBatchMarginPercent(batch);
+
+        return margin > 0 ? margin.toFixed(2) : '';
+      })(),
       selling_price: batch.selling_price === null || batch.selling_price === undefined ? '' : String(batch.selling_price),
       supplier_name: batch.supplier_name ?? '',
       reference_number: '',
@@ -3379,7 +3686,11 @@ export function ProductInventoryPreview({
       quantity: '',
       expiry_date: batch.expiry_date ?? '',
       unit_cost: batch.unit_cost === null || batch.unit_cost === undefined ? '' : String(batch.unit_cost),
-      margin_percent: '',
+      margin_percent: (() => {
+        const margin = resolveInventoryBatchMarginPercent(batch);
+
+        return margin > 0 ? margin.toFixed(2) : '';
+      })(),
       selling_price: batch.selling_price === null || batch.selling_price === undefined ? '' : String(batch.selling_price),
       supplier_name: batch.supplier_name ?? '',
       reference_number: '',
@@ -4366,8 +4677,6 @@ export function ProductInventoryPreview({
       {error && <div className="form-error">{error}</div>}
       {inventoryNotice && <div className="form-success">{inventoryNotice}</div>}
 
-      {activeInventoryView === 'overview' && renderSimpleMightyInventoryCommandCenter()}
-
       <section className="module-workspace-shell inventory-workspace-shell">
         {showInternalNavigation && (
           <aside className="module-section-rail" aria-label="Inventory module sections">
@@ -4387,6 +4696,7 @@ export function ProductInventoryPreview({
         )}
 
         <div className="module-section-stage" style={{ fontSize: tableFontPixels[tableFontSizes[activeInventoryView] ?? 'normal'] }}>
+          {activeInventoryView === 'overview' && renderSimpleMightyInventoryCommandCenter()}
         {pendingDeleteProduct && activeInventoryView !== 'product-master' && (
           <section className="inventory-section inventory-delete-confirmation-panel">
             <div className="section-heading">
@@ -4423,7 +4733,7 @@ export function ProductInventoryPreview({
         )}
 
 
-          {activeInventoryView === 'overview' && summary && (
+          {false && activeInventoryView === 'overview' && summary && (
             <>
               <section className="inventory-card-control-row">
                 <details className="inventory-card-customizer">
@@ -4476,7 +4786,7 @@ export function ProductInventoryPreview({
                   inventorySmartCardOptions
                     .filter((card) => inventorySmartCardVisibility[card.key])
                     .map((card) => {
-                      const cardData = inventorySmartCardData[card.key];
+                      const cardData = inventorySmartCardData?.[card.key] ?? { value: '—', trend: '—', status: '—', target: 'overview' as InventoryView, trendSeed: 1 };
                       const fields = inventorySmartCardFieldVisibility[card.key] ?? { value: true, trend: true, status: true };
                       const trendValues = buildInventoryTrend(cardData.trendSeed);
                       const trendMode = aiTrendMode(trendValues);
@@ -5867,83 +6177,7 @@ export function ProductInventoryPreview({
                 </section>
               )}
 
-                            <section
-                className="inventory-ai-opportunity-panel inventory-ai-opportunity-panel--refined inventory-ai-opportunity-panel--title-only"
-                data-visual-fine-tuning="AQUILA_INVENTORY_WORK_PACKAGE_2G_VISUAL_FINE_TUNING"
-                data-chart-title-refinement="AQUILA_INVENTORY_WORK_PACKAGE_2H_CHART_AND_TITLE_REFINEMENT"
-              >
-                <div className="inventory-section-title-card platform-heading-card">
-                  <h3></h3>
-                </div>
-
-                <div className="inventory-opportunity-grid inventory-opportunity-grid--creative">
-                  {[
-                    {
-                      icon: 'RX',
-                      title: '',
-                      tone: 'is-primary',
-                    },
-                    {
-                      icon: 'SO',
-                      title: '',
-                      tone: 'is-risk',
-                    },
-                    {
-                      icon: 'MD',
-                      title: '',
-                      tone: 'is-market',
-                    },
-                    {
-                      icon: 'MP',
-                      title: '',
-                      tone: 'is-value',
-                    },
-                    {
-                      icon: 'EX',
-                      title: '',
-                      tone: 'is-warning',
-                    },
-                    {
-                      icon: 'PO',
-                      title: '',
-                      tone: 'is-planning',
-                    },
-                  ].map((opportunity) => (
-                    <button
-                      key={opportunity.title}
-                      type="button"
-                      className={`inventory-ai-opportunity-card ${opportunity.tone} ${
-                        activeInventoryOpportunity ===
-                        opportunity.title
-                          ? 'active'
-                          : ''
-                      }`}
-                      aria-pressed={
-                        activeInventoryOpportunity ===
-                        opportunity.title
-                      }
-                      onClick={() => {
-                        setActiveInventoryOpportunity(
-                          opportunity.title,
-                        );
-
-                        setInventoryNotice(
-                          `${opportunity.title} selected for operational review.`,
-                        );
-                      }}
-                    >
-                      <span
-                        className="inventory-ai-opportunity-icon"
-                        aria-hidden="true"
-                      >
-                        {opportunity.icon}
-                      </span>
-
-                      <strong>{opportunity.title}</strong>
-                    </button>
-                  ))}
-                </div>
-              </section>
+                            
 
 {renderAdminTableManagement('product-register', 'Product Inventory Register')}
 
@@ -6165,7 +6399,7 @@ export function ProductInventoryPreview({
                           </td>
                           <td className="cell-number">{formatNumber(batch.available_quantity)}</td>
                           <td className="cell-number">{formatRwf(batch.unit_cost)}</td>
-                          <td className="cell-number">{formatNumber(defaultMargin)}%</td>
+                          <td className="cell-number">{formatInventoryBatchMarginPercent(batch, defaultMargin)}</td>
                           <td className="cell-number">{formatRwf(computedSellingPrice)}</td>
                           <td className="cell-wrap">
                             <strong className="cell-strong">{batch.status === 'active' ? 'Active' : ''}</strong>

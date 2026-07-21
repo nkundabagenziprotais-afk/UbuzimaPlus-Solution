@@ -43140,3 +43140,284 @@ thead
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Pharmaceutical Inventory Operations Analytics dashboard */
+.pharma-inventory-analytics-dashboard {
+  display: grid;
+  gap: 1rem;
+}
+
+.pharma-inventory-analytics-hero,
+.pharma-inventory-analytics-card,
+.pharma-inventory-table-card,
+.pharma-inventory-insight-card {
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 1.2rem;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+}
+
+.pharma-inventory-analytics-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.1rem 1.25rem;
+}
+
+.pharma-inventory-analytics-hero h3 {
+  margin: 0.15rem 0;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.pharma-inventory-analytics-hero span,
+.pharma-inventory-analytics-card header span,
+.pharma-inventory-table-card header span,
+.pharma-inventory-insight-card header span {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.pharma-inventory-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.pharma-inventory-kpi-card {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  min-height: 6rem;
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.pharma-inventory-kpi-card > span {
+  display: grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.85rem;
+  color: #ffffff;
+  font-weight: 950;
+  background: #0f766e;
+}
+
+.pharma-inventory-kpi-card small,
+.pharma-inventory-kpi-card em {
+  display: block;
+  color: #64748b;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.pharma-inventory-kpi-card strong {
+  display: block;
+  margin: 0.18rem 0;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.pharma-inventory-kpi-card--blue > span { background: #2563eb; }
+.pharma-inventory-kpi-card--teal > span { background: #0d9488; }
+.pharma-inventory-kpi-card--purple > span { background: #7c3aed; }
+.pharma-inventory-kpi-card--amber > span { background: #f59e0b; }
+.pharma-inventory-kpi-card--orange > span { background: #f97316; }
+.pharma-inventory-kpi-card--red > span { background: #ef4444; }
+.pharma-inventory-kpi-card--cyan > span { background: #0891b2; }
+
+.pharma-inventory-analytics-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.9fr 0.8fr;
+  gap: 0.9rem;
+}
+
+.pharma-inventory-analytics-card,
+.pharma-inventory-table-card,
+.pharma-inventory-insight-card {
+  padding: 1rem;
+}
+
+.pharma-inventory-analytics-card header,
+.pharma-inventory-table-card header,
+.pharma-inventory-insight-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.pharma-inventory-analytics-card h4,
+.pharma-inventory-table-card h4,
+.pharma-inventory-insight-card h4 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.pharma-category-bars {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.pharma-category-bar-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr minmax(6rem, auto);
+  gap: 0.75rem;
+  align-items: center;
+  font-weight: 800;
+}
+
+.pharma-category-bar-row div {
+  height: 0.65rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.pharma-category-bar-row i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #047857, #22c55e);
+}
+
+.pharma-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.pharma-status-card,
+.pharma-abc-stack > div {
+  border-radius: 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: #f8fafc;
+}
+
+.pharma-status-card small,
+.pharma-abc-stack strong {
+  display: block;
+  color: #475569;
+  font-weight: 850;
+}
+
+.pharma-status-card strong,
+.pharma-abc-stack span {
+  display: block;
+  margin-top: 0.25rem;
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 950;
+}
+
+.pharma-status-card--good { background: #ecfdf5; border-color: #86efac; }
+.pharma-status-card--warning { background: #fffbeb; border-color: #fcd34d; }
+.pharma-status-card--orange { background: #fff7ed; border-color: #fdba74; }
+.pharma-status-card--danger { background: #fef2f2; border-color: #fca5a5; }
+
+.pharma-abc-stack {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.pharma-inventory-table-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.pharma-mini-table {
+  display: grid;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.pharma-mini-table > div {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1.4fr) minmax(6rem, 0.7fr) minmax(5rem, 0.6fr) minmax(6rem, 0.8fr);
+  gap: 0.65rem;
+  align-items: center;
+  min-width: 34rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.pharma-mini-table > div:first-child {
+  color: #64748b;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.pharma-mini-table span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #0f172a;
+  font-weight: 750;
+}
+
+.pharma-inventory-insight-card ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.65rem;
+  color: #0f172a;
+  font-weight: 750;
+}
+
+@media (max-width: 1300px) {
+  .pharma-inventory-kpi-grid,
+  .pharma-inventory-table-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pharma-inventory-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .pharma-inventory-kpi-grid,
+  .pharma-inventory-table-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pharma-inventory-analytics-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+/* Business Overview: force-refresh control for Inventory Risk Overview */
+.bo-pro-risk-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.bo-pro-risk-heading-row h2 {
+  margin: 0;
+}
+
+.bo-pro-risk-refresh-button {
+  border: 1px solid rgba(15, 118, 110, 0.24);
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #0f766e;
+  font-weight: 900;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bo-pro-risk-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
