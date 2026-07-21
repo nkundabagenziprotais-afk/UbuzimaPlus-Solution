@@ -326,37 +326,52 @@ function textRow(data: BusinessOverviewLiveData, labels: string[], fallback = '0
 }
 
 function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
-  const totalInventory = dataLabelNumber(data, [
+  const readText = (labels: string[], fallback = '0'): string => {
+    for (const label of labels) {
+      const kpi = data.kpis[label];
+      if (kpi && kpi !== '—') return kpi;
+
+      const row = rowValue(data.inventoryRows, label);
+      if (row && row !== '—') return row;
+    }
+
+    return fallback;
+  };
+
+  const readNumber = (labels: string[]): number => parseAmount(readText(labels, '0'));
+
+  const totalInventory = readNumber([
     'Inventory Value',
     'Total Inventory Value',
     'Stock Batches Value',
   ]);
 
-  const lowStockValue = dataLabelNumber(data, [
+  const lowStockValue = readNumber([
     'Low Stock Value',
     'Low Stock Items Value',
   ]);
 
-  const nearExpiryValue = dataLabelNumber(data, [
+  const nearExpiryValue = readNumber([
     'Near Expiry Value',
     'Near Expiry Stock Value',
     'Expiring Value',
     'Expiring Items Value',
   ]);
 
-  const expiredValue = dataLabelNumber(data, [
+  const expiredValue = readNumber([
     'Expired Stock Value',
     'Expired Value',
     'Expired Batches Value',
   ]);
 
-  const healthyValueFromData = dataLabelNumber(data, [
+  const healthyValueFromData = readNumber([
     'Healthy Stock Value',
   ]);
 
   const slowValue = 0;
 
-  const healthyValue = healthyValueFromData ||
+  const healthyValue =
+    healthyValueFromData ||
     Math.max(totalInventory - lowStockValue - nearExpiryValue - expiredValue - slowValue, 0);
 
   const total = Math.max(
@@ -368,21 +383,21 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
   return [
     {
       label: 'Expired / quarantined',
-      countLabel: `${textRow(data, ['Expired Count', 'Expired Batches'], '0')} batches`,
+      countLabel: `${readText(['Expired Count', 'Expired Batches'], '0')} batches`,
       value: expiredValue,
       percent: safeRatio(expiredValue, total),
       tone: 'expired',
     },
     {
       label: 'Near expiry',
-      countLabel: `${textRow(data, ['Near Expiry Count', 'Expiring Items'], '0')} batches`,
+      countLabel: `${readText(['Near Expiry Count', 'Expiring Items'], '0')} batches`,
       value: nearExpiryValue,
       percent: safeRatio(nearExpiryValue, total),
       tone: 'near-expiry',
     },
     {
       label: 'Low stock',
-      countLabel: `${textRow(data, ['Low Stock Count', 'Low Stock Items'], '0')} items`,
+      countLabel: `${readText(['Low Stock Count', 'Low Stock Items'], '0')} items`,
       value: lowStockValue,
       percent: safeRatio(lowStockValue, total),
       tone: 'low-stock',
@@ -396,7 +411,7 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
     },
     {
       label: 'Healthy stock',
-      countLabel: `${textRow(data, ['Healthy Stock Count', 'Stock Batches Count', 'Stock Batches'], '0')} batches`,
+      countLabel: `${readText(['Healthy Stock Count', 'Stock Batches Count', 'Stock Batches'], '0')} batches`,
       value: healthyValue,
       percent: safeRatio(healthyValue, total),
       tone: 'healthy',
