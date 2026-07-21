@@ -146,6 +146,82 @@ function stabilizeBusinessOverviewInventoryData(
   return copyBusinessOverviewInventoryLabels(next, previous);
 }
 
+function readBusinessOverviewInventoryRowValue(
+  rows: BusinessOverviewLiveData['inventoryRows'],
+  label: string,
+): string {
+  const row = rows.find((item) => item.label === label);
+
+  return row?.value ?? '';
+}
+
+function mergeBusinessOverviewInventoryData(
+  primary: BusinessOverviewLiveData,
+  fallback: BusinessOverviewLiveData,
+): BusinessOverviewLiveData {
+  const labels = [
+    'Inventory Value',
+    'Total Inventory Value',
+    'Stock Batches Count',
+    'Stock Batches',
+    'Stock Batches Value',
+    'Batch Count',
+    'Healthy Stock Count',
+    'Healthy Stock Value',
+    'Low Stock Count',
+    'Low Stock Value',
+    'Low Stock Items',
+    'Near Expiry Count',
+    'Near Expiry Value',
+    'Near Expiry Stock Value',
+    'Expiring Items',
+    'Expiring Value',
+    'Expired Count',
+    'Expired Value',
+    'Expired Stock Value',
+    'Expired Batches Value',
+  ];
+
+  const nextKpis = { ...primary.kpis };
+  const nextHelpers = { ...primary.kpiHelpers };
+  const rowMap = new Map(primary.inventoryRows.map((row) => [row.label, { ...row }]));
+
+  labels.forEach((label) => {
+    const primaryAmount = Math.max(
+      businessOverviewInventoryCacheAmount(primary.kpis[label]),
+      businessOverviewInventoryCacheAmount(readBusinessOverviewInventoryRowValue(primary.inventoryRows, label)),
+    );
+
+    const fallbackKpi = fallback.kpis[label];
+    const fallbackRowValue = readBusinessOverviewInventoryRowValue(fallback.inventoryRows, label);
+    const fallbackAmount = Math.max(
+      businessOverviewInventoryCacheAmount(fallbackKpi),
+      businessOverviewInventoryCacheAmount(fallbackRowValue),
+    );
+
+    if (fallbackAmount > primaryAmount) {
+      const value = fallbackKpi && fallbackKpi !== '—' ? fallbackKpi : fallbackRowValue;
+
+      if (value) {
+        nextKpis[label] = value;
+        rowMap.set(label, { label, value });
+      }
+
+      if (fallback.kpiHelpers[label]) {
+        nextHelpers[label] = fallback.kpiHelpers[label];
+      }
+    }
+  });
+
+  return {
+    ...primary,
+    inventoryLoaded: primary.inventoryLoaded || fallback.inventoryLoaded,
+    kpis: nextKpis,
+    kpiHelpers: nextHelpers,
+    inventoryRows: Array.from(rowMap.values()),
+  };
+}
+
 function businessOverviewCacheKey(tenantSlug: string | null | undefined, range: DateRange): string {
   return `${businessOverviewCachePrefix}:${tenantSlug || 'tenant'}:${range.startDate}:${range.endDate}`;
 }
@@ -1089,9 +1165,10 @@ export function BusinessOverviewReviewPage({
     ? liveData
     : lastGoodLiveData;
 
-  const inventoryRiskSourceData = businessOverviewInventoryHasNumbers(displayLiveData)
-    ? displayLiveData
-    : liveData;
+  const inventoryRiskSourceData = useMemo(
+    () => mergeBusinessOverviewInventoryData(displayLiveData, liveData),
+    [displayLiveData, liveData],
+  );
 
   const riskSegments = useMemo(
     () => buildInventoryRisk(inventoryRiskSourceData),
