@@ -83,6 +83,69 @@ function businessOverviewCacheIsUsable(data: BusinessOverviewLiveData): boolean 
   return Boolean(data.salesLoaded || data.inventoryLoaded);
 }
 
+function copyBusinessOverviewInventoryLabels(
+  target: BusinessOverviewLiveData,
+  source: BusinessOverviewLiveData,
+): BusinessOverviewLiveData {
+  const inventoryLabels = [
+    'Inventory Value',
+    'Total Inventory Value',
+    'Stock Batches Count',
+    'Stock Batches Value',
+    'Healthy Stock Count',
+    'Healthy Stock Value',
+    'Low Stock Count',
+    'Low Stock Value',
+    'Low Stock Items',
+    'Near Expiry Count',
+    'Near Expiry Value',
+    'Expiring Items',
+    'Expired Count',
+    'Expired Value',
+    'Expired Stock Value',
+  ];
+
+  const nextKpis = { ...target.kpis };
+  const nextHelpers = { ...target.kpiHelpers };
+
+  inventoryLabels.forEach((label) => {
+    const sourceValue = source.kpis[label];
+
+    if (sourceValue && sourceValue !== '—') {
+      nextKpis[label] = sourceValue;
+    }
+
+    const sourceHelper = source.kpiHelpers[label];
+
+    if (sourceHelper) {
+      nextHelpers[label] = sourceHelper;
+    }
+  });
+
+  return {
+    ...target,
+    inventoryLoaded: source.inventoryLoaded,
+    kpis: nextKpis,
+    kpiHelpers: nextHelpers,
+    inventoryRows: source.inventoryRows,
+  };
+}
+
+function stabilizeBusinessOverviewInventoryData(
+  next: BusinessOverviewLiveData,
+  previous: BusinessOverviewLiveData,
+): BusinessOverviewLiveData {
+  if (businessOverviewInventoryHasNumbers(next)) {
+    return next;
+  }
+
+  if (!businessOverviewInventoryHasNumbers(previous)) {
+    return next;
+  }
+
+  return copyBusinessOverviewInventoryLabels(next, previous);
+}
+
 function businessOverviewCacheKey(tenantSlug: string | null | undefined, range: DateRange): string {
   return `${businessOverviewCachePrefix}:${tenantSlug || 'tenant'}:${range.startDate}:${range.endDate}`;
 }
@@ -939,14 +1002,15 @@ export function BusinessOverviewReviewPage({
       .then((data) => {
         if (cancelled) return;
 
-        setLiveData({ ...data });
+        setLiveData((current) => {
+          const stableData = stabilizeBusinessOverviewInventoryData(data, current);
 
-        if (data.loaded && (data.salesLoaded || data.inventoryLoaded)) {
-          setLastGoodLiveData({ ...data });
-          writeBusinessOverviewCache(tenantSlug, appliedDateRange, data);
-        }
+          if (businessOverviewCacheIsUsable(stableData)) {
+            writeBusinessOverviewCache(tenantSlug, appliedDateRange, stableData);
+          }
 
-        setLoaderStatus(data.error ? `success-with-warning: ${data.error}` : 'success');
+          return { ...stableData };
+        });
         setIsLoading(false);
 
         if (debugEnabled) {
