@@ -276,77 +276,52 @@ function buildDailyTrendSeries(
   points: BusinessOverviewLiveData['trend'],
   startDate: string,
   endDate: string,
-  _maxDays = 31,
-): Array<{ date: string; label: string; value: number }> {
-  // Business request: x-axis must show every day of the month.
-  // Missing days intentionally display zero.
-  const dates = monthDateSeries(startDate || endDate || todayIso());
-  const valueMap = new Map<string, number>();
+  maxDays = 62,
+): Array<{ label: string; value: number }> {
+  const valuesByDate = new Map<string, number>();
 
   points.forEach((point) => {
-    const key = trendPointDate(point);
-    if (!key) return;
+    const date = trendPointDate(point);
+    if (!date) return;
 
-    const fullDate = key.length === 2
-      ? dates.find((date) => date.endsWith(`-${key}`))
-      : key;
+    const record = point as unknown as Record<string, unknown>;
+    const value = parseAmount(
+      record.value ??
+      record.sales ??
+      record.amount ??
+      record.total ??
+      record.count ??
+      record.transaction_count ??
+      record.transactions ??
+      0,
+    );
 
-    if (fullDate) {
-      valueMap.set(fullDate, point.value);
-    }
+    valuesByDate.set(date, (valuesByDate.get(date) ?? 0) + value);
   });
 
-  return dates.map((date) => ({
-    date,
-    label: dayOfMonthLabel(date),
-    value: valueMap.get(date) ?? 0,
-  }));
+  return selectedDateKeys(startDate, endDate)
+    .slice(0, maxDays)
+    .map((date) => ({
+      label: businessDateDayLabel(date),
+      value: valuesByDate.get(date) ?? 0,
+    }));
 }
 
-function chartValues(points: BusinessOverviewLiveData['trend'], fallback: number): number[] {
-  if (points.length > 0) return points.map((point) => point.value);
+function linePath(values: number[], width = 900, height = 140): string {
+  if (!values.length) {
+    return `M 0 ${height}`;
+  }
 
-  if (fallback <= 0) return [0, 0, 0, 0, 0, 0, 0];
-
-  return [
-    fallback * 0.72,
-    fallback * 0.86,
-    fallback * 0.78,
-    fallback * 0.95,
-    fallback * 0.88,
-    fallback,
-    fallback * 0.82,
-  ];
-}
-
-function linePath(values: number[], width = 420, height = 128): string {
   const max = Math.max(...values, 1);
 
   return values
     .map((value, index) => {
       const x = values.length > 1 ? (index / (values.length - 1)) * width : 0;
-      const y = height - (value / max) * (height - 16) - 8;
-      return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
+      const y = height - (value / max) * (height - 24) - 12;
+
+      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
     })
     .join(' ');
-}
-
-function pieGradient(segments: Array<{ percent: number; color: string }>): string {
-  let cursor = 0;
-
-  const stops = segments.map((segment) => {
-    const start = cursor;
-    const end = cursor + Math.max(segment.percent, segment.percent > 0 ? 0.8 : 0);
-    cursor = end;
-
-    return `${segment.color} ${start}% ${end}%`;
-  });
-
-  if (cursor < 100) {
-    stops.push(`#e5e7eb ${cursor}% 100%`);
-  }
-
-  return `conic-gradient(${stops.join(', ')})`;
 }
 
 function dataLabelValue(
@@ -355,31 +330,74 @@ function dataLabelValue(
   fallback = '—',
 ): string {
   for (const label of labels) {
-    const value = kpiValue(data, label);
-    if (value !== '—' && value !== '') return value;
-  }
+    const kpi = data.kpis[label];
+    if (kpi && kpi !== '—') return kpi;
 
-  for (const label of labels) {
     const inventoryValue = rowValue(data.inventoryRows, label);
-    if (inventoryValue !== '—' && inventoryValue !== '') return inventoryValue;
+    if (inventoryValue && inventoryValue !== '—') return inventoryValue;
 
     const revenueValue = rowValue(data.revenueRows, label);
-    if (revenueValue !== '—' && revenueValue !== '') return revenueValue;
+    if (revenueValue && revenueValue !== '—') return revenueValue;
   }
 
   return fallback;
 }
 
-function dataLabelNumber(data: BusinessOverviewLiveData, labels: string[]): number {
-  return parseAmount(dataLabelValue(data, labels, '0'));
+function chartValues(points: BusinessOverviewLiveData['trend'], fallbackValue = 0): number[] {
+  if (points.length > 0) {
+    const values = points.map((point) => {
+      const record = point as unknown as Record<string, unknown>;
+
+      return parseAmount(
+        record.value ??
+        record.sales ??
+        record.amount ??
+        record.total ??
+        record.count ??
+        record.transaction_count ??
+        record.transactions ??
+        0,
+      );
+    });
+
+    return values.length ? values : [fallbackValue];
+  }
+
+  const safeFallback = Number.isFinite(fallbackValue) ? fallbackValue : 0;
+
+  return [0, safeFallback, safeFallback, safeFallback, safeFallback, safeFallback, safeFallback];
 }
 
-function numericRow(data: BusinessOverviewLiveData, labels: string[]): number {
-  return dataLabelNumber(data, labels);
-}
+function pieGradient(segments: Array<{ percent: number; tone?: string }>): string {
+  const colors: Record<string, string> = {
+    expired: '#ef4444',
+    'near-expiry': '#f97316',
+    'low-stock': '#f59e0b',
+    slow: '#64748b',
+    healthy: '#10b981',
+    default: '#2563eb',
+  };
 
-function textRow(data: BusinessOverviewLiveData, labels: string[], fallback = '0'): string {
-  return dataLabelValue(data, labels, fallback);
+  let cursor = 0;
+  const stops = segments
+    .filter((segment) => segment.percent > 0)
+    .map((segment) => {
+      const start = cursor;
+      const end = Math.min(cursor + segment.percent, 100);
+      cursor = end;
+
+      return `${colors[segment.tone ?? 'default'] ?? colors.default} ${start}% ${end}%`;
+    });
+
+  if (!stops.length) {
+    return 'conic-gradient(#e2e8f0 0% 100%)';
+  }
+
+  if (cursor < 100) {
+    stops.push(`#e2e8f0 ${cursor}% 100%`);
+  }
+
+  return `conic-gradient(${stops.join(', ')})`;
 }
 
 function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
