@@ -42361,3 +42361,60 @@ thead
 .inventory-section:has(.inventory-data-table--product-register) .inventory-filter-bar:not(.inventory-register-filter-panel) {
   display: none !important;
 }
+
+/* Product Inventory final workflow: table management + filters + receive actions directly together */
+.inventory-section:has(.inventory-data-table--product-register) .inventory-create-from-master-panel.is-hidden {
+  display: none !important;
+}
+
+.inventory-section:has(.inventory-data-table--product-register) > .inventory-guided-flow-launch-panel {
+  display: none !important;
+}
+
+.inventory-register-filter-panel .inventory-register-filter-action {
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 0.7rem;
+  padding: 0.35rem 0.75rem;
+  background: #dcfce7;
+  color: #14532d;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.inventory-register-filter-panel .inventory-register-filter-action--primary {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.inventory-register-filter-panel .inventory-register-filter-action:hover {
+  filter: brightness(0.96);
+}
+
+/* Product Inventory register: show about 15 rows by default, scroll to remaining rows */
+.inventory-section:has(.inventory-data-table--product-register) [class*="table-shell"],
+.inventory-section:has(.inventory-data-table--product-register) [class*="table-wrap"] {
+  max-height: 52rem !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+.inventory-data-table--product-register {
+  min-width: 96rem;
+}
+
+.inventory-data-table--product-register tbody tr {
+  height: 3.05rem;
+}
+
+/* Final chart font normalization */
+.bo-pro-page .bo-pro-line-chart svg text.bo-pro-data-label {
+  font-size: 8.5px !important;
+  font-weight: 750 !important;
+  stroke-width: 1.15px !important;
+}
+
+.bo-pro-page .bo-pro-line-chart svg text.bo-pro-axis-label {
+  font-size: 8.75px !important;
+  font-weight: 700 !important;
+}

@@ -601,6 +601,13 @@ export async function loadBusinessOverviewDataAdapter({
     ],
     paymentMix,
     topProducts: buildTopProductsFromRows(registerRows),
-    trend: sales.trend,
+    trend: sales.trend.length > 0
+      ? sales.trend
+      : (sales.grossSales > 0 || sales.transactionCount > 0)
+        ? [{
+            label: endDate,
+            value: sales.grossSales,
+          }]
+        : [],
   };
 }
