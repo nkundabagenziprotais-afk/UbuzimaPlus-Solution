@@ -411,8 +411,21 @@ function inventoryFromValuation(response: InventoryValuationResponse) {
   const quantity = getNumber('total_quantity_on_hand', 'total_quantity', 'quantity_on_hand');
 
   const lowStock = getNumber('low_stock_batches', 'low_stock_count', 'low_stock_items');
-  const expiring = getNumber('expiring_soon_batches', 'near_expiry_count', 'expiring_items');
-  const expired = getNumber('expired_batches', 'expired_count');
+  const expiring =
+    getNumber('expiring_soon_batches', 'near_expiry_count', 'expiring_items') ||
+    nestedNumber(
+      'risk_mix.expiring_soon.count',
+      'risk_mix.expiring_soon.batch_count',
+      'risk_mix.expiring.count',
+      'risk_mix.near_expiry.count',
+      'risk_mix.near_expiry.batch_count',
+    );
+  const expired =
+    getNumber('expired_batches', 'expired_count') ||
+    nestedNumber(
+      'risk_mix.expired.count',
+      'risk_mix.expired.batch_count',
+    );
 
   const healthy =
     getNumber('healthy_stock_batches', 'healthy_stock_count') ||

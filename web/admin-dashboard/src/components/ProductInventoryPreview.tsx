@@ -6183,7 +6183,7 @@ export function ProductInventoryPreview({
                           <td className="cell-wrap">
                             <strong className="cell-strong">{batch.status === 'active' ? 'Active' : ''}</strong>
                             <br />
-                            <span className="cell-muted">{expiryStatus(days)}</span>
+                            {expiryStatus(days) === 'safe' ? <span className="cell-muted">Safe</span> : null}
                              <br />
                              <span className={inventoryBatchSourceClass(batch)}>{inventoryBatchSourceLabel(batch)}</span>
                           </td>
@@ -6734,7 +6734,7 @@ function BatchTable({
                   <td className="cell-wrap">
                     {batch.supplier_name ?? 'Not set'}
                     <br />
-                    <span className="cell-muted">{expiryStatus(days)}</span>
+                    {expiryStatus(days) === 'safe' ? <span className="cell-muted">Safe</span> : null}
                   </td>
                   {showRecommendedAction && <td className="cell-wrap">{expiryAction(days)}</td>}
                   <td className="table-cell-actions">{onAction(batch)}</td>

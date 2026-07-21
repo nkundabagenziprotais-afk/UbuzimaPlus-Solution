@@ -508,6 +508,30 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
     'Stock Batches Value',
   ]);
 
+  const stockBatches = readNumber([
+    'Stock Batches Count',
+    'Stock Batches',
+    'Batch Count',
+  ]);
+
+  const averageBatchValue = stockBatches > 0 && totalInventory > 0
+    ? totalInventory / stockBatches
+    : 0;
+
+  const countLabel = (labels: string[], unit: string, value: number): string => {
+    const directCount = readNumber(labels);
+
+    if (directCount > 0) {
+      return `${new Intl.NumberFormat('en-US').format(directCount)} ${unit}`;
+    }
+
+    if (value > 0 && averageBatchValue > 0) {
+      return `${new Intl.NumberFormat('en-US').format(Math.max(Math.round(value / averageBatchValue), 1))} ${unit}`;
+    }
+
+    return `0 ${unit}`;
+  };
+
   const lowStockValue = readNumber([
     'Low Stock Value',
     'Low Stock Items Value',
@@ -545,25 +569,21 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
   return [
     {
       label: 'Expired / quarantined',
-      countLabel: expiredValue > 0 && readText(['Expired Count', 'Expired Batches'], '0') === '0'
-        ? 'value-bearing'
-        : `${readText(['Expired Count', 'Expired Batches'], '0')} batches`,
+      countLabel: countLabel(['Expired Count', 'Expired Batches'], 'batches', expiredValue),
       value: expiredValue,
       percent: safeRatio(expiredValue, total),
       tone: 'expired',
     },
     {
       label: 'Near expiry',
-      countLabel: nearExpiryValue > 0 && readText(['Near Expiry Count', 'Expiring Items'], '0') === '0'
-        ? 'value-bearing'
-        : `${readText(['Near Expiry Count', 'Expiring Items'], '0')} batches`,
+      countLabel: countLabel(['Near Expiry Count', 'Expiring Items'], 'batches', nearExpiryValue),
       value: nearExpiryValue,
       percent: safeRatio(nearExpiryValue, total),
       tone: 'near-expiry',
     },
     {
       label: 'Low stock',
-      countLabel: `${readText(['Low Stock Count', 'Low Stock Items'], '0')} items`,
+      countLabel: countLabel(['Low Stock Count', 'Low Stock Items'], 'items', lowStockValue),
       value: lowStockValue,
       percent: safeRatio(lowStockValue, total),
       tone: 'low-stock',
@@ -577,7 +597,7 @@ function buildInventoryRisk(data: BusinessOverviewLiveData): RiskSegment[] {
     },
     {
       label: 'Healthy stock',
-      countLabel: `${readText(['Healthy Stock Count', 'Stock Batches Count', 'Stock Batches'], '0')} batches`,
+      countLabel: countLabel(['Healthy Stock Count', 'Stock Batches Count', 'Stock Batches'], 'batches', healthyValue),
       value: healthyValue,
       percent: safeRatio(healthyValue, total),
       tone: 'healthy',

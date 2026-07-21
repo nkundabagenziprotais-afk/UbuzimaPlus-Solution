@@ -42663,3 +42663,64 @@ thead
 .bo-pro-bar-axis-label {
   font-size: 7.5px !important;
 }
+
+/* Product Inventory: remove remaining top title / blank panel only when inventory register exists */
+.dashboard-main:has(.inventory-data-table--product-register) .dashboard-title-card,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-page-header,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-page-titlebar,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-page-hero,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-preview-hero,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-product-hero,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-section-hero {
+  display: none !important;
+}
+
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:empty,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-create-from-master-panel.is-hidden,
+.dashboard-main:has(.inventory-data-table--product-register) .inventory-create-from-master-panel:not(:has(input)):not(:has(select)):not(:has(button)) {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Supplier Register: corrected selectors with real spaces */
+.supplier-register-table-wrap table,
+.procurement-supplier-table-wrap table,
+.supplier-table-wrap table,
+.procurement-table-shell table {
+  min-width: 96rem !important;
+  width: max-content !important;
+  table-layout: auto !important;
+}
+
+.supplier-register-table-wrap th,
+.supplier-register-table-wrap td,
+.procurement-supplier-table-wrap th,
+.procurement-supplier-table-wrap td,
+.supplier-table-wrap th,
+.supplier-table-wrap td,
+.procurement-table-shell th,
+.procurement-table-shell td {
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+.supplier-register-table-wrap,
+.procurement-supplier-table-wrap,
+.supplier-table-wrap,
+.procurement-table-shell {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Supplier select: native dropdown only; allow keyboard type-to-search and scrolling by browser */
+.inventory-procurement-supplier-select {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Product Inventory status: muted expiry tags only visible for Safe */
+.inventory-data-table--product-register .cell-muted:empty {
+  display: none !important;
+}
