@@ -656,6 +656,15 @@ export function BusinessOverviewReviewPage({
   const [draftEndDate, setDraftEndDate] = useState(initialRange.endDate);
   const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(initialRange);
   const [loadSequence, setLoadSequence] = useState(0);
+  const [trendUsesGlobalDates, setTrendUsesGlobalDates] = useState(true);
+  const [productUsesGlobalDates, setProductUsesGlobalDates] = useState(true);
+  const [paymentUsesGlobalDates, setPaymentUsesGlobalDates] = useState(true);
+  const [expenseUsesGlobalDates, setExpenseUsesGlobalDates] = useState(true);
+  const [inventoryRiskUsesGlobalDates, setInventoryRiskUsesGlobalDates] = useState(true);
+  const [insuranceUsesGlobalDates, setInsuranceUsesGlobalDates] = useState(true);
+  const [nearExpiryUsesGlobalDates, setNearExpiryUsesGlobalDates] = useState(true);
+  const [inventoryMovementUsesGlobalDates, setInventoryMovementUsesGlobalDates] = useState(true);
+
 
   const [dailyDate, setDailyDate] = useState(todayIso());
   const [trendMetric, setTrendMetric] = useState<'value' | 'count'>('value');
@@ -871,7 +880,7 @@ export function BusinessOverviewReviewPage({
     trendStartDate,
     trendEndDate,
     trendMetric,
-    31,
+    Math.max(selectedDateKeys(trendStartDate, trendEndDate).length, 1),
   );
   const salesTrendValues = salesTrendSeries.map((point) => point.value);
   const salesTrendLabels = salesTrendSeries.map((point) => point.label);
@@ -880,6 +889,7 @@ export function BusinessOverviewReviewPage({
   const inventoryMovementTrendValues = movementChartValues(
     Math.max(totalInventoryValue - atRiskValue, 0),
     totalInventoryValue,
+    Math.max(selectedDateKeys(inventoryMovementStartDate, inventoryMovementEndDate).length, 1),
   );
 
   const paymentSegments = displayLiveData.paymentMix.length
@@ -923,29 +933,45 @@ export function BusinessOverviewReviewPage({
     setDraftEndDate(nextRange.endDate);
     setAppliedDateRange(nextRange);
 
-    setTrendStartDate(nextRange.startDate);
-    setTrendEndDate(nextRange.endDate);
+    if (trendUsesGlobalDates) {
+      setTrendStartDate(nextRange.startDate);
+      setTrendEndDate(nextRange.endDate);
+    }
 
-    setProductStartDate(nextRange.startDate);
-    setProductEndDate(nextRange.endDate);
+    if (productUsesGlobalDates) {
+      setProductStartDate(nextRange.startDate);
+      setProductEndDate(nextRange.endDate);
+    }
 
-    setPaymentStartDate(nextRange.startDate);
-    setPaymentEndDate(nextRange.endDate);
+    if (paymentUsesGlobalDates) {
+      setPaymentStartDate(nextRange.startDate);
+      setPaymentEndDate(nextRange.endDate);
+    }
 
-    setExpenseStartDate(nextRange.startDate);
-    setExpenseEndDate(nextRange.endDate);
+    if (expenseUsesGlobalDates) {
+      setExpenseStartDate(nextRange.startDate);
+      setExpenseEndDate(nextRange.endDate);
+    }
 
-    setInventoryRiskStartDate(nextRange.startDate);
-    setInventoryRiskEndDate(nextRange.endDate);
+    if (inventoryRiskUsesGlobalDates) {
+      setInventoryRiskStartDate(nextRange.startDate);
+      setInventoryRiskEndDate(nextRange.endDate);
+    }
 
-    setInsuranceStartDate(nextRange.startDate);
-    setInsuranceEndDate(nextRange.endDate);
+    if (insuranceUsesGlobalDates) {
+      setInsuranceStartDate(nextRange.startDate);
+      setInsuranceEndDate(nextRange.endDate);
+    }
 
-    setNearExpiryStartDate(nextRange.startDate);
-    setNearExpiryEndDate(nextRange.endDate);
+    if (nearExpiryUsesGlobalDates) {
+      setNearExpiryStartDate(nextRange.startDate);
+      setNearExpiryEndDate(nextRange.endDate);
+    }
 
-    setInventoryMovementStartDate(nextRange.startDate);
-    setInventoryMovementEndDate(nextRange.endDate);
+    if (inventoryMovementUsesGlobalDates) {
+      setInventoryMovementStartDate(nextRange.startDate);
+      setInventoryMovementEndDate(nextRange.endDate);
+    }
 
     if (options.resetDaily) {
       setDailyDate(todayIso());
@@ -968,6 +994,15 @@ export function BusinessOverviewReviewPage({
   };
 
   const resetGlobalDates = () => {
+    setTrendUsesGlobalDates(true);
+    setProductUsesGlobalDates(true);
+    setPaymentUsesGlobalDates(true);
+    setExpenseUsesGlobalDates(true);
+    setInventoryRiskUsesGlobalDates(true);
+    setInsuranceUsesGlobalDates(true);
+    setNearExpiryUsesGlobalDates(true);
+    setInventoryMovementUsesGlobalDates(true);
+
     applyDateRange(defaultDateRange(), { resetDaily: true });
   };
 
@@ -1050,8 +1085,8 @@ export function BusinessOverviewReviewPage({
                 <option value="value">Transaction Value</option>
                 <option value="count">Transaction Count</option>
               </select>
-              <input type="date" value={trendStartDate} onChange={(event) => setTrendStartDate(event.target.value)} />
-              <input type="date" value={trendEndDate} onChange={(event) => setTrendEndDate(event.target.value)} />
+              <input type="date" value={trendStartDate} onChange={(event) => { setTrendUsesGlobalDates(false); setTrendStartDate(event.target.value); }} />
+              <input type="date" value={trendEndDate} onChange={(event) => { setTrendUsesGlobalDates(false); setTrendEndDate(event.target.value); }} />
             </div>
           </header>
           <LineChart
@@ -1069,8 +1104,8 @@ export function BusinessOverviewReviewPage({
               <h2>Top Contributing Products</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={productStartDate} onChange={(event) => setProductStartDate(event.target.value)} />
-              <input type="date" value={productEndDate} onChange={(event) => setProductEndDate(event.target.value)} />
+              <input type="date" value={productStartDate} onChange={(event) => { setProductUsesGlobalDates(false); setProductStartDate(event.target.value); }} />
+              <input type="date" value={productEndDate} onChange={(event) => { setProductUsesGlobalDates(false); setProductEndDate(event.target.value); }} />
             </div>
           </header>
 <div className="bo-pro-table-wrap">
@@ -1109,8 +1144,8 @@ export function BusinessOverviewReviewPage({
               <h2>Payment Mix</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={paymentStartDate} onChange={(event) => setPaymentStartDate(event.target.value)} />
-              <input type="date" value={paymentEndDate} onChange={(event) => setPaymentEndDate(event.target.value)} />
+              <input type="date" value={paymentStartDate} onChange={(event) => { setPaymentUsesGlobalDates(false); setPaymentStartDate(event.target.value); }} />
+              <input type="date" value={paymentEndDate} onChange={(event) => { setPaymentUsesGlobalDates(false); setPaymentEndDate(event.target.value); }} />
             </div>
           </header>
 
@@ -1144,8 +1179,8 @@ export function BusinessOverviewReviewPage({
               <h2>Expenses & Profitability</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={expenseStartDate} onChange={(event) => setExpenseStartDate(event.target.value)} />
-              <input type="date" value={expenseEndDate} onChange={(event) => setExpenseEndDate(event.target.value)} />
+              <input type="date" value={expenseStartDate} onChange={(event) => { setExpenseUsesGlobalDates(false); setExpenseStartDate(event.target.value); }} />
+              <input type="date" value={expenseEndDate} onChange={(event) => { setExpenseUsesGlobalDates(false); setExpenseEndDate(event.target.value); }} />
             </div>
           </header>
 <div className="bo-pro-metric-list compact">
@@ -1162,8 +1197,8 @@ export function BusinessOverviewReviewPage({
               <h2>Inventory Risk Overview</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={inventoryRiskStartDate} onChange={(event) => setInventoryRiskStartDate(event.target.value)} />
-              <input type="date" value={inventoryRiskEndDate} onChange={(event) => setInventoryRiskEndDate(event.target.value)} />
+              <input type="date" value={inventoryRiskStartDate} onChange={(event) => { setInventoryRiskUsesGlobalDates(false); setInventoryRiskStartDate(event.target.value); }} />
+              <input type="date" value={inventoryRiskEndDate} onChange={(event) => { setInventoryRiskUsesGlobalDates(false); setInventoryRiskEndDate(event.target.value); }} />
             </div>
           </header>
 
@@ -1206,8 +1241,8 @@ export function BusinessOverviewReviewPage({
               <h2>Insurance & Receivables</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={insuranceStartDate} onChange={(event) => setInsuranceStartDate(event.target.value)} />
-              <input type="date" value={insuranceEndDate} onChange={(event) => setInsuranceEndDate(event.target.value)} />
+              <input type="date" value={insuranceStartDate} onChange={(event) => { setInsuranceUsesGlobalDates(false); setInsuranceStartDate(event.target.value); }} />
+              <input type="date" value={insuranceEndDate} onChange={(event) => { setInsuranceUsesGlobalDates(false); setInsuranceEndDate(event.target.value); }} />
             </div>
           </header>
 
@@ -1227,8 +1262,8 @@ export function BusinessOverviewReviewPage({
               <h2>Near Expiry Inventory Movement</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={nearExpiryStartDate} onChange={(event) => setNearExpiryStartDate(event.target.value)} />
-              <input type="date" value={nearExpiryEndDate} onChange={(event) => setNearExpiryEndDate(event.target.value)} />
+              <input type="date" value={nearExpiryStartDate} onChange={(event) => { setNearExpiryUsesGlobalDates(false); setNearExpiryStartDate(event.target.value); }} />
+              <input type="date" value={nearExpiryEndDate} onChange={(event) => { setNearExpiryUsesGlobalDates(false); setNearExpiryEndDate(event.target.value); }} />
             </div>
           </header>
 
@@ -1249,8 +1284,8 @@ export function BusinessOverviewReviewPage({
               <h2>Total Inventory Movement</h2>
             </div>
             <div className="bo-pro-controls">
-              <input type="date" value={inventoryMovementStartDate} onChange={(event) => setInventoryMovementStartDate(event.target.value)} />
-              <input type="date" value={inventoryMovementEndDate} onChange={(event) => setInventoryMovementEndDate(event.target.value)} />
+              <input type="date" value={inventoryMovementStartDate} onChange={(event) => { setInventoryMovementUsesGlobalDates(false); setInventoryMovementStartDate(event.target.value); }} />
+              <input type="date" value={inventoryMovementEndDate} onChange={(event) => { setInventoryMovementUsesGlobalDates(false); setInventoryMovementEndDate(event.target.value); }} />
             </div>
           </header>
 
