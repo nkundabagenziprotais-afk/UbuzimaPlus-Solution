@@ -185,7 +185,13 @@ return new class extends Migration
 
     private function grantFinancePermissionsToAdministrativeRoles(): void
     {
-        if (! Schema::hasTable('roles') || ! Schema::hasTable('role_permissions')) {
+        if (! Schema::hasTable('roles')) {
+            return;
+        }
+
+        $pivotTable = $this->rolePermissionPivotTable();
+
+        if (! $pivotTable) {
             return;
         }
 
@@ -207,7 +213,7 @@ return new class extends Migration
 
         foreach ($roleIds as $roleId) {
             foreach ($permissionIds as $permissionId) {
-                DB::table('role_permissions')->updateOrInsert(
+                DB::table($pivotTable)->updateOrInsert(
                     [
                         'role_id' => $roleId,
                         'permission_id' => $permissionId,
@@ -216,5 +222,16 @@ return new class extends Migration
                 );
             }
         }
+    }
+
+    private function rolePermissionPivotTable(): ?string
+    {
+        foreach (['role_permissions', 'permission_role'] as $table) {
+            if (Schema::hasTable($table)) {
+                return $table;
+            }
+        }
+
+        return null;
     }
 };

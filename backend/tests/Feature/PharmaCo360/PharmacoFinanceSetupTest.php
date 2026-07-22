@@ -61,7 +61,11 @@ class PharmacoFinanceSetupTest extends TestCase
         $this->assertNotNull($tenantAdminRoleId);
         $this->assertNotNull($dashboardPermissionId);
 
-        $this->assertDatabaseHas('role_permissions', [
+        $pivotTable = $this->rolePermissionPivotTable();
+
+        $this->assertNotNull($pivotTable);
+
+        $this->assertDatabaseHas($pivotTable, [
             'role_id' => $tenantAdminRoleId,
             'permission_id' => $dashboardPermissionId,
         ]);
@@ -83,6 +87,17 @@ class PharmacoFinanceSetupTest extends TestCase
             ->expectsOutput('Finance Trial Balance Check')
             ->expectsOutput('Trial balance is balanced.')
             ->assertExitCode(0);
+    }
+
+    private function rolePermissionPivotTable(): ?string
+    {
+        foreach (['role_permissions', 'permission_role'] as $table) {
+            if (DB::getSchemaBuilder()->hasTable($table)) {
+                return $table;
+            }
+        }
+
+        return null;
     }
 
     private function expectedPermissions(): array
