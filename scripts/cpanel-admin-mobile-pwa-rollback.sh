@@ -36,6 +36,11 @@ fi
 mkdir -p "$ADMIN_WEB_ROOT"
 
 echo "== Restoring admin web root from backup =="
-rsync -a --delete "$BACKUP_DIR"/ "$ADMIN_WEB_ROOT"/
+rsync -a --delete --exclude 'assets/***' "$BACKUP_DIR"/ "$ADMIN_WEB_ROOT"/
+
+if [ -d "$BACKUP_DIR/assets" ]; then
+  mkdir -p "$ADMIN_WEB_ROOT/assets"
+  rsync -a "$BACKUP_DIR/assets"/ "$ADMIN_WEB_ROOT/assets"/
+fi
 
 echo "Rollback completed from: $BACKUP_DIR"

@@ -1063,10 +1063,26 @@ function installUbuzimaMobileWebExperience(): void {
       ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname));
 
   if (canUseServiceWorker) {
+    let didReloadForServiceWorkerUpdate = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (didReloadForServiceWorkerUpdate) {
+        return;
+      }
+
+      didReloadForServiceWorkerUpdate = true;
+      window.location.reload();
+    });
+
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(() => {
-        // Service worker is an enhancement only.
-      });
+      navigator.serviceWorker
+        .register('/admin/sw.js', { scope: '/admin/' })
+        .then((registration) => {
+          void registration.update().catch(() => undefined);
+        })
+        .catch(() => {
+          // Service worker is an enhancement only.
+        });
     });
   }
 }

@@ -85,8 +85,15 @@ grep -Fq 'href="/admin/assets/ubuzima-pwa-icon.svg"' "$ADMIN_DIR/index.html"
 grep -Fq '"start_url": "/admin/' "$ADMIN_DIR/public/manifest.webmanifest"
 grep -Fq '"scope": "/admin/"' "$ADMIN_DIR/public/manifest.webmanifest"
 grep -Fq '"display": "standalone"' "$ADMIN_DIR/public/manifest.webmanifest"
-grep -Fq "navigator.serviceWorker.register('/admin/sw.js'" "$ADMIN_DIR/src/main.tsx"
-grep -Fq "ubuzima-admin-shell-v17" "$ADMIN_DIR/public/sw.js"
+grep -Fq "register('/admin/sw.js'" "$ADMIN_DIR/src/main.tsx"
+grep -Fq "ubuzima-admin-shell-v18" "$ADMIN_DIR/public/sw.js"
+grep -Fq "isCacheableAssetResponse" "$ADMIN_DIR/public/sw.js"
+grep -Fq "ubuzima-boot-fallback" "$ADMIN_DIR/index.html"
+grep -Fq "registration.update()" "$ADMIN_DIR/src/main.tsx"
+grep -Fq -- "--exclude 'assets/***'" "$ROOT_DIR/scripts/cpanel-admin-mobile-pwa-deploy.sh"
+grep -Fq "UBUZIMA_ADMIN_RELEASE.txt?release=" "$ROOT_DIR/scripts/cpanel-admin-mobile-pwa-deploy.sh"
+grep -Fq "application/manifest\\+json" "$ROOT_DIR/scripts/cpanel-admin-mobile-pwa-deploy.sh"
+grep -Fq -- "--exclude 'assets/***'" "$ROOT_DIR/scripts/cpanel-admin-mobile-pwa-rollback.sh"
 
 if [ "$SKIP_NPM_BUILD" != "1" ]; then
   if ! "$NPM_BIN" --version >/dev/null 2>&1; then

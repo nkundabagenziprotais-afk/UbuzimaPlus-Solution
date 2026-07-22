@@ -41,6 +41,8 @@ fi
 cd "$ROOT_DIR"
 "$AUDIT_SCRIPT"
 
+current_commit="$(git rev-parse HEAD)"
+release_short="$(git rev-parse --short HEAD)"
 timestamp="$(date -u +%Y%m%d-%H%M%S)"
 backup_dir="$BACKUP_ROOT/admin-$timestamp"
 mkdir -p "$backup_dir"
@@ -67,11 +69,15 @@ rsync -a --delete \
   --exclude 'storage/***' \
   --exclude 'database/***' \
   --exclude '*.sqlite' \
+  --exclude 'assets/***' \
   "$ADMIN_DIR/dist"/ "$ADMIN_WEB_ROOT"/
+
+mkdir -p "$ADMIN_WEB_ROOT/assets"
+rsync -a "$ADMIN_DIR/dist/assets"/ "$ADMIN_WEB_ROOT/assets"/
 
 cat > "$ADMIN_WEB_ROOT/UBUZIMA_ADMIN_RELEASE.txt" <<MARKER
 Ubuzima+ Admin Mobile PWA release
-Commit: $(git rev-parse HEAD)
+Commit: $current_commit
 Deployed UTC: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 Backup: $backup_dir
 MARKER
@@ -82,10 +88,28 @@ test -f "$ADMIN_WEB_ROOT/sw.js"
 
 if [ -n "$PUBLIC_ADMIN_URL" ] && command -v curl >/dev/null 2>&1; then
   base_url="${PUBLIC_ADMIN_URL%/}"
+  asset_origin="${base_url%/admin}"
+
+  if [ "$asset_origin" = "$base_url" ]; then
+    asset_origin="$base_url"
+  fi
+
   echo "== Live URL verification =="
-  curl -fsSI "$base_url/" >/dev/null
-  curl -fsSI "$base_url/manifest.webmanifest" >/dev/null
-  curl -fsSI "$base_url/sw.js" >/dev/null
+  live_index="$(curl -fsSL "$base_url/?release=$release_short")"
+  while IFS= read -r asset_path; do
+    if [ -z "$asset_path" ]; then
+      continue
+    fi
+
+    echo "$live_index" | grep -Fq "$asset_path"
+    curl -fsSI "$asset_origin$asset_path" >/dev/null
+  done < <(grep -Eo '/admin/assets/[^"]+' "$ADMIN_DIR/dist/index.html" | sort -u)
+
+  expected_cache_line="$(grep -F 'const CACHE_NAME' "$ADMIN_DIR/dist/sw.js" | head -n 1)"
+  curl -fsSL "$base_url/sw.js?release=$release_short" | grep -Fq "$expected_cache_line"
+  curl -fsSL "$base_url/UBUZIMA_ADMIN_RELEASE.txt?release=$release_short" | grep -Fq "Commit: $current_commit"
+  curl -fsSI "$base_url/manifest.webmanifest?release=$release_short" \
+    | grep -Eiq 'content-type: *(application/manifest\+json|application/json)'
 fi
 
 echo "Deploy completed."

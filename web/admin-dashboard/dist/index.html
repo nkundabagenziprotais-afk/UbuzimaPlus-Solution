@@ -13,11 +13,55 @@
     <link rel="icon" type="image/svg+xml" href="/admin/assets/ubuzima-pwa-icon.svg" />
     <link rel="apple-touch-icon" href="/admin/assets/vitapharma-logo.png" />
     <title>Ubuzima+ Admin Dashboard</title>
-    <script type="module" crossorigin src="/admin/assets/index-BXacnRov.js"></script>
+    <style>
+      .ubuzima-boot-fallback {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #f4f8f6;
+        color: #10211b;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .ubuzima-boot-fallback__card {
+        width: min(360px, 100%);
+        display: grid;
+        gap: 10px;
+        border: 1px solid rgba(75, 83, 32, 0.16);
+        border-radius: 8px;
+        padding: 18px;
+        background: #ffffff;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.1);
+      }
+
+      .ubuzima-boot-fallback strong,
+      .ubuzima-boot-fallback span {
+        display: block;
+      }
+
+      .ubuzima-boot-fallback strong {
+        font-size: 1.05rem;
+      }
+
+      .ubuzima-boot-fallback span {
+        color: #5f7169;
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
+    </style>
+    <script type="module" crossorigin src="/admin/assets/index-PJbE7zS1.js"></script>
     <link rel="modulepreload" crossorigin href="/admin/assets/react-vendor-DjB5-EPc.js">
     <link rel="stylesheet" crossorigin href="/admin/assets/index-sCgF0IkM.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="ubuzima-boot-fallback" role="status" aria-live="polite">
+        <div class="ubuzima-boot-fallback__card">
+          <strong>Opening Ubuzima+</strong>
+          <span>If this screen does not continue, refresh once to load the latest app version.</span>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

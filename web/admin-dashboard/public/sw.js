@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ubuzima-admin-shell-v17';
+const CACHE_NAME = 'ubuzima-admin-shell-v18';
 const SHELL_ASSETS = [
   '/admin/',
   '/admin/index.html',
@@ -8,6 +8,14 @@ const SHELL_ASSETS = [
   '/admin/assets/ubuzima-logo.png',
   '/admin/assets/vitapharma-logo.png'
 ];
+
+function isHtmlResponse(response) {
+  return (response.headers.get('content-type') || '').includes('text/html');
+}
+
+function isCacheableAssetResponse(response) {
+  return response.ok && !isHtmlResponse(response);
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -44,9 +52,11 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           const copy = response.clone();
 
-          caches.open(CACHE_NAME)
-            .then((cache) => cache.put('/admin/index.html', copy))
-            .catch(() => {});
+          if (response.ok && isHtmlResponse(response)) {
+            caches.open(CACHE_NAME)
+              .then((cache) => cache.put('/admin/index.html', copy))
+              .catch(() => {});
+          }
 
           return response;
         })
@@ -70,7 +80,7 @@ self.addEventListener('fetch', (event) => {
 
           caches.open(CACHE_NAME)
             .then((cache) => {
-              if (response.ok) {
+              if (isCacheableAssetResponse(response)) {
                 cache.put(request, copy);
               }
             })
@@ -89,7 +99,7 @@ self.addEventListener('fetch', (event) => {
         const copy = response.clone();
 
         caches.open(CACHE_NAME).then((cache) => {
-          if (response.ok) {
+          if (response.ok && !isHtmlResponse(response)) {
             cache.put(request, copy);
           }
         }).catch(() => {});
