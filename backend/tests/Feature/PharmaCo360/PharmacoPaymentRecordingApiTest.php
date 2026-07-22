@@ -221,7 +221,7 @@ class PharmacoPaymentRecordingApiTest extends TestCase
         $this->withHeader('X-Tenant-Slug', 'vitapharma')
             ->withToken($token)
             ->postJson("/api/v1/pharmaco/sales/{$sale->id}/confirm", $payload)
-            ->assertCreated();
+            ->assertOk();
 
         return $sale->fresh();
     }
