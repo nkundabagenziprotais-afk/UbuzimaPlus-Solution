@@ -76,18 +76,13 @@ class PosSessionAdminController extends Controller
             );
         }
 
+        // POS_ADMIN_LIST_ALL_SESSION_TYPES_V1
+        // When no business date is selected, show both live and historical
+        // sessions ordered by recency instead of hiding older historical dates.
         if (! empty($validated['business_date'])) {
             $query->whereDate(
                 'business_date',
                 $validated['business_date'],
-            );
-        } else {
-            $query->whereDate(
-                'business_date',
-                '>=',
-                now()
-                    ->subDays(13)
-                    ->toDateString(),
             );
         }
 
@@ -218,13 +213,9 @@ class PosSessionAdminController extends Controller
                     404,
                 );
 
-                if ($locked->session_mode === 'historical') {
-                    throw ValidationException::withMessages([
-                        'session' => [
-                            'Historical sessions must use the historical POS approval workflow.',
-                        ],
-                    ]);
-                }
+                // POS_ADMIN_CAN_FORCE_CLOSE_HISTORICAL_V4
+                // Admin support can force-close abandoned live and historical
+                // POS sessions from POS Session Management.
 
                 if (! in_array(
                     $locked->status,
@@ -386,29 +377,34 @@ class PosSessionAdminController extends Controller
                     404,
                 );
 
-                $latest = PharmacoPosSession::query()
-                    ->where('tenant_id', $locked->tenant_id)
-                    ->where('branch_id', $locked->branch_id)
-                    ->where('user_id', $locked->user_id)
-                    ->whereDate(
-                        'business_date',
-                        $locked->business_date
-                            ->toDateString(),
-                    )
-                    ->latest('sequence_number')
-                    ->lockForUpdate()
-                    ->first();
+                // POS_ADMIN_HISTORICAL_RESET_ACCESS_V4
+                // Historical access reset must work from POS Session Management.
+                // Keep the latest-session rule for live sessions only.
+                if ($locked->session_mode !== 'historical') {
+                    $latest = PharmacoPosSession::query()
+                        ->where('tenant_id', $locked->tenant_id)
+                        ->where('branch_id', $locked->branch_id)
+                        ->where('user_id', $locked->user_id)
+                        ->whereDate(
+                            'business_date',
+                            $locked->business_date
+                                ->toDateString(),
+                        )
+                        ->latest('sequence_number')
+                        ->lockForUpdate()
+                        ->first();
 
-                if (
-                    ! $latest
-                    || (int) $latest->id
-                        !== (int) $locked->id
-                ) {
-                    throw ValidationException::withMessages([
-                        'session' => [
-                            'Only the latest session for this cashier, branch and business date can receive a session-limit reset.',
-                        ],
-                    ]);
+                    if (
+                        ! $latest
+                        || (int) $latest->id
+                            !== (int) $locked->id
+                    ) {
+                        throw ValidationException::withMessages([
+                            'session' => [
+                                'Only the latest session for this cashier, branch and business date can receive a session-limit reset.',
+                            ],
+                        ]);
+                    }
                 }
 
                 $policy->ensureCanAuthorizeReset($locked);
@@ -567,9 +563,9 @@ class PosSessionAdminController extends Controller
                 $session->zeroized_at?->toISOString(),
             'closed_at' =>
                 $session->closed_at?->toISOString(),
+            // POS_ADMIN_HISTORICAL_BUTTON_FLAGS_V4
             'can_force_close' =>
-                $session->session_mode !== 'historical'
-                && in_array(
+                in_array(
                     $session->status,
                     ['open', 'zeroized'],
                     true,
@@ -578,6 +574,7 @@ class PosSessionAdminController extends Controller
                 $session->status === 'closed'
                 && $session->closed_at !== null
                 && $session->reset_authorized_at === null,
+
             'metadata' => $session->metadata ?? [],
             'events' =>
                 $session->relationLoaded('events')

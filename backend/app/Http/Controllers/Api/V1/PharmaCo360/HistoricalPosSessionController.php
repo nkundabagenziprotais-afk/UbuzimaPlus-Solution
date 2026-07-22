@@ -187,9 +187,13 @@ class HistoricalPosSessionController extends Controller
                         ->lockForUpdate()
                         ->firstOrFail();
 
+                    // HISTORICAL_POS_ONLY_BLOCK_LIVE_SESSION_V1
+                    // Historical POS must not be blocked by another historical session record.
+                    // Only an active live POS session should prevent opening historical POS.
                     $activeSession = PharmacoPosSession::query()
                         ->where('tenant_id', $tenant->id)
                         ->where('user_id', $request->user()->id)
+                        ->whereNull('historical_approval_id')
                         ->whereIn('status', [
                             'open',
                             'zeroized',

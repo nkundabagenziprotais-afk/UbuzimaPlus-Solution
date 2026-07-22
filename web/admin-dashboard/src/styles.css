@@ -49362,3 +49362,848 @@ html.ubuzima-standalone-webapp .admin-header {
     animation: none !important;
   }
 }
+
+/* POS_SALES_DASHBOARD_INVENTORY_STANDARD_V1 */
+.pos-sales-dashboard-standard,
+.pos-sales-overview,
+.pos-analytics-dashboard {
+  --pos-card-radius: 1rem;
+}
+
+.pos-sales-dashboard-standard .pos-analytics-filter-bar,
+.pos-sales-overview .pos-analytics-filter-bar,
+.pos-analytics-dashboard .pos-analytics-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+.pos-sales-dashboard-standard .pos-analytics-kpis,
+.pos-sales-overview .pos-analytics-kpis,
+.pos-analytics-dashboard .pos-analytics-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.pos-sales-dashboard-standard article,
+.pos-sales-overview article,
+.pos-analytics-dashboard article {
+  border-radius: var(--pos-card-radius);
+}
+
+@media (max-width: 1024px) {
+  .pos-sales-dashboard-standard .pos-analytics-filter-bar,
+  .pos-sales-overview .pos-analytics-filter-bar,
+  .pos-analytics-dashboard .pos-analytics-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-sales-dashboard-standard .pos-analytics-kpis,
+  .pos-sales-overview .pos-analytics-kpis,
+  .pos-analytics-dashboard .pos-analytics-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .pos-sales-dashboard-standard .pos-analytics-kpis,
+  .pos-sales-overview .pos-analytics-kpis,
+  .pos-analytics-dashboard .pos-analytics-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* POS_SALES_ANALYTICS_VISIBLE_ENTRY_V1 */
+.urma-module-card[data-module-key='sales'],
+.urma-actions button[data-action-match*='POS'],
+.urma-tabs button[data-tab='sales'] {
+  outline: 1px solid rgba(37, 99, 235, 0.12);
+}
+
+.urma-module-card[data-module-key='sales'] span,
+.urma-actions button[data-action-match*='POS'] span {
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #2563eb !important;
+}
+
+/* POS and Sales Overview deployment target + real stock trend marker */
+.urma-module-card[data-module-key='sales'] strong,
+.urma-actions button[data-action-match*='POS'] strong {
+  letter-spacing: -0.01em;
+}
+
+.inventory-analytics-bar-trend-card {
+  contain: layout paint;
+}
+
+/* POS_COMPONENT_ANALYTICS_COMMAND_CENTRE_V1 */
+.pos-analytics-command-centre {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 1.1rem;
+  background: #f8fbff;
+}
+
+.pos-analytics-filter-card {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0;
+  margin: 0.85rem 0;
+  overflow: hidden;
+  border: 1px solid #d8e4f2;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
+.pos-analytics-filter-card label {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-right: 1px solid #e3edf8;
+}
+
+.pos-analytics-filter-card small {
+  font-size: 0.66rem !important;
+  font-weight: 800;
+  color: #415c7a;
+}
+
+.pos-analytics-filter-card span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #06204a;
+}
+
+.pos-analytics-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.pos-analytics-kpi-strip article {
+  min-height: 5.8rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.72rem;
+  border: 1px solid #d8e4f2;
+  border-radius: 0.85rem;
+  background: #ffffff;
+}
+
+.pos-analytics-kpi-strip span {
+  font-size: 0.7rem !important;
+  font-weight: 800;
+  color: #06204a;
+}
+
+.pos-analytics-kpi-strip strong {
+  font-size: 1.08rem;
+  color: #06204a;
+}
+
+.pos-analytics-kpi-strip small {
+  font-size: 0.62rem !important;
+  color: #008758;
+}
+
+.pos-analytics-kpi-strip .warning small {
+  color: #dc2626;
+}
+
+.pos-analytics-dashboard-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.pos-analytics-dashboard-grid.top {
+  grid-template-columns: 1.15fr 1.55fr 1.15fr;
+}
+
+.pos-analytics-dashboard-grid.middle {
+  grid-template-columns: 1.45fr 1fr 0.8fr;
+}
+
+.pos-analytics-dashboard-grid.bottom {
+  grid-template-columns: 1.15fr 1.2fr 1fr 0.95fr;
+}
+
+.pos-analytics-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d8e4f2;
+  border-radius: 0.9rem;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.035);
+}
+
+.pos-analytics-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.78rem 0.9rem;
+  border-bottom: 1px solid #edf3fa;
+}
+
+.pos-analytics-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.pos-analytics-card th,
+.pos-analytics-card td {
+  padding: 0.6rem 0.72rem;
+  border-bottom: 1px solid #edf3fa;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.pos-analytics-card th {
+  color: #415c7a;
+  font-weight: 800;
+}
+
+.pos-analytics-card td {
+  color: #06204a;
+  font-weight: 650;
+}
+
+.pos-analytics-card .good {
+  color: #008758;
+}
+
+.pos-analytics-card .bad {
+  color: #dc2626;
+}
+
+.pos-analytics-bar-chart {
+  height: 13rem;
+  display: flex;
+  align-items: end;
+  gap: 0.42rem;
+  padding: 1rem 1rem 1.8rem;
+}
+
+.pos-analytics-bar-chart i {
+  position: relative;
+  flex: 1;
+  min-width: 0.25rem;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, #008758, #16a34a);
+}
+
+.pos-analytics-bar-chart small {
+  position: absolute;
+  left: 50%;
+  bottom: -1.25rem;
+  transform: translateX(-50%);
+  color: #49627d;
+  font-size: 0.58rem !important;
+}
+
+.pos-analytics-payment-layout {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.pos-analytics-donut {
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: conic-gradient(#16a34a 0 62%, #0891b2 62% 82%, #7c3aed 82% 93%, #f43f5e 93% 100%);
+}
+
+.pos-analytics-donut span,
+.pos-analytics-donut strong {
+  display: block;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.88);
+}
+
+.pos-analytics-payment-bars {
+  display: grid;
+  gap: 0.65rem;
+  align-content: center;
+}
+
+.pos-analytics-payment-bars div {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr) 5rem;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pos-analytics-payment-bars i {
+  height: 0.62rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #008758, #16a34a);
+}
+
+.pos-analytics-list,
+.pos-analytics-insights,
+.pos-analytics-actions,
+.pos-analytics-mini-kpis {
+  display: grid;
+  gap: 0.58rem;
+  padding: 0.8rem;
+}
+
+.pos-analytics-list p,
+.pos-analytics-insights p,
+.pos-analytics-mini-kpis article {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #edf3fa;
+}
+
+.pos-analytics-actions button {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+  text-align: left;
+  border: 1px solid #e4edf7;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  padding: 0.62rem;
+}
+
+.pos-analytics-actions span {
+  width: 1.55rem;
+  height: 1.55rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #eefbf6;
+  color: #008758;
+  font-weight: 900;
+}
+
+@media (max-width: 1280px) {
+  .pos-analytics-kpi-strip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .pos-analytics-filter-card {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .pos-analytics-dashboard-grid.top,
+  .pos-analytics-dashboard-grid.middle,
+  .pos-analytics-dashboard-grid.bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .pos-analytics-command-centre {
+    padding: 0.75rem;
+  }
+
+  .pos-analytics-kpi-strip,
+  .pos-analytics-filter-card,
+  .pos-analytics-payment-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-analytics-card {
+    overflow-x: auto;
+  }
+}
+
+/* POS_ANALYTICS_LAYOUT_REFINEMENT_V1 */
+.pos-overview {
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-overview-header p,
+.pos-overview-header-actions .pos-overview-secondary-button,
+.pos-analytics-command-centre > .pos-overview-section-heading,
+.pos-overview-performance {
+  display: none !important;
+}
+
+.pos-overview-modules {
+  order: 1;
+}
+
+.pos-analytics-command-centre {
+  order: 2;
+}
+
+.pos-overview-module-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+}
+
+.pos-overview-module-card {
+  min-height: 4.25rem !important;
+  padding: 0.62rem !important;
+  border-radius: 0.85rem !important;
+}
+
+.pos-overview-module-card strong {
+  font-size: 0.74rem !important;
+  line-height: 1.1 !important;
+}
+
+.pos-overview-module-card .pos-overview-module-index,
+.pos-overview-module-card .pos-overview-module-arrow {
+  font-size: 0.62rem !important;
+}
+
+.pos-overview-module-card .pos-overview-module-icon {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+}
+
+.pos-analytics-filter-card {
+  grid-template-columns: repeat(8, minmax(0, 1fr)) auto !important;
+}
+
+.pos-analytics-filter-card::after {
+  content: "Apply Filters";
+  display: grid;
+  place-items: center;
+  min-height: 3.6rem;
+  padding: 0 0.85rem;
+  background: #008758;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.pos-analytics-kpi-strip {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+.pos-analytics-kpi-strip article {
+  text-align: right !important;
+  align-content: center !important;
+}
+
+.pos-analytics-kpi-strip article span,
+.pos-analytics-kpi-strip article small {
+  justify-self: end !important;
+}
+
+.pos-analytics-kpi-strip article strong {
+  justify-self: end !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-analytics-dashboard-grid.top,
+.pos-analytics-dashboard-grid.middle,
+.pos-analytics-dashboard-grid.bottom {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.pos-analytics-card {
+  min-height: 18rem;
+}
+
+.pos-analytics-card header {
+  min-height: 3.3rem;
+}
+
+.pos-analytics-card header strong {
+  min-width: 0;
+  font-size: 0.86rem !important;
+  line-height: 1.15 !important;
+  overflow-wrap: anywhere;
+}
+
+.pos-analytics-week-select {
+  min-height: 2rem !important;
+  max-width: 8rem;
+  border: 1px solid #d8e4f2;
+  border-radius: 999px;
+  background: #fff;
+  color: #06204a;
+  font-size: 0.68rem !important;
+  font-weight: 800;
+  padding: 0 0.55rem;
+}
+
+.pos-analytics-card table {
+  table-layout: auto;
+}
+
+.pos-analytics-card th,
+.pos-analytics-card td {
+  font-size: 0.68rem !important;
+  white-space: normal !important;
+  line-height: 1.2;
+}
+
+@media (max-width: 1280px) {
+  .pos-overview-module-grid,
+  .pos-analytics-kpi-strip,
+  .pos-analytics-filter-card,
+  .pos-analytics-dashboard-grid.top,
+  .pos-analytics-dashboard-grid.middle,
+  .pos-analytics-dashboard-grid.bottom {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .pos-overview-module-grid,
+  .pos-analytics-kpi-strip,
+  .pos-analytics-filter-card,
+  .pos-analytics-dashboard-grid.top,
+  .pos-analytics-dashboard-grid.middle,
+  .pos-analytics-dashboard-grid.bottom {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* POS_ANALYTICS_LAYOUT_REFINEMENT_V2 */
+.pos-overview-section-heading:has(h2) p,
+.pos-overview-section-heading:has(h2) .pos-overview-eyebrow:empty,
+.pos-overview-header p,
+.pos-overview-header-actions .pos-overview-secondary-button,
+.pos-analytics-command-centre > .pos-overview-section-heading,
+.pos-overview-performance {
+  display: none !important;
+}
+
+.pos-overview-modules .pos-overview-section-heading {
+  display: none !important;
+}
+
+.pos-overview-module-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+}
+
+.pos-overview-module-card {
+  min-height: 4rem !important;
+  padding: 0.58rem !important;
+  border-radius: 0.85rem !important;
+}
+
+.pos-overview-module-card strong {
+  font-size: 0.72rem !important;
+  line-height: 1.1 !important;
+}
+
+.pos-overview-module-card .pos-overview-module-icon {
+  width: 1.65rem !important;
+  height: 1.65rem !important;
+}
+
+.pos-analytics-filter-card {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto !important;
+  gap: 0.55rem !important;
+  padding: 0.75rem !important;
+  border-radius: 0.95rem !important;
+}
+
+.pos-analytics-filter-card label {
+  border-right: 0 !important;
+  padding: 0 !important;
+}
+
+.pos-analytics-filter-card input,
+.pos-analytics-filter-card select {
+  width: 100%;
+  min-height: 2.35rem !important;
+  border: 1px solid #d8e4f2;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #06204a;
+  font-size: 0.76rem !important;
+  font-weight: 800;
+  padding: 0 0.62rem;
+}
+
+.pos-analytics-filter-card::after {
+  content: none !important;
+}
+
+.pos-analytics-filter-actions {
+  display: flex;
+  align-items: end;
+  gap: 0.45rem;
+}
+
+.pos-analytics-filter-actions button {
+  min-height: 2.35rem !important;
+  border: 1px solid #d8e4f2;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #06204a;
+  font-size: 0.72rem !important;
+  font-weight: 900;
+  padding: 0 0.8rem;
+}
+
+.pos-analytics-filter-actions button:last-child {
+  background: #008758;
+  border-color: #008758;
+  color: #fff;
+}
+
+.pos-analytics-kpi-strip {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+.pos-analytics-kpi-strip article {
+  text-align: right !important;
+  align-content: center !important;
+}
+
+.pos-analytics-kpi-strip article span,
+.pos-analytics-kpi-strip article small,
+.pos-analytics-kpi-strip article strong {
+  justify-self: end !important;
+}
+
+.pos-analytics-kpi-strip article strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-analytics-dashboard-grid.top,
+.pos-analytics-dashboard-grid.middle,
+.pos-analytics-dashboard-grid.bottom {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: start !important;
+}
+
+.pos-analytics-card {
+  min-height: 16rem !important;
+}
+
+.pos-analytics-card header {
+  min-height: 3.2rem !important;
+}
+
+.pos-analytics-card header strong {
+  font-size: 0.84rem !important;
+  line-height: 1.15 !important;
+  overflow-wrap: anywhere;
+}
+
+.pos-analytics-card th,
+.pos-analytics-card td {
+  font-size: 0.67rem !important;
+  white-space: normal !important;
+  line-height: 1.2;
+}
+
+@media (max-width: 1180px) {
+  .pos-overview-module-grid,
+  .pos-analytics-kpi-strip,
+  .pos-analytics-filter-card,
+  .pos-analytics-dashboard-grid.top,
+  .pos-analytics-dashboard-grid.middle,
+  .pos-analytics-dashboard-grid.bottom {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .pos-overview-module-grid,
+  .pos-analytics-kpi-strip,
+  .pos-analytics-filter-card,
+  .pos-analytics-dashboard-grid.top,
+  .pos-analytics-dashboard-grid.middle,
+  .pos-analytics-dashboard-grid.bottom {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-analytics-filter-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* HISTORICAL_POS_GUIDED_CUSTOMER_JOURNEY_V1 */
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] textarea[name*='reason'],
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] input[name*='reason'],
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] label:has(textarea),
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] label:has(input[name*='reason']) {
+  display: none !important;
+}
+
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] {
+  --historical-step-radius: 0.95rem;
+}
+
+.historical-pos-workflow[data-historical-pos-journey='guided-v1']::before {
+  content: "1. Pick business date  →  2. Check availability  →  3. Request approval only if conflict  →  4. Open Historical POS";
+  display: block;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(0, 135, 88, 0.16);
+  border-radius: var(--historical-step-radius);
+  background: rgba(236, 253, 245, 0.88);
+  color: #065f46;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.pos-admin-historical-approval-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.9rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 0.95rem;
+  background: rgba(239, 246, 255, 0.92);
+}
+
+.pos-admin-historical-approval-strip span {
+  display: none;
+}
+
+.pos-admin-historical-approval-strip strong {
+  display: block;
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.pos-admin-historical-approval-strip p,
+.pos-admin-historical-approval-strip small {
+  margin: 0.15rem 0 0;
+  color: #475569;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .historical-pos-workflow[data-historical-pos-journey='guided-v1']::before,
+  .pos-admin-historical-approval-strip {
+    font-size: 0.72rem;
+  }
+
+  .pos-admin-historical-approval-strip {
+    display: grid;
+  }
+}
+
+/* POS_ANALYTICS_UI_REFINEMENT_V5 */
+
+/* Remove visible Historical POS guidance text. Keep the simplified journey behavior. */
+.historical-pos-workflow[data-hide-guidance='true']::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Make all analytics cards flow continuously in 2 columns without empty grid holes. */
+.pos-analytics-dashboard-grid-all {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.75rem !important;
+  align-items: start !important;
+}
+
+.pos-analytics-dashboard-grid.middle,
+.pos-analytics-dashboard-grid.bottom {
+  display: contents !important;
+}
+
+/* Standardize POS analytics card font sizing to match Cashier Performance. */
+.pos-analytics-card,
+.pos-analytics-card table,
+.pos-analytics-card th,
+.pos-analytics-card td,
+.pos-analytics-card p,
+.pos-analytics-card span,
+.pos-analytics-card strong,
+.pos-analytics-card small,
+.pos-analytics-list p,
+.pos-analytics-insights p,
+.pos-analytics-actions button {
+  font-size: 0.72rem !important;
+  line-height: 1.25 !important;
+}
+
+.pos-analytics-card header strong {
+  font-size: 0.86rem !important;
+  line-height: 1.2 !important;
+}
+
+/* Sales Trend: horizontal scroll, data labels at the top, days on X-axis. */
+.pos-analytics-card.sales-trend {
+  overflow: hidden !important;
+}
+
+.pos-analytics-bar-chart {
+  min-height: 15rem !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  align-items: end !important;
+  gap: 0.55rem !important;
+  padding: 2.1rem 1rem 2rem !important;
+  scroll-snap-type: x proximity;
+}
+
+.pos-analytics-bar-chart i {
+  flex: 0 0 2.1rem !important;
+  min-width: 2.1rem !important;
+  max-width: 2.1rem !important;
+  scroll-snap-align: start;
+}
+
+.pos-analytics-bar-chart i strong {
+  position: absolute;
+  left: 50%;
+  top: -1.55rem;
+  transform: translateX(-50%);
+  min-width: 3.4rem;
+  padding: 0.12rem 0.2rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  font-size: 0.62rem !important;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.pos-analytics-bar-chart i small {
+  bottom: -1.35rem !important;
+  font-size: 0.62rem !important;
+  font-weight: 800;
+}
+
+/* Business insights should carry measurable business context. */
+.pos-analytics-card.ai-insight .pos-analytics-insights p {
+  display: grid !important;
+  gap: 0.18rem;
+  justify-content: stretch !important;
+  text-align: left;
+}
+
+/* Keep 2 columns on desktop/tablet and 1 column on phone. */
+@media (max-width: 760px) {
+  .pos-analytics-dashboard-grid-all {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-analytics-bar-chart i {
+    flex-basis: 2.4rem !important;
+    min-width: 2.4rem !important;
+  }
+}
