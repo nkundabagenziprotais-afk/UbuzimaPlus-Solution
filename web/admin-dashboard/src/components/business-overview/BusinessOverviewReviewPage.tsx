@@ -1488,7 +1488,7 @@ export function BusinessOverviewReviewPage({
           </header>
 
           <div className="bo-pro-metric-list">
-            <article><span>Gross Sales</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Gross Revenue')}</strong></article>
+            <article><span>Gross Sales</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Gross Sales')}</strong></article>
             <article><span>Collections</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Collections')}</strong></article>
             <article><span>Transactions</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Transaction Count')}</strong></article>
             <article><span>Average Sale</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Average Transaction Value')}</strong></article>

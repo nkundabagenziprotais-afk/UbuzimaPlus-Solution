@@ -349,6 +349,101 @@ function buildTopProductsFromRows(rows: unknown[]): Array<{ name: string; label:
     }));
 }
 
+function deepSalesNumberValue(source: unknown, keys: string[]): number {
+  const normalizedKeys = new Set(keys.map((key) => key.toLowerCase().replace(/[^a-z0-9]/g, '')));
+  const queue: unknown[] = [source];
+  const visited = new Set<unknown>();
+
+  while (queue.length) {
+    const current = queue.shift();
+
+    if (!current || visited.has(current)) {
+      continue;
+    }
+
+    if (typeof current === 'object') {
+      visited.add(current);
+    }
+
+    if (Array.isArray(current)) {
+      current.forEach((item) => queue.push(item));
+      continue;
+    }
+
+    if (typeof current !== 'object') {
+      continue;
+    }
+
+    Object.entries(current as UnknownRecord).forEach(([key, value]) => {
+      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      if (normalizedKeys.has(normalizedKey)) {
+        const amount = numberValue(value);
+
+        if (amount > 0) {
+          queue.unshift({ __directMatch: amount });
+        }
+      }
+
+      if (value && typeof value === 'object') {
+        queue.push(value);
+      }
+    });
+
+    const directMatch = numberValue((current as UnknownRecord).__directMatch);
+
+    if (directMatch > 0) {
+      return directMatch;
+    }
+  }
+
+  return 0;
+}
+
+function estimateGrossRevenueFromSalesRows(rows: UnknownRecord[]): number {
+  return rows.reduce((sum, row) => {
+    const quantity = Math.max(
+      deepSalesNumberValue(row, ['quantity', 'qty', 'quantity_sold']),
+      1,
+    );
+
+    const lineTotal = deepSalesNumberValue(row, [
+      'line_total',
+      'total_amount',
+      'sales_value',
+      'subtotal_amount',
+      'amount',
+    ]);
+
+    const unitPrice = deepSalesNumberValue(row, [
+      'unit_price',
+      'selling_price',
+      'price',
+    ]);
+
+    const unitCost = deepSalesNumberValue(row, [
+      'unit_cost',
+      'cost_price',
+      'cost',
+      'purchase_price',
+    ]);
+
+    const revenue = lineTotal > 0 ? lineTotal : unitPrice * quantity;
+    const effectiveUnitPrice = unitPrice > 0 ? unitPrice : revenue / quantity;
+
+    /*
+      If cost is missing or equals selling price, estimate cost from selling price
+      using 30% markup assumption: cost = price / 1.3.
+    */
+    const effectiveUnitCost =
+      unitCost > 0 && Math.abs(unitCost - effectiveUnitPrice) > 0.01
+        ? unitCost
+        : (effectiveUnitPrice > 0 ? effectiveUnitPrice / 1.3 : 0);
+
+    return sum + Math.max(revenue - (effectiveUnitCost * quantity), 0);
+  }, 0);
+}
+
 function buildPaymentMix(paymentMethods: UnknownRecord[], collections: number): BusinessOverviewPaymentMixRow[] {
   const total = Math.max(collections, 1);
 
@@ -563,6 +658,7 @@ export async function loadBusinessOverviewDataAdapter({
       salesRecord.margin_income ??
       0,
     ),
+    estimateGrossRevenueFromSalesRows(registerRows),
     0,
   );
   const paymentMix = buildPaymentMix(sales.paymentMethods, sales.collections);

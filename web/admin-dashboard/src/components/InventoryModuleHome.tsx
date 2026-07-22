@@ -321,6 +321,44 @@ function inventoryRecord(value: unknown): UnknownRecord {
     : {};
 }
 
+function inventoryDeepRecordArray(value: unknown): UnknownRecord[] {
+  const queue: unknown[] = [value];
+  let best: UnknownRecord[] = [];
+
+  while (queue.length) {
+    const current = queue.shift();
+
+    if (Array.isArray(current)) {
+      const records = current.filter(
+        (item): item is UnknownRecord =>
+          Boolean(item) && typeof item === 'object' && !Array.isArray(item),
+      );
+
+      if (records.length > best.length) {
+        best = records;
+      }
+
+      current.forEach((item) => {
+        if (item && typeof item === 'object') {
+          queue.push(item);
+        }
+      });
+
+      continue;
+    }
+
+    if (current && typeof current === 'object') {
+      Object.values(current as UnknownRecord).forEach((item) => {
+        if (item && typeof item === 'object') {
+          queue.push(item);
+        }
+      });
+    }
+  }
+
+  return best;
+}
+
 function inventoryArrayFromResponse(value: unknown, keys: string[]): UnknownRecord[] {
   if (Array.isArray(value)) {
     return value.filter((item) => item && typeof item === 'object') as UnknownRecord[];
@@ -1094,9 +1132,9 @@ export function InventoryModuleHome({
       {sectionVisibility.analytics && (
         <section className="inventory-home-analytics inventory-analytics-requested-dashboard">
           {(() => {
-            const productRows = inventoryArrayFromResponse(analyticsProducts, ['products', 'items', 'rows']);
-            const batchRows = inventoryArrayFromResponse(analyticsBatches, ['batches', 'items', 'rows']);
-            const nearExpiryRows = inventoryArrayFromResponse(analyticsNearExpiry, ['batches', 'items', 'rows']);
+            const productRows = inventoryArrayFromResponse(analyticsProducts, ['products', 'items', 'rows', 'data']).length ? inventoryArrayFromResponse(analyticsProducts, ['products', 'items', 'rows', 'data']) : inventoryDeepRecordArray(analyticsProducts);
+            const batchRows = inventoryArrayFromResponse(analyticsBatches, ['batches', 'items', 'rows', 'data']).length ? inventoryArrayFromResponse(analyticsBatches, ['batches', 'items', 'rows', 'data']) : inventoryDeepRecordArray(analyticsBatches);
+            const nearExpiryRows = inventoryArrayFromResponse(analyticsNearExpiry, ['batches', 'items', 'rows', 'data']).length ? inventoryArrayFromResponse(analyticsNearExpiry, ['batches', 'items', 'rows', 'data']) : inventoryDeepRecordArray(analyticsNearExpiry);
             const locationRows = inventoryArrayFromResponse(analyticsLocations, ['locations', 'items', 'rows']);
 
             const productNameFor = (batch: UnknownRecord): string => inventoryBatchProductName(batch);
@@ -1433,40 +1471,37 @@ export function InventoryModuleHome({
                       ))}
                     </div>
 
-                    <div className="inventory-analytics-trend-mini-tables">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Total Inventory Trend</th>
-                            <th>Value</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {trendValues.map((value, index) => (
-                            <tr key={`total-inventory-trend-${index}`}>
-                              <td>{index === 0 ? analyticsDateFromFilter : index === trendValues.length - 1 ? analyticsDateToFilter : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</td>
-                              <td>{formatCurrency(value)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="inventory-analytics-trend-chart-pair">
+                      {[
+                        { label: 'Total Inventory Trend', values: trendValues },
+                        { label: 'Near Expiry Trend', values: nearExpiryTrendValues },
+                      ].map((chart) => {
+                        const maxChartValue = Math.max(...chart.values, 1);
+                        const points = chart.values
+                          .map((value, index) => {
+                            const x = 12 + index * (216 / Math.max(chart.values.length - 1, 1));
+                            const y = 88 - (Math.max(value, 0) / maxChartValue) * 68;
 
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Near Expiry Trend</th>
-                            <th>Value</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {nearExpiryTrendValues.map((value, index) => (
-                            <tr key={`near-expiry-trend-${index}`}>
-                              <td>{index === 0 ? analyticsDateFromFilter : index === nearExpiryTrendValues.length - 1 ? analyticsDateToFilter : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</td>
-                              <td>{formatCurrency(value)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                            return `${x},${y}`;
+                          })
+                          .join(' ');
+
+                        return (
+                          <div key={chart.label} className="inventory-analytics-mini-line-chart">
+                            <strong>{chart.label}</strong>
+                            <svg viewBox="0 0 240 100" role="img" aria-label={chart.label}>
+                              <polyline points={points} />
+                              {chart.values.map((value, index) => {
+                                const x = 12 + index * (216 / Math.max(chart.values.length - 1, 1));
+                                const y = 88 - (Math.max(value, 0) / maxChartValue) * 68;
+
+                                return <circle key={`${chart.label}-${index}`} cx={x} cy={y} r="3" />;
+                              })}
+                            </svg>
+                            <span>{formatCurrency(chart.values[chart.values.length - 1] ?? 0)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </article>
 

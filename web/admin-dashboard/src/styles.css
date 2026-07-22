@@ -45050,3 +45050,61 @@ thead
     grid-template-columns: 1fr;
   }
 }
+
+/* Corrected Inventory trend charts: no tables */
+.inventory-analytics-trend-mini-tables,
+.inventory-analytics-request-grid > .inventory-analytics-request-card:first-child .inventory-analytics-request-table-scroll {
+  display: none !important;
+}
+
+.inventory-analytics-trend-chart-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.inventory-analytics-mini-line-chart {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.8rem;
+  background: #f8fafc;
+  padding: 0.65rem;
+  min-width: 0;
+}
+
+.inventory-analytics-mini-line-chart strong,
+.inventory-analytics-mini-line-chart span {
+  display: block;
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.inventory-analytics-mini-line-chart span {
+  margin-top: 0.25rem;
+  color: #0f766e;
+}
+
+.inventory-analytics-mini-line-chart svg {
+  width: 100%;
+  height: 6.5rem;
+  margin-top: 0.45rem;
+}
+
+.inventory-analytics-mini-line-chart polyline {
+  fill: none;
+  stroke: #0f766e;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.inventory-analytics-mini-line-chart circle {
+  fill: #0f766e;
+}
+
+@media (max-width: 900px) {
+  .inventory-analytics-trend-chart-pair {
+    grid-template-columns: 1fr;
+  }
+}
