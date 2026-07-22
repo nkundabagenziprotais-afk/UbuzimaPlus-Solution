@@ -47142,3 +47142,55 @@ html.ubuzima-standalone-webapp .admin-header {
   }
 }
 /* UBUZIMA_REAL_MOBILE_APP_HOME_END */
+
+/* POS_SALES_DASHBOARD_INVENTORY_STANDARD_V1 */
+.pos-sales-dashboard-standard,
+.pos-sales-overview,
+.pos-analytics-dashboard {
+  --pos-card-radius: 1rem;
+}
+
+.pos-sales-dashboard-standard .pos-analytics-filter-bar,
+.pos-sales-overview .pos-analytics-filter-bar,
+.pos-analytics-dashboard .pos-analytics-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+.pos-sales-dashboard-standard .pos-analytics-kpis,
+.pos-sales-overview .pos-analytics-kpis,
+.pos-analytics-dashboard .pos-analytics-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.pos-sales-dashboard-standard article,
+.pos-sales-overview article,
+.pos-analytics-dashboard article {
+  border-radius: var(--pos-card-radius);
+}
+
+@media (max-width: 1024px) {
+  .pos-sales-dashboard-standard .pos-analytics-filter-bar,
+  .pos-sales-overview .pos-analytics-filter-bar,
+  .pos-analytics-dashboard .pos-analytics-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-sales-dashboard-standard .pos-analytics-kpis,
+  .pos-sales-overview .pos-analytics-kpis,
+  .pos-analytics-dashboard .pos-analytics-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .pos-sales-dashboard-standard .pos-analytics-kpis,
+  .pos-sales-overview .pos-analytics-kpis,
+  .pos-analytics-dashboard .pos-analytics-kpis {
+    grid-template-columns: 1fr;
+  }
+}
