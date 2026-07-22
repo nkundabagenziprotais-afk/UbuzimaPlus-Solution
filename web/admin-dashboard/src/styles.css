@@ -44930,3 +44930,45 @@ thead
     min-width: 40rem !important;
   }
 }
+
+/* Inventory Analytics: refresh button, trend fit, header action alignment */
+.inventory-analytics-photo-refresh {
+  border: 0;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 900;
+  padding: 0.58rem 0.9rem;
+  cursor: pointer;
+}
+
+.inventory-analytics-trend-change {
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0.25rem 0.5rem;
+  white-space: nowrap;
+}
+
+.inventory-analytics-request-grid > .inventory-analytics-request-card:first-child .inventory-analytics-request-table-scroll {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.inventory-analytics-request-grid > .inventory-analytics-request-card:first-child .inventory-analytics-request-bars {
+  min-height: 9rem !important;
+  margin-bottom: 0.45rem !important;
+}
+
+.dashboard-header-center-actions {
+  margin-left: auto !important;
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.dashboard-main > .dashboard-header-center-actions,
+.dashboard-header .dashboard-header-center-actions {
+  align-self: flex-end !important;
+}

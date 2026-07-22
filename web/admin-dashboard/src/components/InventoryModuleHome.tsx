@@ -532,6 +532,7 @@ export function InventoryModuleHome({
   const [analyticsBatches, setAnalyticsBatches] = useState<unknown>(null);
   const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(null);
   const [analyticsLocations, setAnalyticsLocations] = useState<unknown>(null);
+  const [analyticsRefreshSequence, setAnalyticsRefreshSequence] = useState(0);
   const [analyticsCategoryFilter, setAnalyticsCategoryFilter] = useState('all');
   const [analyticsProductFilter, setAnalyticsProductFilter] = useState('all');
   const [analyticsLocationFilter, setAnalyticsLocationFilter] = useState('all');
@@ -925,8 +926,12 @@ export function InventoryModuleHome({
           <p>Monitor inventory value, stock movement, expiry risk, and operational performance in real time.</p>
         </div>
 
-        <button type="button" className="inventory-analytics-photo-export">
-          Export Report
+        <button
+          type="button"
+          className="inventory-analytics-photo-refresh"
+          onClick={() => setAnalyticsRefreshSequence((value) => value + 1)}
+        >
+          Refresh
         </button>
       </header>
 
@@ -1292,6 +1297,11 @@ export function InventoryModuleHome({
             const maxCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
             const trendValues = [0, 0, 0, 0, 0, 0, totalValue];
             const trendMax = Math.max(...trendValues, 1);
+            const trendStartValue = trendValues.find((value) => value > 0) ?? 0;
+            const trendEndValue = trendValues[trendValues.length - 1] ?? 0;
+            const trendPercentChange = trendStartValue > 0
+              ? ((trendEndValue - trendStartValue) / trendStartValue) * 100
+              : 0;
 
             return (
               <>
@@ -1374,6 +1384,9 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Stock Value Trend</h3>
+                      <span className="inventory-analytics-trend-change">
+                        {trendPercentChange.toFixed(1)}%
+                      </span>
                       <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 

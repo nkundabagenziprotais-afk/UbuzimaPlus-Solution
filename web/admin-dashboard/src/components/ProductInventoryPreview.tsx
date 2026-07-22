@@ -29,6 +29,8 @@ import {
   deletePharmaStockBatch,
 } from '../lib/api';
 
+const defaultApprovedInventoryMargin = 1.4;
+
 const inventoryArray = <T,>(
   value: T[] | null | undefined,
 ): T[] => (
@@ -150,7 +152,7 @@ const emptyInventoryCreateForm: InventoryCreateFormState = {
   quantity: '',
   expiry_date: '',
   unit_cost: '',
-  margin_percent: '',
+  margin_percent: String(defaultApprovedInventoryMargin),
   selling_price: '',
   supplier_name: '',
   reference_number: '',
@@ -960,7 +962,7 @@ export function ProductInventoryPreview({
     inventory_value: Number(summaryPayload.inventory_value ?? 0),
     batches_count: Number(summaryPayload.batches_count ?? 0),
   };
-  const resolveInventoryBatchMarginPercent = (batch: PharmaStockBatch, fallbackMargin = 0): number => {
+  const resolveInventoryBatchMarginPercent = (batch: PharmaStockBatch, fallbackMargin = defaultApprovedInventoryMargin): number => {
     const record = batch as unknown as Record<string, unknown>;
     const savedMargin = Number(
       record.margin_percent ??
@@ -984,7 +986,7 @@ export function ProductInventoryPreview({
     return fallbackMargin;
   };
 
-  const formatInventoryBatchMarginPercent = (batch: PharmaStockBatch, fallbackMargin = 0): string => {
+  const formatInventoryBatchMarginPercent = (batch: PharmaStockBatch, fallbackMargin = defaultApprovedInventoryMargin): string => {
     const margin = resolveInventoryBatchMarginPercent(batch, fallbackMargin);
 
     return margin > 0 ? `${formatNumber(margin)}%` : '—';
@@ -2138,7 +2140,7 @@ export function ProductInventoryPreview({
           quantity: Number(inventoryCreateForm.quantity || 0),
           expiry_date: inventoryCreateForm.expiry_date || null,
           unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
-          ...(inventoryCreateForm.margin_percent ? { margin_percent: Number(inventoryCreateForm.margin_percent) } : {}),
+          ...{ margin_percent: Number(inventoryCreateForm.margin_percent || defaultApprovedInventoryMargin) },
           selling_price: sellingPrice > 0 ? sellingPrice : null,
           supplier_name: inventoryCreateForm.supplier_name || null,
           reference_number: inventoryCreateForm.reference_number || null,
@@ -2154,7 +2156,7 @@ export function ProductInventoryPreview({
           quantity: Number(inventoryCreateForm.quantity || 0),
           expiry_date: inventoryCreateForm.expiry_date || null,
           unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
-          ...(inventoryCreateForm.margin_percent ? { margin_percent: Number(inventoryCreateForm.margin_percent) } : {}),
+          ...{ margin_percent: Number(inventoryCreateForm.margin_percent || defaultApprovedInventoryMargin) },
           selling_price: sellingPrice > 0 ? sellingPrice : null,
           supplier_name: inventoryCreateForm.supplier_name || null,
           reference_number: inventoryCreateForm.reference_number || null,
@@ -5882,7 +5884,7 @@ export function ProductInventoryPreview({
                               setInventoryCreateForm((current) => ({
                                 ...current,
                                 product_id: '',
-                                margin_percent: '',
+                                margin_percent: String(defaultApprovedInventoryMargin),
                                 selling_price: '',
                               }));
                               setInventoryProductSearchTerm('');
