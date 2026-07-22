@@ -390,6 +390,38 @@ function writeInventoryAnalyticsCache(key: string, value: unknown): void {
   }
 }
 
+function inventoryAnalyticsPayloadHasValue(value: unknown): boolean {
+  if (!value) {
+    return false;
+  }
+
+  if (inventoryDeepRecordArray(value).length > 0) {
+    return true;
+  }
+
+  return inventoryDeepNumberValue(value, [
+    'total_inventory_value',
+    'stock_on_hand_count',
+    'stock_received_value',
+    'stock_received_count',
+    'stock_issued_value',
+    'stock_issued_count',
+    'low_stock_value',
+    'low_stock_count',
+    'near_expiry_value',
+    'near_expiry_count',
+    'expired_value',
+    'expired_count',
+    'turnover_value',
+    'turnover_count',
+    'inventory_value',
+    'stock_value',
+    'total_value',
+    'count',
+  ]) > 0;
+}
+
+
 function inventoryMaxPositive(...values: number[]): number {
   return values.reduce((max, value) => {
     const numericValue = Number(value);
@@ -958,7 +990,7 @@ export function InventoryModuleHome({
 
         const data = await response.json();
 
-        if (isActive) {
+        if (isActive && inventoryAnalyticsPayloadHasValue(data)) {
           setAnalyticsKpiSummary(data);
           setAnalyticsKpiSummaryLastGood(data);
           writeInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood', data);
@@ -1205,7 +1237,7 @@ export function InventoryModuleHome({
         setValuation(null);
       }
 
-      if (productsResult.status === 'fulfilled') {
+      if (productsResult.status === 'fulfilled' && inventoryAnalyticsPayloadHasValue(productsResult.value)) {
         setAnalyticsProducts(productsResult.value);
         writeInventoryAnalyticsCache('inventoryAnalyticsProductsLastGood', productsResult.value);
       } else {
@@ -1215,7 +1247,7 @@ export function InventoryModuleHome({
         }
       }
 
-      if (batchesResult.status === 'fulfilled') {
+      if (batchesResult.status === 'fulfilled' && inventoryAnalyticsPayloadHasValue(batchesResult.value)) {
         setAnalyticsBatches(batchesResult.value);
         writeInventoryAnalyticsCache('inventoryAnalyticsBatchesLastGood', batchesResult.value);
       } else {
@@ -1225,7 +1257,7 @@ export function InventoryModuleHome({
         }
       }
 
-      if (nearExpiryResult.status === 'fulfilled') {
+      if (nearExpiryResult.status === 'fulfilled' && inventoryAnalyticsPayloadHasValue(nearExpiryResult.value)) {
         setAnalyticsNearExpiry(nearExpiryResult.value);
         writeInventoryAnalyticsCache('inventoryAnalyticsNearExpiryLastGood', nearExpiryResult.value);
       } else {
@@ -2161,7 +2193,9 @@ export function InventoryModuleHome({
               salesRegisterRows.length,
             );
 
-            const effectiveAnalyticsKpiSummary = analyticsKpiSummary ?? analyticsKpiSummaryLastGood;
+            const effectiveAnalyticsKpiSummary = inventoryAnalyticsPayloadHasValue(analyticsKpiSummary)
+              ? analyticsKpiSummary
+              : analyticsKpiSummaryLastGood;
             const apiInventoryKpiTotalValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['total_inventory_value']);
             const apiInventoryKpiStockOnHandCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['stock_on_hand_count']);
             const apiInventoryKpiReceivedValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['stock_received_value']);
