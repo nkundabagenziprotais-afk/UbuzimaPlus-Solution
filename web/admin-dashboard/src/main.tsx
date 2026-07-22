@@ -1,4 +1,165 @@
 
+function installUbuzimaNativeMobileDrawerV2(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
+  const root = document.documentElement;
+  const mobileQuery = window.matchMedia('(max-width: 1024px)');
+
+  function nodeText(node: Element | null): string {
+    return (node?.textContent ?? '').replace(/\s+/g, ' ').trim();
+  }
+
+  function findSidebar(): HTMLElement | null {
+    const selectors = [
+      '[data-ubuzima-detected-sidebar="true"]',
+      '[data-admin-sidebar]',
+      '[data-sidebar]',
+      '.admin-sidebar',
+      '.dashboard-sidebar',
+      '.dashboard-shell-sidebar',
+      '.side-nav',
+      '.left-menu',
+      '.module-sidebar',
+      '.app-sidebar',
+      '.admin-navigation',
+      '.dashboard-navigation',
+      'aside',
+    ];
+
+    for (const selector of selectors) {
+      const candidate = document.querySelector<HTMLElement>(selector);
+
+      if (!candidate) {
+        continue;
+      }
+
+      const text = nodeText(candidate);
+
+      if (/Dashboard|Home|Business|Inventory|Sales|POS|Procurement|Finance|Reports|Settings|Users|Admin|Pharma/i.test(text)) {
+        candidate.dataset.ubuzimaDetectedSidebar = 'true';
+        candidate.classList.add('ubuzima-native-drawer-panel');
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  function ensureOverlay(): HTMLButtonElement {
+    let overlay = document.querySelector<HTMLButtonElement>('.ubuzima-native-drawer-overlay');
+
+    if (!overlay) {
+      overlay = document.createElement('button');
+      overlay.type = 'button';
+      overlay.className = 'ubuzima-native-drawer-overlay';
+      overlay.setAttribute('aria-label', 'Close menu');
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', closeDrawer);
+    }
+
+    return overlay;
+  }
+
+  function openDrawer(): void {
+    if (!mobileQuery.matches) {
+      return;
+    }
+
+    const sidebar = findSidebar();
+
+    if (!sidebar) {
+      return;
+    }
+
+    ensureOverlay();
+    root.classList.add('ubuzima-native-drawer-open');
+    sidebar.classList.add('ubuzima-native-drawer-open');
+  }
+
+  function closeDrawer(): void {
+    root.classList.remove('ubuzima-native-drawer-open');
+
+    document.querySelectorAll<HTMLElement>(
+      '.ubuzima-native-drawer-panel, .ubuzima-mobile-sidebar, [data-ubuzima-detected-sidebar="true"]',
+    ).forEach((sidebar) => {
+      sidebar.classList.remove('ubuzima-native-drawer-open');
+      sidebar.classList.remove('ubuzima-mobile-sidebar-open');
+    });
+  }
+
+  function toggleDrawer(): void {
+    if (root.classList.contains('ubuzima-native-drawer-open')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  }
+
+  function bindControls(): void {
+    document.querySelectorAll<HTMLButtonElement>(
+      '.ubuzima-mobile-appbar-menu, .ubuzima-mobile-bottom-nav [data-mobile-module="more"], .ubuzima-mobile-menu-button',
+    ).forEach((button) => {
+      if (button.dataset.ubuzimaDrawerBound === 'true') {
+        return;
+      }
+
+      button.dataset.ubuzimaDrawerBound = 'true';
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleDrawer();
+      });
+    });
+
+    const sidebar = findSidebar();
+
+    if (sidebar && sidebar.dataset.ubuzimaDrawerSelectionBound !== 'true') {
+      sidebar.dataset.ubuzimaDrawerSelectionBound = 'true';
+
+      sidebar.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement | null;
+
+        if (!target) {
+          return;
+        }
+
+        if (target.closest('a,button,[role="button"],[data-module],[data-view]')) {
+          window.setTimeout(closeDrawer, 120);
+        }
+      });
+    }
+  }
+
+  function sync(): void {
+    root.classList.toggle('ubuzima-native-mobile-v2', mobileQuery.matches);
+
+    if (!mobileQuery.matches) {
+      closeDrawer();
+      return;
+    }
+
+    findSidebar();
+    ensureOverlay();
+    bindControls();
+  }
+
+  sync();
+  window.setTimeout(sync, 300);
+  window.setTimeout(sync, 1000);
+  window.setInterval(sync, 1800);
+  window.addEventListener('resize', sync, { passive: true });
+  window.addEventListener('orientationchange', sync, { passive: true });
+
+  const observer = new MutationObserver(sync);
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+installUbuzimaNativeMobileDrawerV2();
+
+
+
 function installUbuzimaNativeMobileInterfaceV1(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return;
