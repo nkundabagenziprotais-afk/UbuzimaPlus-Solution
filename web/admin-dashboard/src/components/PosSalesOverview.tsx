@@ -630,6 +630,23 @@ export function PosSalesOverview({
     1,
   );
 
+  const [posAnalyticsWeekSelection, setPosAnalyticsWeekSelection] = useState('all');
+
+  const posAnalyticsWeekSelector = (
+    <select
+      className="pos-analytics-week-select"
+      value={posAnalyticsWeekSelection}
+      onChange={(event) => setPosAnalyticsWeekSelection(event.target.value)}
+    >
+      <option value="all">Full range</option>
+      <option value="week-1">Week 1</option>
+      <option value="week-2">Week 2</option>
+      <option value="week-3">Week 3</option>
+      <option value="week-4">Week 4</option>
+      <option value="week-5">Week 5</option>
+    </select>
+  );
+
   const insights = [
     analytics.strongestDay
       ? `${analytics.strongestDay.label} is currently the strongest trading day at ${money(
@@ -675,10 +692,7 @@ export function PosSalesOverview({
             POS and Sales Overview
           </span>
           <h1>POS and Sales Overview</h1>
-          <p>
-            Real-time and historical insights on sales, payments, sessions,
-            cashier performance, returns, insurance, and customer credit.
-          </p>
+
         </div>
 
         <div className="pos-overview-header-actions">
@@ -796,14 +810,10 @@ export function PosSalesOverview({
         <div className="pos-overview-section-heading">
           <div>
             <span className="pos-overview-eyebrow">
-              POS_COMPONENT_ANALYTICS_COMMAND_CENTRE_V1
+              
             </span>
-            <h2>POS and Sales Analytics</h2>
-            <p>
-              Full analytics view for sales trend, payment mix, cashier performance,
-              POS sessions, product revenue, returns, customer credit, insurance,
-              AI insight, and recommended actions.
-            </p>
+            
+
           </div>
 
           <button
@@ -882,7 +892,7 @@ export function PosSalesOverview({
 
         <div className="pos-analytics-dashboard-grid top">
           <article className="pos-analytics-card sales-trend">
-            <header><strong>1. Sales Trend</strong><span>Net Sales</span></header>
+            <header><strong>1. Sales Trend</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-bar-chart">
               {analytics.daily.map((day) => (
                 <i
@@ -898,7 +908,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card payment-mix">
-            <header><strong>2. Payment Mix</strong><span>Amount</span></header>
+            <header><strong>2. Payment Mix</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-payment-layout">
               <div className="pos-analytics-donut">
                 <span>Total</span>
@@ -926,7 +936,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card cashier-performance">
-            <header><strong>3. Cashier Performance (MTD)</strong><span>By Net Sales</span></header>
+            <header><strong>3. Cashier Performance</strong>{posAnalyticsWeekSelector}</header>
             <table>
               <thead>
                 <tr><th>Cashier</th><th>Net Sales</th><th>Transactions</th><th>Avg Trans.</th><th>Variance</th></tr>
@@ -952,7 +962,7 @@ export function PosSalesOverview({
 
         <div className="pos-analytics-dashboard-grid middle">
           <article className="pos-analytics-card session-analytics">
-            <header><strong>4. POS Session Analytics</strong><span>Business Date</span></header>
+            <header><strong>4. POS Session Analytics</strong>{posAnalyticsWeekSelector}</header>
             <table>
               <thead>
                 <tr><th>Session</th><th>Type</th><th>Business Date</th><th>Opened By</th><th>Expected Cash</th><th>Count Cash</th><th>Variance</th><th>Status</th></tr>
@@ -975,7 +985,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card top-products">
-            <header><strong>5. Top Products by Revenue (MTD)</strong><span>Revenue</span></header>
+            <header><strong>5. Top Products by Revenue</strong>{posAnalyticsWeekSelector}</header>
             <table>
               <thead>
                 <tr><th>#</th><th>Product</th><th>Quantity</th><th>Revenue</th><th>% of Sales</th></tr>
@@ -995,7 +1005,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card returns-exceptions">
-            <header><strong>6. Returns & Exceptions (MTD)</strong></header>
+            <header><strong>6. Returns & Exceptions</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-list">
               <p><span>Sales Returns</span><strong>{money(analytics.outstanding * 0.08)}</strong></p>
               <p><span>Reversals</span><strong>{money(analytics.outstanding * 0.03)}</strong></p>
@@ -1008,7 +1018,7 @@ export function PosSalesOverview({
 
         <div className="pos-analytics-dashboard-grid bottom">
           <article className="pos-analytics-card customer-credit">
-            <header><strong>7. Customer & Credit Overview</strong></header>
+            <header><strong>7. Customer & Credit Overview</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-list">
               <p><span>Total Customer Exposure</span><strong>{money(analytics.outstanding)}</strong></p>
               <p><span>Collection Efficiency</span><strong>{percentage(analytics.collectionRate)}</strong></p>
@@ -1017,7 +1027,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card insurance-summary">
-            <header><strong>8. Insurance POS Summary (MTD)</strong></header>
+            <header><strong>8. Insurance POS Summary</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-mini-kpis">
               <article><span>Insurance Sales</span><strong>{money(analytics.insuranceSales)}</strong></article>
               <article><span>Customer Contribution</span><strong>{money(analytics.insuranceSales * 0.23)}</strong></article>
@@ -1027,7 +1037,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card ai-insight">
-            <header><strong>AI / Business Insight</strong></header>
+            <header><strong>AI / Business Insight</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-insights">
               {insights.map((insight) => (
                 <p key={insight}>{insight}</p>
@@ -1036,7 +1046,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card recommended-actions">
-            <header><strong>10. Recommended Actions</strong></header>
+            <header><strong>10. Recommended Actions</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-actions">
               {recommendations.map((recommendation) => (
                 <button type="button" key={recommendation}>
@@ -1069,7 +1079,7 @@ export function PosSalesOverview({
         </div>
 
         <div className="pos-overview-module-grid">
-          {visibleModules.map(
+          {visibleModules.filter((module) => /POS Sales|POS Counter|Pharmacist Review|Customer|Patients|Prescription|Sales Register|Receipts|Payment/i.test(module.title)).slice(0, 6).map(
             (module, index) => (
               <button
                 type="button"
