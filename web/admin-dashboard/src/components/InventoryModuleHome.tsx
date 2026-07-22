@@ -1899,22 +1899,7 @@ export function InventoryModuleHome({
               finalInventoryKpiIssuedCount,
             );
 
-            const kpiCards = [
-              { label: 'Total Inventory Value', value: formatCurrency(finalInventoryKpiTotalValue), target: 'product-inventory' },
-              { label: 'Stock on Hand Count', value: formatCompactNumber(finalInventoryKpiStockOnHandCount), target: 'product-inventory' },
-              { label: 'Stock Received Value', value: formatCurrency(finalInventoryKpiReceivedValue), target: 'purchase-orders' },
-              { label: 'Stock Received Count', value: formatCompactNumber(finalInventoryKpiReceivedCount), target: 'purchase-orders' },
-              { label: 'Stock Issued Value', value: formatCurrency(finalInventoryKpiIssuedValue), target: 'product-inventory' },
-              { label: 'Stock Issued Count', value: formatCompactNumber(finalInventoryKpiIssuedCount), target: 'product-inventory' },
-              { label: 'Low Stock Value', value: formatCurrency(finalInventoryKpiLowStockValue), target: 'low-stock' },
-              { label: 'Low Stock Count', value: formatCompactNumber(finalInventoryKpiLowStockCount), target: 'low-stock' },
-              { label: 'Near Expiry Value', value: formatCurrency(finalInventoryKpiNearExpiryValue), target: 'near-expiry' },
-              { label: 'Near Expiry Count', value: formatCompactNumber(finalInventoryKpiNearExpiryCount), target: 'near-expiry' },
-              { label: 'Expired Value', value: formatCurrency(finalInventoryKpiExpiredValue), target: 'near-expiry' },
-              { label: 'Expired Count', value: formatCompactNumber(finalInventoryKpiExpiredCount), target: 'near-expiry' },
-              { label: 'Turnover Value', value: formatCurrency(finalInventoryKpiTurnoverValue), target: 'product-inventory' },
-              { label: 'Turnover Count', value: formatCompactNumber(finalInventoryKpiTurnoverCount), target: 'product-inventory' },
-            ];
+
 
             const categoryTotals = new Map<string, number>();
 
@@ -1927,6 +1912,65 @@ export function InventoryModuleHome({
               .map(([label, value]) => ({ label, value }))
               .sort((left, right) => right.value - left.value)
               .slice(0, 8);
+
+            const liveCategoryCardTotalValue = categoryRows.reduce((sum, row) => sum + row.value, 0);
+
+            const displayedTotalInventoryValue = Math.max(
+              liveCategoryCardTotalValue,
+              dashboardTotalInventoryValue,
+              totalValue,
+            );
+
+            const displayedStockOnHandCount = Math.max(
+              dashboardStockOnHandCount,
+              stockOnHandCount,
+              analyticsMetricBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0),
+            );
+
+            const displayedReceivedValue = Math.max(
+              dashboardStockReceivedValue,
+              stockReceivedValue,
+              batchReceivedValue,
+              displayedTotalInventoryValue,
+            );
+
+            const displayedReceivedCount = Math.max(
+              dashboardStockReceivedCount,
+              stockReceivedCount,
+              receivedFallbackRows.length,
+              analyticsMetricBatchRows.length,
+            );
+
+            const displayedIssuedValue = Math.max(
+              dashboardStockIssuedValue,
+              stockIssuedValue,
+              registerIssuedValue,
+              movementIssuedValue,
+            );
+
+            const displayedIssuedCount = Math.max(
+              dashboardStockIssuedCount,
+              stockIssuedCount,
+              issuedRows.length,
+              salesRegisterRows.length,
+            );
+
+            const kpiCards = [
+              { label: 'Total Inventory Value', value: formatCurrency(displayedTotalInventoryValue), target: 'product-inventory' },
+              { label: 'Stock on Hand Count', value: formatCompactNumber(displayedStockOnHandCount), target: 'product-inventory' },
+              { label: 'Stock Received Value', value: formatCurrency(displayedReceivedValue), target: 'purchase-orders' },
+              { label: 'Stock Received Count', value: formatCompactNumber(displayedReceivedCount), target: 'purchase-orders' },
+              { label: 'Stock Issued Value', value: formatCurrency(displayedIssuedValue), target: 'product-inventory' },
+              { label: 'Stock Issued Count', value: formatCompactNumber(displayedIssuedCount), target: 'product-inventory' },
+              { label: 'Low Stock Value', value: formatCurrency(lowStockValue), target: 'low-stock' },
+              { label: 'Low Stock Count', value: formatCompactNumber(lowStockCount), target: 'low-stock' },
+              { label: 'Near Expiry Value', value: formatCurrency(nearExpiryValue), target: 'near-expiry' },
+              { label: 'Near Expiry Count', value: formatCompactNumber(nearExpiryCount), target: 'near-expiry' },
+              { label: 'Expired Value', value: formatCurrency(expiredValue), target: 'near-expiry' },
+              { label: 'Expired Count', value: formatCompactNumber(expiredCount), target: 'near-expiry' },
+              { label: 'Turnover Value', value: formatCurrency(displayedIssuedValue), target: 'product-inventory' },
+              { label: 'Turnover Count', value: formatCompactNumber(displayedIssuedCount), target: 'product-inventory' },
+            ];
 
             const maxCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
             const analyticsTrendDateKeys = inventoryAnalyticsDateKeys(analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter);
@@ -2490,3 +2534,4 @@ export function InventoryModuleHome({
 
   );
 }
+
