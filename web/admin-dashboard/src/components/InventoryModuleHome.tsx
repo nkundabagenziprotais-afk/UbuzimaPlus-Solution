@@ -390,6 +390,62 @@ function inventoryBatchProductName(batch: UnknownRecord): string {
   );
 }
 
+function inventoryDeepNumber(value: unknown, keys: string[]): number {
+  const normalizedKeys = new Set(
+    keys.map((key) => key.toLowerCase().replace(/[^a-z0-9]/g, '')),
+  );
+  const queue: unknown[] = [value];
+  const visited = new Set<unknown>();
+
+  while (queue.length) {
+    const current = queue.shift();
+
+    if (!current || visited.has(current)) {
+      continue;
+    }
+
+    if (typeof current === 'object') {
+      visited.add(current);
+    }
+
+    if (Array.isArray(current)) {
+      current.forEach((item) => queue.push(item));
+      continue;
+    }
+
+    if (typeof current !== 'object') {
+      continue;
+    }
+
+    const record = current as UnknownRecord;
+
+    for (const [key, rawValue] of Object.entries(record)) {
+      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      if (normalizedKeys.has(normalizedKey)) {
+        const amount = Number(
+          String(rawValue ?? '')
+            .replace(/RWF/gi, '')
+            .replace(/[,%]/g, '')
+            .replace(/[^0-9.-]/g, '')
+            .trim(),
+        );
+
+        if (Number.isFinite(amount) && amount > 0) {
+          return amount;
+        }
+      }
+
+      if (rawValue && typeof rawValue === 'object') {
+        queue.push(rawValue);
+      }
+    }
+  }
+
+  return 0;
+}
+
+
 function findNumericSignal(
   payload: unknown,
   candidateKeys: string[],
@@ -1086,14 +1142,17 @@ export function InventoryModuleHome({
                 createdToMatches;
             });
 
-            const totalValue =
-              findNumericSignal(valuation, ['total_inventory_value', 'inventory_value', 'total_stock_value', 'total_cost_value']) ??
-              findNumericSignal(summary, ['total_inventory_value', 'inventory_value', 'total_stock_value']) ??
-              filteredBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0);
+            const totalValue = Math.max(
+              inventoryDeepNumber(valuation, ['total_inventory_value', 'inventory_value', 'total_stock_value', 'total_cost_value', 'stock_batch_value']),
+              inventoryDeepNumber(summary, ['total_inventory_value', 'inventory_value', 'total_stock_value', 'stock_batch_value']),
+              filteredBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0),
+            );
 
-            const stockOnHandCount =
-              findNumericSignal(summary, ['total_quantity_on_hand', 'quantity_on_hand', 'total_quantity']) ??
-              filteredBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0);
+            const stockOnHandCount = Math.max(
+              inventoryDeepNumber(summary, ['total_quantity_on_hand', 'quantity_on_hand', 'total_quantity', 'stock_batches_count', 'stock_batches']),
+              inventoryDeepNumber(valuation, ['total_quantity_on_hand', 'quantity_on_hand', 'total_quantity', 'stock_batches_count', 'stock_batches']),
+              filteredBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0),
+            );
 
             const reorderLevelFor = (batch: UnknownRecord): number => {
               const product = productRecordFor(batch);
@@ -1152,22 +1211,45 @@ export function InventoryModuleHome({
             const turnoverValue = 0;
             const turnoverCount = 0;
 
-            const lowStockValue = lowStockRows.reduce((sum, row) => sum + row.value, 0);
-            const lowStockCount =
-              findNumericSignal(summary, ['low_stock_products_count', 'low_stock_count', 'products_below_reorder']) ??
-              lowStockRows.length;
+            const lowStockValue = Math.max(
+              inventoryDeepNumber(summary, ['low_stock_value', 'low_stock_stock_value']),
+              inventoryDeepNumber(valuation, ['low_stock_value', 'low_stock_stock_value']),
+              lowStockRows.reduce((sum, row) => sum + row.value, 0),
+            );
+            const lowStockCount = Math.max(
+              inventoryDeepNumber(summary, ['low_stock_products_count', 'low_stock_count', 'products_below_reorder', 'low_stock_items']),
+              inventoryDeepNumber(valuation, ['low_stock_products_count', 'low_stock_count', 'products_below_reorder', 'low_stock_items']),
+              lowStockRows.length,
+            );
 
-            const nearExpiryValue = nearExpirySourceRows.reduce((sum, row) => sum + row.value, 0);
-            const nearExpiryCount =
-              findNumericSignal(summary, ['near_expiry_batches_180_days_count', 'near_expiry_count', 'expiring_batches_count']) ??
-              nearExpirySourceRows.length;
+            const nearExpiryValue = Math.max(
+              inventoryDeepNumber(summary, ['near_expiry_value', 'near_expiry_stock_value', 'expiring_value', 'expiring_items_value']),
+              inventoryDeepNumber(valuation, ['near_expiry_value', 'near_expiry_stock_value', 'expiring_value', 'expiring_items_value']),
+              nearExpirySourceRows.reduce((sum, row) => sum + row.value, 0),
+            );
+            const nearExpiryCount = Math.max(
+              inventoryDeepNumber(summary, ['near_expiry_batches_180_days_count', 'near_expiry_count', 'expiring_batches_count', 'expiring_items']),
+              inventoryDeepNumber(valuation, ['near_expiry_batches_180_days_count', 'near_expiry_count', 'expiring_batches_count', 'expiring_items']),
+              nearExpirySourceRows.length,
+            );
 
-            const expiredValue = expiredRows.reduce((sum, row) => sum + row.value, 0);
-            const expiredCount =
-              findNumericSignal(summary, ['expired_batches_count', 'expired_count', 'expired_items_count']) ??
-              expiredRows.length;
+            const expiredValue = Math.max(
+              inventoryDeepNumber(summary, ['expired_stock_value', 'expired_value', 'expired_batches_value']),
+              inventoryDeepNumber(valuation, ['expired_stock_value', 'expired_value', 'expired_batches_value']),
+              expiredRows.reduce((sum, row) => sum + row.value, 0),
+            );
+            const expiredCount = Math.max(
+              inventoryDeepNumber(summary, ['expired_batches_count', 'expired_count', 'expired_items_count']),
+              inventoryDeepNumber(valuation, ['expired_batches_count', 'expired_count', 'expired_items_count']),
+              expiredRows.length,
+            );
 
-            const healthyValue = Math.max(totalValue - lowStockValue - nearExpiryValue - expiredValue, 0);
+            const healthyValue = Math.max(
+              inventoryDeepNumber(summary, ['healthy_stock_value', 'healthy_value']),
+              inventoryDeepNumber(valuation, ['healthy_stock_value', 'healthy_value']),
+              totalValue - lowStockValue - nearExpiryValue - expiredValue,
+              0,
+            );
             const riskTotal = Math.max(totalValue, lowStockValue + nearExpiryValue + expiredValue + healthyValue, 1);
             const atRiskValue = lowStockValue + nearExpiryValue + expiredValue;
 
@@ -1272,17 +1354,9 @@ export function InventoryModuleHome({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setAnalyticsCategoryFilter('all');
-                      setAnalyticsProductFilter('all');
-                      setAnalyticsLocationFilter('all');
-                      setAnalyticsCreatedFromFilter('');
-                      setAnalyticsCreatedToFilter('');
-                      setAnalyticsExpiryFromFilter('');
-                      setAnalyticsExpiryToFilter('');
-                    }}
+                    onClick={() => undefined}
                   >
-                    Reset Filters
+                    Apply Filters
                   </button>
                 </div>
 
@@ -1291,9 +1365,7 @@ export function InventoryModuleHome({
                     <article key={card.label}>
                       <small>{card.label}</small>
                       <strong>{card.value}</strong>
-                      <button type="button" onClick={() => onOpenWorkspace(card.target as InventoryView)}>
-                        More
-                      </button>
+                      
                     </article>
                   ))}
                 </div>
