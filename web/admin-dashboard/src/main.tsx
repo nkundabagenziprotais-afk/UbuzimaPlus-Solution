@@ -1093,3 +1093,98 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <App />
   </React.StrictMode>
 );
+
+
+/* BUSINESS_OVERVIEW_FORCE_REFRESH_BUTTON_V1 */
+function installBusinessOverviewForceRefreshButton(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const dateKeyFrom = 'ubuzima:business-overview:date-from';
+  const dateKeyTo = 'ubuzima:business-overview:date-to';
+
+  function rememberBusinessOverviewDates(anchor: HTMLElement): void {
+    const section =
+      anchor.closest('section, article, main, div') ?? document.body;
+
+    const dateInputs = Array.from(
+      section.querySelectorAll<HTMLInputElement>('input[type="date"]'),
+    ).filter((input) => input.offsetParent !== null);
+
+    const from = dateInputs[0]?.value || '';
+    const to = dateInputs[1]?.value || '';
+
+    try {
+      if (from) window.localStorage.setItem(dateKeyFrom, from);
+      if (to) window.localStorage.setItem(dateKeyTo, to);
+      window.localStorage.setItem(
+        'ubuzima:business-overview:force-refresh-at',
+        String(Date.now()),
+      );
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  function enhance(): void {
+    const buttons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('button'),
+    );
+
+    const applyButton = buttons.find((button) =>
+      /apply\s+dates/i.test(button.textContent ?? ''),
+    );
+
+    if (!applyButton || applyButton.dataset.businessOverviewRefreshReady === 'true') {
+      return;
+    }
+
+    applyButton.dataset.businessOverviewRefreshReady = 'true';
+
+    const refreshButton = document.createElement('button');
+    refreshButton.type = 'button';
+    refreshButton.className = 'ubuzima-business-overview-force-refresh-button';
+    refreshButton.textContent = 'Force Refresh';
+
+    refreshButton.addEventListener('click', () => {
+      rememberBusinessOverviewDates(applyButton);
+
+      try {
+        Object.keys(window.localStorage)
+          .filter((key) => /business.*overview|overview.*analytics|business-analytics/i.test(key))
+          .forEach((key) => {
+            if (!/date-from|date-to/.test(key)) {
+              window.localStorage.removeItem(key);
+            }
+          });
+      } catch {
+        // Ignore storage cleanup failures.
+      }
+
+      window.dispatchEvent(
+        new CustomEvent('ubuzima:business-overview-force-refresh', {
+          detail: { at: Date.now() },
+        }),
+      );
+
+      applyButton.click();
+    });
+
+    applyButton.insertAdjacentElement('afterend', refreshButton);
+
+    applyButton.addEventListener('click', () => {
+      rememberBusinessOverviewDates(applyButton);
+    });
+  }
+
+  enhance();
+
+  const observer = new MutationObserver(() => enhance());
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
+installBusinessOverviewForceRefreshButton();

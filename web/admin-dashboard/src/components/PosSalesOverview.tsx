@@ -418,9 +418,17 @@ export function PosSalesOverview({
     );
 
   const todayIsoForPosAnalytics = new Date().toISOString().slice(0, 10);
+  const posStoredBusinessOverviewDateFrom =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('ubuzima:business-overview:date-from') || ''
+      : '';
+  const posStoredBusinessOverviewDateTo =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('ubuzima:business-overview:date-to') || ''
+      : '';
   const monthStartIsoForPosAnalytics = `${todayIsoForPosAnalytics.slice(0, 8)}01`;
-  const [posBusinessDateFromFilter, setPosBusinessDateFromFilter] = useState(monthStartIsoForPosAnalytics);
-  const [posBusinessDateToFilter, setPosBusinessDateToFilter] = useState(todayIsoForPosAnalytics);
+  const [posBusinessDateFromFilter, setPosBusinessDateFromFilter] = useState(posStoredBusinessOverviewDateFrom || monthStartIsoForPosAnalytics);
+  const [posBusinessDateToFilter, setPosBusinessDateToFilter] = useState(posStoredBusinessOverviewDateTo || todayIsoForPosAnalytics);
   const [posBranchFilter, setPosBranchFilter] = useState('all');
   const [posCashierFilter, setPosCashierFilter] = useState('all');
   const [posSessionFilter, setPosSessionFilter] = useState('all');

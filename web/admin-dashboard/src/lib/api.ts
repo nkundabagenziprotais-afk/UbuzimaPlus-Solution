@@ -4842,7 +4842,7 @@ export async function getPharmaLiveBusinessAnalytics(
   return ubuzimaHandoverRequest<PharmaLiveBusinessAnalyticsResponse>(
     token,
     tenantSlug,
-    `/pharmaco/business-analytics/live${params}`,
+    `/pharmaco/business-analytics/live${params}${params ? '&' : '?'}_=${Date.now()}`,
   );
 }
 

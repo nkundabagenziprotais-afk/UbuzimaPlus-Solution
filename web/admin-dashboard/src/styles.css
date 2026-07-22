@@ -47987,3 +47987,26 @@ html.ubuzima-standalone-webapp .admin-header {
     min-width: 2.4rem !important;
   }
 }
+
+/* BUSINESS_OVERVIEW_FORCE_REFRESH_BUTTON_V1 */
+.ubuzima-business-overview-force-refresh-button {
+  min-height: 2.2rem !important;
+  margin-left: 0.45rem !important;
+  padding: 0 0.85rem !important;
+  border: 1px solid rgba(0, 135, 88, 0.22) !important;
+  border-radius: 0.65rem !important;
+  background: #008758 !important;
+  color: #ffffff !important;
+  font-size: 0.74rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+@media (max-width: 720px) {
+  .ubuzima-business-overview-force-refresh-button {
+    width: 100% !important;
+    margin: 0.45rem 0 0 !important;
+  }
+}
