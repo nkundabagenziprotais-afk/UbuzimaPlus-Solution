@@ -593,6 +593,26 @@ function inventoryFromValuation(response: InventoryValuationResponse) {
   };
 }
 
+function businessOverviewBusinessDateKey(value: unknown): string {
+  const raw = String(value ?? '').trim();
+
+  if (!raw) {
+    return '';
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  const parsed = new Date(raw);
+
+  if (Number.isFinite(parsed.getTime())) {
+    return parsed.toISOString().slice(0, 10);
+  }
+
+  return raw.slice(0, 10);
+}
+
 export async function loadBusinessOverviewDataAdapter({
   token,
   tenantSlug,
@@ -743,4 +763,22 @@ export async function loadBusinessOverviewDataAdapter({
           }]
         : [],
   };
+}
+
+
+// BUSINESS_OVERVIEW_ADAPTER_BUSINESS_DATE_TREND_V1
+// Keep Sales Trend date labels aligned to Business Date, not timestamp display labels.
+export function normalizeBusinessOverviewTrendBusinessDatesForDisplay<T extends Record<string, unknown>>(rows: T[]): T[] {
+  return rows.map((row) => {
+    const businessDate = businessOverviewBusinessDateKey(
+      row.business_date ?? row.businessDate ?? row.date ?? row.created_at ?? row.createdAt,
+    );
+
+    return {
+      ...row,
+      business_date: businessDate,
+      date: businessDate,
+      label: businessDate ? businessDate.slice(5) : String(row.label ?? ''),
+    };
+  });
 }

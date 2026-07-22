@@ -48033,3 +48033,10 @@ html.ubuzima-standalone-webapp .admin-header {
   font-size: 0.78rem !important;
   color: #92400e !important;
 }
+
+/* BUSINESS_OVERVIEW_SALES_TREND_BUSINESS_DATE_V1 */
+.bo-pro-card--trend time,
+.bo-pro-card--trend small,
+.bo-pro-card--trend text {
+  font-variant-numeric: tabular-nums !important;
+}

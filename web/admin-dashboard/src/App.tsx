@@ -1,3 +1,4 @@
+/* APP_RX_WARNING_ALLOW_POS_RECORDING_V1 */
 /* POS_SALES_ANALYTICS_VISIBLE_ENTRY_V1 */
 import {
   InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
