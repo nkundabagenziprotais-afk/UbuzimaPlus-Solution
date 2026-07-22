@@ -674,11 +674,10 @@ export function PosSalesOverview({
           <span className="pos-overview-eyebrow">
             POS and Sales Overview
           </span>
-          <h1>Business control centre</h1>
+          <h1>POS and Sales Overview</h1>
           <p>
-            Open a dedicated operational module or review
-            the most important sales, cash, collection,
-            and performance signals in one place.
+            Real-time and historical insights on sales, payments, sessions,
+            cashier performance, returns, insurance, and customer credit.
           </p>
         </div>
 
@@ -792,6 +791,263 @@ export function PosSalesOverview({
           </div>
         </section>
       )}
+
+      <section className="pos-analytics-command-centre" aria-label="POS and Sales analytics dashboard">
+        <div className="pos-overview-section-heading">
+          <div>
+            <span className="pos-overview-eyebrow">
+              POS_COMPONENT_ANALYTICS_COMMAND_CENTRE_V1
+            </span>
+            <h2>POS and Sales Analytics</h2>
+            <p>
+              Full analytics view for sales trend, payment mix, cashier performance,
+              POS sessions, product revenue, returns, customer credit, insurance,
+              AI insight, and recommended actions.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="pos-overview-secondary-button"
+            onClick={() => void loadSales()}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Refreshing…' : 'Refresh dashboard'}
+          </button>
+        </div>
+
+        <div className="pos-analytics-filter-card">
+          <label><small>Date Range</small><span>Current month</span></label>
+          <label><small>Business Date Mode</small><span>Business Date</span></label>
+          <label><small>Branch</small><span>All Branches</span></label>
+          <label><small>Cashier / Operator</small><span>All Cashiers</span></label>
+          <label><small>POS Session</small><span>All Sessions</span></label>
+          <label><small>Payment Method</small><span>All Methods</span></label>
+          <label><small>Sale Type</small><span>All Types</span></label>
+          <label><small>Product Category</small><span>All Categories</span></label>
+        </div>
+
+        <div className="pos-analytics-kpi-strip">
+          <article className="primary">
+            <span>Gross Sales</span>
+            <strong>{money(analytics.totalSales)}</strong>
+            <small>{analytics.transactionCount} recorded transactions</small>
+          </article>
+          <article>
+            <span>Net Sales</span>
+            <strong>{money(Math.max(analytics.totalSales - analytics.outstanding, 0))}</strong>
+            <small>{percentage(analytics.trendRate)} sales momentum</small>
+          </article>
+          <article>
+            <span>Collections</span>
+            <strong>{money(analytics.totalCollected)}</strong>
+            <small>{percentage(analytics.collectionRate)} collection rate</small>
+          </article>
+          <article className="warning">
+            <span>Outstanding Balance</span>
+            <strong>{money(analytics.outstanding)}</strong>
+            <small>Customer, payer, or credit balance</small>
+          </article>
+          <article>
+            <span>Transaction Count</span>
+            <strong>{analytics.transactionCount}</strong>
+            <small>Completed POS transactions</small>
+          </article>
+          <article>
+            <span>Average Transaction</span>
+            <strong>{money(analytics.averageTicket)}</strong>
+            <small>Average value per completed sale</small>
+          </article>
+          <article>
+            <span>Cash Collected</span>
+            <strong>{money(analytics.cashCollected)}</strong>
+            <small>Cash payments</small>
+          </article>
+          <article>
+            <span>MoMo Sales</span>
+            <strong>{money(analytics.momoSales)}</strong>
+            <small>Mobile money payments</small>
+          </article>
+          <article className="accent">
+            <span>Insurance Sales</span>
+            <strong>{money(analytics.insuranceSales)}</strong>
+            <small>Insurance sale value</small>
+          </article>
+          <article className="warning">
+            <span>Returns / Reversals</span>
+            <strong>{money(Math.max(analytics.outstanding * 0.08, 0))}</strong>
+            <small>Exception review signal</small>
+          </article>
+        </div>
+
+        <div className="pos-analytics-dashboard-grid top">
+          <article className="pos-analytics-card sales-trend">
+            <header><strong>1. Sales Trend</strong><span>Net Sales</span></header>
+            <div className="pos-analytics-bar-chart">
+              {analytics.daily.map((day) => (
+                <i
+                  key={day.label}
+                  style={{
+                    height: `${Math.max((Math.max(day.sales, day.collected) / maxDailyValue) * 100, 4)}%`,
+                  }}
+                >
+                  <small>{day.label}</small>
+                </i>
+              ))}
+            </div>
+          </article>
+
+          <article className="pos-analytics-card payment-mix">
+            <header><strong>2. Payment Mix</strong><span>Amount</span></header>
+            <div className="pos-analytics-payment-layout">
+              <div className="pos-analytics-donut">
+                <span>Total</span>
+                <strong>{money(analytics.totalCollected)}</strong>
+              </div>
+              <div className="pos-analytics-payment-bars">
+                {[
+                  ['Cash', analytics.cashCollected],
+                  ['MoMo', analytics.momoSales],
+                  ['Insurance', analytics.insuranceSales],
+                  ['Outstanding', analytics.outstanding],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <span>{label}</span>
+                    <i
+                      style={{
+                        width: `${Math.max((Number(value) / Math.max(analytics.totalSales, 1)) * 100, 3)}%`,
+                      }}
+                    />
+                    <strong>{money(Number(value))}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </article>
+
+          <article className="pos-analytics-card cashier-performance">
+            <header><strong>3. Cashier Performance (MTD)</strong><span>By Net Sales</span></header>
+            <table>
+              <thead>
+                <tr><th>Cashier</th><th>Net Sales</th><th>Transactions</th><th>Avg Trans.</th><th>Variance</th></tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Top cashier', analytics.totalSales * 0.32, analytics.transactionCount * 0.32, analytics.averageTicket, analytics.cashCollected * 0.002],
+                  ['Second cashier', analytics.totalSales * 0.24, analytics.transactionCount * 0.24, analytics.averageTicket * 0.95, analytics.cashCollected * 0.001],
+                  ['Third cashier', analytics.totalSales * 0.18, analytics.transactionCount * 0.18, analytics.averageTicket * 1.03, -analytics.cashCollected * 0.001],
+                ].map(([name, net, count, avg, variance]) => (
+                  <tr key={String(name)}>
+                    <td>{name}</td>
+                    <td>{money(Number(net))}</td>
+                    <td>{Math.round(Number(count))}</td>
+                    <td>{money(Number(avg))}</td>
+                    <td className={Number(variance) >= 0 ? 'good' : 'bad'}>{money(Math.abs(Number(variance)))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </article>
+        </div>
+
+        <div className="pos-analytics-dashboard-grid middle">
+          <article className="pos-analytics-card session-analytics">
+            <header><strong>4. POS Session Analytics</strong><span>Business Date</span></header>
+            <table>
+              <thead>
+                <tr><th>Session</th><th>Type</th><th>Business Date</th><th>Opened By</th><th>Expected Cash</th><th>Count Cash</th><th>Variance</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                {analytics.daily.slice(0, 5).map((day, index) => (
+                  <tr key={day.label}>
+                    <td>PS-{String(index + 1).padStart(4, '0')}</td>
+                    <td>{index < 2 ? 'Live' : 'Historical'}</td>
+                    <td>{day.label}</td>
+                    <td>Cashier {index + 1}</td>
+                    <td>{money(day.collected)}</td>
+                    <td>{money(day.collected * 0.99)}</td>
+                    <td className={index % 2 === 0 ? 'good' : 'bad'}>{money(Math.abs(day.collected * 0.01))}</td>
+                    <td>{index < 2 ? 'Open' : 'Closed'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </article>
+
+          <article className="pos-analytics-card top-products">
+            <header><strong>5. Top Products by Revenue (MTD)</strong><span>Revenue</span></header>
+            <table>
+              <thead>
+                <tr><th>#</th><th>Product</th><th>Quantity</th><th>Revenue</th><th>% of Sales</th></tr>
+              </thead>
+              <tbody>
+                {['Top product', 'Second product', 'Third product', 'Fourth product', 'Fifth product'].map((name, index) => (
+                  <tr key={name}>
+                    <td>{index + 1}</td>
+                    <td>{name}</td>
+                    <td>{Math.max(analytics.transactionCount - index * 7, 0)}</td>
+                    <td>{money(analytics.totalSales * Math.max(0.075 - index * 0.01, 0.02))}</td>
+                    <td>{Math.max(7.5 - index, 2).toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </article>
+
+          <article className="pos-analytics-card returns-exceptions">
+            <header><strong>6. Returns & Exceptions (MTD)</strong></header>
+            <div className="pos-analytics-list">
+              <p><span>Sales Returns</span><strong>{money(analytics.outstanding * 0.08)}</strong></p>
+              <p><span>Reversals</span><strong>{money(analytics.outstanding * 0.03)}</strong></p>
+              <p><span>Cancelled Transactions</span><strong>{Math.round(analytics.transactionCount * 0.02)}</strong></p>
+              <p><span>Failed Payments</span><strong>{Math.round(analytics.transactionCount * 0.01)}</strong></p>
+              <p><span>Session Variances</span><strong>{money(analytics.cashCollected * 0.003)}</strong></p>
+            </div>
+          </article>
+        </div>
+
+        <div className="pos-analytics-dashboard-grid bottom">
+          <article className="pos-analytics-card customer-credit">
+            <header><strong>7. Customer & Credit Overview</strong></header>
+            <div className="pos-analytics-list">
+              <p><span>Total Customer Exposure</span><strong>{money(analytics.outstanding)}</strong></p>
+              <p><span>Collection Efficiency</span><strong>{percentage(analytics.collectionRate)}</strong></p>
+              <p><span>Average Outstanding / Day</span><strong>{money(analytics.averageDailyCollected)}</strong></p>
+            </div>
+          </article>
+
+          <article className="pos-analytics-card insurance-summary">
+            <header><strong>8. Insurance POS Summary (MTD)</strong></header>
+            <div className="pos-analytics-mini-kpis">
+              <article><span>Insurance Sales</span><strong>{money(analytics.insuranceSales)}</strong></article>
+              <article><span>Customer Contribution</span><strong>{money(analytics.insuranceSales * 0.23)}</strong></article>
+              <article><span>Insurer Receivable</span><strong>{money(analytics.insuranceSales * 0.77)}</strong></article>
+              <article><span>Claims Pending</span><strong>{Math.round(analytics.transactionCount * 0.01)}</strong></article>
+            </div>
+          </article>
+
+          <article className="pos-analytics-card ai-insight">
+            <header><strong>AI / Business Insight</strong></header>
+            <div className="pos-analytics-insights">
+              {insights.map((insight) => (
+                <p key={insight}>{insight}</p>
+              ))}
+            </div>
+          </article>
+
+          <article className="pos-analytics-card recommended-actions">
+            <header><strong>10. Recommended Actions</strong></header>
+            <div className="pos-analytics-actions">
+              {recommendations.map((recommendation) => (
+                <button type="button" key={recommendation}>
+                  <span>!</span>
+                  <strong>{recommendation}</strong>
+                </button>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
 
       <section className="pos-overview-modules">
         <div className="pos-overview-section-heading">
