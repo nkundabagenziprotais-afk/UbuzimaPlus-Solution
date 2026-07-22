@@ -45705,3 +45705,74 @@ thead
     min-height: 4.4rem;
   }
 }
+
+/* Inventory Risk Overview: horizontal bar chart only */
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] table,
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-table-wrap,
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-request-table-wrap {
+  display: none !important;
+}
+
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars {
+  display: grid !important;
+  gap: 0.8rem !important;
+  margin-top: 0.75rem !important;
+}
+
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars div {
+  display: grid !important;
+  grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr) minmax(4.5rem, auto) !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  padding: 0.62rem 0.75rem !important;
+  border: 1px solid rgba(148, 163, 184, 0.24) !important;
+  border-radius: 0.9rem !important;
+  background: rgba(248, 250, 252, 0.88) !important;
+}
+
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars span {
+  min-width: 0 !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  color: #334155 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars i {
+  display: block !important;
+  height: 0.8rem !important;
+  min-width: 0.35rem !important;
+  border-radius: 999px !important;
+}
+
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars strong {
+  justify-self: end !important;
+  font-size: 0.82rem !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars em {
+  grid-column: 2 / 4 !important;
+  justify-self: end !important;
+  font-size: 0.72rem !important;
+  color: #64748b !important;
+  font-style: normal !important;
+}
+
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] header + p,
+.inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-summary {
+  display: none !important;
+}
+
+@media (max-width: 620px) {
+  .inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars div {
+    grid-template-columns: 1fr !important;
+  }
+
+  .inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars strong,
+  .inventory-analytics-request-card[data-inventory-risk-overview-card='true'] .inventory-analytics-risk-bars em {
+    justify-self: start !important;
+    grid-column: 1 !important;
+  }
+}

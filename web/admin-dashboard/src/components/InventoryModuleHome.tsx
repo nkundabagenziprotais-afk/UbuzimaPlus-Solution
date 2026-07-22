@@ -808,9 +808,9 @@ export function InventoryModuleHome({
   const [analyticsCategoryFilter, setAnalyticsCategoryFilter] = useState('all');
   const [analyticsProductFilter, setAnalyticsProductFilter] = useState('all');
   const [analyticsLocationFilter, setAnalyticsLocationFilter] = useState('all');
-  const [analyticsDateFromFilter, setAnalyticsDateFromFilter] = useState(inventoryAnalyticsWeekStartIso());
+  const [analyticsDateFromFilter, setAnalyticsDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
   const [analyticsDateToFilter, setAnalyticsDateToFilter] = useState(inventoryAnalyticsTodayIso());
-  const [analyticsAppliedDateFromFilter, setAnalyticsAppliedDateFromFilter] = useState(inventoryAnalyticsWeekStartIso());
+  const [analyticsAppliedDateFromFilter, setAnalyticsAppliedDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
   const [analyticsAppliedDateToFilter, setAnalyticsAppliedDateToFilter] = useState(inventoryAnalyticsTodayIso());
   const [analyticsTrendWeekSelection, setAnalyticsTrendWeekSelection] = useState('all');
   const [analyticsVisibleKpiFallback, setAnalyticsVisibleKpiFallback] = useState({
@@ -837,6 +837,7 @@ export function InventoryModuleHome({
     setAnalyticsRefreshSequence((value) => value + 1);
   };
 
+
   const [analyticsExpiryFromFilter, setAnalyticsExpiryFromFilter] = useState('');
   const [analyticsExpiryToFilter, setAnalyticsExpiryToFilter] = useState('');
   const [analyticsCreatedFromFilter, setAnalyticsCreatedFromFilter] = useState(inventoryAnalyticsMonthStartIso());
@@ -845,6 +846,30 @@ export function InventoryModuleHome({
 
   const [analyticsLoading, setAnalyticsLoading] =
     useState(true);
+
+  useEffect(() => {
+    function tagInventoryRiskOverviewCard() {
+      const cards = Array.from(document.querySelectorAll<HTMLElement>('.inventory-analytics-request-card'));
+      const riskCard = cards.find((card) =>
+        /Inventory Risk Overview/i.test(card.querySelector('h3')?.textContent ?? ''),
+      );
+
+      if (riskCard) {
+        riskCard.dataset.inventoryRiskOverviewCard = 'true';
+      }
+    }
+
+    tagInventoryRiskOverviewCard();
+    window.requestAnimationFrame(tagInventoryRiskOverviewCard);
+    window.setTimeout(tagInventoryRiskOverviewCard, 700);
+  }, [
+    analyticsLoading,
+    analyticsRefreshSequence,
+    analyticsAppliedDateFromFilter,
+    analyticsAppliedDateToFilter,
+    analyticsTrendWeekSelection,
+  ]);
+
 
 
   useEffect(() => {
@@ -2460,19 +2485,34 @@ export function InventoryModuleHome({
             const nearExpiryValueByDate = new Map<string, number>();
 
             nearExpirySourceRows.forEach((row) => {
-              const rowRecord = (row.batch && typeof row.batch === 'object' ? row.batch : row) as UnknownRecord;
-              const expiryDate = inventoryText(rowRecord, ['expiry_date', 'expires_at', 'expiry', 'expiration_date'], '').slice(0, 10);
+              const expiryDate = (
+                row.expiry ||
+                inventoryText(row.batch, ['expiry_date', 'expires_at', 'expiry', 'expiration_date'], '')
+              ).slice(0, 10);
 
-              if (!expiryDate) {
+              if (!expiryDate || !analyticsTrendDateKeys.includes(expiryDate)) {
                 return;
               }
 
               nearExpiryValueByDate.set(expiryDate, (nearExpiryValueByDate.get(expiryDate) ?? 0) + row.value);
             });
 
-            const fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
+            let fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
               nearExpiryValueByDate.get(dateKey) ?? 0,
             );
+
+            const nearExpiryTrendFallbackValue = Math.max(
+              alignedInventoryKpiNearExpiryValue,
+              apiInventoryKpiNearExpiryValue,
+              nearExpiryValue,
+              nearExpirySourceRows.reduce((sum, row) => sum + row.value, 0),
+            );
+
+            if (fullNearExpiryTrendValues.every((value) => value <= 0) && nearExpiryTrendFallbackValue > 0) {
+              fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
+                dateKey === analyticsAppliedDateToFilter ? nearExpiryTrendFallbackValue : 0,
+              );
+            }
 
             const trendValues = selectedTrendDateKeys.map((dateKey) =>
               fullTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
