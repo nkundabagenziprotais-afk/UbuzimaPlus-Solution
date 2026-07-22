@@ -731,6 +731,7 @@ export function InventoryModuleHome({
   const [analyticsProducts, setAnalyticsProducts] = useState<unknown>(null);
   const [analyticsBatches, setAnalyticsBatches] = useState<unknown>(null);
   const [analyticsKpiSummary, setAnalyticsKpiSummary] = useState<unknown>(null);
+  const [analyticsKpiSummaryLastGood, setAnalyticsKpiSummaryLastGood] = useState<unknown>(null);
   const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(null);
   const [analyticsLocations, setAnalyticsLocations] = useState<unknown>(null);
   const [analyticsMovements, setAnalyticsMovements] = useState<unknown>(null);
@@ -906,7 +907,6 @@ export function InventoryModuleHome({
 
     async function loadInventoryAnalyticsKpiSummary() {
       if (!token || !tenantSlug) {
-        setAnalyticsKpiSummary(null);
         return;
       }
 
@@ -935,11 +935,10 @@ export function InventoryModuleHome({
 
         if (isActive) {
           setAnalyticsKpiSummary(data);
+          setAnalyticsKpiSummaryLastGood(data);
         }
       } catch {
-        if (isActive) {
-          setAnalyticsKpiSummary(null);
-        }
+        // Preserve the last good KPI summary on temporary auth/network failures.
       }
     }
 
@@ -2106,20 +2105,21 @@ export function InventoryModuleHome({
               salesRegisterRows.length,
             );
 
-            const apiInventoryKpiTotalValue = inventoryDeepNumberValue(analyticsKpiSummary, ['total_inventory_value']);
-            const apiInventoryKpiStockOnHandCount = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_on_hand_count']);
-            const apiInventoryKpiReceivedValue = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_received_value']);
-            const apiInventoryKpiReceivedCount = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_received_count']);
-            const apiInventoryKpiIssuedValue = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_issued_value']);
-            const apiInventoryKpiIssuedCount = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_issued_count']);
-            const apiInventoryKpiLowStockValue = inventoryDeepNumberValue(analyticsKpiSummary, ['low_stock_value']);
-            const apiInventoryKpiLowStockCount = inventoryDeepNumberValue(analyticsKpiSummary, ['low_stock_count']);
-            const apiInventoryKpiNearExpiryValue = inventoryDeepNumberValue(analyticsKpiSummary, ['near_expiry_value']);
-            const apiInventoryKpiNearExpiryCount = inventoryDeepNumberValue(analyticsKpiSummary, ['near_expiry_count']);
-            const apiInventoryKpiExpiredValue = inventoryDeepNumberValue(analyticsKpiSummary, ['expired_value']);
-            const apiInventoryKpiExpiredCount = inventoryDeepNumberValue(analyticsKpiSummary, ['expired_count']);
-            const apiInventoryKpiTurnoverValue = inventoryDeepNumberValue(analyticsKpiSummary, ['turnover_value']);
-            const apiInventoryKpiTurnoverCount = inventoryDeepNumberValue(analyticsKpiSummary, ['turnover_count']);
+            const effectiveAnalyticsKpiSummary = analyticsKpiSummary ?? analyticsKpiSummaryLastGood;
+            const apiInventoryKpiTotalValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['total_inventory_value']);
+            const apiInventoryKpiStockOnHandCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['stock_on_hand_count']);
+            const apiInventoryKpiReceivedValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['stock_received_value']);
+            const apiInventoryKpiReceivedCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['stock_received_count']);
+            const apiInventoryKpiIssuedValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['stock_issued_value']);
+            const apiInventoryKpiIssuedCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['stock_issued_count']);
+            const apiInventoryKpiLowStockValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['low_stock_value']);
+            const apiInventoryKpiLowStockCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['low_stock_count']);
+            const apiInventoryKpiNearExpiryValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['near_expiry_value']);
+            const apiInventoryKpiNearExpiryCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['near_expiry_count']);
+            const apiInventoryKpiExpiredValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['expired_value']);
+            const apiInventoryKpiExpiredCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['expired_count']);
+            const apiInventoryKpiTurnoverValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['turnover_value']);
+            const apiInventoryKpiTurnoverCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['turnover_count']);
 
             const kpiCards = [
               { label: 'Total Inventory Value', value: formatCurrency(apiInventoryKpiTotalValue), target: 'product-inventory' },
