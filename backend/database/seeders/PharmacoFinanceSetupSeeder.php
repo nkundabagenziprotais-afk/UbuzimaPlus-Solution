@@ -8,6 +8,18 @@ use Illuminate\Support\Facades\Schema;
 
 class PharmacoFinanceSetupSeeder extends Seeder
 {
+    private array $permissions = [
+        'finance.dashboard.view' => 'View Finance Dashboard',
+        'finance.chart_of_accounts.manage' => 'Manage Chart of Accounts',
+        'finance.journal.view' => 'View Finance Journal',
+        'finance.journal.create' => 'Create Finance Journal Entries',
+        'finance.journal.approve' => 'Approve Finance Journal Entries',
+        'finance.reports.view' => 'View Finance Reports',
+        'finance.reconciliation.manage' => 'Manage Finance Reconciliation',
+        'finance.period.close' => 'Close Finance Periods',
+        'finance.settings.manage' => 'Manage Finance Settings',
+    ];
+
     private array $accounts = [
         ['code' => '1000', 'name' => 'Cash on Hand', 'account_type' => 'asset', 'normal_balance' => 'debit', 'is_cash_or_bank' => true],
         ['code' => '1010', 'name' => 'Bank Account', 'account_type' => 'asset', 'normal_balance' => 'debit', 'is_cash_or_bank' => true],
@@ -25,18 +37,6 @@ class PharmacoFinanceSetupSeeder extends Seeder
         ['code' => '6000', 'name' => 'Operating Expenses', 'account_type' => 'expense', 'normal_balance' => 'debit'],
         ['code' => '6100', 'name' => 'Supplier Expense Clearing', 'account_type' => 'expense', 'normal_balance' => 'debit'],
         ['code' => '7000', 'name' => 'Insurance Write-Offs', 'account_type' => 'expense', 'normal_balance' => 'debit'],
-    ];
-
-    private array $permissions = [
-        'finance.dashboard.view' => 'View Finance Dashboard',
-        'finance.chart_of_accounts.manage' => 'Manage Chart of Accounts',
-        'finance.journal.view' => 'View Finance Journal',
-        'finance.journal.create' => 'Create Finance Journal Entries',
-        'finance.journal.approve' => 'Approve Finance Journal Entries',
-        'finance.reports.view' => 'View Finance Reports',
-        'finance.reconciliation.manage' => 'Manage Finance Reconciliation',
-        'finance.period.close' => 'Close Finance Periods',
-        'finance.settings.manage' => 'Manage Finance Settings',
     ];
 
     private array $mappings = [
@@ -69,10 +69,99 @@ class PharmacoFinanceSetupSeeder extends Seeder
             return;
         }
 
-        $now = now();
-
         $this->registerFinancePermissions();
         $this->grantFinancePermissionsToAdministrativeRoles();
+        $this->seedAccountsAndMappings();
+    }
+
+    private function registerFinancePermissions(): void
+    {
+        if (! Schema::hasTable('permissions')) {
+            return;
+        }
+
+        $now = now();
+
+        foreach ($this->permissions as $code => $name) {
+            $values = ['code' => $code];
+
+            if (Schema::hasColumn('permissions', 'name')) {
+                $values['name'] = $name;
+            }
+
+            if (Schema::hasColumn('permissions', 'permission_group')) {
+                $values['permission_group'] = 'finance';
+            }
+
+            if (Schema::hasColumn('permissions', 'group')) {
+                $values['group'] = 'finance';
+            }
+
+            if (Schema::hasColumn('permissions', 'description')) {
+                $values['description'] = $name;
+            }
+
+            if (Schema::hasColumn('permissions', 'created_at')) {
+                $values['created_at'] = $now;
+            }
+
+            if (Schema::hasColumn('permissions', 'updated_at')) {
+                $values['updated_at'] = $now;
+            }
+
+            DB::table('permissions')->updateOrInsert(['code' => $code], $values);
+        }
+    }
+
+    private function grantFinancePermissionsToAdministrativeRoles(): void
+    {
+        if (
+            ! Schema::hasTable('roles')
+            || ! Schema::hasTable('permissions')
+            || ! Schema::hasTable('permission_role')
+        ) {
+            return;
+        }
+
+        $permissionIds = DB::table('permissions')
+            ->whereIn('code', array_keys($this->permissions))
+            ->pluck('id');
+
+        $roleIds = DB::table('roles')
+            ->whereIn('code', [
+                'ubuzima_plus_super_admin',
+                'pharmaco360_solution_admin',
+                'tenant_admin',
+            ])
+            ->pluck('id');
+
+        $pivotHasCreatedAt = Schema::hasColumn('permission_role', 'created_at');
+        $pivotHasUpdatedAt = Schema::hasColumn('permission_role', 'updated_at');
+        $now = now();
+
+        foreach ($roleIds as $roleId) {
+            foreach ($permissionIds as $permissionId) {
+                $payload = [
+                    'role_id' => $roleId,
+                    'permission_id' => $permissionId,
+                ];
+
+                if ($pivotHasCreatedAt) {
+                    $payload['created_at'] = $now;
+                }
+
+                if ($pivotHasUpdatedAt) {
+                    $payload['updated_at'] = $now;
+                }
+
+                DB::table('permission_role')->insertOrIgnore($payload);
+            }
+        }
+    }
+
+    private function seedAccountsAndMappings(): void
+    {
+        $now = now();
 
         foreach (DB::table('tenants')->pluck('id') as $tenantId) {
             $accountIdsByCode = [];
@@ -140,99 +229,5 @@ class PharmacoFinanceSetupSeeder extends Seeder
                 );
             }
         }
-    private function registerFinancePermissions(): void
-    {
-        if (! Schema::hasTable('permissions')) {
-            return;
-        }
-
-        $now = now();
-
-        foreach ($this->permissions as $code => $name) {
-            $values = [
-                'code' => $code,
-            ];
-
-            if (Schema::hasColumn('permissions', 'name')) {
-                $values['name'] = $name;
-            }
-
-            if (Schema::hasColumn('permissions', 'permission_group')) {
-                $values['permission_group'] = 'finance';
-            }
-
-            if (Schema::hasColumn('permissions', 'group')) {
-                $values['group'] = 'finance';
-            }
-
-            if (Schema::hasColumn('permissions', 'description')) {
-                $values['description'] = $name;
-            }
-
-            if (Schema::hasColumn('permissions', 'created_at')) {
-                $values['created_at'] = $now;
-            }
-
-            if (Schema::hasColumn('permissions', 'updated_at')) {
-                $values['updated_at'] = $now;
-            }
-
-            DB::table('permissions')->updateOrInsert(
-                ['code' => $code],
-                $values,
-            );
-        }
-    }
-
-    private function grantFinancePermissionsToAdministrativeRoles(): void
-    {
-        if (
-            ! Schema::hasTable('roles')
-            || ! Schema::hasTable('permissions')
-            || ! Schema::hasTable('permission_role')
-        ) {
-            return;
-        }
-
-        $permissionIds = DB::table('permissions')
-            ->whereIn('code', array_keys($this->permissions))
-            ->pluck('id');
-
-        if ($permissionIds->isEmpty()) {
-            return;
-        }
-
-        $roleIds = DB::table('roles')
-            ->whereIn('code', [
-                'ubuzima_plus_super_admin',
-                'pharmaco360_solution_admin',
-                'tenant_admin',
-            ])
-            ->pluck('id');
-
-        $pivotHasCreatedAt = Schema::hasColumn('permission_role', 'created_at');
-        $pivotHasUpdatedAt = Schema::hasColumn('permission_role', 'updated_at');
-        $now = now();
-
-        foreach ($roleIds as $roleId) {
-            foreach ($permissionIds as $permissionId) {
-                $payload = [
-                    'role_id' => $roleId,
-                    'permission_id' => $permissionId,
-                ];
-
-                if ($pivotHasCreatedAt) {
-                    $payload['created_at'] = $now;
-                }
-
-                if ($pivotHasUpdatedAt) {
-                    $payload['updated_at'] = $now;
-                }
-
-                DB::table('permission_role')->insertOrIgnore($payload);
-            }
-        }
-    }
-
     }
 }
