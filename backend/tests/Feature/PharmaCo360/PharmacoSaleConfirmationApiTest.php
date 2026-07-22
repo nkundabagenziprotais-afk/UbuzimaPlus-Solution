@@ -70,7 +70,7 @@ class PharmacoSaleConfirmationApiTest extends TestCase
         ]);
     }
 
-    public function test_prescription_required_item_must_be_verified_before_dispensing(): void
+    public function test_prescription_required_item_confirms_with_rx_warning_when_not_verified(): void
     {
         $this->seed();
 
@@ -98,10 +98,13 @@ class PharmacoSaleConfirmationApiTest extends TestCase
         $this->withHeader('X-Tenant-Slug', 'vitapharma')
             ->withToken($token)
             ->postJson("/api/v1/pharmaco/sales/{$sale->id}/confirm", $payload)
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('items');
+            ->assertOk();
 
-        $this->assertSame('draft', $sale->fresh()->status);
+        $freshSale = $sale->fresh();
+
+        $this->assertSame('dispensed', $freshSale->status);
+        $this->assertTrue((bool) ($freshSale->metadata['rx_prescription_warning_required'] ?? false));
+        $this->assertTrue((bool) ($freshSale->metadata['rx_prescription_warning_acknowledged'] ?? false));
     }
 
     public function test_insufficient_stock_is_rejected_without_deducting_sale(): void

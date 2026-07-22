@@ -196,7 +196,7 @@ class PharmacoSalesCreationApiTest extends TestCase
         ]);
     }
 
-    public function test_prescription_required_product_requires_prescription_on_sale_creation(): void
+    public function test_prescription_required_product_creates_sale_with_rx_warning_without_prescription(): void
     {
         $this->seed();
 
@@ -205,7 +205,7 @@ class PharmacoSalesCreationApiTest extends TestCase
         $branch = Branch::where('tenant_id', $tenant->id)->firstOrFail();
         $product = Product::where('tenant_id', $tenant->id)->where('requires_prescription', true)->firstOrFail();
 
-        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+        $response = $this->withHeader('X-Tenant-Slug', 'vitapharma')
             ->withToken($token)
             ->postJson('/api/v1/pharmaco/sales', [
                 'branch_id' => $branch->id,
@@ -216,9 +216,16 @@ class PharmacoSalesCreationApiTest extends TestCase
                         'unit_price' => 1000,
                     ],
                 ],
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('pharmaco_prescription_id');
+            ]);
+
+        $response->assertCreated();
+
+        $saleId = $response->json('data.id');
+        $sale = PharmacoSale::findOrFail($saleId);
+
+        $this->assertTrue((bool) ($sale->metadata['rx_prescription_warning_required'] ?? false));
+        $this->assertTrue((bool) ($sale->metadata['rx_prescription_warning_acknowledged'] ?? false));
+        $this->assertNotEmpty($sale->metadata['rx_prescription_warning_products'] ?? []);
     }
 
     public function test_sale_creation_rejects_product_outside_current_tenant(): void
