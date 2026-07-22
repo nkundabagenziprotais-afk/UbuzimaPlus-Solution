@@ -687,7 +687,21 @@ export function InventoryModuleHome({
   const [analyticsLocationFilter, setAnalyticsLocationFilter] = useState('all');
   const [analyticsDateFromFilter, setAnalyticsDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
   const [analyticsDateToFilter, setAnalyticsDateToFilter] = useState(inventoryAnalyticsTodayIso());
+  const [analyticsAppliedDateFromFilter, setAnalyticsAppliedDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
+  const [analyticsAppliedDateToFilter, setAnalyticsAppliedDateToFilter] = useState(inventoryAnalyticsTodayIso());
   const [analyticsTrendWeekSelection, setAnalyticsTrendWeekSelection] = useState('all');
+  const applyInventoryAnalyticsFilters = () => {
+    setAnalyticsAppliedDateFromFilter(analyticsDateFromFilter || inventoryAnalyticsMonthStartIso());
+    setAnalyticsAppliedDateToFilter(analyticsDateToFilter || inventoryAnalyticsTodayIso());
+    setAnalyticsRefreshSequence((value) => value + 1);
+  };
+
+  const refreshInventoryAnalyticsDashboard = () => {
+    setAnalyticsAppliedDateFromFilter(analyticsDateFromFilter || inventoryAnalyticsMonthStartIso());
+    setAnalyticsAppliedDateToFilter(analyticsDateToFilter || inventoryAnalyticsTodayIso());
+    setAnalyticsRefreshSequence((value) => value + 1);
+  };
+
   const [analyticsExpiryFromFilter, setAnalyticsExpiryFromFilter] = useState('');
   const [analyticsExpiryToFilter, setAnalyticsExpiryToFilter] = useState('');
   const [analyticsCreatedFromFilter, setAnalyticsCreatedFromFilter] = useState(inventoryAnalyticsMonthStartIso());
@@ -746,10 +760,10 @@ export function InventoryModuleHome({
       }
 
       const query = new URLSearchParams({
-        start_date: analyticsDateFromFilter,
-        end_date: analyticsDateToFilter,
-        date_from: analyticsDateFromFilter,
-        date_to: analyticsDateToFilter,
+        start_date: analyticsAppliedDateFromFilter,
+        end_date: analyticsAppliedDateToFilter,
+        date_from: analyticsAppliedDateFromFilter,
+        date_to: analyticsAppliedDateToFilter,
       }).toString();
 
       const endpoints = [
@@ -798,7 +812,7 @@ export function InventoryModuleHome({
     return () => {
       isActive = false;
     };
-  }, [token, tenantSlug, analyticsDateFromFilter, analyticsDateToFilter, analyticsRefreshSequence]);
+  }, [token, tenantSlug, analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter, analyticsRefreshSequence]);
 
   useEffect(() => {
     let isActive = true;
@@ -810,12 +824,12 @@ export function InventoryModuleHome({
       }
 
       const query = new URLSearchParams({
-        start_date: analyticsDateFromFilter,
-        end_date: analyticsDateToFilter,
-        date_from: analyticsDateFromFilter,
-        date_to: analyticsDateToFilter,
-        business_date_from: analyticsDateFromFilter,
-        business_date_to: analyticsDateToFilter,
+        start_date: analyticsAppliedDateFromFilter,
+        end_date: analyticsAppliedDateToFilter,
+        date_from: analyticsAppliedDateFromFilter,
+        date_to: analyticsAppliedDateToFilter,
+        business_date_from: analyticsAppliedDateFromFilter,
+        business_date_to: analyticsAppliedDateToFilter,
         date_basis: 'business_date',
       }).toString();
 
@@ -865,7 +879,7 @@ export function InventoryModuleHome({
     return () => {
       isActive = false;
     };
-  }, [token, tenantSlug, analyticsDateFromFilter, analyticsDateToFilter, analyticsRefreshSequence]);
+  }, [token, tenantSlug, analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter, analyticsRefreshSequence]);
 
 
   const canCustomize =
@@ -986,7 +1000,7 @@ export function InventoryModuleHome({
     return () => {
       cancelled = true;
     };
-  }, [tenantSlug, token]);
+  }, [tenantSlug, token, analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter, analyticsRefreshSequence]);
 
   const analyticsMetrics =
     useMemo<AnalyticsMetric[]>(() => {
@@ -1213,7 +1227,7 @@ export function InventoryModuleHome({
         <button
           type="button"
           className="inventory-analytics-photo-refresh"
-          onClick={() => setAnalyticsRefreshSequence((value) => value + 1)}
+          onClick={refreshInventoryAnalyticsDashboard}
         >
           Refresh
         </button>
@@ -1507,19 +1521,19 @@ export function InventoryModuleHome({
             const movementRows = inventoryDeepRecordArray(analyticsMovements).filter((movement) => {
               const movementDate = inventoryText(movement, ['business_date', 'occurred_at', 'created_at', 'received_at'], '');
 
-              return inventoryAnalyticsInDateRange(movementDate, analyticsDateFromFilter, analyticsDateToFilter);
+              return inventoryAnalyticsInDateRange(movementDate, analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter);
             });
 
             const salesRegisterRows = inventoryDeepRecordArray(analyticsSalesRegister).filter((row) => {
               const salesDate = inventoryText(row, ['business_date', 'sale_date', 'created_at', 'invoice_date'], '');
 
-              return inventoryAnalyticsInDateRange(salesDate, analyticsDateFromFilter, analyticsDateToFilter);
+              return inventoryAnalyticsInDateRange(salesDate, analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter);
             });
 
             const receivedBatchRows = analyticsMetricBatchRows.filter((batch) => {
               const receivedDate = inventoryText(batch, ['received_at', 'created_at', 'business_date'], '');
 
-              return inventoryAnalyticsInDateRange(receivedDate, analyticsDateFromFilter, analyticsDateToFilter);
+              return inventoryAnalyticsInDateRange(receivedDate, analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter);
             });
 
             const movementValue = (movement: UnknownRecord): number => {
@@ -1579,7 +1593,10 @@ export function InventoryModuleHome({
 
             const stockReceivedValue = Math.max(movementReceivedValue, batchReceivedValue);
             const stockReceivedCount = Math.max(receivedRows.length, receivedFallbackRows.length);
-            const stockIssuedValue = Math.max(movementIssuedValue, registerIssuedValue);
+            const stockIssuedValue = Math.max(
+              movementIssuedValue,
+              registerIssuedValue,
+            );
             const stockIssuedCount = Math.max(issuedRows.length, salesRegisterRows.length);
             const turnoverValue = stockIssuedValue;
             const turnoverCount = stockIssuedCount;
@@ -1663,7 +1680,7 @@ export function InventoryModuleHome({
               .slice(0, 8);
 
             const maxCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
-            const analyticsTrendDateKeys = inventoryAnalyticsDateKeys(analyticsDateFromFilter, analyticsDateToFilter);
+            const analyticsTrendDateKeys = inventoryAnalyticsDateKeys(analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter);
             const analyticsTrendWeeks = Array.from(
               new Set(analyticsTrendDateKeys.map((_, index) => `week-${Math.floor(index / 7) + 1}`)),
             );
@@ -1714,7 +1731,7 @@ export function InventoryModuleHome({
             });
 
             const fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
-              dateKey === analyticsDateToFilter ? nearExpiryValue : 0,
+              dateKey === analyticsAppliedDateToFilter ? nearExpiryValue : 0,
             );
 
             const trendValues = selectedTrendDateKeys.map((dateKey) =>
@@ -1872,6 +1889,18 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Inventory Risk Overview</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
+                      >
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                       <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
@@ -1943,6 +1972,18 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Low Stock Watch List</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
+                      >
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                       <button type="button" onClick={() => onOpenWorkspace('low-stock')}>More</button>
                     </header>
 
@@ -1977,6 +2018,18 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Near Expiry Review</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
+                      >
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                       <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>More</button>
                     </header>
 
@@ -2011,6 +2064,18 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Expired Items</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
+                      >
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                       <button type="button" onClick={() => onOpenWorkspace('near-expiry')}>More</button>
                     </header>
 
@@ -2045,6 +2110,18 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Top Fast Moving Products</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
+                      >
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                       <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
@@ -2067,6 +2144,18 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Slow Moving / Non-Moving Products</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
+                      >
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                       <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 
@@ -2089,6 +2178,18 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>High Value – Low Stock Risk</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
+                      >
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                       <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
                     </header>
 

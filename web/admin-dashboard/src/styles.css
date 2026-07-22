@@ -45421,3 +45421,90 @@ thead
   line-height: 1 !important;
   white-space: nowrap !important;
 }
+
+/* Inventory Analytics: professional full-range chart scrolling and refresh behavior */
+.inventory-analytics-bar-trend-card {
+  overflow: hidden !important;
+}
+
+.inventory-analytics-bar-trend-bars {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: end !important;
+  gap: 0.34rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 8.75rem !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 0.2rem 0.2rem 0.45rem !important;
+  scroll-behavior: smooth !important;
+  overscroll-behavior-x: contain !important;
+}
+
+.inventory-analytics-bar-trend-bars div {
+  flex: 0 0 3.25rem !important;
+  width: 3.25rem !important;
+  max-width: 3.25rem !important;
+  display: grid !important;
+  grid-template-rows: 1.25rem 1fr 0.9rem !important;
+  gap: 0.16rem !important;
+  align-items: end !important;
+  height: 8.35rem !important;
+  min-width: 0 !important;
+}
+
+.inventory-analytics-bar-trend-bars span {
+  display: block !important;
+  color: #0f766e !important;
+  font-size: 0.54rem !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  line-height: 1 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.inventory-analytics-bar-trend-bars i {
+  display: block !important;
+  width: 1.35rem !important;
+  max-width: 1.35rem !important;
+  margin: 0 auto !important;
+  border-radius: 0.35rem 0.35rem 0.1rem 0.1rem !important;
+  background: linear-gradient(180deg, #14b8a6, #0f766e) !important;
+  min-height: 0.35rem !important;
+}
+
+.inventory-analytics-bar-trend-bars small {
+  display: block !important;
+  color: #64748b !important;
+  font-size: 0.6rem !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.inventory-analytics-request-card header {
+  gap: 0.5rem !important;
+}
+
+.inventory-analytics-request-card header .inventory-analytics-trend-header-select {
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+  padding: 0.32rem 0.48rem !important;
+  max-width: 8.5rem !important;
+}
+
+.inventory-analytics-request-filters button,
+.inventory-analytics-photo-refresh {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
