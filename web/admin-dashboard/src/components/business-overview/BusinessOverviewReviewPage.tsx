@@ -458,6 +458,93 @@ function businessDateDayLabel(value: string): string {
   return String(Number(day || 0) || value);
 }
 
+function businessOverviewTrendDateKey(value: unknown): string {
+  const raw = String(value ?? '').trim();
+
+  if (!raw) {
+    return '';
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  const parsed = new Date(raw);
+
+  if (Number.isFinite(parsed.getTime())) {
+    return parsed.toISOString().slice(0, 10);
+  }
+
+  return raw.slice(0, 10);
+}
+
+function businessOverviewTrendNumber(value: unknown): number {
+  const parsed =
+    typeof value === 'number'
+      ? value
+      : Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function businessOverviewTrendValueForMetric(row: unknown, metric: string): number {
+  const source = row && typeof row === 'object' ? row as Record<string, unknown> : {};
+
+  if (metric === 'count') {
+    return businessOverviewTrendNumber(
+      source.count ??
+      source.transaction_count ??
+      source.transactions ??
+      source.sales_count ??
+      source.orders_count,
+    );
+  }
+
+  return businessOverviewTrendNumber(
+    source.value ??
+    source.amount ??
+    source.sales ??
+    source.gross_sales ??
+    source.gross_revenue ??
+    source.net_sales ??
+    source.total ??
+    source.total_amount ??
+    source.revenue,
+  );
+}
+
+function buildBusinessDateSalesTrendValues(
+  rows: unknown,
+  dateKeys: string[],
+  metric: string,
+): number[] {
+  const bucket = new Map<string, number>();
+  const sourceRows = Array.isArray(rows) ? rows : [];
+
+  sourceRows.forEach((row) => {
+    const source = row && typeof row === 'object' ? row as Record<string, unknown> : {};
+    const dateKey = businessOverviewTrendDateKey(
+      source.business_date ??
+      source.businessDate ??
+      source.date ??
+      source.day ??
+      source.period ??
+      source.label,
+    );
+
+    if (!dateKey) {
+      return;
+    }
+
+    bucket.set(
+      dateKey,
+      (bucket.get(dateKey) ?? 0) + businessOverviewTrendValueForMetric(row, metric),
+    );
+  });
+
+  return dateKeys.map((dateKey) => bucket.get(dateKey) ?? 0);
+}
+
 function selectedDateKeys(startDate: string, endDate: string): string[] {
   const start = parseLocalBusinessDate(startDate);
   const end = parseLocalBusinessDate(endDate);
@@ -1287,15 +1374,14 @@ export function BusinessOverviewReviewPage({
   const selectedGlobalDateKeys = selectedDateKeys(appliedDateRange.startDate, appliedDateRange.endDate);
   const selectedGlobalDateLabels = selectedGlobalDateKeys.map((date) => businessDateDayLabel(date));
 
-  const salesTrendSeries = buildDailyTrendSeries(
+  // BUSINESS_OVERVIEW_FORCE_SALES_TREND_BUSINESS_DATE_BUCKETS_V2
+  // Values are bucketed by business_date, not relabeled from timestamp-created rows.
+  const salesTrendValues = buildBusinessDateSalesTrendValues(
     displayLiveData.trend,
-    salesTrendRange.startDate,
-    salesTrendRange.endDate,
+    selectedGlobalDateKeys,
     trendMetric,
-    Math.max(salesTrendDateKeys.length, 1),
   );
-  const salesTrendValues = salesTrendSeries.map((point) => point.value);
-  const salesTrendLabels = salesTrendDateLabels;
+  const salesTrendLabels = selectedGlobalDateLabels;
 
   const insuranceTrendValues = outstanding > 0
     ? movementChartValues(
