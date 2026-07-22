@@ -45930,3 +45930,10 @@ html.ubuzima-standalone-webapp .admin-header {
     min-height: 4.4rem;
   }
 }
+
+/* Shared dashboard analytics consistency marker */
+[data-shared-analytics-synced='true'] strong,
+[data-shared-analytics-synced='true'] [data-kpi-value],
+[data-shared-analytics-synced='true'] .kpi-value {
+  font-variant-numeric: tabular-nums;
+}
