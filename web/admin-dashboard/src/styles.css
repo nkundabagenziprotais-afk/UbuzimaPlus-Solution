@@ -47638,6 +47638,7 @@ html.ubuzima-standalone-webapp .admin-header {
   .ubuzima-native-brand small,
   .ubuzima-native-topbar__actions,
   .ubuzima-native-section__heading,
+  .ubuzima-native-section__title,
   .ubuzima-native-profile-card div,
   .ubuzima-native-sales-card div,
   .ubuzima-native-stock-hero div,
@@ -47877,8 +47878,31 @@ html.ubuzima-standalone-webapp .admin-header {
 
   .ubuzima-native-section__heading {
     display: grid;
-    gap: 3px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px;
     margin-bottom: 10px;
+  }
+
+  .ubuzima-native-section__title {
+    display: grid;
+    gap: 3px;
+  }
+
+  .ubuzima-native-section__action {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .ubuzima-native-section__action button {
+    min-height: 34px;
+    border: 1px solid rgba(75, 83, 32, 0.18);
+    border-radius: 8px;
+    background: #f7faf9;
+    color: #243016;
+    padding: 0 11px;
+    font-size: 0.7rem;
+    font-weight: 950;
   }
 
   .ubuzima-native-section__heading span {
@@ -47905,7 +47929,7 @@ html.ubuzima-standalone-webapp .admin-header {
 
   .ubuzima-native-action {
     min-width: 0;
-    min-height: 104px;
+    min-height: 76px;
     display: grid;
     align-content: start;
     justify-items: start;
@@ -48518,8 +48542,20 @@ html.ubuzima-standalone-webapp .admin-header {
 
   .ubuzima-native-balance-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 8px) / 2);
+    grid-template-columns: none;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 1px 1px 6px;
+    scroll-padding-inline: 1px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ubuzima-native-balance-grid::-webkit-scrollbar {
+    display: none;
   }
 
   .ubuzima-native-balance-card {
@@ -48532,6 +48568,7 @@ html.ubuzima-standalone-webapp .admin-header {
     border-radius: 8px;
     background: #ffffff;
     padding: 9px;
+    scroll-snap-align: start;
   }
 
   .ubuzima-native-balance-card strong {
@@ -48553,7 +48590,7 @@ html.ubuzima-standalone-webapp .admin-header {
   }
 
   .ubuzima-native-action {
-    min-height: 86px !important;
+    min-height: 76px !important;
     gap: 6px !important;
     padding: 10px !important;
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.045);
@@ -48664,12 +48701,7 @@ html.ubuzima-standalone-webapp .admin-header {
 
 @media (max-width: 420px) {
   .ubuzima-native-balance-grid {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(114px, 38vw);
-    grid-template-columns: none;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
+    grid-auto-columns: calc((100% - 8px) / 2);
   }
 
   .ubuzima-native-business-hero {
@@ -49208,12 +49240,125 @@ html.ubuzima-standalone-webapp .admin-header {
 
 @media (max-width: 420px) {
   .ubuzima-native-balance-grid {
-    grid-auto-columns: minmax(132px, 42vw);
+    grid-auto-columns: calc((100% - 8px) / 2);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ubuzima-native-device-item.is-action {
     transition: none !important;
+  }
+}
+
+/* Mobile analytics sheet */
+@media (max-width: 860px) {
+  .ubuzima-native-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    align-items: end;
+    pointer-events: none;
+  }
+
+  .ubuzima-native-sheet__backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+    background: rgba(16, 33, 27, 0.42);
+    pointer-events: auto;
+  }
+
+  .ubuzima-native-sheet__panel {
+    position: relative;
+    z-index: 1;
+    max-height: min(76vh, 640px);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    border-radius: 8px 8px 0 0;
+    background: #f8fbfa;
+    box-shadow: 0 -22px 54px rgba(15, 23, 42, 0.24);
+    padding:
+      12px
+      max(13px, env(safe-area-inset-right))
+      calc(14px + env(safe-area-inset-bottom))
+      max(13px, env(safe-area-inset-left));
+    pointer-events: auto;
+    animation: ubuzimaNativeSheetUp 180ms ease-out both;
+  }
+
+  .ubuzima-native-sheet__panel header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+  }
+
+  .ubuzima-native-sheet__panel header div {
+    min-width: 0;
+  }
+
+  .ubuzima-native-sheet__panel header span {
+    display: block;
+    color: #718077;
+    font-size: 0.61rem;
+    font-weight: 950;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .ubuzima-native-sheet__panel header h2 {
+    margin: 2px 0 0;
+    color: #10211b;
+    font-size: 0.98rem;
+    line-height: 1.1;
+  }
+
+  .ubuzima-native-sheet__panel header button {
+    flex: 0 0 auto;
+    min-height: 36px;
+    border: 1px solid rgba(75, 83, 32, 0.18);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #243016;
+    padding: 0 12px;
+    font-size: 0.72rem;
+    font-weight: 950;
+  }
+
+  .ubuzima-native-sheet__grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow-y: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ubuzima-native-sheet__grid .ubuzima-native-balance-card {
+    min-height: 98px;
+  }
+}
+
+@keyframes ubuzimaNativeSheetUp {
+  from {
+    transform: translateY(18px);
+    opacity: 0.72;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ubuzima-native-sheet__panel {
+    animation: none !important;
   }
 }

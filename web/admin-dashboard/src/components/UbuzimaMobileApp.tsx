@@ -278,6 +278,20 @@ function AppIcon({ name }: { name: string }) {
   }
 }
 
+function BusinessMetricCard({ metric }: { metric: UbuzimaMobileAppMetric }) {
+  return (
+    <article
+      key={metric.key}
+      className={`ubuzima-native-balance-card ${toneClass(metric.tone)}`}
+    >
+      <AppIcon name={metricIconName(metric.key)} />
+      <span>{metric.label}</span>
+      <strong className={valueFitClass(metric.value)}>{metric.value}</strong>
+      <small>{metric.helper}</small>
+    </article>
+  );
+}
+
 function metricIconName(key: string) {
   if (key.includes('revenue') || key.includes('sales')) return 'FN';
   if (key.includes('stock') || key.includes('inventory')) return 'ST';
@@ -305,17 +319,22 @@ function valueFitClass(value: string | undefined) {
 function AppSection({
   eyebrow,
   title,
+  action,
   children,
 }: {
   eyebrow: string;
   title: string;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className="ubuzima-native-section">
       <div className="ubuzima-native-section__heading">
-        <span>{eyebrow}</span>
-        <h2>{title}</h2>
+        <div className="ubuzima-native-section__title">
+          <span>{eyebrow}</span>
+          <h2>{title}</h2>
+        </div>
+        {action ? <div className="ubuzima-native-section__action">{action}</div> : null}
       </div>
       {children}
     </section>
@@ -334,7 +353,6 @@ function ActionGrid({
       <div className="ubuzima-native-empty" role="status">
         <AppIcon name="LOCK" />
         <strong>No actions available</strong>
-        <span>Access depends on your staff role.</span>
       </div>
     );
   }
@@ -350,7 +368,6 @@ function ActionGrid({
         >
           <AppIcon name={action.icon} />
           <strong>{action.label}</strong>
-          <small>{action.detail}</small>
         </button>
       ))}
     </div>
@@ -388,11 +405,12 @@ export function UbuzimaMobileApp({
   onSignOut,
 }: UbuzimaMobileAppProps) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [isMetricSheetOpen, setIsMetricSheetOpen] = useState(false);
   const activeNavScreen =
     navigationItems.find((item) => item.screen === activeScreen)?.screen ?? '';
   const heroAction = primaryActions[0];
   const primaryMetric = metrics[0];
-  const secondaryMetrics = metrics.slice(1, 4);
+  const businessPositionMetrics = metrics.slice(1);
   const paymentActions = salesActions.slice(0, 3);
   const trendBars = [42, 58, 52, 71, 63, 84, 76];
   const canInstallApp = installAvailable && !isStandalone;
@@ -412,6 +430,11 @@ export function UbuzimaMobileApp({
       ...current,
       [groupKey]: !(current[groupKey] ?? fallbackOpen),
     }));
+  }
+
+  function changeScreen(screen: UbuzimaMobileAppScreen) {
+    setIsMetricSheetOpen(false);
+    onScreenChange(screen);
   }
 
   function renderBusinessScreen() {
@@ -474,59 +497,38 @@ export function UbuzimaMobileApp({
             <AppIcon name="HM" />
             <span>
               <strong>{isInstalling ? 'Opening install' : 'Add to phone'}</strong>
-              <small>Standalone access from the phone home screen</small>
             </span>
           </button>
         )}
 
         <AppSection eyebrow={workbench.eyebrow} title={workbench.title}>
-          <div className="ubuzima-native-workbench-card">
-            <div>
-              <span>{workbench.status}</span>
-              <p>{workbench.summary}</p>
-            </div>
-          </div>
           <ActionGrid actions={workbench.actions} compact />
         </AppSection>
 
-        <AppSection eyebrow="Performance" title="Business position">
-          <div className="ubuzima-native-balance-grid">
-            {secondaryMetrics.map((metric) => (
-              <article
-                key={metric.key}
-                className={`ubuzima-native-balance-card ${toneClass(metric.tone)}`}
+        <AppSection
+          eyebrow="Performance"
+          title="Business position"
+          action={
+            businessPositionMetrics.length > 2 ? (
+              <button
+                type="button"
+                onClick={() => setIsMetricSheetOpen(true)}
+                aria-haspopup="dialog"
               >
-                <AppIcon name={metricIconName(metric.key)} />
-                <span>{metric.label}</span>
-                <strong className={valueFitClass(metric.value)}>{metric.value}</strong>
-                <small>{metric.helper}</small>
-              </article>
+                More
+              </button>
+            ) : undefined
+          }
+        >
+          <div className="ubuzima-native-balance-grid" aria-label="Business position metrics">
+            {businessPositionMetrics.map((metric) => (
+              <BusinessMetricCard key={metric.key} metric={metric} />
             ))}
           </div>
         </AppSection>
 
         <AppSection eyebrow="Services" title="Quick access">
           <ActionGrid actions={primaryActions} />
-        </AppSection>
-
-        <AppSection eyebrow="Focus" title="Today">
-          <div className="ubuzima-native-task-list">
-            <button type="button" onClick={() => onScreenChange('sales')}>
-              <AppIcon name="POS" />
-              <strong>POS and Sales</strong>
-              <small>Counter, receipts, payments, and daily close</small>
-            </button>
-            <button type="button" onClick={() => onScreenChange('inventory')}>
-              <AppIcon name="ST" />
-              <strong>Inventory control</strong>
-              <small>Low stock, expiry, batches, shelf, and product master</small>
-            </button>
-            <button type="button" onClick={() => onScreenChange('procurement')}>
-              <AppIcon name="PO" />
-              <strong>Procurement</strong>
-              <small>Suppliers, purchase orders, receiving, and follow-up</small>
-            </button>
-          </div>
         </AppSection>
       </>
     );
@@ -587,7 +589,6 @@ export function UbuzimaMobileApp({
           <div>
             <span>Inventory</span>
             <strong>Stock position</strong>
-            <small>Product master, shelf, batches, and expiry controls</small>
           </div>
           <button type="button" onClick={stockActions[0]?.onPress}>
             Open
@@ -618,13 +619,11 @@ export function UbuzimaMobileApp({
           <div>
             <span>Procurement</span>
             <h1>Orders</h1>
-            <p>Suppliers, purchase orders, receiving</p>
           </div>
           <div className="ubuzima-native-sales-card__figures">
             <span>Desk</span>
             <AppIcon name="PO" />
             <strong>Orders</strong>
-            <small>{currentWorkspace}</small>
           </div>
         </section>
 
@@ -642,7 +641,6 @@ export function UbuzimaMobileApp({
           <div>
             <span>General Stock</span>
             <strong>Operational items</strong>
-            <small>Categories, master items, stock, receiving, and usage</small>
           </div>
           <button type="button" onClick={generalStockActions[0]?.onPress}>
             Open
@@ -786,7 +784,7 @@ export function UbuzimaMobileApp({
         <button
           type="button"
           className="ubuzima-native-brand"
-          onClick={() => onScreenChange('business')}
+          onClick={() => changeScreen('business')}
         >
           <img src={brandLogoSrc} alt="" />
           <span>
@@ -808,7 +806,7 @@ export function UbuzimaMobileApp({
           <button
             type="button"
             className="ubuzima-native-avatar-button"
-            onClick={() => onScreenChange('more')}
+            onClick={() => changeScreen('more')}
             aria-label="Open profile and menu"
           >
             {profileAvatarUrl ? (
@@ -822,13 +820,45 @@ export function UbuzimaMobileApp({
 
       <main key={activeScreen} className="ubuzima-native-content">{renderScreen()}</main>
 
+      {isMetricSheetOpen && activeScreen === 'business' && (
+        <div className="ubuzima-native-sheet" role="presentation">
+          <button
+            type="button"
+            className="ubuzima-native-sheet__backdrop"
+            onClick={() => setIsMetricSheetOpen(false)}
+            aria-label="Close business position"
+          />
+          <section
+            className="ubuzima-native-sheet__panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ubuzima-native-business-position-title"
+          >
+            <header>
+              <div>
+                <span>Performance</span>
+                <h2 id="ubuzima-native-business-position-title">Business position</h2>
+              </div>
+              <button type="button" onClick={() => setIsMetricSheetOpen(false)}>
+                Close
+              </button>
+            </header>
+            <div className="ubuzima-native-sheet__grid">
+              {businessPositionMetrics.map((metric) => (
+                <BusinessMetricCard key={metric.key} metric={metric} />
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+
       <nav className="ubuzima-native-tabbar" aria-label="Mobile app navigation">
         {navigationItems.map((item) => (
           <button
             key={item.key}
             type="button"
             className={activeNavScreen === item.screen ? 'active' : ''}
-            onClick={() => onScreenChange(item.screen)}
+            onClick={() => changeScreen(item.screen)}
           >
             <AppIcon name={item.icon} />
             <small>{item.label}</small>
