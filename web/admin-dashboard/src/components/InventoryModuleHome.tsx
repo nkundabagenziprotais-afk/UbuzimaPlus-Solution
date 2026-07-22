@@ -275,6 +275,26 @@ function numericValue(value: unknown): number | null {
   return null;
 }
 
+function inventoryAnalyticsTodayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function inventoryAnalyticsMonthStartIso(): string {
+  const today = new Date();
+
+  return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+}
+
+function inventoryAnalyticsDateValue(value: string): number {
+  if (!value) {
+    return Number.NaN;
+  }
+
+  const parsed = new Date(value).getTime();
+
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
 function formatCompactNumber(value: number): string {
   if (!Number.isFinite(value) || value <= 0) {
     return '0';
@@ -536,10 +556,12 @@ export function InventoryModuleHome({
   const [analyticsCategoryFilter, setAnalyticsCategoryFilter] = useState('all');
   const [analyticsProductFilter, setAnalyticsProductFilter] = useState('all');
   const [analyticsLocationFilter, setAnalyticsLocationFilter] = useState('all');
+  const [analyticsDateFromFilter, setAnalyticsDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
+  const [analyticsDateToFilter, setAnalyticsDateToFilter] = useState(inventoryAnalyticsTodayIso());
   const [analyticsExpiryFromFilter, setAnalyticsExpiryFromFilter] = useState('');
   const [analyticsExpiryToFilter, setAnalyticsExpiryToFilter] = useState('');
-  const [analyticsCreatedFromFilter, setAnalyticsCreatedFromFilter] = useState('');
-  const [analyticsCreatedToFilter, setAnalyticsCreatedToFilter] = useState('');
+  const [analyticsCreatedFromFilter, setAnalyticsCreatedFromFilter] = useState(inventoryAnalyticsMonthStartIso());
+  const [analyticsCreatedToFilter, setAnalyticsCreatedToFilter] = useState(inventoryAnalyticsTodayIso());
 
 
   const [analyticsLoading, setAnalyticsLoading] =
@@ -1134,9 +1156,18 @@ export function InventoryModuleHome({
               const createdText = createdFor(batch);
               const createdTime = createdText ? new Date(createdText).getTime() : Number.NaN;
               const createdFromMatches = !analyticsCreatedFromFilter ||
-                (Number.isFinite(createdTime) && createdTime >= new Date(analyticsCreatedFromFilter).getTime());
+                (Number.isFinite(createdTime) && createdTime >= inventoryAnalyticsDateValue(analyticsCreatedFromFilter));
               const createdToMatches = !analyticsCreatedToFilter ||
-                (Number.isFinite(createdTime) && createdTime <= new Date(analyticsCreatedToFilter).getTime());
+                (Number.isFinite(createdTime) && createdTime <= inventoryAnalyticsDateValue(analyticsCreatedToFilter));
+
+              const dateText = createdText || expiryText || inventoryText(batch, ['received_at'], '');
+              const dateTime = inventoryAnalyticsDateValue(dateText);
+              const dateFromMatches = !analyticsDateFromFilter ||
+                !Number.isFinite(dateTime) ||
+                dateTime >= inventoryAnalyticsDateValue(analyticsDateFromFilter);
+              const dateToMatches = !analyticsDateToFilter ||
+                !Number.isFinite(dateTime) ||
+                dateTime <= inventoryAnalyticsDateValue(analyticsDateToFilter);
 
               return categoryMatches &&
                 productMatches &&
@@ -1144,19 +1175,25 @@ export function InventoryModuleHome({
                 expiryFromMatches &&
                 expiryToMatches &&
                 createdFromMatches &&
-                createdToMatches;
+                createdToMatches &&
+                dateFromMatches &&
+                dateToMatches;
             });
+
+            const analyticsMetricBatchRows = filteredBatchRows.length || batchRows.length === 0
+              ? filteredBatchRows
+              : batchRows;
 
             const totalValue = Math.max(
               inventoryDeepNumber(valuation, ['total_inventory_value', 'inventory_value', 'total_stock_value', 'total_cost_value', 'stock_batch_value']),
               inventoryDeepNumber(summary, ['total_inventory_value', 'inventory_value', 'total_stock_value', 'stock_batch_value']),
-              filteredBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0),
+              analyticsMetricBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0),
             );
 
             const stockOnHandCount = Math.max(
               inventoryDeepNumber(summary, ['total_quantity_on_hand', 'quantity_on_hand', 'total_quantity', 'stock_batches_count', 'stock_batches']),
               inventoryDeepNumber(valuation, ['total_quantity_on_hand', 'quantity_on_hand', 'total_quantity', 'stock_batches_count', 'stock_batches']),
-              filteredBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0),
+              analyticsMetricBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0),
             );
 
             const reorderLevelFor = (batch: UnknownRecord): number => {
@@ -1178,7 +1215,7 @@ export function InventoryModuleHome({
               .filter((row) => row.reorderLevel > 0 && row.quantity <= row.reorderLevel)
               .sort((left, right) => right.value - left.value);
 
-            const nearExpirySourceRows = (nearExpiryRows.length ? nearExpiryRows : filteredBatchRows)
+            const nearExpirySourceRows = (nearExpiryRows.length ? nearExpiryRows : analyticsMetricBatchRows)
               .filter((batch) => expiryFor(batch) !== '')
               .map((batch) => ({
                 batch,
@@ -1189,7 +1226,7 @@ export function InventoryModuleHome({
                 value: inventoryBatchValue(batch),
               }));
 
-            const expiredRows = filteredBatchRows
+            const expiredRows = analyticsMetricBatchRows
               .filter((batch) => {
                 const expiryText = expiryFor(batch);
                 const expiryTime = expiryText ? new Date(expiryText).getTime() : Number.NaN;
@@ -1284,7 +1321,7 @@ export function InventoryModuleHome({
 
             const categoryTotals = new Map<string, number>();
 
-            filteredBatchRows.forEach((batch) => {
+            analyticsMetricBatchRows.forEach((batch) => {
               const category = categoryFor(batch);
               categoryTotals.set(category, (categoryTotals.get(category) ?? 0) + inventoryBatchValue(batch));
             });
@@ -1318,6 +1355,16 @@ export function InventoryModuleHome({
                 )}
 
                 <div className="inventory-analytics-request-filters">
+                  <label>
+                    <span>Date From</span>
+                    <input type="date" value={analyticsDateFromFilter} onChange={(event) => setAnalyticsDateFromFilter(event.target.value)} />
+                  </label>
+
+                  <label>
+                    <span>Date To</span>
+                    <input type="date" value={analyticsDateToFilter} onChange={(event) => setAnalyticsDateToFilter(event.target.value)} />
+                  </label>
+
                   <label>
                     <span>Category</span>
                     <select value={analyticsCategoryFilter} onChange={(event) => setAnalyticsCategoryFilter(event.target.value)}>
@@ -1410,7 +1457,7 @@ export function InventoryModuleHome({
                         <tbody>
                           {trendValues.map((value, index) => (
                             <tr key={`trend-row-${index}`}>
-                              <td>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</td>
+                              <td>{index === 0 ? analyticsDateFromFilter : index === trendValues.length - 1 ? analyticsDateToFilter : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</td>
                               <td>{formatCurrency(value)}</td>
                             </tr>
                           ))}

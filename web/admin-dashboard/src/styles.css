@@ -44972,3 +44972,33 @@ thead
 .dashboard-header .dashboard-header-center-actions {
   align-self: flex-end !important;
 }
+
+/* Inventory Analytics: card loading/default date refinements */
+.inventory-analytics-request-kpis article strong {
+  min-height: 1.25rem;
+}
+
+.inventory-analytics-request-filters {
+  grid-template-columns: repeat(9, minmax(0, 1fr)) auto !important;
+}
+
+.inventory-analytics-request-filters input[type="date"] {
+  min-width: 0;
+}
+
+.inventory-analytics-request-card,
+.inventory-analytics-request-kpis article {
+  min-width: 0;
+}
+
+@media (max-width: 1600px) {
+  .inventory-analytics-request-filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .inventory-analytics-request-filters {
+    grid-template-columns: 1fr !important;
+  }
+}
