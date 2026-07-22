@@ -948,6 +948,15 @@ export async function getPharmaProducts(
   if (options?.perPage) params.set('per_page', String(options.perPage));
   if (options?.status) params.set('status', options.status);
 
+  // POS_PRODUCT_SEARCH_LOAD_FULL_MASTER_V1
+  if (!params.has('per_page')) {
+    params.set('per_page', '5000');
+  }
+
+  if (!params.has('limit')) {
+    params.set('limit', '5000');
+  }
+
   const query = params.toString();
 
   return getJsonWithTenant<PharmaProductsResponse>(

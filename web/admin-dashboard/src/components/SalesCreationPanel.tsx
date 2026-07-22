@@ -98,6 +98,14 @@ function blankPrescriptionForm(customerId = ''): PrescriptionForm {
   };
 }
 
+function normalizePosProductSearchText(value: unknown): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '');
+}
+
 function blankSaleLine(productId = '', stockBatchId = '', unitPrice = ''): SaleLineForm {
   return {
     product_id: productId,
@@ -604,7 +612,7 @@ export function SalesCreationPanel({
             })}
 
             {visibleProducts.length === 0 && (
-              <p className="muted">No matching products. Try another product name, SKU, barcode, or category.</p>
+              <p className="muted">No matching products. Try product name, generic name, SKU, barcode, or confirm the product exists in Product Inventory with active stock.</p>
             )}
           </div>
         </section>
