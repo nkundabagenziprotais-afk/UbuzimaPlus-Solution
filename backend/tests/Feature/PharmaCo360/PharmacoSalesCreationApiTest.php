@@ -220,8 +220,11 @@ class PharmacoSalesCreationApiTest extends TestCase
 
         $response->assertCreated();
 
-        $saleId = $response->json('data.id');
-        $sale = PharmacoSale::findOrFail($saleId);
+        $sale = PharmacoSale::where('tenant_id', $tenant->id)
+            ->where('branch_id', $branch->id)
+            ->whereHas('items', fn ($query) => $query->where('product_id', $product->id))
+            ->latest('id')
+            ->firstOrFail();
 
         $this->assertTrue((bool) ($sale->metadata['rx_prescription_warning_required'] ?? false));
         $this->assertTrue((bool) ($sale->metadata['rx_prescription_warning_acknowledged'] ?? false));
