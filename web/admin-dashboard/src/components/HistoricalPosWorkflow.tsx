@@ -683,7 +683,7 @@ export function HistoricalPosWorkflow({
       ]
         .filter(Boolean)
         .join(" ")}
-      aria-label="Historical POS workflow" data-historical-pos-journey="guided-v1"
+      aria-label="Historical POS workflow" data-historical-pos-journey="guided-v1" data-hide-guidance="true"
     >
       {isHistoricalSession ? (
         <div

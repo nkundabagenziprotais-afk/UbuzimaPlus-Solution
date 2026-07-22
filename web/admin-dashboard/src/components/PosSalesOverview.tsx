@@ -994,9 +994,9 @@ export function PosSalesOverview({
           </article>
         </div>
 
-        <div className="pos-analytics-dashboard-grid top">
+        <div className="pos-analytics-dashboard-grid pos-analytics-dashboard-grid-all">
           <article className="pos-analytics-card sales-trend">
-            <header><strong>1. Sales Trend</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Sales Trend</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-bar-chart">
               {analytics.daily.map((day) => (
                 <i
@@ -1005,6 +1005,12 @@ export function PosSalesOverview({
                     height: `${Math.max((Math.max(day.sales, day.collected) / maxDailyValue) * 100, 4)}%`,
                   }}
                 >
+                  <strong>
+                    {Number(day.sales).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </strong>
                   <small>{day.label}</small>
                 </i>
               ))}
@@ -1012,7 +1018,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card payment-mix">
-            <header><strong>2. Payment Mix</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Payment Mix</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-payment-layout">
               <div className="pos-analytics-donut">
                 <span>Total</span>
@@ -1040,7 +1046,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card cashier-performance">
-            <header><strong>3. Cashier Performance</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Cashier Performance</strong>{posAnalyticsWeekSelector}</header>
             <table>
               <thead>
                 <tr><th>Cashier</th><th>Net Sales</th><th>Transactions</th><th>Avg Trans.</th><th>Variance</th></tr>
@@ -1062,11 +1068,9 @@ export function PosSalesOverview({
               </tbody>
             </table>
           </article>
-        </div>
 
-        <div className="pos-analytics-dashboard-grid middle">
           <article className="pos-analytics-card session-analytics">
-            <header><strong>4. POS Session Analytics</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>POS Session Analytics</strong>{posAnalyticsWeekSelector}</header>
             <table>
               <thead>
                 <tr><th>Session</th><th>Type</th><th>Business Date</th><th>Opened By</th><th>Expected Cash</th><th>Count Cash</th><th>Variance</th><th>Status</th></tr>
@@ -1089,7 +1093,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card top-products">
-            <header><strong>5. Top Products by Revenue</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Top Products by Revenue</strong>{posAnalyticsWeekSelector}</header>
             <table>
               <thead>
                 <tr><th>#</th><th>Product</th><th>Quantity</th><th>Revenue</th><th>% of Sales</th></tr>
@@ -1109,7 +1113,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card returns-exceptions">
-            <header><strong>6. Returns & Exceptions</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Returns & Exceptions</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-list">
               <p><span>Sales Returns</span><strong>{money(analytics.outstanding * 0.08)}</strong></p>
               <p><span>Reversals</span><strong>{money(analytics.outstanding * 0.03)}</strong></p>
@@ -1118,11 +1122,9 @@ export function PosSalesOverview({
               <p><span>Session Variances</span><strong>{money(analytics.cashCollected * 0.003)}</strong></p>
             </div>
           </article>
-        </div>
 
-        <div className="pos-analytics-dashboard-grid bottom">
           <article className="pos-analytics-card customer-credit">
-            <header><strong>7. Customer & Credit Overview</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Customer & Credit Overview</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-list">
               <p><span>Total Customer Exposure</span><strong>{money(analytics.outstanding)}</strong></p>
               <p><span>Collection Efficiency</span><strong>{percentage(analytics.collectionRate)}</strong></p>
@@ -1131,7 +1133,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card insurance-summary">
-            <header><strong>8. Insurance POS Summary</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Insurance POS Summary</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-mini-kpis">
               <article><span>Insurance Sales</span><strong>{money(analytics.insuranceSales)}</strong></article>
               <article><span>Customer Contribution</span><strong>{money(analytics.insuranceSales * 0.23)}</strong></article>
@@ -1141,7 +1143,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card ai-insight">
-            <header><strong>AI / Business Insight</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Business Insights</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-insights">
               {insights.map((insight) => (
                 <p key={insight}>{insight}</p>
@@ -1150,7 +1152,7 @@ export function PosSalesOverview({
           </article>
 
           <article className="pos-analytics-card recommended-actions">
-            <header><strong>10. Recommended Actions</strong>{posAnalyticsWeekSelector}</header>
+            <header><strong>Recommended Actions</strong>{posAnalyticsWeekSelector}</header>
             <div className="pos-analytics-actions">
               {recommendations.map((recommendation) => (
                 <button type="button" key={recommendation}>

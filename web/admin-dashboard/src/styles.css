@@ -47880,3 +47880,110 @@ html.ubuzima-standalone-webapp .admin-header {
     display: grid;
   }
 }
+
+/* POS_ANALYTICS_UI_REFINEMENT_V5 */
+
+/* Remove visible Historical POS guidance text. Keep the simplified journey behavior. */
+.historical-pos-workflow[data-hide-guidance='true']::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Make all analytics cards flow continuously in 2 columns without empty grid holes. */
+.pos-analytics-dashboard-grid-all {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.75rem !important;
+  align-items: start !important;
+}
+
+.pos-analytics-dashboard-grid.middle,
+.pos-analytics-dashboard-grid.bottom {
+  display: contents !important;
+}
+
+/* Standardize POS analytics card font sizing to match Cashier Performance. */
+.pos-analytics-card,
+.pos-analytics-card table,
+.pos-analytics-card th,
+.pos-analytics-card td,
+.pos-analytics-card p,
+.pos-analytics-card span,
+.pos-analytics-card strong,
+.pos-analytics-card small,
+.pos-analytics-list p,
+.pos-analytics-insights p,
+.pos-analytics-actions button {
+  font-size: 0.72rem !important;
+  line-height: 1.25 !important;
+}
+
+.pos-analytics-card header strong {
+  font-size: 0.86rem !important;
+  line-height: 1.2 !important;
+}
+
+/* Sales Trend: horizontal scroll, data labels at the top, days on X-axis. */
+.pos-analytics-card.sales-trend {
+  overflow: hidden !important;
+}
+
+.pos-analytics-bar-chart {
+  min-height: 15rem !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  align-items: end !important;
+  gap: 0.55rem !important;
+  padding: 2.1rem 1rem 2rem !important;
+  scroll-snap-type: x proximity;
+}
+
+.pos-analytics-bar-chart i {
+  flex: 0 0 2.1rem !important;
+  min-width: 2.1rem !important;
+  max-width: 2.1rem !important;
+  scroll-snap-align: start;
+}
+
+.pos-analytics-bar-chart i strong {
+  position: absolute;
+  left: 50%;
+  top: -1.55rem;
+  transform: translateX(-50%);
+  min-width: 3.4rem;
+  padding: 0.12rem 0.2rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  font-size: 0.62rem !important;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.pos-analytics-bar-chart i small {
+  bottom: -1.35rem !important;
+  font-size: 0.62rem !important;
+  font-weight: 800;
+}
+
+/* Business insights should carry measurable business context. */
+.pos-analytics-card.ai-insight .pos-analytics-insights p {
+  display: grid !important;
+  gap: 0.18rem;
+  justify-content: stretch !important;
+  text-align: left;
+}
+
+/* Keep 2 columns on desktop/tablet and 1 column on phone. */
+@media (max-width: 760px) {
+  .pos-analytics-dashboard-grid-all {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-analytics-bar-chart i {
+    flex-basis: 2.4rem !important;
+    min-width: 2.4rem !important;
+  }
+}
