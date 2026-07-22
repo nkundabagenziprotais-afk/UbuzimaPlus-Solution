@@ -1255,6 +1255,7 @@ export function BusinessOverviewReviewPage({
   };
 
   const kpiCards = [
+    { label: 'Gross Sales', value: kpiValue(displayLiveData, 'Gross Sales'), icon: 'Σ', tone: 'emerald' },
     { label: 'Gross Revenue', value: kpiValue(displayLiveData, 'Gross Revenue'), icon: '↗', tone: 'amber' },
     { label: 'Net Revenue', value: kpiValue(displayLiveData, 'Net Revenue'), icon: '⌁', tone: 'blue' },
     { label: 'Collections', value: kpiValue(displayLiveData, 'Collections'), icon: '☷', tone: 'green' },

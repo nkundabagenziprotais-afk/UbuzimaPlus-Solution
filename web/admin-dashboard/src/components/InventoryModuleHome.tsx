@@ -422,21 +422,63 @@ function inventoryNestedRecord(record: UnknownRecord, key: string): UnknownRecor
 }
 
 function inventoryBatchQuantity(batch: UnknownRecord): number {
-  return inventoryNumber(batch, [
-    'available_quantity',
-    'quantity_on_hand',
-    'on_hand',
-    'quantity',
-  ]);
+  return Math.max(
+    inventoryNumber(batch, [
+      'quantity_on_hand',
+      'quantityOnHand',
+      'on_hand',
+      'onHand',
+      'quantity',
+      'qty',
+      'stock_quantity',
+      'available_quantity',
+    ]),
+    0,
+  );
 }
+
 
 function inventoryBatchValue(batch: UnknownRecord): number {
-  const quantity = inventoryBatchQuantity(batch);
-  const unitCost = inventoryNumber(batch, ['unit_cost', 'cost_price', 'purchase_price']);
-  const sellingPrice = inventoryNumber(batch, ['selling_price', 'retail_price']);
+  const directValue = inventoryNumber(batch, [
+    'stock_value',
+    'inventory_value',
+    'total_value',
+    'value',
+    'line_total',
+    'cost_value',
+  ]);
 
-  return quantity * (unitCost || sellingPrice);
+  if (directValue > 0) {
+    return directValue;
+  }
+
+  const quantity = inventoryBatchQuantity(batch);
+  const unitCost = inventoryNumber(batch, [
+    'unit_cost',
+    'unitCost',
+    'cost',
+    'average_unit_cost',
+    'last_unit_cost',
+  ]);
+
+  if (quantity > 0 && unitCost > 0) {
+    return quantity * unitCost;
+  }
+
+  const sellingPrice = inventoryNumber(batch, [
+    'selling_price',
+    'sellingPrice',
+    'unit_price',
+    'price',
+  ]);
+
+  if (quantity > 0 && sellingPrice > 0) {
+    return quantity * (sellingPrice / 1.3);
+  }
+
+  return 0;
 }
+
 
 function inventoryBatchProductName(batch: UnknownRecord): string {
   const product = inventoryNestedRecord(batch, 'product');
@@ -1436,7 +1478,7 @@ export function InventoryModuleHome({
 
                   <button
                     type="button"
-                    onClick={() => undefined}
+                    onClick={() => setAnalyticsRefreshSequence((value) => value + 1)}
                   >
                     Apply Filters
                   </button>
@@ -1471,34 +1513,31 @@ export function InventoryModuleHome({
                       ))}
                     </div>
 
-                    <div className="inventory-analytics-trend-chart-pair">
+                    <div className="inventory-analytics-stacked-bar-trends">
                       {[
                         { label: 'Total Inventory Trend', values: trendValues },
                         { label: 'Near Expiry Trend', values: nearExpiryTrendValues },
                       ].map((chart) => {
                         const maxChartValue = Math.max(...chart.values, 1);
-                        const points = chart.values
-                          .map((value, index) => {
-                            const x = 12 + index * (216 / Math.max(chart.values.length - 1, 1));
-                            const y = 88 - (Math.max(value, 0) / maxChartValue) * 68;
-
-                            return `${x},${y}`;
-                          })
-                          .join(' ');
 
                         return (
-                          <div key={chart.label} className="inventory-analytics-mini-line-chart">
+                          <div key={chart.label} className="inventory-analytics-bar-trend-card">
                             <strong>{chart.label}</strong>
-                            <svg viewBox="0 0 240 100" role="img" aria-label={chart.label}>
-                              <polyline points={points} />
+                            <div className="inventory-analytics-bar-trend-bars">
                               {chart.values.map((value, index) => {
-                                const x = 12 + index * (216 / Math.max(chart.values.length - 1, 1));
-                                const y = 88 - (Math.max(value, 0) / maxChartValue) * 68;
+                                const height = value > 0
+                                  ? Math.max((value / maxChartValue) * 100, 7)
+                                  : 2;
 
-                                return <circle key={`${chart.label}-${index}`} cx={x} cy={y} r="3" />;
+                                return (
+                                  <div key={`${chart.label}-${index}`}>
+                                    <span>{value > 0 ? formatCurrency(value) : '0'}</span>
+                                    <i style={{ height: `${height}%` }} />
+                                    <small>{index === 0 ? analyticsDateFromFilter : index === chart.values.length - 1 ? analyticsDateToFilter : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</small>
+                                  </div>
+                                );
                               })}
-                            </svg>
-                            <span>{formatCurrency(chart.values[chart.values.length - 1] ?? 0)}</span>
+                            </div>
                           </div>
                         );
                       })}
