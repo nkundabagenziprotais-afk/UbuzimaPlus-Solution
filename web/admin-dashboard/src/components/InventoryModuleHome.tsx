@@ -743,6 +743,18 @@ export function InventoryModuleHome({
   const [analyticsAppliedDateFromFilter, setAnalyticsAppliedDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
   const [analyticsAppliedDateToFilter, setAnalyticsAppliedDateToFilter] = useState(inventoryAnalyticsTodayIso());
   const [analyticsTrendWeekSelection, setAnalyticsTrendWeekSelection] = useState('all');
+  const [analyticsVisibleKpiFallback, setAnalyticsVisibleKpiFallback] = useState({
+    totalInventoryValue: 0,
+    stockOnHandCount: 0,
+    receivedValue: 0,
+    receivedCount: 0,
+    lowStockValue: 0,
+    lowStockCount: 0,
+    nearExpiryValue: 0,
+    nearExpiryCount: 0,
+    expiredValue: 0,
+    expiredCount: 0,
+  });
   const applyInventoryAnalyticsFilters = () => {
     setAnalyticsAppliedDateFromFilter(analyticsDateFromFilter || inventoryAnalyticsMonthStartIso());
     setAnalyticsAppliedDateToFilter(analyticsDateToFilter || inventoryAnalyticsTodayIso());
@@ -763,6 +775,89 @@ export function InventoryModuleHome({
 
   const [analyticsLoading, setAnalyticsLoading] =
     useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      function parseInventoryVisibleNumber(value: string | null | undefined): number {
+        if (!value) {
+          return 0;
+        }
+
+        const cleaned = value.replace(/[^0-9.-]/g, '');
+        const parsed = Number(cleaned);
+
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+      }
+
+      const cards = Array.from(document.querySelectorAll<HTMLElement>('.inventory-analytics-request-card'));
+      const cardByTitle = (title: string): HTMLElement | null =>
+        cards.find((card) => card.querySelector('h3')?.textContent?.trim().includes(title)) ?? null;
+
+      const categoryCard = cardByTitle('Inventory Value by Category');
+      const categoryNumbers = Array.from((categoryCard?.textContent ?? '').matchAll(/\d{1,3}(?:,\d{3})+(?:\.\d+)?/g))
+        .map((match) => parseInventoryVisibleNumber(match[0]))
+        .filter((value) => value > 0);
+
+      const categoryTotal = categoryNumbers.reduce((sum, value) => sum + value, 0);
+
+      const sumLastColumn = (title: string): { count: number; value: number } => {
+        const card = cardByTitle(title);
+
+        if (!card) {
+          return { count: 0, value: 0 };
+        }
+
+        const rows = Array.from(card.querySelectorAll<HTMLTableRowElement>('tbody tr'));
+
+        if (rows.length === 0) {
+          return { count: 0, value: 0 };
+        }
+
+        const value = rows.reduce((sum, row) => {
+          const cells = Array.from(row.querySelectorAll<HTMLTableCellElement>('td'));
+          const lastCell = cells[cells.length - 1];
+
+          return sum + parseInventoryVisibleNumber(lastCell?.textContent);
+        }, 0);
+
+        return { count: rows.length, value };
+      };
+
+      const lowStock = sumLastColumn('Low Stock Watch List');
+      const nearExpiry = sumLastColumn('Near Expiry Review');
+      const expired = sumLastColumn('Expired Items');
+
+      const nextFallback = {
+        totalInventoryValue: categoryTotal,
+        stockOnHandCount: categoryTotal > 0 ? 1 : 0,
+        receivedValue: categoryTotal,
+        receivedCount: categoryTotal > 0 ? Math.max(categoryNumbers.length, 1) : 0,
+        lowStockValue: lowStock.value,
+        lowStockCount: lowStock.count,
+        nearExpiryValue: nearExpiry.value,
+        nearExpiryCount: nearExpiry.count,
+        expiredValue: expired.value,
+        expiredCount: expired.count,
+      };
+
+      setAnalyticsVisibleKpiFallback((current) => {
+        const unchanged = Object.entries(nextFallback).every(
+          ([key, value]) => current[key as keyof typeof current] === value,
+        );
+
+        return unchanged ? current : nextFallback;
+      });
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    analyticsLoading,
+    analyticsRefreshSequence,
+    analyticsAppliedDateFromFilter,
+    analyticsAppliedDateToFilter,
+    analyticsTrendWeekSelection,
+  ]);
+
 
   const [analyticsError, setAnalyticsError] =
     useState<string | null>(null);
@@ -1917,18 +2012,21 @@ export function InventoryModuleHome({
 
             const displayedTotalInventoryValue = Math.max(
               liveCategoryCardTotalValue,
+              analyticsVisibleKpiFallback.totalInventoryValue,
               dashboardTotalInventoryValue,
               totalValue,
             );
 
             const displayedStockOnHandCount = Math.max(
               dashboardStockOnHandCount,
+              analyticsVisibleKpiFallback.stockOnHandCount,
               stockOnHandCount,
               analyticsMetricBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0),
             );
 
             const displayedReceivedValue = Math.max(
               dashboardStockReceivedValue,
+              analyticsVisibleKpiFallback.receivedValue,
               stockReceivedValue,
               batchReceivedValue,
               displayedTotalInventoryValue,
@@ -1936,6 +2034,7 @@ export function InventoryModuleHome({
 
             const displayedReceivedCount = Math.max(
               dashboardStockReceivedCount,
+              analyticsVisibleKpiFallback.receivedCount,
               stockReceivedCount,
               receivedFallbackRows.length,
               analyticsMetricBatchRows.length,
@@ -1962,12 +2061,12 @@ export function InventoryModuleHome({
               { label: 'Stock Received Count', value: formatCompactNumber(displayedReceivedCount), target: 'purchase-orders' },
               { label: 'Stock Issued Value', value: formatCurrency(displayedIssuedValue), target: 'product-inventory' },
               { label: 'Stock Issued Count', value: formatCompactNumber(displayedIssuedCount), target: 'product-inventory' },
-              { label: 'Low Stock Value', value: formatCurrency(lowStockValue), target: 'low-stock' },
-              { label: 'Low Stock Count', value: formatCompactNumber(lowStockCount), target: 'low-stock' },
-              { label: 'Near Expiry Value', value: formatCurrency(nearExpiryValue), target: 'near-expiry' },
-              { label: 'Near Expiry Count', value: formatCompactNumber(nearExpiryCount), target: 'near-expiry' },
-              { label: 'Expired Value', value: formatCurrency(expiredValue), target: 'near-expiry' },
-              { label: 'Expired Count', value: formatCompactNumber(expiredCount), target: 'near-expiry' },
+              { label: 'Low Stock Value', value: formatCurrency(Math.max(lowStockValue, analyticsVisibleKpiFallback.lowStockValue)), target: 'low-stock' },
+              { label: 'Low Stock Count', value: formatCompactNumber(Math.max(lowStockCount, analyticsVisibleKpiFallback.lowStockCount)), target: 'low-stock' },
+              { label: 'Near Expiry Value', value: formatCurrency(Math.max(nearExpiryValue, analyticsVisibleKpiFallback.nearExpiryValue)), target: 'near-expiry' },
+              { label: 'Near Expiry Count', value: formatCompactNumber(Math.max(nearExpiryCount, analyticsVisibleKpiFallback.nearExpiryCount)), target: 'near-expiry' },
+              { label: 'Expired Value', value: formatCurrency(Math.max(expiredValue, analyticsVisibleKpiFallback.expiredValue)), target: 'near-expiry' },
+              { label: 'Expired Count', value: formatCompactNumber(Math.max(expiredCount, analyticsVisibleKpiFallback.expiredCount)), target: 'near-expiry' },
               { label: 'Turnover Value', value: formatCurrency(displayedIssuedValue), target: 'product-inventory' },
               { label: 'Turnover Count', value: formatCompactNumber(displayedIssuedCount), target: 'product-inventory' },
             ];
