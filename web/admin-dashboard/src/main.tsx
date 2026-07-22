@@ -236,7 +236,8 @@ function installUbuzimaRealMobileAppHomeV1(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-installUbuzimaRealMobileAppHomeV1();
+// Legacy DOM-injected mobile home remains disabled. The authenticated React
+// app owns the phone interface through UbuzimaMobileApp.
 
 
 
