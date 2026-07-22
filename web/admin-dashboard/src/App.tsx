@@ -107,6 +107,8 @@ import {
 } from './components/InsuranceManagementWorkspace';
 import {
   UbuzimaMobileApp,
+  type UbuzimaMobileDailyPosSummary,
+  type UbuzimaMobileDailyPosTransaction,
   type UbuzimaMobileAppAction,
   type UbuzimaMobileAppMenuGroup,
   type UbuzimaMobileAppMetric,
@@ -4141,6 +4143,10 @@ function App() {
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine,
   );
+  const [isMobileSyncing, setIsMobileSyncing] = useState(false);
+  const [mobileSyncStatus, setMobileSyncStatus] = useState<'idle' | 'syncing' | 'synced'>('idle');
+  const [mobileSyncTick, setMobileSyncTick] = useState(0);
+  const [, setSharedMetricsRevision] = useState(0);
 
   const profile = session?.profile;
   const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
@@ -4315,6 +4321,32 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const handleSharedMetricsChange = () => {
+      setSharedMetricsRevision((current) => current + 1);
+    };
+
+    window.addEventListener('ubuzima:shared-metrics-change', handleSharedMetricsChange);
+
+    return () => {
+      window.removeEventListener('ubuzima:shared-metrics-change', handleSharedMetricsChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!session?.token || !posSessionTenantSlug || !visibleSectionKeys.has('pos')) {
+      return;
+    }
+
+    void refreshMobilePosLiveData();
+  }, [
+    mobileSyncTick,
+    posSession?.id,
+    posSessionTenantSlug,
+    session?.token,
+    visibleSectionKeys,
+  ]);
+
+  useEffect(() => {
     const navigatorInfo = window.navigator as Navigator & {
       platform?: string;
     };
@@ -4466,6 +4498,7 @@ function App() {
     };
   }, [
     activeSection,
+    mobileSyncTick,
     posSessionTenantSlug,
     session?.token,
   ]);
@@ -5152,8 +5185,69 @@ function App() {
     }, 1800);
   }
 
+  async function refreshMobilePosLiveData(businessDateOverride?: string | null): Promise<void> {
+    if (!session?.token || !posSessionTenantSlug) {
+      return;
+    }
+
+    const posSessionBusinessDate =
+      (posSession as { business_date?: string | null } | null)?.business_date
+      ?? null;
+
+    const effectiveBusinessDate =
+      businessDateOverride
+      ?? posSessionBusinessDate
+      ?? new Date().toISOString().slice(0, 10);
+
+    try {
+      const [analyticsResponse, transactionsResponse] = await Promise.all([
+        getPharmaLiveBusinessAnalytics(session.token, posSessionTenantSlug, effectiveBusinessDate),
+        getPharmaRecentTransactionsWithUsers(session.token, posSessionTenantSlug),
+      ]);
+
+      setPosLiveBusinessAnalytics(analyticsResponse);
+      setPosRecentTransactionsWithUsers(transactionsResponse.transactions);
+      setPosLiveBusinessAnalyticsNotice(null);
+    } catch (error) {
+      setPosLiveBusinessAnalyticsNotice(
+        error instanceof Error
+          ? error.message
+          : 'Unable to refresh live POS analytics.',
+      );
+    }
+  }
+
   function refreshMobileWorkspace() {
-    window.dispatchEvent(new Event('ubuzima:refresh'));
+    if (isMobileSyncing) {
+      return;
+    }
+
+    setIsMobileSyncing(true);
+    setMobileSyncStatus('syncing');
+    setMobileSyncTick((current) => current + 1);
+    setPosSummaryRefreshKey((current) => current + 1);
+    setPosInventoryLoadedAt('');
+    setPosInventoryError('');
+    setPosLiveBusinessAnalyticsNotice(null);
+    void loadPharmaCore();
+
+    window.dispatchEvent(
+      new CustomEvent('ubuzima:refresh', {
+        detail: {
+          source: 'mobile-app',
+          requestedAt: Date.now(),
+        },
+      }),
+    );
+
+    window.setTimeout(() => {
+      setIsMobileSyncing(false);
+      setMobileSyncStatus('synced');
+
+      window.setTimeout(() => {
+        setMobileSyncStatus('idle');
+      }, 1600);
+    }, 1900);
   }
 
   function toggleMenuGroup(group: MenuGroupKey) {
@@ -5187,7 +5281,7 @@ function App() {
         phone: loginMethod === 'phone' ? phone.trim() : undefined,
         password: loginMethod === 'email' ? password : undefined,
         pin: loginMethod === 'phone' ? pin : undefined,
-        device_name: 'Ubuzima+ Admin Dashboard',
+        device_name: isStandalonePwa ? 'Ubuzima+ Mobile App' : 'Ubuzima+ Admin Dashboard',
         trusted_device_token: localStorage.getItem(trustedDeviceStorageKey),
       });
 
@@ -5551,7 +5645,7 @@ function App() {
                         inputMode="tel"
                         value={phone}
                         onChange={(event) => setPhone(event.target.value)}
-                        autoComplete="off"
+                        autoComplete="tel"
                         placeholder="+250..."
                         required
                       />
@@ -5565,7 +5659,9 @@ function App() {
                         value={pin}
                         onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 6))}
                         autoComplete="new-password"
-                        placeholder="Enter your PIN"
+                        placeholder="4 to 6 digit PIN"
+                        maxLength={6}
+                        pattern="[0-9]{4,6}"
                         required
                       />
                     </label>
@@ -5575,7 +5671,11 @@ function App() {
                 {error && <div className="form-error">{error}</div>}
 
                 <button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Checking access...' : 'Continue'}
+                  {isSubmitting
+                    ? 'Checking access...'
+                    : loginMethod === 'phone'
+                      ? 'Continue with PIN'
+                      : 'Continue'}
                 </button>
               </form>
             ) : (
@@ -10017,6 +10117,12 @@ return (
     : isStandalonePwa
       ? 'Installed'
       : 'Online';
+  const mobileSyncLabel =
+    mobileSyncStatus === 'syncing'
+      ? 'Syncing'
+      : mobileSyncStatus === 'synced'
+        ? 'Synced'
+        : 'Sync';
   const mobileBottomNavCandidates: MobileBottomNavItem[] = [
     {
       key: 'home',
@@ -10519,6 +10625,102 @@ return (
       : []),
   ];
 
+  const nativeDailyPosBusinessDate =
+    normalizeUbuzimaTransactionDate(
+      posLiveBusinessAnalytics?.business_date
+        ?? (posSession as { business_date?: string | null } | null)?.business_date
+        ?? new Date().toISOString().slice(0, 10),
+    ) ?? new Date().toISOString().slice(0, 10);
+  const nativeDailyPosTimestamp = (transaction: PharmaRecentTransactionWithUser) => {
+    const rawTimestamp =
+      transaction.received_at
+      ?? transaction.sold_at
+      ?? transaction.created_at
+      ?? '';
+    const timestamp = new Date(rawTimestamp).getTime();
+
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
+  const nativeDailyPosRawTransactions = posRecentTransactionsWithUsers
+    .filter((transaction) => {
+      const transactionBusinessDate = normalizeUbuzimaTransactionDate(
+        transaction.business_date
+          ?? transaction.received_at
+          ?? transaction.sold_at
+          ?? transaction.created_at,
+      );
+
+      return transactionBusinessDate === nativeDailyPosBusinessDate;
+    })
+    .sort((left, right) => {
+      const rightTime = nativeDailyPosTimestamp(right);
+      const leftTime = nativeDailyPosTimestamp(left);
+
+      if (rightTime !== leftTime) {
+        return rightTime - leftTime;
+      }
+
+      return right.id - left.id;
+    });
+  const formatNativeDailyPosTime = (transaction: PharmaRecentTransactionWithUser) => {
+    const rawTimestamp =
+      transaction.received_at
+      ?? transaction.sold_at
+      ?? transaction.created_at
+      ?? '';
+    const date = new Date(rawTimestamp);
+
+    if (!Number.isFinite(date.getTime())) {
+      return 'Time pending';
+    }
+
+    return date.toLocaleTimeString('en-RW', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+  const nativeDailyPosTransactions: UbuzimaMobileDailyPosTransaction[] =
+    nativeDailyPosRawTransactions
+      .slice(0, 5)
+      .map((transaction) => ({
+        key: `${transaction.id}-${transaction.sale_number ?? 'sale'}`,
+        saleNumber: transaction.sale_number ?? `Sale #${transaction.id}`,
+        amount: formatUbuzimaMoney(transaction.total_amount),
+        method: (transaction.payment_method ?? 'Payment pending').replaceAll('_', ' '),
+        status: (transaction.payment_status ?? 'pending').replaceAll('_', ' '),
+        operator: formatUbuzimaOperatorName(transaction),
+        timeLabel: formatNativeDailyPosTime(transaction),
+        businessDate: nativeDailyPosBusinessDate,
+        receiptNumber: transaction.receipt_number ?? undefined,
+      }));
+  const nativeDailyPosFallbackSalesTotal = nativeDailyPosRawTransactions.reduce(
+    (sum, transaction) => sum + Number(transaction.total_amount ?? 0),
+    0,
+  );
+  const nativeDailyPosFallbackCollectionsTotal = nativeDailyPosRawTransactions.reduce(
+    (sum, transaction) => sum + Number(transaction.paid_amount ?? 0),
+    0,
+  );
+  const nativeDailyPosSummary: UbuzimaMobileDailyPosSummary = {
+    dateLabel: `Business date ${nativeDailyPosBusinessDate}`,
+    salesTotal: formatUbuzimaMoney(
+      posLiveBusinessAnalytics?.sales_total ?? nativeDailyPosFallbackSalesTotal,
+    ),
+    collectionsTotal: formatUbuzimaMoney(
+      posLiveBusinessAnalytics?.collections_total ?? nativeDailyPosFallbackCollectionsTotal,
+    ),
+    transactionCount: String(
+      posLiveBusinessAnalytics?.transaction_count ?? nativeDailyPosRawTransactions.length,
+    ),
+    status: posLiveBusinessAnalyticsNotice
+      ? 'Sync issue'
+      : isMobileSyncing
+        ? 'Syncing'
+        : posLiveBusinessAnalytics
+          ? 'Live'
+          : 'Ready',
+  };
+
   const nativeRoleTokens = profileRoleTokens(profile);
   const profileHasNativeRole = (...tokens: string[]) =>
     nativeRoleTokens.some((role) =>
@@ -10688,6 +10890,9 @@ return (
         isIosDevice={isIosDevice}
         isOnline={isOnline}
         isStandalone={isStandalonePwa}
+        isSyncing={isMobileSyncing}
+        dailyPosSummary={nativeDailyPosSummary}
+        dailyPosTransactions={nativeDailyPosTransactions}
         menuGroups={nativeMobileMenuGroups}
         metrics={nativeMetrics}
         liveMetricBars={nativeLiveMetricBars}
@@ -10701,6 +10906,7 @@ return (
         profileName={profileDisplayName}
         salesActions={nativeSalesActions}
         stockActions={nativeStockActions}
+        syncLabel={mobileSyncLabel}
         unreadMailCount={unreadMailCount}
         workbench={nativeMobileWorkbench}
         onChangePassword={() => {
@@ -10758,8 +10964,9 @@ return (
             className="ubuzima-mobile-icon-button ubuzima-mobile-refresh-button"
             aria-label="Refresh current workspace"
             onClick={refreshMobileWorkspace}
+            disabled={isMobileSyncing}
           >
-            SY
+            {mobileSyncStatus === 'syncing' ? '...' : 'Sync'}
           </button>
         )}
       </header>

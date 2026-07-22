@@ -424,6 +424,8 @@ class TenantUserManagementController extends Controller
                         $assignment->user
                             ->tokens()
                             ->count(),
+                    'mobile_pin_configured' =>
+                        filled($assignment->user->login_pin),
                 ],
                 'branch' => $assignment->branch ? [
                     'id' => $assignment->branch->id,
@@ -476,6 +478,7 @@ class TenantUserManagementController extends Controller
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'max:100'],
             'password' => ['nullable', 'string', 'min:8', 'max:100'],
+            'login_pin' => ['nullable', 'digits_between:4,6'],
             'branch_id' => ['nullable', 'integer'],
             'status' => ['nullable', 'string', 'in:active,invited,suspended,inactive'],
             'two_factor_required' =>
@@ -502,6 +505,9 @@ class TenantUserManagementController extends Controller
             $user->name = $validated['name'];
             $user->phone = $validated['phone'] ?? null;
             $user->password = Hash::make($temporaryPassword);
+            if (! empty($validated['login_pin'])) {
+                $user->login_pin = Hash::make($validated['login_pin']);
+            }
             $user->forceFill([
                 'must_change_password' => true,
                 'two_factor_required' =>
@@ -564,6 +570,7 @@ class TenantUserManagementController extends Controller
         return response()->json([
             'message' => 'User created successfully for ' . $tenant->name . '.',
             'temporary_password' => $temporaryPassword,
+            'temporary_pin' => $validated['login_pin'] ?? null,
             'tenant' => [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
@@ -602,6 +609,7 @@ class TenantUserManagementController extends Controller
             'role_code' => ['required', 'string', 'max:80'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'max:100'],
+            'login_pin' => ['nullable', 'digits_between:4,6'],
             'branch_id' => ['nullable', 'integer'],
             'status' => ['nullable', 'string', 'in:active,invited,suspended,inactive'],
             'two_factor_required' =>
@@ -637,6 +645,10 @@ class TenantUserManagementController extends Controller
             )
                 ? $validated['phone']
                 : $user->phone;
+
+            if (! empty($validated['login_pin'])) {
+                $user->login_pin = Hash::make($validated['login_pin']);
+            }
 
             if (
                 array_key_exists(
@@ -696,6 +708,7 @@ class TenantUserManagementController extends Controller
 
         return response()->json([
             'message' => 'User identity, login email, profile, role, permissions and status updated successfully.',
+            'temporary_pin' => $validated['login_pin'] ?? null,
             'user' => [
                 'id' => $updatedUser->id,
                 'name' => $updatedUser->name,

@@ -27,6 +27,26 @@ export type UbuzimaMobileAppMetric = {
   tone?: UbuzimaMobileTone;
 };
 
+export type UbuzimaMobileDailyPosSummary = {
+  dateLabel: string;
+  salesTotal: string;
+  collectionsTotal: string;
+  transactionCount: string;
+  status: string;
+};
+
+export type UbuzimaMobileDailyPosTransaction = {
+  key: string;
+  saleNumber: string;
+  amount: string;
+  method: string;
+  status: string;
+  operator: string;
+  timeLabel: string;
+  businessDate: string;
+  receiptNumber?: string;
+};
+
 export type UbuzimaMobileAppMenuItem = {
   key: string;
   label: string;
@@ -66,6 +86,9 @@ type UbuzimaMobileAppProps = {
   isIosDevice: boolean;
   isOnline: boolean;
   isStandalone: boolean;
+  isSyncing: boolean;
+  dailyPosSummary: UbuzimaMobileDailyPosSummary;
+  dailyPosTransactions: UbuzimaMobileDailyPosTransaction[];
   liveMetricBars?: number[];
   menuGroups: UbuzimaMobileAppMenuGroup[];
   metrics: UbuzimaMobileAppMetric[];
@@ -79,6 +102,7 @@ type UbuzimaMobileAppProps = {
   profileName: string;
   salesActions: UbuzimaMobileAppAction[];
   stockActions: UbuzimaMobileAppAction[];
+  syncLabel: string;
   unreadMailCount: number;
   workbench: UbuzimaMobileAppWorkbench;
   onChangePassword: () => void;
@@ -280,16 +304,41 @@ function AppIcon({ name }: { name: string }) {
   }
 }
 
-function BusinessMetricCard({ metric }: { metric: UbuzimaMobileAppMetric }) {
+function BusinessMetricCard({
+  metric,
+  onPress,
+}: {
+  metric: UbuzimaMobileAppMetric;
+  onPress?: () => void;
+}) {
+  const content = (
+    <>
+      <AppIcon name={metricIconName(metric.key)} />
+      <span>{metric.label}</span>
+      <strong className={valueFitClass(metric.value)}>{metric.value}</strong>
+      <small>{metric.helper}</small>
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <button
+        key={metric.key}
+        type="button"
+        className={`ubuzima-native-balance-card ${toneClass(metric.tone)}`}
+        onClick={onPress}
+      >
+        {content}
+      </button>
+    );
+  }
+
   return (
     <article
       key={metric.key}
       className={`ubuzima-native-balance-card ${toneClass(metric.tone)}`}
     >
-      <AppIcon name={metricIconName(metric.key)} />
-      <span>{metric.label}</span>
-      <strong className={valueFitClass(metric.value)}>{metric.value}</strong>
-      <small>{metric.helper}</small>
+      {content}
     </article>
   );
 }
@@ -385,6 +434,9 @@ export function UbuzimaMobileApp({
   isIosDevice,
   isOnline,
   isStandalone,
+  isSyncing,
+  dailyPosSummary,
+  dailyPosTransactions,
   liveMetricBars = [],
   menuGroups,
   metrics,
@@ -398,6 +450,7 @@ export function UbuzimaMobileApp({
   profileName,
   salesActions,
   stockActions,
+  syncLabel,
   unreadMailCount,
   workbench,
   onChangePassword,
@@ -425,6 +478,8 @@ export function UbuzimaMobileApp({
     (metric) => !heroMetrics.some((heroMetric) => heroMetric.key === metric.key),
   );
   const posCounterAction = actionByKey(salesActions, 'pos-counter') ?? heroAction;
+  const dailyPosTransactionCount = Number(dailyPosSummary.transactionCount.replace(/[^0-9.-]/g, ''));
+  const hasDailyPosSummaryActivity = Number.isFinite(dailyPosTransactionCount) && dailyPosTransactionCount > 0;
   const fallbackTrendBars = [42, 58, 52, 71, 63, 84, 76];
   const trendBars = (liveMetricBars.length > 0 ? liveMetricBars : fallbackTrendBars)
     .slice(0, 7)
@@ -477,6 +532,8 @@ export function UbuzimaMobileApp({
   }
 
   function renderBusinessScreen() {
+    const openSalesRegister = actionByKey(salesActions, 'sales-performance')?.onPress ?? posCounterAction?.onPress;
+
     return (
       <>
         <section className="ubuzima-native-business-hero" aria-label="Business Overview">
@@ -571,9 +628,91 @@ export function UbuzimaMobileApp({
         >
           <div className="ubuzima-native-balance-grid" aria-label="Business position metrics">
             {businessPositionMetrics.map((metric) => (
-              <BusinessMetricCard key={metric.key} metric={metric} />
+              <BusinessMetricCard
+                key={metric.key}
+                metric={metric}
+                onPress={onOpenBusinessOverview}
+              />
             ))}
           </div>
+        </AppSection>
+
+        <AppSection
+          eyebrow="Daily POS"
+          title="Live transactions"
+          action={
+            openSalesRegister ? (
+              <button type="button" onClick={openSalesRegister}>
+                Open
+              </button>
+            ) : undefined
+          }
+        >
+          <button
+            type="button"
+            className="ubuzima-native-pos-daily-summary"
+            onClick={openSalesRegister}
+            disabled={!openSalesRegister}
+          >
+            <span>
+              <small>{dailyPosSummary.dateLabel}</small>
+              <strong>{dailyPosSummary.salesTotal}</strong>
+            </span>
+            <span>
+              <small>Collections</small>
+              <strong>{dailyPosSummary.collectionsTotal}</strong>
+            </span>
+            <span>
+              <small>Transactions</small>
+              <strong>{dailyPosSummary.transactionCount}</strong>
+            </span>
+            <em>{dailyPosSummary.status}</em>
+          </button>
+
+          {dailyPosTransactions.length === 0 ? (
+            <div className="ubuzima-native-pos-daily-empty" role="status">
+              <AppIcon name="REG" />
+              <span>
+                <strong>
+                  {hasDailyPosSummaryActivity
+                    ? 'Transaction details are syncing'
+                    : 'No POS transactions yet today'}
+                </strong>
+                <small>
+                  {hasDailyPosSummaryActivity
+                    ? 'The daily totals are live. Tap Open for the full POS register.'
+                    : 'Tap Sync after sales are recorded on the website.'}
+                </small>
+              </span>
+            </div>
+          ) : (
+            <div className="ubuzima-native-pos-daily-list">
+              {dailyPosTransactions.map((transaction) => (
+                <button
+                  key={transaction.key}
+                  type="button"
+                  onClick={openSalesRegister}
+                  disabled={!openSalesRegister}
+                >
+                  <span className="ubuzima-native-pos-daily-list__time">
+                    {transaction.timeLabel}
+                  </span>
+                  <span className="ubuzima-native-pos-daily-list__body">
+                    <strong>{transaction.saleNumber}</strong>
+                    <small>
+                      {transaction.operator}
+                      {' / '}
+                      {transaction.method}
+                    </small>
+                  </span>
+                  <span className="ubuzima-native-pos-daily-list__amount">
+                    <strong>{transaction.amount}</strong>
+                    <small>{transaction.status}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </AppSection>
 
         <AppSection eyebrow="Services" title="Quick access">
@@ -601,7 +740,11 @@ export function UbuzimaMobileApp({
             <AppIcon name="SEARCH" />
             <strong>Search medicine or scan code</strong>
           </button>
-          <div className="ubuzima-native-cart-preview">
+          <button
+            type="button"
+            className="ubuzima-native-cart-preview"
+            onClick={posCounterAction?.onPress}
+          >
             <div>
               <span>Cart</span>
               <strong>0 items</strong>
@@ -610,7 +753,7 @@ export function UbuzimaMobileApp({
               <span>Total</span>
               <strong>RWF 0</strong>
             </div>
-          </div>
+          </button>
         </section>
 
         <AppSection eyebrow="Sales" title="Counter services">
@@ -669,11 +812,15 @@ export function UbuzimaMobileApp({
             <span>Procurement</span>
             <h1>Orders</h1>
           </div>
-          <div className="ubuzima-native-sales-card__figures">
+          <button
+            type="button"
+            className="ubuzima-native-sales-card__figures"
+            onClick={procurementActions[0]?.onPress}
+          >
             <span>Desk</span>
             <AppIcon name="PO" />
             <strong>Orders</strong>
-          </div>
+          </button>
         </section>
 
         <AppSection eyebrow="Procurement" title="Supplier services">
@@ -857,15 +1004,15 @@ export function UbuzimaMobileApp({
         </button>
 
         <div className="ubuzima-native-topbar__actions">
-          {installAvailable && !isStandalone ? (
-            <button type="button" onClick={onInstall} disabled={isInstalling}>
-              {isInstalling ? 'Opening' : 'Get app'}
-            </button>
-          ) : (
-            <button type="button" onClick={onRefresh}>
-              Sync
-            </button>
-          )}
+          <button
+            type="button"
+            className={isSyncing ? 'is-syncing' : undefined}
+            onClick={onRefresh}
+            disabled={isSyncing}
+            aria-busy={isSyncing}
+          >
+            {syncLabel}
+          </button>
           <button
             type="button"
             className="ubuzima-native-avatar-button"
@@ -908,7 +1055,14 @@ export function UbuzimaMobileApp({
             </header>
             <div className="ubuzima-native-sheet__grid">
               {businessPositionMetrics.map((metric) => (
-                <BusinessMetricCard key={metric.key} metric={metric} />
+                <BusinessMetricCard
+                  key={metric.key}
+                  metric={metric}
+                  onPress={() => {
+                    setIsMetricSheetOpen(false);
+                    onOpenBusinessOverview();
+                  }}
+                />
               ))}
             </div>
           </section>

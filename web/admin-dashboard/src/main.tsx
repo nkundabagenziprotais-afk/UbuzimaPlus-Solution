@@ -900,7 +900,18 @@ function installDashboardAnalyticsConsistencyLayer(): void {
 
   function writeCache(metrics: Record<string, DashboardSharedMetric>): void {
     try {
-      window.localStorage.setItem(storageKey, JSON.stringify(metrics));
+      const nextPayload = JSON.stringify(metrics);
+
+      if (window.localStorage.getItem(storageKey) === nextPayload) {
+        return;
+      }
+
+      window.localStorage.setItem(storageKey, nextPayload);
+      window.dispatchEvent(
+        new CustomEvent('ubuzima:shared-metrics-change', {
+          detail: { updatedAt: Date.now() },
+        }),
+      );
     } catch {
       // Storage is an enhancement only.
     }
@@ -1025,6 +1036,11 @@ function installDashboardAnalyticsConsistencyLayer(): void {
   window.setTimeout(sync, 1500);
   window.setTimeout(sync, 3500);
   window.setInterval(sync, 5000);
+  window.addEventListener('ubuzima:refresh', () => {
+    window.setTimeout(sync, 350);
+    window.setTimeout(sync, 1600);
+    window.setTimeout(sync, 3600);
+  });
 
   const observer = new MutationObserver(sync);
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });

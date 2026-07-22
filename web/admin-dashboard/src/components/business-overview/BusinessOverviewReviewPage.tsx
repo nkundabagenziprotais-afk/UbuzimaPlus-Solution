@@ -1074,6 +1074,24 @@ export function BusinessOverviewReviewPage({
     window.location.search.includes('boDebug=1');
 
   useEffect(() => {
+    function handleWorkspaceRefresh() {
+      setIsLoading(true);
+      setLoaderStatus('loading');
+      setLiveData((current) => ({
+        ...current,
+        error: null,
+      }));
+      setLoadSequence((value) => value + 1);
+    }
+
+    window.addEventListener('ubuzima:refresh', handleWorkspaceRefresh);
+
+    return () => {
+      window.removeEventListener('ubuzima:refresh', handleWorkspaceRefresh);
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     if (!token || !tenantSlug) {

@@ -171,8 +171,7 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     const message =
       data?.message ||
       data?.errors?.email?.[0] ||
-        data?.errors?.phone?.[0] ||
-      data?.errors?.email?.[0] ||
+      data?.errors?.phone?.[0] ||
       data?.errors?.pin?.[0] ||
       'Login failed. Please check your credentials and try again.';
 
@@ -4129,6 +4128,7 @@ export type TenantSecurityUser = {
     last_login_at: string | null;
     trusted_devices_count: number;
     active_sessions_count: number;
+    mobile_pin_configured?: boolean;
   };
   roles: Array<{
     id: number;
@@ -4170,6 +4170,7 @@ export async function createTenantSecurityUser(
     role_code: string;
     permissions?: string[];
     password?: string;
+    login_pin?: string;
     status?: string;
     two_factor_required?: boolean;
   },
@@ -4177,6 +4178,7 @@ export async function createTenantSecurityUser(
   return apiRequest<{
     message: string;
     temporary_password: string;
+    temporary_pin?: string | null;
     user: { id: number; name: string; email: string; phone?: string | null };
   }>(token, tenantSlug, '/access-check/security/users', {
     method: 'POST',
@@ -4199,12 +4201,14 @@ export async function updateTenantSecurityUser(
       | 'granular_permissions';
     role_code: string;
     permissions?: string[];
+    login_pin?: string;
     status?: string;
     two_factor_required?: boolean;
   },
 ) {
   return apiRequest<{
     message: string;
+    temporary_pin?: string | null;
   }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify(payload),

@@ -622,6 +622,7 @@ const emptyForm = {
   role_code: 'cashier',
   permissions: [] as string[],
   password: '',
+  login_pin: '',
   status: 'active',
   two_factor_required: true,
 };
@@ -678,6 +679,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [temporaryPin, setTemporaryPin] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [pendingDeleteUser, setPendingDeleteUser] = useState<TenantSecurityUser | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
@@ -851,6 +853,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
     setEditingUserId(user.id);
     setIsEditorOpen(true);
     setTemporaryPassword('');
+    setTemporaryPin('');
     setForm({
       name: user.name,
       email: user.email,
@@ -870,6 +873,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
             )
           : [],
       password: '',
+      login_pin: '',
       status: user.status || 'active',
       two_factor_required:
         user.security
@@ -913,6 +917,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
     setFieldErrors({});
     setNotice('');
     setTemporaryPassword('');
+    setTemporaryPin('');
 
     const payloadPermissions =
       form.access_assignment_mode
@@ -926,6 +931,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
     const normalizedEmail = form.email.trim().toLowerCase();
     const normalizedPhone = form.phone.trim();
     const normalizedJobTitle = form.job_title.trim();
+    const normalizedLoginPin = form.login_pin.trim();
 
     const validationErrors: Record<string, string> = {};
 
@@ -971,6 +977,16 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
         'The temporary password must contain at least 8 characters.';
     }
 
+    if (normalizedLoginPin && !/^\d{4,6}$/.test(normalizedLoginPin)) {
+      validationErrors.login_pin =
+        'Enter a 4 to 6 digit mobile login PIN.';
+    }
+
+    if (normalizedLoginPin && !normalizedPhone) {
+      validationErrors.phone =
+        'Enter the staff phone number before enabling Phone PIN login.';
+    }
+
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
       setError(
@@ -1001,11 +1017,18 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
             === 'granular_permissions'
               ? payloadPermissions
               : undefined,
+          login_pin:
+            normalizedLoginPin || undefined,
           status: form.status,
           two_factor_required:
             form.two_factor_required,        });
 
-        setNotice(response.message);
+        setTemporaryPin(response.temporary_pin ?? '');
+        setNotice(
+          response.temporary_pin
+            ? `${response.message} Mobile PIN was reset for Phone PIN login.`
+            : response.message,
+        );
       } else {
         const response = await createTenantSecurityUser(token, tenantSlug, {
           tenant_slug: tenantSlug,
@@ -1027,12 +1050,15 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
               : undefined,
           password:
             form.password || undefined,
+          login_pin:
+            normalizedLoginPin || undefined,
           status: form.status,
           two_factor_required:
             form.two_factor_required,        });
 
         setTemporaryPassword(response.temporary_password);
-        setNotice(`${response.message} Share the temporary password securely and ask the user to change it after login.`);
+        setTemporaryPin(response.temporary_pin ?? '');
+        setNotice(`${response.message} Share the temporary password${response.temporary_pin ? ' and mobile PIN' : ''} securely and ask the user to change the password after login.`);
       }
 
       setForm(emptyForm);
@@ -1074,6 +1100,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
             setEditingUserId(null);
             setForm(emptyForm);
             setTemporaryPassword('');
+            setTemporaryPin('');
             setError('');
             setNotice('');
             setIsEditorOpen(true);
@@ -1089,6 +1116,14 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
           <strong>Temporary password</strong>
           <span>{temporaryPassword}</span>
           <small>Copy it now. This value is shown only after creation.</small>
+        </div>
+      )}
+
+      {temporaryPin && (
+        <div className="tenant-user-password-box tenant-user-password-box--pin">
+          <strong>Mobile login PIN</strong>
+          <span>{temporaryPin}</span>
+          <small>Share it securely. This value is shown only after save.</small>
         </div>
       )}
 
@@ -1199,6 +1234,24 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
           <label>
             Phone
             <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
+          </label>
+
+          <label className="tenant-mobile-pin-field">
+            Mobile PIN
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={form.login_pin}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  login_pin: event.target.value.replace(/\D/g, '').slice(0, 6),
+                })
+              }
+              placeholder={editingUserId ? 'Leave blank to keep current PIN' : '4 to 6 digits'}
+            />
+            <small>Used with the Phone PIN login tab on mobile.</small>
           </label>
 
           <label>
@@ -1476,6 +1529,7 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
               setEditingUserId(null);
               setForm(emptyForm);
               setTemporaryPassword('');
+              setTemporaryPin('');
               setIsEditorOpen(false);
             }}
           >
@@ -1542,6 +1596,12 @@ export function UserAccessWorkspace({ token, tenantSlug = 'vitapharma' }: Props)
                                 ? '2FA required'
                                 : '2FA optional'}
                           </strong>
+
+                          <span>
+                            {user.security?.mobile_pin_configured
+                              ? 'Mobile PIN enabled'
+                              : 'No mobile PIN'}
+                          </span>
 
                           <span>
                             {user.security
