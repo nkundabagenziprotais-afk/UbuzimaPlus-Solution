@@ -345,6 +345,20 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function formatInventoryTrendMillion(value: number): string {
+  const safeValue = Number.isFinite(value) ? Math.max(value, 0) : 0;
+
+  return `${(safeValue / 1000000).toFixed(2)}M`;
+}
+
+function inventoryAnalyticsDayNumberLabel(value: string, index: number): string {
+  const parsed = new Date(value);
+  const day = parsed.getDate();
+
+  return Number.isFinite(parsed.getTime()) && day > 0 ? String(day) : String(index + 1);
+}
+
+
 function inventoryRecord(value: unknown): UnknownRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as UnknownRecord)
@@ -666,6 +680,7 @@ export function InventoryModuleHome({
   const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(null);
   const [analyticsLocations, setAnalyticsLocations] = useState<unknown>(null);
   const [analyticsMovements, setAnalyticsMovements] = useState<unknown>(null);
+  const [analyticsSalesRegister, setAnalyticsSalesRegister] = useState<unknown>(null);
   const [analyticsRefreshSequence, setAnalyticsRefreshSequence] = useState(0);
   const [analyticsCategoryFilter, setAnalyticsCategoryFilter] = useState('all');
   const [analyticsProductFilter, setAnalyticsProductFilter] = useState('all');
@@ -784,6 +799,74 @@ export function InventoryModuleHome({
       isActive = false;
     };
   }, [token, tenantSlug, analyticsDateFromFilter, analyticsDateToFilter, analyticsRefreshSequence]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadInventoryAnalyticsSalesRegister() {
+      if (!token || !tenantSlug) {
+        setAnalyticsSalesRegister(null);
+        return;
+      }
+
+      const query = new URLSearchParams({
+        start_date: analyticsDateFromFilter,
+        end_date: analyticsDateToFilter,
+        date_from: analyticsDateFromFilter,
+        date_to: analyticsDateToFilter,
+        business_date_from: analyticsDateFromFilter,
+        business_date_to: analyticsDateToFilter,
+        date_basis: 'business_date',
+      }).toString();
+
+      const endpoints = [
+        `/api/v1/pharmaco/reports/sales-register?${query}`,
+        `/api/v1/pharmaco/sales-register?${query}`,
+        `/api/v1/pharmaco/reports/sales?${query}`,
+        `/pharmaco/reports/sales-register?${query}`,
+        `/pharmaco/sales-register?${query}`,
+        `/pharmaco/reports/sales?${query}`,
+      ];
+
+      const headers = {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        'X-Tenant': tenantSlug,
+        'X-Tenant-Slug': tenantSlug,
+      };
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, { headers });
+
+          if (!response.ok) {
+            continue;
+          }
+
+          const data = await response.json();
+
+          if (isActive) {
+            setAnalyticsSalesRegister(data);
+          }
+
+          return;
+        } catch {
+          continue;
+        }
+      }
+
+      if (isActive) {
+        setAnalyticsSalesRegister(null);
+      }
+    }
+
+    loadInventoryAnalyticsSalesRegister();
+
+    return () => {
+      isActive = false;
+    };
+  }, [token, tenantSlug, analyticsDateFromFilter, analyticsDateToFilter, analyticsRefreshSequence]);
+
 
   const canCustomize =
     canCustomizeInventoryHome(profile);
@@ -1427,6 +1510,18 @@ export function InventoryModuleHome({
               return inventoryAnalyticsInDateRange(movementDate, analyticsDateFromFilter, analyticsDateToFilter);
             });
 
+            const salesRegisterRows = inventoryDeepRecordArray(analyticsSalesRegister).filter((row) => {
+              const salesDate = inventoryText(row, ['business_date', 'sale_date', 'created_at', 'invoice_date'], '');
+
+              return inventoryAnalyticsInDateRange(salesDate, analyticsDateFromFilter, analyticsDateToFilter);
+            });
+
+            const receivedBatchRows = analyticsMetricBatchRows.filter((batch) => {
+              const receivedDate = inventoryText(batch, ['received_at', 'created_at', 'business_date'], '');
+
+              return inventoryAnalyticsInDateRange(receivedDate, analyticsDateFromFilter, analyticsDateToFilter);
+            });
+
             const movementValue = (movement: UnknownRecord): number => {
               const directValue = inventoryNumber(movement, ['total_value', 'value', 'line_total', 'amount']);
 
@@ -1440,6 +1535,25 @@ export function InventoryModuleHome({
               return quantity * unitCost;
             };
 
+            const salesIssuedValue = (row: UnknownRecord): number => {
+              const directCost = inventoryNumber(row, ['cost_value', 'total_cost', 'cogs', 'stock_value']);
+
+              if (directCost > 0) {
+                return directCost;
+              }
+
+              const quantity = Math.max(inventoryNumber(row, ['quantity', 'qty', 'quantity_sold']), 1);
+              const unitCost = inventoryNumber(row, ['unit_cost', 'cost', 'cost_price']);
+
+              if (unitCost > 0) {
+                return quantity * unitCost;
+              }
+
+              const salesValue = inventoryNumber(row, ['line_total', 'total_amount', 'amount', 'sales_value']);
+
+              return salesValue > 0 ? salesValue / 1.3 : 0;
+            };
+
             const movementType = (movement: UnknownRecord): string =>
               inventoryText(movement, ['movement_type', 'type', 'direction'], '').toLowerCase();
 
@@ -1451,10 +1565,15 @@ export function InventoryModuleHome({
               /issue|issued|sale|sold|dispense|stock_out|outbound|adjustment_out/.test(movementType(movement)),
             );
 
-            const stockReceivedValue = receivedRows.reduce((sum, movement) => sum + movementValue(movement), 0);
-            const stockReceivedCount = receivedRows.length;
-            const stockIssuedValue = issuedRows.reduce((sum, movement) => sum + movementValue(movement), 0);
-            const stockIssuedCount = issuedRows.length;
+            const movementReceivedValue = receivedRows.reduce((sum, movement) => sum + movementValue(movement), 0);
+            const batchReceivedValue = receivedBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0);
+            const movementIssuedValue = issuedRows.reduce((sum, movement) => sum + movementValue(movement), 0);
+            const registerIssuedValue = salesRegisterRows.reduce((sum, row) => sum + salesIssuedValue(row), 0);
+
+            const stockReceivedValue = Math.max(movementReceivedValue, batchReceivedValue);
+            const stockReceivedCount = Math.max(receivedRows.length, receivedBatchRows.length);
+            const stockIssuedValue = Math.max(movementIssuedValue, registerIssuedValue);
+            const stockIssuedCount = Math.max(issuedRows.length, salesRegisterRows.length);
             const turnoverValue = stockIssuedValue;
             const turnoverCount = stockIssuedCount;
 
@@ -1685,6 +1804,18 @@ export function InventoryModuleHome({
                   <article className="inventory-analytics-request-card">
                     <header>
                       <h3>Stock Value Trend</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
+                      >
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                       <span className="inventory-analytics-trend-change">
                         {trendPercentChange.toFixed(1)}%
                       </span>
@@ -1698,18 +1829,6 @@ export function InventoryModuleHome({
                           <small>{selectedTrendDateKeys[index] ?? String(index + 1)}</small>
                         </div>
                       ))}
-                    </div>
-
-                    <div className="inventory-analytics-trend-range-selector">
-                      <span>Trend Range</span>
-                      <select value={analyticsTrendWeekSelection} onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}>
-                        <option value="all">Full selected range</option>
-                        {analyticsTrendWeeks.map((week) => (
-                          <option key={week} value={week}>
-                            {week.replace('week-', 'Week ')}
-                          </option>
-                        ))}
-                      </select>
                     </div>
 
                     <div className="inventory-analytics-stacked-bar-trends">
@@ -1730,9 +1849,9 @@ export function InventoryModuleHome({
 
                                 return (
                                   <div key={`${chart.label}-${index}`}>
-                                    <span>{value > 0 ? formatCurrency(value) : '0'}</span>
+                                    <span>{formatInventoryTrendMillion(value)}</span>
                                     <i style={{ height: `${height}%` }} />
-                                    <small>{index === 0 ? analyticsDateFromFilter : index === chart.values.length - 1 ? analyticsDateToFilter : selectedTrendDateKeys[index] ?? String(index + 1)}</small>
+                                    <small>{inventoryAnalyticsDayNumberLabel(selectedTrendDateKeys[index] ?? '', index)}</small>
                                   </div>
                                 );
                               })}

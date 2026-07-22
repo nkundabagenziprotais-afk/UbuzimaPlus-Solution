@@ -45311,3 +45311,25 @@ thead
   color: #fff !important;
   cursor: pointer !important;
 }
+
+/* Inventory Analytics: trend header selector and compact million labels */
+.inventory-analytics-trend-range-selector {
+  display: none !important;
+}
+
+.inventory-analytics-request-card header .inventory-analytics-trend-header-select {
+  margin-left: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0.35rem 0.55rem;
+  max-width: 9.25rem;
+}
+
+.inventory-analytics-bar-trend-bars span {
+  font-size: 0.58rem !important;
+  letter-spacing: -0.02em;
+}
