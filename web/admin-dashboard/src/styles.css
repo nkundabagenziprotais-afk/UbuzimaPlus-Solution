@@ -45536,3 +45536,25 @@ thead
   grid-column: 1 / -1 !important;
   text-align: right !important;
 }
+
+/* Inventory Analytics: top KPI card value alignment */
+.inventory-analytics-request-kpis article {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  column-gap: 0.75rem !important;
+}
+
+.inventory-analytics-request-kpis article small {
+  justify-self: start !important;
+  text-align: left !important;
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.inventory-analytics-request-kpis article strong {
+  justify-self: end !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums !important;
+}

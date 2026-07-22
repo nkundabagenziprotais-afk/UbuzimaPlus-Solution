@@ -365,6 +365,14 @@ function inventoryRecord(value: unknown): UnknownRecord {
     : {};
 }
 
+function inventoryMaxPositive(...values: number[]): number {
+  return values.reduce((max, value) => {
+    const numericValue = Number(value);
+
+    return Number.isFinite(numericValue) && numericValue > max ? numericValue : max;
+  }, 0);
+}
+
 function inventoryDeepNumberValue(source: unknown, keys: string[]): number {
   const normalizedKeys = new Set(keys.map((key) => key.toLowerCase().replace(/[^a-z0-9]/g, '')));
   const queue: unknown[] = [source];
@@ -1695,6 +1703,16 @@ export function InventoryModuleHome({
               { label: 'Healthy stock', count: stockOnHandCount, value: healthyValue, color: '#16a34a' },
             ];
 
+            const preKpiCategoryTotals = new Map<string, number>();
+
+            analyticsMetricBatchRows.forEach((batch) => {
+              const category = categoryFor(batch);
+              preKpiCategoryTotals.set(category, (preKpiCategoryTotals.get(category) ?? 0) + inventoryBatchValue(batch));
+            });
+
+            const preKpiCategoryTotalValue = Array.from(preKpiCategoryTotals.values())
+              .reduce((sum, value) => sum + value, 0);
+
             const dashboardTotalInventoryValue = Math.max(
               totalValue,
               inventoryDeepNumberValue(analyticsBatches, [
@@ -1800,21 +1818,102 @@ export function InventoryModuleHome({
               dashboardStockIssuedCount,
             );
 
+            const finalInventoryKpiTotalValue = inventoryMaxPositive(
+              dashboardTotalInventoryValue,
+              totalValue,
+              preKpiCategoryTotalValue,
+              analyticsMetricBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0),
+            );
+
+            const finalInventoryKpiStockOnHandCount = inventoryMaxPositive(
+              dashboardStockOnHandCount,
+              stockOnHandCount,
+              analyticsMetricBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0),
+            );
+
+            const finalInventoryKpiReceivedValue = inventoryMaxPositive(
+              dashboardStockReceivedValue,
+              stockReceivedValue,
+              batchReceivedValue,
+              finalInventoryKpiTotalValue,
+            );
+
+            const finalInventoryKpiReceivedCount = inventoryMaxPositive(
+              dashboardStockReceivedCount,
+              stockReceivedCount,
+              receivedFallbackRows.length,
+              finalInventoryKpiStockOnHandCount,
+            );
+
+            const finalInventoryKpiIssuedValue = inventoryMaxPositive(
+              dashboardStockIssuedValue,
+              stockIssuedValue,
+              registerIssuedValue,
+              movementIssuedValue,
+            );
+
+            const finalInventoryKpiIssuedCount = inventoryMaxPositive(
+              dashboardStockIssuedCount,
+              stockIssuedCount,
+              issuedRows.length,
+              salesRegisterRows.length,
+            );
+
+            const finalInventoryKpiLowStockValue = inventoryMaxPositive(
+              lowStockValue,
+              lowStockRows.reduce((sum, row) => sum + row.value, 0),
+            );
+
+            const finalInventoryKpiLowStockCount = inventoryMaxPositive(
+              lowStockCount,
+              lowStockRows.length,
+            );
+
+            const finalInventoryKpiNearExpiryValue = inventoryMaxPositive(
+              nearExpiryValue,
+              nearExpirySourceRows.reduce((sum, row) => sum + row.value, 0),
+            );
+
+            const finalInventoryKpiNearExpiryCount = inventoryMaxPositive(
+              nearExpiryCount,
+              nearExpirySourceRows.length,
+            );
+
+            const finalInventoryKpiExpiredValue = inventoryMaxPositive(
+              expiredValue,
+              expiredRows.reduce((sum, row) => sum + row.value, 0),
+            );
+
+            const finalInventoryKpiExpiredCount = inventoryMaxPositive(
+              expiredCount,
+              expiredRows.length,
+            );
+
+            const finalInventoryKpiTurnoverValue = inventoryMaxPositive(
+              dashboardTurnoverValue,
+              finalInventoryKpiIssuedValue,
+            );
+
+            const finalInventoryKpiTurnoverCount = inventoryMaxPositive(
+              dashboardTurnoverCount,
+              finalInventoryKpiIssuedCount,
+            );
+
             const kpiCards = [
-              { label: 'Total Inventory Value', value: formatCurrency(dashboardTotalInventoryValue), target: 'product-inventory' },
-              { label: 'Stock on Hand Count', value: formatCompactNumber(dashboardStockOnHandCount), target: 'product-inventory' },
-              { label: 'Stock Received Value', value: formatCurrency(dashboardStockReceivedValue), target: 'purchase-orders' },
-              { label: 'Stock Received Count', value: formatCompactNumber(dashboardStockReceivedCount), target: 'purchase-orders' },
-              { label: 'Stock Issued Value', value: formatCurrency(dashboardStockIssuedValue), target: 'product-inventory' },
-              { label: 'Stock Issued Count', value: formatCompactNumber(dashboardStockIssuedCount), target: 'product-inventory' },
-              { label: 'Low Stock Value', value: formatCurrency(lowStockValue), target: 'low-stock' },
-              { label: 'Low Stock Count', value: formatCompactNumber(lowStockCount), target: 'low-stock' },
-              { label: 'Near Expiry Value', value: formatCurrency(nearExpiryValue), target: 'near-expiry' },
-              { label: 'Near Expiry Count', value: formatCompactNumber(nearExpiryCount), target: 'near-expiry' },
-              { label: 'Expired Value', value: formatCurrency(expiredValue), target: 'near-expiry' },
-              { label: 'Expired Count', value: formatCompactNumber(expiredCount), target: 'near-expiry' },
-              { label: 'Turnover Value', value: formatCurrency(dashboardTurnoverValue), target: 'product-inventory' },
-              { label: 'Turnover Count', value: formatCompactNumber(dashboardTurnoverCount), target: 'product-inventory' },
+              { label: 'Total Inventory Value', value: formatCurrency(finalInventoryKpiTotalValue), target: 'product-inventory' },
+              { label: 'Stock on Hand Count', value: formatCompactNumber(finalInventoryKpiStockOnHandCount), target: 'product-inventory' },
+              { label: 'Stock Received Value', value: formatCurrency(finalInventoryKpiReceivedValue), target: 'purchase-orders' },
+              { label: 'Stock Received Count', value: formatCompactNumber(finalInventoryKpiReceivedCount), target: 'purchase-orders' },
+              { label: 'Stock Issued Value', value: formatCurrency(finalInventoryKpiIssuedValue), target: 'product-inventory' },
+              { label: 'Stock Issued Count', value: formatCompactNumber(finalInventoryKpiIssuedCount), target: 'product-inventory' },
+              { label: 'Low Stock Value', value: formatCurrency(finalInventoryKpiLowStockValue), target: 'low-stock' },
+              { label: 'Low Stock Count', value: formatCompactNumber(finalInventoryKpiLowStockCount), target: 'low-stock' },
+              { label: 'Near Expiry Value', value: formatCurrency(finalInventoryKpiNearExpiryValue), target: 'near-expiry' },
+              { label: 'Near Expiry Count', value: formatCompactNumber(finalInventoryKpiNearExpiryCount), target: 'near-expiry' },
+              { label: 'Expired Value', value: formatCurrency(finalInventoryKpiExpiredValue), target: 'near-expiry' },
+              { label: 'Expired Count', value: formatCompactNumber(finalInventoryKpiExpiredCount), target: 'near-expiry' },
+              { label: 'Turnover Value', value: formatCurrency(finalInventoryKpiTurnoverValue), target: 'product-inventory' },
+              { label: 'Turnover Count', value: formatCompactNumber(finalInventoryKpiTurnoverCount), target: 'product-inventory' },
             ];
 
             const categoryTotals = new Map<string, number>();
