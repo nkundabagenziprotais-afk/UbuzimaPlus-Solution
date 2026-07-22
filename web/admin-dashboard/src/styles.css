@@ -47217,3 +47217,405 @@ html.ubuzima-standalone-webapp .admin-header {
 .inventory-analytics-bar-trend-card {
   contain: layout paint;
 }
+
+
+/* REAL_POS_SALES_ANALYTICS_DASHBOARD_START */
+#real-pos-sales-analytics-dashboard {
+  display: none;
+}
+
+html.real-pos-sales-analytics-active #real-pos-sales-analytics-dashboard {
+  display: block;
+}
+
+html.real-pos-sales-analytics-active .workspace-module-panel,
+html.real-pos-sales-analytics-active .pos-sales-overview,
+html.real-pos-sales-analytics-active .pos-sales-dashboard-standard {
+  display: none !important;
+}
+
+#real-pos-sales-analytics-dashboard {
+  padding: 1rem;
+  background: #f8fbff;
+  color: #06204a;
+}
+
+.rpsa-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.rpsa-header small {
+  font-weight: 800;
+  color: #0f766e;
+}
+
+.rpsa-header h1 {
+  margin: 0.15rem 0;
+  font-size: 1.55rem;
+  color: #06204a;
+}
+
+.rpsa-header p {
+  margin: 0;
+  color: #49627d;
+}
+
+.rpsa-header button,
+.rpsa-filter-actions button,
+.rpsa-card header button,
+.rpsa-card header select {
+  border: 1px solid #d8e4f2;
+  border-radius: 0.55rem;
+  background: #ffffff;
+  color: #06204a;
+  font-weight: 700;
+  padding: 0.55rem 0.75rem;
+}
+
+.rpsa-filter-card {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid #d8e4f2;
+  border-radius: 0.8rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.rpsa-filter-card label {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem;
+  border-right: 1px solid #e3edf8;
+}
+
+.rpsa-filter-card small {
+  font-size: 0.68rem !important;
+  font-weight: 800;
+  color: #415c7a;
+}
+
+.rpsa-filter-card label button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-weight: 800;
+  color: #06204a;
+}
+
+.rpsa-filter-actions {
+  display: flex;
+  gap: 0.45rem;
+  padding: 0.8rem;
+}
+
+.rpsa-filter-actions button:last-child {
+  background: #008758;
+  color: #ffffff;
+  border-color: #008758;
+}
+
+.rpsa-kpis {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.rpsa-kpi {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 6rem;
+  padding: 0.75rem;
+  border: 1px solid #d8e4f2;
+  border-radius: 0.8rem;
+  background: #ffffff;
+}
+
+.rpsa-kpi span {
+  font-size: 0.72rem !important;
+  font-weight: 800;
+  color: #06204a;
+}
+
+.rpsa-kpi strong {
+  font-size: 1.2rem;
+  color: #06204a;
+}
+
+.rpsa-kpi small {
+  font-size: 0.64rem !important;
+  color: #008758;
+}
+
+.rpsa-kpi.is-red small,
+.rpsa-kpi.is-orange small {
+  color: #dc2626;
+}
+
+.rpsa-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.rpsa-grid-top {
+  grid-template-columns: 1.15fr 1.55fr 1.15fr;
+}
+
+.rpsa-grid-mid {
+  grid-template-columns: 1.45fr 1fr 0.8fr;
+}
+
+.rpsa-grid-bottom {
+  grid-template-columns: 1.15fr 1.2fr 1fr 0.85fr;
+}
+
+.rpsa-card {
+  min-width: 0;
+  border: 1px solid #d8e4f2;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.035);
+  overflow: hidden;
+}
+
+.rpsa-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid #edf3fa;
+}
+
+.rpsa-card header strong {
+  color: #06204a;
+}
+
+.rpsa-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.rpsa-card th,
+.rpsa-card td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #edf3fa;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rpsa-card th {
+  color: #415c7a;
+  font-weight: 800;
+}
+
+.rpsa-card td {
+  color: #06204a;
+  font-weight: 650;
+}
+
+.rpsa-card .good {
+  color: #008758;
+}
+
+.rpsa-card .bad {
+  color: #dc2626;
+}
+
+.rpsa-line-chart {
+  height: 13rem;
+  display: flex;
+  align-items: end;
+  gap: 0.42rem;
+  padding: 1rem 1rem 1.8rem;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.rpsa-line-chart i {
+  position: relative;
+  flex: 1;
+  min-width: 0.25rem;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, #008758, #16a34a);
+}
+
+.rpsa-line-chart small {
+  position: absolute;
+  left: 50%;
+  bottom: -1.25rem;
+  transform: translateX(-50%);
+  color: #49627d;
+  font-size: 0.58rem !important;
+}
+
+.rpsa-payment-body {
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.rpsa-donut,
+.rpsa-small-donut {
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: conic-gradient(#16a34a 0 62%, #0891b2 62% 81%, #f59e0b 81% 91%, #7c3aed 91% 97%, #f43f5e 97% 100%);
+  color: #06204a;
+}
+
+.rpsa-donut::before,
+.rpsa-small-donut::before {
+  content: "";
+  position: absolute;
+}
+
+.rpsa-donut span,
+.rpsa-donut strong,
+.rpsa-small-donut span,
+.rpsa-small-donut strong {
+  display: block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.88);
+}
+
+.rpsa-payment-bars {
+  display: grid;
+  gap: 0.75rem;
+  align-content: center;
+}
+
+.rpsa-payment-bars div {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr) 5rem;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.rpsa-payment-bars i {
+  height: 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--tone) var(--bar), #e7eef8 var(--bar));
+}
+
+.rpsa-exception-list,
+.rpsa-actions-list,
+.rpsa-insight-list,
+.rpsa-mini-kpis {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+}
+
+.rpsa-exception-list div,
+.rpsa-mini-kpis article {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #edf3fa;
+}
+
+.rpsa-actions-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  text-align: left;
+  border: 1px solid #e4edf7;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  padding: 0.65rem;
+}
+
+.rpsa-actions-list span {
+  width: 1.65rem;
+  height: 1.65rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #eefbf6;
+  color: #008758;
+  font-weight: 900;
+}
+
+.rpsa-insight-list p {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid #edf3fa;
+}
+
+.rpsa-insight-list strong {
+  color: #06204a;
+}
+
+.rpsa-insight-list span {
+  color: #49627d;
+  font-size: 0.72rem !important;
+}
+
+.rpsa-credit-body {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: 0.8rem;
+  padding: 0.85rem;
+}
+
+.rpsa-small-donut {
+  width: 8.5rem;
+}
+
+@media (max-width: 1280px) {
+  .rpsa-kpis {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .rpsa-filter-card {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .rpsa-grid-top,
+  .rpsa-grid-mid,
+  .rpsa-grid-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  #real-pos-sales-analytics-dashboard {
+    padding: 0.75rem;
+  }
+
+  .rpsa-header {
+    display: grid;
+  }
+
+  .rpsa-kpis,
+  .rpsa-filter-card {
+    grid-template-columns: 1fr;
+  }
+
+  .rpsa-payment-body,
+  .rpsa-credit-body {
+    grid-template-columns: 1fr;
+  }
+
+  .rpsa-card {
+    overflow-x: auto;
+  }
+}
+/* REAL_POS_SALES_ANALYTICS_DASHBOARD_END */
