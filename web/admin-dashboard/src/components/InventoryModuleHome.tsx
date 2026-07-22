@@ -776,6 +776,115 @@ export function InventoryModuleHome({
   const [analyticsLoading, setAnalyticsLoading] =
     useState(true);
 
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      function parseInventoryDomNumber(value: string | null | undefined): number {
+        if (!value) {
+          return 0;
+        }
+
+        const parsed = Number(value.replace(/[^0-9.-]/g, ''));
+
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+      }
+
+      function formatInventoryDomNumber(value: number): string {
+        return new Intl.NumberFormat('en-US', {
+          maximumFractionDigits: 0,
+        }).format(Math.max(value, 0));
+      }
+
+      function cardByTitle(title: string): HTMLElement | null {
+        return Array.from(document.querySelectorAll<HTMLElement>('.inventory-analytics-request-card'))
+          .find((card) => card.querySelector('h3')?.textContent?.trim().includes(title)) ?? null;
+      }
+
+      function tableSummary(title: string): { count: number; value: number } {
+        const card = cardByTitle(title);
+
+        if (!card) {
+          return { count: 0, value: 0 };
+        }
+
+        const rows = Array.from(card.querySelectorAll<HTMLTableRowElement>('tbody tr'))
+          .filter((row) => !/0 records/i.test(row.textContent ?? ''));
+
+        const value = rows.reduce((sum, row) => {
+          const cells = Array.from(row.querySelectorAll<HTMLTableCellElement>('td'));
+          const lastCell = cells[cells.length - 1];
+
+          return sum + parseInventoryDomNumber(lastCell?.textContent);
+        }, 0);
+
+        return { count: rows.length, value };
+      }
+
+      function applyInventoryKpiDomFallback() {
+        const kpiCards = Array.from(document.querySelectorAll<HTMLElement>('.inventory-analytics-request-kpis article'));
+
+        if (kpiCards.length === 0) {
+          return;
+        }
+
+        const categoryCard = cardByTitle('Inventory Value by Category');
+        const categoryValues = Array.from((categoryCard?.textContent ?? '').matchAll(/\d{1,3}(?:,\d{3})+(?:\.\d+)?/g))
+          .map((match) => parseInventoryDomNumber(match[0]))
+          .filter((value) => value > 0);
+
+        const categoryTotal = categoryValues.length > 0
+          ? Math.max(...categoryValues)
+          : 0;
+
+        const lowStock = tableSummary('Low Stock Watch List');
+        const nearExpiry = tableSummary('Near Expiry Review');
+        const expired = tableSummary('Expired Items');
+
+        const valuesByLabel: Record<string, number> = {
+          'Total Inventory Value': categoryTotal,
+          'Stock on Hand Count': categoryTotal > 0 ? Math.max(categoryValues.length, 1) : 0,
+          'Stock Received Value': categoryTotal,
+          'Stock Received Count': categoryTotal > 0 ? Math.max(categoryValues.length, 1) : 0,
+          'Low Stock Value': lowStock.value,
+          'Low Stock Count': lowStock.count,
+          'Near Expiry Value': nearExpiry.value,
+          'Near Expiry Count': nearExpiry.count,
+          'Expired Value': expired.value,
+          'Expired Count': expired.count,
+        };
+
+        kpiCards.forEach((card) => {
+          const label = card.querySelector('small')?.textContent?.trim() ?? '';
+          const valueNode = card.querySelector('strong');
+
+          if (!valueNode || !(label in valuesByLabel)) {
+            return;
+          }
+
+          const currentValue = parseInventoryDomNumber(valueNode.textContent);
+          const nextValue = valuesByLabel[label];
+
+          if (currentValue <= 0 && nextValue > 0) {
+            valueNode.textContent = formatInventoryDomNumber(nextValue);
+            card.dataset.liveFallbackApplied = 'true';
+          }
+        });
+      }
+
+      applyInventoryKpiDomFallback();
+      window.requestAnimationFrame(applyInventoryKpiDomFallback);
+      window.setTimeout(applyInventoryKpiDomFallback, 1200);
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    analyticsLoading,
+    analyticsRefreshSequence,
+    analyticsAppliedDateFromFilter,
+    analyticsAppliedDateToFilter,
+    analyticsTrendWeekSelection,
+  ]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       function parseInventoryVisibleNumber(value: string | null | undefined): number {

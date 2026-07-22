@@ -45600,3 +45600,15 @@ thead
   white-space: nowrap !important;
   font-variant-numeric: tabular-nums !important;
 }
+
+/* Inventory Analytics KPI cards: right-aligned, fallback-ready values */
+.inventory-analytics-request-kpis article strong {
+  justify-self: end !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.inventory-analytics-request-kpis article[data-live-fallback-applied='true'] strong {
+  color: #0f766e !important;
+}
