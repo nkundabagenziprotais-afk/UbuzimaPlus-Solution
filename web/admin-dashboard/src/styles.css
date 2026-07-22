@@ -45783,3 +45783,150 @@ thead
 [data-risk-cache-restored='true'] .inventory-analytics-risk-summary {
   display: none !important;
 }
+
+/* Ubuzima+ mobile-app-like web experience */
+html.ubuzima-mobile-web,
+html.ubuzima-mobile-web body,
+html.ubuzima-mobile-web #root {
+  min-height: 100%;
+  min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.ubuzima-mobile-web body {
+  margin: 0;
+  background: #f8fafc;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+html.ubuzima-mobile-web input,
+html.ubuzima-mobile-web textarea,
+html.ubuzima-mobile-web select,
+html.ubuzima-mobile-web [contenteditable='true'] {
+  user-select: text;
+  font-size: 16px !important;
+}
+
+html.ubuzima-mobile-web button,
+html.ubuzima-mobile-web a,
+html.ubuzima-mobile-web select,
+html.ubuzima-mobile-web input {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+html.ubuzima-mobile-web .dashboard-shell,
+html.ubuzima-mobile-web .dashboard-main,
+html.ubuzima-mobile-web .admin-dashboard-shell,
+html.ubuzima-mobile-web .admin-dashboard-main {
+  width: 100% !important;
+  min-height: 100dvh !important;
+  border-radius: 0 !important;
+  overflow-x: hidden !important;
+}
+
+html.ubuzima-mobile-web .dashboard-header-center-actions,
+html.ubuzima-mobile-web .admin-topbar,
+html.ubuzima-mobile-web .admin-header,
+html.ubuzima-mobile-web .module-header {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding-top: max(0.55rem, env(safe-area-inset-top));
+}
+
+html.ubuzima-mobile-web .dashboard-scroll-panel,
+html.ubuzima-mobile-web .module-content,
+html.ubuzima-mobile-web .admin-content {
+  padding-bottom: max(5.75rem, calc(env(safe-area-inset-bottom) + 4.5rem)) !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.ubuzima-mobile-web .inventory-analytics-request-kpis,
+html.ubuzima-mobile-web .business-overview-kpi-grid,
+html.ubuzima-mobile-web .overview-kpi-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.6rem !important;
+}
+
+html.ubuzima-mobile-web .inventory-analytics-request-grid,
+html.ubuzima-mobile-web .business-overview-grid,
+html.ubuzima-mobile-web .overview-review-grid,
+html.ubuzima-mobile-web .dashboard-grid {
+  grid-template-columns: 1fr !important;
+}
+
+html.ubuzima-mobile-web .inventory-analytics-request-card,
+html.ubuzima-mobile-web .business-overview-card,
+html.ubuzima-mobile-web .dashboard-card,
+html.ubuzima-mobile-web .review-card {
+  border-radius: 1.1rem !important;
+  overflow: hidden;
+}
+
+html.ubuzima-mobile-web .inventory-analytics-request-filters,
+html.ubuzima-mobile-web .inventory-analytics-filter-bar-full,
+html.ubuzima-mobile-web .filter-bar,
+html.ubuzima-mobile-web .filters-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.65rem !important;
+}
+
+html.ubuzima-mobile-web table {
+  min-width: 40rem;
+}
+
+html.ubuzima-mobile-web .table-wrapper,
+html.ubuzima-mobile-web .inventory-analytics-table-wrap,
+html.ubuzima-mobile-web .business-overview-table-wrap,
+html.ubuzima-mobile-web .scrollable-table {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.ubuzima-mobile-web .inventory-analytics-bar-trend-bars,
+html.ubuzima-mobile-web .chart-scroll,
+html.ubuzima-mobile-web .horizontal-scroll {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+
+html.ubuzima-mobile-web .inventory-analytics-bar-trend-bars > *,
+html.ubuzima-mobile-web .chart-scroll > *,
+html.ubuzima-mobile-web .horizontal-scroll > * {
+  scroll-snap-align: start;
+}
+
+html.ubuzima-standalone-webapp body {
+  background: #f8fafc;
+}
+
+html.ubuzima-standalone-webapp .dashboard-header-center-actions,
+html.ubuzima-standalone-webapp .admin-topbar,
+html.ubuzima-standalone-webapp .admin-header {
+  padding-top: max(0.85rem, env(safe-area-inset-top));
+}
+
+@media (max-width: 480px) {
+  html.ubuzima-mobile-web .inventory-analytics-request-kpis,
+  html.ubuzima-mobile-web .business-overview-kpi-grid,
+  html.ubuzima-mobile-web .overview-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  html.ubuzima-mobile-web .inventory-analytics-request-kpis article,
+  html.ubuzima-mobile-web .business-overview-kpi-grid article,
+  html.ubuzima-mobile-web .overview-kpi-grid article {
+    min-height: 4.4rem;
+  }
+}
