@@ -2526,8 +2526,14 @@ export function InventoryModuleHome({
             const stockMovementEntriesForTrend = Array.from(stockMovementByDate.entries())
               .filter(([dateKey]) => analyticsTrendDateKeys.includes(dateKey));
 
+            // TOTAL_INVENTORY_TREND_VISIBLE_REAL_DATA_V1
+            const visibleStockTrendSnapshotDate =
+              selectedTrendDateKeys[selectedTrendDateKeys.length - 1] ??
+              analyticsTrendDateKeys[analyticsTrendDateKeys.length - 1] ??
+              analyticsAppliedDateToFilter;
+
             let realFullStockTrendValues = analyticsTrendDateKeys.map((dateKey) =>
-              dateKey === analyticsAppliedDateToFilter ? realCurrentStockValueForTrend : 0,
+              dateKey === visibleStockTrendSnapshotDate ? realCurrentStockValueForTrend : 0,
             );
 
             if (stockMovementEntriesForTrend.length > 0) {
