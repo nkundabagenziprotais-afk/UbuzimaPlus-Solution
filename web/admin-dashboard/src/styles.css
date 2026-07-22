@@ -48026,3 +48026,10 @@ html.ubuzima-standalone-webapp .admin-header {
   font-size: 0.78rem !important;
   color: #92400e !important;
 }
+
+/* POS_PRODUCT_SEARCH_LOAD_FULL_MASTER_V1 */
+.pos-product-picker-empty,
+.pos-product-search-empty {
+  font-size: 0.78rem !important;
+  color: #92400e !important;
+}
