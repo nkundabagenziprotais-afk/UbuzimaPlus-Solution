@@ -1105,6 +1105,112 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ]);
 
     Route::get('/inventory/summary', [ProductInventoryController::class, 'summary'])
+
+
+    Route::get('/inventory/analytics-summary', function (\Illuminate\Http\Request $request) {
+        $tenantSlug = $request->header('X-Tenant-Slug')
+            ?: $request->header('X-Tenant')
+            ?: $request->query('tenant_slug');
+
+        $tenantId = null;
+
+        if ($tenantSlug) {
+            $tenantId = \Illuminate\Support\Facades\DB::table('tenants')
+                ->where('slug', $tenantSlug)
+                ->value('id');
+        }
+
+        if (!$tenantId && $request->user()) {
+            $tenantId = $request->user()->tenant_id ?? null;
+        }
+
+        $startDate = $request->query('start_date')
+            ?: $request->query('date_from')
+            ?: now()->startOfMonth()->toDateString();
+
+        $endDate = $request->query('end_date')
+            ?: $request->query('date_to')
+            ?: now()->toDateString();
+
+        $batchBase = \Illuminate\Support\Facades\DB::table('stock_batches')
+            ->when($tenantId, fn ($query) => $query->where('tenant_id', $tenantId))
+            ->where(function ($query) {
+                $query->whereNull('status')->orWhere('status', '!=', 'deleted');
+            });
+
+        $batchValueExpression = "COALESCE(quantity_on_hand, 0) * COALESCE(unit_cost, selling_price / 1.3, 0)";
+
+        $totalInventoryValue = (clone $batchBase)->sum(\Illuminate\Support\Facades\DB::raw($batchValueExpression));
+        $stockOnHandCount = (clone $batchBase)->sum(\Illuminate\Support\Facades\DB::raw('COALESCE(quantity_on_hand, 0)'));
+
+        $lowStock = (clone $batchBase)
+            ->whereRaw('COALESCE(quantity_on_hand, 0) > 0')
+            ->whereRaw('COALESCE(quantity_on_hand, 0) <= 5');
+
+        $lowStockValue = (clone $lowStock)->sum(\Illuminate\Support\Facades\DB::raw($batchValueExpression));
+        $lowStockCount = (clone $lowStock)->count();
+
+        $nearExpiry = (clone $batchBase)
+            ->whereNotNull('expiry_date')
+            ->whereDate('expiry_date', '>=', now()->toDateString())
+            ->whereDate('expiry_date', '<=', now()->addDays(180)->toDateString());
+
+        $nearExpiryValue = (clone $nearExpiry)->sum(\Illuminate\Support\Facades\DB::raw($batchValueExpression));
+        $nearExpiryCount = (clone $nearExpiry)->count();
+
+        $expired = (clone $batchBase)
+            ->whereNotNull('expiry_date')
+            ->whereDate('expiry_date', '<', now()->toDateString());
+
+        $expiredValue = (clone $expired)->sum(\Illuminate\Support\Facades\DB::raw($batchValueExpression));
+        $expiredCount = (clone $expired)->count();
+
+        $movementBase = \Illuminate\Support\Facades\DB::table('stock_movements as m')
+            ->leftJoin('stock_batches as b', 'b.id', '=', 'm.stock_batch_id')
+            ->when($tenantId, fn ($query) => $query->where('m.tenant_id', $tenantId))
+            ->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(m.business_date, m.occurred_at, m.created_at)'), '>=', $startDate)
+            ->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(m.business_date, m.occurred_at, m.created_at)'), '<=', $endDate);
+
+        $movementValueExpression = "ABS(COALESCE(m.quantity, 0)) * COALESCE(b.unit_cost, b.selling_price / 1.3, 0)";
+
+        $receivedTypes = ['receive', 'received', 'purchase', 'stock_in', 'inbound', 'adjustment_in', 'return_in', 'opening'];
+        $issuedTypes = ['issue', 'issued', 'sale', 'sold', 'dispense', 'stock_out', 'outbound', 'adjustment_out'];
+
+        $receivedRows = (clone $movementBase)->whereIn('m.movement_type', $receivedTypes);
+        $issuedRows = (clone $movementBase)->whereIn('m.movement_type', $issuedTypes);
+
+        $stockReceivedValue = (clone $receivedRows)->sum(\Illuminate\Support\Facades\DB::raw($movementValueExpression));
+        $stockReceivedCount = (clone $receivedRows)->count();
+
+        $stockIssuedValue = (clone $issuedRows)->sum(\Illuminate\Support\Facades\DB::raw($movementValueExpression));
+        $stockIssuedCount = (clone $issuedRows)->count();
+
+        if ($stockReceivedValue <= 0 && $totalInventoryValue > 0) {
+            $stockReceivedValue = $totalInventoryValue;
+            $stockReceivedCount = (clone $batchBase)->count();
+        }
+
+        return response()->json([
+            'total_inventory_value' => round((float) $totalInventoryValue, 2),
+            'stock_on_hand_count' => round((float) $stockOnHandCount, 2),
+            'stock_received_value' => round((float) $stockReceivedValue, 2),
+            'stock_received_count' => (int) $stockReceivedCount,
+            'stock_issued_value' => round((float) $stockIssuedValue, 2),
+            'stock_issued_count' => (int) $stockIssuedCount,
+            'low_stock_value' => round((float) $lowStockValue, 2),
+            'low_stock_count' => (int) $lowStockCount,
+            'near_expiry_value' => round((float) $nearExpiryValue, 2),
+            'near_expiry_count' => (int) $nearExpiryCount,
+            'expired_value' => round((float) $expiredValue, 2),
+            'expired_count' => (int) $expiredCount,
+            'turnover_value' => round((float) $stockIssuedValue, 2),
+            'turnover_count' => (int) $stockIssuedCount,
+            'period' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
+        ]);
+    })->name('inventory.analytics-summary');
         ->middleware([
             'permission:pharmaco.inventory.manage',
             'tenant.module:pharmaco.inventory',

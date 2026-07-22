@@ -730,6 +730,7 @@ export function InventoryModuleHome({
     useState<unknown>(null);
   const [analyticsProducts, setAnalyticsProducts] = useState<unknown>(null);
   const [analyticsBatches, setAnalyticsBatches] = useState<unknown>(null);
+  const [analyticsKpiSummary, setAnalyticsKpiSummary] = useState<unknown>(null);
   const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(null);
   const [analyticsLocations, setAnalyticsLocations] = useState<unknown>(null);
   const [analyticsMovements, setAnalyticsMovements] = useState<unknown>(null);
@@ -897,6 +898,56 @@ export function InventoryModuleHome({
   const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ??
     '';
+
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadInventoryAnalyticsKpiSummary() {
+      if (!token || !tenantSlug) {
+        setAnalyticsKpiSummary(null);
+        return;
+      }
+
+      const query = new URLSearchParams({
+        start_date: analyticsAppliedDateFromFilter,
+        end_date: analyticsAppliedDateToFilter,
+        date_from: analyticsAppliedDateFromFilter,
+        date_to: analyticsAppliedDateToFilter,
+      }).toString();
+
+      try {
+        const response = await fetch(`/api/v1/pharmaco/inventory/analytics-summary?${query}`, {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+            'X-Tenant': tenantSlug,
+            'X-Tenant-Slug': tenantSlug,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Inventory analytics summary failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (isActive) {
+          setAnalyticsKpiSummary(data);
+        }
+      } catch {
+        if (isActive) {
+          setAnalyticsKpiSummary(null);
+        }
+      }
+    }
+
+    loadInventoryAnalyticsKpiSummary();
+
+    return () => {
+      isActive = false;
+    };
+  }, [token, tenantSlug, analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter, analyticsRefreshSequence]);
 
   useEffect(() => {
     let isActive = true;
@@ -2054,21 +2105,36 @@ export function InventoryModuleHome({
               salesRegisterRows.length,
             );
 
+            const apiInventoryKpiTotalValue = inventoryDeepNumberValue(analyticsKpiSummary, ['total_inventory_value']);
+            const apiInventoryKpiStockOnHandCount = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_on_hand_count']);
+            const apiInventoryKpiReceivedValue = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_received_value']);
+            const apiInventoryKpiReceivedCount = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_received_count']);
+            const apiInventoryKpiIssuedValue = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_issued_value']);
+            const apiInventoryKpiIssuedCount = inventoryDeepNumberValue(analyticsKpiSummary, ['stock_issued_count']);
+            const apiInventoryKpiLowStockValue = inventoryDeepNumberValue(analyticsKpiSummary, ['low_stock_value']);
+            const apiInventoryKpiLowStockCount = inventoryDeepNumberValue(analyticsKpiSummary, ['low_stock_count']);
+            const apiInventoryKpiNearExpiryValue = inventoryDeepNumberValue(analyticsKpiSummary, ['near_expiry_value']);
+            const apiInventoryKpiNearExpiryCount = inventoryDeepNumberValue(analyticsKpiSummary, ['near_expiry_count']);
+            const apiInventoryKpiExpiredValue = inventoryDeepNumberValue(analyticsKpiSummary, ['expired_value']);
+            const apiInventoryKpiExpiredCount = inventoryDeepNumberValue(analyticsKpiSummary, ['expired_count']);
+            const apiInventoryKpiTurnoverValue = inventoryDeepNumberValue(analyticsKpiSummary, ['turnover_value']);
+            const apiInventoryKpiTurnoverCount = inventoryDeepNumberValue(analyticsKpiSummary, ['turnover_count']);
+
             const kpiCards = [
-              { label: 'Total Inventory Value', value: formatCurrency(displayedTotalInventoryValue), target: 'product-inventory' },
-              { label: 'Stock on Hand Count', value: formatCompactNumber(displayedStockOnHandCount), target: 'product-inventory' },
-              { label: 'Stock Received Value', value: formatCurrency(displayedReceivedValue), target: 'purchase-orders' },
-              { label: 'Stock Received Count', value: formatCompactNumber(displayedReceivedCount), target: 'purchase-orders' },
-              { label: 'Stock Issued Value', value: formatCurrency(displayedIssuedValue), target: 'product-inventory' },
-              { label: 'Stock Issued Count', value: formatCompactNumber(displayedIssuedCount), target: 'product-inventory' },
-              { label: 'Low Stock Value', value: formatCurrency(Math.max(lowStockValue, analyticsVisibleKpiFallback.lowStockValue)), target: 'low-stock' },
-              { label: 'Low Stock Count', value: formatCompactNumber(Math.max(lowStockCount, analyticsVisibleKpiFallback.lowStockCount)), target: 'low-stock' },
-              { label: 'Near Expiry Value', value: formatCurrency(Math.max(nearExpiryValue, analyticsVisibleKpiFallback.nearExpiryValue)), target: 'near-expiry' },
-              { label: 'Near Expiry Count', value: formatCompactNumber(Math.max(nearExpiryCount, analyticsVisibleKpiFallback.nearExpiryCount)), target: 'near-expiry' },
-              { label: 'Expired Value', value: formatCurrency(Math.max(expiredValue, analyticsVisibleKpiFallback.expiredValue)), target: 'near-expiry' },
-              { label: 'Expired Count', value: formatCompactNumber(Math.max(expiredCount, analyticsVisibleKpiFallback.expiredCount)), target: 'near-expiry' },
-              { label: 'Turnover Value', value: formatCurrency(displayedIssuedValue), target: 'product-inventory' },
-              { label: 'Turnover Count', value: formatCompactNumber(displayedIssuedCount), target: 'product-inventory' },
+              { label: 'Total Inventory Value', value: formatCurrency(Math.max(apiInventoryKpiTotalValue, displayedTotalInventoryValue)), target: 'product-inventory' },
+              { label: 'Stock on Hand Count', value: formatCompactNumber(Math.max(apiInventoryKpiStockOnHandCount, displayedStockOnHandCount)), target: 'product-inventory' },
+              { label: 'Stock Received Value', value: formatCurrency(Math.max(apiInventoryKpiReceivedValue, displayedReceivedValue)), target: 'purchase-orders' },
+              { label: 'Stock Received Count', value: formatCompactNumber(Math.max(apiInventoryKpiReceivedCount, displayedReceivedCount)), target: 'purchase-orders' },
+              { label: 'Stock Issued Value', value: formatCurrency(Math.max(apiInventoryKpiIssuedValue, displayedIssuedValue)), target: 'product-inventory' },
+              { label: 'Stock Issued Count', value: formatCompactNumber(Math.max(apiInventoryKpiIssuedCount, displayedIssuedCount)), target: 'product-inventory' },
+              { label: 'Low Stock Value', value: formatCurrency(Math.max(apiInventoryKpiLowStockValue, lowStockValue, analyticsVisibleKpiFallback.lowStockValue)), target: 'low-stock' },
+              { label: 'Low Stock Count', value: formatCompactNumber(Math.max(apiInventoryKpiLowStockCount, lowStockCount, analyticsVisibleKpiFallback.lowStockCount)), target: 'low-stock' },
+              { label: 'Near Expiry Value', value: formatCurrency(Math.max(apiInventoryKpiNearExpiryValue, nearExpiryValue, analyticsVisibleKpiFallback.nearExpiryValue)), target: 'near-expiry' },
+              { label: 'Near Expiry Count', value: formatCompactNumber(Math.max(apiInventoryKpiNearExpiryCount, nearExpiryCount, analyticsVisibleKpiFallback.nearExpiryCount)), target: 'near-expiry' },
+              { label: 'Expired Value', value: formatCurrency(Math.max(apiInventoryKpiExpiredValue, expiredValue, analyticsVisibleKpiFallback.expiredValue)), target: 'near-expiry' },
+              { label: 'Expired Count', value: formatCompactNumber(Math.max(apiInventoryKpiExpiredCount, expiredCount, analyticsVisibleKpiFallback.expiredCount)), target: 'near-expiry' },
+              { label: 'Turnover Value', value: formatCurrency(Math.max(apiInventoryKpiTurnoverValue, displayedIssuedValue)), target: 'product-inventory' },
+              { label: 'Turnover Count', value: formatCompactNumber(Math.max(apiInventoryKpiTurnoverCount, displayedIssuedCount)), target: 'product-inventory' },
             ];
 
             const maxCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
