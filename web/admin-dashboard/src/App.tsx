@@ -4135,6 +4135,8 @@ function App() {
   const [mobileAppScreen, setMobileAppScreen] = useState<UbuzimaMobileAppScreen>('business');
   const [isPwaInstallAvailable, setIsPwaInstallAvailable] = useState(false);
   const [isPwaInstalling, setIsPwaInstalling] = useState(false);
+  const [isIosDevice, setIsIosDevice] = useState(false);
+  const [isLoginIosInstallGuideOpen, setIsLoginIosInstallGuideOpen] = useState(false);
   const [isStandalonePwa, setIsStandalonePwa] = useState(false);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine,
@@ -4310,6 +4312,15 @@ function App() {
       window.removeEventListener('online', updateOnlineState);
       window.removeEventListener('offline', updateOnlineState);
     };
+  }, []);
+
+  useEffect(() => {
+    const navigatorInfo = window.navigator as Navigator & {
+      platform?: string;
+    };
+    const isTouchMac = navigatorInfo.platform === 'MacIntel' && navigatorInfo.maxTouchPoints > 1;
+
+    setIsIosDevice(/iPad|iPhone|iPod/i.test(navigatorInfo.userAgent) || isTouchMac);
   }, []);
 
   useEffect(() => {
@@ -5379,6 +5390,22 @@ function App() {
   }
 
 
+  const loginInstallStatusLabel = isStandalonePwa
+    ? 'Installed app'
+    : isPwaInstallAvailable
+      ? 'Ready to install'
+      : isIosDevice
+        ? 'iPhone ready'
+        : 'Secure web access';
+  const loginInstallStatusDetail = isStandalonePwa
+    ? 'Ubuzima+ is running in app mode'
+    : isPwaInstallAvailable
+      ? 'Install Ubuzima+ on this phone'
+      : isIosDevice
+        ? 'Add to Home Screen from Safari'
+        : 'Open on a phone for app installation';
+  const shouldShowLoginInstallPanel = !isStandalonePwa && (isPwaInstallAvailable || isIosDevice);
+
   if (isRestoringSession) {
     return (
       <main
@@ -5390,7 +5417,7 @@ function App() {
 
   if (!profile) {
     return (
-      <main className="auth-shell auth-shell--identity">
+      <main className="auth-shell auth-shell--identity auth-shell--mobile-app-ready">
         <section className="auth-side auth-info-panel">
           <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
           <p className="eyebrow">Ubuzima+ Platform</p>
@@ -5417,6 +5444,19 @@ function App() {
         </section>
 
         <section className="auth-panel auth-form-panel">
+          <div className="login-app-brand">
+            <img src={brandLogoSrc} alt="" />
+            <span>
+              <strong>Ubuzima+</strong>
+              <small>Secure pharmacy app</small>
+            </span>
+          </div>
+
+          <div className="login-app-status" aria-label="Device app readiness">
+            <span>{loginInstallStatusLabel}</span>
+            <span>{isOnline ? 'Online' : 'Offline shell'}</span>
+          </div>
+
           <div className="auth-language-row">
             <span>Staff Identity</span>
             <div>
@@ -5431,7 +5471,7 @@ function App() {
             <p className="eyebrow">Sign in</p>
             <h2>Access your workspace</h2>
             <p className="auth-copy">
-              Use your staff account. Access is tenant-aware and limited by your role, branch, package, and permissions.
+              Sign in to POS, inventory, procurement, finance, and live business overview with your approved staff access.
             </p>
 
             <div className="login-method-tabs" aria-label="Login method">
@@ -5596,7 +5636,58 @@ function App() {
                 </div>
               </div>
             )}
+
+            {shouldShowLoginInstallPanel && (
+              <div className="login-install-panel">
+                <div>
+                  <span>Device app readiness</span>
+                  <strong>{loginInstallStatusLabel}</strong>
+                  <small>{loginInstallStatusDetail}</small>
+                </div>
+
+                {isPwaInstallAvailable ? (
+                  <button type="button" onClick={requestPwaInstall} disabled={isPwaInstalling}>
+                    {isPwaInstalling ? 'Opening install' : 'Install app'}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setIsLoginIosInstallGuideOpen(true)}>
+                    iPhone install
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+
+          {isLoginIosInstallGuideOpen && (
+            <div className="recovery-overlay login-ios-install-overlay" role="presentation">
+              <section
+                className="recovery-overlay-card login-ios-install-card"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="login-ios-install-title"
+              >
+                <p className="eyebrow">Device app readiness</p>
+                <h2 id="login-ios-install-title">Install Ubuzima+ on iPhone</h2>
+                <div className="login-ios-steps">
+                  <article>
+                    <strong>1</strong>
+                    <span>Open this page in Safari.</span>
+                  </article>
+                  <article>
+                    <strong>2</strong>
+                    <span>Tap Share.</span>
+                  </article>
+                  <article>
+                    <strong>3</strong>
+                    <span>Select Add to Home Screen and confirm.</span>
+                  </article>
+                </div>
+                <button type="button" onClick={() => setIsLoginIosInstallGuideOpen(false)}>
+                  Got it
+                </button>
+              </section>
+            </div>
+          )}
         </section>
       </main>
     );
@@ -10594,6 +10685,7 @@ return (
         currentWorkspace={mobileActiveTitle}
         installAvailable={isPwaInstallAvailable}
         isInstalling={isPwaInstalling}
+        isIosDevice={isIosDevice}
         isOnline={isOnline}
         isStandalone={isStandalonePwa}
         menuGroups={nativeMobileMenuGroups}

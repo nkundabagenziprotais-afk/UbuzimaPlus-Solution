@@ -86,7 +86,7 @@ grep -Fq '"start_url": "/admin/' "$ADMIN_DIR/public/manifest.webmanifest"
 grep -Fq '"scope": "/admin/"' "$ADMIN_DIR/public/manifest.webmanifest"
 grep -Fq '"display": "standalone"' "$ADMIN_DIR/public/manifest.webmanifest"
 grep -Fq "navigator.serviceWorker.register('/admin/sw.js'" "$ADMIN_DIR/src/main.tsx"
-grep -Fq "ubuzima-admin-shell-v16" "$ADMIN_DIR/public/sw.js"
+grep -Fq "ubuzima-admin-shell-v17" "$ADMIN_DIR/public/sw.js"
 
 if [ "$SKIP_NPM_BUILD" != "1" ]; then
   if ! "$NPM_BIN" --version >/dev/null 2>&1; then

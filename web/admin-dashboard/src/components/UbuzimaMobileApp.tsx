@@ -63,6 +63,7 @@ type UbuzimaMobileAppProps = {
   currentWorkspace: string;
   installAvailable: boolean;
   isInstalling: boolean;
+  isIosDevice: boolean;
   isOnline: boolean;
   isStandalone: boolean;
   liveMetricBars?: number[];
@@ -381,6 +382,7 @@ export function UbuzimaMobileApp({
   currentWorkspace,
   installAvailable,
   isInstalling,
+  isIosDevice,
   isOnline,
   isStandalone,
   liveMetricBars = [],
@@ -408,6 +410,7 @@ export function UbuzimaMobileApp({
 }: UbuzimaMobileAppProps) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [isMetricSheetOpen, setIsMetricSheetOpen] = useState(false);
+  const [isIosInstallSheetOpen, setIsIosInstallSheetOpen] = useState(false);
   const activeNavScreen =
     navigationItems.find((item) => item.screen === activeScreen)?.screen ?? '';
   const heroAction = primaryActions[0];
@@ -428,16 +431,21 @@ export function UbuzimaMobileApp({
     .map((height) => Math.max(8, Math.min(100, Math.round(height))));
   const chartStatusLabel = liveMetricBars.length > 0 ? 'Live' : isOnline ? 'Ready' : 'Saved';
   const canInstallApp = installAvailable && !isStandalone;
+  const canShowIosInstall = isIosDevice && !isStandalone;
   const installStatusLabel = isStandalone
     ? 'Installed app'
     : canInstallApp
       ? 'Install available'
-      : 'Browser access';
+      : canShowIosInstall
+        ? 'iPhone ready'
+        : 'Browser access';
   const installStatusDetail = isStandalone
     ? 'Standalone mode is active'
     : canInstallApp
       ? 'Add Ubuzima+ to this phone'
-      : 'Use the phone browser install option';
+      : canShowIosInstall
+        ? 'Use Add to Home Screen from Safari'
+        : 'Use the phone browser install option';
   const paymentChannels = ['Cash', 'Momo', 'Insurance', 'Credit'].map((method) => ({
     method,
     action:
@@ -749,6 +757,20 @@ export function UbuzimaMobileApp({
               </article>
             )}
 
+            {canShowIosInstall && (
+              <button
+                type="button"
+                className="ubuzima-native-device-item is-action is-ios"
+                onClick={() => setIsIosInstallSheetOpen(true)}
+              >
+                <AppIcon name="HM" />
+                <span>
+                  <strong>iPhone installation</strong>
+                  <small>Add Ubuzima+ to the Home Screen</small>
+                </span>
+              </button>
+            )}
+
             <article className="ubuzima-native-device-item">
               <AppIcon name="MAIL" />
               <span>
@@ -888,6 +910,47 @@ export function UbuzimaMobileApp({
               {businessPositionMetrics.map((metric) => (
                 <BusinessMetricCard key={metric.key} metric={metric} />
               ))}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {isIosInstallSheetOpen && (
+        <div className="ubuzima-native-sheet" role="presentation">
+          <button
+            type="button"
+            className="ubuzima-native-sheet__backdrop"
+            onClick={() => setIsIosInstallSheetOpen(false)}
+            aria-label="Close iPhone installation guide"
+          />
+          <section
+            className="ubuzima-native-sheet__panel ubuzima-native-ios-install-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ubuzima-native-ios-install-title"
+          >
+            <header>
+              <div>
+                <span>Device app readiness</span>
+                <h2 id="ubuzima-native-ios-install-title">Install on iPhone</h2>
+              </div>
+              <button type="button" onClick={() => setIsIosInstallSheetOpen(false)}>
+                Close
+              </button>
+            </header>
+            <div className="ubuzima-native-ios-steps">
+              <article>
+                <strong>1</strong>
+                <span>Open this admin page in Safari.</span>
+              </article>
+              <article>
+                <strong>2</strong>
+                <span>Tap the Share button.</span>
+              </article>
+              <article>
+                <strong>3</strong>
+                <span>Choose Add to Home Screen and confirm.</span>
+              </article>
             </div>
           </section>
         </div>
