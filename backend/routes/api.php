@@ -1109,6 +1109,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'permission:pharmaco.inventory.manage',
             'tenant.module:pharmaco.inventory',
         ]);
+    Route::get('/inventory/analytics-summary', [ProductInventoryController::class, 'analyticsSummary'])->name('inventory.analytics-summary');
 
     Route::get('/profile', [CoreProfileController::class, 'profile'])
         ->middleware([
