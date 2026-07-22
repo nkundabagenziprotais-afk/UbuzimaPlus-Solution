@@ -47194,3 +47194,16 @@ html.ubuzima-standalone-webapp .admin-header {
     grid-template-columns: 1fr;
   }
 }
+
+/* POS_SALES_ANALYTICS_VISIBLE_ENTRY_V1 */
+.urma-module-card[data-module-key='sales'],
+.urma-actions button[data-action-match*='POS'],
+.urma-tabs button[data-tab='sales'] {
+  outline: 1px solid rgba(37, 99, 235, 0.12);
+}
+
+.urma-module-card[data-module-key='sales'] span,
+.urma-actions button[data-action-match*='POS'] span {
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #2563eb !important;
+}
