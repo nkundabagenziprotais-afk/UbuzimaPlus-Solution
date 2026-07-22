@@ -76,18 +76,13 @@ class PosSessionAdminController extends Controller
             );
         }
 
+        // POS_ADMIN_LIST_ALL_SESSION_TYPES_V1
+        // When no business date is selected, show both live and historical
+        // sessions ordered by recency instead of hiding older historical dates.
         if (! empty($validated['business_date'])) {
             $query->whereDate(
                 'business_date',
                 $validated['business_date'],
-            );
-        } else {
-            $query->whereDate(
-                'business_date',
-                '>=',
-                now()
-                    ->subDays(13)
-                    ->toDateString(),
             );
         }
 
