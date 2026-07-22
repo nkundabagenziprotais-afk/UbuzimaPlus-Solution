@@ -85,7 +85,11 @@ class PharmacoPaymentRecordingApiTest extends TestCase
             ->where('status', 'shadow_posted')
             ->firstOrFail();
 
-        $this->assertSame($sale->business_date->toDateString(), $entry->business_date->toDateString());
+        $expectedBusinessDate = $sale->business_date?->toDateString()
+            ?: $payment->received_at?->toDateString()
+            ?: now()->toDateString();
+
+        $this->assertSame($expectedBusinessDate, $entry->business_date->toDateString());
         $this->assertSame((float) $payment->amount, (float) $entry->total_debit);
         $this->assertSame((float) $payment->amount, (float) $entry->total_credit);
         $this->assertCount(2, $entry->lines);

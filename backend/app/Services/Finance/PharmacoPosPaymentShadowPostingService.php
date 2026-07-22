@@ -85,8 +85,7 @@ class PharmacoPosPaymentShadowPostingService
         return $this->postingService->post(new FinancePostingPayload(
             tenantId: (int) $payment->tenant_id,
             branchId: $sale->branch_id,
-            businessDate: $payment->business_date?->toDateString()
-                ?: $sale->business_date?->toDateString(),
+            businessDate: $this->businessDateFor($payment, $sale),
             sourceModule: 'pos',
             sourceType: 'payment',
             sourceId: (string) $payment->id,
@@ -125,6 +124,14 @@ class PharmacoPosPaymentShadowPostingService
             ],
             mode: 'shadow',
         ));
+    }
+
+    private function businessDateFor(PharmacoPayment $payment, PharmacoSale $sale): string
+    {
+        return $payment->business_date?->toDateString()
+            ?: $sale->business_date?->toDateString()
+            ?: $payment->received_at?->toDateString()
+            ?: now()->toDateString();
     }
 
     private function paymentMappingKey(string $paymentMethod): string
