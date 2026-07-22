@@ -1,4 +1,211 @@
 
+type UbuzimaBeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice?: Promise<{ outcome: string; platform: string }>;
+};
+
+function installUbuzimaMobileAppShellNavigation(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
+  const root = document.documentElement;
+  const mobileQuery = window.matchMedia('(max-width: 1024px)');
+  const compactQuery = window.matchMedia('(max-width: 780px)');
+
+  let sidebar: HTMLElement | null = null;
+  let menuButton: HTMLButtonElement | null = null;
+  let overlay: HTMLButtonElement | null = null;
+
+  function findSidebar(): HTMLElement | null {
+    const selectors = [
+      '[data-admin-sidebar]',
+      '[data-sidebar]',
+      '.admin-sidebar',
+      '.dashboard-sidebar',
+      '.dashboard-shell-sidebar',
+      '.sidebar',
+      '.side-nav',
+      '.left-menu',
+      '.module-sidebar',
+      '.app-sidebar',
+      '.admin-navigation',
+      '.dashboard-navigation',
+      'aside',
+    ];
+
+    for (const selector of selectors) {
+      const candidate = document.querySelector<HTMLElement>(selector);
+
+      if (!candidate) {
+        continue;
+      }
+
+      const text = candidate.textContent ?? '';
+      const hasNavigationContent =
+        /Dashboard|Inventory|Business|Sales|Procurement|Finance|Reports|Settings|Users|Admin|Pharma/i.test(text);
+
+      if (hasNavigationContent && candidate.offsetParent !== null) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  function ensureControls(): void {
+    if (!menuButton) {
+      menuButton = document.createElement('button');
+      menuButton.type = 'button';
+      menuButton.className = 'ubuzima-mobile-menu-button';
+      menuButton.setAttribute('aria-label', 'Open menu');
+      menuButton.setAttribute('aria-expanded', 'false');
+      menuButton.innerHTML = '<span></span><span></span><span></span>';
+      document.body.appendChild(menuButton);
+
+      menuButton.addEventListener('click', () => {
+        if (root.classList.contains('ubuzima-mobile-menu-open')) {
+          closeMenu();
+        } else {
+          openMenu();
+        }
+      });
+    }
+
+    if (!overlay) {
+      overlay = document.createElement('button');
+      overlay.type = 'button';
+      overlay.className = 'ubuzima-mobile-menu-overlay';
+      overlay.setAttribute('aria-label', 'Close menu');
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', closeMenu);
+    }
+  }
+
+  function openMenu(): void {
+    if (!mobileQuery.matches || !sidebar) {
+      return;
+    }
+
+    root.classList.add('ubuzima-mobile-menu-open');
+    sidebar.classList.add('ubuzima-mobile-sidebar-open');
+    menuButton?.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu(): void {
+    root.classList.remove('ubuzima-mobile-menu-open');
+    sidebar?.classList.remove('ubuzima-mobile-sidebar-open');
+    menuButton?.setAttribute('aria-expanded', 'false');
+  }
+
+  function bindSidebarCloseOnSelection(): void {
+    if (!sidebar || sidebar.dataset.ubuzimaMobileNavBound === 'true') {
+      return;
+    }
+
+    sidebar.dataset.ubuzimaMobileNavBound = 'true';
+
+    sidebar.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+
+      if (!target) {
+        return;
+      }
+
+      const interactive = target.closest('a,button,[role="button"],[data-module],[data-view]');
+
+      if (!interactive) {
+        return;
+      }
+
+      window.setTimeout(closeMenu, 120);
+    });
+  }
+
+  function sync(): void {
+    const isMobile = mobileQuery.matches;
+    const isCompact = compactQuery.matches;
+
+    root.classList.toggle('ubuzima-app-shell-mobile', isMobile);
+    root.classList.toggle('ubuzima-app-shell-compact', isCompact);
+
+    sidebar = findSidebar();
+
+    if (sidebar) {
+      sidebar.classList.toggle('ubuzima-mobile-sidebar', isMobile);
+      bindSidebarCloseOnSelection();
+    }
+
+    ensureControls();
+
+    if (!isMobile) {
+      closeMenu();
+    }
+  }
+
+  sync();
+
+  window.addEventListener('resize', sync, { passive: true });
+  window.addEventListener('orientationchange', sync, { passive: true });
+
+  const observer = new MutationObserver(sync);
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function installUbuzimaInstallAppPrompt(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
+  let deferredPrompt: UbuzimaBeforeInstallPromptEvent | null = null;
+  let button: HTMLButtonElement | null = null;
+
+  function ensureButton(): HTMLButtonElement {
+    if (button) {
+      return button;
+    }
+
+    button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'ubuzima-install-app-button';
+    button.textContent = 'Install app';
+    button.hidden = true;
+    document.body.appendChild(button);
+
+    button.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        return;
+      }
+
+      button!.hidden = true;
+      await deferredPrompt.prompt().catch(() => undefined);
+      await deferredPrompt.userChoice?.catch(() => undefined);
+      deferredPrompt = null;
+    });
+
+    return button;
+  }
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredPrompt = event as UbuzimaBeforeInstallPromptEvent;
+    ensureButton().hidden = false;
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+
+    if (button) {
+      button.hidden = true;
+    }
+  });
+}
+
+installUbuzimaMobileAppShellNavigation();
+installUbuzimaInstallAppPrompt();
+
+
+
 type DashboardSharedMetric = {
   label: string;
   valueText: string;
