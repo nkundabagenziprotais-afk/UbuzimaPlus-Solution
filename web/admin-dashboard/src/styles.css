@@ -47813,3 +47813,70 @@ html.ubuzima-standalone-webapp .admin-header {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* HISTORICAL_POS_GUIDED_CUSTOMER_JOURNEY_V1 */
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] textarea[name*='reason'],
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] input[name*='reason'],
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] label:has(textarea),
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] label:has(input[name*='reason']) {
+  display: none !important;
+}
+
+.historical-pos-workflow[data-historical-pos-journey='guided-v1'] {
+  --historical-step-radius: 0.95rem;
+}
+
+.historical-pos-workflow[data-historical-pos-journey='guided-v1']::before {
+  content: "1. Pick business date  →  2. Check availability  →  3. Request approval only if conflict  →  4. Open Historical POS";
+  display: block;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(0, 135, 88, 0.16);
+  border-radius: var(--historical-step-radius);
+  background: rgba(236, 253, 245, 0.88);
+  color: #065f46;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.pos-admin-historical-approval-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.9rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 0.95rem;
+  background: rgba(239, 246, 255, 0.92);
+}
+
+.pos-admin-historical-approval-strip span {
+  display: none;
+}
+
+.pos-admin-historical-approval-strip strong {
+  display: block;
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.pos-admin-historical-approval-strip p,
+.pos-admin-historical-approval-strip small {
+  margin: 0.15rem 0 0;
+  color: #475569;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .historical-pos-workflow[data-historical-pos-journey='guided-v1']::before,
+  .pos-admin-historical-approval-strip {
+    font-size: 0.72rem;
+  }
+
+  .pos-admin-historical-approval-strip {
+    display: grid;
+  }
+}

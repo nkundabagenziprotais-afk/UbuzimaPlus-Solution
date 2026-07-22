@@ -389,8 +389,7 @@ export function HistoricalPosWorkflow({
           {
             branch_id: branchId,
             business_date: businessDate,
-            request_reason:
-              historicalReason.trim(),
+            request_reason: historicalPosAutoReason(),
             historical_reference:
               historicalReference.trim()
               || undefined,
@@ -538,6 +537,10 @@ export function HistoricalPosWorkflow({
     }
   }
 
+  function historicalPosAutoReason() {
+    return `Historical POS session for business date ${businessDate || 'selected date'}`;
+  }
+
   async function openHistoricalSession() {
     if (!canOpen) {
       setErrorMessage(
@@ -619,8 +622,7 @@ export function HistoricalPosWorkflow({
               numericOpeningFloat,
             opening_mode:
               selectedOpeningMode,
-            historical_reason:
-              historicalReason.trim(),
+            historical_reason: historicalPosAutoReason(),
             historical_reference:
               historicalReference.trim()
               || undefined,
@@ -681,7 +683,7 @@ export function HistoricalPosWorkflow({
       ]
         .filter(Boolean)
         .join(" ")}
-      aria-label="Historical POS workflow"
+      aria-label="Historical POS workflow" data-historical-pos-journey="guided-v1"
     >
       {isHistoricalSession ? (
         <div

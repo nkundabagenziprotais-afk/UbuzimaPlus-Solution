@@ -218,6 +218,20 @@ export function PosSessionAdminControl({
 
   if (!canAdminister) return null;
 
+  const historicalApprovalNotice = (
+    <section className="pos-admin-historical-approval-strip">
+      <div>
+        <span>HISTORICAL_POS_APPROVALS_IN_SESSION_MANAGEMENT_V1</span>
+        <strong>Historical POS approval requests</strong>
+        <p>
+          Pending historical POS requests are approved by Admin or Owner before
+          the pharmacist continues recording for a conflicted business date.
+        </p>
+      </div>
+      <small>Use the Historical POS approval queue when a conflict request is pending.</small>
+    </section>
+  );
+
   return (
     <section className="pos-admin-control">
       <header className="pos-admin-control__header">
