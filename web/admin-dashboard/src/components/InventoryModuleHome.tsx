@@ -279,6 +279,16 @@ function inventoryAnalyticsTodayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function inventoryAnalyticsWeekStartIso(): string {
+  const date = new Date();
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+
+  return date.toISOString().slice(0, 10);
+}
+
 function inventoryAnalyticsMonthStartIso(): string {
   const today = new Date();
 
@@ -788,6 +798,7 @@ export function InventoryModuleHome({
   const [analyticsProducts, setAnalyticsProducts] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsProductsLastGood'));
   const [analyticsBatches, setAnalyticsBatches] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsBatchesLastGood'));
   const [analyticsKpiSummary, setAnalyticsKpiSummary] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood'));
+  const [analyticsBusinessOverviewLive, setAnalyticsBusinessOverviewLive] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsBusinessOverviewLiveLastGood'));
   const [analyticsKpiSummaryLastGood, setAnalyticsKpiSummaryLastGood] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood'));
   const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsNearExpiryLastGood'));
   const [analyticsLocations, setAnalyticsLocations] = useState<unknown>(null);
@@ -797,9 +808,9 @@ export function InventoryModuleHome({
   const [analyticsCategoryFilter, setAnalyticsCategoryFilter] = useState('all');
   const [analyticsProductFilter, setAnalyticsProductFilter] = useState('all');
   const [analyticsLocationFilter, setAnalyticsLocationFilter] = useState('all');
-  const [analyticsDateFromFilter, setAnalyticsDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
+  const [analyticsDateFromFilter, setAnalyticsDateFromFilter] = useState(inventoryAnalyticsWeekStartIso());
   const [analyticsDateToFilter, setAnalyticsDateToFilter] = useState(inventoryAnalyticsTodayIso());
-  const [analyticsAppliedDateFromFilter, setAnalyticsAppliedDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
+  const [analyticsAppliedDateFromFilter, setAnalyticsAppliedDateFromFilter] = useState(inventoryAnalyticsWeekStartIso());
   const [analyticsAppliedDateToFilter, setAnalyticsAppliedDateToFilter] = useState(inventoryAnalyticsTodayIso());
   const [analyticsTrendWeekSelection, setAnalyticsTrendWeekSelection] = useState('all');
   const [analyticsVisibleKpiFallback, setAnalyticsVisibleKpiFallback] = useState({
@@ -957,6 +968,59 @@ export function InventoryModuleHome({
   const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ??
     '';
+
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadInventoryAnalyticsBusinessOverviewLive() {
+      if (!token || !tenantSlug) {
+        return;
+      }
+
+      const query = new URLSearchParams({
+        start_date: analyticsAppliedDateFromFilter,
+        end_date: analyticsAppliedDateToFilter,
+        date_from: analyticsAppliedDateFromFilter,
+        date_to: analyticsAppliedDateToFilter,
+        date_basis: 'business_date',
+      }).toString();
+
+      try {
+        const response = await fetch(`/api/v1/pharmaco/business-analytics/live?${query}`, {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+            'X-Tenant': tenantSlug,
+            'X-Tenant-Slug': tenantSlug,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Business Overview live analytics failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (isActive && inventoryAnalyticsPayloadHasValue(data)) {
+          setAnalyticsBusinessOverviewLive(data);
+          writeInventoryAnalyticsCache('inventoryAnalyticsBusinessOverviewLiveLastGood', data);
+        }
+      } catch {
+        const cachedBusinessOverview = readInventoryAnalyticsCache('inventoryAnalyticsBusinessOverviewLiveLastGood');
+
+        if (isActive && cachedBusinessOverview) {
+          setAnalyticsBusinessOverviewLive(cachedBusinessOverview);
+        }
+      }
+    }
+
+    loadInventoryAnalyticsBusinessOverviewLive();
+
+    return () => {
+      isActive = false;
+    };
+  }, [token, tenantSlug, analyticsAppliedDateFromFilter, analyticsAppliedDateToFilter, analyticsRefreshSequence]);
 
 
   useEffect(() => {
@@ -1927,14 +1991,70 @@ export function InventoryModuleHome({
               totalValue - lowStockValue - nearExpiryValue - expiredValue,
               0,
             );
-            const riskTotal = Math.max(totalValue, lowStockValue + nearExpiryValue + expiredValue + healthyValue, 1);
             const atRiskValue = lowStockValue + nearExpiryValue + expiredValue;
 
+            const effectiveRiskKpiSummary = inventoryAnalyticsPayloadHasValue(analyticsKpiSummary)
+              ? analyticsKpiSummary
+              : analyticsKpiSummaryLastGood;
+
+            const riskLowStockValue = Math.max(
+              lowStockValue,
+              inventoryDeepNumberValue(effectiveRiskKpiSummary, ['low_stock_value']),
+              inventoryDeepNumberValue(analyticsBusinessOverviewLive, ['low_stock_value', 'lowStockValue', 'low_stock_inventory_value']),
+            );
+            const riskLowStockCount = Math.max(
+              lowStockCount,
+              inventoryDeepNumberValue(effectiveRiskKpiSummary, ['low_stock_count']),
+              inventoryDeepNumberValue(analyticsBusinessOverviewLive, ['low_stock_count', 'lowStockCount', 'low_stock_items']),
+            );
+            const riskNearExpiryValue = Math.max(
+              nearExpiryValue,
+              inventoryDeepNumberValue(effectiveRiskKpiSummary, ['near_expiry_value']),
+              inventoryDeepNumberValue(analyticsBusinessOverviewLive, ['near_expiry_value', 'nearExpiryValue', 'near_expiry_stock_value', 'expiring_value']),
+            );
+            const riskNearExpiryCount = Math.max(
+              nearExpiryCount,
+              inventoryDeepNumberValue(effectiveRiskKpiSummary, ['near_expiry_count']),
+              inventoryDeepNumberValue(analyticsBusinessOverviewLive, ['near_expiry_count', 'nearExpiryCount', 'expiring_count', 'expiring_items']),
+            );
+            const riskExpiredValue = Math.max(
+              expiredValue,
+              inventoryDeepNumberValue(effectiveRiskKpiSummary, ['expired_value']),
+              inventoryDeepNumberValue(analyticsBusinessOverviewLive, ['expired_value', 'expiredValue', 'expired_stock_value']),
+            );
+            const riskExpiredCount = Math.max(
+              expiredCount,
+              inventoryDeepNumberValue(effectiveRiskKpiSummary, ['expired_count']),
+              inventoryDeepNumberValue(analyticsBusinessOverviewLive, ['expired_count', 'expiredCount', 'expired_items']),
+            );
+            const riskTotalInventoryValue = Math.max(
+              totalValue,
+              inventoryDeepNumberValue(effectiveRiskKpiSummary, ['total_inventory_value']),
+              inventoryDeepNumberValue(analyticsBusinessOverviewLive, ['total_inventory_value', 'inventory_value', 'inventoryValue', 'stock_value', 'total_stock_value']),
+              riskLowStockValue + riskNearExpiryValue + riskExpiredValue,
+            );
+            const riskStockOnHandCount = Math.max(
+              stockOnHandCount,
+              inventoryDeepNumberValue(effectiveRiskKpiSummary, ['stock_on_hand_count']),
+              inventoryDeepNumberValue(analyticsBusinessOverviewLive, ['stock_on_hand_count', 'stockOnHandCount', 'stock_count', 'quantity_on_hand']),
+              riskLowStockCount + riskNearExpiryCount + riskExpiredCount,
+            );
+            const riskHealthyValue = Math.max(
+              riskTotalInventoryValue - riskLowStockValue - riskNearExpiryValue - riskExpiredValue,
+              0,
+            );
+
+            const riskTotal = Math.max(
+              riskTotalInventoryValue,
+              riskLowStockValue + riskNearExpiryValue + riskExpiredValue + riskHealthyValue,
+              1,
+            );
+
             const riskRows = [
-              { label: 'Expired / quarantined', count: expiredCount, value: expiredValue, color: '#dc2626' },
-              { label: 'Near expiry', count: nearExpiryCount, value: nearExpiryValue, color: '#f97316' },
-              { label: 'Low stock', count: lowStockCount, value: lowStockValue, color: '#eab308' },
-              { label: 'Healthy stock', count: stockOnHandCount, value: healthyValue, color: '#16a34a' },
+              { label: 'Expired / quarantined', count: riskExpiredCount, value: riskExpiredValue, color: '#dc2626' },
+              { label: 'Near expiry', count: riskNearExpiryCount, value: riskNearExpiryValue, color: '#f97316' },
+              { label: 'Low stock', count: riskLowStockCount, value: riskLowStockValue, color: '#eab308' },
+              { label: 'Healthy stock', count: riskStockOnHandCount, value: riskHealthyValue, color: '#16a34a' },
             ];
 
             const preKpiCategoryTotals = new Map<string, number>();
@@ -2211,19 +2331,77 @@ export function InventoryModuleHome({
             const apiInventoryKpiTurnoverValue = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['turnover_value']);
             const apiInventoryKpiTurnoverCount = inventoryDeepNumberValue(effectiveAnalyticsKpiSummary, ['turnover_count']);
 
+            const businessOverviewInventoryValue = inventoryDeepNumberValue(analyticsBusinessOverviewLive, [
+              'total_inventory_value',
+              'inventory_value',
+              'inventoryValue',
+              'stock_value',
+              'total_stock_value',
+              'inventory_valuation',
+            ]);
+            const businessOverviewStockOnHandCount = inventoryDeepNumberValue(analyticsBusinessOverviewLive, [
+              'stock_on_hand_count',
+              'stockOnHandCount',
+              'inventory_count',
+              'stock_count',
+              'total_stock_on_hand',
+              'quantity_on_hand',
+            ]);
+            const businessOverviewLowStockValue = inventoryDeepNumberValue(analyticsBusinessOverviewLive, [
+              'low_stock_value',
+              'lowStockValue',
+              'low_stock_inventory_value',
+            ]);
+            const businessOverviewLowStockCount = inventoryDeepNumberValue(analyticsBusinessOverviewLive, [
+              'low_stock_count',
+              'lowStockCount',
+              'low_stock_items',
+            ]);
+            const businessOverviewNearExpiryValue = inventoryDeepNumberValue(analyticsBusinessOverviewLive, [
+              'near_expiry_value',
+              'nearExpiryValue',
+              'near_expiry_stock_value',
+              'expiring_value',
+            ]);
+            const businessOverviewNearExpiryCount = inventoryDeepNumberValue(analyticsBusinessOverviewLive, [
+              'near_expiry_count',
+              'nearExpiryCount',
+              'expiring_count',
+              'expiring_items',
+            ]);
+            const businessOverviewExpiredValue = inventoryDeepNumberValue(analyticsBusinessOverviewLive, [
+              'expired_value',
+              'expiredValue',
+              'expired_stock_value',
+            ]);
+            const businessOverviewExpiredCount = inventoryDeepNumberValue(analyticsBusinessOverviewLive, [
+              'expired_count',
+              'expiredCount',
+              'expired_items',
+            ]);
+
+            const alignedInventoryKpiTotalValue = businessOverviewInventoryValue > 0 ? businessOverviewInventoryValue : apiInventoryKpiTotalValue;
+            const alignedInventoryKpiStockOnHandCount = businessOverviewStockOnHandCount > 0 ? businessOverviewStockOnHandCount : apiInventoryKpiStockOnHandCount;
+            const alignedInventoryKpiLowStockValue = businessOverviewLowStockValue > 0 ? businessOverviewLowStockValue : apiInventoryKpiLowStockValue;
+            const alignedInventoryKpiLowStockCount = businessOverviewLowStockCount > 0 ? businessOverviewLowStockCount : apiInventoryKpiLowStockCount;
+            const alignedInventoryKpiNearExpiryValue = businessOverviewNearExpiryValue > 0 ? businessOverviewNearExpiryValue : apiInventoryKpiNearExpiryValue;
+            const alignedInventoryKpiNearExpiryCount = businessOverviewNearExpiryCount > 0 ? businessOverviewNearExpiryCount : apiInventoryKpiNearExpiryCount;
+            const alignedInventoryKpiExpiredValue = businessOverviewExpiredValue > 0 ? businessOverviewExpiredValue : apiInventoryKpiExpiredValue;
+            const alignedInventoryKpiExpiredCount = businessOverviewExpiredCount > 0 ? businessOverviewExpiredCount : apiInventoryKpiExpiredCount;
+
             const kpiCards = [
-              { label: 'Total Inventory Value', value: formatCurrency(apiInventoryKpiTotalValue), target: 'product-inventory' },
-              { label: 'Stock on Hand Count', value: formatCompactNumber(apiInventoryKpiStockOnHandCount), target: 'product-inventory' },
+              { label: 'Total Inventory Value', value: formatCurrency(alignedInventoryKpiTotalValue), target: 'product-inventory' },
+              { label: 'Stock on Hand Count', value: formatCompactNumber(alignedInventoryKpiStockOnHandCount), target: 'product-inventory' },
               { label: 'Stock Received Value', value: formatCurrency(apiInventoryKpiReceivedValue), target: 'purchase-orders' },
               { label: 'Stock Received Count', value: formatCompactNumber(apiInventoryKpiReceivedCount), target: 'purchase-orders' },
               { label: 'Stock Issued Value', value: formatCurrency(apiInventoryKpiIssuedValue), target: 'product-inventory' },
               { label: 'Stock Issued Count', value: formatCompactNumber(apiInventoryKpiIssuedCount), target: 'product-inventory' },
-              { label: 'Low Stock Value', value: formatCurrency(apiInventoryKpiLowStockValue), target: 'low-stock' },
-              { label: 'Low Stock Count', value: formatCompactNumber(apiInventoryKpiLowStockCount), target: 'low-stock' },
-              { label: 'Near Expiry Value', value: formatCurrency(apiInventoryKpiNearExpiryValue), target: 'near-expiry' },
-              { label: 'Near Expiry Count', value: formatCompactNumber(apiInventoryKpiNearExpiryCount), target: 'near-expiry' },
-              { label: 'Expired Value', value: formatCurrency(apiInventoryKpiExpiredValue), target: 'near-expiry' },
-              { label: 'Expired Count', value: formatCompactNumber(apiInventoryKpiExpiredCount), target: 'near-expiry' },
+              { label: 'Low Stock Value', value: formatCurrency(alignedInventoryKpiLowStockValue), target: 'low-stock' },
+              { label: 'Low Stock Count', value: formatCompactNumber(alignedInventoryKpiLowStockCount), target: 'low-stock' },
+              { label: 'Near Expiry Value', value: formatCurrency(alignedInventoryKpiNearExpiryValue), target: 'near-expiry' },
+              { label: 'Near Expiry Count', value: formatCompactNumber(alignedInventoryKpiNearExpiryCount), target: 'near-expiry' },
+              { label: 'Expired Value', value: formatCurrency(alignedInventoryKpiExpiredValue), target: 'near-expiry' },
+              { label: 'Expired Count', value: formatCompactNumber(alignedInventoryKpiExpiredCount), target: 'near-expiry' },
               { label: 'Turnover Value', value: formatCurrency(apiInventoryKpiTurnoverValue), target: 'product-inventory' },
               { label: 'Turnover Count', value: formatCompactNumber(apiInventoryKpiTurnoverCount), target: 'product-inventory' },
             ];
@@ -2279,8 +2457,21 @@ export function InventoryModuleHome({
               return Math.max(runningInventoryValue, 0);
             });
 
+            const nearExpiryValueByDate = new Map<string, number>();
+
+            nearExpirySourceRows.forEach((row) => {
+              const rowRecord = (row.batch && typeof row.batch === 'object' ? row.batch : row) as UnknownRecord;
+              const expiryDate = inventoryText(rowRecord, ['expiry_date', 'expires_at', 'expiry', 'expiration_date'], '').slice(0, 10);
+
+              if (!expiryDate) {
+                return;
+              }
+
+              nearExpiryValueByDate.set(expiryDate, (nearExpiryValueByDate.get(expiryDate) ?? 0) + row.value);
+            });
+
             const fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
-              dateKey === analyticsAppliedDateToFilter ? nearExpiryValue : 0,
+              nearExpiryValueByDate.get(dateKey) ?? 0,
             );
 
             const trendValues = selectedTrendDateKeys.map((dateKey) =>

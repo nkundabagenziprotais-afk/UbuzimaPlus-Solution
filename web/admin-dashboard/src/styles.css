@@ -45612,3 +45612,96 @@ thead
 .inventory-analytics-request-kpis article[data-live-fallback-applied='true'] strong {
   color: #0f766e !important;
 }
+
+/* Mobile app-like web experience */
+@media (max-width: 780px) {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: #f8fafc;
+    touch-action: manipulation;
+  }
+
+  .dashboard-shell {
+    width: 100%;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .dashboard-main {
+    border-radius: 0 !important;
+    min-height: 100dvh;
+  }
+
+  .dashboard-header-center-actions {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    justify-content: flex-end !important;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(14px);
+    padding: max(0.55rem, env(safe-area-inset-top)) 0.75rem 0.55rem;
+  }
+
+  .dashboard-scroll-panel {
+    padding-bottom: max(5rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .inventory-analytics-request-kpis {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.55rem !important;
+  }
+
+  .inventory-analytics-request-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .inventory-analytics-request-card {
+    border-radius: 1.1rem !important;
+    overflow: hidden;
+  }
+
+  .inventory-analytics-filter-bar-full,
+  .inventory-analytics-request-filters {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.6rem !important;
+  }
+
+  .inventory-analytics-request-card table {
+    min-width: 40rem;
+  }
+
+  .inventory-analytics-bar-trend-bars {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .inventory-analytics-bar-trend-bars div {
+    scroll-snap-align: start;
+  }
+
+  button,
+  select,
+  input {
+    min-height: 2.65rem;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inventory-analytics-request-kpis {
+    grid-template-columns: 1fr !important;
+  }
+
+  .inventory-analytics-request-kpis article {
+    min-height: 4.4rem;
+  }
+}
