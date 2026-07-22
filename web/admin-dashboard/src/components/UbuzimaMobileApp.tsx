@@ -260,6 +260,15 @@ function AppIcon({ name }: { name: string }) {
           <path d="M9 10V7.8a3 3 0 0 1 6 0V10" />
         </IconSvg>
       );
+    case 'SYNC':
+      return (
+        <IconSvg>
+          <path d="M18.5 8.2A6.7 6.7 0 0 0 6.8 6.5L5 8.3" />
+          <path d="M5 5.2v3.1h3.1" />
+          <path d="M5.5 15.8a6.7 6.7 0 0 0 11.7 1.7l1.8-1.8" />
+          <path d="M19 18.8v-3.1h-3.1" />
+        </IconSvg>
+      );
     default:
       return (
         <span className="ubuzima-native-icon ubuzima-native-icon--text" aria-hidden="true">
@@ -281,6 +290,16 @@ function paymentIconName(method: string) {
   if (method === 'Momo' || method === 'Credit') return 'PAY';
   if (method === 'Insurance') return 'RX';
   return 'PAY';
+}
+
+function valueFitClass(value: string | undefined) {
+  const compactLength = (value ?? '').replace(/\s+/g, '').length;
+
+  if (compactLength >= 18) return 'ubuzima-native-value ubuzima-native-value--xs';
+  if (compactLength >= 14) return 'ubuzima-native-value ubuzima-native-value--sm';
+  if (compactLength >= 10) return 'ubuzima-native-value ubuzima-native-value--md';
+
+  return 'ubuzima-native-value';
 }
 
 function AppSection({
@@ -376,6 +395,17 @@ export function UbuzimaMobileApp({
   const secondaryMetrics = metrics.slice(1, 4);
   const paymentActions = salesActions.slice(0, 3);
   const trendBars = [42, 58, 52, 71, 63, 84, 76];
+  const canInstallApp = installAvailable && !isStandalone;
+  const installStatusLabel = isStandalone
+    ? 'Installed app'
+    : canInstallApp
+      ? 'Install available'
+      : 'Browser access';
+  const installStatusDetail = isStandalone
+    ? 'Standalone mode is active'
+    : canInstallApp
+      ? 'Add Ubuzima+ to this phone'
+      : 'Use the phone browser install option';
 
   function toggleGroup(groupKey: string, fallbackOpen: boolean) {
     setOpenGroups((current) => ({
@@ -400,7 +430,9 @@ export function UbuzimaMobileApp({
 
           <div className="ubuzima-native-business-hero__balance">
             <span>{primaryMetric?.label ?? 'Gross sales'}</span>
-            <strong>{primaryMetric?.value ?? 'RWF 0'}</strong>
+            <strong className={valueFitClass(primaryMetric?.value)}>
+              {primaryMetric?.value ?? 'RWF 0'}
+            </strong>
             <small>{primaryMetric?.helper ?? 'Today business position'}</small>
           </div>
 
@@ -466,7 +498,7 @@ export function UbuzimaMobileApp({
               >
                 <AppIcon name={metricIconName(metric.key)} />
                 <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
+                <strong className={valueFitClass(metric.value)}>{metric.value}</strong>
                 <small>{metric.helper}</small>
               </article>
             ))}
@@ -506,7 +538,9 @@ export function UbuzimaMobileApp({
         <section className="ubuzima-native-pos-terminal" aria-label="POS and Sales">
           <div className="ubuzima-native-pos-terminal__status">
             <span>POS and Sales</span>
-            <strong>{primaryMetric?.value ?? 'RWF 0'}</strong>
+            <strong className={valueFitClass(primaryMetric?.value)}>
+              {primaryMetric?.value ?? 'RWF 0'}
+            </strong>
           </div>
           <button
             type="button"
@@ -650,6 +684,49 @@ export function UbuzimaMobileApp({
             <span>Change Password</span>
           </button>
         </div>
+
+        <AppSection eyebrow="Device" title="App readiness">
+          <div className="ubuzima-native-device-list">
+            {canInstallApp ? (
+              <button
+                type="button"
+                className="ubuzima-native-device-item is-action"
+                onClick={onInstall}
+                disabled={isInstalling}
+              >
+                <AppIcon name="HM" />
+                <span>
+                  <strong>{isInstalling ? 'Opening install' : installStatusLabel}</strong>
+                  <small>{installStatusDetail}</small>
+                </span>
+              </button>
+            ) : (
+              <article className="ubuzima-native-device-item">
+                <AppIcon name="HM" />
+                <span>
+                  <strong>{installStatusLabel}</strong>
+                  <small>{installStatusDetail}</small>
+                </span>
+              </article>
+            )}
+
+            <article className="ubuzima-native-device-item">
+              <AppIcon name="MAIL" />
+              <span>
+                <strong>SMS reconciliation</strong>
+                <small>Native Android consent module required</small>
+              </span>
+            </article>
+
+            <article className="ubuzima-native-device-item">
+              <AppIcon name="SYNC" />
+              <span>
+                <strong>Offline shell</strong>
+                <small>{isOnline ? 'Ready for network changes' : 'Saved shell is active'}</small>
+              </span>
+            </article>
+          </div>
+        </AppSection>
 
         <AppSection eyebrow="Modules" title="Full app menu">
           <div className="ubuzima-native-menu-list">

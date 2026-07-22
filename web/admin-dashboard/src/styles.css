@@ -49081,3 +49081,139 @@ html.ubuzima-standalone-webapp .admin-header {
     animation: none !important;
   }
 }
+
+/* Mobile value fitting and device readiness */
+@media (max-width: 860px) {
+  .ubuzima-native-value {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: clip;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0 !important;
+    line-height: 1 !important;
+  }
+
+  .ubuzima-native-business-hero__balance .ubuzima-native-value {
+    font-size: 1.76rem !important;
+  }
+
+  .ubuzima-native-business-hero__balance .ubuzima-native-value--md {
+    font-size: 1.48rem !important;
+  }
+
+  .ubuzima-native-business-hero__balance .ubuzima-native-value--sm {
+    font-size: 1.22rem !important;
+  }
+
+  .ubuzima-native-business-hero__balance .ubuzima-native-value--xs {
+    font-size: 1.02rem !important;
+  }
+
+  .ubuzima-native-balance-card .ubuzima-native-value {
+    font-size: 1rem !important;
+  }
+
+  .ubuzima-native-balance-card .ubuzima-native-value--md {
+    font-size: 0.84rem !important;
+  }
+
+  .ubuzima-native-balance-card .ubuzima-native-value--sm {
+    font-size: 0.72rem !important;
+  }
+
+  .ubuzima-native-balance-card .ubuzima-native-value--xs {
+    font-size: 0.63rem !important;
+  }
+
+  .ubuzima-native-pos-terminal__status .ubuzima-native-value {
+    font-size: 0.94rem !important;
+  }
+
+  .ubuzima-native-pos-terminal__status .ubuzima-native-value--md,
+  .ubuzima-native-pos-terminal__status .ubuzima-native-value--sm,
+  .ubuzima-native-pos-terminal__status .ubuzima-native-value--xs {
+    font-size: 0.8rem !important;
+  }
+
+  .ubuzima-native-device-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .ubuzima-native-device-item {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #10211b;
+    padding: 10px;
+    text-align: left;
+  }
+
+  .ubuzima-native-device-item.is-action {
+    border-color: rgba(75, 83, 32, 0.26);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.055);
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .ubuzima-native-device-item.is-action:active {
+    transform: scale(0.985);
+  }
+
+  .ubuzima-native-device-item.is-action:hover {
+    border-color: rgba(75, 83, 32, 0.36);
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+  }
+
+  .ubuzima-native-device-item .ubuzima-native-icon {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    background: rgba(75, 83, 32, 0.12);
+    color: #243016;
+  }
+
+  .ubuzima-native-device-item strong,
+  .ubuzima-native-device-item small {
+    display: block;
+    min-width: 0;
+  }
+
+  .ubuzima-native-device-item strong {
+    font-size: 0.78rem;
+    line-height: 1.1;
+  }
+
+  .ubuzima-native-device-item small {
+    margin-top: 2px;
+    color: #62736b;
+    font-size: 0.66rem;
+    font-weight: 780;
+    line-height: 1.22;
+  }
+}
+
+@media (max-width: 420px) {
+  .ubuzima-native-balance-grid {
+    grid-auto-columns: minmax(132px, 42vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ubuzima-native-device-item.is-action {
+    transition: none !important;
+  }
+}
