@@ -1071,14 +1071,24 @@ class SalesDispensingController extends Controller
         }
 
         $requiresPrescription = $products->contains(fn (Product $product) => (bool) $product->requires_prescription);
+        $prescriptionWarningProducts = $products
+            ->filter(fn (Product $product) => (bool) $product->requires_prescription)
+            ->map(fn (Product $product) => [
+                'id' => $product->id,
+                'sku' => $product->sku,
+                'name' => $product->name,
+            ])
+            ->values()
+            ->all();
 
-        if ($requiresPrescription && ! $prescription) {
-            throw ValidationException::withMessages([
-                'pharmaco_prescription_id' => ['A prescription is required because one or more selected products require prescription control.'],
-            ]);
-        }
+        /*
+         * RX_WARNING_ALLOW_POS_RECORDING_V2
+         * Prescription-controlled products notify the pharmacist but do not
+         * block POS sale recording. Warning is retained in metadata/audit.
+         */
+        $prescriptionWarningRequired = $requiresPrescription && ! $prescription;
 
-        $result = DB::transaction(function () use ($request, $tenant, $validated, $branch, $customer, $prescription, $products) {
+        $result = DB::transaction(function () use ($request, $tenant, $validated, $branch, $customer, $prescription, $products, $prescriptionWarningRequired, $prescriptionWarningProducts) {
             $historicalSession = $this->lockActiveHistoricalSessionForBranch(
                 $request,
                 (int) $tenant->id,
@@ -1166,6 +1176,9 @@ class SalesDispensingController extends Controller
                 'metadata' => [
                     'creation_workflow' => 'phase_6_1_create_sale',
                     'stock_deducted' => false,
+                    'rx_prescription_warning_required' => $prescriptionWarningRequired,
+                    'rx_prescription_warning_acknowledged' => $prescriptionWarningRequired,
+                    'rx_prescription_warning_products' => $prescriptionWarningProducts,
                     ...($historicalSession ? [
                         'entry_mode' => 'historical',
                         'business_date' => $historicalSession->business_date
@@ -1204,6 +1217,8 @@ class SalesDispensingController extends Controller
                 'sale_number' => $result->sale_number,
                 'items_count' => $result->items->count(),
                 'total_amount' => (float) $result->total_amount,
+                'rx_prescription_warning_required' => (bool) ($result->metadata['rx_prescription_warning_required'] ?? false),
+                'rx_prescription_warning_products' => $result->metadata['rx_prescription_warning_products'] ?? [],
                 'entry_mode' => $result->entry_mode ?? 'live',
                 'business_date' => $result->business_date?->toDateString(),
                 'pos_session_id' => $result->pos_session_id,
@@ -1683,12 +1698,22 @@ class SalesDispensingController extends Controller
                 }
 
                 $requiresPrescription = (bool) $item->requires_prescription;
-                $prescriptionVerified = (bool) ($payload['prescription_verified'] ?? $item->prescription_verified);
+                $prescriptionVerified = (bool) $item->prescription_verified;
 
                 if ($requiresPrescription && (! $lockedSale->pharmaco_prescription_id || ! $prescriptionVerified)) {
-                    throw ValidationException::withMessages([
-                        'items' => ["Item {$item->sku_snapshot} requires prescription verification before dispensing."],
-                    ]);
+                    /*
+                     * RX_WARNING_ALLOW_POS_CONFIRMATION_V2
+                     * Notify pharmacist and keep audit metadata, but do not
+                     * block stock dispensing/POS recording.
+                     */
+                    $lockedSale->metadata = [
+                        ...($lockedSale->metadata ?? []),
+                        'rx_prescription_warning_required' => true,
+                        'rx_prescription_warning_acknowledged' => true,
+                        'rx_prescription_warning_message' =>
+                            'Prescription-controlled item was dispensed after pharmacist warning.',
+                    ];
+                    $lockedSale->save();
                 }
 
                 $quantity = (float) $item->quantity;
@@ -1812,6 +1837,9 @@ class SalesDispensingController extends Controller
 
         return response()->json([
             'message' => 'Sale confirmed and stock dispensed successfully.',
+            'warning' => (bool) ($confirmedSale->metadata['rx_prescription_warning_required'] ?? false)
+                ? 'Prescription-controlled medicine was dispensed after pharmacist warning.'
+                : null,
             'sale' => $this->serializeSale($confirmedSale, includeDetails: true),
         ]);
     }

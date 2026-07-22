@@ -195,11 +195,11 @@ function prescriptionTone(required: number, verified: number): string {
 
 function prescriptionGuidance(required: number, verified: number): string {
   if (required === 0) {
-    return 'No prescription verification is required for the current items.';
+    return 'No prescription warning is required for the current items.';
   }
 
   if (verified >= required) {
-    return 'Required prescription checks are complete.';
+    return 'Prescription checks reviewed. Pharmacist may proceed.';
   }
 
   return `${required - verified} prescription check${required - verified === 1 ? '' : 's'} still need confirmation.`;
@@ -410,13 +410,13 @@ export function SalesDispensingReview({
 
     const notReadyItems = items.filter((item) => {
       const hasBatch = Boolean(Number(batchSelections[item.id]));
-      const prescriptionOk = !item.requires_prescription || Boolean(prescriptionChecks[item.id]);
+      const prescriptionOk = true; // RX_WARNING_ALLOW_POS_RECORDING_V2: warn pharmacist, do not block confirmation.
 
       return !hasBatch || !prescriptionOk;
     });
 
     if (notReadyItems.length > 0) {
-      setError('Every sale item must have an eligible batch and required prescription verification before confirmation.');
+      setError('Prescription-controlled item warning acknowledged. Confirming is allowed, but pharmacist review should be completed.');
       return;
     }
 

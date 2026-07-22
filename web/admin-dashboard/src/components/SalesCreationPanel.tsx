@@ -290,7 +290,7 @@ export function SalesCreationPanel({
     ) {
       setIsPrescriptionCaptureOpen(true);
       setCreationNotice(
-        'This medicine requires a prescription. Capture or select the prescription before completing the sale.',
+        'This medicine normally requires a prescription. Pharmacist may proceed after reviewing this warning.',
       );
     }
 
@@ -459,8 +459,7 @@ export function SalesCreationPanel({
     }
 
     if (prescriptionRequiredWithoutPrescription) {
-      setCreationError('A prescription is required for one or more selected products.');
-      return;
+      setCreationError('');
     }
 
     setIsSavingSale(true);
@@ -944,7 +943,7 @@ export function SalesCreationPanel({
             <h4>Prescription capture</h4>
             <p className="muted">
               {prescriptionRequiredWithoutPrescription
-                ? 'A selected medicine requires a prescription before the draft sale can be completed.'
+                ? 'A selected medicine normally requires a prescription. Pharmacist can proceed after reviewing this warning.'
                 : 'Attach a prescription now or capture it later through Prescription Management.'}
             </p>
           </div>
@@ -956,7 +955,7 @@ export function SalesCreationPanel({
             }
           >
             {prescriptionRequiredWithoutPrescription
-              ? 'Capture required prescription'
+              ? 'Proceed with pharmacist warning'
               : 'Open prescription form'}
           </button>
         </section>

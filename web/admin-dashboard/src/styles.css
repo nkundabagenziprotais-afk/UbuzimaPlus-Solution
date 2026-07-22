@@ -48010,3 +48010,12 @@ html.ubuzima-standalone-webapp .admin-header {
     margin: 0.45rem 0 0 !important;
   }
 }
+
+/* RX_WARNING_ALLOW_POS_RECORDING_V2 */
+.rx-warning,
+.prescription-warning,
+.sales-prescription-warning {
+  border-color: rgba(245, 158, 11, 0.32) !important;
+  background: rgba(255, 251, 235, 0.95) !important;
+  color: #92400e !important;
+}
