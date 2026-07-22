@@ -45508,3 +45508,31 @@ thead
   pointer-events: auto !important;
   opacity: 1 !important;
 }
+
+/* Inventory Analytics KPI cards: right-aligned values and reliable fitting */
+.inventory-analytics-request-kpis article {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.45rem 0.65rem !important;
+  min-width: 0 !important;
+}
+
+.inventory-analytics-request-kpis article span {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.inventory-analytics-request-kpis article strong {
+  justify-self: end !important;
+  text-align: right !important;
+  min-width: max-content !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+
+.inventory-analytics-request-kpis article small,
+.inventory-analytics-request-kpis article em {
+  grid-column: 1 / -1 !important;
+  text-align: right !important;
+}

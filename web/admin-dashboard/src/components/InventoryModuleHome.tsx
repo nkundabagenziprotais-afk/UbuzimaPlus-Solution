@@ -365,6 +365,51 @@ function inventoryRecord(value: unknown): UnknownRecord {
     : {};
 }
 
+function inventoryDeepNumberValue(source: unknown, keys: string[]): number {
+  const normalizedKeys = new Set(keys.map((key) => key.toLowerCase().replace(/[^a-z0-9]/g, '')));
+  const queue: unknown[] = [source];
+  const visited = new Set<unknown>();
+
+  while (queue.length) {
+    const current = queue.shift();
+
+    if (!current || visited.has(current)) {
+      continue;
+    }
+
+    if (typeof current === 'object') {
+      visited.add(current);
+    }
+
+    if (Array.isArray(current)) {
+      current.forEach((item) => queue.push(item));
+      continue;
+    }
+
+    if (typeof current !== 'object') {
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(current as UnknownRecord)) {
+      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      if (normalizedKeys.has(normalizedKey)) {
+        const number = inventoryNumber({ value }, ['value']);
+
+        if (number > 0) {
+          return number;
+        }
+      }
+
+      if (value && typeof value === 'object') {
+        queue.push(value);
+      }
+    }
+  }
+
+  return 0;
+}
+
 function inventoryDeepRecordArray(value: unknown): UnknownRecord[] {
   const queue: unknown[] = [value];
   let best: UnknownRecord[] = [];
@@ -1650,21 +1695,126 @@ export function InventoryModuleHome({
               { label: 'Healthy stock', count: stockOnHandCount, value: healthyValue, color: '#16a34a' },
             ];
 
+            const dashboardTotalInventoryValue = Math.max(
+              totalValue,
+              inventoryDeepNumberValue(analyticsBatches, [
+                'total_inventory_value',
+                'inventory_value',
+                'stock_value',
+                'stock_batches_value',
+                'total_cost_value',
+                'total_value',
+              ]),
+              analyticsMetricBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0),
+            );
+
+            const dashboardStockOnHandCount = Math.max(
+              stockOnHandCount,
+              inventoryDeepNumberValue(analyticsBatches, [
+                'stock_batch_count',
+                'stock_batches',
+                'batch_count',
+                'stock_on_hand_count',
+                'total_quantity_on_hand',
+                'quantity_on_hand',
+                'quantity',
+              ]),
+              analyticsMetricBatchRows.reduce((sum, batch) => sum + inventoryBatchQuantity(batch), 0),
+            );
+
+            const dashboardStockReceivedValue = Math.max(
+              stockReceivedValue,
+              batchReceivedValue,
+              inventoryDeepNumberValue(analyticsMovements, [
+                'received_value',
+                'stock_received_value',
+                'purchase_value',
+                'inbound_value',
+              ]),
+              inventoryDeepNumberValue(analyticsBatches, [
+                'received_value',
+                'stock_received_value',
+                'stock_value',
+                'inventory_value',
+              ]),
+            );
+
+            const dashboardStockReceivedCount = Math.max(
+              stockReceivedCount,
+              receivedFallbackRows.length,
+              inventoryDeepNumberValue(analyticsMovements, [
+                'received_count',
+                'stock_received_count',
+                'purchase_count',
+              ]),
+              inventoryDeepNumberValue(analyticsBatches, [
+                'received_count',
+                'stock_received_count',
+                'stock_batch_count',
+                'batch_count',
+              ]),
+            );
+
+            const dashboardStockIssuedValue = Math.max(
+              stockIssuedValue,
+              registerIssuedValue,
+              movementIssuedValue,
+              inventoryDeepNumberValue(analyticsMovements, [
+                'issued_value',
+                'stock_issued_value',
+                'stock_out_value',
+                'sales_cost_value',
+                'cogs',
+              ]),
+              inventoryDeepNumberValue(analyticsSalesRegister, [
+                'cost_value',
+                'total_cost',
+                'cogs',
+                'stock_value',
+              ]),
+            );
+
+            const dashboardStockIssuedCount = Math.max(
+              stockIssuedCount,
+              issuedRows.length,
+              salesRegisterRows.length,
+              inventoryDeepNumberValue(analyticsMovements, [
+                'issued_count',
+                'stock_issued_count',
+                'stock_out_count',
+              ]),
+              inventoryDeepNumberValue(analyticsSalesRegister, [
+                'transaction_count',
+                'sales_count',
+                'count',
+              ]),
+            );
+
+            const dashboardTurnoverValue = Math.max(
+              turnoverValue,
+              dashboardStockIssuedValue,
+            );
+
+            const dashboardTurnoverCount = Math.max(
+              turnoverCount,
+              dashboardStockIssuedCount,
+            );
+
             const kpiCards = [
-              { label: 'Total Inventory Value', value: formatCurrency(totalValue), target: 'product-inventory' },
-              { label: 'Stock on Hand Count', value: formatCompactNumber(stockOnHandCount), target: 'product-inventory' },
-              { label: 'Stock Received Value', value: formatCurrency(stockReceivedValue), target: 'purchase-orders' },
-              { label: 'Stock Received Count', value: formatCompactNumber(stockReceivedCount), target: 'purchase-orders' },
-              { label: 'Stock Issued Value', value: formatCurrency(stockIssuedValue), target: 'product-inventory' },
-              { label: 'Stock Issued Count', value: formatCompactNumber(stockIssuedCount), target: 'product-inventory' },
+              { label: 'Total Inventory Value', value: formatCurrency(dashboardTotalInventoryValue), target: 'product-inventory' },
+              { label: 'Stock on Hand Count', value: formatCompactNumber(dashboardStockOnHandCount), target: 'product-inventory' },
+              { label: 'Stock Received Value', value: formatCurrency(dashboardStockReceivedValue), target: 'purchase-orders' },
+              { label: 'Stock Received Count', value: formatCompactNumber(dashboardStockReceivedCount), target: 'purchase-orders' },
+              { label: 'Stock Issued Value', value: formatCurrency(dashboardStockIssuedValue), target: 'product-inventory' },
+              { label: 'Stock Issued Count', value: formatCompactNumber(dashboardStockIssuedCount), target: 'product-inventory' },
               { label: 'Low Stock Value', value: formatCurrency(lowStockValue), target: 'low-stock' },
               { label: 'Low Stock Count', value: formatCompactNumber(lowStockCount), target: 'low-stock' },
               { label: 'Near Expiry Value', value: formatCurrency(nearExpiryValue), target: 'near-expiry' },
               { label: 'Near Expiry Count', value: formatCompactNumber(nearExpiryCount), target: 'near-expiry' },
               { label: 'Expired Value', value: formatCurrency(expiredValue), target: 'near-expiry' },
               { label: 'Expired Count', value: formatCompactNumber(expiredCount), target: 'near-expiry' },
-              { label: 'Turnover Value', value: formatCurrency(turnoverValue), target: 'product-inventory' },
-              { label: 'Turnover Count', value: formatCompactNumber(turnoverCount), target: 'product-inventory' },
+              { label: 'Turnover Value', value: formatCurrency(dashboardTurnoverValue), target: 'product-inventory' },
+              { label: 'Turnover Count', value: formatCompactNumber(dashboardTurnoverCount), target: 'product-inventory' },
             ];
 
             const categoryTotals = new Map<string, number>();
@@ -1808,7 +1958,7 @@ export function InventoryModuleHome({
 
                   <button
                     type="button"
-                    onClick={() => setAnalyticsRefreshSequence((value) => value + 1)}
+                    onClick={applyInventoryAnalyticsFilters}
                   >
                     Apply Filters
                   </button>
