@@ -73,7 +73,7 @@ class PharmacoPaymentRecordingApiTest extends TestCase
                 'reference_number' => 'SHADOW-FIN-001',
                 'generate_receipt' => true,
             ])
-            ->assertOk();
+            ->assertCreated();
 
         $payment = $sale->fresh('payments')->payments()->latest('id')->firstOrFail();
 
@@ -221,7 +221,7 @@ class PharmacoPaymentRecordingApiTest extends TestCase
         $this->withHeader('X-Tenant-Slug', 'vitapharma')
             ->withToken($token)
             ->postJson("/api/v1/pharmaco/sales/{$sale->id}/confirm", $payload)
-            ->assertOk();
+            ->assertCreated();
 
         return $sale->fresh();
     }
@@ -234,7 +234,7 @@ class PharmacoPaymentRecordingApiTest extends TestCase
             'device_name' => 'PharmaCo360 Payment API Test Client',
         ]);
 
-        $response->assertOk();
+        $response->assertCreated();
 
         return $response->json('access_token');
     }
