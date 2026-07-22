@@ -1,3 +1,4 @@
+/* POS_AND_SALES_OVERVIEW_DEPLOY_TARGET_V1 */
 import {
   useCallback,
   useEffect,
@@ -671,7 +672,7 @@ export function PosSalesOverview({
       <header className="pos-overview-header">
         <div>
           <span className="pos-overview-eyebrow">
-            POS Analytics
+            POS and Sales Overview
           </span>
           <h1>Business control centre</h1>
           <p>
@@ -729,7 +730,7 @@ export function PosSalesOverview({
               <h2>Dashboard visibility</h2>
               <p>
                 Select the module and performance cards
-                visible on the POS Analytics landing page.
+                visible on the POS and Sales Overview landing page.
               </p>
             </div>
 

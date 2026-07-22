@@ -19,7 +19,7 @@ function installUbuzimaRealMobileAppHomeV1(): void {
   const modules: MobileModule[] = [
     { key: 'business', label: 'Business', subtitle: 'Overview & revenue', match: /Business Overview|Business/i, icon: '▣', tone: 'teal' },
     { key: 'inventory', label: 'Inventory', subtitle: 'Stock & batches', match: /Inventory/i, icon: '▤', tone: 'emerald' },
-    { key: 'sales', label: 'POS Analytics', subtitle: 'Sales dashboard & register', match: /POS Analytics|Sales|POS/i, icon: '◉', tone: 'blue' },
+    { key: 'sales', label: 'POS and Sales Overview', subtitle: 'Sales dashboard & register', match: /POS and Sales Overview|POS Analytics|Sales|POS/i, icon: '◉', tone: 'blue' },
     { key: 'procurement', label: 'Procurement', subtitle: 'Purchases & suppliers', match: /Procurement|Purchase|Supplier/i, icon: '▧', tone: 'amber' },
     { key: 'finance', label: 'Finance', subtitle: 'Cash & expenses', match: /Finance|Expense|Cash/i, icon: '◍', tone: 'purple' },
     { key: 'reports', label: 'Reports', subtitle: 'Analytics & insights', match: /Reports|Analytics/i, icon: '▥', tone: 'slate' },
@@ -120,7 +120,7 @@ function installUbuzimaRealMobileAppHomeV1(): void {
         </section>
         <section class="urma-actions">
           <button type="button" data-action-match="Inventory"><span>＋</span><strong>Receive Stock</strong><small>Inventory</small></button>
-          <button type="button" data-action-match="POS Analytics|Sales|POS"><span>◉</span><strong>POS Analytics</strong><small>Sales dashboard</small></button>
+          <button type="button" data-action-match="POS and Sales Overview|POS Analytics|Sales|POS"><span>◉</span><strong>POS and Sales Overview</strong><small>Sales dashboard</small></button>
           <button type="button" data-action-match="Reports|Analytics"><span>▥</span><strong>View Reports</strong><small>Analytics</small></button>
         </section>
       </main>
@@ -174,7 +174,7 @@ function installUbuzimaRealMobileAppHomeV1(): void {
     });
     app.querySelector<HTMLButtonElement>('[data-tab="business"]')?.addEventListener('click', () => openModule(/Business Overview|Business/i));
     app.querySelector<HTMLButtonElement>('[data-tab="inventory"]')?.addEventListener('click', () => openModule(/Inventory/i));
-    app.querySelector<HTMLButtonElement>('[data-tab="sales"]')?.addEventListener('click', () => openModule(/POS Analytics|Sales|POS/i));
+    app.querySelector<HTMLButtonElement>('[data-tab="sales"]')?.addEventListener('click', () => openModule(/POS and Sales Overview|POS Analytics|Sales|POS/i));
     app.querySelector<HTMLButtonElement>('[data-tab="more"]')?.addEventListener('click', () => {
       app.querySelector<HTMLButtonElement>('.urma-menu')?.click();
     });

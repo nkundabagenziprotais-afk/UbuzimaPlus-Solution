@@ -47207,3 +47207,13 @@ html.ubuzima-standalone-webapp .admin-header {
   background: rgba(37, 99, 235, 0.12) !important;
   color: #2563eb !important;
 }
+
+/* POS and Sales Overview deployment target + real stock trend marker */
+.urma-module-card[data-module-key='sales'] strong,
+.urma-actions button[data-action-match*='POS'] strong {
+  letter-spacing: -0.01em;
+}
+
+.inventory-analytics-bar-trend-card {
+  contain: layout paint;
+}

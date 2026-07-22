@@ -2514,8 +2514,42 @@ export function InventoryModuleHome({
               );
             }
 
+            // REAL_STOCK_VALUE_TREND_FROM_BATCHES_V1
+            // Build Stock Value Trend from real loaded stock batches.
+            // If movement rows exist, reconstruct value backwards from the current stock snapshot.
+            // If movement rows do not exist, show the real current snapshot only on the selected end date.
+            const realCurrentStockValueForTrend = analyticsMetricBatchRows.reduce(
+              (sum, batch) => sum + inventoryBatchValue(batch),
+              0,
+            );
+
+            const stockMovementEntriesForTrend = Array.from(stockMovementByDate.entries())
+              .filter(([dateKey]) => analyticsTrendDateKeys.includes(dateKey));
+
+            let realFullStockTrendValues = analyticsTrendDateKeys.map((dateKey) =>
+              dateKey === analyticsAppliedDateToFilter ? realCurrentStockValueForTrend : 0,
+            );
+
+            if (stockMovementEntriesForTrend.length > 0) {
+              let reverseRunningStockValue = realCurrentStockValueForTrend;
+              const reverseValues = new Map<string, number>();
+
+              [...analyticsTrendDateKeys].reverse().forEach((dateKey) => {
+                reverseValues.set(dateKey, Math.max(reverseRunningStockValue, 0));
+
+                const movement = stockMovementByDate.get(dateKey);
+                if (movement) {
+                  reverseRunningStockValue -= (movement.received ?? 0) - (movement.issued ?? 0);
+                }
+              });
+
+              realFullStockTrendValues = analyticsTrendDateKeys.map((dateKey) =>
+                reverseValues.get(dateKey) ?? 0,
+              );
+            }
+
             const trendValues = selectedTrendDateKeys.map((dateKey) =>
-              fullTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
+              realFullStockTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
             );
             const nearExpiryTrendValues = selectedTrendDateKeys.map((dateKey) =>
               fullNearExpiryTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
