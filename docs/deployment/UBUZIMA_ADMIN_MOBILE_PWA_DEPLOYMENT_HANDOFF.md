@@ -44,6 +44,40 @@ local development browser session.
 9. Test desktop admin, mobile browser, installed PWA, login, POS/Sales,
    Inventory, Procurement, General Stock, and More.
 
+## cPanel Git Deployment Scripts
+
+Use these scripts on cPanel after the branch is available in the server-side Git
+repository. They do not require sharing cPanel credentials with ChatGPT.
+
+Audit only:
+
+```bash
+EXPECTED_COMMIT=<approved_commit> scripts/cpanel-admin-mobile-pwa-audit.sh
+```
+
+Deploy to the static admin web root:
+
+```bash
+CONFIRM_DEPLOY=DEPLOY_UBUZIMA_ADMIN \
+EXPECTED_COMMIT=<approved_commit> \
+ADMIN_WEB_ROOT=/home/USER/public_html/admin \
+PUBLIC_ADMIN_URL=https://example.com/admin \
+scripts/cpanel-admin-mobile-pwa-deploy.sh
+```
+
+Rollback from the backup path printed by the deploy script:
+
+```bash
+CONFIRM_ROLLBACK=ROLLBACK_UBUZIMA_ADMIN \
+ADMIN_WEB_ROOT=/home/USER/public_html/admin \
+BACKUP_DIR=/home/USER/ubuzima-admin-backups/admin-YYYYMMDD-HHMMSS \
+scripts/cpanel-admin-mobile-pwa-rollback.sh
+```
+
+Replace `<approved_commit>`, `USER`, and `example.com` with the approved Git
+commit, real cPanel account, and domain. The deploy script refuses to run unless
+`ADMIN_WEB_ROOT` ends with `/admin`.
+
 ## ChatGPT/Codex Handoff Prompt
 
 Use this prompt only after the branch is pushed:
@@ -63,6 +97,7 @@ Wait for explicit owner authorization before any production upload or server com
 - `npm --prefix web/admin-dashboard run build`
 - `npm --prefix web/admin-dashboard run native:doctor`
 - `scripts/ubuzima-admin-mobile-pwa-release-preflight.sh`
+- `scripts/cpanel-admin-mobile-pwa-audit.sh`
 - Mobile smoke test at phone width
 - Desktop smoke test at normal desktop width
 - Owner approval captured
