@@ -661,6 +661,7 @@ export async function loadBusinessOverviewDataAdapter({
     estimateGrossRevenueFromSalesRows(registerRows),
     0,
   );
+  const netRevenue = Math.max(grossRevenue, 0);
   const paymentMix = buildPaymentMix(sales.paymentMethods, sales.collections);
 
   return {
@@ -671,7 +672,7 @@ export async function loadBusinessOverviewDataAdapter({
     kpis: {
       'Gross Sales': formatMoney(sales.grossSales),
       'Gross Revenue': formatMoney(grossRevenue),
-      'Net Revenue': formatMoney(sales.netSales),
+      'Net Revenue': formatMoney(netRevenue),
       Collections: formatMoney(sales.collections),
       'Outstanding Balance': formatMoney(sales.outstandingBalance),
       'Transaction Count': formatCount(sales.transactionCount),

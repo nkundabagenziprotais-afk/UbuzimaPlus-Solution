@@ -285,6 +285,36 @@ function inventoryAnalyticsMonthStartIso(): string {
   return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
 }
 
+function inventoryAnalyticsDateKeys(startDate: string, endDate: string): string[] {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end < start) {
+    return [inventoryAnalyticsTodayIso()];
+  }
+
+  const keys: string[] = [];
+  const cursor = new Date(start);
+
+  while (cursor <= end && keys.length < 62) {
+    keys.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return keys.length ? keys : [inventoryAnalyticsTodayIso()];
+}
+
+function inventoryAnalyticsInDateRange(value: string, startDate: string, endDate: string): boolean {
+  const time = inventoryAnalyticsDateValue(value);
+
+  if (!Number.isFinite(time)) {
+    return true;
+  }
+
+  return time >= inventoryAnalyticsDateValue(startDate) &&
+    time <= inventoryAnalyticsDateValue(endDate);
+}
+
 function inventoryAnalyticsDateValue(value: string): number {
   if (!value) {
     return Number.NaN;
@@ -432,10 +462,12 @@ function inventoryBatchQuantity(batch: UnknownRecord): number {
       'qty',
       'stock_quantity',
       'available_quantity',
+      'running_balance',
     ]),
     0,
   );
 }
+
 
 
 function inventoryBatchValue(batch: UnknownRecord): number {
@@ -478,6 +510,7 @@ function inventoryBatchValue(batch: UnknownRecord): number {
 
   return 0;
 }
+
 
 
 function inventoryBatchProductName(batch: UnknownRecord): string {
@@ -632,12 +665,14 @@ export function InventoryModuleHome({
   const [analyticsBatches, setAnalyticsBatches] = useState<unknown>(null);
   const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(null);
   const [analyticsLocations, setAnalyticsLocations] = useState<unknown>(null);
+  const [analyticsMovements, setAnalyticsMovements] = useState<unknown>(null);
   const [analyticsRefreshSequence, setAnalyticsRefreshSequence] = useState(0);
   const [analyticsCategoryFilter, setAnalyticsCategoryFilter] = useState('all');
   const [analyticsProductFilter, setAnalyticsProductFilter] = useState('all');
   const [analyticsLocationFilter, setAnalyticsLocationFilter] = useState('all');
   const [analyticsDateFromFilter, setAnalyticsDateFromFilter] = useState(inventoryAnalyticsMonthStartIso());
   const [analyticsDateToFilter, setAnalyticsDateToFilter] = useState(inventoryAnalyticsTodayIso());
+  const [analyticsTrendWeekSelection, setAnalyticsTrendWeekSelection] = useState('all');
   const [analyticsExpiryFromFilter, setAnalyticsExpiryFromFilter] = useState('');
   const [analyticsExpiryToFilter, setAnalyticsExpiryToFilter] = useState('');
   const [analyticsCreatedFromFilter, setAnalyticsCreatedFromFilter] = useState(inventoryAnalyticsMonthStartIso());
@@ -685,6 +720,70 @@ export function InventoryModuleHome({
   const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ??
     '';
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadInventoryAnalyticsMovements() {
+      if (!token || !tenantSlug) {
+        setAnalyticsMovements(null);
+        return;
+      }
+
+      const query = new URLSearchParams({
+        start_date: analyticsDateFromFilter,
+        end_date: analyticsDateToFilter,
+        date_from: analyticsDateFromFilter,
+        date_to: analyticsDateToFilter,
+      }).toString();
+
+      const endpoints = [
+        `/api/v1/pharmaco/inventory/stock-movements?${query}`,
+        `/api/v1/pharmaco/stock-movements?${query}`,
+        `/api/v1/pharmaco/reports/stock-movements?${query}`,
+        `/pharmaco/inventory/stock-movements?${query}`,
+        `/pharmaco/stock-movements?${query}`,
+        `/pharmaco/reports/stock-movements?${query}`,
+      ];
+
+      const headers = {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        'X-Tenant': tenantSlug,
+        'X-Tenant-Slug': tenantSlug,
+      };
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, { headers });
+
+          if (!response.ok) {
+            continue;
+          }
+
+          const data = await response.json();
+
+          if (isActive) {
+            setAnalyticsMovements(data);
+          }
+
+          return;
+        } catch {
+          continue;
+        }
+      }
+
+      if (isActive) {
+        setAnalyticsMovements(null);
+      }
+    }
+
+    loadInventoryAnalyticsMovements();
+
+    return () => {
+      isActive = false;
+    };
+  }, [token, tenantSlug, analyticsDateFromFilter, analyticsDateToFilter, analyticsRefreshSequence]);
 
   const canCustomize =
     canCustomizeInventoryHome(profile);
@@ -1322,12 +1421,42 @@ export function InventoryModuleHome({
               .filter((row) => row.value > 0)
               .sort((left, right) => right.value - left.value);
 
-            const stockReceivedValue = 0;
-            const stockReceivedCount = 0;
-            const stockIssuedValue = 0;
-            const stockIssuedCount = 0;
-            const turnoverValue = 0;
-            const turnoverCount = 0;
+            const movementRows = inventoryDeepRecordArray(analyticsMovements).filter((movement) => {
+              const movementDate = inventoryText(movement, ['business_date', 'occurred_at', 'created_at', 'received_at'], '');
+
+              return inventoryAnalyticsInDateRange(movementDate, analyticsDateFromFilter, analyticsDateToFilter);
+            });
+
+            const movementValue = (movement: UnknownRecord): number => {
+              const directValue = inventoryNumber(movement, ['total_value', 'value', 'line_total', 'amount']);
+
+              if (directValue > 0) {
+                return directValue;
+              }
+
+              const quantity = Math.abs(inventoryNumber(movement, ['quantity', 'qty']));
+              const unitCost = inventoryNumber(movement, ['unit_cost', 'cost', 'average_unit_cost']);
+
+              return quantity * unitCost;
+            };
+
+            const movementType = (movement: UnknownRecord): string =>
+              inventoryText(movement, ['movement_type', 'type', 'direction'], '').toLowerCase();
+
+            const receivedRows = movementRows.filter((movement) =>
+              /receive|received|purchase|stock_in|inbound|adjustment_in|return_in/.test(movementType(movement)),
+            );
+
+            const issuedRows = movementRows.filter((movement) =>
+              /issue|issued|sale|sold|dispense|stock_out|outbound|adjustment_out/.test(movementType(movement)),
+            );
+
+            const stockReceivedValue = receivedRows.reduce((sum, movement) => sum + movementValue(movement), 0);
+            const stockReceivedCount = receivedRows.length;
+            const stockIssuedValue = issuedRows.reduce((sum, movement) => sum + movementValue(movement), 0);
+            const stockIssuedCount = issuedRows.length;
+            const turnoverValue = stockIssuedValue;
+            const turnoverCount = stockIssuedCount;
 
             const lowStockValue = Math.max(
               inventoryDeepNumber(summary, ['low_stock_value', 'low_stock_stock_value']),
@@ -1408,8 +1537,66 @@ export function InventoryModuleHome({
               .slice(0, 8);
 
             const maxCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
-            const trendValues = [0, 0, 0, 0, 0, 0, totalValue];
-            const nearExpiryTrendValues = [0, 0, 0, 0, 0, 0, nearExpiryValue];
+            const analyticsTrendDateKeys = inventoryAnalyticsDateKeys(analyticsDateFromFilter, analyticsDateToFilter);
+            const analyticsTrendWeeks = Array.from(
+              new Set(analyticsTrendDateKeys.map((_, index) => `week-${Math.floor(index / 7) + 1}`)),
+            );
+            const selectedTrendDateKeys = analyticsTrendWeekSelection === 'all'
+              ? analyticsTrendDateKeys
+              : analyticsTrendDateKeys.filter((_, index) => `week-${Math.floor(index / 7) + 1}` === analyticsTrendWeekSelection);
+
+            const stockMovementByDate = new Map<string, { received: number; issued: number }>();
+
+            movementRows.forEach((movement) => {
+              const dateKey = inventoryText(movement, ['business_date', 'occurred_at', 'created_at', 'received_at'], '').slice(0, 10);
+
+              if (!dateKey) {
+                return;
+              }
+
+              const current = stockMovementByDate.get(dateKey) ?? { received: 0, issued: 0 };
+              const value = movementValue(movement);
+
+              if (receivedRows.includes(movement)) {
+                current.received += value;
+              }
+
+              if (issuedRows.includes(movement)) {
+                current.issued += value;
+              }
+
+              stockMovementByDate.set(dateKey, current);
+            });
+
+            const openingInventoryValue = Math.max(
+              totalValue -
+                analyticsTrendDateKeys.reduce((sum, dateKey) => {
+                  const movement = stockMovementByDate.get(dateKey);
+
+                  return sum + (movement?.received ?? 0) - (movement?.issued ?? 0);
+                }, 0),
+              0,
+            );
+
+            let runningInventoryValue = openingInventoryValue;
+
+            const fullTrendValues = analyticsTrendDateKeys.map((dateKey) => {
+              const movement = stockMovementByDate.get(dateKey);
+              runningInventoryValue += (movement?.received ?? 0) - (movement?.issued ?? 0);
+
+              return Math.max(runningInventoryValue, 0);
+            });
+
+            const fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
+              dateKey === analyticsDateToFilter ? nearExpiryValue : 0,
+            );
+
+            const trendValues = selectedTrendDateKeys.map((dateKey) =>
+              fullTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
+            );
+            const nearExpiryTrendValues = selectedTrendDateKeys.map((dateKey) =>
+              fullNearExpiryTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
+            );
             const trendMax = Math.max(...trendValues, 1);
             const trendStartValue = trendValues.find((value) => value > 0) ?? 0;
             const trendEndValue = trendValues[trendValues.length - 1] ?? 0;
@@ -1508,9 +1695,21 @@ export function InventoryModuleHome({
                       {trendValues.map((value, index) => (
                         <div key={`stock-trend-${index}`}>
                           <i style={{ height: `${Math.max((value / trendMax) * 100, value > 0 ? 12 : 4)}%` }} />
-                          <small>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</small>
+                          <small>{selectedTrendDateKeys[index] ?? String(index + 1)}</small>
                         </div>
                       ))}
+                    </div>
+
+                    <div className="inventory-analytics-trend-range-selector">
+                      <span>Trend Range</span>
+                      <select value={analyticsTrendWeekSelection} onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}>
+                        <option value="all">Full selected range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="inventory-analytics-stacked-bar-trends">
@@ -1533,7 +1732,7 @@ export function InventoryModuleHome({
                                   <div key={`${chart.label}-${index}`}>
                                     <span>{value > 0 ? formatCurrency(value) : '0'}</span>
                                     <i style={{ height: `${height}%` }} />
-                                    <small>{index === 0 ? analyticsDateFromFilter : index === chart.values.length - 1 ? analyticsDateToFilter : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</small>
+                                    <small>{index === 0 ? analyticsDateFromFilter : index === chart.values.length - 1 ? analyticsDateToFilter : selectedTrendDateKeys[index] ?? String(index + 1)}</small>
                                   </div>
                                 );
                               })}

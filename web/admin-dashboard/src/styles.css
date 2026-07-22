@@ -45195,3 +45195,119 @@ thead
     grid-template-columns: repeat(7, minmax(4.4rem, 1fr));
   }
 }
+
+/* Final corrections: hide old trend, stack selected-range bar charts, remove customization */
+.inventory-home-customization {
+  display: none !important;
+}
+
+.inventory-analytics-request-bars,
+.inventory-analytics-trend-chart-pair,
+.inventory-analytics-trend-mini-tables,
+.inventory-analytics-request-grid > .inventory-analytics-request-card:first-child .inventory-analytics-request-table-scroll {
+  display: none !important;
+}
+
+.inventory-analytics-trend-range-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.8rem;
+  background: #f8fafc;
+  padding: 0.55rem 0.7rem;
+  margin-top: 0.6rem;
+}
+
+.inventory-analytics-trend-range-selector span {
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.inventory-analytics-trend-range-selector select {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.4rem 0.55rem;
+}
+
+.inventory-analytics-stacked-bar-trends {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin-top: 0.7rem;
+}
+
+.inventory-analytics-bar-trend-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #f8fafc;
+  padding: 0.75rem;
+  min-width: 0;
+}
+
+.inventory-analytics-bar-trend-card strong {
+  display: block;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 900;
+  margin-bottom: 0.55rem;
+}
+
+.inventory-analytics-bar-trend-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(4.25rem, 1fr);
+  gap: 0.4rem;
+  align-items: end;
+  min-height: 9.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.inventory-analytics-bar-trend-bars div {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.25rem;
+  align-items: end;
+  min-width: 0;
+  height: 9.25rem;
+}
+
+.inventory-analytics-bar-trend-bars span {
+  color: #0f766e;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-align: center;
+  overflow-wrap: anywhere;
+  line-height: 1.05;
+}
+
+.inventory-analytics-bar-trend-bars i {
+  display: block;
+  width: 100%;
+  border-radius: 0.45rem 0.45rem 0.1rem 0.1rem;
+  background: linear-gradient(180deg, #14b8a6, #0f766e);
+  min-height: 0.35rem;
+}
+
+.inventory-analytics-bar-trend-bars small {
+  color: #64748b;
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+  line-height: 1.05;
+}
+
+.inventory-analytics-request-filters button,
+.inventory-analytics-photo-refresh {
+  background: #0f766e !important;
+  color: #fff !important;
+  cursor: pointer !important;
+}
