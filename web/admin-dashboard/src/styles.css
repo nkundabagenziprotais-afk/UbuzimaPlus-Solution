@@ -45333,3 +45333,91 @@ thead
   font-size: 0.58rem !important;
   letter-spacing: -0.02em;
 }
+
+/* Inventory Analytics: clean Stock Value Trend bar sizing */
+.inventory-analytics-trend-range-selector,
+.inventory-analytics-request-bars,
+.inventory-analytics-trend-chart-pair,
+.inventory-analytics-trend-mini-tables,
+.inventory-analytics-request-grid > .inventory-analytics-request-card:first-child .inventory-analytics-request-table-scroll {
+  display: none !important;
+}
+
+.inventory-analytics-request-card header .inventory-analytics-trend-header-select {
+  margin-left: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0.35rem 0.55rem;
+  max-width: 9.25rem;
+}
+
+.inventory-analytics-stacked-bar-trends {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.8rem !important;
+  margin-top: 0.65rem !important;
+}
+
+.inventory-analytics-bar-trend-card {
+  padding: 0.7rem !important;
+  overflow: hidden !important;
+}
+
+.inventory-analytics-bar-trend-bars {
+  display: grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: minmax(3rem, 3.65rem) !important;
+  justify-content: start !important;
+  gap: 0.32rem !important;
+  align-items: end !important;
+  min-height: 8.75rem !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 0.15rem 0.05rem 0.35rem !important;
+}
+
+.inventory-analytics-bar-trend-bars div {
+  display: grid !important;
+  grid-template-rows: 1.35rem 1fr 1rem !important;
+  gap: 0.18rem !important;
+  align-items: end !important;
+  height: 8.5rem !important;
+  min-width: 0 !important;
+}
+
+.inventory-analytics-bar-trend-bars span {
+  display: block !important;
+  color: #0f766e !important;
+  font-size: 0.56rem !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.inventory-analytics-bar-trend-bars i {
+  display: block !important;
+  width: 1.45rem !important;
+  max-width: 1.45rem !important;
+  margin: 0 auto !important;
+  border-radius: 0.38rem 0.38rem 0.1rem 0.1rem !important;
+  background: linear-gradient(180deg, #14b8a6, #0f766e) !important;
+  min-height: 0.35rem !important;
+}
+
+.inventory-analytics-bar-trend-bars small {
+  display: block !important;
+  color: #64748b !important;
+  font-size: 0.62rem !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}

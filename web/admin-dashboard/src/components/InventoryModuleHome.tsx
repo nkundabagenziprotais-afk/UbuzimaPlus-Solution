@@ -1523,16 +1523,22 @@ export function InventoryModuleHome({
             });
 
             const movementValue = (movement: UnknownRecord): number => {
-              const directValue = inventoryNumber(movement, ['total_value', 'value', 'line_total', 'amount']);
+              const directValue = inventoryNumber(movement, ['total_value', 'value', 'line_total', 'amount', 'cost_value']);
 
               if (directValue > 0) {
                 return directValue;
               }
 
-              const quantity = Math.abs(inventoryNumber(movement, ['quantity', 'qty']));
-              const unitCost = inventoryNumber(movement, ['unit_cost', 'cost', 'average_unit_cost']);
+              const quantity = Math.abs(inventoryNumber(movement, ['quantity', 'qty', 'quantity_on_hand']));
+              const unitCost = inventoryNumber(movement, ['unit_cost', 'cost', 'average_unit_cost', 'last_unit_cost']);
 
-              return quantity * unitCost;
+              if (quantity > 0 && unitCost > 0) {
+                return quantity * unitCost;
+              }
+
+              const sellingPrice = inventoryNumber(movement, ['selling_price', 'unit_price', 'price']);
+
+              return quantity > 0 && sellingPrice > 0 ? quantity * (sellingPrice / 1.3) : 0;
             };
 
             const salesIssuedValue = (row: UnknownRecord): number => {
@@ -1549,29 +1555,30 @@ export function InventoryModuleHome({
                 return quantity * unitCost;
               }
 
-              const salesValue = inventoryNumber(row, ['line_total', 'total_amount', 'amount', 'sales_value']);
+              const salesValue = inventoryNumber(row, ['line_total', 'total_amount', 'amount', 'sales_value', 'gross_sales']);
 
               return salesValue > 0 ? salesValue / 1.3 : 0;
             };
 
             const movementType = (movement: UnknownRecord): string =>
-              inventoryText(movement, ['movement_type', 'type', 'direction'], '').toLowerCase();
+              inventoryText(movement, ['movement_type', 'type', 'direction', 'transaction_type'], '').toLowerCase();
 
             const receivedRows = movementRows.filter((movement) =>
-              /receive|received|purchase|stock_in|inbound|adjustment_in|return_in/.test(movementType(movement)),
+              /receive|received|purchase|stock_in|inbound|adjustment_in|return_in|opening/.test(movementType(movement)),
             );
 
             const issuedRows = movementRows.filter((movement) =>
               /issue|issued|sale|sold|dispense|stock_out|outbound|adjustment_out/.test(movementType(movement)),
             );
 
+            const receivedFallbackRows = receivedBatchRows.length ? receivedBatchRows : analyticsMetricBatchRows;
             const movementReceivedValue = receivedRows.reduce((sum, movement) => sum + movementValue(movement), 0);
-            const batchReceivedValue = receivedBatchRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0);
+            const batchReceivedValue = receivedFallbackRows.reduce((sum, batch) => sum + inventoryBatchValue(batch), 0);
             const movementIssuedValue = issuedRows.reduce((sum, movement) => sum + movementValue(movement), 0);
             const registerIssuedValue = salesRegisterRows.reduce((sum, row) => sum + salesIssuedValue(row), 0);
 
             const stockReceivedValue = Math.max(movementReceivedValue, batchReceivedValue);
-            const stockReceivedCount = Math.max(receivedRows.length, receivedBatchRows.length);
+            const stockReceivedCount = Math.max(receivedRows.length, receivedFallbackRows.length);
             const stockIssuedValue = Math.max(movementIssuedValue, registerIssuedValue);
             const stockIssuedCount = Math.max(issuedRows.length, salesRegisterRows.length);
             const turnoverValue = stockIssuedValue;
