@@ -15,6 +15,8 @@ use App\Models\StockBatch;
 use App\Models\StockMovement;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
+use App\Services\Finance\PharmacoPosPaymentShadowPostingService;
+use Throwable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1988,6 +1990,8 @@ class SalesDispensingController extends Controller
 
         $scope = $scopeResolver->resolveForUser($request->user());
 
+        $this->shadowPostPaymentToFinance($result['payment'], $result['sale']);
+
         $auditLogService->record(
             action: 'pharmaco.payment.recorded',
             scope: $scope,
@@ -2237,6 +2241,18 @@ class SalesDispensingController extends Controller
         }
 
         return $payload;
+    }
+
+    private function shadowPostPaymentToFinance(PharmacoPayment $payment, PharmacoSale $sale): void
+    {
+        try {
+            app(PharmacoPosPaymentShadowPostingService::class)->postPayment(
+                $payment,
+                $sale
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function serializeSale(PharmacoSale $sale, bool $includeDetails = false): array

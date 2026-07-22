@@ -5,6 +5,7 @@ namespace Tests\Feature\PharmaCo360;
 use App\Models\Branch;
 use App\Models\PharmacoPayment;
 use App\Models\PharmacoSale;
+use App\Models\FinanceJournalEntry;
 use App\Models\PharmacoSaleItem;
 use App\Models\Solution;
 use App\Models\StockBatch;
@@ -55,6 +56,43 @@ class PharmacoPaymentRecordingApiTest extends TestCase
             'auditable_type' => PharmacoPayment::class,
             'auditable_id' => $payment->id,
         ]);
+    }
+
+    public function test_successful_payment_creates_shadow_finance_posting(): void
+    {
+        $this->seed();
+
+        $sale = $this->confirmSeededSale();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson("/api/v1/pharmaco/sales/{$sale->id}/payments", [
+                'amount' => $sale->total_amount,
+                'payment_method' => 'cash',
+                'reference_number' => 'SHADOW-FIN-001',
+                'generate_receipt' => true,
+            ])
+            ->assertCreated();
+
+        $payment = $sale->fresh('payments')->payments()->latest('id')->firstOrFail();
+
+        $entry = FinanceJournalEntry::query()
+            ->where('tenant_id', $sale->tenant_id)
+            ->where('source_module', 'pos')
+            ->where('source_type', 'payment')
+            ->where('source_id', (string) $payment->id)
+            ->where('status', 'shadow_posted')
+            ->firstOrFail();
+
+        $expectedBusinessDate = $sale->business_date?->toDateString()
+            ?: $payment->received_at?->toDateString()
+            ?: now()->toDateString();
+
+        $this->assertSame($expectedBusinessDate, $entry->business_date->toDateString());
+        $this->assertSame((float) $payment->amount, (float) $entry->total_debit);
+        $this->assertSame((float) $payment->amount, (float) $entry->total_credit);
+        $this->assertCount(2, $entry->lines);
     }
 
     public function test_partial_payment_updates_sale_balance_and_status(): void
