@@ -562,7 +562,7 @@ const legacyPermissionMap: Record<string, string[]> = {
   'users.create': ['users.staff.add'],
   'users.update': ['users.staff.edit'],
   'users.permissions.edit': ['security.permissions.view', 'security.permissions.edit'],
-  'pharmaco.pos.use': ['pos.sales.view', 'pos.sales.add', 'pos.receipts.view', 'pos.payments.view'],
+  'pharmaco.pos.use': ['pos.sales.view', 'pos.sales.add', 'pos.receipts.view', 'pos.payments.view', 'pharmaco.pos.historical.view', 'pharmaco.pos.historical.open', 'pharmaco.pos.historical.record'],
   'pharmaco.pos.session.reset': ['pos.session_support.view', 'pos.session_support.edit'],
   'pharmaco.sales.view': ['pos.sales.view', 'pos.receipts.view'],
   'pharmaco.sales.create': ['pos.sales.add', 'pos.payments.add'],
