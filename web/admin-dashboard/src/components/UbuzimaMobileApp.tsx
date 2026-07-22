@@ -65,6 +65,7 @@ type UbuzimaMobileAppProps = {
   isInstalling: boolean;
   isOnline: boolean;
   isStandalone: boolean;
+  liveMetricBars?: number[];
   menuGroups: UbuzimaMobileAppMenuGroup[];
   metrics: UbuzimaMobileAppMetric[];
   navigationItems: UbuzimaMobileAppNavItem[];
@@ -382,6 +383,7 @@ export function UbuzimaMobileApp({
   isInstalling,
   isOnline,
   isStandalone,
+  liveMetricBars = [],
   menuGroups,
   metrics,
   navigationItems,
@@ -409,10 +411,22 @@ export function UbuzimaMobileApp({
   const activeNavScreen =
     navigationItems.find((item) => item.screen === activeScreen)?.screen ?? '';
   const heroAction = primaryActions[0];
-  const primaryMetric = metrics[0];
-  const businessPositionMetrics = metrics.slice(1);
-  const paymentActions = salesActions.slice(0, 3);
-  const trendBars = [42, 58, 52, 71, 63, 84, 76];
+  const actionByKey = (actions: UbuzimaMobileAppAction[], key: string) =>
+    actions.find((action) => action.key === key);
+  const primaryMetric = metrics.find((metric) => metric.key === 'gross-sales') ?? metrics[0];
+  const grossRevenueMetric = metrics.find((metric) => metric.key === 'gross-revenue');
+  const heroMetrics = [primaryMetric, grossRevenueMetric].filter(
+    (metric): metric is UbuzimaMobileAppMetric => Boolean(metric),
+  );
+  const businessPositionMetrics = metrics.filter(
+    (metric) => !heroMetrics.some((heroMetric) => heroMetric.key === metric.key),
+  );
+  const posCounterAction = actionByKey(salesActions, 'pos-counter') ?? heroAction;
+  const fallbackTrendBars = [42, 58, 52, 71, 63, 84, 76];
+  const trendBars = (liveMetricBars.length > 0 ? liveMetricBars : fallbackTrendBars)
+    .slice(0, 7)
+    .map((height) => Math.max(8, Math.min(100, Math.round(height))));
+  const chartStatusLabel = liveMetricBars.length > 0 ? 'Live' : isOnline ? 'Ready' : 'Saved';
   const canInstallApp = installAvailable && !isStandalone;
   const installStatusLabel = isStandalone
     ? 'Installed app'
@@ -424,6 +438,23 @@ export function UbuzimaMobileApp({
     : canInstallApp
       ? 'Add Ubuzima+ to this phone'
       : 'Use the phone browser install option';
+  const paymentChannels = ['Cash', 'Momo', 'Insurance', 'Credit'].map((method) => ({
+    method,
+    action:
+      method === 'Credit'
+        ? actionByKey(salesActions, 'finance-flow') ?? actionByKey(salesActions, 'payment-receipt') ?? posCounterAction
+        : method === 'Cash'
+          ? posCounterAction ?? actionByKey(salesActions, 'payment-receipt')
+          : actionByKey(salesActions, 'payment-receipt') ?? posCounterAction,
+  }));
+  const inventoryReviewChips = [
+    { label: 'Low stock', action: actionByKey(stockActions, 'stock-low') },
+    { label: 'Near expiry', action: actionByKey(stockActions, 'stock-expiry') },
+    { label: 'Batch list', action: actionByKey(stockActions, 'stock-batches') },
+    { label: 'Shelf view', action: actionByKey(stockActions, 'stock-batches') ?? actionByKey(stockActions, 'stock-master') },
+    { label: 'Locations', action: actionByKey(stockActions, 'stock-master') },
+    { label: 'Receiving', action: actionByKey(procurementActions, 'receiving') },
+  ].filter((chip): chip is { label: string; action: UbuzimaMobileAppAction } => Boolean(chip.action));
 
   function toggleGroup(groupKey: string, fallbackOpen: boolean) {
     setOpenGroups((current) => ({
@@ -451,18 +482,27 @@ export function UbuzimaMobileApp({
             </button>
           </div>
 
-          <div className="ubuzima-native-business-hero__balance">
-            <span>{primaryMetric?.label ?? 'Gross sales'}</span>
-            <strong className={valueFitClass(primaryMetric?.value)}>
-              {primaryMetric?.value ?? 'RWF 0'}
-            </strong>
-            <small>{primaryMetric?.helper ?? 'Today business position'}</small>
+          <div className="ubuzima-native-business-hero__comparison" aria-label="Gross sales and gross revenue">
+            {heroMetrics.map((metric) => (
+              <button
+                key={metric.key}
+                type="button"
+                className="ubuzima-native-business-hero__balance"
+                onClick={onOpenBusinessOverview}
+              >
+                <span>{metric.label}</span>
+                <strong className={valueFitClass(metric.value)}>
+                  {metric.value}
+                </strong>
+                <small>{metric.helper}</small>
+              </button>
+            ))}
           </div>
 
           <div className="ubuzima-native-business-hero__analytics" aria-hidden="true">
             <div>
-              <span>7-day pulse</span>
-              <strong>{isOnline ? 'Stable' : 'Saved'}</strong>
+              <span>Live pulse</span>
+              <strong>{chartStatusLabel}</strong>
             </div>
             <div className="ubuzima-native-mini-chart">
               {trendBars.map((height, index) => (
@@ -497,6 +537,7 @@ export function UbuzimaMobileApp({
             <AppIcon name="HM" />
             <span>
               <strong>{isInstalling ? 'Opening install' : 'Add to phone'}</strong>
+              <small>{installStatusDetail}</small>
             </span>
           </button>
         )}
@@ -547,7 +588,7 @@ export function UbuzimaMobileApp({
           <button
             type="button"
             className="ubuzima-native-search-row"
-            onClick={heroAction?.onPress}
+            onClick={posCounterAction?.onPress}
           >
             <AppIcon name="SEARCH" />
             <strong>Search medicine or scan code</strong>
@@ -570,8 +611,8 @@ export function UbuzimaMobileApp({
 
         <AppSection eyebrow="Payment" title="Channels">
           <div className="ubuzima-native-payment-grid">
-            {['Cash', 'Momo', 'Insurance', 'Credit'].map((method) => (
-              <button key={method} type="button" onClick={paymentActions[0]?.onPress}>
+            {paymentChannels.map(({ method, action }) => (
+              <button key={method} type="button" onClick={action?.onPress}>
                 <AppIcon name={paymentIconName(method)} />
                 <span>{method}</span>
               </button>
@@ -601,9 +642,9 @@ export function UbuzimaMobileApp({
 
         <AppSection eyebrow="Filters" title="Review">
           <div className="ubuzima-native-chip-grid">
-            {['Low stock', 'Near expiry', 'Batch list', 'Shelf view', 'Locations', 'Receiving'].map((label) => (
-              <button key={label} type="button" onClick={stockActions[0]?.onPress}>
-                {label}
+            {inventoryReviewChips.map((chip) => (
+              <button key={chip.label} type="button" onClick={chip.action.onPress}>
+                {chip.label}
               </button>
             ))}
           </div>

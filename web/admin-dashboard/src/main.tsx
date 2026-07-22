@@ -765,6 +765,7 @@ function installUbuzimaInstallAppPrompt(): void {
 
   let deferredPrompt: UbuzimaBeforeInstallPromptEvent | null = null;
   const notifyInstallChange = (isAvailable: boolean) => {
+    (window as Window & { __ubuzimaPwaInstallAvailable?: boolean }).__ubuzimaPwaInstallAvailable = isAvailable;
     window.dispatchEvent(
       new CustomEvent('ubuzima:pwa-install-change', {
         detail: { isAvailable },

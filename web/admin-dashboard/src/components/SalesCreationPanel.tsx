@@ -254,6 +254,9 @@ export function SalesCreationPanel({
         return leftRisk - rightRisk || left.name.localeCompare(right.name);
       });
   }, [activeCategory, activeProducts, productSearch]);
+  const productBrowserLimit = productBrowserView === 'grid' ? 12 : 20;
+  const displayedProducts = visibleProducts.slice(0, productBrowserLimit);
+  const hiddenProductCount = Math.max(visibleProducts.length - displayedProducts.length, 0);
 
   function preferredPrice(product: PharmaProduct): string {
     const price = bestBatch(product.id)?.selling_price;
@@ -541,7 +544,7 @@ export function SalesCreationPanel({
           <div className="section-heading">
             <div>
               <h4>Product browser</h4>
-              <span>Search by medicine, SKU, barcode, brand, or category.</span>
+              <span>{visibleProducts.length.toLocaleString('en-RW')} products available</span>
             </div>
             <div className="view-toggle" aria-label="Product browser view">
               <button
@@ -585,7 +588,7 @@ export function SalesCreationPanel({
           </div>
 
           <div className={`pos-product-grid ${productBrowserView === 'list' ? 'pos-product-grid--list' : ''}`}>
-            {visibleProducts.slice(0, productBrowserView === 'grid' ? 10 : 16).map((product) => {
+            {displayedProducts.map((product) => {
               const batch = bestBatch(product.id);
               const price = preferredPrice(product);
 
@@ -606,6 +609,12 @@ export function SalesCreationPanel({
 
             {visibleProducts.length === 0 && (
               <p className="muted">No matching products. Try another product name, SKU, barcode, or category.</p>
+            )}
+
+            {hiddenProductCount > 0 && (
+              <p className="muted pos-product-count">
+                {hiddenProductCount.toLocaleString('en-RW')} more products match this filter.
+              </p>
             )}
           </div>
         </section>

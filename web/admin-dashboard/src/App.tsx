@@ -698,12 +698,13 @@ function mobileAppScreenForSection(section: AdminSectionKey): UbuzimaMobileAppSc
 
 type SharedBusinessMetric = {
   valueText?: string;
+  valueNumber?: number;
   updatedAt?: number;
 };
 
 const sharedBusinessOverviewMetricStorageKey = 'ubuzimaSharedDashboardAnalyticsMetricsV1';
 
-function readSharedBusinessMetric(labels: string[]): string | null {
+function readSharedBusinessMetricRecord(labels: string[]): SharedBusinessMetric | null {
   if (typeof window === 'undefined') return null;
 
   try {
@@ -720,16 +721,16 @@ function readSharedBusinessMetric(labels: string[]): string | null {
       const normalizedLabel = label.toLowerCase();
       const exact = parsed[label] ?? normalizedEntries.find(([key]) => key === normalizedLabel)?.[1];
 
-      if (exact?.valueText) {
-        return exact.valueText;
+      if (exact?.valueText || typeof exact?.valueNumber === 'number') {
+        return exact;
       }
 
       const partial = normalizedEntries.find(([key]) =>
         key.includes(normalizedLabel) || normalizedLabel.includes(key),
       )?.[1];
 
-      if (partial?.valueText) {
-        return partial.valueText;
+      if (partial?.valueText || typeof partial?.valueNumber === 'number') {
+        return partial;
       }
     }
   } catch {
@@ -737,6 +738,20 @@ function readSharedBusinessMetric(labels: string[]): string | null {
   }
 
   return null;
+}
+
+function buildNativeLiveMetricBars(values: Array<number | undefined>): number[] {
+  const liveValues = values.filter((value): value is number =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0,
+  );
+
+  if (liveValues.length < 2) return [];
+
+  const max = Math.max(...liveValues, 1);
+
+  return liveValues
+    .slice(0, 7)
+    .map((value) => Math.max(12, Math.min(100, Math.round((value / max) * 100))));
 }
 
 function staffLanguageCode(language: StaffLoginLanguage): RuntimeLanguage {
@@ -4321,6 +4336,9 @@ function App() {
     };
 
     updateStandaloneState();
+    setIsPwaInstallAvailable(
+      Boolean((window as Window & { __ubuzimaPwaInstallAvailable?: boolean }).__ubuzimaPwaInstallAvailable),
+    );
 
     standaloneQuery.addEventListener('change', updateStandaloneState);
     window.addEventListener(
@@ -10026,25 +10044,56 @@ return (
       screen: 'more',
     },
   ];
+  const nativeGrossSalesMetric = readSharedBusinessMetricRecord(['Gross Sales']);
+  const nativeGrossRevenueMetric = readSharedBusinessMetricRecord(['Gross Revenue', 'Gross Profit']);
+  const nativeNetRevenueMetric = readSharedBusinessMetricRecord(['Net Revenue']);
+  const nativeCollectionsMetric = readSharedBusinessMetricRecord(['Collections']);
+  const nativeOutstandingMetric = readSharedBusinessMetricRecord(['Outstanding Balance', 'Balance Amount']);
+  const nativeAverageSaleMetric = readSharedBusinessMetricRecord(['Average Transaction Value']);
+  const nativeInventoryValueMetric = readSharedBusinessMetricRecord([
+    'Total Inventory Value',
+    'Inventory Value',
+    'Stock Value',
+  ]);
+  const nativeAlertsMetric = readSharedBusinessMetricRecord([
+    'Low Stock Count',
+    'Low Stock Products',
+    'Near Expiry Count',
+  ]);
+  const nativeLiveMetricBars = buildNativeLiveMetricBars([
+    nativeGrossSalesMetric?.valueNumber,
+    nativeGrossRevenueMetric?.valueNumber,
+    nativeNetRevenueMetric?.valueNumber,
+    nativeCollectionsMetric?.valueNumber,
+    nativeOutstandingMetric?.valueNumber,
+    nativeAverageSaleMetric?.valueNumber,
+  ]);
   const nativeMetrics: UbuzimaMobileAppMetric[] = [
     {
       key: 'gross-sales',
       label: 'Gross sales',
-      value: readSharedBusinessMetric(['Gross Sales', 'Gross Revenue']) ?? 'RWF 0',
+      value: nativeGrossSalesMetric?.valueText ?? 'RWF 0',
       helper: 'Business Overview',
       tone: 'olive',
     },
     {
+      key: 'gross-revenue',
+      label: 'Gross revenue',
+      value: nativeGrossRevenueMetric?.valueText ?? 'RWF 0',
+      helper: 'Profit signal',
+      tone: 'gold',
+    },
+    {
       key: 'net-revenue',
       label: 'Net revenue',
-      value: readSharedBusinessMetric(['Net Revenue']) ?? 'RWF 0',
+      value: nativeNetRevenueMetric?.valueText ?? 'RWF 0',
       helper: 'After discounts and returns',
       tone: 'teal',
     },
     {
       key: 'inventory-value',
       label: 'Stock value',
-      value: readSharedBusinessMetric(['Total Inventory Value', 'Inventory Value', 'Stock Value']) ?? 'RWF 0',
+      value: nativeInventoryValueMetric?.valueText ?? 'RWF 0',
       helper: 'Inventory position',
       tone: 'gold',
     },
@@ -10052,7 +10101,7 @@ return (
       key: 'alerts',
       label: 'Alerts',
       value:
-        readSharedBusinessMetric(['Low Stock Count', 'Low Stock Products', 'Near Expiry Count']) ??
+        nativeAlertsMetric?.valueText ??
         (unreadMailCount > 0 ? unreadMailCount.toLocaleString('en-RW') : '0'),
       helper: unreadMailCount > 0 ? 'Corporate email requires review' : 'Stock and operations',
       tone: unreadMailCount > 0 ? 'red' : 'blue',
@@ -10549,6 +10598,7 @@ return (
         isStandalone={isStandalonePwa}
         menuGroups={nativeMobileMenuGroups}
         metrics={nativeMetrics}
+        liveMetricBars={nativeLiveMetricBars}
         navigationItems={nativeMobileNavItems}
         primaryActions={nativePrimaryActions}
         procurementActions={nativeProcurementActions}

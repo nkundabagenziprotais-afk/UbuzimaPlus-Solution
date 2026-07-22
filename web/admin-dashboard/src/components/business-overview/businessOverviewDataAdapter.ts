@@ -227,6 +227,13 @@ function salesFromSummary(response: unknown, startDate: string, endDate: string)
   const sales = asRecord(record.sales);
 
   const grossSales = numberValue(sales.total_sales_amount);
+  const grossProfit = numberValue(
+    sales.gross_profit ??
+    sales.gross_revenue ??
+    sales.gross_margin ??
+    sales.margin_income ??
+    sales.profit_amount,
+  );
   const collections = numberValue(sales.payments_collected) || numberValue(sales.paid_amount);
   const outstandingBalance = numberValue(sales.balance_amount);
   const transactionCount = numberValue(sales.sale_count);
@@ -235,6 +242,7 @@ function salesFromSummary(response: unknown, startDate: string, endDate: string)
   return {
     periodLabel: startDate === endDate ? startDate : `${startDate} → ${endDate}`,
     grossSales,
+    grossProfit,
     netSales: grossSales,
     collections,
     outstandingBalance,
@@ -710,6 +718,7 @@ export async function loadBusinessOverviewDataAdapter({
     },
     revenueRows: [
       { label: 'Gross Sales', value: formatMoney(sales.grossSales) },
+      { label: 'Gross Revenue', value: formatMoney(grossRevenue) },
       { label: 'Discounts', value: formatMoney(0) },
       { label: 'Returns / Reversals', value: formatMoney(0) },
       { label: 'Net Sales', value: formatMoney(sales.netSales) },

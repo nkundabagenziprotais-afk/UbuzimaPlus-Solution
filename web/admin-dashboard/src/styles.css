@@ -1615,6 +1615,15 @@ p {
   line-height: 1.35;
 }
 
+.pos-product-count {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-weight: 800;
+}
+
 .pos-meta-grid,
 .pos-cart-footer {
   display: grid;
@@ -1909,6 +1918,128 @@ p {
   .pos-cart-footer,
   .pos-cart-line {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .sales-creation-card {
+    border-radius: 8px;
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .sales-creation-card .panel-heading-row {
+    align-items: stretch;
+    gap: 0.7rem;
+  }
+
+  .sales-creation-card .panel-heading-row > div:first-child p {
+    display: none;
+  }
+
+  .sale-total-box {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .retail-pos-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .pos-product-browser,
+  .pos-cart-panel,
+  .quick-customer-panel {
+    border-radius: 8px;
+    padding: 0.72rem;
+    gap: 0.72rem;
+  }
+
+  .pos-product-browser .section-heading,
+  .pos-cart-panel .section-heading {
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .pos-product-browser .section-heading h4,
+  .pos-cart-panel .section-heading h4 {
+    font-size: 0.92rem;
+    line-height: 1.1;
+  }
+
+  .pos-product-browser .section-heading span,
+  .pos-cart-panel .section-heading span {
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .view-toggle {
+    min-height: 40px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 8px;
+    background: #f8fafc;
+    padding: 3px;
+  }
+
+  .view-toggle button {
+    min-height: 34px;
+    border-radius: 7px;
+    padding: 0 0.62rem;
+    font-size: 0.72rem;
+  }
+
+  .pos-product-toolbar {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .pos-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .pos-product-grid button {
+    min-height: 132px;
+    gap: 0.28rem;
+    border-radius: 8px;
+    padding: 0.68rem;
+  }
+
+  .pos-product-grid button strong {
+    font-size: 0.82rem;
+    line-height: 1.12;
+  }
+
+  .pos-product-grid small,
+  .pos-product-grid em {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+
+  .pos-product-grid--list {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-product-grid--list button {
+    min-height: 84px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.55rem;
+  }
+
+  .pos-product-grid--list button strong,
+  .pos-product-grid--list button small,
+  .pos-product-grid--list button em {
+    grid-column: 2;
+  }
+
+  .pos-product-grid--list .rx-chip,
+  .pos-product-grid--list .otc-chip {
+    grid-row: span 4;
+    place-self: start;
   }
 }
 
@@ -48486,10 +48617,42 @@ html.ubuzima-standalone-webapp .admin-header {
     font-weight: 950;
   }
 
+  .ubuzima-native-business-hero__comparison {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .ubuzima-native-business-hero__balance {
+    min-width: 0;
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.11);
+    color: inherit;
+    padding: 9px;
+    text-align: left;
+    transition:
+      transform 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .ubuzima-native-business-hero__balance:active {
+    transform: scale(0.985);
+  }
+
+  .ubuzima-native-business-hero__balance:hover {
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.16);
+  }
+
   .ubuzima-native-business-hero__balance strong {
     display: block;
-    margin-top: 6px;
-    font-size: clamp(1.55rem, 8.4vw, 2.05rem);
+    margin-top: 2px;
+    font-size: clamp(1rem, 5.2vw, 1.34rem);
     line-height: 1;
     letter-spacing: 0;
     overflow-wrap: anywhere;
@@ -48497,10 +48660,11 @@ html.ubuzima-standalone-webapp .admin-header {
 
   .ubuzima-native-business-hero__balance small {
     display: block;
-    margin-top: 5px;
+    margin-top: 2px;
     color: rgba(255, 255, 255, 0.78);
-    font-size: 0.72rem;
+    font-size: 0.64rem;
     font-weight: 780;
+    line-height: 1.16;
   }
 
   .ubuzima-native-business-hero__chips {
@@ -49132,19 +49296,19 @@ html.ubuzima-standalone-webapp .admin-header {
   }
 
   .ubuzima-native-business-hero__balance .ubuzima-native-value {
-    font-size: 1.76rem !important;
+    font-size: 1.18rem !important;
   }
 
   .ubuzima-native-business-hero__balance .ubuzima-native-value--md {
-    font-size: 1.48rem !important;
+    font-size: 1rem !important;
   }
 
   .ubuzima-native-business-hero__balance .ubuzima-native-value--sm {
-    font-size: 1.22rem !important;
+    font-size: 0.86rem !important;
   }
 
   .ubuzima-native-business-hero__balance .ubuzima-native-value--xs {
-    font-size: 1.02rem !important;
+    font-size: 0.72rem !important;
   }
 
   .ubuzima-native-balance-card .ubuzima-native-value {
