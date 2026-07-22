@@ -171,7 +171,7 @@ function profileIsAdmin(
       .toLowerCase()
       .replace(/[-\s]+/g, '_');
 
-    return (
+  return (
       code === 'tenant_admin' ||
       code === 'ubuzima_plus_super_admin' ||
       code === 'super_admin' ||
@@ -574,6 +574,26 @@ export function PosSalesOverview({
       visibility.modules.includes(module.key),
   );
 
+  const posTopModuleOrder = [
+    /POS Counter|POS Sales|POS/i,
+    /Pharmacist Review|Dispensing Review/i,
+    /Customer|Patients/i,
+    /Prescription/i,
+    /Sales Register/i,
+    /Receipts|Payment/i,
+  ];
+
+  const posTopModules = visibleModules
+    .filter((module) => posTopModuleOrder.some((pattern) => pattern.test(module.title)))
+    .sort((left, right) => {
+      const leftIndex = posTopModuleOrder.findIndex((pattern) => pattern.test(left.title));
+      const rightIndex = posTopModuleOrder.findIndex((pattern) => pattern.test(right.title));
+
+      return (leftIndex === -1 ? 99 : leftIndex) - (rightIndex === -1 ? 99 : rightIndex);
+    })
+    .slice(0, 6);
+
+
   const widgetVisible = (id: string) =>
     visibility.analytics.includes(id);
 
@@ -631,6 +651,33 @@ export function PosSalesOverview({
   );
 
   const [posAnalyticsWeekSelection, setPosAnalyticsWeekSelection] = useState('all');
+
+  const todayIsoForPosAnalytics = new Date().toISOString().slice(0, 10);
+  const monthStartIsoForPosAnalytics = `${todayIsoForPosAnalytics.slice(0, 8)}01`;
+  const [posBusinessDateFromFilter, setPosBusinessDateFromFilter] = useState(monthStartIsoForPosAnalytics);
+  const [posBusinessDateToFilter, setPosBusinessDateToFilter] = useState(todayIsoForPosAnalytics);
+  const [posBranchFilter, setPosBranchFilter] = useState('all');
+  const [posCashierFilter, setPosCashierFilter] = useState('all');
+  const [posSessionFilter, setPosSessionFilter] = useState('all');
+  const [posPaymentMethodFilter, setPosPaymentMethodFilter] = useState('all');
+  const [posSaleTypeFilter, setPosSaleTypeFilter] = useState('all');
+  const [posProductCategoryFilter, setPosProductCategoryFilter] = useState('all');
+
+  const applyPosAnalyticsFilters = () => {
+    void loadSales();
+  };
+
+  const resetPosAnalyticsFilters = () => {
+    setPosBusinessDateFromFilter(monthStartIsoForPosAnalytics);
+    setPosBusinessDateToFilter(todayIsoForPosAnalytics);
+    setPosBranchFilter('all');
+    setPosCashierFilter('all');
+    setPosSessionFilter('all');
+    setPosPaymentMethodFilter('all');
+    setPosSaleTypeFilter('all');
+    setPosProductCategoryFilter('all');
+    void loadSales();
+  };
 
   const posAnalyticsWeekSelector = (
     <select
@@ -827,14 +874,71 @@ export function PosSalesOverview({
         </div>
 
         <div className="pos-analytics-filter-card">
-          <label><small>Date Range</small><span>Current month</span></label>
-          <label><small>Business Date Mode</small><span>Business Date</span></label>
-          <label><small>Branch</small><span>All Branches</span></label>
-          <label><small>Cashier / Operator</small><span>All Cashiers</span></label>
-          <label><small>POS Session</small><span>All Sessions</span></label>
-          <label><small>Payment Method</small><span>All Methods</span></label>
-          <label><small>Sale Type</small><span>All Types</span></label>
-          <label><small>Product Category</small><span>All Categories</span></label>
+          <label>
+            <small>Business Date From</small>
+            <input
+              type="date"
+              value={posBusinessDateFromFilter}
+              onChange={(event) => setPosBusinessDateFromFilter(event.target.value)}
+            />
+          </label>
+          <label>
+            <small>Business Date To</small>
+            <input
+              type="date"
+              value={posBusinessDateToFilter}
+              onChange={(event) => setPosBusinessDateToFilter(event.target.value)}
+            />
+          </label>
+          <label>
+            <small>Branch</small>
+            <select value={posBranchFilter} onChange={(event) => setPosBranchFilter(event.target.value)}>
+              <option value="all">All Branches</option>
+            </select>
+          </label>
+          <label>
+            <small>Cashier / Operator</small>
+            <select value={posCashierFilter} onChange={(event) => setPosCashierFilter(event.target.value)}>
+              <option value="all">All Cashiers</option>
+            </select>
+          </label>
+          <label>
+            <small>POS Session</small>
+            <select value={posSessionFilter} onChange={(event) => setPosSessionFilter(event.target.value)}>
+              <option value="all">All Sessions</option>
+              <option value="live">Live POS</option>
+              <option value="historical">Historical POS</option>
+            </select>
+          </label>
+          <label>
+            <small>Payment Method</small>
+            <select value={posPaymentMethodFilter} onChange={(event) => setPosPaymentMethodFilter(event.target.value)}>
+              <option value="all">All Methods</option>
+              <option value="cash">Cash</option>
+              <option value="momo">MoMo</option>
+              <option value="insurance">Insurance</option>
+              <option value="credit">Credit</option>
+            </select>
+          </label>
+          <label>
+            <small>Sale Type</small>
+            <select value={posSaleTypeFilter} onChange={(event) => setPosSaleTypeFilter(event.target.value)}>
+              <option value="all">All Types</option>
+              <option value="normal">Normal Sale</option>
+              <option value="insurance">Insurance Sale</option>
+              <option value="credit">Credit Sale</option>
+            </select>
+          </label>
+          <label>
+            <small>Product Category</small>
+            <select value={posProductCategoryFilter} onChange={(event) => setPosProductCategoryFilter(event.target.value)}>
+              <option value="all">All Categories</option>
+            </select>
+          </label>
+          <div className="pos-analytics-filter-actions">
+            <button type="button" onClick={resetPosAnalyticsFilters}>Reset</button>
+            <button type="button" onClick={applyPosAnalyticsFilters}>Apply Filters</button>
+          </div>
         </div>
 
         <div className="pos-analytics-kpi-strip">
@@ -1066,11 +1170,7 @@ export function PosSalesOverview({
               Operational modules
             </span>
             <h2>Choose where you want to work</h2>
-            <p>
-              Every module opens a dedicated page with its
-              own workflow, controls, approvals, and audit
-              history.
-            </p>
+
           </div>
 
           <span className="pos-overview-count">
@@ -1079,7 +1179,7 @@ export function PosSalesOverview({
         </div>
 
         <div className="pos-overview-module-grid">
-          {visibleModules.filter((module) => /POS Sales|POS Counter|Pharmacist Review|Customer|Patients|Prescription|Sales Register|Receipts|Payment/i.test(module.title)).slice(0, 6).map(
+          {posTopModules.map(
             (module, index) => (
               <button
                 type="button"
