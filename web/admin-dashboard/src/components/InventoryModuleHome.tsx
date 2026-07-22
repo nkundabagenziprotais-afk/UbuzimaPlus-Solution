@@ -365,6 +365,31 @@ function inventoryRecord(value: unknown): UnknownRecord {
     : {};
 }
 
+function readInventoryAnalyticsCache(key: string): unknown {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const value = window.localStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeInventoryAnalyticsCache(key: string, value: unknown): void {
+  if (typeof window === 'undefined' || value == null) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore storage quota/private mode failures.
+  }
+}
+
 function inventoryMaxPositive(...values: number[]): number {
   return values.reduce((max, value) => {
     const numericValue = Number(value);
@@ -728,11 +753,11 @@ export function InventoryModuleHome({
 
   const [valuation, setValuation] =
     useState<unknown>(null);
-  const [analyticsProducts, setAnalyticsProducts] = useState<unknown>(null);
-  const [analyticsBatches, setAnalyticsBatches] = useState<unknown>(null);
-  const [analyticsKpiSummary, setAnalyticsKpiSummary] = useState<unknown>(null);
-  const [analyticsKpiSummaryLastGood, setAnalyticsKpiSummaryLastGood] = useState<unknown>(null);
-  const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(null);
+  const [analyticsProducts, setAnalyticsProducts] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsProductsLastGood'));
+  const [analyticsBatches, setAnalyticsBatches] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsBatchesLastGood'));
+  const [analyticsKpiSummary, setAnalyticsKpiSummary] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood'));
+  const [analyticsKpiSummaryLastGood, setAnalyticsKpiSummaryLastGood] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood'));
+  const [analyticsNearExpiry, setAnalyticsNearExpiry] = useState<unknown>(() => readInventoryAnalyticsCache('inventoryAnalyticsNearExpiryLastGood'));
   const [analyticsLocations, setAnalyticsLocations] = useState<unknown>(null);
   const [analyticsMovements, setAnalyticsMovements] = useState<unknown>(null);
   const [analyticsSalesRegister, setAnalyticsSalesRegister] = useState<unknown>(null);
@@ -936,9 +961,14 @@ export function InventoryModuleHome({
         if (isActive) {
           setAnalyticsKpiSummary(data);
           setAnalyticsKpiSummaryLastGood(data);
+          writeInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood', data);
         }
       } catch {
-        // Preserve the last good KPI summary on temporary auth/network failures.
+        const cachedSummary = readInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood');
+
+        if (isActive && cachedSummary) {
+          setAnalyticsKpiSummaryLastGood(cachedSummary);
+        }
       }
     }
 
@@ -1175,9 +1205,35 @@ export function InventoryModuleHome({
         setValuation(null);
       }
 
-      setAnalyticsProducts(productsResult.status === 'fulfilled' ? productsResult.value : null);
-      setAnalyticsBatches(batchesResult.status === 'fulfilled' ? batchesResult.value : null);
-      setAnalyticsNearExpiry(nearExpiryResult.status === 'fulfilled' ? nearExpiryResult.value : null);
+      if (productsResult.status === 'fulfilled') {
+        setAnalyticsProducts(productsResult.value);
+        writeInventoryAnalyticsCache('inventoryAnalyticsProductsLastGood', productsResult.value);
+      } else {
+        const cachedProducts = readInventoryAnalyticsCache('inventoryAnalyticsProductsLastGood');
+        if (cachedProducts) {
+          setAnalyticsProducts(cachedProducts);
+        }
+      }
+
+      if (batchesResult.status === 'fulfilled') {
+        setAnalyticsBatches(batchesResult.value);
+        writeInventoryAnalyticsCache('inventoryAnalyticsBatchesLastGood', batchesResult.value);
+      } else {
+        const cachedBatches = readInventoryAnalyticsCache('inventoryAnalyticsBatchesLastGood');
+        if (cachedBatches) {
+          setAnalyticsBatches(cachedBatches);
+        }
+      }
+
+      if (nearExpiryResult.status === 'fulfilled') {
+        setAnalyticsNearExpiry(nearExpiryResult.value);
+        writeInventoryAnalyticsCache('inventoryAnalyticsNearExpiryLastGood', nearExpiryResult.value);
+      } else {
+        const cachedNearExpiry = readInventoryAnalyticsCache('inventoryAnalyticsNearExpiryLastGood');
+        if (cachedNearExpiry) {
+          setAnalyticsNearExpiry(cachedNearExpiry);
+        }
+      }
       setAnalyticsLocations(locationsResult.status === 'fulfilled' ? locationsResult.value : null);
 
       if (
