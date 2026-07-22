@@ -1,4 +1,206 @@
 
+function installUbuzimaNativeMobileInterfaceV1(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
+  const root = document.documentElement;
+  const mobileQuery = window.matchMedia('(max-width: 1024px)');
+
+  const primaryModules = [
+    { key: 'dashboard', label: 'Home', match: /Dashboard|Home/i, icon: '⌂' },
+    { key: 'business', label: 'Business', match: /Business Overview|Business/i, icon: '▣' },
+    { key: 'inventory', label: 'Inventory', match: /Inventory/i, icon: '▤' },
+    { key: 'sales', label: 'Sales', match: /Sales|POS/i, icon: '◉' },
+  ];
+
+  function textOf(node: Element | null): string {
+    return (node?.textContent ?? '').replace(/\s+/g, ' ').trim();
+  }
+
+  function findNavigationTargets(): HTMLElement[] {
+    return Array.from(document.querySelectorAll<HTMLElement>('a,button,[role="button"],[data-module],[data-view]'))
+      .filter((node) => {
+        const text = textOf(node);
+        return /Dashboard|Home|Business|Inventory|Sales|POS|Procurement|Finance|Reports|Settings|Users|Admin/i.test(text);
+      });
+  }
+
+  function clickModule(match: RegExp): void {
+    const target = findNavigationTargets().find((node) => match.test(textOf(node)));
+
+    if (target) {
+      target.click();
+      window.setTimeout(() => {
+        root.classList.remove('ubuzima-mobile-menu-open');
+        document.querySelector<HTMLElement>('.ubuzima-mobile-sidebar')?.classList.remove('ubuzima-mobile-sidebar-open');
+      }, 140);
+    }
+  }
+
+  function ensureAppBar(): void {
+    if (document.querySelector('.ubuzima-mobile-appbar')) {
+      return;
+    }
+
+    const bar = document.createElement('div');
+    bar.className = 'ubuzima-mobile-appbar';
+    bar.innerHTML = `
+      <button class="ubuzima-mobile-appbar-menu" type="button" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="ubuzima-mobile-appbar-brand">
+        <img src="/admin/assets/ubuzima-logo.png" alt="" />
+        <div>
+          <strong>Ubuzima+</strong>
+          <small>Admin app</small>
+        </div>
+      </div>
+      <button class="ubuzima-mobile-appbar-action" type="button" aria-label="Refresh">↻</button>
+    `;
+    document.body.appendChild(bar);
+
+    bar.querySelector<HTMLButtonElement>('.ubuzima-mobile-appbar-menu')?.addEventListener('click', () => {
+      const existingMenuButton = document.querySelector<HTMLButtonElement>('.ubuzima-mobile-menu-button');
+      if (existingMenuButton) {
+        existingMenuButton.click();
+      } else {
+        root.classList.toggle('ubuzima-mobile-menu-open');
+      }
+    });
+
+    bar.querySelector<HTMLButtonElement>('.ubuzima-mobile-appbar-action')?.addEventListener('click', () => {
+      const refreshButton = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+        .find((button) => /refresh|reload|apply/i.test(textOf(button)));
+
+      if (refreshButton) {
+        refreshButton.click();
+      } else {
+        window.dispatchEvent(new Event('ubuzima:refresh'));
+      }
+    });
+  }
+
+  function ensureBottomNav(): void {
+    if (document.querySelector('.ubuzima-mobile-bottom-nav')) {
+      return;
+    }
+
+    const nav = document.createElement('nav');
+    nav.className = 'ubuzima-mobile-bottom-nav';
+    nav.setAttribute('aria-label', 'Primary mobile navigation');
+
+    primaryModules.forEach((module) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.mobileModule = module.key;
+      button.innerHTML = `<span>${module.icon}</span><small>${module.label}</small>`;
+      button.addEventListener('click', () => clickModule(module.match));
+      nav.appendChild(button);
+    });
+
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.dataset.mobileModule = 'more';
+    more.innerHTML = '<span>☰</span><small>More</small>';
+    more.addEventListener('click', () => {
+      const menuButton = document.querySelector<HTMLButtonElement>('.ubuzima-mobile-menu-button');
+      if (menuButton) {
+        menuButton.click();
+      } else {
+        root.classList.toggle('ubuzima-mobile-menu-open');
+      }
+    });
+
+    nav.appendChild(more);
+    document.body.appendChild(nav);
+  }
+
+  function ensureQuickModuleStrip(): void {
+    const existing = document.querySelector('.ubuzima-mobile-quick-strip');
+
+    if (existing || !mobileQuery.matches) {
+      return;
+    }
+
+    const firstMain =
+      document.querySelector<HTMLElement>('.dashboard-scroll-panel') ||
+      document.querySelector<HTMLElement>('.module-content') ||
+      document.querySelector<HTMLElement>('main');
+
+    if (!firstMain) {
+      return;
+    }
+
+    const strip = document.createElement('section');
+    strip.className = 'ubuzima-mobile-quick-strip';
+    strip.innerHTML = `
+      <button type="button" data-quick-module="business"><span>▣</span><strong>Business</strong><small>Overview</small></button>
+      <button type="button" data-quick-module="inventory"><span>▤</span><strong>Inventory</strong><small>Stock</small></button>
+      <button type="button" data-quick-module="sales"><span>◉</span><strong>Sales</strong><small>POS</small></button>
+      <button type="button" data-quick-module="reports"><span>▥</span><strong>Reports</strong><small>Analytics</small></button>
+    `;
+
+    strip.querySelector<HTMLButtonElement>('[data-quick-module="business"]')?.addEventListener('click', () => clickModule(/Business Overview|Business/i));
+    strip.querySelector<HTMLButtonElement>('[data-quick-module="inventory"]')?.addEventListener('click', () => clickModule(/Inventory/i));
+    strip.querySelector<HTMLButtonElement>('[data-quick-module="sales"]')?.addEventListener('click', () => clickModule(/Sales|POS/i));
+    strip.querySelector<HTMLButtonElement>('[data-quick-module="reports"]')?.addEventListener('click', () => clickModule(/Reports|Analytics/i));
+
+    firstMain.prepend(strip);
+  }
+
+  function tagMobileCards(): void {
+    const cardSelectors = [
+      'article',
+      '.dashboard-card',
+      '.business-overview-card',
+      '.inventory-analytics-request-card',
+      '.review-card',
+      '.kpi-card',
+      '.overview-kpi-card',
+      '.business-overview-kpi-card',
+    ];
+
+    document.querySelectorAll<HTMLElement>(cardSelectors.join(',')).forEach((card) => {
+      card.classList.add('ubuzima-mobile-app-card');
+    });
+
+    document.querySelectorAll<HTMLElement>(
+      '.inventory-analytics-request-kpis, .business-overview-kpi-grid, .overview-kpi-grid, .kpi-grid',
+    ).forEach((grid) => {
+      grid.classList.add('ubuzima-mobile-kpi-carousel');
+    });
+  }
+
+  function sync(): void {
+    const isMobile = mobileQuery.matches;
+    root.classList.toggle('ubuzima-native-mobile-interface', isMobile);
+
+    if (!isMobile) {
+      return;
+    }
+
+    ensureAppBar();
+    ensureBottomNav();
+    ensureQuickModuleStrip();
+    tagMobileCards();
+  }
+
+  sync();
+  window.setTimeout(sync, 500);
+  window.setTimeout(sync, 1500);
+  window.setInterval(sync, 2500);
+  window.addEventListener('resize', sync, { passive: true });
+  window.addEventListener('orientationchange', sync, { passive: true });
+
+  const observer = new MutationObserver(sync);
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+installUbuzimaNativeMobileInterfaceV1();
+
+
+
 type UbuzimaBeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice?: Promise<{ outcome: string; platform: string }>;
