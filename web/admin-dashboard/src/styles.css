@@ -51148,3 +51148,373 @@ html.ubuzima-standalone-webapp .admin-header {
     text-align: left;
   }
 }
+
+/* Native mobile operational workflows */
+.ubuzima-native-workflow-bar {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .dashboard-shell.dashboard-shell--fresh-mobile-app {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    background: #edf3f1 !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-app {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-content {
+    min-height: 0 !important;
+    height: 100% !important;
+    padding-bottom: 10px !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    scrollbar-width: none;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-content::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    min-height: calc(66px + env(safe-area-inset-bottom)) !important;
+    padding:
+      5px
+      max(5px, env(safe-area-inset-right))
+      calc(5px + env(safe-area-inset-bottom))
+      max(5px, env(safe-area-inset-left)) !important;
+    border-width: 1px 0 0 !important;
+    border-radius: 0 !important;
+    box-shadow: 0 -10px 24px rgba(15, 23, 42, 0.1) !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-workflow-open > .ubuzima-native-app {
+    display: none !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-workflow-open > .dashboard-main {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 15000 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    padding:
+      calc(58px + env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    pointer-events: auto !important;
+    background: #edf3f1 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-workflow-open > .dashboard-main > :not(.recovery-overlay) {
+    display: block !important;
+  }
+
+  .dashboard-shell--native-workflow-open .ubuzima-native-workflow-bar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    left: 0 !important;
+    z-index: 16000 !important;
+    min-height: calc(56px + env(safe-area-inset-top));
+    display: grid !important;
+    grid-template-columns: minmax(68px, auto) minmax(0, 1fr) minmax(64px, auto);
+    align-items: end;
+    gap: 8px;
+    padding:
+      calc(7px + env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      7px
+      max(10px, env(safe-area-inset-left));
+    border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(247, 250, 249, 0.985);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .ubuzima-native-workflow-bar__back,
+  .ubuzima-native-workflow-bar__sync {
+    min-width: 0;
+    min-height: 42px;
+    display: inline-grid;
+    grid-auto-flow: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid rgba(75, 83, 32, 0.18);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #243016;
+    padding: 0 10px;
+    font-size: 0.74rem;
+    font-weight: 950;
+    line-height: 1;
+  }
+
+  .ubuzima-native-workflow-bar__back span {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(75, 83, 32, 0.12);
+    font-size: 0.76rem;
+  }
+
+  .ubuzima-native-workflow-bar__sync {
+    background: #4b5320;
+    color: #ffffff;
+  }
+
+  .ubuzima-native-workflow-bar__sync.is-syncing {
+    background: #0f513d;
+  }
+
+  .ubuzima-native-workflow-bar__title {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .ubuzima-native-workflow-bar__title span {
+    max-width: 100%;
+    color: #66786f;
+    font-size: 0.58rem;
+    font-weight: 950;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ubuzima-native-workflow-bar__title strong {
+    max-width: 100%;
+    color: #10211b;
+    font-size: 0.88rem;
+    font-weight: 950;
+    line-height: 1.08;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dashboard-shell--native-workflow-open .dashboard-header,
+  .dashboard-shell--native-workflow-open .dashboard-header--fixed,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-workflow-open > .dashboard-main > .dashboard-header,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-workflow-open > .dashboard-main > .ubuzima-mobile-action-strip,
+  .dashboard-shell--native-workflow-open .module-page-sticky-header,
+  .dashboard-shell--native-workflow-open .pos-fixed-top-v16 .module-page-navigation,
+  .dashboard-shell--native-workflow-open .pos-fixed-top-v16 .module-page-navigation-context {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .dashboard-scroll-panel,
+  .dashboard-shell--native-workflow-open .section-page,
+  .dashboard-shell--native-workflow-open .module-page-scroll-content,
+  .dashboard-shell--native-workflow-open .dedicated-module-page,
+  .dashboard-shell--native-workflow-open .pos-unified-module-page,
+  .dashboard-shell--native-workflow-open .pos-dedicated-counter-shell,
+  .dashboard-shell--native-workflow-open .pos-counter-page,
+  .dashboard-shell--native-workflow-open .pos-terminal-main-scroll,
+  .dashboard-shell--native-workflow-open .pos-scroll-body-v16 {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-counter-heading,
+  .dashboard-shell--native-workflow-open .panel,
+  .dashboard-shell--native-workflow-open .inventory-section,
+  .dashboard-shell--native-workflow-open .inventory-table-management-panel,
+  .dashboard-shell--native-workflow-open .procurement-workspace-panel,
+  .dashboard-shell--native-workflow-open .procurement-module-card,
+  .dashboard-shell--native-workflow-open .general-items-card,
+  .dashboard-shell--native-workflow-open .pos-product-stock-section,
+  .dashboard-shell--native-workflow-open .pos-sale-transaction-section,
+  .dashboard-shell--native-workflow-open .pos-cart-card,
+  .dashboard-shell--native-workflow-open .pos-summary-field-card,
+  .dashboard-shell--native-workflow-open .pos-selected-drug-card,
+  .dashboard-shell--native-workflow-open .pos-transaction-setup-card {
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.055) !important;
+    padding: 10px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-counter-heading {
+    margin-bottom: 9px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-counter-heading .eyebrow,
+  .dashboard-shell--native-workflow-open .pos-counter-heading .muted {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-counter-heading h2,
+  .dashboard-shell--native-workflow-open h2,
+  .dashboard-shell--native-workflow-open h3 {
+    margin: 0 !important;
+    color: #10211b !important;
+    font-size: 1rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-counter-workbench,
+  .dashboard-shell--native-workflow-open .pos-four-section-workspace,
+  .dashboard-shell--native-workflow-open .pos-operating-cockpit-v2,
+  .dashboard-shell--native-workflow-open .retail-pos-grid,
+  .dashboard-shell--native-workflow-open .creation-form-grid,
+  .dashboard-shell--native-workflow-open .pos-field-grid,
+  .dashboard-shell--native-workflow-open .pos-shift-control-grid,
+  .dashboard-shell--native-workflow-open .pos-payment-summary-grid,
+  .dashboard-shell--native-workflow-open .inventory-register-filter-panel,
+  .dashboard-shell--native-workflow-open .procurement-action-grid,
+  .dashboard-shell--native-workflow-open .general-items-action-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 9px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-grid--list,
+  .dashboard-shell--native-workflow-open .pos-drug-list,
+  .dashboard-shell--native-workflow-open .pos-drug-list--ten {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-grid button,
+  .dashboard-shell--native-workflow-open .pos-product-tile,
+  .dashboard-shell--native-workflow-open .pos-product-tile-v16,
+  .dashboard-shell--native-workflow-open .pos-drug-list button {
+    min-width: 0 !important;
+    min-height: 74px !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+  }
+
+  .dashboard-shell--native-workflow-open :is(input, select, textarea) {
+    width: 100% !important;
+    min-height: 46px !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+  }
+
+  .dashboard-shell--native-workflow-open :is(button, a) {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  .dashboard-shell--native-workflow-open :is(label, .section-heading, .panel-heading-row) {
+    min-width: 0 !important;
+  }
+
+  .dashboard-shell--native-workflow-open :is(.table-wrapper, .scrollable-table, .inventory-table-shell, .inventory-data-table, .managed-sales-table-wrap, .procurement-table-shell, .procurement-register-table-wrap, .supplier-register-table-wrap, .general-items-table-scroll, .system-table-wrap) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    border-radius: 8px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-shell--native-workflow-open table {
+    min-width: 660px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .dashboard-shell--native-workflow-open table th,
+  .dashboard-shell--native-workflow-open table td {
+    padding: 8px 9px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .view-toggle,
+  .dashboard-shell--native-workflow-open .pos-product-toolbar,
+  .dashboard-shell--native-workflow-open .filter-bar,
+  .dashboard-shell--native-workflow-open .filters-grid,
+  .dashboard-shell--native-workflow-open .pos-current-session-table-toolbar,
+  .dashboard-shell--native-workflow-open .pos-table-management-actions,
+  .dashboard-shell--native-workflow-open .password-change-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .view-toggle button {
+    border-radius: 8px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .dashboard-shell--native-workflow-open .ubuzima-native-workflow-bar {
+    grid-template-columns: 56px minmax(0, 1fr) 56px;
+    gap: 5px;
+  }
+
+  .ubuzima-native-workflow-bar__back,
+  .ubuzima-native-workflow-bar__sync {
+    padding-inline: 7px;
+    font-size: 0.66rem;
+  }
+
+  .ubuzima-native-workflow-bar__title strong {
+    font-size: 0.8rem;
+  }
+}

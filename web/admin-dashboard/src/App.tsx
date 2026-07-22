@@ -261,6 +261,21 @@ type AdhocReportWorkspaceKey =
   | 'decision-note'
   | 'operation-checklist'
   | 'priority-follow-up';
+type NativeMobileSectionOptions = {
+  financeWorkspace?: FinanceWorkspaceKey;
+  inventoryView?: InventoryView;
+  openWorkflow?: boolean;
+  posWorkspace?: PosWorkspaceKey;
+  reportWorkspace?: AdhocReportWorkspaceKey;
+  screen?: UbuzimaMobileAppScreen;
+  supplierWorkspace?: SupplierWorkspaceKey;
+  workflowTitle?: string;
+};
+type MobileNativeWorkflowState = {
+  section: AdminSectionKey;
+  screen: UbuzimaMobileAppScreen;
+  title: string;
+} | null;
 const adminStateStorageKey = 'ubuzima.admin.state.v1';
 
 function storedAdminState(): Record<string, string> {
@@ -4135,6 +4150,7 @@ function App() {
   });
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [mobileAppScreen, setMobileAppScreen] = useState<UbuzimaMobileAppScreen>('business');
+  const [mobileNativeWorkflow, setMobileNativeWorkflow] = useState<MobileNativeWorkflowState>(null);
   const [isPwaInstallAvailable, setIsPwaInstallAvailable] = useState(false);
   const [isPwaInstalling, setIsPwaInstalling] = useState(false);
   const [isIosDevice, setIsIosDevice] = useState(false);
@@ -5084,17 +5100,94 @@ function App() {
     setIsMobileDrawerOpen(false);
   }
 
+  function mobileWorkflowTitleForSection(
+    section: AdminSectionKey,
+    options: NativeMobileSectionOptions,
+  ): string {
+    if (options.workflowTitle) return options.workflowTitle;
+
+    if (section === 'overview') return 'Business Overview';
+
+    if (section === 'pos') {
+      const titles: Partial<Record<PosWorkspaceKey, string>> = {
+        overview: 'POS and Sales',
+        pos: 'POS Counter',
+        'sales-performance': 'Sales Register',
+        'payment-receipt': 'Payments',
+        'dispensing-review': 'Dispensing',
+        customers: 'Customers',
+        prescriptions: 'Prescriptions',
+      };
+
+      return titles[options.posWorkspace ?? 'overview'] ?? 'POS and Sales';
+    }
+
+    if (section === 'inventory') {
+      const titles: Partial<Record<InventoryView, string>> = {
+        overview: 'Inventory',
+        'low-stock': 'Low Stock',
+        'near-expiry': 'Expiry Control',
+        'product-master': 'Product Master',
+        batches: 'Batches',
+      };
+
+      return titles[options.inventoryView ?? 'overview'] ?? 'Inventory';
+    }
+
+    if (section === 'suppliers') {
+      const titles: Partial<Record<SupplierWorkspaceKey, string>> = {
+        overview: 'Procurement',
+        'supplier-list': 'Suppliers',
+        'create-purchase-order': 'Purchase Orders',
+        'outstanding-purchase-orders': 'Outstanding Orders',
+        'receive-purchase-order': 'Receiving',
+        'general-items-overview': 'General Stock',
+        'general-item-master': 'Item Master',
+        'general-item-stock': 'General Item Stock',
+        'general-item-usage': 'General Item Usage',
+      };
+
+      return titles[options.supplierWorkspace ?? 'overview'] ?? 'Procurement';
+    }
+
+    if (section === 'finance') {
+      const titles: Partial<Record<FinanceWorkspaceKey, string>> = {
+        overview: 'Finance',
+        'finance-flow': 'Finance Flow',
+        collection: 'Collections',
+        'receivable-register': 'Receivables',
+      };
+
+      return titles[options.financeWorkspace ?? 'overview'] ?? 'Finance';
+    }
+
+    if (section === 'general-stock-items') return 'General Stock';
+    if (section === 'corporate-email') return 'Corporate Email';
+
+    return activeLeftSubmenuLabel ?? currentSection.title;
+  }
+
+  function openNativeBusinessOverviewWorkflow() {
+    setMobileAppScreen('business');
+    setMobileNativeWorkflow({
+      section: 'overview',
+      screen: 'business',
+      title: 'Business Overview',
+    });
+    navigateToSection('overview');
+  }
+
+  function closeMobileNativeWorkflow() {
+    setMobileNativeWorkflow(null);
+    setMobileAppScreen(mobileAppScreenForSection(activeSection));
+  }
+
   function openNativeMobileSection(
     section: AdminSectionKey,
-    options: {
-      financeWorkspace?: FinanceWorkspaceKey;
-      inventoryView?: InventoryView;
-      posWorkspace?: PosWorkspaceKey;
-      reportWorkspace?: AdhocReportWorkspaceKey;
-      screen?: UbuzimaMobileAppScreen;
-      supplierWorkspace?: SupplierWorkspaceKey;
-    } = {},
+    options: NativeMobileSectionOptions = {},
   ) {
+    const nextScreen = options.screen ?? mobileAppScreenForSection(section);
+
     if (section === 'inventory' && options.inventoryView) {
       setActiveInventoryView(options.inventoryView);
     }
@@ -5111,13 +5204,25 @@ function App() {
       setActiveAdhocReportWorkspace(options.reportWorkspace);
     }
 
-    setMobileAppScreen(options.screen ?? mobileAppScreenForSection(section));
+    setMobileAppScreen(nextScreen);
+
+    if (options.openWorkflow) {
+      setMobileNativeWorkflow({
+        section,
+        screen: nextScreen,
+        title: mobileWorkflowTitleForSection(section, options),
+      });
+    } else {
+      setMobileNativeWorkflow(null);
+    }
+
     navigateToMobileSection(section, {
       posWorkspace: options.posWorkspace,
     });
   }
 
   function handleNativeMobileScreenChange(screen: UbuzimaMobileAppScreen) {
+    setMobileNativeWorkflow(null);
     setMobileAppScreen(screen);
 
     if (screen === 'business') {
@@ -10389,7 +10494,9 @@ return (
             onPress: () =>
               openNativeMobileSection('inventory', {
                 inventoryView: 'low-stock',
+                openWorkflow: true,
                 screen: 'inventory',
+                workflowTitle: 'Low Stock',
               }),
           },
           {
@@ -10401,7 +10508,9 @@ return (
             onPress: () =>
               openNativeMobileSection('inventory', {
                 inventoryView: 'near-expiry',
+                openWorkflow: true,
                 screen: 'inventory',
+                workflowTitle: 'Expiry Control',
               }),
           },
           {
@@ -10413,7 +10522,9 @@ return (
             onPress: () =>
               openNativeMobileSection('inventory', {
                 inventoryView: 'product-master',
+                openWorkflow: true,
                 screen: 'inventory',
+                workflowTitle: 'Product Master',
               }),
           },
           {
@@ -10425,7 +10536,9 @@ return (
             onPress: () =>
               openNativeMobileSection('inventory', {
                 inventoryView: 'batches',
+                openWorkflow: true,
                 screen: 'inventory',
+                workflowTitle: 'Batches',
               }),
           },
         ]
@@ -10442,8 +10555,10 @@ return (
             tone: 'blue' as const,
             onPress: () =>
               openNativeMobileSection('suppliers', {
+                openWorkflow: true,
                 supplierWorkspace: 'supplier-list',
                 screen: 'procurement',
+                workflowTitle: 'Suppliers',
               }),
           },
           {
@@ -10454,8 +10569,10 @@ return (
             tone: 'olive' as const,
             onPress: () =>
               openNativeMobileSection('suppliers', {
+                openWorkflow: true,
                 supplierWorkspace: 'create-purchase-order',
                 screen: 'procurement',
+                workflowTitle: 'Purchase Orders',
               }),
           },
           {
@@ -10466,8 +10583,10 @@ return (
             tone: 'teal' as const,
             onPress: () =>
               openNativeMobileSection('suppliers', {
+                openWorkflow: true,
                 supplierWorkspace: 'receive-purchase-order',
                 screen: 'procurement',
+                workflowTitle: 'Receiving',
               }),
           },
           {
@@ -10478,8 +10597,10 @@ return (
             tone: 'gold' as const,
             onPress: () =>
               openNativeMobileSection('suppliers', {
+                openWorkflow: true,
                 supplierWorkspace: 'outstanding-purchase-orders',
                 screen: 'procurement',
+                workflowTitle: 'Outstanding Orders',
               }),
           },
         ]
@@ -10496,7 +10617,9 @@ return (
             tone: 'red' as const,
             onPress: () =>
               openNativeMobileSection('general-stock-items', {
+                openWorkflow: true,
                 screen: 'general-stock',
+                workflowTitle: 'General Stock',
               }),
           },
         ]
@@ -10511,8 +10634,10 @@ return (
             tone: 'olive' as const,
             onPress: () =>
               openNativeMobileSection('suppliers', {
+                openWorkflow: true,
                 supplierWorkspace: 'general-items-overview',
                 screen: 'general-stock',
+                workflowTitle: 'General Stock',
               }),
           },
           {
@@ -10523,8 +10648,10 @@ return (
             tone: 'blue' as const,
             onPress: () =>
               openNativeMobileSection('suppliers', {
+                openWorkflow: true,
                 supplierWorkspace: 'general-item-master',
                 screen: 'general-stock',
+                workflowTitle: 'Item Master',
               }),
           },
           {
@@ -10535,8 +10662,10 @@ return (
             tone: 'teal' as const,
             onPress: () =>
               openNativeMobileSection('suppliers', {
+                openWorkflow: true,
                 supplierWorkspace: 'general-item-stock',
                 screen: 'general-stock',
+                workflowTitle: 'General Item Stock',
               }),
           },
           {
@@ -10547,8 +10676,10 @@ return (
             tone: 'gold' as const,
             onPress: () =>
               openNativeMobileSection('suppliers', {
+                openWorkflow: true,
                 supplierWorkspace: 'general-item-usage',
                 screen: 'general-stock',
+                workflowTitle: 'General Item Usage',
               }),
           },
         ]
@@ -10565,8 +10696,10 @@ return (
             tone: 'olive' as const,
             onPress: () =>
               openNativeMobileSection('pos', {
+                openWorkflow: true,
                 posWorkspace: 'pos',
                 screen: 'sales',
+                workflowTitle: 'POS Counter',
               }),
           },
           {
@@ -10577,8 +10710,10 @@ return (
             tone: 'olive' as const,
             onPress: () =>
               openNativeMobileSection('pos', {
+                openWorkflow: true,
                 posWorkspace: 'sales-performance',
                 screen: 'sales',
+                workflowTitle: 'Sales Register',
               }),
           },
           {
@@ -10589,8 +10724,10 @@ return (
             tone: 'teal' as const,
             onPress: () =>
               openNativeMobileSection('pos', {
+                openWorkflow: true,
                 posWorkspace: 'payment-receipt',
                 screen: 'sales',
+                workflowTitle: 'Payments',
               }),
           },
           {
@@ -10601,8 +10738,10 @@ return (
             tone: 'gold' as const,
             onPress: () =>
               openNativeMobileSection('pos', {
+                openWorkflow: true,
                 posWorkspace: 'dispensing-review',
                 screen: 'sales',
+                workflowTitle: 'Dispensing',
               }),
           },
         ]
@@ -10618,7 +10757,9 @@ return (
             onPress: () =>
               openNativeMobileSection('finance', {
                 financeWorkspace: 'finance-flow',
+                openWorkflow: true,
                 screen: 'sales',
+                workflowTitle: 'Finance Flow',
               }),
           },
         ]
@@ -10702,7 +10843,7 @@ return (
     0,
   );
   const nativeDailyPosSummary: UbuzimaMobileDailyPosSummary = {
-    dateLabel: `Business date ${nativeDailyPosBusinessDate}`,
+    dateLabel: nativeDailyPosBusinessDate,
     salesTotal: formatUbuzimaMoney(
       posLiveBusinessAnalytics?.sales_total ?? nativeDailyPosFallbackSalesTotal,
     ),
@@ -10759,10 +10900,7 @@ return (
                   detail: 'Live dashboard and management review',
                   icon: 'HM',
                   tone: 'olive' as const,
-                  onPress: () => {
-                    setMobileAppScreen('business');
-                    navigateToSection('overview');
-                  },
+                  onPress: openNativeBusinessOverviewWorkflow,
                 },
               ]
             : []),
@@ -10868,8 +11006,14 @@ return (
         icon: item.icon,
         status: item.status,
         onPress: () => {
+          const nextScreen = mobileAppScreenForSection(item.key);
           handleMenuItemClick(item);
-          setMobileAppScreen(mobileAppScreenForSection(item.key));
+          setMobileAppScreen(nextScreen);
+          setMobileNativeWorkflow({
+            section: item.key,
+            screen: nextScreen,
+            title: item.label,
+          });
         },
       })),
     }));
@@ -10878,7 +11022,7 @@ return (
     <main
       className={`dashboard-shell dashboard-shell--mobile-app-ready dashboard-shell--fresh-mobile-app ${
         isMobileDrawerOpen ? 'dashboard-shell--mobile-drawer-open' : ''
-      }`}
+      } ${mobileNativeWorkflow ? 'dashboard-shell--native-workflow-open' : ''}`}
       style={leftMenuStyle}
     >
       <UbuzimaMobileApp
@@ -10915,18 +11059,47 @@ return (
           setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
           setIsChangePasswordOpen(true);
         }}
-        onCorporateEmail={() => openNativeMobileSection('corporate-email', { screen: 'more' })}
+        onCorporateEmail={() =>
+          openNativeMobileSection('corporate-email', {
+            openWorkflow: true,
+            screen: 'more',
+            workflowTitle: 'Corporate Email',
+          })
+        }
         onInstall={requestPwaInstall}
-        onOpenBusinessOverview={() => {
-          setMobileAppScreen('business');
-          if (visibleSectionKeys.has('overview')) {
-            navigateToSection('overview');
-          }
-        }}
+        onOpenBusinessOverview={openNativeBusinessOverviewWorkflow}
         onRefresh={refreshMobileWorkspace}
         onScreenChange={handleNativeMobileScreenChange}
         onSignOut={handleLogout}
       />
+
+      {mobileNativeWorkflow && (
+        <header className="ubuzima-native-workflow-bar" aria-label="Mobile workflow controls">
+          <button
+            type="button"
+            className="ubuzima-native-workflow-bar__back"
+            onClick={closeMobileNativeWorkflow}
+          >
+            <span aria-hidden="true">&lt;</span>
+            Back
+          </button>
+
+          <div className="ubuzima-native-workflow-bar__title">
+            <span>{mobileNativeWorkflow.screen.replace('-', ' ')}</span>
+            <strong>{mobileNativeWorkflow.title}</strong>
+          </div>
+
+          <button
+            type="button"
+            className={`ubuzima-native-workflow-bar__sync ${isMobileSyncing ? 'is-syncing' : ''}`}
+            onClick={refreshMobileWorkspace}
+            disabled={isMobileSyncing}
+            aria-busy={isMobileSyncing}
+          >
+            {mobileSyncStatus === 'syncing' ? 'Syncing' : 'Sync'}
+          </button>
+        </header>
+      )}
 
       <header className="ubuzima-mobile-topbar" aria-label="Ubuzima+ mobile app bar">
         <button
