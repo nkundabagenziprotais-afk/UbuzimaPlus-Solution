@@ -140,5 +140,99 @@ class PharmacoFinanceSetupSeeder extends Seeder
                 );
             }
         }
+    private function registerFinancePermissions(): void
+    {
+        if (! Schema::hasTable('permissions')) {
+            return;
+        }
+
+        $now = now();
+
+        foreach ($this->permissions as $code => $name) {
+            $values = [
+                'code' => $code,
+            ];
+
+            if (Schema::hasColumn('permissions', 'name')) {
+                $values['name'] = $name;
+            }
+
+            if (Schema::hasColumn('permissions', 'permission_group')) {
+                $values['permission_group'] = 'finance';
+            }
+
+            if (Schema::hasColumn('permissions', 'group')) {
+                $values['group'] = 'finance';
+            }
+
+            if (Schema::hasColumn('permissions', 'description')) {
+                $values['description'] = $name;
+            }
+
+            if (Schema::hasColumn('permissions', 'created_at')) {
+                $values['created_at'] = $now;
+            }
+
+            if (Schema::hasColumn('permissions', 'updated_at')) {
+                $values['updated_at'] = $now;
+            }
+
+            DB::table('permissions')->updateOrInsert(
+                ['code' => $code],
+                $values,
+            );
+        }
+    }
+
+    private function grantFinancePermissionsToAdministrativeRoles(): void
+    {
+        if (
+            ! Schema::hasTable('roles')
+            || ! Schema::hasTable('permissions')
+            || ! Schema::hasTable('permission_role')
+        ) {
+            return;
+        }
+
+        $permissionIds = DB::table('permissions')
+            ->whereIn('code', array_keys($this->permissions))
+            ->pluck('id');
+
+        if ($permissionIds->isEmpty()) {
+            return;
+        }
+
+        $roleIds = DB::table('roles')
+            ->whereIn('code', [
+                'ubuzima_plus_super_admin',
+                'pharmaco360_solution_admin',
+                'tenant_admin',
+            ])
+            ->pluck('id');
+
+        $pivotHasCreatedAt = Schema::hasColumn('permission_role', 'created_at');
+        $pivotHasUpdatedAt = Schema::hasColumn('permission_role', 'updated_at');
+        $now = now();
+
+        foreach ($roleIds as $roleId) {
+            foreach ($permissionIds as $permissionId) {
+                $payload = [
+                    'role_id' => $roleId,
+                    'permission_id' => $permissionId,
+                ];
+
+                if ($pivotHasCreatedAt) {
+                    $payload['created_at'] = $now;
+                }
+
+                if ($pivotHasUpdatedAt) {
+                    $payload['updated_at'] = $now;
+                }
+
+                DB::table('permission_role')->insertOrIgnore($payload);
+            }
+        }
+    }
+
     }
 }
