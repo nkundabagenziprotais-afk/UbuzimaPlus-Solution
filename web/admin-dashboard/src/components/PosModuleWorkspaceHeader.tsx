@@ -780,7 +780,7 @@ export function PosModuleWorkspaceHeader({
       if (failureCount > 0) {
         setNotice(
           failureCount === results.length
-            ? 'Live workspace intelligence is temporarily unavailable. Operational functions remain available below.'
+            ? 'Operational insights are temporarily unavailable. Sales functions remain available below.'
             : 'Some indicators could not be refreshed. Available live information is shown.',
         );
       }

@@ -104,6 +104,15 @@ import {
   InsuranceManagementWorkspace,
   type InsuranceWorkspaceKey,
 } from './components/InsuranceManagementWorkspace';
+import {
+  UbuzimaMobileApp,
+  type UbuzimaMobileAppAction,
+  type UbuzimaMobileAppMenuGroup,
+  type UbuzimaMobileAppMetric,
+  type UbuzimaMobileAppNavItem,
+  type UbuzimaMobileAppScreen,
+  type UbuzimaMobileAppWorkbench,
+} from './components/UbuzimaMobileApp';
 
 type StoredSession = {
   token: string;
@@ -385,6 +394,14 @@ type HomeWidgetKey =
   | 'role-workspaces';
 type MenuContextKey = ErpWorkspaceKey | SolutionKey | AiWorkspaceKey | AdminPanelWorkspaceKey;
 type LoginMethod = 'email' | 'phone';
+type UbuzimaPwaInstallChangeEvent = CustomEvent<{ isAvailable: boolean }>;
+type MobileBottomNavItem = {
+  key: string;
+  label: string;
+  icon: string;
+  section: AdminSectionKey;
+  posWorkspace?: PosWorkspaceKey;
+};
 
 type MenuItem = {
   key: AdminSectionKey;
@@ -660,10 +677,66 @@ const storageKey = 'ubuzima_admin_session';
 const activeSectionStorageKey = 'ubuzima_admin_active_section';
 const trustedDeviceStorageKey = 'ubuzima_admin_trusted_device_token';
 const staffLanguageStorageKey = 'ubuzima_admin_language';
-const brandLogoSrc = '/assets/ubuzima-logo.png';
-const vitaPharmaLogoSrc = '/assets/vitapharma-logo.png';
+const adminAssetBaseUrl = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const brandLogoSrc = `${adminAssetBaseUrl}assets/ubuzima-logo.png`;
+const vitaPharmaLogoSrc = `${adminAssetBaseUrl}assets/vitapharma-logo.png`;
 const staffLoginLanguages = ['English', 'French', 'Portuguese'] as const;
 type StaffLoginLanguage = typeof staffLoginLanguages[number];
+
+function mobileAppScreenForSection(section: AdminSectionKey): UbuzimaMobileAppScreen {
+  if (section === 'overview') return 'business';
+  if (section === 'pos' || section === 'finance') return 'sales';
+  if (section === 'inventory') return 'inventory';
+  if (section === 'suppliers') return 'procurement';
+  if (section === 'general-stock-items') return 'general-stock';
+
+  return 'more';
+}
+
+type SharedBusinessMetric = {
+  valueText?: string;
+  updatedAt?: number;
+};
+
+const sharedBusinessOverviewMetricStorageKey = 'ubuzimaSharedDashboardAnalyticsMetricsV1';
+
+function readSharedBusinessMetric(labels: string[]): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(sharedBusinessOverviewMetricStorageKey);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Record<string, SharedBusinessMetric>;
+    const normalizedEntries = Object.entries(parsed).map(([key, metric]) => [
+      key.toLowerCase(),
+      metric,
+    ] as const);
+
+    for (const label of labels) {
+      const normalizedLabel = label.toLowerCase();
+      const exact = parsed[label] ?? normalizedEntries.find(([key]) => key === normalizedLabel)?.[1];
+
+      if (exact?.valueText) {
+        return exact.valueText;
+      }
+
+      const partial = normalizedEntries.find(([key]) =>
+        key.includes(normalizedLabel) || normalizedLabel.includes(key),
+      )?.[1];
+
+      if (partial?.valueText) {
+        return partial.valueText;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
 
 function staffLanguageCode(language: StaffLoginLanguage): RuntimeLanguage {
   if (language === 'French') return 'fr';
@@ -4042,6 +4115,14 @@ function App() {
     'tenant-admin': true,
     market: false,
   });
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [mobileAppScreen, setMobileAppScreen] = useState<UbuzimaMobileAppScreen>('business');
+  const [isPwaInstallAvailable, setIsPwaInstallAvailable] = useState(false);
+  const [isPwaInstalling, setIsPwaInstalling] = useState(false);
+  const [isStandalonePwa, setIsStandalonePwa] = useState(false);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === 'undefined' ? true : navigator.onLine,
+  );
 
   const profile = session?.profile;
   const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
@@ -4088,6 +4169,24 @@ function App() {
     profile,
     visibleMenuGroups,
   ]);
+
+  useEffect(() => {
+    if (
+      mobileAppScreen !== 'business' ||
+      activeSection === 'overview' ||
+      !visibleSectionKeys.has('overview') ||
+      !window.matchMedia('(max-width: 860px)').matches
+    ) {
+      return;
+    }
+
+    navigateToSection('overview');
+  }, [
+    activeSection,
+    mobileAppScreen,
+    visibleSectionKeys,
+  ]);
+
   const principalMenuItems = useMemo(
     () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
     [visibleMenuGroups],
@@ -4161,6 +4260,121 @@ function App() {
     )?.branch?.id ??
     pharmaCore.branches?.branches?.[0]?.id ??
     null;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add('ubuzima-react-mobile-shell');
+
+    return () => {
+      root.classList.remove('ubuzima-react-mobile-shell');
+      root.classList.remove('ubuzima-react-mobile-drawer-open');
+    };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      'ubuzima-react-mobile-drawer-open',
+      isMobileDrawerOpen,
+    );
+
+    return () => {
+      document.documentElement.classList.remove(
+        'ubuzima-react-mobile-drawer-open',
+      );
+    };
+  }, [isMobileDrawerOpen]);
+
+  useEffect(() => {
+    const updateOnlineState = () => setIsOnline(navigator.onLine);
+
+    window.addEventListener('online', updateOnlineState);
+    window.addEventListener('offline', updateOnlineState);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineState);
+      window.removeEventListener('offline', updateOnlineState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const standaloneQuery = window.matchMedia('(display-mode: standalone)');
+    const updateStandaloneState = () => {
+      setIsStandalonePwa(
+        standaloneQuery.matches ||
+          (window.navigator as Navigator & { standalone?: boolean })
+            .standalone === true,
+      );
+    };
+
+    const handleInstallChange = (event: Event) => {
+      setIsPwaInstallAvailable(
+        Boolean((event as UbuzimaPwaInstallChangeEvent).detail?.isAvailable),
+      );
+      setIsPwaInstalling(false);
+    };
+
+    const handleInstallComplete = () => {
+      setIsPwaInstallAvailable(false);
+      setIsPwaInstalling(false);
+      updateStandaloneState();
+    };
+
+    updateStandaloneState();
+
+    standaloneQuery.addEventListener('change', updateStandaloneState);
+    window.addEventListener(
+      'ubuzima:pwa-install-change',
+      handleInstallChange,
+    );
+    window.addEventListener(
+      'ubuzima:pwa-install-complete',
+      handleInstallComplete,
+    );
+    window.addEventListener('appinstalled', handleInstallComplete);
+
+    return () => {
+      standaloneQuery.removeEventListener('change', updateStandaloneState);
+      window.removeEventListener(
+        'ubuzima:pwa-install-change',
+        handleInstallChange,
+      );
+      window.removeEventListener(
+        'ubuzima:pwa-install-complete',
+        handleInstallComplete,
+      );
+      window.removeEventListener('appinstalled', handleInstallComplete);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsMobileDrawerOpen(false);
+  }, [
+    activeSection,
+    activeInventoryView,
+    activeInsuranceWorkspace,
+    activePosWorkspace,
+    activeSupplierWorkspace,
+    activeFinanceWorkspace,
+    activeAdhocReportWorkspace,
+    activeAiWorkspace,
+    activeAdminPanelWorkspace,
+  ]);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia('(min-width: 861px)');
+    const closeDesktopDrawer = () => {
+      if (desktopQuery.matches) {
+        setIsMobileDrawerOpen(false);
+      }
+    };
+
+    closeDesktopDrawer();
+    desktopQuery.addEventListener('change', closeDesktopDrawer);
+
+    return () => {
+      desktopQuery.removeEventListener('change', closeDesktopDrawer);
+    };
+  }, []);
 
   useEffect(() => {
     if (
@@ -4793,6 +5007,123 @@ function App() {
 
     setNavigationStack(rest);
     setActiveSection(previous);
+  }
+
+  function navigateToMobileSection(
+    section: AdminSectionKey,
+    options: { posWorkspace?: PosWorkspaceKey } = {},
+  ) {
+    if (section === 'pos' && options.posWorkspace) {
+      setActivePosWorkspace(options.posWorkspace);
+    }
+
+    navigateToSection(section);
+    setIsMobileDrawerOpen(false);
+  }
+
+  function openNativeMobileSection(
+    section: AdminSectionKey,
+    options: {
+      financeWorkspace?: FinanceWorkspaceKey;
+      inventoryView?: InventoryView;
+      posWorkspace?: PosWorkspaceKey;
+      reportWorkspace?: AdhocReportWorkspaceKey;
+      screen?: UbuzimaMobileAppScreen;
+      supplierWorkspace?: SupplierWorkspaceKey;
+    } = {},
+  ) {
+    if (section === 'inventory' && options.inventoryView) {
+      setActiveInventoryView(options.inventoryView);
+    }
+
+    if (section === 'suppliers' && options.supplierWorkspace) {
+      setActiveSupplierWorkspace(options.supplierWorkspace);
+    }
+
+    if (section === 'finance' && options.financeWorkspace) {
+      setActiveFinanceWorkspace(options.financeWorkspace);
+    }
+
+    if (section === 'reports' && options.reportWorkspace) {
+      setActiveAdhocReportWorkspace(options.reportWorkspace);
+    }
+
+    setMobileAppScreen(options.screen ?? mobileAppScreenForSection(section));
+    navigateToMobileSection(section, {
+      posWorkspace: options.posWorkspace,
+    });
+  }
+
+  function handleNativeMobileScreenChange(screen: UbuzimaMobileAppScreen) {
+    setMobileAppScreen(screen);
+
+    if (screen === 'business') {
+      if (visibleSectionKeys.has('overview')) {
+        navigateToSection('overview');
+      }
+      return;
+    }
+
+    if (screen === 'sales' && visibleSectionKeys.has('pos')) {
+      openNativeMobileSection('pos', {
+        posWorkspace: 'overview',
+        screen,
+      });
+      return;
+    }
+
+    if (screen === 'inventory' && visibleSectionKeys.has('inventory')) {
+      openNativeMobileSection('inventory', {
+        inventoryView: 'overview',
+        screen,
+      });
+      return;
+    }
+
+    if (screen === 'procurement' && visibleSectionKeys.has('suppliers')) {
+      openNativeMobileSection('suppliers', {
+        supplierWorkspace: 'overview',
+        screen,
+      });
+      return;
+    }
+
+    if (screen === 'general-stock') {
+      if (visibleSectionKeys.has('general-stock-items')) {
+        openNativeMobileSection('general-stock-items', {
+          screen,
+        });
+        return;
+      }
+
+      if (visibleSectionKeys.has('suppliers')) {
+        openNativeMobileSection('suppliers', {
+          supplierWorkspace: 'general-items-overview',
+          screen,
+        });
+      }
+      return;
+    }
+
+    if (screen === 'sales' && visibleSectionKeys.has('finance')) {
+      openNativeMobileSection('finance', {
+        financeWorkspace: 'overview',
+        screen,
+      });
+    }
+  }
+
+  function requestPwaInstall() {
+    setIsPwaInstalling(true);
+    window.dispatchEvent(new CustomEvent('ubuzima:pwa-install-request'));
+
+    window.setTimeout(() => {
+      setIsPwaInstalling(false);
+    }, 1800);
+  }
+
+  function refreshMobileWorkspace() {
+    window.dispatchEvent(new Event('ubuzima:refresh'));
   }
 
   function toggleMenuGroup(group: MenuGroupKey) {
@@ -9565,9 +9896,752 @@ return (
     }
   }
 
+  const mobileHomeSection = (
+    visibleSectionKeys.has('overview')
+      ? 'overview'
+      : Array.from(visibleSectionKeys)[0] ?? 'overview'
+  ) as AdminSectionKey;
+  const mobileActiveTitle = activeLeftSubmenuLabel ?? currentSection.title;
+  const mobileShellStatus = !isOnline
+    ? 'Offline'
+    : isStandalonePwa
+      ? 'Installed'
+      : 'Online';
+  const mobileBottomNavCandidates: MobileBottomNavItem[] = [
+    {
+      key: 'home',
+      label: 'Home',
+      icon: 'HM',
+      section: mobileHomeSection,
+    },
+    {
+      key: 'pos',
+      label: 'POS',
+      icon: 'POS',
+      section: 'pos',
+      posWorkspace: 'pos',
+    },
+    {
+      key: 'inventory',
+      label: 'Stock',
+      icon: 'ST',
+      section: 'inventory',
+    },
+    {
+      key: 'reports',
+      label: 'Report',
+      icon: 'RP',
+      section: 'reports',
+    },
+  ];
+  const mobileBottomNavItems = mobileBottomNavCandidates.filter((item) =>
+    visibleSectionKeys.has(item.section),
+  );
+  const mobileQuickActionCandidates: MobileBottomNavItem[] = [
+    {
+      key: 'quick-pos',
+      label: 'POS Counter',
+      icon: 'POS',
+      section: 'pos',
+      posWorkspace: 'pos',
+    },
+    {
+      key: 'quick-inventory',
+      label: 'Inventory',
+      icon: 'ST',
+      section: 'inventory',
+    },
+    {
+      key: 'quick-suppliers',
+      label: 'Suppliers',
+      icon: 'PO',
+      section: 'suppliers',
+    },
+    {
+      key: 'quick-finance',
+      label: 'Finance',
+      icon: 'FN',
+      section: 'finance',
+    },
+  ];
+  const mobileQuickActions = mobileQuickActionCandidates.filter((item) =>
+    visibleSectionKeys.has(item.section),
+  );
+  const nativeMobileNavItems: UbuzimaMobileAppNavItem[] = [
+    ...(visibleSectionKeys.has('overview')
+      ? [
+          {
+            key: 'home',
+            label: 'Home',
+            icon: 'HM',
+            screen: 'business' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('pos')
+      ? [
+          {
+            key: 'pos-sales',
+            label: 'POS & Sales',
+            icon: 'POS',
+            screen: 'sales' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('inventory')
+      ? [
+          {
+            key: 'inventory',
+            label: 'Inventory',
+            icon: 'ST',
+            screen: 'inventory' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'procurement',
+            label: 'Procurement',
+            icon: 'PO',
+            screen: 'procurement' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('general-stock-items') || visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'general-stock',
+            label: 'General Stock',
+            icon: 'GS',
+            screen: 'general-stock' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    {
+      key: 'more',
+      label: 'More',
+      icon: 'MN',
+      screen: 'more',
+    },
+  ];
+  const nativeMetrics: UbuzimaMobileAppMetric[] = [
+    {
+      key: 'gross-sales',
+      label: 'Gross sales',
+      value: readSharedBusinessMetric(['Gross Sales', 'Gross Revenue']) ?? 'RWF 0',
+      helper: 'Business Overview',
+      tone: 'olive',
+    },
+    {
+      key: 'net-revenue',
+      label: 'Net revenue',
+      value: readSharedBusinessMetric(['Net Revenue']) ?? 'RWF 0',
+      helper: 'After discounts and returns',
+      tone: 'teal',
+    },
+    {
+      key: 'inventory-value',
+      label: 'Stock value',
+      value: readSharedBusinessMetric(['Total Inventory Value', 'Inventory Value', 'Stock Value']) ?? 'RWF 0',
+      helper: 'Inventory position',
+      tone: 'gold',
+    },
+    {
+      key: 'alerts',
+      label: 'Alerts',
+      value:
+        readSharedBusinessMetric(['Low Stock Count', 'Low Stock Products', 'Near Expiry Count']) ??
+        (unreadMailCount > 0 ? unreadMailCount.toLocaleString('en-RW') : '0'),
+      helper: unreadMailCount > 0 ? 'Corporate email requires review' : 'Stock and operations',
+      tone: unreadMailCount > 0 ? 'red' : 'blue',
+    },
+  ];
+  const nativePrimaryActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('pos')
+      ? [
+          {
+            key: 'pos-sales',
+            label: 'POS & Sales',
+            detail: 'Counter, receipts, payments',
+            icon: 'POS',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                screen: 'sales',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('inventory')
+      ? [
+          {
+            key: 'inventory-overview',
+            label: 'Inventory',
+            detail: 'Products, batches, expiry',
+            icon: 'ST',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'overview',
+                screen: 'inventory',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'procurement',
+            label: 'Procurement',
+            detail: 'Suppliers, purchase orders',
+            icon: 'PO',
+            tone: 'blue' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'overview',
+                screen: 'procurement',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('general-stock-items') || visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'general-stock',
+            label: 'General Stock',
+            detail: 'Operational supplies store',
+            icon: 'GS',
+            tone: 'red' as const,
+            onPress: () => {
+              if (visibleSectionKeys.has('general-stock-items')) {
+                openNativeMobileSection('general-stock-items', {
+                  screen: 'general-stock',
+                });
+                return;
+              }
+
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'general-items-overview',
+                screen: 'general-stock',
+              });
+            },
+          },
+        ]
+      : []),
+  ];
+  const nativeStockActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('inventory')
+      ? [
+          {
+            key: 'stock-low',
+            label: 'Low Stock',
+            detail: 'Products needing reorder',
+            icon: 'LOW',
+            tone: 'red' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'low-stock',
+                screen: 'inventory',
+              }),
+          },
+          {
+            key: 'stock-expiry',
+            label: 'Expiry',
+            detail: 'Near-expiry batch control',
+            icon: 'EXP',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'near-expiry',
+                screen: 'inventory',
+              }),
+          },
+          {
+            key: 'stock-master',
+            label: 'Product Master',
+            detail: 'Medicine catalog and pricing',
+            icon: 'PM',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'product-master',
+                screen: 'inventory',
+              }),
+          },
+          {
+            key: 'stock-batches',
+            label: 'Batches',
+            detail: 'Batch and shelf quantities',
+            icon: 'BT',
+            tone: 'teal' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'batches',
+                screen: 'inventory',
+              }),
+          },
+        ]
+      : []),
+  ];
+  const nativeProcurementActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'supplier-list',
+            label: 'Suppliers',
+            detail: 'Approved supplier list',
+            icon: 'PO',
+            tone: 'blue' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'supplier-list',
+                screen: 'procurement',
+              }),
+          },
+          {
+            key: 'purchase-orders',
+            label: 'Purchase Orders',
+            detail: 'Create and follow orders',
+            icon: 'PO',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'create-purchase-order',
+                screen: 'procurement',
+              }),
+          },
+          {
+            key: 'receiving',
+            label: 'Receiving',
+            detail: 'Receive supplier stock',
+            icon: 'RC',
+            tone: 'teal' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'receive-purchase-order',
+                screen: 'procurement',
+              }),
+          },
+          {
+            key: 'outstanding-orders',
+            label: 'Outstanding',
+            detail: 'Open purchase orders',
+            icon: 'OP',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'outstanding-purchase-orders',
+                screen: 'procurement',
+              }),
+          },
+        ]
+      : []),
+  ];
+  const nativeGeneralStockActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('general-stock-items')
+      ? [
+          {
+            key: 'general-stock-route',
+            label: 'General Stock',
+            detail: 'Open operational stock',
+            icon: 'GS',
+            tone: 'red' as const,
+            onPress: () =>
+              openNativeMobileSection('general-stock-items', {
+                screen: 'general-stock',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'general-items-overview',
+            label: 'Overview',
+            detail: 'General item dashboard',
+            icon: 'OV',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'general-items-overview',
+                screen: 'general-stock',
+              }),
+          },
+          {
+            key: 'general-item-master',
+            label: 'Item Master',
+            detail: 'Operational item catalog',
+            icon: 'IM',
+            tone: 'blue' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'general-item-master',
+                screen: 'general-stock',
+              }),
+          },
+          {
+            key: 'general-item-stock',
+            label: 'Stock',
+            detail: 'Quantities and valuation',
+            icon: 'ST',
+            tone: 'teal' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'general-item-stock',
+                screen: 'general-stock',
+              }),
+          },
+          {
+            key: 'general-item-usage',
+            label: 'Usage',
+            detail: 'Issues and consumption',
+            icon: 'US',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'general-item-usage',
+                screen: 'general-stock',
+              }),
+          },
+        ]
+      : []),
+  ];
+  const nativeSalesActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('pos')
+      ? [
+          {
+            key: 'pos-counter',
+            label: 'POS Counter',
+            detail: 'Open sale and cart',
+            icon: 'POS',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                posWorkspace: 'pos',
+                screen: 'sales',
+              }),
+          },
+          {
+            key: 'sales-performance',
+            label: 'Sales Register',
+            detail: 'Cashier activity and receipts',
+            icon: 'REG',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                posWorkspace: 'sales-performance',
+                screen: 'sales',
+              }),
+          },
+          {
+            key: 'payment-receipt',
+            label: 'Payments',
+            detail: 'Receipt and payment review',
+            icon: 'PAY',
+            tone: 'teal' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                posWorkspace: 'payment-receipt',
+                screen: 'sales',
+              }),
+          },
+          {
+            key: 'dispensing-review',
+            label: 'Dispensing',
+            detail: 'Pharmacist review queue',
+            icon: 'RX',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                posWorkspace: 'dispensing-review',
+                screen: 'sales',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('finance')
+      ? [
+          {
+            key: 'finance-flow',
+            label: 'Finance',
+            detail: 'Receivables and collection',
+            icon: 'FN',
+            tone: 'blue' as const,
+            onPress: () =>
+              openNativeMobileSection('finance', {
+                financeWorkspace: 'finance-flow',
+                screen: 'sales',
+              }),
+          },
+        ]
+      : []),
+  ];
+
+  const nativeRoleTokens = profileRoleTokens(profile);
+  const profileHasNativeRole = (...tokens: string[]) =>
+    nativeRoleTokens.some((role) =>
+      tokens.some((token) =>
+        role === token ||
+        role.endsWith(`_${token}`) ||
+        role.includes(`_${token}_`),
+      ),
+    );
+  const nativeRoleActionFallback =
+    nativePrimaryActions.length > 0
+      ? nativePrimaryActions
+      : [
+          {
+            key: 'fallback-menu',
+            label: 'Open Menu',
+            detail: 'View all modules available to your account',
+            icon: 'MN',
+            tone: 'blue' as const,
+            onPress: () => setMobileAppScreen('more'),
+          },
+        ];
+  const nativeMobileWorkbench: UbuzimaMobileAppWorkbench = (() => {
+    if (profileHasAdminAuthority(profile) || profileHasOwnerRole(profile)) {
+      return {
+        eyebrow: profileHasOwnerRole(profile) ? 'Owner workbench' : 'Admin workbench',
+        title: 'Business control desk',
+        summary: 'Start with the live dashboard, then move into sales, stock, procurement, and staff follow-up.',
+        status: 'Executive operating view',
+        actions: [
+          ...(visibleSectionKeys.has('overview')
+            ? [
+                {
+                  key: 'workbench-business-overview',
+                  label: 'Business Overview',
+                  detail: 'Live dashboard and management review',
+                  icon: 'HM',
+                  tone: 'olive' as const,
+                  onPress: () => {
+                    setMobileAppScreen('business');
+                    navigateToSection('overview');
+                  },
+                },
+              ]
+            : []),
+          ...nativeSalesActions.filter((action) => ['sales-performance', 'payment-receipt'].includes(action.key)),
+          ...nativeStockActions.filter((action) => ['stock-low', 'stock-expiry'].includes(action.key)),
+        ].slice(0, 4),
+      };
+    }
+
+    if (
+      profileHasNativeRole('cashier', 'sales_cashier', 'pos_cashier') ||
+      profileHasGranularPermission(profile, ['pharmaco.pos.use', 'pos.sales.view', 'pos.payments.view'])
+    ) {
+      return {
+        eyebrow: 'Cashier workbench',
+        title: 'Counter and payments',
+        summary: 'Open the POS counter, review receipts, capture payments, and keep the shift moving.',
+        status: 'Front desk flow',
+        actions: nativeSalesActions.filter((action) =>
+          ['pos-counter', 'payment-receipt', 'sales-performance'].includes(action.key),
+        ),
+      };
+    }
+
+    if (
+      profileHasNativeRole('pharmacist', 'dispensing', 'dispenser') ||
+      profileHasGranularPermission(profile, ['pharmaco.inventory.view', 'inventory.products.view'])
+    ) {
+      return {
+        eyebrow: 'Pharmacist workbench',
+        title: 'Dispensing and medicine safety',
+        summary: 'Review dispensing queues, product master, batches, low stock, and expiry risk.',
+        status: 'Clinical operations',
+        actions: [
+          ...nativeSalesActions.filter((action) => action.key === 'dispensing-review'),
+          ...nativeStockActions.filter((action) => ['stock-master', 'stock-batches', 'stock-expiry'].includes(action.key)),
+        ].slice(0, 4),
+      };
+    }
+
+    if (
+      profileHasNativeRole('finance', 'accountant', 'collector') ||
+      profileHasGranularPermission(profile, granularMenuPermissionMap.finance)
+    ) {
+      return {
+        eyebrow: 'Finance workbench',
+        title: 'Collections and reconciliation',
+        summary: 'Follow receivables, payments, cashier activity, and daily settlement signals.',
+        status: 'Finance desk',
+        actions: [
+          ...nativeSalesActions.filter((action) => ['finance-flow', 'payment-receipt', 'sales-performance'].includes(action.key)),
+          ...nativePrimaryActions.filter((action) => action.key === 'pos-sales'),
+        ].slice(0, 4),
+      };
+    }
+
+    if (
+      profileHasNativeRole('procurement', 'supplier', 'purchasing') ||
+      profileHasGranularPermission(profile, granularMenuPermissionMap.suppliers)
+    ) {
+      return {
+        eyebrow: 'Procurement workbench',
+        title: 'Orders and receiving',
+        summary: 'Move from supplier follow-up into purchase orders, receiving, and operational stock.',
+        status: 'Supply desk',
+        actions: [
+          ...nativeProcurementActions,
+          ...nativeGeneralStockActions.filter((action) => action.key === 'general-items-overview'),
+        ].slice(0, 4),
+      };
+    }
+
+    if (
+      profileHasNativeRole('inventory', 'storekeeper', 'stock') ||
+      profileHasGranularPermission(profile, granularMenuPermissionMap.inventory)
+    ) {
+      return {
+        eyebrow: 'Inventory workbench',
+        title: 'Stock control',
+        summary: 'Check low stock, expiry, batches, product master, and shelf quantities.',
+        status: 'Stock desk',
+        actions: nativeStockActions.slice(0, 4),
+      };
+    }
+
+    return {
+      eyebrow: 'Staff workbench',
+      title: 'Your available tools',
+      summary: 'Open the modules your account can access and continue from your permitted workflows.',
+      status: 'Role based access',
+      actions: nativeRoleActionFallback.slice(0, 4),
+    };
+  })();
+
+  const nativeMobileMenuGroups: UbuzimaMobileAppMenuGroup[] =
+    visibleMenuGroups.map((group) => ({
+      key: group.key,
+      label: group.label,
+      items: group.items.map((item) => ({
+        key: `${group.key}-${item.key}-${item.context ?? 'root'}`,
+        label: item.label,
+        description: item.description,
+        icon: item.icon,
+        status: item.status,
+        onPress: () => {
+          handleMenuItemClick(item);
+          setMobileAppScreen(mobileAppScreenForSection(item.key));
+        },
+      })),
+    }));
+
   return (
-    <main className="dashboard-shell" style={leftMenuStyle}>
-      <aside className="sidebar">
+    <main
+      className={`dashboard-shell dashboard-shell--mobile-app-ready dashboard-shell--fresh-mobile-app ${
+        isMobileDrawerOpen ? 'dashboard-shell--mobile-drawer-open' : ''
+      }`}
+      style={leftMenuStyle}
+    >
+      <UbuzimaMobileApp
+        activeScreen={mobileAppScreen}
+        brandLogoSrc={brandLogoSrc}
+        currentWorkspace={mobileActiveTitle}
+        installAvailable={isPwaInstallAvailable}
+        isInstalling={isPwaInstalling}
+        isOnline={isOnline}
+        isStandalone={isStandalonePwa}
+        menuGroups={nativeMobileMenuGroups}
+        metrics={nativeMetrics}
+        navigationItems={nativeMobileNavItems}
+        primaryActions={nativePrimaryActions}
+        procurementActions={nativeProcurementActions}
+        generalStockActions={nativeGeneralStockActions}
+        profileAvatarUrl={profileAvatarUrl}
+        profileInitials={profileInitials}
+        profileInstitution={profileInstitution}
+        profileName={profileDisplayName}
+        salesActions={nativeSalesActions}
+        stockActions={nativeStockActions}
+        unreadMailCount={unreadMailCount}
+        workbench={nativeMobileWorkbench}
+        onChangePassword={() => {
+          setChangePasswordError('');
+          setChangePasswordNotice('');
+          setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
+          setIsChangePasswordOpen(true);
+        }}
+        onCorporateEmail={() => openNativeMobileSection('corporate-email', { screen: 'more' })}
+        onInstall={requestPwaInstall}
+        onOpenBusinessOverview={() => {
+          setMobileAppScreen('business');
+          if (visibleSectionKeys.has('overview')) {
+            navigateToSection('overview');
+          }
+        }}
+        onRefresh={refreshMobileWorkspace}
+        onScreenChange={handleNativeMobileScreenChange}
+        onSignOut={handleLogout}
+      />
+
+      <header className="ubuzima-mobile-topbar" aria-label="Ubuzima+ mobile app bar">
+        <button
+          type="button"
+          className="ubuzima-mobile-icon-button"
+          aria-label="Open navigation menu"
+          aria-expanded={isMobileDrawerOpen}
+          onClick={() => setIsMobileDrawerOpen((current) => !current)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+
+        <div className="ubuzima-mobile-brand">
+          <img src={brandLogoSrc} alt="" />
+          <div>
+            <strong>{mobileActiveTitle}</strong>
+            <small>{mobileShellStatus}</small>
+          </div>
+        </div>
+
+        {isPwaInstallAvailable && !isStandalonePwa ? (
+          <button
+            type="button"
+            className="ubuzima-mobile-install-button"
+            onClick={requestPwaInstall}
+            disabled={isPwaInstalling}
+          >
+            {isPwaInstalling ? 'Opening' : 'Install'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="ubuzima-mobile-icon-button ubuzima-mobile-refresh-button"
+            aria-label="Refresh current workspace"
+            onClick={refreshMobileWorkspace}
+          >
+            SY
+          </button>
+        )}
+      </header>
+
+      <button
+        type="button"
+        className="ubuzima-mobile-drawer-overlay"
+        aria-label="Close navigation menu"
+        hidden={!isMobileDrawerOpen}
+        onClick={() => setIsMobileDrawerOpen(false)}
+      />
+
+      <aside
+        className="sidebar"
+        data-admin-sidebar
+        onClickCapture={(event) => {
+          const target = event.target as HTMLElement | null;
+
+          if (target?.closest('button,a')) {
+            window.setTimeout(() => {
+              setIsMobileDrawerOpen(false);
+            }, 150);
+          }
+        }}
+      >
         <div className="sidebar-inner">
           <div className="sidebar-brand">
             <img className="sidebar-logo" src={brandLogoSrc} alt="Ubuzima+" />
@@ -9808,6 +10882,39 @@ return (
           </button>
         )}
 
+        <section className="ubuzima-mobile-action-strip" aria-label="Mobile quick actions">
+          {!isOnline && (
+            <div className="ubuzima-mobile-offline-banner" role="status">
+              <strong>Offline mode</strong>
+              <span>Saved screens remain available while the network reconnects.</span>
+            </div>
+          )}
+
+          <div className="ubuzima-mobile-section-context">
+            <span>{currentSection.eyebrow}</span>
+            <strong>{mobileActiveTitle}</strong>
+          </div>
+
+          {mobileQuickActions.length > 0 && (
+            <div className="ubuzima-mobile-quick-grid">
+              {mobileQuickActions.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() =>
+                    navigateToMobileSection(item.section, {
+                      posWorkspace: item.posWorkspace,
+                    })
+                  }
+                >
+                  <span>{item.icon}</span>
+                  <strong>{item.label}</strong>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section className="dashboard-scroll-panel">
           {renderActiveSection()}
         </section>
@@ -9907,6 +11014,33 @@ return (
           </div>
         )}
       </section>
+
+      <nav className="ubuzima-mobile-bottom-nav" aria-label="Primary mobile navigation">
+        {mobileBottomNavItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={activeSection === item.section ? 'active' : ''}
+            onClick={() =>
+              navigateToMobileSection(item.section, {
+                posWorkspace: item.posWorkspace,
+              })
+            }
+          >
+            <span>{item.icon}</span>
+            <small>{item.label}</small>
+          </button>
+        ))}
+
+        <button
+          type="button"
+          className={isMobileDrawerOpen ? 'active' : ''}
+          onClick={() => setIsMobileDrawerOpen((current) => !current)}
+        >
+          <span>MN</span>
+          <small>Menu</small>
+        </button>
+      </nav>
     </main>
   );
 }

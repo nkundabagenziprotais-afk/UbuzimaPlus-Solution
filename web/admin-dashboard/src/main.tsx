@@ -156,7 +156,7 @@ function installUbuzimaNativeMobileDrawerV2(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-installUbuzimaNativeMobileDrawerV2();
+// The authenticated React app now owns the phone app shell and drawer.
 
 
 
@@ -358,7 +358,7 @@ function installUbuzimaNativeMobileInterfaceV1(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-installUbuzimaNativeMobileInterfaceV1();
+// The legacy injected mobile interface remains inactive to avoid duplicate controls.
 
 
 
@@ -523,50 +523,44 @@ function installUbuzimaInstallAppPrompt(): void {
   }
 
   let deferredPrompt: UbuzimaBeforeInstallPromptEvent | null = null;
-  let button: HTMLButtonElement | null = null;
+  const notifyInstallChange = (isAvailable: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent('ubuzima:pwa-install-change', {
+        detail: { isAvailable },
+      }),
+    );
+  };
 
-  function ensureButton(): HTMLButtonElement {
-    if (button) {
-      return button;
+  async function promptForInstall(): Promise<void> {
+    if (!deferredPrompt) {
+      notifyInstallChange(false);
+      return;
     }
 
-    button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'ubuzima-install-app-button';
-    button.textContent = 'Install app';
-    button.hidden = true;
-    document.body.appendChild(button);
-
-    button.addEventListener('click', async () => {
-      if (!deferredPrompt) {
-        return;
-      }
-
-      button!.hidden = true;
-      await deferredPrompt.prompt().catch(() => undefined);
-      await deferredPrompt.userChoice?.catch(() => undefined);
-      deferredPrompt = null;
-    });
-
-    return button;
+    await deferredPrompt.prompt().catch(() => undefined);
+    await deferredPrompt.userChoice?.catch(() => undefined);
+    deferredPrompt = null;
+    notifyInstallChange(false);
+    window.dispatchEvent(new CustomEvent('ubuzima:pwa-install-complete'));
   }
 
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredPrompt = event as UbuzimaBeforeInstallPromptEvent;
-    ensureButton().hidden = false;
+    notifyInstallChange(true);
+  });
+
+  window.addEventListener('ubuzima:pwa-install-request', () => {
+    void promptForInstall();
   });
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
-
-    if (button) {
-      button.hidden = true;
-    }
+    notifyInstallChange(false);
+    window.dispatchEvent(new CustomEvent('ubuzima:pwa-install-complete'));
   });
 }
 
-installUbuzimaMobileAppShellNavigation();
 installUbuzimaInstallAppPrompt();
 
 
@@ -820,7 +814,12 @@ function installUbuzimaMobileWebExperience(): void {
   window.addEventListener('resize', syncMobileAppMode, { passive: true });
   window.addEventListener('orientationchange', syncMobileAppMode, { passive: true });
 
-  if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+  const canUseServiceWorker =
+    'serviceWorker' in navigator &&
+    (window.isSecureContext ||
+      ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname));
+
+  if (canUseServiceWorker) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(() => {
         // Service worker is an enhancement only.
