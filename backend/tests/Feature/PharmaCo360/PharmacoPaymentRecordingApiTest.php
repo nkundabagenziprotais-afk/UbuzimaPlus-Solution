@@ -234,7 +234,7 @@ class PharmacoPaymentRecordingApiTest extends TestCase
             'device_name' => 'PharmaCo360 Payment API Test Client',
         ]);
 
-        $response->assertCreated();
+        $response->assertOk();
 
         return $response->json('access_token');
     }
