@@ -552,6 +552,19 @@ export async function loadBusinessOverviewDataAdapter({
     inventory?.expiredValue,
     inventory?.quantity,
   ].some((value) => Number(value ?? 0) > 0);
+  const salesRecord = sales as unknown as UnknownRecord;
+  const grossRevenue = Math.max(
+    numberValue(
+      salesRecord.grossProfit ??
+      salesRecord.gross_profit ??
+      salesRecord.grossMargin ??
+      salesRecord.gross_margin ??
+      salesRecord.marginIncome ??
+      salesRecord.margin_income ??
+      0,
+    ),
+    0,
+  );
   const paymentMix = buildPaymentMix(sales.paymentMethods, sales.collections);
 
   return {
@@ -560,7 +573,8 @@ export async function loadBusinessOverviewDataAdapter({
     inventoryLoaded,
     error: inventoryResult.status === 'rejected' ? 'Inventory valuation source unavailable.' : null,
     kpis: {
-      'Gross Revenue': formatMoney(sales.grossSales),
+      'Gross Sales': formatMoney(sales.grossSales),
+      'Gross Revenue': formatMoney(grossRevenue),
       'Net Revenue': formatMoney(sales.netSales),
       Collections: formatMoney(sales.collections),
       'Outstanding Balance': formatMoney(sales.outstandingBalance),
@@ -568,7 +582,7 @@ export async function loadBusinessOverviewDataAdapter({
       'Average Transaction Value': sales.transactionCount ? formatMoney(sales.averageTransactionValue) : '—',
       'Live POS Sales': formatCount(sales.transactionCount),
       'Historical POS Sales': '—',
-      'Gross Profit': '—',
+      'Gross Profit': grossRevenue > 0 ? formatMoney(grossRevenue) : '0',
       'Estimated Net Profit': '—',
       'Operating Expenses': '—',
       'Expense / Revenue Ratio': '—',

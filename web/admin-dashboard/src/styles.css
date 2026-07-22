@@ -45002,3 +45002,51 @@ thead
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Business/Inventory Analytics metric refinements */
+.inventory-analytics-trend-mini-tables {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.inventory-analytics-trend-mini-tables table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  font-size: 0.72rem;
+}
+
+.inventory-analytics-trend-mini-tables th,
+.inventory-analytics-trend-mini-tables td {
+  padding: 0.42rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: #475569;
+  font-weight: 750;
+}
+
+.inventory-analytics-trend-mini-tables th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 900;
+}
+
+.inventory-analytics-request-grid > .inventory-analytics-request-card:first-child .inventory-analytics-request-table-scroll {
+  display: none !important;
+}
+
+.inventory-analytics-request-filters {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) auto !important;
+}
+
+@media (max-width: 900px) {
+  .inventory-analytics-trend-mini-tables {
+    grid-template-columns: 1fr;
+  }
+}

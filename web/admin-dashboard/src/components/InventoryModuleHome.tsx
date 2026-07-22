@@ -1155,10 +1155,8 @@ export function InventoryModuleHome({
 
               const createdText = createdFor(batch);
               const createdTime = createdText ? new Date(createdText).getTime() : Number.NaN;
-              const createdFromMatches = !analyticsCreatedFromFilter ||
-                (Number.isFinite(createdTime) && createdTime >= inventoryAnalyticsDateValue(analyticsCreatedFromFilter));
-              const createdToMatches = !analyticsCreatedToFilter ||
-                (Number.isFinite(createdTime) && createdTime <= inventoryAnalyticsDateValue(analyticsCreatedToFilter));
+              const createdFromMatches = true;
+              const createdToMatches = true;
 
               const dateText = createdText || expiryText || inventoryText(batch, ['received_at'], '');
               const dateTime = inventoryAnalyticsDateValue(dateText);
@@ -1180,9 +1178,7 @@ export function InventoryModuleHome({
                 dateToMatches;
             });
 
-            const analyticsMetricBatchRows = filteredBatchRows.length || batchRows.length === 0
-              ? filteredBatchRows
-              : batchRows;
+            const analyticsMetricBatchRows = batchRows.length ? batchRows : filteredBatchRows;
 
             const totalValue = Math.max(
               inventoryDeepNumber(valuation, ['total_inventory_value', 'inventory_value', 'total_stock_value', 'total_cost_value', 'stock_batch_value']),
@@ -1333,6 +1329,7 @@ export function InventoryModuleHome({
 
             const maxCategoryValue = Math.max(...categoryRows.map((row) => row.value), 1);
             const trendValues = [0, 0, 0, 0, 0, 0, totalValue];
+            const nearExpiryTrendValues = [0, 0, 0, 0, 0, 0, nearExpiryValue];
             const trendMax = Math.max(...trendValues, 1);
             const trendStartValue = trendValues.find((value) => value > 0) ?? 0;
             const trendEndValue = trendValues[trendValues.length - 1] ?? 0;
@@ -1390,16 +1387,6 @@ export function InventoryModuleHome({
                   </label>
 
                   <label>
-                    <span>Created From</span>
-                    <input type="date" value={analyticsCreatedFromFilter} onChange={(event) => setAnalyticsCreatedFromFilter(event.target.value)} />
-                  </label>
-
-                  <label>
-                    <span>Created To</span>
-                    <input type="date" value={analyticsCreatedToFilter} onChange={(event) => setAnalyticsCreatedToFilter(event.target.value)} />
-                  </label>
-
-                  <label>
                     <span>Expiry From</span>
                     <input type="date" value={analyticsExpiryFromFilter} onChange={(event) => setAnalyticsExpiryFromFilter(event.target.value)} />
                   </label>
@@ -1446,18 +1433,35 @@ export function InventoryModuleHome({
                       ))}
                     </div>
 
-                    <div className="inventory-analytics-request-table-scroll">
+                    <div className="inventory-analytics-trend-mini-tables">
                       <table>
                         <thead>
                           <tr>
-                            <th>Period</th>
+                            <th>Total Inventory Trend</th>
                             <th>Value</th>
                           </tr>
                         </thead>
                         <tbody>
                           {trendValues.map((value, index) => (
-                            <tr key={`trend-row-${index}`}>
+                            <tr key={`total-inventory-trend-${index}`}>
                               <td>{index === 0 ? analyticsDateFromFilter : index === trendValues.length - 1 ? analyticsDateToFilter : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</td>
+                              <td>{formatCurrency(value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Near Expiry Trend</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {nearExpiryTrendValues.map((value, index) => (
+                            <tr key={`near-expiry-trend-${index}`}>
+                              <td>{index === 0 ? analyticsDateFromFilter : index === nearExpiryTrendValues.length - 1 ? analyticsDateToFilter : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'][index]}</td>
                               <td>{formatCurrency(value)}</td>
                             </tr>
                           ))}
