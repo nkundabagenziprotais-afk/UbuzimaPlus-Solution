@@ -1,4 +1,245 @@
 
+function installUbuzimaRealMobileAppHomeV1(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
+  const root = document.documentElement;
+  const mobileQuery = window.matchMedia('(max-width: 1024px)');
+
+  type MobileModule = {
+    key: string;
+    label: string;
+    subtitle: string;
+    match: RegExp;
+    icon: string;
+    tone: string;
+  };
+
+  const modules: MobileModule[] = [
+    { key: 'business', label: 'Business', subtitle: 'Overview & revenue', match: /Business Overview|Business/i, icon: '▣', tone: 'teal' },
+    { key: 'inventory', label: 'Inventory', subtitle: 'Stock & batches', match: /Inventory/i, icon: '▤', tone: 'emerald' },
+    { key: 'sales', label: 'Sales', subtitle: 'POS & register', match: /Sales|POS/i, icon: '◉', tone: 'blue' },
+    { key: 'procurement', label: 'Procurement', subtitle: 'Purchases & suppliers', match: /Procurement|Purchase|Supplier/i, icon: '▧', tone: 'amber' },
+    { key: 'finance', label: 'Finance', subtitle: 'Cash & expenses', match: /Finance|Expense|Cash/i, icon: '◍', tone: 'purple' },
+    { key: 'reports', label: 'Reports', subtitle: 'Analytics & insights', match: /Reports|Analytics/i, icon: '▥', tone: 'slate' },
+  ];
+
+  function textOf(node: Element | null): string {
+    return (node?.textContent ?? '').replace(/\s+/g, ' ').trim();
+  }
+
+  function navTargets(): HTMLElement[] {
+    return Array.from(document.querySelectorAll<HTMLElement>('a,button,[role="button"],[data-module],[data-view]'))
+      .filter((node) => /Dashboard|Home|Business|Inventory|Sales|POS|Procurement|Purchase|Supplier|Finance|Expense|Reports|Analytics|Settings|Users/i.test(textOf(node)));
+  }
+
+  function openModule(match: RegExp): void {
+    const target = navTargets().find((node) => match.test(textOf(node)));
+
+    root.classList.remove('ubuzima-real-mobile-home-open');
+
+    if (target) {
+      target.click();
+    }
+
+    window.setTimeout(() => {
+      root.classList.remove('ubuzima-native-drawer-open', 'ubuzima-mobile-menu-open');
+      document.querySelectorAll<HTMLElement>('.ubuzima-native-drawer-panel, [data-ubuzima-detected-sidebar="true"], .ubuzima-mobile-sidebar')
+        .forEach((node) => {
+          node.classList.remove('ubuzima-native-drawer-open', 'ubuzima-mobile-sidebar-open');
+        });
+    }, 120);
+  }
+
+  function collectKpis(): { label: string; value: string }[] {
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('article, .kpi-card, .overview-kpi-card, .business-overview-kpi-card'))
+      .map((card) => {
+        const label =
+          card.querySelector<HTMLElement>('small')?.textContent?.trim() ||
+          card.querySelector<HTMLElement>('h3,h4')?.textContent?.trim() ||
+          '';
+
+        const value =
+          card.querySelector<HTMLElement>('strong')?.textContent?.trim() ||
+          card.querySelector<HTMLElement>('[data-kpi-value], .kpi-value')?.textContent?.trim() ||
+          '';
+
+        return { label, value };
+      })
+      .filter((row) => row.label && row.value)
+      .slice(0, 8);
+
+    return rows.length ? rows : [
+      { label: 'Business', value: 'Open' },
+      { label: 'Inventory', value: 'Review' },
+      { label: 'Sales', value: 'Track' },
+      { label: 'Reports', value: 'Analyze' },
+    ];
+  }
+
+  function ensureHome(): HTMLElement {
+    let app = document.querySelector<HTMLElement>('#ubuzima-real-mobile-app');
+
+    if (app) {
+      return app;
+    }
+
+    app = document.createElement('section');
+    app.id = 'ubuzima-real-mobile-app';
+    app.innerHTML = `
+      <header class="urma-header">
+        <button class="urma-menu" type="button" aria-label="Open menu"><span></span><span></span><span></span></button>
+        <div class="urma-brand">
+          <img src="/admin/assets/ubuzima-logo.png" alt="" />
+          <div><strong>Ubuzima+</strong><small>Mobile workspace</small></div>
+        </div>
+        <button class="urma-refresh" type="button" aria-label="Refresh">↻</button>
+      </header>
+
+      <main class="urma-home">
+        <section class="urma-hero">
+          <small>Welcome back</small>
+          <h1>Run your pharmacy from your phone.</h1>
+          <p>Business, inventory, sales, procurement, finance and reports in one mobile app interface.</p>
+          <label class="urma-search">
+            <span>⌕</span>
+            <input type="search" placeholder="Search module, report, product..." />
+          </label>
+        </section>
+
+        <section class="urma-kpi-wallet" aria-label="Key metrics"></section>
+
+        <section class="urma-section-head">
+          <div><strong>Modules</strong><small>Tap to open</small></div>
+        </section>
+        <section class="urma-module-grid"></section>
+
+        <section class="urma-section-head">
+          <div><strong>Quick actions</strong><small>Common workflows</small></div>
+        </section>
+        <section class="urma-actions">
+          <button type="button" data-action-match="Inventory"><span>＋</span><strong>Receive Stock</strong><small>Inventory</small></button>
+          <button type="button" data-action-match="Sales|POS"><span>◉</span><strong>New Sale</strong><small>Sales</small></button>
+          <button type="button" data-action-match="Reports|Analytics"><span>▥</span><strong>View Reports</strong><small>Analytics</small></button>
+        </section>
+      </main>
+
+      <nav class="urma-tabs" aria-label="Mobile tabs">
+        <button type="button" data-tab="home"><span>⌂</span><small>Home</small></button>
+        <button type="button" data-tab="business"><span>▣</span><small>Business</small></button>
+        <button type="button" data-tab="inventory"><span>▤</span><small>Stock</small></button>
+        <button type="button" data-tab="sales"><span>◉</span><small>Sales</small></button>
+        <button type="button" data-tab="more"><span>☰</span><small>More</small></button>
+      </nav>
+    `;
+
+    document.body.appendChild(app);
+
+    app.querySelector<HTMLButtonElement>('.urma-menu')?.addEventListener('click', () => {
+      const menuButton = document.querySelector<HTMLButtonElement>('.ubuzima-mobile-appbar-menu, .ubuzima-mobile-menu-button');
+      if (menuButton) {
+        menuButton.click();
+      } else {
+        root.classList.toggle('ubuzima-native-drawer-open');
+      }
+    });
+
+    app.querySelector<HTMLButtonElement>('.urma-refresh')?.addEventListener('click', () => {
+      const refresh = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+        .find((button) => /refresh|reload|apply/i.test(textOf(button)));
+
+      if (refresh) {
+        refresh.click();
+      } else {
+        window.location.reload();
+      }
+    });
+
+    app.querySelector<HTMLInputElement>('.urma-search input')?.addEventListener('input', (event) => {
+      const value = (event.target as HTMLInputElement).value.toLowerCase();
+      app.querySelectorAll<HTMLElement>('.urma-module-card, .urma-actions button').forEach((card) => {
+        card.hidden = value.length > 0 && !textOf(card).toLowerCase().includes(value);
+      });
+    });
+
+    app.querySelectorAll<HTMLButtonElement>('[data-action-match]').forEach((button) => {
+      button.addEventListener('click', () => {
+        openModule(new RegExp(button.dataset.actionMatch || '', 'i'));
+      });
+    });
+
+    app.querySelector<HTMLButtonElement>('[data-tab="home"]')?.addEventListener('click', () => {
+      root.classList.add('ubuzima-real-mobile-home-open');
+    });
+    app.querySelector<HTMLButtonElement>('[data-tab="business"]')?.addEventListener('click', () => openModule(/Business Overview|Business/i));
+    app.querySelector<HTMLButtonElement>('[data-tab="inventory"]')?.addEventListener('click', () => openModule(/Inventory/i));
+    app.querySelector<HTMLButtonElement>('[data-tab="sales"]')?.addEventListener('click', () => openModule(/Sales|POS/i));
+    app.querySelector<HTMLButtonElement>('[data-tab="more"]')?.addEventListener('click', () => {
+      app.querySelector<HTMLButtonElement>('.urma-menu')?.click();
+    });
+
+    return app;
+  }
+
+  function renderHome(): void {
+    const app = ensureHome();
+
+    const wallet = app.querySelector<HTMLElement>('.urma-kpi-wallet');
+    if (wallet) {
+      wallet.innerHTML = collectKpis()
+        .map((row) => `<article><small>${row.label}</small><strong>${row.value}</strong></article>`)
+        .join('');
+    }
+
+    const grid = app.querySelector<HTMLElement>('.urma-module-grid');
+    if (grid && grid.childElementCount === 0) {
+      grid.innerHTML = modules.map((module) => `
+        <button type="button" class="urma-module-card is-${module.tone}" data-module-key="${module.key}">
+          <span>${module.icon}</span>
+          <strong>${module.label}</strong>
+          <small>${module.subtitle}</small>
+        </button>
+      `).join('');
+
+      modules.forEach((module) => {
+        grid.querySelector<HTMLButtonElement>(`[data-module-key="${module.key}"]`)?.addEventListener('click', () => {
+          openModule(module.match);
+        });
+      });
+    }
+  }
+
+  function sync(): void {
+    const isMobile = mobileQuery.matches;
+    root.classList.toggle('ubuzima-real-mobile-app-active', isMobile);
+
+    if (!isMobile) {
+      return;
+    }
+
+    renderHome();
+
+    if (!root.classList.contains('ubuzima-real-mobile-visited')) {
+      root.classList.add('ubuzima-real-mobile-home-open', 'ubuzima-real-mobile-visited');
+    }
+  }
+
+  sync();
+  window.setTimeout(sync, 400);
+  window.setTimeout(sync, 1200);
+  window.setInterval(sync, 2500);
+  window.addEventListener('resize', sync, { passive: true });
+  window.addEventListener('orientationchange', sync, { passive: true });
+
+  const observer = new MutationObserver(sync);
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+installUbuzimaRealMobileAppHomeV1();
+
+
+
 function installUbuzimaNativeMobileDrawerV2(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return;
