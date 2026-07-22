@@ -671,7 +671,7 @@ export function PosSalesOverview({
       <header className="pos-overview-header">
         <div>
           <span className="pos-overview-eyebrow">
-            POS & Sales
+            POS Analytics
           </span>
           <h1>Business control centre</h1>
           <p>
@@ -729,7 +729,7 @@ export function PosSalesOverview({
               <h2>Dashboard visibility</h2>
               <p>
                 Select the module and performance cards
-                visible on the POS & Sales landing page.
+                visible on the POS Analytics landing page.
               </p>
             </div>
 
