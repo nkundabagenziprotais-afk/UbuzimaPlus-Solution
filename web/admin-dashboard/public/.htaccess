@@ -1,0 +1,12 @@
+AddType application/manifest+json .webmanifest
+AddType image/svg+xml .svg
+
+<IfModule mod_headers.c>
+  <Files "sw.js">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </Files>
+
+  <Files "manifest.webmanifest">
+    Header set Cache-Control "public, max-age=300"
+  </Files>
+</IfModule>

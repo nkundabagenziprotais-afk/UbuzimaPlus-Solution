@@ -76,8 +76,10 @@ require_file "$ADMIN_DIR/package-lock.json"
 require_file "$ADMIN_DIR/index.html"
 require_file "$ADMIN_DIR/public/manifest.webmanifest"
 require_file "$ADMIN_DIR/public/sw.js"
+require_file "$ADMIN_DIR/public/.htaccess"
 require_file "$ADMIN_DIR/src/main.tsx"
 
+grep -Fq 'AddType application/manifest+json .webmanifest' "$ADMIN_DIR/public/.htaccess"
 grep -Fq 'href="/admin/manifest.webmanifest"' "$ADMIN_DIR/index.html"
 grep -Fq 'href="/admin/assets/ubuzima-pwa-icon.svg"' "$ADMIN_DIR/index.html"
 grep -Fq '"start_url": "/admin/' "$ADMIN_DIR/public/manifest.webmanifest"
@@ -105,6 +107,8 @@ fi
 require_file "$ADMIN_DIR/dist/index.html"
 require_file "$ADMIN_DIR/dist/manifest.webmanifest"
 require_file "$ADMIN_DIR/dist/sw.js"
+require_file "$ADMIN_DIR/dist/.htaccess"
+grep -Fq 'AddType application/manifest+json .webmanifest' "$ADMIN_DIR/dist/.htaccess"
 
 dist_protected_hits="$(
   find "$ADMIN_DIR/dist" -type f \

@@ -40,7 +40,8 @@ local development browser session.
 7. Do not overwrite production `.env`, uploaded files, storage folders, or
    database files.
 8. Verify `/admin/manifest.webmanifest`, `/admin/sw.js`, and `/admin/` load
-   from the live domain.
+   from the live domain. The manifest should be served as
+   `application/manifest+json`.
 9. Test desktop admin, mobile browser, installed PWA, login, POS/Sales,
    Inventory, Procurement, General Stock, and More.
 
@@ -122,6 +123,7 @@ Requirements:
 - Audit first, then deploy only after explicit owner approval.
 - Back up current /admin before upload and provide rollback command.
 - Verify desktop admin, mobile app layout, manifest, service worker, installability, login, POS/Sales, Inventory, Procurement, General Stock, and More after deployment.
+- Confirm /admin/manifest.webmanifest is not served as application/octet-stream.
 
 Use these commands after confirming the approved commit:
 
