@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             PharmacoProductInventorySeeder::class,
             ProductMasterCorrectionSeeder::class,
             PharmacoSalesDispensingSeeder::class,
+            PharmacoFinanceSetupSeeder::class,
         ]);
     }
 }
