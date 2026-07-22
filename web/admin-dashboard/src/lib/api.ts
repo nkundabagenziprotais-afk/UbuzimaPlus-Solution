@@ -1757,6 +1757,8 @@ export type PharmaSalesFilters = {
   sale_type?: string;
   branch_id?: number;
   pos_session_id?: number;
+  business_date_from?: string;
+  business_date_to?: string;
 };
 
 function buildPharmaQueryString(params: Record<string, string | number | null | undefined>): string {
@@ -1784,6 +1786,9 @@ export async function getPharmaSales(
     sale_type: filters.sale_type,
     branch_id: filters.branch_id,
     pos_session_id: filters.pos_session_id,
+    business_date_from: filters.business_date_from,
+    business_date_to: filters.business_date_to,
+    _: Date.now(),
   });
 
   return getJsonWithTenant<PharmaSalesResponse>(token, `/pharmaco/sales${query}`, tenantSlug);

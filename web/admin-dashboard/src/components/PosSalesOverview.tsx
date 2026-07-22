@@ -1,4 +1,5 @@
-/* POS_AND_SALES_OVERVIEW_DEPLOY_TARGET_V1 */
+/*
+ POS_AND_SALES_OVERVIEW_DEPLOY_TARGET_V1 */
 import {
   useCallback,
   useEffect,
@@ -416,76 +417,59 @@ export function PosSalesOverview({
       () => loadVisibility(visibilityKey),
     );
 
-  const loadSales = useCallback(async () => {
-    if (!tenantSlug) {
-      setError(
-        'An active tenant assignment is required to load business analytics.',
-      );
-      setIsLoading(false);
-      return;
-    }
+  const todayIsoForPosAnalytics = new Date().toISOString().slice(0, 10);
+  const monthStartIsoForPosAnalytics = `${todayIsoForPosAnalytics.slice(0, 8)}01`;
+  const [posBusinessDateFromFilter, setPosBusinessDateFromFilter] = useState(monthStartIsoForPosAnalytics);
+  const [posBusinessDateToFilter, setPosBusinessDateToFilter] = useState(todayIsoForPosAnalytics);
+  const [posBranchFilter, setPosBranchFilter] = useState('all');
+  const [posCashierFilter, setPosCashierFilter] = useState('all');
+  const [posSessionFilter, setPosSessionFilter] = useState('all');
+  const [posPaymentMethodFilter, setPosPaymentMethodFilter] = useState('all');
+  const [posSaleTypeFilter, setPosSaleTypeFilter] = useState('all');
+  const [posProductCategoryFilter, setPosProductCategoryFilter] = useState('all');
 
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await getPharmaSales(
-        token,
-        tenantSlug,
-      );
-
-      setSales(
-        Array.isArray(response.sales)
-          ? response.sales
-          : [],
-      );
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : ' data could not be loaded.',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [tenantSlug, token]);
-
-  useEffect(() => {
+  const applyPosAnalyticsFilters = () => {
     void loadSales();
-  }, [loadSales]);
+  };
 
-  useEffect(() => {
-    setVisibility(
-      loadVisibility(visibilityKey),
-    );
-  }, [visibilityKey]);
+  const resetPosAnalyticsFilters = () => {
+    setPosBusinessDateFromFilter(monthStartIsoForPosAnalytics);
+    setPosBusinessDateToFilter(todayIsoForPosAnalytics);
+    setPosBranchFilter('all');
+    setPosCashierFilter('all');
+    setPosSessionFilter('all');
+    setPosPaymentMethodFilter('all');
+    setPosSaleTypeFilter('all');
+    setPosProductCategoryFilter('all');
+    void loadSales();
+  };
 
-  useEffect(() => {
-    const syncVisibility = (
-      event: StorageEvent,
-    ) => {
-      if (event.key === visibilityKey) {
-        setVisibility(
-          loadVisibility(visibilityKey),
-        );
-      }
-    };
-
-    window.addEventListener(
-      'storage',
-      syncVisibility,
-    );
-
-    return () => {
-      window.removeEventListener(
-        'storage',
-        syncVisibility,
-      );
-    };
-  }, [visibilityKey]);
 
   const analytics = useMemo(() => {
-    const validSales = sales.filter((sale) => !['draft', 'cancelled', 'voided'].includes(String(sale.status ?? '').toLowerCase()));
+    const selectedDateFrom = posBusinessDateFromFilter ? safeDate(posBusinessDateFromFilter) : null;
+    const selectedDateTo = posBusinessDateToFilter ? safeDate(posBusinessDateToFilter) : null;
+
+    const validSales = sales.filter((sale) => {
+      if (['draft', 'cancelled', 'voided'].includes(String(sale.status ?? '').toLowerCase())) {
+        return false;
+      }
+
+      const saleDate = safeDate(sale.business_date ?? sale.sold_at ?? sale.created_at);
+
+      if (selectedDateFrom && saleDate && saleDate < selectedDateFrom) {
+        return false;
+      }
+
+      if (selectedDateTo && saleDate && saleDate > selectedDateTo) {
+        return false;
+      }
+
+      if (posSaleTypeFilter !== 'all' && String(sale.sale_type ?? '') !== posSaleTypeFilter) {
+        return false;
+      }
+
+      return true;
+    });
     const completedPayments = validSales.flatMap((sale) => (Array.isArray(sale.payments) ? sale.payments : [])
       .filter((payment) => String(payment.status ?? '').toLowerCase() === 'completed')
       .map((payment) => ({ payment, sale })));
@@ -549,6 +533,106 @@ export function PosSalesOverview({
     const trendRate = earlierTotal > 0 ? ((recentTotal - earlierTotal) / earlierTotal) * 100 : recentTotal > 0 ? 100 : 0;
     const forecast = averageDailySales * 7 * (1 + Math.max(-0.25, Math.min(0.25, trendRate / 100)));
 
+
+    const posAnalyticsDeepTextValue = (source: unknown, paths: string[], fallback = ''): string => {
+      for (const path of paths) {
+        const value = path.split('.').reduce<unknown>((current, key) => {
+          if (!current || typeof current !== 'object') {
+            return undefined;
+          }
+
+          return (current as Record<string, unknown>)[key];
+        }, source);
+
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
+      }
+
+      return fallback;
+    };
+
+    const posAnalyticsDeepNumberValue = (source: unknown, paths: string[], fallback = 0): number => {
+      for (const path of paths) {
+        const value = path.split('.').reduce<unknown>((current, key) => {
+          if (!current || typeof current !== 'object') {
+            return undefined;
+          }
+
+          return (current as Record<string, unknown>)[key];
+        }, source);
+
+        const parsed =
+          typeof value === 'number'
+            ? value
+            : Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
+
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+
+      return fallback;
+    };
+
+    const cashierRows = Array.from(validSales.reduce((map, sale) => {
+      const name = posAnalyticsDeepTextValue(
+        sale,
+        ['cashier.name', 'user.name', 'sold_by.name', 'operator.name', 'created_by.name', 'creator.name'],
+        'Unassigned cashier',
+      );
+
+      const current = map.get(name) ?? {
+        name,
+        netSales: 0,
+        transactions: 0,
+        variance: 0,
+      };
+
+      current.netSales += numberValue(sale.total_amount);
+      current.transactions += 1;
+      current.variance += numberValue(sale.paid_amount) - numberValue(sale.total_amount);
+
+      map.set(name, current);
+
+      return map;
+    }, new Map<string, { name: string; netSales: number; transactions: number; variance: number; }>()).values())
+      .sort((left, right) => right.netSales - left.netSales)
+      .slice(0, 5)
+      .map((row) => ({
+        ...row,
+        averageTransaction: row.transactions > 0 ? row.netSales / row.transactions : 0,
+      }));
+
+    const productRows = Array.from(validSales.flatMap((sale) =>
+      Array.isArray(sale.items) ? sale.items : [],
+    ).reduce((map, item) => {
+      const name = posAnalyticsDeepTextValue(
+        item,
+        ['product.name', 'product.trade_name', 'product.generic_name', 'product_name', 'name'],
+        'Unspecified product',
+      );
+
+      const quantity = posAnalyticsDeepNumberValue(item, ['quantity', 'dispensed_quantity'], 0);
+      const revenue = posAnalyticsDeepNumberValue(item, ['line_total', 'total_amount', 'subtotal_amount', 'amount'], 0);
+
+      const current = map.get(name) ?? {
+        name,
+        quantity: 0,
+        revenue: 0,
+      };
+
+      current.quantity += quantity;
+      current.revenue += revenue;
+
+      map.set(name, current);
+
+      return map;
+    }, new Map<string, { name: string; quantity: number; revenue: number; }>()).values())
+      .sort((left, right) => right.revenue - left.revenue)
+      .slice(0, 5);
+
+
     return {
       totalSales,
       totalCollected,
@@ -566,6 +650,8 @@ export function PosSalesOverview({
       forecast,
       daily,
       transactionCount: validSales.length,
+      cashierRows,
+      productRows,
     };
   }, [sales]);
 
@@ -652,32 +738,79 @@ export function PosSalesOverview({
 
   const [posAnalyticsWeekSelection, setPosAnalyticsWeekSelection] = useState('all');
 
-  const todayIsoForPosAnalytics = new Date().toISOString().slice(0, 10);
-  const monthStartIsoForPosAnalytics = `${todayIsoForPosAnalytics.slice(0, 8)}01`;
-  const [posBusinessDateFromFilter, setPosBusinessDateFromFilter] = useState(monthStartIsoForPosAnalytics);
-  const [posBusinessDateToFilter, setPosBusinessDateToFilter] = useState(todayIsoForPosAnalytics);
-  const [posBranchFilter, setPosBranchFilter] = useState('all');
-  const [posCashierFilter, setPosCashierFilter] = useState('all');
-  const [posSessionFilter, setPosSessionFilter] = useState('all');
-  const [posPaymentMethodFilter, setPosPaymentMethodFilter] = useState('all');
-  const [posSaleTypeFilter, setPosSaleTypeFilter] = useState('all');
-  const [posProductCategoryFilter, setPosProductCategoryFilter] = useState('all');
 
-  const applyPosAnalyticsFilters = () => {
-    void loadSales();
-  };
+  const loadSales = useCallback(async () => {
+    if (!tenantSlug) {
+      setError(
+        'An active tenant assignment is required to load business analytics.',
+      );
+      setIsLoading(false);
+      return;
+    }
 
-  const resetPosAnalyticsFilters = () => {
-    setPosBusinessDateFromFilter(monthStartIsoForPosAnalytics);
-    setPosBusinessDateToFilter(todayIsoForPosAnalytics);
-    setPosBranchFilter('all');
-    setPosCashierFilter('all');
-    setPosSessionFilter('all');
-    setPosPaymentMethodFilter('all');
-    setPosSaleTypeFilter('all');
-    setPosProductCategoryFilter('all');
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await getPharmaSales(
+        token,
+        tenantSlug,
+        {
+          business_date_from: posBusinessDateFromFilter || undefined,
+          business_date_to: posBusinessDateToFilter || undefined,
+          sale_type: posSaleTypeFilter !== 'all' ? posSaleTypeFilter : undefined,
+        },
+      );
+
+      setSales(
+        Array.isArray(response.sales)
+          ? response.sales
+          : [],
+      );
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : ' data could not be loaded.',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tenantSlug, token, posBusinessDateFromFilter, posBusinessDateToFilter, posSaleTypeFilter]);
+
+  useEffect(() => {
     void loadSales();
-  };
+  }, [loadSales]);
+
+  useEffect(() => {
+    setVisibility(
+      loadVisibility(visibilityKey),
+    );
+  }, [visibilityKey]);
+
+  useEffect(() => {
+    const syncVisibility = (
+      event: StorageEvent,
+    ) => {
+      if (event.key === visibilityKey) {
+        setVisibility(
+          loadVisibility(visibilityKey),
+        );
+      }
+    };
+
+    window.addEventListener(
+      'storage',
+      syncVisibility,
+    );
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        syncVisibility,
+      );
+    };
+  }, [visibilityKey]);
 
   const posAnalyticsWeekSelector = (
     <select
@@ -1052,17 +1185,19 @@ export function PosSalesOverview({
                 <tr><th>Cashier</th><th>Net Sales</th><th>Transactions</th><th>Avg Trans.</th><th>Variance</th></tr>
               </thead>
               <tbody>
-                {[
-                  ['Top cashier', analytics.totalSales * 0.32, analytics.transactionCount * 0.32, analytics.averageTicket, analytics.cashCollected * 0.002],
-                  ['Second cashier', analytics.totalSales * 0.24, analytics.transactionCount * 0.24, analytics.averageTicket * 0.95, analytics.cashCollected * 0.001],
-                  ['Third cashier', analytics.totalSales * 0.18, analytics.transactionCount * 0.18, analytics.averageTicket * 1.03, -analytics.cashCollected * 0.001],
-                ].map(([name, net, count, avg, variance]) => (
-                  <tr key={String(name)}>
-                    <td>{name}</td>
-                    <td>{money(Number(net))}</td>
-                    <td>{Math.round(Number(count))}</td>
-                    <td>{money(Number(avg))}</td>
-                    <td className={Number(variance) >= 0 ? 'good' : 'bad'}>{money(Math.abs(Number(variance)))}</td>
+                {(analytics.cashierRows.length ? analytics.cashierRows : [{
+                  name: 'No cashier sales in range',
+                  netSales: 0,
+                  transactions: 0,
+                  averageTransaction: 0,
+                  variance: 0,
+                }]).map((row) => (
+                  <tr key={row.name}>
+                    <td>{row.name}</td>
+                    <td>{money(row.netSales)}</td>
+                    <td>{Math.round(row.transactions)}</td>
+                    <td>{money(row.averageTransaction)}</td>
+                    <td className={row.variance >= 0 ? 'good' : 'bad'}>{money(Math.abs(row.variance))}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1099,13 +1234,17 @@ export function PosSalesOverview({
                 <tr><th>#</th><th>Product</th><th>Quantity</th><th>Revenue</th><th>% of Sales</th></tr>
               </thead>
               <tbody>
-                {['Top product', 'Second product', 'Third product', 'Fourth product', 'Fifth product'].map((name, index) => (
-                  <tr key={name}>
+                {(analytics.productRows.length ? analytics.productRows : [{
+                  name: 'No product sales in range',
+                  quantity: 0,
+                  revenue: 0,
+                }]).map((row, index) => (
+                  <tr key={row.name}>
                     <td>{index + 1}</td>
-                    <td>{name}</td>
-                    <td>{Math.max(analytics.transactionCount - index * 7, 0)}</td>
-                    <td>{money(analytics.totalSales * Math.max(0.075 - index * 0.01, 0.02))}</td>
-                    <td>{Math.max(7.5 - index, 2).toFixed(1)}%</td>
+                    <td>{row.name}</td>
+                    <td>{Math.round(row.quantity)}</td>
+                    <td>{money(row.revenue)}</td>
+                    <td>{analytics.totalSales > 0 ? ((row.revenue / analytics.totalSales) * 100).toFixed(1) : '0.0'}%</td>
                   </tr>
                 ))}
               </tbody>

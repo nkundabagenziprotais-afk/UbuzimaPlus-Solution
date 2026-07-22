@@ -82,12 +82,19 @@ class SalesDispensingController extends Controller
         $tenant = $request->attributes->get('tenant');
 
         $sales = PharmacoSale::query()
-            ->with(['branch', 'customer', 'prescription', 'payments'])
+            ->with(['branch', 'customer', 'prescription', 'payments', 'items.product'])
             ->withCount(['items', 'payments'])
             ->where('tenant_id', $tenant->id)
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
             ->when($request->query('payment_status'), fn ($query, $status) => $query->where('payment_status', $status))
             ->when($request->query('sale_type'), fn ($query, $saleType) => $query->where('sale_type', $saleType))
+            // POS_SALES_BUSINESS_DATE_FILTERS_V1
+            ->when($request->query('business_date_from'), fn ($query, $dateFrom) =>
+                $query->whereDate('business_date', '>=', $dateFrom)
+            )
+            ->when($request->query('business_date_to'), fn ($query, $dateTo) =>
+                $query->whereDate('business_date', '<=', $dateTo)
+            )
             ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($request->query('pos_session_id'), fn ($query, $sessionId) => $query->where('pos_session_id', $sessionId))
             ->latest('created_at')
