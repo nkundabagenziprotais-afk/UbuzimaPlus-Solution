@@ -49,19 +49,37 @@ local development browser session.
 Use these scripts on cPanel after the branch is available in the server-side Git
 repository. They do not require sharing cPanel credentials with ChatGPT.
 
+Known cPanel values from the existing hosting script:
+
+- Repository path: `/home/inzoeqqx/ubuzimaplus.com`
+- Admin web root: `/home/inzoeqqx/ubuzimaplus.com/public_html/admin`
+- cPanel npm binary: `/home/inzoeqqx/nodevenv/ubuzima-node-app/22/bin/npm`
+
+First, open the repository and check out the approved branch:
+
+```bash
+cd /home/inzoeqqx/ubuzimaplus.com || exit 1
+git fetch origin
+git switch codex/mobile-pwa-app-shell || git switch -c codex/mobile-pwa-app-shell --track origin/codex/mobile-pwa-app-shell
+git pull --ff-only origin codex/mobile-pwa-app-shell
+```
+
 Audit only:
 
 ```bash
-EXPECTED_COMMIT=<approved_commit> scripts/cpanel-admin-mobile-pwa-audit.sh
+NPM_BIN=/home/inzoeqqx/nodevenv/ubuzima-node-app/22/bin/npm \
+EXPECTED_COMMIT=<approved_commit> \
+scripts/cpanel-admin-mobile-pwa-audit.sh
 ```
 
 Deploy to the static admin web root:
 
 ```bash
+NPM_BIN=/home/inzoeqqx/nodevenv/ubuzima-node-app/22/bin/npm \
 CONFIRM_DEPLOY=DEPLOY_UBUZIMA_ADMIN \
 EXPECTED_COMMIT=<approved_commit> \
-ADMIN_WEB_ROOT=/home/USER/public_html/admin \
-PUBLIC_ADMIN_URL=https://example.com/admin \
+ADMIN_WEB_ROOT=/home/inzoeqqx/ubuzimaplus.com/public_html/admin \
+PUBLIC_ADMIN_URL=https://ubuzimaplus.com/admin \
 scripts/cpanel-admin-mobile-pwa-deploy.sh
 ```
 
@@ -69,26 +87,61 @@ Rollback from the backup path printed by the deploy script:
 
 ```bash
 CONFIRM_ROLLBACK=ROLLBACK_UBUZIMA_ADMIN \
-ADMIN_WEB_ROOT=/home/USER/public_html/admin \
-BACKUP_DIR=/home/USER/ubuzima-admin-backups/admin-YYYYMMDD-HHMMSS \
+ADMIN_WEB_ROOT=/home/inzoeqqx/ubuzimaplus.com/public_html/admin \
+BACKUP_DIR=/home/inzoeqqx/ubuzima-admin-backups/admin-YYYYMMDD-HHMMSS \
 scripts/cpanel-admin-mobile-pwa-rollback.sh
 ```
 
-Replace `<approved_commit>`, `USER`, and `example.com` with the approved Git
-commit, real cPanel account, and domain. The deploy script refuses to run unless
-`ADMIN_WEB_ROOT` ends with `/admin`.
+Replace `<approved_commit>` with the approved Git commit. The deploy script
+refuses to run unless `ADMIN_WEB_ROOT` ends with `/admin`.
+
+The older cPanel script style that edits files, commits directly to `main`, and
+deploys immediately should not be used for this release unless the PR is
+reviewed and the owner explicitly authorizes it. This handoff keeps production
+safer by auditing first, backing up the live `/admin` folder, and deploying only
+the built admin app files.
 
 ## ChatGPT/Codex Handoff Prompt
 
-Use this prompt only after the branch is pushed:
+Use this prompt for any deployment assistant or cPanel operator. Do not include
+the cPanel password in the prompt.
 
 ```text
-Open repository nkundabagenziprotais-afk/ubuzimaplus-solution.
-Review branch codex/mobile-pwa-app-shell. Do not deploy yet.
-Run web/admin-dashboard checks and scripts/ubuzima-admin-mobile-pwa-release-preflight.sh.
-Confirm the build output is web/admin-dashboard/dist and the app is served under /admin/.
-Prepare a deployment plan that backs up current production /admin, uploads only the approved dist files, does not touch .env/storage/database, verifies PWA manifest/service worker/install behavior, and includes rollback steps.
-Wait for explicit owner authorization before any production upload or server command.
+We are deploying the approved Ubuzima+ Admin Mobile PWA update from GitHub PR #154.
+Repository: nkundabagenziprotais-afk/UbuzimaPlus-Solution
+Branch: codex/mobile-pwa-app-shell
+cPanel repository path: /home/inzoeqqx/ubuzimaplus.com
+Admin production web root: /home/inzoeqqx/ubuzimaplus.com/public_html/admin
+cPanel npm binary: /home/inzoeqqx/nodevenv/ubuzima-node-app/22/bin/npm
+Public admin URL: https://ubuzimaplus.com/admin
+
+Requirements:
+- Do not ask me to paste cPanel passwords, tokens, .env values, or database credentials in chat.
+- Do not edit production source files directly on main.
+- Do not overwrite .env, storage, database, uploaded files, backend runtime files, or public_html outside /admin.
+- Audit first, then deploy only after explicit owner approval.
+- Back up current /admin before upload and provide rollback command.
+- Verify desktop admin, mobile app layout, manifest, service worker, installability, login, POS/Sales, Inventory, Procurement, General Stock, and More after deployment.
+
+Use these commands after confirming the approved commit:
+
+cd /home/inzoeqqx/ubuzimaplus.com || exit 1
+git fetch origin
+git switch codex/mobile-pwa-app-shell || git switch -c codex/mobile-pwa-app-shell --track origin/codex/mobile-pwa-app-shell
+git pull --ff-only origin codex/mobile-pwa-app-shell
+
+NPM_BIN=/home/inzoeqqx/nodevenv/ubuzima-node-app/22/bin/npm \
+EXPECTED_COMMIT=<approved_commit> \
+scripts/cpanel-admin-mobile-pwa-audit.sh
+
+Only after the audit passes and I approve production upload, run:
+
+NPM_BIN=/home/inzoeqqx/nodevenv/ubuzima-node-app/22/bin/npm \
+CONFIRM_DEPLOY=DEPLOY_UBUZIMA_ADMIN \
+EXPECTED_COMMIT=<approved_commit> \
+ADMIN_WEB_ROOT=/home/inzoeqqx/ubuzimaplus.com/public_html/admin \
+PUBLIC_ADMIN_URL=https://ubuzimaplus.com/admin \
+scripts/cpanel-admin-mobile-pwa-deploy.sh
 ```
 
 ## Go/No-Go Checks

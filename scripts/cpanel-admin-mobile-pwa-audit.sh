@@ -5,6 +5,7 @@ ROOT_DIR="${UBUZIMA_RELEASE_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pw
 ADMIN_DIR="$ROOT_DIR/web/admin-dashboard"
 SKIP_NPM_BUILD="${SKIP_NPM_BUILD:-0}"
 EXPECTED_COMMIT="${EXPECTED_COMMIT:-}"
+NPM_BIN="${NPM_BIN:-npm}"
 
 require_file() {
   local file="$1"
@@ -86,18 +87,19 @@ grep -Fq "navigator.serviceWorker.register('/admin/sw.js'" "$ADMIN_DIR/src/main.
 grep -Fq "ubuzima-admin-shell-v13" "$ADMIN_DIR/public/sw.js"
 
 if [ "$SKIP_NPM_BUILD" != "1" ]; then
-  if ! command -v npm >/dev/null 2>&1; then
-    echo "npm is required for build audit. Set SKIP_NPM_BUILD=1 only if dist is already built and reviewed."
+  if ! "$NPM_BIN" --version >/dev/null 2>&1; then
+    echo "npm is required for build audit. Set NPM_BIN=/path/to/npm if cPanel uses a Node virtualenv."
+    echo "Set SKIP_NPM_BUILD=1 only if dist is already built and reviewed."
     exit 1
   fi
 
   if [ ! -d "$ADMIN_DIR/node_modules" ]; then
-    npm --prefix "$ADMIN_DIR" ci
+    "$NPM_BIN" --prefix "$ADMIN_DIR" ci
   fi
 
-  npm --prefix "$ADMIN_DIR" run typecheck
-  npm --prefix "$ADMIN_DIR" run build
-  npm --prefix "$ADMIN_DIR" run native:doctor
+  "$NPM_BIN" --prefix "$ADMIN_DIR" run typecheck
+  "$NPM_BIN" --prefix "$ADMIN_DIR" run build
+  "$NPM_BIN" --prefix "$ADMIN_DIR" run native:doctor
 fi
 
 require_file "$ADMIN_DIR/dist/index.html"
