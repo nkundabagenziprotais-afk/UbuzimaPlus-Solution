@@ -45776,3 +45776,10 @@ thead
     grid-column: 1 !important;
   }
 }
+
+/* Business Overview: remove old injected Inventory Risk Overview cache/table artifacts */
+[data-risk-cache-restored='true'] table,
+[data-risk-cache-restored='true'] .inventory-analytics-risk-bars,
+[data-risk-cache-restored='true'] .inventory-analytics-risk-summary {
+  display: none !important;
+}
