@@ -479,7 +479,7 @@ export function TenantPharmacyDashboard({ token, profile, onOpenSection }: Props
           </p>
         </div>
         <div className="tenant-command-status">
-          <span>{isLoading ? 'Refreshing' : 'Live workspace'}</span>
+          <span>{isLoading ? 'Refreshing' : 'Business overview'}</span>
           <strong>{profile.scope.type}</strong>
           <small>{profile.user.email}</small>
         </div>

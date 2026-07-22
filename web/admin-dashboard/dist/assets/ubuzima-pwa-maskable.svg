@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Ubuzima+ maskable app icon</title>
+  <desc id="desc">Maskable Ubuzima+ pharmacy operations app icon.</desc>
+  <rect width="512" height="512" fill="#4B5320"/>
+  <circle cx="256" cy="256" r="206" fill="#f7faf9"/>
+  <path d="M150 256h212" stroke="#4B5320" stroke-width="50" stroke-linecap="round"/>
+  <path d="M256 150v212" stroke="#4B5320" stroke-width="50" stroke-linecap="round"/>
+  <path d="M152 384h208" stroke="#0f766e" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="382" cy="130" r="42" fill="#B42129"/>
+</svg>
