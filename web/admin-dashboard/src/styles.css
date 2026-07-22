@@ -45938,256 +45938,10 @@ html.ubuzima-standalone-webapp .admin-header {
   font-variant-numeric: tabular-nums;
 }
 
-/* Ubuzima+ responsive app shell: mobile/tablet drawer navigation and compact app UI */
-html.ubuzima-app-shell-mobile,
-html.ubuzima-app-shell-mobile body,
-html.ubuzima-app-shell-mobile #root {
-  width: 100%;
-  min-height: 100dvh;
-  overflow-x: hidden;
-  overscroll-behavior-y: contain;
-}
-
-html.ubuzima-app-shell-mobile body {
-  background: #f8fafc;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-html.ubuzima-app-shell-mobile .ubuzima-mobile-menu-button {
-  position: fixed;
-  top: max(0.75rem, env(safe-area-inset-top));
-  left: max(0.75rem, env(safe-area-inset-left));
-  z-index: 10050;
-  width: 2.85rem;
-  height: 2.85rem;
-  display: inline-grid;
-  place-items: center;
-  gap: 0.22rem;
-  border: 1px solid rgba(15, 118, 110, 0.18);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-html.ubuzima-app-shell-mobile .ubuzima-mobile-menu-button span {
-  display: block;
-  width: 1.12rem;
-  height: 2px;
-  border-radius: 999px;
-  background: #0f766e;
-}
-
-html:not(.ubuzima-app-shell-mobile) .ubuzima-mobile-menu-button,
-html:not(.ubuzima-app-shell-mobile) .ubuzima-mobile-menu-overlay,
-html:not(.ubuzima-app-shell-mobile) .ubuzima-install-app-button {
-  display: none !important;
-}
-
-html.ubuzima-app-shell-mobile .ubuzima-mobile-menu-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10030;
-  display: none;
-  border: 0;
-  background: rgba(15, 23, 42, 0.42);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-}
-
-html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .ubuzima-mobile-menu-overlay {
-  display: block;
-}
-
-html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open body {
-  overflow: hidden;
-}
-
-html.ubuzima-app-shell-mobile .ubuzima-mobile-sidebar {
-  position: fixed !important;
-  inset: 0 auto 0 0 !important;
-  z-index: 10040 !important;
-  width: min(86vw, 21rem) !important;
-  max-width: min(86vw, 21rem) !important;
-  height: 100dvh !important;
-  max-height: 100dvh !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  transform: translateX(-105%) !important;
-  transition: transform 220ms ease, box-shadow 220ms ease !important;
-  border-radius: 0 1.35rem 1.35rem 0 !important;
-  background: rgba(255, 255, 255, 0.98) !important;
-  box-shadow: none !important;
-  padding-top: max(4.25rem, calc(env(safe-area-inset-top) + 3.5rem)) !important;
-  padding-bottom: max(1.2rem, env(safe-area-inset-bottom)) !important;
-}
-
-html.ubuzima-app-shell-mobile .ubuzima-mobile-sidebar.ubuzima-mobile-sidebar-open {
-  transform: translateX(0) !important;
-  box-shadow: 20px 0 52px rgba(15, 23, 42, 0.28) !important;
-}
-
-html.ubuzima-app-shell-mobile .dashboard-main,
-html.ubuzima-app-shell-mobile .admin-dashboard-main,
-html.ubuzima-app-shell-mobile main,
-html.ubuzima-app-shell-mobile .module-content,
-html.ubuzima-app-shell-mobile .dashboard-scroll-panel {
-  width: 100% !important;
-  max-width: 100vw !important;
-  margin-left: 0 !important;
-  border-radius: 0 !important;
-}
-
-html.ubuzima-app-shell-mobile .dashboard-header-center-actions,
-html.ubuzima-app-shell-mobile .admin-header,
-html.ubuzima-app-shell-mobile .admin-topbar,
-html.ubuzima-app-shell-mobile .module-header {
-  position: sticky;
-  top: 0;
-  z-index: 80;
-  padding-left: max(4.1rem, calc(env(safe-area-inset-left) + 4rem)) !important;
-  padding-top: max(0.72rem, env(safe-area-inset-top)) !important;
-  background: rgba(248, 250, 252, 0.94) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-html.ubuzima-app-shell-mobile .ubuzima-install-app-button {
-  position: fixed;
-  right: max(0.85rem, env(safe-area-inset-right));
-  bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.75rem));
-  z-index: 10060;
-  min-height: 2.55rem;
-  padding: 0 0.95rem;
-  border: 0;
-  border-radius: 999px;
-  background: #0f766e;
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 800;
-  box-shadow: 0 14px 30px rgba(15, 118, 110, 0.28);
-}
-
-html.ubuzima-app-shell-mobile .ubuzima-install-app-button[hidden] {
-  display: none !important;
-}
-
-html.ubuzima-app-shell-compact {
-  font-size: 14px;
-}
-
-html.ubuzima-app-shell-compact body {
-  font-size: 0.86rem;
-}
-
-html.ubuzima-app-shell-compact h1 {
-  font-size: 1.18rem !important;
-}
-
-html.ubuzima-app-shell-compact h2 {
-  font-size: 1.02rem !important;
-}
-
-html.ubuzima-app-shell-compact h3 {
-  font-size: 0.92rem !important;
-}
-
-html.ubuzima-app-shell-compact p,
-html.ubuzima-app-shell-compact li,
-html.ubuzima-app-shell-compact td,
-html.ubuzima-app-shell-compact th,
-html.ubuzima-app-shell-compact label,
-html.ubuzima-app-shell-compact small {
-  font-size: 0.78rem !important;
-}
-
-html.ubuzima-app-shell-compact button,
-html.ubuzima-app-shell-compact input,
-html.ubuzima-app-shell-compact select,
-html.ubuzima-app-shell-compact textarea {
-  min-height: 2.45rem;
-  font-size: 16px !important;
-}
-
-html.ubuzima-app-shell-compact .dashboard-card,
-html.ubuzima-app-shell-compact .business-overview-card,
-html.ubuzima-app-shell-compact .inventory-analytics-request-card,
-html.ubuzima-app-shell-compact .review-card,
-html.ubuzima-app-shell-compact article {
-  border-radius: 1rem !important;
-}
-
-html.ubuzima-app-shell-compact .dashboard-grid,
-html.ubuzima-app-shell-compact .business-overview-grid,
-html.ubuzima-app-shell-compact .overview-review-grid,
-html.ubuzima-app-shell-compact .inventory-analytics-request-grid {
-  grid-template-columns: 1fr !important;
-  gap: 0.8rem !important;
-}
-
-html.ubuzima-app-shell-compact .inventory-analytics-request-kpis,
-html.ubuzima-app-shell-compact .business-overview-kpi-grid,
-html.ubuzima-app-shell-compact .overview-kpi-grid,
-html.ubuzima-app-shell-compact .kpi-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 0.55rem !important;
-}
-
-html.ubuzima-app-shell-compact .inventory-analytics-request-kpis article,
-html.ubuzima-app-shell-compact .business-overview-kpi-grid article,
-html.ubuzima-app-shell-compact .overview-kpi-grid article,
-html.ubuzima-app-shell-compact .kpi-card {
-  min-height: 4.25rem;
-  padding: 0.72rem !important;
-}
-
-html.ubuzima-app-shell-compact .inventory-analytics-request-kpis article strong,
-html.ubuzima-app-shell-compact .business-overview-kpi-grid article strong,
-html.ubuzima-app-shell-compact .overview-kpi-grid article strong,
-html.ubuzima-app-shell-compact .kpi-card strong {
-  font-size: 0.95rem !important;
-}
-
-html.ubuzima-app-shell-compact .filter-bar,
-html.ubuzima-app-shell-compact .filters-grid,
-html.ubuzima-app-shell-compact .inventory-analytics-request-filters,
-html.ubuzima-app-shell-compact .inventory-analytics-filter-bar-full {
-  grid-template-columns: 1fr !important;
-  gap: 0.55rem !important;
-}
-
-html.ubuzima-app-shell-compact .table-wrapper,
-html.ubuzima-app-shell-compact .scrollable-table,
-html.ubuzima-app-shell-compact .inventory-analytics-table-wrap,
-html.ubuzima-app-shell-compact .business-overview-table-wrap {
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
-}
-
-html.ubuzima-app-shell-compact table {
-  min-width: 42rem;
-}
-
-@media (max-width: 520px) {
-  html.ubuzima-app-shell-compact .inventory-analytics-request-kpis,
-  html.ubuzima-app-shell-compact .business-overview-kpi-grid,
-  html.ubuzima-app-shell-compact .overview-kpi-grid,
-  html.ubuzima-app-shell-compact .kpi-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  html.ubuzima-app-shell-mobile .ubuzima-mobile-sidebar {
-    width: min(90vw, 20rem) !important;
-    max-width: min(90vw, 20rem) !important;
-  }
-}
 
 
-/* UBUZIMA_NATIVE_APP_SHELL_V2_START
-   Real mobile app shell: drawer menu, compact app layout, card-first modules.
-*/
+
+/* UBUZIMA_FINAL_NATIVE_APP_SHELL_START */
 @media (max-width: 1024px) {
   html.ubuzima-app-shell-mobile,
   html.ubuzima-app-shell-mobile body,
@@ -46195,13 +45949,13 @@ html.ubuzima-app-shell-compact table {
     width: 100%;
     min-height: 100dvh;
     overflow-x: hidden !important;
-    overscroll-behavior-y: contain;
     background: #f7faf9;
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
   }
 
   html.ubuzima-app-shell-mobile body {
     margin: 0;
-    -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
 
@@ -46209,7 +45963,7 @@ html.ubuzima-app-shell-compact table {
     position: fixed !important;
     top: max(0.8rem, env(safe-area-inset-top)) !important;
     left: max(0.75rem, env(safe-area-inset-left)) !important;
-    z-index: 10060 !important;
+    z-index: 10080 !important;
     width: 2.9rem !important;
     height: 2.9rem !important;
     display: inline-grid !important;
@@ -46217,8 +45971,8 @@ html.ubuzima-app-shell-compact table {
     gap: 0.18rem !important;
     border: 1px solid rgba(15, 118, 110, 0.2) !important;
     border-radius: 999px !important;
-    background: rgba(255, 255, 255, 0.96) !important;
-    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.18) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.2) !important;
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
   }
@@ -46234,10 +45988,10 @@ html.ubuzima-app-shell-compact table {
   html.ubuzima-app-shell-mobile .ubuzima-mobile-menu-overlay {
     position: fixed !important;
     inset: 0 !important;
-    z-index: 10040 !important;
+    z-index: 10060 !important;
     display: none !important;
     border: 0 !important;
-    background: rgba(15, 23, 42, 0.42) !important;
+    background: rgba(15, 23, 42, 0.45) !important;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
@@ -46250,10 +46004,24 @@ html.ubuzima-app-shell-compact table {
     overflow: hidden !important;
   }
 
-  html.ubuzima-app-shell-mobile .ubuzima-mobile-sidebar {
+  html.ubuzima-app-shell-mobile .ubuzima-mobile-sidebar,
+  html.ubuzima-app-shell-mobile [data-ubuzima-detected-sidebar='true'],
+  html.ubuzima-app-shell-mobile [data-admin-sidebar],
+  html.ubuzima-app-shell-mobile [data-sidebar],
+  html.ubuzima-app-shell-mobile .admin-sidebar,
+  html.ubuzima-app-shell-mobile .dashboard-sidebar,
+  html.ubuzima-app-shell-mobile .dashboard-shell-sidebar,
+  html.ubuzima-app-shell-mobile .side-nav,
+  html.ubuzima-app-shell-mobile .left-menu,
+  html.ubuzima-app-shell-mobile .module-sidebar,
+  html.ubuzima-app-shell-mobile .app-sidebar,
+  html.ubuzima-app-shell-mobile .admin-navigation,
+  html.ubuzima-app-shell-mobile .dashboard-navigation {
     position: fixed !important;
     inset: 0 auto 0 0 !important;
-    z-index: 10050 !important;
+    z-index: 10070 !important;
+    display: block !important;
+    visibility: visible !important;
     width: min(88vw, 21rem) !important;
     max-width: min(88vw, 21rem) !important;
     height: 100dvh !important;
@@ -46269,7 +46037,19 @@ html.ubuzima-app-shell-compact table {
     padding-bottom: max(1.4rem, env(safe-area-inset-bottom)) !important;
   }
 
-  html.ubuzima-app-shell-mobile .ubuzima-mobile-sidebar.ubuzima-mobile-sidebar-open {
+  html.ubuzima-app-shell-mobile .ubuzima-mobile-sidebar.ubuzima-mobile-sidebar-open,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open [data-ubuzima-detected-sidebar='true'],
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open [data-admin-sidebar],
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open [data-sidebar],
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .admin-sidebar,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .dashboard-sidebar,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .dashboard-shell-sidebar,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .side-nav,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .left-menu,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .module-sidebar,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .app-sidebar,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .admin-navigation,
+  html.ubuzima-app-shell-mobile.ubuzima-mobile-menu-open .dashboard-navigation {
     transform: translateX(0) !important;
     box-shadow: 22px 0 54px rgba(15, 23, 42, 0.3) !important;
   }
@@ -46300,26 +46080,6 @@ html.ubuzima-app-shell-compact table {
     background: rgba(248, 250, 252, 0.94) !important;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-  }
-
-  html.ubuzima-app-shell-mobile .ubuzima-install-app-button {
-    position: fixed !important;
-    right: max(0.85rem, env(safe-area-inset-right)) !important;
-    bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.75rem)) !important;
-    z-index: 10070 !important;
-    min-height: 2.55rem !important;
-    padding: 0 0.95rem !important;
-    border: 0 !important;
-    border-radius: 999px !important;
-    background: #0f766e !important;
-    color: #ffffff !important;
-    font-size: 0.78rem !important;
-    font-weight: 800 !important;
-    box-shadow: 0 14px 30px rgba(15, 118, 110, 0.28) !important;
-  }
-
-  html.ubuzima-app-shell-mobile .ubuzima-install-app-button[hidden] {
-    display: none !important;
   }
 
   html.ubuzima-app-shell-compact {
@@ -46360,14 +46120,6 @@ html.ubuzima-app-shell-compact table {
     font-size: 16px !important;
   }
 
-  html.ubuzima-app-shell-compact .dashboard-card,
-  html.ubuzima-app-shell-compact .business-overview-card,
-  html.ubuzima-app-shell-compact .inventory-analytics-request-card,
-  html.ubuzima-app-shell-compact .review-card,
-  html.ubuzima-app-shell-compact article {
-    border-radius: 1rem !important;
-  }
-
   html.ubuzima-app-shell-compact .dashboard-grid,
   html.ubuzima-app-shell-compact .business-overview-grid,
   html.ubuzima-app-shell-compact .overview-review-grid,
@@ -46383,26 +46135,6 @@ html.ubuzima-app-shell-compact table {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 0.55rem !important;
   }
-
-  html.ubuzima-app-shell-compact .filter-bar,
-  html.ubuzima-app-shell-compact .filters-grid,
-  html.ubuzima-app-shell-compact .inventory-analytics-request-filters,
-  html.ubuzima-app-shell-compact .inventory-analytics-filter-bar-full {
-    grid-template-columns: 1fr !important;
-    gap: 0.55rem !important;
-  }
-
-  html.ubuzima-app-shell-compact .table-wrapper,
-  html.ubuzima-app-shell-compact .scrollable-table,
-  html.ubuzima-app-shell-compact .inventory-analytics-table-wrap,
-  html.ubuzima-app-shell-compact .business-overview-table-wrap {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  html.ubuzima-app-shell-compact table {
-    min-width: 42rem;
-  }
 }
 
 @media (max-width: 520px) {
@@ -46412,10 +46144,5 @@ html.ubuzima-app-shell-compact table {
   html.ubuzima-app-shell-compact .kpi-grid {
     grid-template-columns: 1fr !important;
   }
-
-  html.ubuzima-app-shell-mobile .ubuzima-mobile-sidebar {
-    width: min(90vw, 20rem) !important;
-    max-width: min(90vw, 20rem) !important;
-  }
 }
-/* UBUZIMA_NATIVE_APP_SHELL_V2_END */
+/* UBUZIMA_FINAL_NATIVE_APP_SHELL_END */

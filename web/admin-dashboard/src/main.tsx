@@ -45,7 +45,8 @@ function installUbuzimaMobileAppShellNavigation(): void {
       const hasNavigationContent =
         /Dashboard|Inventory|Business|Sales|Procurement|Finance|Reports|Settings|Users|Admin|Pharma/i.test(text);
 
-      if (hasNavigationContent && candidate.offsetParent !== null) {
+      if (hasNavigationContent) {
+        candidate.dataset.ubuzimaDetectedSidebar = 'true';
         return candidate;
       }
     }
@@ -147,6 +148,7 @@ function installUbuzimaMobileAppShellNavigation(): void {
 
   window.addEventListener('resize', sync, { passive: true });
   window.addEventListener('orientationchange', sync, { passive: true });
+  window.setInterval(sync, 1500);
 
   const observer = new MutationObserver(sync);
   observer.observe(document.body, { childList: true, subtree: true });
