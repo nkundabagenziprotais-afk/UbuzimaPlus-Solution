@@ -27,6 +27,18 @@ class PharmacoFinanceSetupSeeder extends Seeder
         ['code' => '7000', 'name' => 'Insurance Write-Offs', 'account_type' => 'expense', 'normal_balance' => 'debit'],
     ];
 
+    private array $permissions = [
+        'finance.dashboard.view' => 'View Finance Dashboard',
+        'finance.chart_of_accounts.manage' => 'Manage Chart of Accounts',
+        'finance.journal.view' => 'View Finance Journal',
+        'finance.journal.create' => 'Create Finance Journal Entries',
+        'finance.journal.approve' => 'Approve Finance Journal Entries',
+        'finance.reports.view' => 'View Finance Reports',
+        'finance.reconciliation.manage' => 'Manage Finance Reconciliation',
+        'finance.period.close' => 'Close Finance Periods',
+        'finance.settings.manage' => 'Manage Finance Settings',
+    ];
+
     private array $mappings = [
         'pos.cash' => '1000',
         'pos.bank' => '1010',
@@ -58,6 +70,9 @@ class PharmacoFinanceSetupSeeder extends Seeder
         }
 
         $now = now();
+
+        $this->registerFinancePermissions();
+        $this->grantFinancePermissionsToAdministrativeRoles();
 
         foreach (DB::table('tenants')->pluck('id') as $tenantId) {
             $accountIdsByCode = [];
