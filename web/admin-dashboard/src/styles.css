@@ -54056,6 +54056,36 @@ html.ubuzima-standalone-webapp .admin-header {
 
 /* Mobile POS product card polish: product name row, price/availability row */
 @media (max-width: 860px) {
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-stock-section {
+    position: relative !important;
+    max-height: calc(100dvh - 168px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-search-input {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(75, 83, 32, 0.28) !important;
+    box-shadow: 0 10px 22px rgba(16, 33, 27, 0.12) !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-drug-list,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-drug-list--ten,
+  .dashboard-shell--native-workflow-open .pos-builder-product-panel > .pos-drug-list--ten {
+    min-height: 0 !important;
+    max-height: none !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 10px !important;
+  }
+
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-tile,
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-tile-v16,
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-drug-list button {
