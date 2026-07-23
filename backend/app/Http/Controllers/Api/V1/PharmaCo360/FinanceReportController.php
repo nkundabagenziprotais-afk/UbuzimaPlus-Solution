@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\PharmaCo360;
 use App\Http\Controllers\Controller;
 use App\Services\Finance\FinancePosRevenueShadowReportService;
 use App\Services\Finance\FinancePosShadowReconciliationReportService;
+use App\Services\Finance\FinanceReadinessHealthReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -57,4 +58,26 @@ class FinanceReportController extends Controller
             ),
         ]);
     }
+    public function readinessHealth(
+        Request $request,
+        FinanceReadinessHealthReportService $reports
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
+            'branch_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json([
+            'data' => $reports->report(
+                tenantId: (int) $tenant->id,
+                from: $validated['from'] ?? null,
+                to: $validated['to'] ?? null,
+                branchId: isset($validated['branch_id']) ? (int) $validated['branch_id'] : null,
+            ),
+        ]);
+    }
+
 }

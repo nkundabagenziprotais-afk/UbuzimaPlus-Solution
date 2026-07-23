@@ -722,6 +722,12 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'App\\Http\\Middleware\\EnsureAnyPermission:finance.reports.view,finance.reconciliation.view,finance.reconciliation.manage',
         ]);
 
+    Route::get('/finance/reports/readiness-health', [FinanceReportController::class, 'readinessHealth'])
+        ->middleware([
+            'tenant.module:pharmaco.sales',
+            'App\\Http\\Middleware\\EnsureAnyPermission:finance.reports.view,finance.reconciliation.view,finance.reconciliation.manage',
+        ]);
+
     Route::get('/reports/customer-credit-exposure', [ReportingController::class, 'customerCreditExposure'])
         ->middleware([
             'permission:pharmaco.sales.manage',

@@ -248,6 +248,47 @@ class PharmacoPaymentRecordingApiTest extends TestCase
             ->assertJsonPath('data.payment_methods.0.payment_method', 'cash');
     }
 
+    public function test_finance_readiness_health_endpoint_reports_shadow_ready_after_payment(): void
+    {
+        $this->seed();
+
+        $sale = $this->confirmSeededSale();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson("/api/v1/pharmaco/sales/{$sale->id}/payments", [
+                'amount' => $sale->total_amount,
+                'payment_method' => 'cash',
+                'reference_number' => 'SHADOW-HEALTH-001',
+                'generate_receipt' => true,
+            ])
+            ->assertCreated();
+
+        $payment = $sale->fresh('payments')->payments()->latest('id')->firstOrFail();
+
+        $entry = \App\Models\FinanceJournalEntry::query()
+            ->where('source_module', 'pos')
+            ->where('source_type', 'payment')
+            ->where('source_id', (string) $payment->id)
+            ->where('status', 'shadow_posted')
+            ->firstOrFail();
+
+        $businessDate = $entry->business_date->toDateString();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->getJson('/api/v1/pharmaco/finance/reports/readiness-health?from=' . $businessDate . '&to=' . $businessDate)
+            ->assertOk()
+            ->assertJsonPath('data.mode', 'shadow')
+            ->assertJsonPath('data.overall_status', 'ready')
+            ->assertJsonPath('data.dashboard_switch_status', 'ready_for_staged_switch')
+            ->assertJsonPath('data.checks.trial_balance.status', 'passed')
+            ->assertJsonPath('data.checks.pos_payment_reconciliation.status', 'passed')
+            ->assertJsonPath('data.checks.pos_revenue_shadow.status', 'passed')
+            ->assertJsonPath('data.checks.dashboard_source_policy.status', 'shadow_mode');
+    }
+
     public function test_partial_payment_updates_sale_balance_and_status(): void
     {
         $this->seed();
