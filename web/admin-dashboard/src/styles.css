@@ -52670,3 +52670,454 @@ html.ubuzima-standalone-webapp .admin-header {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Mobile app polish v3: consistent typography, tighter cards, and faster operational scanning */
+@media (max-width: 860px) {
+  .auth-shell--mobile-app-ready,
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-app,
+  .dashboard-shell--native-workflow-open {
+    font-size: 15px !important;
+    letter-spacing: 0 !important;
+  }
+
+  .auth-shell.auth-shell--mobile-app-ready .auth-panel {
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .auth-shell--mobile-app-ready .auth-language-row {
+    min-height: 34px !important;
+    margin: 0 auto !important;
+    width: min(408px, 100%) !important;
+    padding: 0 2px !important;
+    font-size: 0.66rem !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-card {
+    width: min(408px, 100%) !important;
+    max-height: calc(100dvh - 58px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    margin: 0 auto !important;
+    gap: 7px !important;
+    padding: 12px !important;
+    align-content: start !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-card .login-app-brand {
+    display: grid !important;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-card .login-app-brand img {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 8px !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-card .login-app-brand strong {
+    font-size: 0.94rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-card .login-app-brand small,
+  .auth-shell--mobile-app-ready .login-app-status span {
+    font-size: 0.62rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-card h2 {
+    font-size: 0.98rem !important;
+    line-height: 1.08 !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-card .eyebrow {
+    font-size: 0.58rem !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-form {
+    gap: 7px !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-topbar {
+    min-height: calc(56px + env(safe-area-inset-top)) !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-brand strong {
+    font-size: 0.94rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-brand small {
+    font-size: 0.68rem !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar {
+    min-height: calc(62px + min(16px, env(safe-area-inset-bottom))) !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar button {
+    min-height: 52px !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar small {
+    font-size: 0.58rem !important;
+    line-height: 1.04 !important;
+    font-weight: 850 !important;
+  }
+
+  .ubuzima-native-section,
+  .ubuzima-native-pos-terminal,
+  .ubuzima-native-stock-hero,
+  .ubuzima-native-sales-card,
+  .ubuzima-native-profile-card,
+  .ubuzima-native-menu-group,
+  .ubuzima-native-install-card,
+  .ubuzima-native-offline,
+  .ubuzima-native-empty {
+    padding: 9px !important;
+    gap: 8px !important;
+  }
+
+  .ubuzima-native-section__heading {
+    min-height: 0 !important;
+  }
+
+  .ubuzima-native-section__heading span,
+  .ubuzima-native-business-hero__top span,
+  .ubuzima-native-business-hero__balance span,
+  .ubuzima-native-balance-card span,
+  .ubuzima-native-pos-terminal__status span,
+  .ubuzima-native-stock-hero span,
+  .ubuzima-native-sales-card span,
+  .ubuzima-native-profile-card span {
+    font-size: 0.62rem !important;
+  }
+
+  .ubuzima-native-section__heading h2,
+  .ubuzima-native-sales-card strong,
+  .ubuzima-native-stock-hero strong,
+  .ubuzima-native-profile-card strong,
+  .ubuzima-native-menu-group__title strong {
+    font-size: 0.9rem !important;
+    line-height: 1.08 !important;
+  }
+
+  .ubuzima-native-action {
+    min-height: 76px !important;
+    padding: 8px !important;
+    align-content: center !important;
+  }
+
+  .ubuzima-native-action::after {
+    display: none !important;
+  }
+
+  .ubuzima-native-action .ubuzima-native-icon {
+    width: 27px !important;
+    min-width: 27px !important;
+    height: 27px !important;
+  }
+
+  .ubuzima-native-action strong {
+    font-size: 0.78rem !important;
+  }
+
+  .ubuzima-native-action small {
+    font-size: 0.62rem !important;
+    -webkit-line-clamp: 1;
+  }
+
+  .ubuzima-native-balance-card {
+    min-height: 72px !important;
+    padding: 8px !important;
+  }
+
+  .ubuzima-native-balance-card .ubuzima-native-value,
+  .ubuzima-native-balance-card strong {
+    white-space: nowrap !important;
+  }
+
+  .ubuzima-native-pos-terminal__status {
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.84fr) minmax(138px, 1fr);
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    border: 1px solid rgba(75, 83, 32, 0.14);
+    border-radius: 8px;
+    background:
+      linear-gradient(135deg, #10211b 0%, #4b5320 82%, #f7faf9 82%, #ffffff 100%);
+  }
+
+  .ubuzima-native-pos-terminal__status div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .ubuzima-native-pos-terminal__status span,
+  .ubuzima-native-pos-terminal__status small {
+    color: rgba(255, 255, 255, 0.82) !important;
+  }
+
+  .ubuzima-native-pos-terminal__status small {
+    font-size: 0.6rem !important;
+    font-weight: 750 !important;
+  }
+
+  .ubuzima-native-pos-terminal__status > strong {
+    justify-self: end;
+    max-width: 100%;
+    padding: 7px 9px;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #10211b !important;
+    font-size: 0.94rem !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ubuzima-native-search-row {
+    min-height: 42px !important;
+    padding: 7px 8px !important;
+  }
+
+  .ubuzima-native-search-row strong {
+    font-size: 0.72rem !important;
+    line-height: 1.1 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ubuzima-native-cart-preview {
+    min-height: 62px !important;
+    gap: 7px !important;
+  }
+
+  .ubuzima-native-cart-preview > div {
+    min-height: 54px !important;
+    display: grid;
+    align-content: center;
+  }
+
+  .ubuzima-native-cart-preview strong,
+  .ubuzima-native-pos-daily-summary strong,
+  .ubuzima-native-pos-daily-list__amount strong {
+    white-space: nowrap !important;
+  }
+
+  .ubuzima-native-inventory-hero {
+    display: grid !important;
+    background:
+      linear-gradient(135deg, #ffffff 0%, #f3f8f5 64%, #fff8ee 100%) !important;
+  }
+
+  .ubuzima-native-inventory-hero__heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ubuzima-native-inventory-values {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .ubuzima-native-inventory-values button {
+    min-width: 0;
+    min-height: 64px;
+    display: grid;
+    align-content: center;
+    gap: 3px;
+    padding: 8px;
+    border: 1px solid rgba(91, 104, 87, 0.14);
+    border-radius: 8px;
+    background: #ffffff;
+    text-align: left;
+  }
+
+  .ubuzima-native-inventory-values span,
+  .ubuzima-native-inventory-values small {
+    min-width: 0;
+    color: #65766e;
+    font-size: 0.58rem !important;
+    font-weight: 850;
+    line-height: 1.08;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ubuzima-native-inventory-values strong {
+    min-width: 0;
+    color: #10211b;
+    font-size: 0.88rem !important;
+    line-height: 1.02;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ubuzima-native-procurement-hero {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 0.36fr) !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    min-height: 92px !important;
+    background:
+      linear-gradient(135deg, #ffffff 0%, #f5f9fb 62%, #f1f6ff 100%) !important;
+  }
+
+  .ubuzima-native-procurement-hero__copy {
+    min-width: 0;
+    display: grid;
+    align-content: center;
+    gap: 3px;
+  }
+
+  .ubuzima-native-procurement-hero__copy small {
+    display: -webkit-box;
+    color: #61736a;
+    font-size: 0.63rem !important;
+    line-height: 1.18 !important;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .ubuzima-native-sales-card__figures {
+    min-height: 74px !important;
+    padding: 8px !important;
+    display: grid !important;
+    place-items: center;
+    align-content: center;
+    gap: 4px;
+  }
+
+  .ubuzima-native-sales-card__figures span {
+    font-size: 0.62rem !important;
+    line-height: 1.04 !important;
+    white-space: nowrap;
+  }
+
+  .ubuzima-native-workflow-bar {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+
+  .ubuzima-native-workflow-bar__back {
+    display: inline-grid !important;
+    grid-auto-flow: column;
+    align-items: center;
+    gap: 5px;
+    min-width: 72px !important;
+    padding-inline: 8px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(75, 83, 32, 0.16) !important;
+    color: #10211b !important;
+    box-shadow: 0 5px 12px rgba(16, 33, 27, 0.06) !important;
+  }
+
+  .ubuzima-native-workflow-bar__back span {
+    width: 21px !important;
+    height: 21px !important;
+    display: grid !important;
+    place-items: center;
+    border-radius: 999px;
+    background: #4b5320;
+    color: #ffffff;
+    line-height: 1;
+  }
+
+  .ubuzima-native-workflow-bar__title strong {
+    font-size: 0.9rem !important;
+    line-height: 1.08 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog {
+    width: min(420px, calc(100vw - 14px)) !important;
+    max-height: calc(100dvh - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    padding: 8px !important;
+    gap: 6px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog__header {
+    gap: 6px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog__header h3 {
+    font-size: 0.84rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog__header small {
+    font-size: 0.58rem !important;
+    line-height: 1.12 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-selling-unit-hero,
+  .dashboard-shell--native-workflow-open .pos-quantity-readonly-grid,
+  .dashboard-shell--native-workflow-open .pos-quantity-total-strip {
+    gap: 6px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-selling-unit-hero > *,
+  .dashboard-shell--native-workflow-open .pos-quantity-price-override-card,
+  .dashboard-shell--native-workflow-open .pos-quantity-readonly-grid article,
+  .dashboard-shell--native-workflow-open .pos-quantity-total-strip div {
+    min-height: 0 !important;
+    padding: 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-selling-unit-hero strong,
+  .dashboard-shell--native-workflow-open .pos-quantity-readonly-grid article strong,
+  .dashboard-shell--native-workflow-open .pos-quantity-total-strip strong {
+    font-size: 0.72rem !important;
+    line-height: 1.04 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog :is(span, small, label) {
+    font-size: 0.58rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog :is(input, select, textarea) {
+    min-height: 35px !important;
+    padding: 6px 7px !important;
+    font-size: 15px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog__actions button {
+    min-height: 38px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-summary-field-card,
+  .dashboard-shell--native-workflow-open .pos-shift-card,
+  .dashboard-shell--native-workflow-open .inventory-create-summary,
+  .dashboard-shell--native-workflow-open .procurement-po-line-card,
+  .dashboard-shell--native-workflow-open .inventory-source-option {
+    min-height: 0 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .inventory-source-option strong {
+    font-size: 0.72rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .inventory-source-option span {
+    display: -webkit-box;
+    font-size: 0.58rem !important;
+    line-height: 1.12 !important;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}

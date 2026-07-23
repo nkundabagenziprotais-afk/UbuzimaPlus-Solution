@@ -721,6 +721,15 @@ type SharedBusinessMetric = {
 };
 
 const sharedBusinessOverviewMetricStorageKey = 'ubuzimaSharedDashboardAnalyticsMetricsV1';
+const mobileRecentPosDataStorageKey = 'ubuzimaMobileRecentPosDataV1';
+
+type MobileRecentPosDataCache = {
+  tenantSlug: string;
+  businessDate: string;
+  cachedAt: number;
+  analytics: PharmaLiveBusinessAnalyticsResponse | null;
+  transactions: PharmaRecentTransactionWithUser[];
+};
 
 function readSharedBusinessMetricRecord(labels: string[]): SharedBusinessMetric | null {
   if (typeof window === 'undefined') return null;
@@ -756,6 +765,54 @@ function readSharedBusinessMetricRecord(labels: string[]): SharedBusinessMetric 
   }
 
   return null;
+}
+
+function readMobileRecentPosDataCache(
+  tenantSlug?: string | null,
+): MobileRecentPosDataCache | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(mobileRecentPosDataStorageKey);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as MobileRecentPosDataCache;
+    const hasData =
+      Boolean(parsed.analytics) ||
+      (Array.isArray(parsed.transactions) && parsed.transactions.length > 0);
+
+    if (!hasData) return null;
+
+    if (tenantSlug && parsed.tenantSlug && parsed.tenantSlug !== tenantSlug) {
+      return null;
+    }
+
+    return {
+      ...parsed,
+      analytics: parsed.analytics ?? null,
+      transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeMobileRecentPosDataCache(
+  payload: Omit<MobileRecentPosDataCache, 'cachedAt'>,
+): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(
+      mobileRecentPosDataStorageKey,
+      JSON.stringify({
+        ...payload,
+        cachedAt: Date.now(),
+      }),
+    );
+  } catch {
+    // Recent-data cache is an enhancement only.
+  }
 }
 
 function buildNativeLiveMetricBars(values: Array<number | undefined>): number[] {
@@ -4001,8 +4058,12 @@ function App() {
   const [posInvoiceContact, setPosInvoiceContact] = useState('');
   const [posDiscountAmount, setPosDiscountAmount] = useState('0');
   const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
-  const [posLiveBusinessAnalytics, setPosLiveBusinessAnalytics] = useState<UbuzimaHandoverLiveAnalytics>(null);
-  const [posRecentTransactionsWithUsers, setPosRecentTransactionsWithUsers] = useState<PharmaRecentTransactionWithUser[]>([]);
+  const [posLiveBusinessAnalytics, setPosLiveBusinessAnalytics] = useState<UbuzimaHandoverLiveAnalytics>(() =>
+    readMobileRecentPosDataCache()?.analytics ?? null,
+  );
+  const [posRecentTransactionsWithUsers, setPosRecentTransactionsWithUsers] = useState<PharmaRecentTransactionWithUser[]>(() =>
+    readMobileRecentPosDataCache()?.transactions ?? [],
+  );
   const [posLiveBusinessAnalyticsNotice, setPosLiveBusinessAnalyticsNotice] = useState<string | null>(null);
   const [posCheckoutKey, setPosCheckoutKey] = useState(createPosCheckoutKey);
   const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
@@ -4153,6 +4214,7 @@ function App() {
   const [mobileAppScreen, setMobileAppScreen] = useState<UbuzimaMobileAppScreen>('business');
   const [mobileNativeWorkflow, setMobileNativeWorkflow] = useState<MobileNativeWorkflowState>(null);
   const [mobilePosStep, setMobilePosStep] = useState<MobilePosStep>('session');
+  const [mobileInventoryReceiveIntent, setMobileInventoryReceiveIntent] = useState(0);
   const [isPwaInstallAvailable, setIsPwaInstallAvailable] = useState(false);
   const [isPwaInstalling, setIsPwaInstalling] = useState(false);
   const [isIosDevice, setIsIosDevice] = useState(false);
@@ -4349,6 +4411,23 @@ function App() {
       window.removeEventListener('ubuzima:shared-metrics-change', handleSharedMetricsChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!posSessionTenantSlug) {
+      return;
+    }
+
+    const cachedData = readMobileRecentPosDataCache(posSessionTenantSlug);
+
+    if (!cachedData) {
+      return;
+    }
+
+    setPosLiveBusinessAnalytics((current) => current ?? cachedData.analytics);
+    setPosRecentTransactionsWithUsers((current) =>
+      current.length > 0 ? current : cachedData.transactions,
+    );
+  }, [posSessionTenantSlug]);
 
   useEffect(() => {
     if (!session?.token || !posSessionTenantSlug || !visibleSectionKeys.has('pos')) {
@@ -5318,6 +5397,12 @@ function App() {
 
       setPosLiveBusinessAnalytics(analyticsResponse);
       setPosRecentTransactionsWithUsers(transactionsResponse.transactions);
+      writeMobileRecentPosDataCache({
+        tenantSlug: posSessionTenantSlug,
+        businessDate: effectiveBusinessDate,
+        analytics: analyticsResponse,
+        transactions: transactionsResponse.transactions,
+      });
       setPosLiveBusinessAnalyticsNotice(null);
     } catch (error) {
       setPosLiveBusinessAnalyticsNotice(
@@ -5340,7 +5425,6 @@ function App() {
     setPosInventoryLoadedAt('');
     setPosInventoryError('');
     setPosLiveBusinessAnalyticsNotice(null);
-    void loadPharmaCore();
 
     window.dispatchEvent(
       new CustomEvent('ubuzima:refresh', {
@@ -5351,14 +5435,24 @@ function App() {
       }),
     );
 
-    window.setTimeout(() => {
-      setIsMobileSyncing(false);
-      setMobileSyncStatus('synced');
+    const syncStartedAt = Date.now();
+
+    void Promise.allSettled([
+      loadPharmaCore(),
+      refreshMobilePosLiveData(),
+    ]).finally(() => {
+      const minimumSyncDisplayMs = 850;
+      const remainingDelay = Math.max(0, minimumSyncDisplayMs - (Date.now() - syncStartedAt));
 
       window.setTimeout(() => {
-        setMobileSyncStatus('idle');
-      }, 1600);
-    }, 1900);
+        setIsMobileSyncing(false);
+        setMobileSyncStatus('synced');
+
+        window.setTimeout(() => {
+          setMobileSyncStatus('idle');
+        }, 1600);
+      }, remainingDelay);
+    });
   }
 
   function toggleMenuGroup(group: MenuGroupKey) {
@@ -5654,19 +5748,6 @@ function App() {
         </section>
 
         <section className="auth-panel auth-form-panel">
-          <div className="login-app-brand">
-            <img src={brandLogoSrc} alt="" />
-            <span>
-              <strong>Ubuzima+</strong>
-              <small>Secure pharmacy app</small>
-            </span>
-          </div>
-
-          <div className="login-app-status" aria-label="Device app readiness">
-            <span>{loginInstallStatusLabel}</span>
-            <span>{isOnline ? 'Online' : 'Offline shell'}</span>
-          </div>
-
           <div className="auth-language-row">
             <span>Staff Identity</span>
             <div>
@@ -5678,6 +5759,19 @@ function App() {
           </div>
 
           <div className="login-card">
+            <div className="login-app-brand">
+              <img src={brandLogoSrc} alt="" />
+              <span>
+                <strong>Ubuzima+</strong>
+                <small>Secure pharmacy app</small>
+              </span>
+            </div>
+
+            <div className="login-app-status" aria-label="Device app readiness">
+              <span>{loginInstallStatusLabel}</span>
+              <span>{isOnline ? 'Online' : 'Offline shell'}</span>
+            </div>
+
             <p className="eyebrow">Sign in</p>
             <h2>Access your workspace</h2>
             <p className="auth-copy">
@@ -6388,6 +6482,7 @@ function App() {
               profile={profile!}
               activeView={activeInventoryView}
               onActiveViewChange={setActiveInventoryView}
+              receiveFlowIntent={mobileInventoryReceiveIntent}
               showInternalNavigation={false}
             />
           </InventoryWorkspaceFrame>
@@ -7142,6 +7237,12 @@ function App() {
 
           setPosLiveBusinessAnalytics(analyticsResponse);
           setPosRecentTransactionsWithUsers(transactionsResponse.transactions);
+          writeMobileRecentPosDataCache({
+            tenantSlug: posTenantSlug,
+            businessDate: effectiveBusinessDate,
+            analytics: analyticsResponse,
+            transactions: transactionsResponse.transactions,
+          });
           setPosLiveBusinessAnalyticsNotice(null);
         } catch (error) {
           setPosLiveBusinessAnalyticsNotice(
@@ -10499,6 +10600,11 @@ return (
     'Inventory Value',
     'Stock Value',
   ]);
+  const nativeNearExpiryValueMetric = readSharedBusinessMetricRecord([
+    'Near Expiry Value',
+    'Near Expiry Inventory Value',
+    'Near Expiry Stock Value',
+  ]);
   const nativeAlertsMetric = readSharedBusinessMetricRecord([
     'Low Stock Count',
     'Low Stock Products',
@@ -10536,10 +10642,17 @@ return (
     },
     {
       key: 'inventory-value',
-      label: 'Stock value',
+      label: 'Total inventory value',
       value: nativeInventoryValueMetric?.valueText ?? 'RWF 0',
       helper: 'Inventory position',
       tone: 'gold',
+    },
+    {
+      key: 'near-expiry-value',
+      label: 'Near expiry value',
+      value: nativeNearExpiryValueMetric?.valueText ?? 'RWF 0',
+      helper: 'Expiry risk value',
+      tone: 'red',
     },
     {
       key: 'alerts',
@@ -10627,6 +10740,22 @@ return (
   const nativeStockActions: UbuzimaMobileAppAction[] = [
     ...(visibleSectionKeys.has('inventory')
       ? [
+          {
+            key: 'receive-stock-manually',
+            label: 'Receive Stock',
+            detail: 'Manual product inventory entry',
+            icon: 'RC',
+            tone: 'olive' as const,
+            onPress: () => {
+              setMobileInventoryReceiveIntent((current) => current + 1);
+              openNativeMobileSection('inventory', {
+                inventoryView: 'product-inventory',
+                openWorkflow: true,
+                screen: 'inventory',
+                workflowTitle: 'Receive Stock Manually',
+              });
+            },
+          },
           {
             key: 'stock-low',
             label: 'Low Stock',

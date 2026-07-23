@@ -472,6 +472,8 @@ export function UbuzimaMobileApp({
     actions.find((action) => action.key === key);
   const primaryMetric = metrics.find((metric) => metric.key === 'gross-sales') ?? metrics[0];
   const grossRevenueMetric = metrics.find((metric) => metric.key === 'gross-revenue');
+  const inventoryValueMetric = metrics.find((metric) => metric.key === 'inventory-value');
+  const nearExpiryValueMetric = metrics.find((metric) => metric.key === 'near-expiry-value');
   const heroMetrics = [primaryMetric, grossRevenueMetric].filter(
     (metric): metric is UbuzimaMobileAppMetric => Boolean(metric),
   );
@@ -512,6 +514,7 @@ export function UbuzimaMobileApp({
           : actionByKey(salesActions, 'payment-receipt') ?? posCounterAction,
   }));
   const inventoryReviewChips = [
+    { label: 'Manual receive', action: actionByKey(stockActions, 'receive-stock-manually') },
     { label: 'Low stock', action: actionByKey(stockActions, 'stock-low') },
     { label: 'Near expiry', action: actionByKey(stockActions, 'stock-expiry') },
     { label: 'Batch list', action: actionByKey(stockActions, 'stock-batches') },
@@ -728,7 +731,10 @@ export function UbuzimaMobileApp({
       <>
         <section className="ubuzima-native-pos-terminal" aria-label="POS and Sales">
           <div className="ubuzima-native-pos-terminal__status">
-            <span>POS and Sales</span>
+            <div>
+              <span>POS and Sales</span>
+              <small>Today counter amount</small>
+            </div>
             <strong className={valueFitClass(primaryMetric?.value)}>
               {primaryMetric?.value ?? 'RWF 0'}
             </strong>
@@ -778,18 +784,43 @@ export function UbuzimaMobileApp({
   function renderInventoryScreen() {
     return (
       <>
-        <section className="ubuzima-native-stock-hero" aria-label="Stock control">
-          <div>
-            <span>Inventory</span>
-            <strong>Stock position</strong>
+        <section className="ubuzima-native-stock-hero ubuzima-native-inventory-hero" aria-label="Stock control">
+          <div className="ubuzima-native-inventory-hero__heading">
+            <div>
+              <span>Inventory</span>
+              <strong>Stock position</strong>
+            </div>
+            <button type="button" onClick={stockActions[0]?.onPress}>
+              Open
+            </button>
           </div>
-          <button type="button" onClick={stockActions[0]?.onPress}>
-            Open
-          </button>
+
+          <div className="ubuzima-native-inventory-values">
+            {[inventoryValueMetric, nearExpiryValueMetric].filter(Boolean).map((metric) => (
+              <button
+                key={metric!.key}
+                type="button"
+                onClick={
+                  metric!.key === 'near-expiry-value'
+                    ? actionByKey(stockActions, 'stock-expiry')?.onPress
+                    : stockActions[0]?.onPress
+                }
+              >
+                <span>{metric!.label}</span>
+                <strong className={valueFitClass(metric!.value)}>{metric!.value}</strong>
+                <small>{metric!.helper}</small>
+              </button>
+            ))}
+          </div>
         </section>
 
         <AppSection eyebrow="Inventory" title="Stock services">
-          <ActionGrid actions={stockActions} />
+          <ActionGrid
+            actions={[
+              ...stockActions.filter((action) => action.key === 'receive-stock-manually'),
+              ...stockActions.filter((action) => action.key !== 'receive-stock-manually'),
+            ]}
+          />
         </AppSection>
 
         <AppSection eyebrow="Filters" title="Review">
@@ -808,19 +839,19 @@ export function UbuzimaMobileApp({
   function renderProcurementScreen() {
     return (
       <>
-        <section className="ubuzima-native-sales-card" aria-label="Procurement">
-          <div>
+        <section className="ubuzima-native-sales-card ubuzima-native-procurement-hero" aria-label="Procurement">
+          <div className="ubuzima-native-procurement-hero__copy">
             <span>Procurement</span>
-            <h1>Orders</h1>
+            <strong>Orders and receiving</strong>
+            <small>Suppliers, purchase orders, open receiving and follow-up.</small>
           </div>
           <button
             type="button"
             className="ubuzima-native-sales-card__figures"
             onClick={procurementActions[0]?.onPress}
           >
-            <span>Desk</span>
             <AppIcon name="PO" />
-            <strong>Orders</strong>
+            <span>Open desk</span>
           </button>
         </section>
 
