@@ -106,6 +106,47 @@ path.write_text(text)
 PY
 
 echo
+
+echo
+echo "=== INSTALL API/SANCTUM LARAVEL FRONT CONTROLLER SHIMS ==="
+mkdir -p "$PUBLIC/api" "$PUBLIC/sanctum"
+
+cat > "$PUBLIC/api/index.php" <<'PHP'
+<?php
+declare(strict_types=1);
+
+require __DIR__ . '/../../backend/public/index.php';
+PHP
+
+cat > "$PUBLIC/sanctum/index.php" <<'PHP'
+<?php
+declare(strict_types=1);
+
+require __DIR__ . '/../../backend/public/index.php';
+PHP
+
+cat > "$PUBLIC/api/.htaccess" <<'HT'
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [L,QSA]
+</IfModule>
+HT
+
+cat > "$PUBLIC/sanctum/.htaccess" <<'HT'
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [L,QSA]
+</IfModule>
+HT
+
 echo "=== CLEAR BACKEND CACHE ==="
 php backend/artisan route:clear >/dev/null 2>&1 || true
 php backend/artisan config:clear >/dev/null 2>&1 || true

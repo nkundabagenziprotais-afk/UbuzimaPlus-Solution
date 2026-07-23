@@ -1,3 +1,11 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Route Laravel API and Sanctum requests to Laravel front controller shims.
+  RewriteRule ^api(?:/.*)?$ /api/index.php [L,QSA]
+  RewriteRule ^sanctum(?:/.*)?$ /sanctum/index.php [L,QSA]
+</IfModule>
+
 <IfModule mod_headers.c>
   <FilesMatch "^(index\.html|manifest\.webmanifest|sw\.js)$">
     Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
