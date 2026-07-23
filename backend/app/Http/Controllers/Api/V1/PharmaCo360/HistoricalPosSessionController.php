@@ -1,5 +1,7 @@
 <?php
 
+/* HISTORICAL_POS_NO_REASON_ADMIN_OWNER_BYPASS_FINAL_V1 */
+
 namespace App\Http\Controllers\Api\V1\PharmaCo360;
 
 use App\Http\Controllers\Controller;
@@ -214,7 +216,7 @@ class HistoricalPosSessionController extends Controller
                      * bypass rights skipped this block, which allowed invalid codes
                      * and opened sessions without historical_approval_id.
                      */
-                    if ($summary['live_activity_exists']) {
+                    if ($summary['live_activity_exists'] && ! $this->userCanBypassHistoricalPosApproval($request)) {
                         $approval =
                             PharmacoHistoricalPosApproval::query()
                                 ->whereKey(
@@ -515,8 +517,7 @@ class HistoricalPosSessionController extends Controller
                 'business_date' => $businessDate,
                 'historical_approval_id' =>
                     $session->historical_approval_id,
-                'approval_required' =>
-                    $summary['live_activity_exists'],
+                'approval_required' => $summary['live_activity_exists'] && ! $this->userCanBypassHistoricalPosApproval($request),
                 'live_activity_count' =>
                     $summary['live_activity_count'],
                 'recorded_at' =>
@@ -743,42 +744,11 @@ class HistoricalPosSessionController extends Controller
             return false;
         }
 
-        $permissions = [
-            'pharmaco.pos.historical.approve',
-            'pharmaco.pos.session_support.manage',
-            'pharmaco.pos.session_support.reset',
-            'admin',
-            'owner',
-        ];
+        $terms = [];
 
-        foreach ($permissions as $permission) {
-            if (
-                method_exists($user, 'can')
-                && $user->can($permission)
-            ) {
-                return true;
-            }
-
-            if (
-                method_exists($user, 'hasPermissionTo')
-                && $user->hasPermissionTo($permission)
-            ) {
-                return true;
-            }
-
-            if (
-                method_exists($user, 'hasPermission')
-                && $user->hasPermission($permission)
-            ) {
-                return true;
-            }
-        }
-
-        $roleValues = [];
-
-        foreach (['role', 'role_name', 'user_type', 'type'] as $attribute) {
-            if (isset($user->{$attribute})) {
-                $roleValues[] = (string) $user->{$attribute};
+        foreach (['role', 'role_name', 'role_code', 'type', 'user_type', 'account_type'] as $field) {
+            if (isset($user->{$field}) && is_scalar($user->{$field})) {
+                $terms[] = strtolower((string) $user->{$field});
             }
         }
 
@@ -787,26 +757,38 @@ class HistoricalPosSessionController extends Controller
                 $roles = $user->roles()->get();
 
                 foreach ($roles as $role) {
-                    foreach (['name', 'code', 'slug'] as $attribute) {
-                        if (isset($role->{$attribute})) {
-                            $roleValues[] = (string) $role->{$attribute};
+                    foreach (['name', 'code', 'slug', 'title'] as $field) {
+                        if (isset($role->{$field}) && is_scalar($role->{$field})) {
+                            $terms[] = strtolower((string) $role->{$field});
                         }
                     }
                 }
             } catch (\Throwable) {
-                // Ignore role lookup failures and use available attributes.
+                // Keep bypass detection resilient across role implementations.
             }
         }
 
-        foreach ($roleValues as $roleValue) {
-            $normalized = strtolower($roleValue);
+        foreach (['admin', 'administrator', 'super admin', 'super-admin', 'owner', 'business owner', 'tenant owner', 'proprietor'] as $needle) {
+            foreach ($terms as $term) {
+                if (str_contains($term, $needle)) {
+                    return true;
+                }
+            }
+        }
 
-            if (
-                str_contains($normalized, 'admin')
-                || str_contains($normalized, 'owner')
-                || str_contains($normalized, 'super')
-            ) {
-                return true;
+        foreach ([
+            'pharmaco.pos.historical.approve',
+            'pharmaco.pos.historical.admin',
+            'pharmaco.pos.historical.bypass',
+            'pharmaco.pos.manage',
+            'pharmaco.admin',
+        ] as $permission) {
+            try {
+                if (method_exists($user, 'can') && $user->can($permission)) {
+                    return true;
+                }
+            } catch (\Throwable) {
+                // Ignore unsupported permission guards.
             }
         }
 

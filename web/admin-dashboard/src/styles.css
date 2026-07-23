@@ -49468,3 +49468,17 @@ html.ubuzima-standalone-webapp .admin-header {
 .historical-pos-workflow-guidance {
   display: none !important;
 }
+
+
+/* HISTORICAL_POS_NO_REASON_ADMIN_OWNER_BYPASS_FINAL_V1 */
+.historical-pos-reason,
+.historical-pos-reason-field,
+.historical-pos-request-reason,
+.historical-pos-guidance,
+[data-historical-pos-reason],
+[data-historical-reason],
+[data-request-reason],
+[data-hide-guidance="true"]::before,
+[data-hide-guidance="true"]::after {
+  display: none !important;
+}

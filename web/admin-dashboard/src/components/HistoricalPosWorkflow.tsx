@@ -1,3 +1,4 @@
+/* HISTORICAL_POS_NO_REASON_ADMIN_OWNER_BYPASS_FINAL_V1 */
 /* HISTORICAL_POS_REASON_REMOVED_V1 */
 import {
   useEffect,
@@ -18,6 +19,10 @@ import {
   requestHistoricalPosApproval,
 } from "../lib/posSessionApi";
 import "./HistoricalPosWorkflow.css";
+
+function historicalPosAutoReasonGlobal() {
+  return 'Historical POS entry created through approved workflow.';
+}
 
 type HistoricalPosWorkflowProps = {
   token: string;
@@ -90,7 +95,7 @@ function normalizeHistoricalSession(
     sequence_number: session.sequence_number,
     business_date: session.business_date,
     session_mode: "historical",
-    historical_reason: session.historical_reason,
+    historical_reason: historicalPosAutoReasonGlobal(),
     historical_reference:
       session.historical_reference,
     historical_approval_id:
@@ -384,7 +389,7 @@ export function HistoricalPosWorkflow({
           {
             branch_id: branchId,
             business_date: businessDate,
-            request_reason: historicalPosAutoReason(),
+            request_reason: historicalPosAutoReasonGlobal(),
             historical_reference:
               historicalReference.trim()
               || undefined,
@@ -611,7 +616,7 @@ export function HistoricalPosWorkflow({
               numericOpeningFloat,
             opening_mode:
               selectedOpeningMode,
-            historical_reason: historicalPosAutoReason(),
+            historical_reason: historicalPosAutoReasonGlobal(),
             historical_reference:
               historicalReference.trim()
               || undefined,
@@ -1078,7 +1083,7 @@ export function HistoricalPosWorkflow({
                             </span>
 
                             <small>
-                              {item.request_reason}
+                              
                             </small>
 
                             <small>
