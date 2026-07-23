@@ -48607,3 +48607,9 @@ html.ubuzima-standalone-webapp .admin-header {
 .inventory-analytics-operational-chart__bar {
   visibility: visible !important;
 }
+
+/* INVENTORY_ANALYTICS_TIMESTAMP_POSITION_TRENDS_V6 */
+.inventory-analytics-operational-chart {
+  display: grid !important;
+  min-height: 205px !important;
+}

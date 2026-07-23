@@ -2775,36 +2775,65 @@ class ProductInventoryController extends Controller
         $movementValueExpression = "ABS(COALESCE(m.quantity, 0)) * (CASE WHEN b.cost_source IN ('legacy_equal_price_cost', 'inferred_from_price') AND COALESCE(b.inferred_unit_cost, 0) > 0 THEN COALESCE(b.inferred_unit_cost, 0) WHEN COALESCE(b.unit_cost, 0) > 0 THEN COALESCE(b.unit_cost, 0) WHEN COALESCE(b.selling_price, 0) > 0 THEN COALESCE(b.selling_price, 0) / 1.4 ELSE 0 END)";
 
 
-        /* INVENTORY_ANALYTICS_EOD_LIVE_POSITION_TRENDS_V5 */
+        /* INVENTORY_ANALYTICS_TIMESTAMP_POSITION_TRENDS_V6 */
         /*
-         * Inventory Analytics position trend rule:
-         * - Completed business date D uses closing position at D + 1 day 00:00:00.
-         * - Current business date uses live position as of now().
-         * - Today therefore equals yesterday close + receipts/positive adjustments
-         *   today - sales/dispensing/loss/negative adjustments today.
-         * - One row is produced for every selected business date, so the bar chart
-         *   is always visible for the selected range.
+         * Inventory trend rule:
+         * - Inventory does NOT use business_date. business_date is POS-only.
+         * - Inventory trends use inventory timestamps, starting from the
+         *   date of the first inventory stock batch record.
+         * - Completed date D uses closing position at D + 1 day 00:00:00.
+         * - Today uses live position as of now().
          */
-        $trendDateFrom = (string) (
-            $request->query('business_date_from')
-            ?? $request->query('date_from')
+        $firstInventoryRecordDateQuery = StockBatch::query()
+            ->where('tenant_id', $tenant->id);
+
+        if (! empty($validated['branch_id'] ?? null)) {
+            $firstInventoryRecordDateQuery->where('branch_id', $validated['branch_id']);
+        }
+
+        $firstInventoryTimestamp = $firstInventoryRecordDateQuery
+            ->min('created_at');
+
+        $firstInventoryDate = $firstInventoryTimestamp
+            ? \Carbon\Carbon::parse($firstInventoryTimestamp)->startOfDay()
+            : now()->startOfDay();
+
+        $requestedDateFrom = (string) (
+            $request->query('date_from')
             ?? $request->query('from')
-            ?? now()->startOfMonth()->toDateString()
+            ?? $request->query('created_at_from')
+            ?? ''
         );
 
-        $trendDateTo = (string) (
-            $request->query('business_date_to')
-            ?? $request->query('date_to')
+        $requestedDateTo = (string) (
+            $request->query('date_to')
             ?? $request->query('to')
-            ?? now()->toDateString()
+            ?? $request->query('created_at_to')
+            ?? ''
         );
 
         try {
-            $trendStartDate = \Carbon\Carbon::parse($trendDateFrom)->startOfDay();
-            $trendEndDate = \Carbon\Carbon::parse($trendDateTo)->startOfDay();
+            $trendStartDate = $requestedDateFrom !== ''
+                ? \Carbon\Carbon::parse($requestedDateFrom)->startOfDay()
+                : $firstInventoryDate->copy();
+
+            $trendEndDate = $requestedDateTo !== ''
+                ? \Carbon\Carbon::parse($requestedDateTo)->startOfDay()
+                : now()->startOfDay();
         } catch (\Throwable) {
-            $trendStartDate = now()->startOfMonth()->startOfDay();
+            $trendStartDate = $firstInventoryDate->copy();
             $trendEndDate = now()->startOfDay();
+        }
+
+        /*
+         * Never start before the first inventory timestamp date.
+         */
+        if ($trendStartDate->lt($firstInventoryDate)) {
+            $trendStartDate = $firstInventoryDate->copy();
+        }
+
+        if ($trendEndDate->lt($firstInventoryDate)) {
+            $trendEndDate = $firstInventoryDate->copy();
         }
 
         if ($trendStartDate->gt($trendEndDate)) {
@@ -2859,13 +2888,13 @@ class ProductInventoryController extends Controller
         $nearExpiryValueDailyPositionTrend = [];
 
         foreach ($trendDateKeys as $trendDateKey) {
-            $businessDate = \Carbon\Carbon::parse($trendDateKey)->startOfDay();
+            $inventoryTimestampDate = \Carbon\Carbon::parse($trendDateKey)->startOfDay();
 
-            $positionCutoff = $businessDate->isToday()
+            $positionCutoff = $inventoryTimestampDate->isToday()
                 ? now()
-                : $businessDate->copy()->addDay()->startOfDay();
+                : $inventoryTimestampDate->copy()->addDay()->startOfDay();
 
-            $nearExpiryEnd = $businessDate
+            $nearExpiryEnd = $inventoryTimestampDate
                 ->copy()
                 ->addDays(180)
                 ->endOfDay();
@@ -2904,22 +2933,25 @@ class ProductInventoryController extends Controller
                 ));
 
             $inventoryValueDailyPositionTrend[] = [
-                'business_date' => $trendDateKey,
+                'inventory_date' => $trendDateKey,
                 'date' => $trendDateKey,
+                'timestamp_basis' => 'stock_batches.created_at',
                 'cutoff_at' => $positionCutoff->toDateTimeString(),
-                'cutoff_type' => $businessDate->isToday() ? 'live_now' : 'next_midnight',
+                'cutoff_type' => $inventoryTimestampDate->isToday() ? 'live_now' : 'next_midnight',
                 'value' => round((float) $dailyTotalInventoryValue, 2),
             ];
 
             $nearExpiryValueDailyPositionTrend[] = [
-                'business_date' => $trendDateKey,
+                'inventory_date' => $trendDateKey,
                 'date' => $trendDateKey,
+                'timestamp_basis' => 'stock_batches.created_at',
                 'cutoff_at' => $positionCutoff->toDateTimeString(),
-                'cutoff_type' => $businessDate->isToday() ? 'live_now' : 'next_midnight',
+                'cutoff_type' => $inventoryTimestampDate->isToday() ? 'live_now' : 'next_midnight',
                 'value' => round((float) $dailyNearExpiryValue, 2),
             ];
         }
-        /* INVENTORY_ANALYTICS_RECONCILE_LIVE_TODAY_TO_KPI_V5 */
+
+        /* INVENTORY_ANALYTICS_RECONCILE_LIVE_TODAY_TO_KPI_V6 */
         $selectedTrendEndsToday = ! empty($trendDateKeys)
             && end($trendDateKeys) === now()->toDateString();
 

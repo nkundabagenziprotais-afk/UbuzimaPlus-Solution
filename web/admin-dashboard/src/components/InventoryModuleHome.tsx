@@ -1,4 +1,4 @@
-/* INVENTORY_ANALYTICS_EOD_LIVE_POSITION_TRENDS_V5 */
+/* INVENTORY_ANALYTICS_TIMESTAMP_POSITION_TRENDS_V6 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -2426,7 +2426,7 @@ export function InventoryModuleHome({
               const map = new Map<string, number>();
 
               rows.forEach((row) => {
-                const rawDate = String(row.business_date ?? row.businessDate ?? row.date ?? row.day ?? '').slice(0, 10);
+                const rawDate = String(row.inventory_date ?? row.inventoryDate ?? row.date ?? row.created_at ?? row.createdAt ?? '').slice(0, 10);
 
                 if (!rawDate) {
                   return;
@@ -2488,7 +2488,7 @@ const inventoryAnalyticsCardSourceTrendDateKeys =
                 maximumFractionDigits: 0,
               }).format(value)}`;
 
-                        const inventoryAnalyticsEodLivePositionTrendValues = (
+                        const inventoryAnalyticsTimestampPositionTrendValues = (
               map: Map<string, number>,
             ): number[] =>
               inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey) => {
@@ -2564,12 +2564,12 @@ const inventoryAnalyticsReconciledTrendValues = (
             };
 
 const inventoryAnalyticsCardStockValueTrendValues =
-              inventoryAnalyticsEodLivePositionTrendValues(
+              inventoryAnalyticsTimestampPositionTrendValues(
                 inventoryAnalyticsTotalInventoryDailyPositionMap,
               );
 
             const inventoryAnalyticsCardNearExpiryTrendValues =
-              inventoryAnalyticsEodLivePositionTrendValues(
+              inventoryAnalyticsTimestampPositionTrendValues(
                 inventoryAnalyticsNearExpiryDailyPositionMap,
               );
 
@@ -2844,7 +2844,7 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                           </div>
                         </div>
 
-                        <div className="inventory-analytics-operational-chart" role="img" aria-label={`${chart.label} daily position bar chart`}>
+                        <div className="inventory-analytics-operational-chart" role="img" aria-label={`${chart.label} timestamp position bar chart`}>
                           {chartEntries.length > 0 ? chartEntries.map((entry, index) => (
                             <div key={`${chart.key}-${entry.dateKey || index}`} className="inventory-analytics-operational-chart__bar">
                               <em>{new Intl.NumberFormat(undefined, {
