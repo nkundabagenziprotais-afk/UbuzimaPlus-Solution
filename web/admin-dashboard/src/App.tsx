@@ -1771,9 +1771,22 @@ function profileRoleTokens(profile: AccessProfile | undefined): string[] {
     .filter(Boolean);
 }
 
+function profileHasActiveAdminScope(profile: AccessProfile | undefined): boolean {
+  return (profile?.admin_scopes ?? []).some((scope) => {
+    const status = normalizePermissionKey(scope.status);
+    const scopeType = normalizePermissionKey(scope.scope_type);
+
+    return (
+      (!status || ['active', 'approved', 'enabled'].includes(status)) &&
+      ['platform', 'solution', 'tenant', 'branch'].includes(scopeType)
+    );
+  });
+}
+
 function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
   if (!profile) return false;
   if (profile!.scope.is_platform) return true;
+  if (profileHasActiveAdminScope(profile)) return true;
 
   const adminRoles = new Set([
     'admin',
@@ -1785,12 +1798,28 @@ function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
     'tenant_admin',
   ]);
 
-  return profileRoleTokens(profile).some((role) =>
+  const hasAdminRole = profileRoleTokens(profile).some((role) =>
     adminRoles.has(role)
     || Array.from(adminRoles).some((adminRole) =>
       role.endsWith(`_${adminRole}`)
       || role.includes(`_${adminRole}_`)
     )
+  );
+
+  if (hasAdminRole) {
+    return true;
+  }
+
+  const adminPermissionTokens = new Set([
+    'platform.admin',
+    'solution.admin',
+    'tenant.admin',
+    'roles.manage',
+    'tenant.roles.manage',
+  ]);
+
+  return Array.from(profilePermissionSet(profile)).some((permission) =>
+    adminPermissionTokens.has(permission),
   );
 }
 
