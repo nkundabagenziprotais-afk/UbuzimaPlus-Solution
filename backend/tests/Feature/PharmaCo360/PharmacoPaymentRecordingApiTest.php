@@ -120,6 +120,58 @@ class PharmacoPaymentRecordingApiTest extends TestCase
             ->assertExitCode(0);
     }
 
+    public function test_pos_shadow_backfill_posts_missing_completed_payment_when_executed(): void
+    {
+        $this->seed();
+
+        $sale = $this->confirmSeededSale();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson("/api/v1/pharmaco/sales/{$sale->id}/payments", [
+                'amount' => $sale->total_amount,
+                'payment_method' => 'cash',
+                'reference_number' => 'SHADOW-BACKFILL-001',
+                'generate_receipt' => true,
+            ])
+            ->assertCreated();
+
+        $payment = $sale->fresh('payments')->payments()->latest('id')->firstOrFail();
+
+        \App\Models\FinanceJournalEntry::query()
+            ->where('source_module', 'pos')
+            ->where('source_type', 'payment')
+            ->where('source_id', (string) $payment->id)
+            ->delete();
+
+        $this->artisan('finance:pos-shadow-backfill', [
+            '--tenant_id' => $sale->tenant_id,
+            '--payment_id' => [$payment->id],
+        ])
+            ->expectsOutput('Mode: dry-run')
+            ->expectsOutput('Missing payments found: 1')
+            ->expectsOutput('Posted: 0')
+            ->assertExitCode(0);
+
+        $this->artisan('finance:pos-shadow-backfill', [
+            '--tenant_id' => $sale->tenant_id,
+            '--payment_id' => [$payment->id],
+            '--execute' => true,
+        ])
+            ->expectsOutput('Mode: execute')
+            ->expectsOutput('Missing payments found: 1')
+            ->expectsOutput('Posted: 1')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('finance_journal_entries', [
+            'source_module' => 'pos',
+            'source_type' => 'payment',
+            'source_id' => (string) $payment->id,
+            'status' => 'shadow_posted',
+        ]);
+    }
+
     public function test_partial_payment_updates_sale_balance_and_status(): void
     {
         $this->seed();
