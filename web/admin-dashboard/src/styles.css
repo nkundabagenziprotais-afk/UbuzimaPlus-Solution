@@ -48613,3 +48613,12 @@ html.ubuzima-standalone-webapp .admin-header {
   display: grid !important;
   min-height: 205px !important;
 }
+
+/* INVENTORY_ANALYTICS_BIND_TRENDS_TO_RETURNED_ROWS_V7 */
+.inventory-analytics-operational-chart__bar i {
+  min-height: 6px !important;
+}
+
+.inventory-analytics-operational-chart__bar em {
+  font-size: 0.62rem !important;
+}

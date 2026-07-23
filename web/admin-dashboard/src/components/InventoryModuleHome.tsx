@@ -1,4 +1,4 @@
-/* INVENTORY_ANALYTICS_TIMESTAMP_POSITION_TRENDS_V6 */
+/* INVENTORY_ANALYTICS_BIND_TRENDS_TO_RETURNED_ROWS_V7 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -1012,7 +1012,6 @@ export function InventoryModuleHome({
         end_date: analyticsAppliedDateToFilter,
         date_from: analyticsAppliedDateFromFilter,
         date_to: analyticsAppliedDateToFilter,
-        date_basis: 'business_date',
       }).toString();
 
       try {
@@ -1182,9 +1181,6 @@ export function InventoryModuleHome({
         end_date: analyticsAppliedDateToFilter,
         date_from: analyticsAppliedDateFromFilter,
         date_to: analyticsAppliedDateToFilter,
-        business_date_from: analyticsAppliedDateFromFilter,
-        business_date_to: analyticsAppliedDateToFilter,
-        date_basis: 'business_date',
       }).toString();
 
       const endpoints = [
@@ -2446,22 +2442,28 @@ export function InventoryModuleHome({
               return map;
             };
 
+            const inventoryAnalyticsTotalInventoryDailyPositionRows =
+              inventoryAnalyticsDailyPositionRowsFrom([
+                'inventory_value_daily_position_trend',
+                'total_inventory_daily_position_trend',
+                'inventory_value_trend',
+              ]);
+
             const inventoryAnalyticsTotalInventoryDailyPositionMap =
               inventoryAnalyticsDailyTrendMap(
-                inventoryAnalyticsDailyPositionRowsFrom([
-                  'inventory_value_daily_position_trend',
-                  'total_inventory_daily_position_trend',
-                  'inventory_value_trend',
-                ]),
+                inventoryAnalyticsTotalInventoryDailyPositionRows,
               );
+
+            const inventoryAnalyticsNearExpiryDailyPositionRows =
+              inventoryAnalyticsDailyPositionRowsFrom([
+                'near_expiry_value_daily_position_trend',
+                'near_expiry_value_trend',
+                'expiry_value_trend',
+              ]);
 
             const inventoryAnalyticsNearExpiryDailyPositionMap =
               inventoryAnalyticsDailyTrendMap(
-                inventoryAnalyticsDailyPositionRowsFrom([
-                  'near_expiry_value_daily_position_trend',
-                  'near_expiry_value_trend',
-                  'expiry_value_trend',
-                ]),
+                inventoryAnalyticsNearExpiryDailyPositionRows,
               );
 
 const inventoryAnalyticsCardSourceTrendDateKeys =
@@ -2488,7 +2490,36 @@ const inventoryAnalyticsCardSourceTrendDateKeys =
                 maximumFractionDigits: 0,
               }).format(value)}`;
 
-                        const inventoryAnalyticsTimestampPositionTrendValues = (
+                                    const inventoryAnalyticsReturnedTrendEntries = (
+              rows: Record<string, unknown>[],
+            ) =>
+              rows
+                .map((row) => {
+                  const dateKey = String(
+                    row.inventory_date ??
+                    row.inventoryDate ??
+                    row.date ??
+                    row.created_at ??
+                    row.createdAt ??
+                    '',
+                  ).slice(0, 10);
+
+                  const value = inventoryAnalyticsDailyTrendNumber(
+                    row.value ??
+                    row.amount ??
+                    row.stock_value ??
+                    row.inventory_value ??
+                    row.near_expiry_value,
+                  );
+
+                  return {
+                    dateKey,
+                    value,
+                  };
+                })
+                .filter((entry) => entry.dateKey && Number.isFinite(entry.value));
+
+const inventoryAnalyticsTimestampPositionTrendValues = (
               map: Map<string, number>,
             ): number[] =>
               inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey) => {
@@ -2783,6 +2814,7 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                       label: 'Total Inventory Trend',
                       shortLabel: 'Total Inventory Trend',
                       values: inventoryAnalyticsCardStockValueTrendValues,
+                      rows: inventoryAnalyticsTotalInventoryDailyPositionRows,
                       startLabel: 'Inventory Value (Start)',
                       endLabel: 'Inventory Value (End)',
                       countLabel: 'Stock Batches',
@@ -2797,6 +2829,7 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                       label: 'Near Expiry Value Trend',
                       shortLabel: 'Near Expiry Value Trend',
                       values: inventoryAnalyticsCardNearExpiryTrendValues,
+                      rows: inventoryAnalyticsNearExpiryDailyPositionRows,
                       startLabel: 'Near Expiry Value (Start)',
                       endLabel: 'Near Expiry Value (End)',
                       countLabel: 'Near Expiry Count',
@@ -2806,8 +2839,10 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                       tone: 'amber',
                     },
                   ].map((chart) => {
-                    const chartEntries = chart.values
-                      .map((value, index) => ({
+                    const returnedEntries = inventoryAnalyticsReturnedTrendEntries(chart.rows ?? []);
+                    const chartEntries = returnedEntries.length > 0
+                      ? returnedEntries
+                      : chart.values.map((value, index) => ({
                         value: Number.isFinite(value) ? value : 0,
                         dateKey: inventoryAnalyticsCardSourceTrendDateKeys[index] ?? '',
                       }));
@@ -2844,7 +2879,7 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                           </div>
                         </div>
 
-                        <div className="inventory-analytics-operational-chart" role="img" aria-label={`${chart.label} timestamp position bar chart`}>
+                        <div className="inventory-analytics-operational-chart" role="img" aria-label={`${chart.label} inventory timestamp position bar chart`}>
                           {chartEntries.length > 0 ? chartEntries.map((entry, index) => (
                             <div key={`${chart.key}-${entry.dateKey || index}`} className="inventory-analytics-operational-chart__bar">
                               <em>{new Intl.NumberFormat(undefined, {
@@ -2860,7 +2895,7 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                             </div>
                           )) : (
                             <div className="inventory-analytics-operational-empty">
-                              No daily position data returned for this selected range.
+                              
                             </div>
                           )}
                         </div>
