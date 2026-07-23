@@ -48239,3 +48239,15 @@ html.ubuzima-standalone-webapp .admin-header {
   text-align: center;
   white-space: nowrap;
 }
+
+/* INVENTORY_ANALYTICS_DAILY_POSITION_TRENDS_V1 */
+.inventory-analytics-bo-bar-chart__bar em {
+  display: block;
+  margin-bottom: 0.22rem;
+  color: #0f172a;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+}
