@@ -1,4 +1,4 @@
-/* INVENTORY_ANALYTICS_BIND_TRENDS_TO_RETURNED_ROWS_V7 */
+/* INVENTORY_ANALYTICS_FORCE_LIVE_TIMESTAMP_PAYLOAD_V8 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -1022,6 +1022,7 @@ export function InventoryModuleHome({
             'X-Tenant': tenantSlug,
             'X-Tenant-Slug': tenantSlug,
           },
+          cache: 'no-store',
         });
 
         if (!response.ok) {
@@ -1067,7 +1068,7 @@ export function InventoryModuleHome({
       }).toString();
 
       try {
-        const response = await fetch(`/api/v1/pharmaco/inventory/analytics-summary?${query}`, {
+        const response = await fetch(`/api/v1/pharmaco/inventory/analytics-summary?${query}&_=${Date.now()}`, {
           headers: {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,
@@ -1085,7 +1086,7 @@ export function InventoryModuleHome({
         if (isActive && inventoryAnalyticsPayloadHasValue(data)) {
           setAnalyticsKpiSummary(data);
           setAnalyticsKpiSummaryLastGood(data);
-          writeInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood', data);
+          // INVENTORY_ANALYTICS_FORCE_LIVE_TIMESTAMP_PAYLOAD_V8: do not cache trend payload for this chart.
         }
       } catch {
         const cachedSummary = readInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood');
@@ -2840,12 +2841,7 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                     },
                   ].map((chart) => {
                     const returnedEntries = inventoryAnalyticsReturnedTrendEntries(chart.rows ?? []);
-                    const chartEntries = returnedEntries.length > 0
-                      ? returnedEntries
-                      : chart.values.map((value, index) => ({
-                        value: Number.isFinite(value) ? value : 0,
-                        dateKey: inventoryAnalyticsCardSourceTrendDateKeys[index] ?? '',
-                      }));
+                    const chartEntries = returnedEntries;
 
                     const chartMax = Math.max(...chartEntries.map((entry) => entry.value), 1);
                     const firstValue = chartEntries[0]?.value ?? 0;
@@ -2880,11 +2876,11 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                         </div>
 
                         <div className="inventory-analytics-operational-chart" role="img" aria-label={`${chart.label} inventory timestamp position bar chart`}>
-                          {chartEntries.length > 0 ? chartEntries.map((entry, index) => (
+                          {chartEntries.map((entry, index) => (
                             <div key={`${chart.key}-${entry.dateKey || index}`} className="inventory-analytics-operational-chart__bar">
                               <em>{new Intl.NumberFormat(undefined, {
-                                notation: entry.value >= 1000000 ? 'compact' : 'standard',
-                                maximumFractionDigits: entry.value >= 1000000 ? 2 : 0,
+                                notation: 'standard',
+                                maximumFractionDigits: 0,
                               }).format(entry.value)}</em>
                               <i
                                 style={{
@@ -2893,11 +2889,7 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                               />
                               <span>{entry.dateKey.slice(8)}</span>
                             </div>
-                          )) : (
-                            <div className="inventory-analytics-operational-empty">
-                              
-                            </div>
-                          )}
+                          ))}
                         </div>
 
                         <div className="inventory-analytics-operational-axis">

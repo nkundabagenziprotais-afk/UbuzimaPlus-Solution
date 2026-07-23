@@ -48622,3 +48622,36 @@ html.ubuzima-standalone-webapp .admin-header {
 .inventory-analytics-operational-chart__bar em {
   font-size: 0.62rem !important;
 }
+
+/* INVENTORY_ANALYTICS_FORCE_LIVE_TIMESTAMP_PAYLOAD_V8 */
+.inventory-analytics-live-trend-empty {
+  grid-column: 1 / -1;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: 16px;
+  padding: 1.25rem;
+  color: #92400e;
+  background: #fffbeb;
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+.inventory-analytics-operational-chart__bar em {
+  transform: rotate(-24deg);
+  transform-origin: center;
+  font-size: 0.58rem !important;
+}
+
+/* INVENTORY_ANALYTICS_FORCE_LIVE_TIMESTAMP_PAYLOAD_V8_RECOVERY */
+.inventory-analytics-operational-chart__bar em {
+  transform: rotate(-24deg);
+  transform-origin: center;
+  font-size: 0.58rem !important;
+}
+
+/* INVENTORY_ANALYTICS_FORCE_LIVE_TIMESTAMP_PAYLOAD_V8_RECOVERY */
+.inventory-analytics-operational-chart__bar em {
+  transform: rotate(-24deg);
+  transform-origin: center;
+  font-size: 0.58rem !important;
+}
