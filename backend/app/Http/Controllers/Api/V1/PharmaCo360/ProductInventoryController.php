@@ -2784,8 +2784,54 @@ class ProductInventoryController extends Controller
          * - Completed date D uses closing position at D + 1 day 00:00:00.
          * - Today uses live position as of now().
          */
-        $firstInventoryRecordDateQuery = StockBatch::query()
-            ->where('tenant_id', $tenant->id);
+                /* INVENTORY_ANALYTICS_TENANT_CONTEXT_FIX_V1 */
+        $inventoryAnalyticsTenantId = null;
+
+        if (isset($tenant) && is_object($tenant) && isset($inventoryAnalyticsTenantId)) {
+            $inventoryAnalyticsTenantId = $inventoryAnalyticsTenantId;
+        }
+
+        if (! $inventoryAnalyticsTenantId && isset($tenantId)) {
+            $inventoryAnalyticsTenantId = $tenantId;
+        }
+
+        if (! $inventoryAnalyticsTenantId && $request->user()) {
+            $inventoryAnalyticsTenantId =
+                $request->user()->tenant_id
+                ?? $request->user()->current_tenant_id
+                ?? null;
+        }
+
+        if (! $inventoryAnalyticsTenantId) {
+            $tenantSlug =
+                $request->header('X-Tenant')
+                ?? $request->header('X-Tenant-Slug')
+                ?? $request->query('tenant')
+                ?? $request->query('tenant_slug');
+
+            if ($tenantSlug) {
+                $inventoryAnalyticsTenantId = \Illuminate\Support\Facades\DB::table('tenants')
+                    ->where('slug', $tenantSlug)
+                    ->orWhere('code', $tenantSlug)
+                    ->orWhere('name', $tenantSlug)
+                    ->value('id');
+            }
+        }
+
+        if (! $inventoryAnalyticsTenantId) {
+            $inventoryAnalyticsTenantId = \Illuminate\Support\Facades\DB::table('tenants')->value('id');
+        }
+
+        if (! $inventoryAnalyticsTenantId) {
+            return response()->json([
+                'message' => 'Inventory Analytics tenant context is unavailable.',
+                'inventory_value_daily_position_trend' => [],
+                'near_expiry_value_daily_position_trend' => [],
+            ], 422);
+        }
+
+$firstInventoryRecordDateQuery = StockBatch::query()
+            ->where('tenant_id', $inventoryAnalyticsTenantId);
 
         if (! empty($validated['branch_id'] ?? null)) {
             $firstInventoryRecordDateQuery->where('branch_id', $validated['branch_id']);
@@ -2912,7 +2958,7 @@ class ProductInventoryController extends Controller
             )";
 
             $dailyBaseQuery = StockBatch::query()
-                ->where('tenant_id', $tenant->id)
+                ->where('tenant_id', $inventoryAnalyticsTenantId)
                 ->where('created_at', '<', $positionCutoff->toDateTimeString());
 
             if (! empty($validated['branch_id'] ?? null)) {
