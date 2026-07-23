@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
+/* USER_BRANCH_ASSIGNMENT_ENDPOINT_V1 */
 class TenantUserManagementController extends Controller
 {
     private function roleTemplates(): array
@@ -706,6 +707,79 @@ class TenantUserManagementController extends Controller
         ]);
     }
 
+
+
+    public function assignBranch(Request $request, User $user): JsonResponse
+    {
+        $tenant = $this->resolveTenant($request);
+
+        $validated = $request->validate([
+            'branch_id' => ['nullable', 'integer'],
+        ]);
+
+        $assignment = TenantUser::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $branchId = $validated['branch_id'] ?? null;
+
+        if ($branchId) {
+            $branchExists = \Illuminate\Support\Facades\DB::table('branches')
+                ->where('id', $branchId)
+                ->where('tenant_id', $tenant->id)
+                ->where(function ($query) {
+                    $query
+                        ->where('status', 'active')
+                        ->orWhereNull('status');
+                })
+                ->exists();
+
+            abort_if(
+                ! $branchExists,
+                422,
+                'Selected branch does not belong to this tenant or is inactive.',
+            );
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($assignment, $user, $tenant, $branchId) {
+            $assignment->forceFill([
+                'branch_id' => $branchId,
+            ])->save();
+
+            try {
+                $tenantRoleIds = $user->roles()
+                    ->wherePivot('tenant_id', $tenant->id)
+                    ->get()
+                    ->pluck('id');
+
+                foreach ($tenantRoleIds as $roleId) {
+                    $user->roles()->updateExistingPivot($roleId, [
+                        'branch_id' => $branchId,
+                    ]);
+                }
+            } catch (\Throwable) {
+                // Role pivot shape can vary; tenant assignment remains the source of truth.
+            }
+        });
+
+        $freshAssignment = $assignment->fresh(['branch']);
+
+        return response()->json([
+            'message' => 'User branch assignment updated successfully.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'branch_id' => $freshAssignment->branch_id,
+                'branch' => $freshAssignment->branch ? [
+                    'id' => $freshAssignment->branch->id,
+                    'name' => $freshAssignment->branch->name,
+                    'code' => $freshAssignment->branch->code ?? null,
+                ] : null,
+            ],
+        ]);
+    }
 
     public function deactivate(Request $request, User $user): JsonResponse
     {

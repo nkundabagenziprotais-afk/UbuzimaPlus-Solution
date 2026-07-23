@@ -90,6 +90,8 @@ Route::middleware('auth:sanctum')->prefix('v1/access-check')->group(function () 
 
     Route::put('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'update'])
         ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
+    Route::post('/security/users/{user}/branch', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'assignBranch'])
+        ->middleware('permission:users.update|tenant.users.update|access.users.manage');
 
     Route::delete('/security/users/{user}', [\App\Http\Controllers\Api\V1\TenantUserManagementController::class, 'deactivate'])
         ->middleware('App\Http\Middleware\EnsureAnyPermission:roles.manage,tenant.roles.manage');
