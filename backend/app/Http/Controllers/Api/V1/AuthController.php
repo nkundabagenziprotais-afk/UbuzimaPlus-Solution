@@ -389,10 +389,11 @@ class AuthController extends Controller
     /* ADMIN_PROFILE_AUTHORITY_RECOVERY_V1 */
     private function ubuzimaAdminAuthorityPermissionSlugs(): array
     {
-        return [
+        $fallback = [
+            '*',
             'admin',
-            'owner',
             'super-admin',
+            'owner',
             'access.users.manage',
             'users.view',
             'users.create',
@@ -419,6 +420,27 @@ class AuthController extends Controller
             'reports.view',
             'reports.manage',
         ];
+
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('permissions')) {
+                $permissionRows = \Illuminate\Support\Facades\DB::table('permissions')->get();
+                $dbPermissions = [];
+
+                foreach ($permissionRows as $permission) {
+                    foreach (['name', 'slug', 'key', 'permission'] as $field) {
+                        if (! empty($permission->{$field}) && is_string($permission->{$field})) {
+                            $dbPermissions[] = $permission->{$field};
+                        }
+                    }
+                }
+
+                return array_values(array_unique(array_filter(array_merge($fallback, $dbPermissions))));
+            }
+        } catch (\Throwable $exception) {
+            return $fallback;
+        }
+
+        return $fallback;
     }
 
     private function ubuzimaUserHasAdminAuthority($user): bool
@@ -518,13 +540,15 @@ class AuthController extends Controller
         $profile['authorities'] = $merged;
 
         $profile['is_admin'] = true;
+        $profile['is_super_admin'] = true;
         $profile['is_owner'] = true;
         $profile['can_manage_users'] = true;
         $profile['can_manage_roles'] = true;
+        $profile['can_manage_permissions'] = true;
         $profile['can_assign_branches'] = true;
         $profile['can_manage_branches'] = true;
-        $profile['role'] = $profile['role'] ?? 'owner';
-        $profile['access_level'] = $profile['access_level'] ?? 'owner';
+        $profile['role'] = 'admin';
+        $profile['access_level'] = 'admin';
 
         return $profile;
     }
