@@ -38,6 +38,50 @@ if ! command -v rsync >/dev/null 2>&1; then
   exit 1
 fi
 
+verify_live_asset() {
+  local asset_url="$1"
+  local asset_path="$2"
+  local headers_file
+  local body_file
+  local content_type
+
+  headers_file="$(mktemp)"
+  body_file="$(mktemp)"
+
+  if ! curl -fsSL -D "$headers_file" -o "$body_file" "$asset_url"; then
+    rm -f "$headers_file" "$body_file"
+    echo "Live asset is not reachable: $asset_url"
+    exit 1
+  fi
+
+  content_type="$(grep -i '^content-type:' "$headers_file" | head -n 1 | tr -d '\r' || true)"
+
+  if head -c 128 "$body_file" | grep -Eiq '<!doctype|<html'; then
+    rm -f "$headers_file" "$body_file"
+    echo "Live asset returned HTML instead of a static file: $asset_url"
+    exit 1
+  fi
+
+  case "$asset_path" in
+    *.js)
+      echo "$content_type" | grep -Eiq 'javascript|ecmascript|text/plain' || {
+        rm -f "$headers_file" "$body_file"
+        echo "Live JS asset has unexpected content type: $asset_url ($content_type)"
+        exit 1
+      }
+      ;;
+    *.css)
+      echo "$content_type" | grep -Eiq 'text/css|text/plain' || {
+        rm -f "$headers_file" "$body_file"
+        echo "Live CSS asset has unexpected content type: $asset_url ($content_type)"
+        exit 1
+      }
+      ;;
+  esac
+
+  rm -f "$headers_file" "$body_file"
+}
+
 cd "$ROOT_DIR"
 "$AUDIT_SCRIPT"
 
@@ -75,6 +119,18 @@ rsync -a --delete \
 mkdir -p "$ADMIN_WEB_ROOT/assets"
 rsync -a "$ADMIN_DIR/dist/assets"/ "$ADMIN_WEB_ROOT/assets"/
 
+while IFS= read -r asset_path; do
+  deployed_asset="$ADMIN_WEB_ROOT/${asset_path#/admin/}"
+  source_asset="$ADMIN_DIR/dist/${asset_path#/admin/}"
+
+  test -f "$source_asset"
+  test -f "$deployed_asset"
+  cmp -s "$source_asset" "$deployed_asset" || {
+    echo "Deployed asset does not match build output: $asset_path"
+    exit 1
+  }
+done < <(grep -Eo '/admin/assets/[^"]+' "$ADMIN_DIR/dist/index.html" | sort -u)
+
 cat > "$ADMIN_WEB_ROOT/UBUZIMA_ADMIN_RELEASE.txt" <<MARKER
 Ubuzima+ Admin Mobile PWA release
 Commit: $current_commit
@@ -102,7 +158,7 @@ if [ -n "$PUBLIC_ADMIN_URL" ] && command -v curl >/dev/null 2>&1; then
     fi
 
     echo "$live_index" | grep -Fq "$asset_path"
-    curl -fsSI "$asset_origin$asset_path" >/dev/null
+    verify_live_asset "$asset_origin$asset_path?release=$release_short" "$asset_path"
   done < <(grep -Eo '/admin/assets/[^"]+' "$ADMIN_DIR/dist/index.html" | sort -u)
 
   expected_cache_line="$(grep -F 'const CACHE_NAME' "$ADMIN_DIR/dist/sw.js" | head -n 1)"

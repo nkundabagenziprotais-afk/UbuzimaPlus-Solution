@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ubuzima-admin-shell-v19';
+const CACHE_NAME = 'ubuzima-admin-shell-v20';
 const SHELL_ASSETS = [
   '/admin/',
   '/admin/index.html',
@@ -17,10 +17,47 @@ function isCacheableAssetResponse(response) {
   return response.ok && !isHtmlResponse(response);
 }
 
+function extractAdminAssetPaths(html) {
+  const matches = html.match(/\/admin\/assets\/[^"'<>\\s]+/g) || [];
+  return Array.from(new Set(matches));
+}
+
+async function cacheResponse(cache, request, response) {
+  if (isCacheableAssetResponse(response)) {
+    await cache.put(request, response.clone());
+  }
+}
+
+async function cacheDiscoveredShellAssets(cache, html) {
+  const assetPaths = extractAdminAssetPaths(html);
+
+  await Promise.allSettled(
+    assetPaths.map(async (assetPath) => {
+      const response = await fetch(assetPath, { cache: 'reload' });
+      await cacheResponse(cache, assetPath, response);
+    })
+  );
+}
+
+async function refreshShellCache() {
+  const cache = await caches.open(CACHE_NAME);
+  const response = await fetch('/admin/index.html', { cache: 'reload' });
+
+  if (response.ok && isHtmlResponse(response)) {
+    const html = await response.clone().text();
+    await cache.put('/admin/index.html', response.clone());
+    await cache.put('/admin/', response.clone());
+    await cacheDiscoveredShellAssets(cache, html);
+  }
+
+  return response;
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(SHELL_ASSETS))
+      .then(() => refreshShellCache())
       .then(() => self.skipWaiting())
       .catch(() => self.skipWaiting())
   );
@@ -48,19 +85,15 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
+      caches.match('/admin/index.html').then((cachedShell) => {
+        const refresh = refreshShellCache().catch(() => undefined);
 
-          if (response.ok && isHtmlResponse(response)) {
-            caches.open(CACHE_NAME)
-              .then((cache) => cache.put('/admin/index.html', copy))
-              .catch(() => {});
-          }
+        if (cachedShell) {
+          return cachedShell;
+        }
 
-          return response;
-        })
-        .catch(() => caches.match('/admin/index.html').then((cached) => cached || caches.match('/admin/')))
+        return refresh.then((response) => response || caches.match('/admin/'));
+      })
     );
     return;
   }
