@@ -84,7 +84,6 @@ import {
 } from './components/GeneralItemsManagementWorkspace';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { ReportingDashboard } from './components/ReportingDashboard';
-import { FinanceSourceOfTruthOverview } from './components/FinanceSourceOfTruthOverview';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
 import { LoginSuccessOverlay } from './components/LoginSuccessOverlay';
@@ -8433,9 +8432,10 @@ async function confirmTransaction() {
         )}
         <div className="module-section-stage">
           {activeFinanceWorkspace === 'overview' && (
-            <FinanceSourceOfTruthOverview
-              token={session!.token}
-              profile={profile!}
+            <FocusRegisterPreview
+              title="Finance Overview"
+              description="Cash, MoMo, card, credit, receivables, payables, and exception status."
+              rows={financeRows}
             />
           )}
 

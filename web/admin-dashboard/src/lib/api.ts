@@ -3025,73 +3025,6 @@ export type PharmaReportDateFilters = {
   end_date?: string;
 };
 
-export type PharmaFinancePosShadowReconciliationFilters = {
-  from?: string;
-  to?: string;
-  branch_id?: number | string;
-  payment_method?: string;
-};
-
-export type PharmaFinancePaymentMethodBreakdown = {
-  payment_method: string;
-  pos_total: number;
-  finance_shadow_total: number;
-  difference: number;
-};
-
-export type PharmaFinancePosShadowReconciliationReport = {
-  filters: {
-    tenant_id: number;
-    from: string | null;
-    to: string | null;
-    branch_id: number | null;
-    payment_method: string | null;
-  };
-  summary: {
-    pos_completed_payments_total: number;
-    finance_shadow_payment_total: number;
-    difference: number;
-    missing_finance_postings_count: number;
-    orphan_finance_shadow_postings_count: number;
-    is_reconciled: boolean;
-  };
-  payment_methods: PharmaFinancePaymentMethodBreakdown[];
-  details: {
-    missing_payment_ids: Array<number | string>;
-    orphan_finance_source_ids: Array<number | string>;
-  };
-};
-
-export type PharmaFinancePosShadowReconciliationReportResponse = {
-  data: PharmaFinancePosShadowReconciliationReport;
-};
-
-function financePosShadowReconciliationQuery(
-  filters?: PharmaFinancePosShadowReconciliationFilters,
-): string {
-  const params = new URLSearchParams();
-
-  if (filters?.from) {
-    params.set('from', filters.from);
-  }
-
-  if (filters?.to) {
-    params.set('to', filters.to);
-  }
-
-  if (filters?.branch_id) {
-    params.set('branch_id', String(filters.branch_id));
-  }
-
-  if (filters?.payment_method) {
-    params.set('payment_method', filters.payment_method);
-  }
-
-  const query = params.toString();
-
-  return query ? `?${query}` : '';
-}
-
 function reportDateQuery(filters?: PharmaReportDateFilters): string {
   const params = new URLSearchParams();
 
@@ -3139,18 +3072,6 @@ export async function getPharmaSalesSummaryReport(
   return getJsonWithTenant<PharmaSalesSummaryReportResponse>(
     token,
     `/pharmaco/reports/sales-summary${reportDateQuery(filters)}`,
-    tenantSlug,
-  );
-}
-
-export async function getPharmaFinancePosShadowReconciliationReport(
-  token: string,
-  tenantSlug: string,
-  filters?: PharmaFinancePosShadowReconciliationFilters,
-): Promise<PharmaFinancePosShadowReconciliationReportResponse> {
-  return getJsonWithTenant<PharmaFinancePosShadowReconciliationReportResponse>(
-    token,
-    `/pharmaco/finance/reports/pos-shadow-reconciliation${financePosShadowReconciliationQuery(filters)}`,
     tenantSlug,
   );
 }
