@@ -82,6 +82,46 @@ verify_live_asset() {
   rm -f "$headers_file" "$body_file"
 }
 
+verify_live_api_health() {
+  local api_url="$1"
+  local headers_file
+  local body_file
+  local content_type
+
+  headers_file="$(mktemp)"
+  body_file="$(mktemp)"
+
+  if ! curl -fsSL -D "$headers_file" -o "$body_file" "$api_url"; then
+    rm -f "$headers_file" "$body_file"
+    echo "Live API health check failed: $api_url"
+    echo "This causes browser 'Failed to fetch'. Check that /api routes reach the Laravel backend."
+    exit 1
+  fi
+
+  content_type="$(grep -i '^content-type:' "$headers_file" | head -n 1 | tr -d '\r' || true)"
+
+  if head -c 128 "$body_file" | grep -Eiq '<!doctype|<html'; then
+    rm -f "$headers_file" "$body_file"
+    echo "Live API returned HTML instead of JSON: $api_url"
+    echo "This causes browser 'Failed to fetch'. Check the public web-root .htaccess and backend index.php routing."
+    exit 1
+  fi
+
+  echo "$content_type" | grep -Eiq 'application/json|text/json|text/plain' || {
+    rm -f "$headers_file" "$body_file"
+    echo "Live API has unexpected content type: $api_url ($content_type)"
+    exit 1
+  }
+
+  grep -Fq '"service":"backend-api"' "$body_file" || grep -Fq '"service": "backend-api"' "$body_file" || {
+    rm -f "$headers_file" "$body_file"
+    echo "Live API health response did not identify backend-api: $api_url"
+    exit 1
+  }
+
+  rm -f "$headers_file" "$body_file"
+}
+
 cd "$ROOT_DIR"
 "$AUDIT_SCRIPT"
 
@@ -151,6 +191,8 @@ if [ -n "$PUBLIC_ADMIN_URL" ] && command -v curl >/dev/null 2>&1; then
   fi
 
   echo "== Live URL verification =="
+  verify_live_api_health "$asset_origin/api/v1/health?release=$release_short"
+
   live_index="$(curl -fsSL "$base_url/?release=$release_short")"
   while IFS= read -r asset_path; do
     if [ -z "$asset_path" ]; then
