@@ -2,8 +2,8 @@
   RewriteEngine On
 
   # Route Laravel API and Sanctum requests to Laravel front controller shims.
-  RewriteRule ^api(?:/.*)?$ /api/index.php [L,QSA]
-  RewriteRule ^sanctum(?:/.*)?$ /sanctum/index.php [L,QSA]
+  RewriteRule ^api(/.*)?$ /api/index.php [L,QSA]
+  RewriteRule ^sanctum(/.*)?$ /sanctum/index.php [L,QSA]
 </IfModule>
 
 <IfModule mod_headers.c>

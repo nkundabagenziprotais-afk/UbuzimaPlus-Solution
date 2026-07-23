@@ -115,12 +115,22 @@ cat > "$PUBLIC/api/index.php" <<'PHP'
 <?php
 declare(strict_types=1);
 
+// Preserve the original /api/... request path for Laravel route matching.
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+$_SERVER['PHP_SELF'] = '/index.php';
+$_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/../../backend/public/index.php';
+
 require __DIR__ . '/../../backend/public/index.php';
 PHP
 
 cat > "$PUBLIC/sanctum/index.php" <<'PHP'
 <?php
 declare(strict_types=1);
+
+// Preserve the original /sanctum/... request path for Laravel route matching.
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+$_SERVER['PHP_SELF'] = '/index.php';
+$_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/../../backend/public/index.php';
 
 require __DIR__ . '/../../backend/public/index.php';
 PHP
@@ -130,8 +140,6 @@ DirectoryIndex index.php
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ index.php [L,QSA]
 </IfModule>
 HT
@@ -141,16 +149,10 @@ DirectoryIndex index.php
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ index.php [L,QSA]
 </IfModule>
 HT
 
-echo "=== CLEAR BACKEND CACHE ==="
-php backend/artisan route:clear >/dev/null 2>&1 || true
-php backend/artisan config:clear >/dev/null 2>&1 || true
-php backend/artisan cache:clear >/dev/null 2>&1 || true
 
 echo
 echo "=== LIVE VERIFY ==="
