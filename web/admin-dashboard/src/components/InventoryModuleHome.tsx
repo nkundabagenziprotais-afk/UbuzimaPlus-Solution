@@ -1,3 +1,4 @@
+/* INVENTORY_ANALYTICS_VISIBLE_AS_AT_VALUES_V1 */
 /* INVENTORY_ANALYTICS_VISIBLE_TREND_CARD_KPI_SOURCE_V1 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
@@ -2540,7 +2541,7 @@ export function InventoryModuleHome({
             );
 
             // REAL_STOCK_VALUE_TREND_FROM_BATCHES_V1
-            // Build Stock Value Trend from real loaded stock batches.
+            // Build Stock Value As At Selected Date from real loaded stock batches.
             // If movement rows exist, reconstruct value backwards from the current stock snapshot.
             // If movement rows do not exist, show the real current snapshot only on the selected end date.
             const realCurrentStockValueForTrend = analyticsMetricBatchRows.reduce(
@@ -2585,9 +2586,19 @@ export function InventoryModuleHome({
             const nearExpiryTrendValues = selectedTrendDateKeys.map((dateKey) =>
               fullNearExpiryTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
             );
-            const trendMax = Math.max(...inventoryAnalyticsCardStockValueTrendValues, 1);
-            const trendStartValue = inventoryAnalyticsCardStockValueTrendValues.find((value) => value > 0) ?? 0;
-            const trendEndValue = inventoryAnalyticsCardStockValueTrendValues[inventoryAnalyticsCardStockValueTrendValues.length - 1] ?? 0;
+            
+            // INVENTORY_ANALYTICS_VISIBLE_AS_AT_VALUES_V1
+            // These two visible Inventory Analytics charts are as-at KPI values,
+            // not independent historical trend calculations.
+            const inventoryAnalyticsVisibleStockValueValues =
+              inventoryAnalyticsCardStockValueTrendValues;
+
+            const inventoryAnalyticsVisibleNearExpiryValueValues =
+              inventoryAnalyticsCardNearExpiryTrendValues;
+
+const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
+            const trendStartValue = inventoryAnalyticsVisibleStockValueValues.find((value) => value > 0) ?? 0;
+            const trendEndValue = inventoryAnalyticsVisibleStockValueValues[inventoryAnalyticsVisibleStockValueValues.length - 1] ?? 0;
             const trendPercentChange = trendStartValue > 0
               ? ((trendEndValue - trendStartValue) / trendStartValue) * 100
               : 0;
@@ -2672,7 +2683,7 @@ export function InventoryModuleHome({
                 <div className="inventory-analytics-request-grid">
                   <article className="inventory-analytics-request-card">
                     <header>
-                      <h3>Stock Value Trend</h3>
+                      <h3>Stock Value As At Selected Date</h3><small className="muted">Inventory Analytics source: KPI as-at v1</small>
                       <select
                         className="inventory-analytics-trend-header-select"
                         value={analyticsTrendWeekSelection}
@@ -2692,7 +2703,7 @@ export function InventoryModuleHome({
                     </header>
 
                     <div className="inventory-analytics-request-bars">
-                      {inventoryAnalyticsCardStockValueTrendValues.map((value, index) => (
+                      {inventoryAnalyticsVisibleStockValueValues.map((value, index) => (
                         <div key={`stock-trend-${index}`}>
                           <i style={{ height: `${Math.max((value / trendMax) * 100, value > 0 ? 12 : 4)}%` }} />
                           <small>{selectedTrendDateKeys[index] ?? String(index + 1)}</small>
@@ -2702,8 +2713,8 @@ export function InventoryModuleHome({
 
                     <div className="inventory-analytics-stacked-bar-trends">
                       {[
-                        { label: 'Total Inventory Trend', values: inventoryAnalyticsCardStockValueTrendValues },
-                        { label: 'Near Expiry Trend', values: inventoryAnalyticsCardNearExpiryTrendValues },
+                        { label: 'Stock Value As At Selected Date', values: inventoryAnalyticsCardStockValueTrendValues },
+                        { label: 'Near Expiry Value As At Selected Date', values: inventoryAnalyticsCardNearExpiryTrendValues },
                       ].map((chart) => {
                         const maxChartValue = Math.max(...chart.values, 1);
 

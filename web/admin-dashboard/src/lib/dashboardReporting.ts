@@ -25,7 +25,7 @@ type DashboardEndpointSpec = {
   patterns: RegExp[];
 };
 
-const CACHE_PREFIX = 'ubuzima:last-good-dashboard:v4';
+const CACHE_PREFIX = 'ubuzima:last-good-dashboard:v5';
 
 const DEFAULT_ENDPOINTS: DashboardEndpointSpec[] = [
   {
