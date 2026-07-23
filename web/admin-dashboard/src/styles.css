@@ -54396,3 +54396,73 @@ html.ubuzima-standalone-webapp .admin-header {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Mobile POS product picker viewport fill: use the lower phone screen instead of reserving blank space */
+@media (max-width: 860px) {
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-workflow-open
+    > .dashboard-main:has(.pos-mobile-step--products) {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding:
+      calc(52px + env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      0
+      max(8px, env(safe-area-inset-left)) !important;
+    overflow: hidden !important;
+    background: #edf3f1 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .dashboard-scroll-panel:has(.pos-mobile-step--products),
+  .dashboard-shell--native-workflow-open .section-page:has(.pos-mobile-step--products),
+  .dashboard-shell--native-workflow-open .pos-dedicated-counter-shell:has(.pos-mobile-step--products),
+  .dashboard-shell--native-workflow-open .pos-counter-page.pos-mobile-step--products {
+    height: calc(100dvh - 52px - env(safe-area-inset-top)) !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 52px - env(safe-area-inset-top)) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-terminal-main-scroll,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-scroll-body-v16,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-counter-workbench,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-four-section-workspace,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-operating-cockpit-v2 {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-mobile-sequence-header {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-stock-section {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-width: 1px 0 0 !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-drug-list,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-drug-list--ten,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-builder-product-panel > .pos-drug-list--ten {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    padding-bottom: max(16px, calc(env(safe-area-inset-bottom) + 10px)) !important;
+  }
+}
