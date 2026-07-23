@@ -849,6 +849,23 @@ function readStoredStaffLanguage(): StaffLoginLanguage {
     : 'English';
 }
 
+function readInitialStaffLoginOpen(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.toLowerCase();
+
+  return (
+    params.get('staff') === '1' ||
+    params.get('login') === 'staff' ||
+    params.get('source') === 'pwa' ||
+    hash.includes('staff-login') ||
+    hash.includes('login=staff')
+  );
+}
+
 
 const commercialFramework = [
   {
@@ -4225,6 +4242,7 @@ function App() {
   const [isPwaInstalling, setIsPwaInstalling] = useState(false);
   const [isIosDevice, setIsIosDevice] = useState(false);
   const [isLoginIosInstallGuideOpen, setIsLoginIosInstallGuideOpen] = useState(false);
+  const [isStaffLoginOpen, setIsStaffLoginOpen] = useState(readInitialStaffLoginOpen);
   const [isStandalonePwa, setIsStandalonePwa] = useState(false);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine,
@@ -5376,6 +5394,33 @@ function App() {
     }, 1800);
   }
 
+  function openStaffLogin() {
+    setIsStaffLoginOpen(true);
+    setError('');
+
+    if (typeof window !== 'undefined') {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('staff', '1');
+      nextUrl.hash = '';
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }
+
+  function openPublicWebsiteHome() {
+    setIsStaffLoginOpen(false);
+    setError('');
+    setTwoFactorFlow(null);
+    setTwoFactorCode('');
+
+    if (typeof window !== 'undefined') {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete('staff');
+      nextUrl.searchParams.delete('login');
+      nextUrl.hash = '';
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }
+
   async function refreshMobilePosLiveData(businessDateOverride?: string | null): Promise<void> {
     if (!session?.token || !posSessionTenantSlug) {
       return;
@@ -5720,6 +5765,123 @@ function App() {
     );
   }
 
+  if (!profile && !isStaffLoginOpen) {
+    return (
+      <main className="ubuzima-public-site-shell" aria-label="Ubuzima+ public website">
+        <header className="ubuzima-public-site-header">
+          <a className="ubuzima-public-brand" href="/admin/" aria-label="Ubuzima+ home">
+            <img src={brandLogoSrc} alt="" />
+            <span>
+              <strong>Ubuzima+</strong>
+              <small>Digital health and pharmacy platform</small>
+            </span>
+          </a>
+
+          <nav className="ubuzima-public-actions" aria-label="Public website actions">
+            <a href={publicWebsiteUrl} target="_blank" rel="noreferrer">
+              Public domain
+            </a>
+            <button type="button" onClick={openStaffLogin}>
+              Staff Login
+            </button>
+          </nav>
+        </header>
+
+        <section className="ubuzima-public-hero">
+          <div className="ubuzima-public-hero-copy">
+            <p className="eyebrow">Ubuzima+ Platform</p>
+            <h1>Connected pharmacy care, sales, stock, and business insight.</h1>
+            <p>
+              Ubuzima+ brings customer-facing access and staff operations together for pharmacy teams, owners,
+              cashiers, procurement, finance, and administration.
+            </p>
+
+            <div className="ubuzima-public-hero-actions">
+              <button type="button" onClick={openStaffLogin}>
+                Staff Login
+              </button>
+              {shouldShowLoginInstallPanel && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={isPwaInstallAvailable ? requestPwaInstall : () => setIsLoginIosInstallGuideOpen(true)}
+                  disabled={isPwaInstalling}
+                >
+                  {isPwaInstalling ? 'Opening install' : 'Install App'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <aside className="ubuzima-public-status-card" aria-label="Platform readiness">
+            <span>{isOnline ? 'Online' : 'Offline shell'}</span>
+            <strong>{loginInstallStatusLabel}</strong>
+            <small>{loginInstallStatusDetail}</small>
+          </aside>
+        </section>
+
+        <section className="ubuzima-public-service-grid" aria-label="Ubuzima+ services">
+          <article>
+            <span>01</span>
+            <strong>Customers</strong>
+            <p>Digital access to pharmacy services, product discovery, and guided support.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <strong>Pharmacy teams</strong>
+            <p>POS, dispensing, inventory, procurement, finance, and reporting in one staff workspace.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <strong>Owners and admins</strong>
+            <p>Business overview, staff permissions, live sales, risk indicators, and governance controls.</p>
+          </article>
+        </section>
+
+        <section className="ubuzima-public-staff-strip" aria-label="Staff access">
+          <div>
+            <strong>Staff workspace</strong>
+            <span>Authorized users can continue to secure app login for POS, sales, inventory, procurement, and finance.</span>
+          </div>
+          <button type="button" onClick={openStaffLogin}>
+            Continue
+          </button>
+        </section>
+
+        {isLoginIosInstallGuideOpen && (
+          <div className="recovery-overlay login-ios-install-overlay" role="presentation">
+            <section
+              className="recovery-overlay-card login-ios-install-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="public-ios-install-title"
+            >
+              <p className="eyebrow">Device app readiness</p>
+              <h2 id="public-ios-install-title">Install Ubuzima+ on iPhone</h2>
+              <div className="login-ios-steps">
+                <article>
+                  <strong>1</strong>
+                  <span>Open this page in Safari.</span>
+                </article>
+                <article>
+                  <strong>2</strong>
+                  <span>Tap Share.</span>
+                </article>
+                <article>
+                  <strong>3</strong>
+                  <span>Select Add to Home Screen and confirm.</span>
+                </article>
+              </div>
+              <button type="button" onClick={() => setIsLoginIosInstallGuideOpen(false)}>
+                Got it
+              </button>
+            </section>
+          </div>
+        )}
+      </main>
+    );
+  }
+
   if (!profile) {
     return (
       <main className="auth-shell auth-shell--identity auth-shell--mobile-app-ready">
@@ -5752,7 +5914,9 @@ function App() {
           <div className="auth-language-row">
             <span>Staff Identity</span>
             <div>
-              <a href={publicWebsiteUrl}>Back to website</a>
+              <button type="button" onClick={openPublicWebsiteHome}>
+                Back to website
+              </button>
               <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
                 {staffLoginLanguage}
               </button>
