@@ -95,6 +95,31 @@ class PharmacoPaymentRecordingApiTest extends TestCase
         $this->assertCount(2, $entry->lines);
     }
 
+    public function test_pos_shadow_reconciliation_command_matches_after_shadow_payment(): void
+    {
+        $this->seed();
+
+        $sale = $this->confirmSeededSale();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson("/api/v1/pharmaco/sales/{$sale->id}/payments", [
+                'amount' => $sale->total_amount,
+                'payment_method' => 'cash',
+                'reference_number' => 'SHADOW-RECON-001',
+                'generate_receipt' => true,
+            ])
+            ->assertCreated();
+
+        $this->artisan('finance:pos-shadow-reconcile', [
+            '--tenant_id' => $sale->tenant_id,
+        ])
+            ->expectsOutput('Finance POS Shadow Reconciliation')
+            ->expectsOutput('POS payments and Finance shadow postings reconcile.')
+            ->assertExitCode(0);
+    }
+
     public function test_partial_payment_updates_sale_balance_and_status(): void
     {
         $this->seed();
