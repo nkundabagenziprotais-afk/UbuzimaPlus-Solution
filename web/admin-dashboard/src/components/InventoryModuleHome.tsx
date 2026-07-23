@@ -1,3 +1,4 @@
+/* INVENTORY_ANALYTICS_VISIBLE_TREND_CARD_KPI_SOURCE_V1 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -2584,9 +2585,9 @@ export function InventoryModuleHome({
             const nearExpiryTrendValues = selectedTrendDateKeys.map((dateKey) =>
               fullNearExpiryTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
             );
-            const trendMax = Math.max(...trendValues, 1);
-            const trendStartValue = trendValues.find((value) => value > 0) ?? 0;
-            const trendEndValue = trendValues[trendValues.length - 1] ?? 0;
+            const trendMax = Math.max(...inventoryAnalyticsCardStockValueTrendValues, 1);
+            const trendStartValue = inventoryAnalyticsCardStockValueTrendValues.find((value) => value > 0) ?? 0;
+            const trendEndValue = inventoryAnalyticsCardStockValueTrendValues[inventoryAnalyticsCardStockValueTrendValues.length - 1] ?? 0;
             const trendPercentChange = trendStartValue > 0
               ? ((trendEndValue - trendStartValue) / trendStartValue) * 100
               : 0;
@@ -2691,7 +2692,7 @@ export function InventoryModuleHome({
                     </header>
 
                     <div className="inventory-analytics-request-bars">
-                      {trendValues.map((value, index) => (
+                      {inventoryAnalyticsCardStockValueTrendValues.map((value, index) => (
                         <div key={`stock-trend-${index}`}>
                           <i style={{ height: `${Math.max((value / trendMax) * 100, value > 0 ? 12 : 4)}%` }} />
                           <small>{selectedTrendDateKeys[index] ?? String(index + 1)}</small>
