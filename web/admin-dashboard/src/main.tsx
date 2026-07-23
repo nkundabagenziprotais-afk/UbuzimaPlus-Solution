@@ -1,3 +1,6 @@
+import { installDashboardLastGoodFetchCache } from './lib/dashboardReporting';
+installDashboardLastGoodFetchCache();
+
 
 function installUbuzimaRealMobileAppHomeV1(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
