@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
+  getPharmaFinancePosRevenueShadowReport,
   getPharmaFinancePosShadowReconciliationReport,
+  type PharmaFinancePosRevenueShadowReport,
   type PharmaFinancePosShadowReconciliationReport,
 } from '../lib/api';
 
@@ -37,29 +39,39 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
   const [from, setFrom] = useState(() => isoDate(30));
   const [to, setTo] = useState(() => isoDate(0));
   const [report, setReport] = useState<PharmaFinancePosShadowReconciliationReport | null>(null);
+  const [revenueReport, setRevenueReport] = useState<PharmaFinancePosRevenueShadowReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const tenantSlug = tenantSlugFromProfile(profile);
   const summary = report?.summary;
+  const revenueSummary = revenueReport?.summary;
 
   async function loadReport() {
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await getPharmaFinancePosShadowReconciliationReport(
-        token,
-        tenantSlug,
-        { from, to },
-      );
+      const [reconciliationResponse, revenueResponse] = await Promise.all([
+        getPharmaFinancePosShadowReconciliationReport(
+          token,
+          tenantSlug,
+          { from, to },
+        ),
+        getPharmaFinancePosRevenueShadowReport(
+          token,
+          tenantSlug,
+          { from, to },
+        ),
+      ]);
 
-      setReport(response.data);
+      setReport(reconciliationResponse.data);
+      setRevenueReport(revenueResponse.data);
     } catch (exception) {
       setError(
         exception instanceof Error
           ? exception.message
-          : 'Unable to load Finance reconciliation report.',
+          : 'Unable to load Finance shadow reports.',
       );
     } finally {
       setIsLoading(false);
@@ -163,8 +175,34 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
 
         <article className="finance-kpi-card">
           <span>Next integration</span>
-          <strong>POS Sales Revenue</strong>
-          <small>Pending Finance revenue posting.</small>
+          <strong>Accrual Sales Revenue</strong>
+          <small>Payment-basis revenue is visible; accrual P&amp;L is not switched yet.</small>
+        </article>
+      </section>
+
+      <section className="finance-kpi-grid">
+        <article className="finance-kpi-card">
+          <span>Payment-basis revenue shadow</span>
+          <strong>{money(revenueSummary?.finance_shadow_revenue)} RWF</strong>
+          <small>Source: Finance shadow revenue lines. Not final accrual P&amp;L revenue.</small>
+        </article>
+
+        <article className="finance-kpi-card">
+          <span>Payment-basis tax shadow</span>
+          <strong>{money(revenueSummary?.finance_shadow_tax)} RWF</strong>
+          <small>Source: Finance shadow tax lines from completed payments.</small>
+        </article>
+
+        <article className="finance-kpi-card">
+          <span>Revenue shadow difference</span>
+          <strong>{money(revenueSummary?.revenue_difference)} RWF</strong>
+          <small>{revenueSummary?.is_reconciled ? 'Revenue shadow validated.' : 'Revenue needs review.'}</small>
+        </article>
+
+        <article className="finance-kpi-card">
+          <span>Tax shadow difference</span>
+          <strong>{money(revenueSummary?.tax_difference)} RWF</strong>
+          <small>{revenueSummary?.is_reconciled ? 'Tax shadow validated.' : 'Tax needs review.'}</small>
         </article>
       </section>
     </section>

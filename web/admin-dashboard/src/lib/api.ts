@@ -3066,6 +3066,48 @@ export type PharmaFinancePosShadowReconciliationReportResponse = {
   data: PharmaFinancePosShadowReconciliationReport;
 };
 
+export type PharmaFinanceRevenueShadowPaymentMethodBreakdown = {
+  payment_method: string;
+  operational_payment_total: number;
+  operational_allocated_revenue: number;
+  operational_allocated_tax: number;
+  finance_shadow_revenue: number;
+  finance_shadow_tax: number;
+  revenue_difference: number;
+  tax_difference: number;
+};
+
+export type PharmaFinancePosRevenueShadowReport = {
+  filters: {
+    tenant_id: number;
+    from: string | null;
+    to: string | null;
+    branch_id: number | null;
+    payment_method: string | null;
+  };
+  basis: {
+    mode: string;
+    label: string;
+    description: string;
+  };
+  summary: {
+    operational_completed_payment_total: number;
+    operational_allocated_revenue: number;
+    operational_allocated_tax: number;
+    finance_shadow_revenue: number;
+    finance_shadow_tax: number;
+    revenue_difference: number;
+    tax_difference: number;
+    is_reconciled: boolean;
+    dashboard_source_status: string;
+  };
+  payment_methods: PharmaFinanceRevenueShadowPaymentMethodBreakdown[];
+};
+
+export type PharmaFinancePosRevenueShadowReportResponse = {
+  data: PharmaFinancePosRevenueShadowReport;
+};
+
 function financePosShadowReconciliationQuery(
   filters?: PharmaFinancePosShadowReconciliationFilters,
 ): string {
@@ -3151,6 +3193,18 @@ export async function getPharmaFinancePosShadowReconciliationReport(
   return getJsonWithTenant<PharmaFinancePosShadowReconciliationReportResponse>(
     token,
     `/pharmaco/finance/reports/pos-shadow-reconciliation${financePosShadowReconciliationQuery(filters)}`,
+    tenantSlug,
+  );
+}
+
+export async function getPharmaFinancePosRevenueShadowReport(
+  token: string,
+  tenantSlug: string,
+  filters?: PharmaFinancePosShadowReconciliationFilters,
+): Promise<PharmaFinancePosRevenueShadowReportResponse> {
+  return getJsonWithTenant<PharmaFinancePosRevenueShadowReportResponse>(
+    token,
+    `/pharmaco/finance/reports/pos-revenue-shadow${financePosShadowReconciliationQuery(filters)}`,
     tenantSlug,
   );
 }
