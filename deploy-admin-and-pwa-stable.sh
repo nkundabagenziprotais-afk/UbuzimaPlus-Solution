@@ -51,14 +51,13 @@ app_start = "$APP_START"
 
 src = Path("web/pwa-root-shell")
 public = Path("public_html")
+admin = public / "admin"
 
-index = (src / "index.html.tpl").read_text()
-manifest = (src / "manifest.webmanifest.tpl").read_text()
-sw = (src / "sw.js.tpl").read_text()
-
-(public / "index.html").write_text(index.replace("__APP_START__", app_start))
-(public / "manifest.webmanifest").write_text(manifest.replace("__APP_START__", app_start))
-(public / "sw.js").write_text(sw.replace("__VERSION__", version))
+(public / "index.html").write_text((src / "index.html.tpl").read_text().replace("__APP_START__", app_start))
+(public / "manifest.webmanifest").write_text((src / "manifest.webmanifest.tpl").read_text().replace("__APP_START__", app_start))
+(public / "sw.js").write_text((src / "sw.js.tpl").read_text().replace("__VERSION__", version))
+(public / ".htaccess").write_text((src / "root.htaccess.tpl").read_text())
+(admin / ".htaccess").write_text((src / "admin.htaccess.tpl").read_text())
 
 print("root index.html start_url:", app_start)
 print("root sw version:", version)
@@ -74,7 +73,7 @@ text = path.read_text()
 
 repair = """
     <script>
-      // UBUZIMA_PWA_STANDALONE_REPAIR_PERMANENT_V1
+      // UBUZIMA_PWA_STANDALONE_REPAIR_PERMANENT_V2
       (function () {
         var params = new URLSearchParams(window.location.search);
         var isStandalone =
@@ -100,7 +99,7 @@ repair = """
     </script>
 """
 
-if "UBUZIMA_PWA_STANDALONE_REPAIR_PERMANENT_V1" not in text:
+if "UBUZIMA_PWA_STANDALONE_REPAIR_PERMANENT_V2" not in text:
     text = text.replace("</head>", repair + "\n  </head>", 1)
 
 path.write_text(text)
@@ -114,15 +113,17 @@ php backend/artisan cache:clear >/dev/null 2>&1 || true
 
 echo
 echo "=== LIVE VERIFY ==="
-grep -nE "refresh|location.replace|Open Ubuzima|admin|PERMANENT" public_html/index.html | head -80 || true
-grep -n "start_url" public_html/manifest.webmanifest
-grep -n "CACHE_NAME" public_html/sw.js public_html/admin/sw.js || true
-grep -n "UBUZIMA_PWA_STANDALONE_REPAIR_PERMANENT_V1" public_html/admin/index.html || true
+grep -nE "refresh|location.replace|Open Ubuzima|admin|PERMANENT|NO_WAIT" public_html/index.html | head -100 || true
+grep -n "start_url\\|scope" public_html/manifest.webmanifest
+grep -n "CACHE_NAME\\|self-destruct\\|NETWORK_FIRST" public_html/sw.js public_html/admin/sw.js || true
+grep -n "UBUZIMA_PWA_STANDALONE_REPAIR_PERMANENT_V2" public_html/admin/index.html || true
+grep -n "Cache-Control" public_html/.htaccess public_html/admin/.htaccess || true
 
 curl -kI --max-time 20 https://ubuzimaplus.com/ || true
 curl -kI --max-time 20 "https://ubuzimaplus.com$APP_START" || true
 curl -kI --max-time 20 https://ubuzimaplus.com/manifest.webmanifest || true
 curl -kI --max-time 20 https://ubuzimaplus.com/sw.js || true
+curl -kI --max-time 20 https://ubuzimaplus.com/admin/sw.js || true
 
 echo
 echo "DONE. PWA start URL: $APP_START"

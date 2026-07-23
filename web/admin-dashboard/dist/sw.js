@@ -1,18 +1,8 @@
-const CACHE_NAME = 'ubuzima-admin-shell-v20260723174001';
-const SHELL_ASSETS = [
-  '/admin/',
-  '/admin/index.html',
-  '/admin/assets/ubuzima-logo.png',
-  '/admin/assets/vitapharma-logo.png'
-];
+const CACHE_NAME = 'ubuzima-admin-shell-v20260723174656';
 
+// UBUZIMA_ADMIN_SW_NETWORK_FIRST_STABILITY_V1
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(SHELL_ASSETS))
-      .then(() => self.skipWaiting())
-      .catch(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -24,17 +14,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // UBUZIMA_SW_BYPASS_API_AUTH_V1
-  const requestUrl = new URL(event.request.url);
-
-  if (
-    event.request.method !== 'GET'
-    || requestUrl.pathname.startsWith('/api/')
-    || requestUrl.pathname.startsWith('/sanctum/')
-    || requestUrl.pathname.startsWith('/broadcasting/')
-  ) {
-    return;
-  }
   const request = event.request;
   const url = new URL(request.url);
 
@@ -42,23 +21,42 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/api/')) {
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/sanctum/') ||
+    url.pathname.includes('/auth/')
+  ) {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
+
+  if (request.mode === 'navigate' || url.pathname.endsWith('/admin/') || url.pathname === '/admin') {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' })
+        .catch(() => caches.match('/admin/index.html'))
+    );
     return;
   }
 
   event.respondWith(
-    fetch(request)
+    fetch(request, { cache: 'no-store' })
       .then((response) => {
-        const copy = response.clone();
+        if (!response || !response.ok) {
+          return response;
+        }
 
+        const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
-          if (response.ok) {
-            cache.put(request, copy);
+          if (
+            url.pathname.startsWith('/admin/assets/') ||
+            url.pathname.endsWith('/admin/manifest.webmanifest')
+          ) {
+            cache.put(request, clone).catch(() => {});
           }
-        }).catch(() => {});
+        });
 
         return response;
       })
-      .catch(() => caches.match(request).then((cached) => cached || caches.match('/admin/index.html')))
+      .catch(() => caches.match(request))
   );
 });

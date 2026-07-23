@@ -2,10 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      http-equiv="refresh"
-      content="0; url=__APP_START__"
-    />
+    <meta http-equiv="refresh" content="1; url=__APP_START__" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0f766e" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -40,7 +37,7 @@
         padding: 1.5rem;
         border: 1px solid rgba(15, 118, 110, 0.16);
         border-radius: 28px;
-        background: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.94);
         box-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
         text-align: center;
       }
@@ -78,7 +75,7 @@
       }
     </style>
     <script>
-      // UBUZIMA_PERMANENT_PWA_ROOT_LAUNCHER_V1
+      // UBUZIMA_PERMANENT_PWA_ROOT_LAUNCHER_NO_WAIT_V2
       (function () {
         var target = '__APP_START__';
 
@@ -86,16 +83,20 @@
           window.location.replace(target);
         }
 
+        // Do not wait for service-worker cleanup. Waiting can cause a white screen
+        // on some installed PWA shells.
+        window.setTimeout(openApp, 80);
+
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations()
             .then(function (registrations) {
-              return Promise.all(registrations.map(function (registration) {
-                return registration.unregister().catch(function () {});
-              }));
+              registrations.forEach(function (registration) {
+                if (registration.scope === window.location.origin + '/') {
+                  registration.unregister().catch(function () {});
+                }
+              });
             })
-            .finally(openApp);
-        } else {
-          openApp();
+            .catch(function () {});
         }
       })();
     </script>
