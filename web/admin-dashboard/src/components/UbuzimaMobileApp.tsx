@@ -787,8 +787,7 @@ export function UbuzimaMobileApp({
         <section className="ubuzima-native-stock-hero ubuzima-native-inventory-hero" aria-label="Stock control">
           <div className="ubuzima-native-inventory-hero__heading">
             <div>
-              <span>Inventory</span>
-              <strong>Stock position</strong>
+              <strong>Inventory</strong>
             </div>
           </div>
 

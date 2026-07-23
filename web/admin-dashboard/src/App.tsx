@@ -10573,6 +10573,12 @@ return (
           },
         ]
       : []),
+    {
+      key: 'more',
+      label: 'More',
+      icon: 'MN',
+      screen: 'more',
+    },
   ];
   const nativeGrossSalesMetric = readSharedBusinessMetricRecord(['Gross Sales']);
   const nativeGrossRevenueMetric = readSharedBusinessMetricRecord(['Gross Revenue', 'Gross Profit']);

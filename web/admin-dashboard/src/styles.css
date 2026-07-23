@@ -53705,7 +53705,7 @@ html.ubuzima-standalone-webapp .admin-header {
   }
 
   .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   }
 
   .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar button {
