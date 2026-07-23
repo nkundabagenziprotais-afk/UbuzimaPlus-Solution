@@ -172,6 +172,44 @@ class PharmacoPaymentRecordingApiTest extends TestCase
         ]);
     }
 
+    public function test_finance_pos_shadow_reconciliation_report_endpoint_is_read_only_and_matches(): void
+    {
+        $this->seed();
+
+        $sale = $this->confirmSeededSale();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson("/api/v1/pharmaco/sales/{$sale->id}/payments", [
+                'amount' => $sale->total_amount,
+                'payment_method' => 'cash',
+                'reference_number' => 'SHADOW-REPORT-001',
+                'generate_receipt' => true,
+            ])
+            ->assertCreated();
+
+        $payment = $sale->fresh('payments')->payments()->latest('id')->firstOrFail();
+
+        $entry = \App\Models\FinanceJournalEntry::query()
+            ->where('source_module', 'pos')
+            ->where('source_type', 'payment')
+            ->where('source_id', (string) $payment->id)
+            ->where('status', 'shadow_posted')
+            ->firstOrFail();
+
+        $businessDate = $entry->business_date->toDateString();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->getJson('/api/v1/pharmaco/finance/reports/pos-shadow-reconciliation?from=' . $businessDate . '&to=' . $businessDate)
+            ->assertOk()
+            ->assertJsonPath('data.summary.is_reconciled', true)
+            ->assertJsonPath('data.summary.missing_finance_postings_count', 0)
+            ->assertJsonPath('data.summary.orphan_finance_shadow_postings_count', 0)
+            ->assertJsonPath('data.payment_methods.0.payment_method', 'cash');
+    }
+
     public function test_partial_payment_updates_sale_balance_and_status(): void
     {
         $this->seed();

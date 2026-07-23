@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\TrendAnalysisController;
 use App\Http\Controllers\Api\V1\PharmaCo360\GeneralItemsController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProcurementController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReportingController;
+use App\Http\Controllers\Api\V1\PharmaCo360\FinanceReportController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ReceivablesController;
 use App\Http\Controllers\Api\V1\PharmaCo360\SalesDispensingController;
 use App\Http\Controllers\Api\V1\PharmaCo360\PosOperationsController;
@@ -707,6 +708,12 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
         ->middleware([
             'permission:pharmaco.procurement.payment.view',
             'tenant.module:pharmaco.suppliers',
+        ]);
+
+    Route::get('/finance/reports/pos-shadow-reconciliation', [FinanceReportController::class, 'posShadowReconciliation'])
+        ->middleware([
+            'tenant.module:pharmaco.sales',
+            'App\\Http\\Middleware\\EnsureAnyPermission:finance.reports.view,finance.reconciliation.view,finance.reconciliation.manage',
         ]);
 
     Route::get('/reports/customer-credit-exposure', [ReportingController::class, 'customerCreditExposure'])
