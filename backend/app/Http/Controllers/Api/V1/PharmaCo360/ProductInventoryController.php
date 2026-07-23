@@ -2953,9 +2953,11 @@ $firstInventoryRecordDateQuery = StockBatch::query()
                       AND sm.created_at >= '".$positionCutoff->toDateTimeString()."')"
                 : "0";
 
-            $quantityAsAtExpression = "(CASE WHEN (COALESCE(stock_batches.quantity_on_hand) > 0 THEN (COALESCE(stock_batches.quantity_on_hand) ELSE 0 END) - COALESCE({$postCutoffMovementSql}, 0),
-                0
-            )";
+            $quantityAsAtExpression = "(CASE
+                WHEN (COALESCE(stock_batches.quantity_on_hand, 0) - COALESCE({$postCutoffMovementSql}, 0)) > 0
+                    THEN (COALESCE(stock_batches.quantity_on_hand, 0) - COALESCE({$postCutoffMovementSql}, 0))
+                ELSE 0
+            END)";
 
             $dailyBaseQuery = StockBatch::query()
                 ->where('tenant_id', $inventoryAnalyticsTenantId)
