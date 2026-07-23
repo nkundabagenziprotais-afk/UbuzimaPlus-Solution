@@ -1,3 +1,4 @@
+/* INVENTORY_ANALYTICS_DAILY_POSITION_TRENDS_V1 */
 /* INVENTORY_ANALYTICS_BO_STYLE_BAR_TRENDS_V2 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
@@ -2398,7 +2399,73 @@ export function InventoryModuleHome({
               ? analyticsTrendDateKeys
               : analyticsTrendDateKeys.filter((_, index) => `week-${Math.floor(index / 7) + 1}` === analyticsTrendWeekSelection);
 
-            const inventoryAnalyticsCardSourceTrendDateKeys =
+            
+            const inventoryAnalyticsDailyPositionRowsFrom = (keys: string[]) => {
+              const source = effectiveAnalyticsKpiSummary as Record<string, unknown>;
+
+              for (const key of keys) {
+                const rows = source[key];
+
+                if (Array.isArray(rows)) {
+                  return rows as Record<string, unknown>[];
+                }
+              }
+
+              return [];
+            };
+
+            const inventoryAnalyticsDailyTrendNumber = (value: unknown): number => {
+              const parsed =
+                typeof value === 'number'
+                  ? value
+                  : Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
+
+              return Number.isFinite(parsed) ? parsed : 0;
+            };
+
+            const inventoryAnalyticsDailyTrendMap = (rows: Record<string, unknown>[]) => {
+              const map = new Map<string, number>();
+
+              rows.forEach((row) => {
+                const rawDate = String(row.business_date ?? row.businessDate ?? row.date ?? row.day ?? '').slice(0, 10);
+
+                if (!rawDate) {
+                  return;
+                }
+
+                const value = inventoryAnalyticsDailyTrendNumber(
+                  row.value ??
+                  row.amount ??
+                  row.stock_value ??
+                  row.inventory_value ??
+                  row.near_expiry_value,
+                );
+
+                map.set(rawDate, value);
+              });
+
+              return map;
+            };
+
+            const inventoryAnalyticsTotalInventoryDailyPositionMap =
+              inventoryAnalyticsDailyTrendMap(
+                inventoryAnalyticsDailyPositionRowsFrom([
+                  'inventory_value_daily_position_trend',
+                  'total_inventory_daily_position_trend',
+                  'inventory_value_trend',
+                ]),
+              );
+
+            const inventoryAnalyticsNearExpiryDailyPositionMap =
+              inventoryAnalyticsDailyTrendMap(
+                inventoryAnalyticsDailyPositionRowsFrom([
+                  'near_expiry_value_daily_position_trend',
+                  'near_expiry_value_trend',
+                  'expiry_value_trend',
+                ]),
+              );
+
+const inventoryAnalyticsCardSourceTrendDateKeys =
               selectedTrendDateKeys.length > 0
                 ? selectedTrendDateKeys
                 : [analyticsAppliedDateToFilter];
@@ -2417,17 +2484,23 @@ export function InventoryModuleHome({
             );
 
             const inventoryAnalyticsCardStockValueTrendValues =
-              inventoryAnalyticsCardSourceTrendDateKeys.map((_, index) =>
-                index === inventoryAnalyticsCardSourceAsAtIndex
-                  ? inventoryAnalyticsCardSourceStockValue
-                  : 0,
+              inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey, index) =>
+                inventoryAnalyticsTotalInventoryDailyPositionMap.get(dateKey)
+                ?? (
+                  index === inventoryAnalyticsCardSourceAsAtIndex
+                    ? inventoryAnalyticsCardSourceStockValue
+                    : 0
+                ),
               );
 
             const inventoryAnalyticsCardNearExpiryTrendValues =
-              inventoryAnalyticsCardSourceTrendDateKeys.map((_, index) =>
-                index === inventoryAnalyticsCardSourceAsAtIndex
-                  ? inventoryAnalyticsCardSourceNearExpiryValue
-                  : 0,
+              inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey, index) =>
+                inventoryAnalyticsNearExpiryDailyPositionMap.get(dateKey)
+                ?? (
+                  index === inventoryAnalyticsCardSourceAsAtIndex
+                    ? inventoryAnalyticsCardSourceNearExpiryValue
+                    : 0
+                ),
               );
 
 
@@ -2677,12 +2750,13 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                         <div className="inventory-analytics-bo-bar-chart" role="img" aria-label={`${chart.label} bar chart`}>
                           {chart.values.map((value, index) => (
                             <div key={`${chart.key}-${index}`} className="inventory-analytics-bo-bar-chart__bar">
+                              <em>{new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value)}</em>
                               <i
                                 style={{
                                   height: `${Math.max((value / chartMax) * 100, value > 0 ? 12 : 4)}%`,
                                 }}
                               />
-                              <span>{inventoryAnalyticsCardSourceTrendDateKeys[index]?.slice(5) ?? ''}</span>
+                              <span>{inventoryAnalyticsCardSourceTrendDateKeys[index]?.slice(8) ?? ''}</span>
                             </div>
                           ))}
                         </div>

@@ -2774,6 +2774,109 @@ class ProductInventoryController extends Controller
 
         $movementValueExpression = "ABS(COALESCE(m.quantity, 0)) * (CASE WHEN b.cost_source IN ('legacy_equal_price_cost', 'inferred_from_price') AND COALESCE(b.inferred_unit_cost, 0) > 0 THEN COALESCE(b.inferred_unit_cost, 0) WHEN COALESCE(b.unit_cost, 0) > 0 THEN COALESCE(b.unit_cost, 0) WHEN COALESCE(b.selling_price, 0) > 0 THEN COALESCE(b.selling_price, 0) / 1.4 ELSE 0 END)";
 
+
+        /* INVENTORY_ANALYTICS_DAILY_POSITION_TRENDS_V1 */
+        $trendDateFrom = (string) (
+            $request->query('business_date_from')
+            ?? $request->query('date_from')
+            ?? $request->query('from')
+            ?? now()->startOfMonth()->toDateString()
+        );
+
+        $trendDateTo = (string) (
+            $request->query('business_date_to')
+            ?? $request->query('date_to')
+            ?? $request->query('to')
+            ?? now()->toDateString()
+        );
+
+        try {
+            $trendStartDate = \Carbon\Carbon::parse($trendDateFrom)->startOfDay();
+            $trendEndDate = \Carbon\Carbon::parse($trendDateTo)->startOfDay();
+        } catch (\Throwable) {
+            $trendStartDate = now()->startOfMonth()->startOfDay();
+            $trendEndDate = now()->startOfDay();
+        }
+
+        if ($trendStartDate->gt($trendEndDate)) {
+            [$trendStartDate, $trendEndDate] = [$trendEndDate, $trendStartDate];
+        }
+
+        $trendDateKeys = [];
+        $trendCursor = $trendStartDate->copy();
+
+        while ($trendCursor->lte($trendEndDate)) {
+            $trendDateKeys[] = $trendCursor->toDateString();
+            $trendCursor->addDay();
+        }
+
+        $resolvedBatchCostExpression = "(CASE
+            WHEN stock_batches.cost_source IN ('legacy_equal_price_cost', 'inferred_from_price')
+                AND COALESCE(stock_batches.inferred_unit_cost, 0) > 0
+                THEN COALESCE(stock_batches.inferred_unit_cost, 0)
+            WHEN COALESCE(stock_batches.unit_cost, 0) > 0
+                THEN COALESCE(stock_batches.unit_cost, 0)
+            WHEN COALESCE(stock_batches.selling_price, 0) > 0
+                THEN COALESCE(stock_batches.selling_price, 0) / 1.4
+            ELSE 0
+        END)";
+
+        $stockMovementTableExists = \Illuminate\Support\Facades\Schema::hasTable('stock_movements');
+
+        $inventoryValueDailyPositionTrend = [];
+        $nearExpiryValueDailyPositionTrend = [];
+
+        foreach ($trendDateKeys as $trendDateKey) {
+            $dateEnd = \Carbon\Carbon::parse($trendDateKey)->endOfDay();
+            $nearExpiryEnd = \Carbon\Carbon::parse($trendDateKey)->addDays(180)->endOfDay();
+
+            $postDateMovementSql = $stockMovementTableExists
+                ? "(SELECT COALESCE(SUM(sm.quantity), 0)
+                    FROM stock_movements sm
+                    WHERE sm.stock_batch_id = stock_batches.id
+                      AND sm.created_at > '".$dateEnd->toDateTimeString()."')"
+                : "0";
+
+            $quantityAsAtExpression = "GREATEST(
+                COALESCE(stock_batches.quantity_on_hand, 0) - COALESCE({$postDateMovementSql}, 0),
+                0
+            )";
+
+            $dailyBaseQuery = StockBatch::query()
+                ->where('tenant_id', $tenant->id)
+                ->whereDate('created_at', '<=', $dateEnd->toDateString());
+
+            if (! empty($validated['branch_id'] ?? null)) {
+                $dailyBaseQuery->where('branch_id', $validated['branch_id']);
+            }
+
+            $dailyTotalInventoryValue = (clone $dailyBaseQuery)
+                ->sum(\Illuminate\Support\Facades\DB::raw(
+                    "{$quantityAsAtExpression} * {$resolvedBatchCostExpression}"
+                ));
+
+            $dailyNearExpiryValue = (clone $dailyBaseQuery)
+                ->whereNotNull('expiry_date')
+                ->whereDate('expiry_date', '>=', $trendDateKey)
+                ->whereDate('expiry_date', '<=', $nearExpiryEnd->toDateString())
+                ->sum(\Illuminate\Support\Facades\DB::raw(
+                    "{$quantityAsAtExpression} * {$resolvedBatchCostExpression}"
+                ));
+
+            $inventoryValueDailyPositionTrend[] = [
+                'business_date' => $trendDateKey,
+                'date' => $trendDateKey,
+                'value' => round((float) $dailyTotalInventoryValue, 2),
+            ];
+
+            $nearExpiryValueDailyPositionTrend[] = [
+                'business_date' => $trendDateKey,
+                'date' => $trendDateKey,
+                'value' => round((float) $dailyNearExpiryValue, 2),
+            ];
+        }
+
+
         $receivedTypes = ['receive', 'received', 'purchase', 'stock_in', 'inbound', 'adjustment_in', 'return_in', 'opening'];
         $issuedTypes = ['issue', 'issued', 'sale', 'sold', 'dispense', 'stock_out', 'outbound', 'adjustment_out'];
 
@@ -2793,6 +2896,9 @@ class ProductInventoryController extends Controller
 
         return response()->json([
             'total_inventory_value' => round((float) $totalInventoryValue, 2),
+            'inventory_value_daily_position_trend' => $inventoryValueDailyPositionTrend ?? [],
+            'total_inventory_daily_position_trend' => $inventoryValueDailyPositionTrend ?? [],
+            'near_expiry_value_daily_position_trend' => $nearExpiryValueDailyPositionTrend ?? [],
             'stock_on_hand_count' => round((float) $stockOnHandCount, 2),
             'stock_received_value' => round((float) $stockReceivedValue, 2),
             'stock_received_count' => (int) $stockReceivedCount,
