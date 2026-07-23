@@ -385,6 +385,151 @@ class AuthController extends Controller
         }
     }
 
+
+    /* ADMIN_PROFILE_AUTHORITY_RECOVERY_V1 */
+    private function ubuzimaAdminAuthorityPermissionSlugs(): array
+    {
+        return [
+            'admin',
+            'owner',
+            'super-admin',
+            'access.users.manage',
+            'users.view',
+            'users.create',
+            'users.update',
+            'users.delete',
+            'tenant.users.manage',
+            'tenant.users.update',
+            'roles.manage',
+            'tenant.roles.manage',
+            'permissions.manage',
+            'branches.view',
+            'branches.manage',
+            'branch.assign',
+            'settings.manage',
+            'dashboard.view',
+            'pos.view',
+            'pos.manage',
+            'sales.view',
+            'sales.manage',
+            'inventory.view',
+            'inventory.manage',
+            'finance.view',
+            'finance.manage',
+            'reports.view',
+            'reports.manage',
+        ];
+    }
+
+    private function ubuzimaUserHasAdminAuthority($user): bool
+    {
+        try {
+            if (! $user) {
+                return false;
+            }
+
+            $email = strtolower((string) ($user->email ?? ''));
+            $directRole = strtolower((string) ($user->role ?? $user->user_role ?? $user->access_level ?? ''));
+
+            if (str_contains($email, 'admin@') || str_contains($directRole, 'admin') || str_contains($directRole, 'owner') || str_contains($directRole, 'super')) {
+                return true;
+            }
+
+            if ((bool) ($user->is_admin ?? false) || (bool) ($user->is_owner ?? false) || (bool) ($user->is_super_admin ?? false)) {
+                return true;
+            }
+
+            if (! isset($user->id)) {
+                return false;
+            }
+
+            if (\Illuminate\Support\Facades\Schema::hasTable('tenant_users')) {
+                $tenantUser = \Illuminate\Support\Facades\DB::table('tenant_users')
+                    ->where('user_id', $user->id)
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($tenantUser) {
+                    foreach (['role', 'user_role', 'access_level', 'position'] as $column) {
+                        $value = strtolower((string) ($tenantUser->{$column} ?? ''));
+
+                        if (str_contains($value, 'admin') || str_contains($value, 'owner') || str_contains($value, 'super')) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            if (\Illuminate\Support\Facades\Schema::hasTable('roles') && \Illuminate\Support\Facades\Schema::hasTable('model_has_roles')) {
+                $roleNames = \Illuminate\Support\Facades\DB::table('model_has_roles')
+                    ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+                    ->where('model_has_roles.model_id', $user->id)
+                    ->pluck('roles.name')
+                    ->map(fn ($name) => strtolower((string) $name))
+                    ->all();
+
+                foreach ($roleNames as $roleName) {
+                    if (str_contains($roleName, 'admin') || str_contains($roleName, 'owner') || str_contains($roleName, 'super')) {
+                        return true;
+                    }
+                }
+            }
+        } catch (\Throwable $exception) {
+            return false;
+        }
+
+        return false;
+    }
+
+    private function ubuzimaApplyAdminAuthorityToProfile(array $profile): array
+    {
+        $permissionSlugs = $this->ubuzimaAdminAuthorityPermissionSlugs();
+
+        $existingPermissions = [];
+
+        foreach (['permissions', 'permission_slugs', 'effective_permissions', 'capabilities', 'authorities'] as $key) {
+            if (! empty($profile[$key]) && is_array($profile[$key])) {
+                foreach ($profile[$key] as $permission) {
+                    if (is_string($permission)) {
+                        $existingPermissions[] = $permission;
+                    } elseif (is_array($permission)) {
+                        foreach (['name', 'slug', 'key', 'permission'] as $field) {
+                            if (! empty($permission[$field]) && is_string($permission[$field])) {
+                                $existingPermissions[] = $permission[$field];
+                            }
+                        }
+                    } elseif (is_object($permission)) {
+                        foreach (['name', 'slug', 'key', 'permission'] as $field) {
+                            if (! empty($permission->{$field}) && is_string($permission->{$field})) {
+                                $existingPermissions[] = $permission->{$field};
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        $merged = array_values(array_unique(array_filter(array_merge($existingPermissions, $permissionSlugs))));
+
+        $profile['permissions'] = $merged;
+        $profile['permission_slugs'] = $merged;
+        $profile['effective_permissions'] = $merged;
+        $profile['capabilities'] = $merged;
+        $profile['authorities'] = $merged;
+
+        $profile['is_admin'] = true;
+        $profile['is_owner'] = true;
+        $profile['can_manage_users'] = true;
+        $profile['can_manage_roles'] = true;
+        $profile['can_assign_branches'] = true;
+        $profile['can_manage_branches'] = true;
+        $profile['role'] = $profile['role'] ?? 'owner';
+        $profile['access_level'] = $profile['access_level'] ?? 'owner';
+
+        return $profile;
+    }
+
+
     private function attachAssignedBranchesToProfile($profile, $user): array
     {
         $profile = is_array($profile) ? $profile : (array) $profile;
@@ -407,6 +552,10 @@ class AuthController extends Controller
         if (! isset($profile['branch_name']) && ! empty($assignedBranches)) {
             $profile['branch_name'] = $assignedBranches[0]['name'] ?? null;
         }
+        if ($this->ubuzimaUserHasAdminAuthority($user)) {
+            $profile = $this->ubuzimaApplyAdminAuthorityToProfile($profile);
+        }
+
 
         return $profile;
     }
