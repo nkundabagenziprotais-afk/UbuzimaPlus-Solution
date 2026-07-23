@@ -48655,3 +48655,118 @@ html.ubuzima-standalone-webapp .admin-header {
   transform-origin: center;
   font-size: 0.58rem !important;
 }
+
+/* Finance Source-of-Truth Overview */
+.finance-source-truth-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.finance-authority-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: stretch;
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 34%),
+    linear-gradient(135deg, #0f172a, #1e3a8a);
+  color: #fff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+}
+
+.finance-authority-banner h2,
+.finance-authority-banner p {
+  margin: 0;
+}
+
+.finance-authority-banner p:not(.eyebrow) {
+  max-width: 54rem;
+  color: rgba(255, 255, 255, 0.78);
+  margin-top: 0.35rem;
+}
+
+.finance-authority-status-card {
+  min-width: 13rem;
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.finance-authority-status-card span,
+.finance-authority-status-card small {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.finance-authority-status-card strong {
+  font-size: 1rem;
+}
+
+.finance-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(10rem, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.finance-filter-bar label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.finance-filter-bar input {
+  min-height: 2.45rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  padding: 0 0.75rem;
+}
+
+.finance-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.finance-kpi-card {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.finance-kpi-card span,
+.finance-kpi-card small {
+  color: #64748b;
+}
+
+.finance-kpi-card strong {
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+@media (max-width: 1100px) {
+  .finance-authority-banner,
+  .finance-filter-bar,
+  .finance-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-authority-status-card {
+    min-width: 0;
+  }
+}
+
