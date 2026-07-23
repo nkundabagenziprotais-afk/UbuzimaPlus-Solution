@@ -47827,7 +47827,7 @@ html.ubuzima-standalone-webapp .admin-header {
 }
 
 .historical-pos-workflow[data-historical-pos-journey='guided-v1']::before {
-  content: "1. Pick business date  →  2. Check availability  →  3. Request approval only if conflict  →  4. Open Historical POS";
+  content: "";
   display: block;
   margin-bottom: 0.85rem;
   padding: 0.75rem 0.9rem;
@@ -49459,4 +49459,12 @@ html.ubuzima-standalone-webapp .admin-header {
   .finance-v2-donut-wrap {
     grid-template-columns: 1fr;
   }
+}
+
+/* POS_BRANCH_FALLBACK_PROFILE_ASSIGNMENTS_V1 */
+.pos-guidance,
+.historical-pos-guidance,
+.pos-workflow-guidance,
+.historical-pos-workflow-guidance {
+  display: none !important;
 }

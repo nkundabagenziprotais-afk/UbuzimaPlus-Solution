@@ -311,7 +311,7 @@ export function HistoricalPosWorkflow({
   async function checkAvailability() {
     if (!branchId) {
       setErrorMessage(
-        "No active branch is available for historical POS.",
+        "Select your assigned branch to continue. If no branch appears, ask an administrator to confirm your branch assignment.",
       );
       return;
     }
@@ -364,7 +364,7 @@ export function HistoricalPosWorkflow({
   async function submitApprovalRequest() {
     if (!branchId) {
       setErrorMessage(
-        "No active branch is available.",
+        "Select your assigned branch to continue. If no branch appears, ask an administrator to confirm your branch assignment.",
       );
       return;
     }
@@ -546,7 +546,7 @@ export function HistoricalPosWorkflow({
 
     if (!branchId) {
       setErrorMessage(
-        "No active branch is available.",
+        "Select your assigned branch to continue. If no branch appears, ask an administrator to confirm your branch assignment.",
       );
       return;
     }
@@ -690,9 +690,7 @@ export function HistoricalPosWorkflow({
                 {currentSession.business_date}
               </strong>
 
-              <small>
-
-              </small>
+              
             </div>
           </div>
 

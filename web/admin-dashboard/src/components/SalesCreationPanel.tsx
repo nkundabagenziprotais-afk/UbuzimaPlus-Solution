@@ -157,6 +157,7 @@ export function SalesCreationPanel({
   onSaleCreated,
 }: Props) {
   const activeBranches = branches.filter((branch) => branch.status === 'active');
+
   const activeProducts = products.filter((product) => product.status === 'active');
 
   const [customerForm, setCustomerForm] = useState<CustomerForm>(blankCustomerForm());
