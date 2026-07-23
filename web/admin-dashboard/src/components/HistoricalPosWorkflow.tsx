@@ -1,3 +1,4 @@
+/* HISTORICAL_POS_REASON_REMOVED_V1 */
 import {
   useEffect,
   useMemo,
@@ -368,12 +369,6 @@ export function HistoricalPosWorkflow({
       return;
     }
 
-    if (historicalReason.trim().length < 10) {
-      setErrorMessage(
-        "Provide a clear reason of at least 10 characters.",
-      );
-      return;
-    }
 
     setIsRequesting(true);
     setErrorMessage("");
@@ -563,12 +558,6 @@ export function HistoricalPosWorkflow({
       return;
     }
 
-    if (historicalReason.trim().length < 10) {
-      setErrorMessage(
-        "Provide a clear historical-entry reason.",
-      );
-      return;
-    }
 
     const numericOpeningFloat = Number(
       openingFloat,

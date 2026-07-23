@@ -95,12 +95,7 @@ class HistoricalPosSessionController extends Controller
                 'nullable',
                 'in:fresh-start,handover',
             ],
-            'historical_reason' => [
-                'required',
-                'string',
-                'min:10',
-                'max:1000',
-            ],
+            'historical_reason' => ['nullable', 'string', 'max:500'],
             'historical_reference' => [
                 'nullable',
                 'string',
@@ -213,7 +208,14 @@ class HistoricalPosSessionController extends Controller
 
                     $approval = null;
 
-                    if ($summary['live_activity_exists']) {
+                    // HISTORICAL_POS_ADMIN_OWNER_BYPASS_V1
+                    // Admin, Owner, and users with historical approval rights can open
+                    // a conflicted historical POS session directly. Other users must
+                    // request approval through POS Session Management.
+                    if (
+                        $summary['live_activity_exists']
+                        && ! $this->userCanBypassHistoricalPosApproval($request)
+                    ) {
                         $approval =
                             PharmacoHistoricalPosApproval::query()
                                 ->whereKey(
@@ -734,4 +736,82 @@ class HistoricalPosSessionController extends Controller
                     : [],
         ];
     }
+    private function userCanBypassHistoricalPosApproval(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        $permissions = [
+            'pharmaco.pos.historical.approve',
+            'pharmaco.pos.session_support.manage',
+            'pharmaco.pos.session_support.reset',
+            'admin',
+            'owner',
+        ];
+
+        foreach ($permissions as $permission) {
+            if (
+                method_exists($user, 'can')
+                && $user->can($permission)
+            ) {
+                return true;
+            }
+
+            if (
+                method_exists($user, 'hasPermissionTo')
+                && $user->hasPermissionTo($permission)
+            ) {
+                return true;
+            }
+
+            if (
+                method_exists($user, 'hasPermission')
+                && $user->hasPermission($permission)
+            ) {
+                return true;
+            }
+        }
+
+        $roleValues = [];
+
+        foreach (['role', 'role_name', 'user_type', 'type'] as $attribute) {
+            if (isset($user->{$attribute})) {
+                $roleValues[] = (string) $user->{$attribute};
+            }
+        }
+
+        if (method_exists($user, 'roles')) {
+            try {
+                $roles = $user->roles()->get();
+
+                foreach ($roles as $role) {
+                    foreach (['name', 'code', 'slug'] as $attribute) {
+                        if (isset($role->{$attribute})) {
+                            $roleValues[] = (string) $role->{$attribute};
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Ignore role lookup failures and use available attributes.
+            }
+        }
+
+        foreach ($roleValues as $roleValue) {
+            $normalized = strtolower($roleValue);
+
+            if (
+                str_contains($normalized, 'admin')
+                || str_contains($normalized, 'owner')
+                || str_contains($normalized, 'super')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }
