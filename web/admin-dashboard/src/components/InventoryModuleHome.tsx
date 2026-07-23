@@ -1,4 +1,4 @@
-/* INVENTORY_ANALYTICS_BO_STYLE_VALUE_CARDS_V2 */
+/* INVENTORY_ANALYTICS_BO_STYLE_BAR_TRENDS_V2 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -2632,45 +2632,70 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                   ))}
                 </div>
 
-                {/* INVENTORY_ANALYTICS_BO_STYLE_VALUE_CARDS_V2 */}
-                <div className="inventory-analytics-bo-value-grid" aria-label="Inventory Analytics value cards">
+                {/* INVENTORY_ANALYTICS_BO_STYLE_BAR_TRENDS_V2 */}
+                <div className="inventory-analytics-bo-trend-grid" aria-label="Inventory Analytics trend cards">
                   {[
                     {
-                      key: 'stock-value-as-at',
-                      label: 'Stock Value',
+                      key: 'total-inventory-trend',
+                      label: 'Total Inventory Trend',
                       value:
                         kpiCards.find((card) => /Total Inventory Value|Inventory Value|Stock Value/i.test(card.label))?.value
                         ?? kpiCards[0]?.value
                         ?? '0',
+                      numericValue: inventoryAnalyticsCardSourceStockValue,
+                      values: inventoryAnalyticsCardStockValueTrendValues,
                       meta: `As at ${analyticsAppliedDateToFilter}`,
                       tone: 'blue',
                     },
                     {
-                      key: 'near-expiry-value-as-at',
-                      label: 'Near Expiry Value',
+                      key: 'near-expiry-value-trend',
+                      label: 'Near Expiry Value Trend',
                       value:
                         kpiCards.find((card) => /Near Expiry Value/i.test(card.label))?.value
                         ?? '0',
+                      numericValue: inventoryAnalyticsCardSourceNearExpiryValue,
+                      values: inventoryAnalyticsCardNearExpiryTrendValues,
                       meta: `As at ${analyticsAppliedDateToFilter}`,
                       tone: 'amber',
                     },
-                  ].map((card) => (
-                    <article
-                      key={card.key}
-                      className={`inventory-analytics-bo-value-card inventory-analytics-bo-value-card--${card.tone}`}
-                    >
-                      <div>
-                        <span>{card.meta}</span>
-                        <h3>{card.label}</h3>
-                      </div>
-                      <strong>{card.value}</strong>
-                      <small>Source: Inventory Analytics KPI</small>
-                    </article>
-                  ))}
+                  ].map((chart) => {
+                    const chartMax = Math.max(...chart.values, chart.numericValue, 1);
+
+                    return (
+                      <article
+                        key={chart.key}
+                        className={`inventory-analytics-bo-trend-card inventory-analytics-bo-trend-card--${chart.tone}`}
+                      >
+                        <div className="inventory-analytics-bo-trend-card__head">
+                          <div>
+                            <span>{chart.meta}</span>
+                            <h3>{chart.label}</h3>
+                          </div>
+                          <strong>{chart.value}</strong>
+                        </div>
+
+                        <div className="inventory-analytics-bo-bar-chart" role="img" aria-label={`${chart.label} bar chart`}>
+                          {chart.values.map((value, index) => (
+                            <div key={`${chart.key}-${index}`} className="inventory-analytics-bo-bar-chart__bar">
+                              <i
+                                style={{
+                                  height: `${Math.max((value / chartMax) * 100, value > 0 ? 12 : 4)}%`,
+                                }}
+                              />
+                              <span>{inventoryAnalyticsCardSourceTrendDateKeys[index]?.slice(5) ?? ''}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <small>Source: Inventory Analytics KPI · Business Overview bar style</small>
+                      </article>
+                    );
+                  })}
                 </div>
 
 
-                <div className="inventory-analytics-request-grid">
+                
+<div className="inventory-analytics-request-grid">
                   
 
 
