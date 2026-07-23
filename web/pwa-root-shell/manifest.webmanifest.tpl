@@ -1,8 +1,8 @@
 {
   "name": "Ubuzima+ Mobile",
   "short_name": "Ubuzima+",
-  "description": "Ubuzima+ mobile web application",
-  "start_url": "/admin/?mobile=1&pwa=1&standalone=1",
+  "description": "Ubuzima+ staff mobile web application",
+  "start_url": "/admin/",
   "scope": "/admin/",
   "display": "standalone",
   "background_color": "#f8fafc",

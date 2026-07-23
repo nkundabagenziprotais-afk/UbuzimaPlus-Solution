@@ -7,7 +7,7 @@
 </IfModule>
 
 <IfModule mod_headers.c>
-  <FilesMatch "^(index\.html|manifest\.webmanifest|sw\.js)$">
+  <FilesMatch "^(index\.html|sw\.js)$">
     Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
     Header set Pragma "no-cache"
     Header set Expires "0"

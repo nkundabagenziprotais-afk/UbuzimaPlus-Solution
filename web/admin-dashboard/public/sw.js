@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ubuzima-admin-shell-v20260723181644';
+const CACHE_NAME = 'ubuzima-admin-shell-v20260723182514';
 
 // UBUZIMA_ADMIN_SW_NETWORK_FIRST_STABILITY_V1
 self.addEventListener('install', (event) => {
