@@ -2785,6 +2785,7 @@ class ProductInventoryController extends Controller
          * - Today uses live position as of now().
          */
                 /* INVENTORY_ANALYTICS_TENANT_CONTEXT_FIX_V1 */
+        /* INVENTORY_ANALYTICS_SQLITE_NO_GREATEST_FIX_V1 */
         $inventoryAnalyticsTenantId = null;
 
         if (isset($tenant) && is_object($tenant) && isset($tenant->id)) {
@@ -2952,8 +2953,7 @@ $firstInventoryRecordDateQuery = StockBatch::query()
                       AND sm.created_at >= '".$positionCutoff->toDateTimeString()."')"
                 : "0";
 
-            $quantityAsAtExpression = "GREATEST(
-                COALESCE(stock_batches.quantity_on_hand, 0) - COALESCE({$postCutoffMovementSql}, 0),
+            $quantityAsAtExpression = "(CASE WHEN (COALESCE(stock_batches.quantity_on_hand) > 0 THEN (COALESCE(stock_batches.quantity_on_hand) ELSE 0 END) - COALESCE({$postCutoffMovementSql}, 0),
                 0
             )";
 
