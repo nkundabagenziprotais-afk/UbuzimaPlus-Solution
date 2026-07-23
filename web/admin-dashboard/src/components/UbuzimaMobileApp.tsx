@@ -419,6 +419,7 @@ function ActionGrid({
         >
           <AppIcon name={action.icon} />
           <strong>{action.label}</strong>
+          <small>{action.detail}</small>
         </button>
       ))}
     </div>

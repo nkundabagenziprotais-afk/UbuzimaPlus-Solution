@@ -51518,3 +51518,664 @@ html.ubuzima-standalone-webapp .admin-header {
     font-size: 0.8rem;
   }
 }
+
+/* Mobile app revamp: denser cards, cleaner forms, and cashier-first POS */
+@media (max-width: 860px) {
+  .dashboard-shell.dashboard-shell--fresh-mobile-app {
+    background:
+      linear-gradient(180deg, #f8fbfa 0%, #edf3f1 44%, #f6f8f7 100%) !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-app {
+    background:
+      linear-gradient(180deg, #f8fbfa 0%, #eef4f1 50%, #f7f8f6 100%) !important;
+  }
+
+  .ubuzima-native-topbar {
+    min-height: calc(52px + env(safe-area-inset-top)) !important;
+    padding:
+      max(7px, calc(env(safe-area-inset-top) + 5px))
+      max(12px, env(safe-area-inset-right))
+      7px
+      max(12px, env(safe-area-inset-left)) !important;
+    border-bottom-color: rgba(76, 86, 67, 0.12) !important;
+    background: rgba(250, 252, 251, 0.98) !important;
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.055) !important;
+  }
+
+  .ubuzima-native-brand img {
+    width: 34px !important;
+    height: 34px !important;
+    padding: 3px !important;
+  }
+
+  .ubuzima-native-brand strong {
+    font-size: 0.86rem !important;
+  }
+
+  .ubuzima-native-brand small {
+    font-size: 0.62rem !important;
+  }
+
+  .ubuzima-native-topbar__actions > button:first-child,
+  .ubuzima-native-avatar-button {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+
+  .ubuzima-native-topbar__actions > button:first-child {
+    padding-inline: 10px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .ubuzima-native-avatar-button,
+  .ubuzima-native-avatar {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-content {
+    padding:
+      8px
+      max(11px, env(safe-area-inset-right))
+      8px
+      max(11px, env(safe-area-inset-left)) !important;
+  }
+
+  .ubuzima-native-business-hero {
+    min-height: 184px !important;
+    gap: 10px !important;
+    padding: 13px !important;
+    border-radius: 8px !important;
+    background:
+      linear-gradient(135deg, #10211b 0%, #4b5320 56%, #b42129 128%) !important;
+    box-shadow: 0 14px 28px rgba(16, 33, 27, 0.2) !important;
+  }
+
+  .ubuzima-native-business-hero::after {
+    display: none !important;
+  }
+
+  .ubuzima-native-business-hero__comparison {
+    gap: 7px !important;
+  }
+
+  .ubuzima-native-business-hero__balance {
+    min-height: 68px !important;
+    padding: 8px !important;
+  }
+
+  .ubuzima-native-business-hero__balance strong,
+  .ubuzima-native-business-hero__balance .ubuzima-native-value {
+    font-size: 1.08rem !important;
+  }
+
+  .ubuzima-native-business-hero__balance small,
+  .ubuzima-native-business-hero__analytics span,
+  .ubuzima-native-business-hero__chips span {
+    font-size: 0.58rem !important;
+  }
+
+  .ubuzima-native-business-hero__analytics {
+    grid-template-columns: minmax(0, 0.68fr) minmax(112px, 1fr) !important;
+    padding: 8px !important;
+  }
+
+  .ubuzima-native-mini-chart {
+    height: 34px !important;
+  }
+
+  .ubuzima-native-section,
+  .ubuzima-native-pos-terminal,
+  .ubuzima-native-stock-hero,
+  .ubuzima-native-sales-card,
+  .ubuzima-native-profile-card,
+  .ubuzima-native-menu-group,
+  .ubuzima-native-install-card,
+  .ubuzima-native-offline,
+  .ubuzima-native-empty {
+    border-radius: 8px !important;
+    border-color: rgba(91, 104, 87, 0.14) !important;
+    background:
+      linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%) !important;
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.055) !important;
+  }
+
+  .ubuzima-native-section {
+    margin-top: 8px !important;
+    padding: 10px !important;
+  }
+
+  .ubuzima-native-section__heading {
+    align-items: center !important;
+    margin-bottom: 8px !important;
+  }
+
+  .ubuzima-native-section__heading span,
+  .ubuzima-native-business-hero__top span,
+  .ubuzima-native-business-hero__balance span,
+  .ubuzima-native-balance-card span,
+  .ubuzima-native-pos-terminal__status span,
+  .ubuzima-native-stock-hero span,
+  .ubuzima-native-sales-card span,
+  .ubuzima-native-profile-card span {
+    font-size: 0.58rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .ubuzima-native-section__heading h2 {
+    font-size: 0.86rem !important;
+  }
+
+  .ubuzima-native-section__action button {
+    min-height: 30px !important;
+    border-radius: 8px !important;
+    font-size: 0.64rem !important;
+  }
+
+  .ubuzima-native-action-grid {
+    gap: 7px !important;
+  }
+
+  .ubuzima-native-section .ubuzima-native-action-grid.compact,
+  .ubuzima-native-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ubuzima-native-action {
+    min-height: 90px !important;
+    position: relative;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-content: stretch !important;
+    align-items: start;
+    gap: 5px 8px !important;
+    padding: 9px !important;
+    overflow: hidden;
+    border-color: rgba(91, 104, 87, 0.16) !important;
+    background: #ffffff !important;
+    box-shadow: 0 6px 14px rgba(16, 33, 27, 0.045) !important;
+  }
+
+  .ubuzima-native-action::after {
+    content: "";
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 18px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(75, 83, 32, 0.18);
+  }
+
+  .ubuzima-native-action .ubuzima-native-icon {
+    grid-row: span 2;
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    border-radius: 8px !important;
+  }
+
+  .ubuzima-native-action strong {
+    min-width: 0;
+    font-size: 0.74rem !important;
+    line-height: 1.12 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ubuzima-native-action small {
+    min-width: 0;
+    grid-column: 2;
+    display: -webkit-box !important;
+    color: #61736a !important;
+    font-size: 0.6rem !important;
+    font-weight: 740 !important;
+    line-height: 1.18 !important;
+    overflow: hidden !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .ubuzima-native-balance-grid {
+    grid-auto-columns: calc((100% - 7px) / 2) !important;
+    gap: 7px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .ubuzima-native-balance-card {
+    min-height: 82px !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 4px 7px !important;
+    padding: 8px !important;
+    background:
+      linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%) !important;
+  }
+
+  .ubuzima-native-balance-card .ubuzima-native-icon {
+    width: 25px !important;
+    min-width: 25px !important;
+    height: 25px !important;
+  }
+
+  .ubuzima-native-balance-card .ubuzima-native-value {
+    font-size: 0.9rem !important;
+  }
+
+  .ubuzima-native-balance-card small {
+    font-size: 0.57rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .ubuzima-native-pos-daily-summary {
+    gap: 6px !important;
+    padding: 8px !important;
+    background:
+      linear-gradient(135deg, #ffffff 0%, #f2f7f4 68%, #fff9ed 100%) !important;
+  }
+
+  .ubuzima-native-pos-daily-summary strong {
+    font-size: 0.78rem !important;
+  }
+
+  .ubuzima-native-pos-daily-summary em {
+    min-height: 21px !important;
+    padding-inline: 8px !important;
+    font-size: 0.55rem !important;
+  }
+
+  .ubuzima-native-pos-terminal {
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  .ubuzima-native-search-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+    min-height: 48px !important;
+    padding: 9px !important;
+    background: #f7faf9 !important;
+  }
+
+  .ubuzima-native-cart-preview > div {
+    padding: 9px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-stock-section {
+    grid-template-rows: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .ubuzima-native-payment-grid button,
+  .ubuzima-native-chip-grid button,
+  .ubuzima-native-account-actions button {
+    min-height: 48px !important;
+    border-radius: 8px !important;
+    font-size: 0.68rem !important;
+    background: #ffffff !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar {
+    min-height: calc(58px + min(14px, env(safe-area-inset-bottom))) !important;
+    padding:
+      4px
+      max(5px, env(safe-area-inset-right))
+      max(4px, min(14px, env(safe-area-inset-bottom)))
+      max(5px, env(safe-area-inset-left)) !important;
+    box-shadow: 0 -8px 20px rgba(16, 33, 27, 0.09) !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar button {
+    min-height: 48px !important;
+    padding: 3px 1px !important;
+    border-radius: 8px !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar .ubuzima-native-icon {
+    width: 23px !important;
+    min-width: 23px !important;
+    height: 21px !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar small {
+    font-size: 0.48rem !important;
+    line-height: 1.02 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .ubuzima-native-workflow-bar {
+    min-height: calc(50px + env(safe-area-inset-top)) !important;
+    padding:
+      calc(5px + env(safe-area-inset-top))
+      max(9px, env(safe-area-inset-right))
+      5px
+      max(9px, env(safe-area-inset-left)) !important;
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.075) !important;
+  }
+
+  .dashboard-shell--native-workflow-open > .dashboard-main,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-workflow-open > .dashboard-main {
+    padding:
+      calc(52px + env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(8px, min(14px, env(safe-area-inset-bottom)))
+      max(8px, env(safe-area-inset-left)) !important;
+    background:
+      linear-gradient(180deg, #f7faf9 0%, #edf3f1 58%, #f8faf8 100%) !important;
+  }
+
+  .ubuzima-native-workflow-bar__back,
+  .ubuzima-native-workflow-bar__sync {
+    min-height: 38px !important;
+    border-radius: 8px !important;
+    font-size: 0.68rem !important;
+    padding-inline: 9px !important;
+  }
+
+  .ubuzima-native-workflow-bar__title span {
+    font-size: 0.52rem !important;
+  }
+
+  .ubuzima-native-workflow-bar__title strong {
+    font-size: 0.8rem !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-counter-heading {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-stock-section,
+  .dashboard-shell--native-workflow-open .pos-sale-transaction-section,
+  .dashboard-shell--native-workflow-open .pos-cart-card,
+  .dashboard-shell--native-workflow-open .pos-shift-control-section,
+  .dashboard-shell--native-workflow-open .pos-summary-confirmation-card,
+  .dashboard-shell--native-workflow-open .pos-summary-field-card,
+  .dashboard-shell--native-workflow-open .panel,
+  .dashboard-shell--native-workflow-open .inventory-section,
+  .dashboard-shell--native-workflow-open .inventory-table-management-panel {
+    border-radius: 8px !important;
+    border-color: rgba(91, 104, 87, 0.14) !important;
+    background:
+      linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%) !important;
+    box-shadow: 0 7px 16px rgba(16, 33, 27, 0.05) !important;
+    padding: 9px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .section-heading {
+    align-items: center !important;
+    gap: 7px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .section-heading span,
+  .dashboard-shell--native-workflow-open label > span,
+  .dashboard-shell--native-workflow-open .pos-shift-field span,
+  .dashboard-shell--native-workflow-open .pos-summary-field-card span {
+    color: #65766e !important;
+    font-size: 0.58rem !important;
+    font-weight: 900 !important;
+    line-height: 1.05 !important;
+    text-transform: uppercase;
+  }
+
+  .dashboard-shell--native-workflow-open .section-heading h3,
+  .dashboard-shell--native-workflow-open h3,
+  .dashboard-shell--native-workflow-open h2 {
+    font-size: 0.88rem !important;
+    line-height: 1.12 !important;
+  }
+
+  .dashboard-shell--native-workflow-open :is(p, small, .muted, .form-hint) {
+    font-size: 0.64rem !important;
+    line-height: 1.22 !important;
+  }
+
+  .dashboard-shell--native-workflow-open :is(input, select, textarea) {
+    min-height: 42px !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+  }
+
+  .dashboard-shell--native-workflow-open :is(button, a) {
+    min-height: 40px !important;
+    border-radius: 8px;
+    font-size: 0.7rem;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-search-input {
+    position: sticky;
+    top: calc(52px + env(safe-area-inset-top));
+    z-index: 3;
+    margin: 0 0 7px !important;
+    background: #ffffff !important;
+    border-color: rgba(75, 83, 32, 0.18) !important;
+    box-shadow: 0 6px 16px rgba(16, 33, 27, 0.06);
+  }
+
+  .dashboard-shell--native-workflow-open .pos-inventory-load-panel {
+    grid-template-columns: minmax(0, 0.5fr) minmax(0, 1fr) !important;
+    align-items: center !important;
+    padding: 6px !important;
+    border-radius: 8px !important;
+    background: #f7faf9 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-inventory-load-panel button {
+    min-height: 36px !important;
+    background: #4b5320 !important;
+    color: #ffffff !important;
+    font-weight: 900 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-inventory-load-panel span {
+    color: #64756d !important;
+    font-size: 0.58rem !important;
+    line-height: 1.15 !important;
+    text-align: right;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-drug-list,
+  .dashboard-shell--native-workflow-open .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-rows: auto !important;
+    align-items: start !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-content: start !important;
+    gap: 7px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-tile,
+  .dashboard-shell--native-workflow-open .pos-product-tile-v16,
+  .dashboard-shell--native-workflow-open .pos-drug-list button {
+    position: relative;
+    min-height: 82px !important;
+    max-height: none !important;
+    height: auto !important;
+    align-self: start !important;
+    display: grid !important;
+    grid-template-rows: auto auto auto;
+    align-content: start !important;
+    gap: 4px !important;
+    border-radius: 8px !important;
+    border-color: rgba(75, 83, 32, 0.13) !important;
+    background:
+      linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%) !important;
+    color: #10211b !important;
+    padding: 8px !important;
+    box-shadow: 0 6px 14px rgba(16, 33, 27, 0.045) !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-tile::after,
+  .dashboard-shell--native-workflow-open .pos-product-tile-v16::after,
+  .dashboard-shell--native-workflow-open .pos-drug-list button::after {
+    content: "+";
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #4b5320;
+    color: #ffffff;
+    font-size: 0.86rem;
+    font-weight: 950;
+    line-height: 1;
+    box-shadow: 0 6px 12px rgba(75, 83, 32, 0.18);
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-tile strong,
+  .dashboard-shell--native-workflow-open .pos-product-tile-v16 strong {
+    display: -webkit-box !important;
+    min-width: 0;
+    color: #10211b !important;
+    font-size: 0.72rem !important;
+    font-weight: 900 !important;
+    line-height: 1.16 !important;
+    overflow: hidden !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-tile em,
+  .dashboard-shell--native-workflow-open .pos-product-tile-v16 em {
+    justify-self: start;
+    min-height: 22px;
+    width: auto !important;
+    display: inline-grid !important;
+    place-items: center;
+    border-radius: 999px !important;
+    background: #10211b !important;
+    color: #ffffff !important;
+    padding: 0 8px !important;
+    font-size: 0.62rem !important;
+    font-style: normal !important;
+    font-weight: 900 !important;
+    line-height: 1;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-card-line {
+    justify-self: start;
+    min-height: 20px;
+    width: auto !important;
+    display: inline-grid !important;
+    place-items: center;
+    border-radius: 999px !important;
+    background: rgba(75, 83, 32, 0.11) !important;
+    color: #2f3b15 !important;
+    padding: 0 7px !important;
+    font-size: 0.58rem !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-product-card-line:nth-of-type(n + 2) {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-shift-control-grid,
+  .dashboard-shell--native-workflow-open .pos-payment-summary-grid,
+  .dashboard-shell--native-workflow-open .pos-summary-update-bridge,
+  .dashboard-shell--native-workflow-open .pos-transaction-completion-actions,
+  .dashboard-shell--native-workflow-open .pos-invoice-journey {
+    gap: 7px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-shift-card,
+  .dashboard-shell--native-workflow-open .pos-summary-field-card {
+    border-radius: 8px !important;
+    padding: 8px !important;
+    background: #f8fbfa !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-summary-field-card strong {
+    font-size: 0.82rem !important;
+    line-height: 1.05 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dashboard-shell--native-workflow-open .system-table-wrap:has(.pos-cart-table) {
+    overflow: visible !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-cart-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 7px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-cart-table thead {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-cart-table tbody,
+  .dashboard-shell--native-workflow-open .pos-cart-table tr,
+  .dashboard-shell--native-workflow-open .pos-cart-table td {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-cart-table tr {
+    border: 1px solid rgba(91, 104, 87, 0.13);
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 8px;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-cart-table td {
+    border: 0 !important;
+    padding: 4px 0 !important;
+    font-size: 0.68rem !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-cart-table td:nth-child(2),
+  .dashboard-shell--native-workflow-open .pos-cart-table td:nth-child(3),
+  .dashboard-shell--native-workflow-open .pos-cart-table td:nth-child(4) {
+    display: inline-grid !important;
+    width: auto !important;
+    margin-right: 6px;
+    vertical-align: top;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog {
+    border-radius: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog__header h3 {
+    font-size: 0.92rem !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-readonly-grid,
+  .dashboard-shell--native-workflow-open .pos-quantity-selling-unit-hero,
+  .dashboard-shell--native-workflow-open .pos-quantity-total-strip,
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog__actions {
+    gap: 7px !important;
+  }
+}
+
+@media (min-width: 421px) and (max-width: 860px) {
+  .dashboard-shell--native-workflow-open .pos-drug-list,
+  .dashboard-shell--native-workflow-open .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .dashboard-shell--fresh-mobile-app .ubuzima-native-tabbar {
+    min-height: calc(56px + min(12px, env(safe-area-inset-bottom))) !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-drug-list,
+  .dashboard-shell--native-workflow-open .pos-drug-list--ten {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
