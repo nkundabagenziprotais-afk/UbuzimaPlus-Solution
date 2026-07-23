@@ -24,6 +24,12 @@ class StockBatch extends Model
         'supplier_name',
         'status',
         'metadata',
+        'original_unit_cost',
+        'inferred_unit_cost',
+        'cost_source',
+        'cost_adjustment_method',
+        'cost_resolution_notes',
+        'cost_resolved_at',
     ];
 
     protected $casts = [

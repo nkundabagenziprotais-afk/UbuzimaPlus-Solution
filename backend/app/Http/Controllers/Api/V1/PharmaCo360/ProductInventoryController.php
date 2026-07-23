@@ -10,6 +10,7 @@ use App\Models\ProductCategory;
 use App\Models\StockBatch;
 use App\Models\StockLocation;
 use App\Models\StockMovement;
+use App\Services\PharmaCo360\InventoryCostResolver;
 use App\Services\Access\ScopeResolver;
 use App\Services\Auth\UserAccessProfileService;
 use App\Services\Audit\AuditLogService;
@@ -2513,6 +2514,7 @@ class ProductInventoryController extends Controller
         ]);
     }
 
+    /* LEGACY_COST_RESOLUTION_V1 */
     private function serializeBatch(StockBatch $batch): array
     {
         $metadata = is_array($batch->metadata) ? $batch->metadata : [];
@@ -2554,6 +2556,14 @@ class ProductInventoryController extends Controller
             'quantity_on_hand' => (float) $batch->quantity_on_hand,
             'quantity_reserved' => (float) $batch->quantity_reserved,
             'available_quantity' => (float) $batch->quantity_on_hand - (float) $batch->quantity_reserved,
+            'resolved_unit_cost' => app(InventoryCostResolver::class)->resolve(
+                $batch->unit_cost,
+                $batch->selling_price,
+                $batch->cost_source ?? null,
+                $batch->inferred_unit_cost ?? null,
+            )['resolved_unit_cost'],
+            'cost_source' => $batch->cost_source ?? null,
+            'cost_adjustment_method' => $batch->cost_adjustment_method ?? null,
             'unit_cost' => $batch->unit_cost === null ? null : (float) $batch->unit_cost,
             'amount' => round(
                 (float) $batch->quantity_on_hand
@@ -2715,7 +2725,7 @@ class ProductInventoryController extends Controller
             ?: $request->query('date_to')
             ?: now()->toDateString();
 
-        $batchValueExpression = "COALESCE(quantity_on_hand, 0) * COALESCE(unit_cost, selling_price / 1.3, 0)";
+        $batchValueExpression = "COALESCE(quantity_on_hand, 0) * (CASE WHEN cost_source IN ('legacy_equal_price_cost', 'inferred_from_price') AND COALESCE(inferred_unit_cost, 0) > 0 THEN COALESCE(inferred_unit_cost, 0) WHEN COALESCE(unit_cost, 0) > 0 THEN COALESCE(unit_cost, 0) WHEN COALESCE(selling_price, 0) > 0 THEN COALESCE(selling_price, 0) / 1.4 ELSE 0 END)";
 
         $batchBase = \Illuminate\Support\Facades\DB::table('stock_batches')
             ->when($tenantId, fn ($query) => $query->where('tenant_id', $tenantId))
