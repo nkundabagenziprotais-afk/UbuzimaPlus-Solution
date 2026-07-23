@@ -790,9 +790,6 @@ export function UbuzimaMobileApp({
               <span>Inventory</span>
               <strong>Stock position</strong>
             </div>
-            <button type="button" onClick={stockActions[0]?.onPress}>
-              Open
-            </button>
           </div>
 
           <div className="ubuzima-native-inventory-values">

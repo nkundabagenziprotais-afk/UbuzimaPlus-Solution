@@ -116,6 +116,10 @@ import {
   type UbuzimaMobileAppScreen,
   type UbuzimaMobileAppWorkbench,
 } from './components/UbuzimaMobileApp';
+import {
+  MobileNativeOperationalWorkflow,
+  type MobileNativeOperationalWorkflowKind,
+} from './components/MobileNativeOperationalWorkflow';
 
 type StoredSession = {
   token: string;
@@ -269,12 +273,14 @@ type NativeMobileSectionOptions = {
   reportWorkspace?: AdhocReportWorkspaceKey;
   screen?: UbuzimaMobileAppScreen;
   supplierWorkspace?: SupplierWorkspaceKey;
+  workflowKey?: MobileNativeOperationalWorkflowKind;
   workflowTitle?: string;
 };
 type MobileNativeWorkflowState = {
   section: AdminSectionKey;
   screen: UbuzimaMobileAppScreen;
   title: string;
+  workflowKey?: MobileNativeOperationalWorkflowKind;
 } | null;
 const adminStateStorageKey = 'ubuzima.admin.state.v1';
 
@@ -5296,6 +5302,7 @@ function App() {
         section,
         screen: nextScreen,
         title: mobileWorkflowTitleForSection(section, options),
+        workflowKey: options.workflowKey,
       });
     } else {
       setMobileNativeWorkflow(null);
@@ -5342,17 +5349,11 @@ function App() {
     }
 
     if (screen === 'general-stock') {
-      if (visibleSectionKeys.has('general-stock-items')) {
-        openNativeMobileSection('general-stock-items', {
-          screen,
-        });
-        return;
-      }
-
+      setMobileAppScreen('procurement');
       if (visibleSectionKeys.has('suppliers')) {
         openNativeMobileSection('suppliers', {
-          supplierWorkspace: 'general-items-overview',
-          screen,
+          supplierWorkspace: 'overview',
+          screen: 'procurement',
         });
       }
       return;
@@ -10572,22 +10573,6 @@ return (
           },
         ]
       : []),
-    ...(visibleSectionKeys.has('general-stock-items') || visibleSectionKeys.has('suppliers')
-      ? [
-          {
-            key: 'general-stock',
-            label: 'General Stock',
-            icon: 'GS',
-            screen: 'general-stock' as UbuzimaMobileAppScreen,
-          },
-        ]
-      : []),
-    {
-      key: 'more',
-      label: 'More',
-      icon: 'MN',
-      screen: 'more',
-    },
   ];
   const nativeGrossSalesMetric = readSharedBusinessMetricRecord(['Gross Sales']);
   const nativeGrossRevenueMetric = readSharedBusinessMetricRecord(['Gross Revenue', 'Gross Profit']);
@@ -10712,30 +10697,6 @@ return (
           },
         ]
       : []),
-    ...(visibleSectionKeys.has('general-stock-items') || visibleSectionKeys.has('suppliers')
-      ? [
-          {
-            key: 'general-stock',
-            label: 'General Stock',
-            detail: 'Operational supplies store',
-            icon: 'GS',
-            tone: 'red' as const,
-            onPress: () => {
-              if (visibleSectionKeys.has('general-stock-items')) {
-                openNativeMobileSection('general-stock-items', {
-                  screen: 'general-stock',
-                });
-                return;
-              }
-
-              openNativeMobileSection('suppliers', {
-                supplierWorkspace: 'general-items-overview',
-                screen: 'general-stock',
-              });
-            },
-          },
-        ]
-      : []),
   ];
   const nativeStockActions: UbuzimaMobileAppAction[] = [
     ...(visibleSectionKeys.has('inventory')
@@ -10752,6 +10713,7 @@ return (
                 inventoryView: 'product-inventory',
                 openWorkflow: true,
                 screen: 'inventory',
+                workflowKey: 'receive-stock-manually',
                 workflowTitle: 'Receive Stock Manually',
               });
             },
@@ -10843,6 +10805,7 @@ return (
                 openWorkflow: true,
                 supplierWorkspace: 'create-purchase-order',
                 screen: 'procurement',
+                workflowKey: 'purchase-orders',
                 workflowTitle: 'Purchase Orders',
               }),
           },
@@ -10857,6 +10820,7 @@ return (
                 openWorkflow: true,
                 supplierWorkspace: 'receive-purchase-order',
                 screen: 'procurement',
+                workflowKey: 'receiving',
                 workflowTitle: 'Receiving',
               }),
           },
@@ -11239,7 +11203,6 @@ return (
         status: 'Supply desk',
         actions: [
           ...nativeProcurementActions,
-          ...nativeGeneralStockActions.filter((action) => action.key === 'general-items-overview'),
         ].slice(0, 4),
       };
     }
@@ -11710,7 +11673,16 @@ return (
         </section>
 
         <section className="dashboard-scroll-panel">
-          {renderActiveSection()}
+          {mobileNativeWorkflow?.workflowKey ? (
+            <MobileNativeOperationalWorkflow
+              kind={mobileNativeWorkflow.workflowKey}
+              token={session!.token}
+              profile={profile!}
+              onCompleted={refreshMobileWorkspace}
+            />
+          ) : (
+            renderActiveSection()
+          )}
         </section>
 
         {loginSuccess && (
