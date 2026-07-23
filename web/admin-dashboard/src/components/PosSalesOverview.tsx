@@ -1,3 +1,4 @@
+/* POS_SALES_TREND_DATA_LABEL_2_DECIMALS_V1 */
 /*
  POS_AND_SALES_OVERVIEW_DEPLOY_TARGET_V1 */
 import {
@@ -149,6 +150,12 @@ const defaultVisibility: VisibilityConfiguration = {
 
 
 
+
+const formatPosSalesTrendDataLabel = (value: number): string =>
+  Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
 function tenantSlugFrom(
   profile: AccessProfile,
