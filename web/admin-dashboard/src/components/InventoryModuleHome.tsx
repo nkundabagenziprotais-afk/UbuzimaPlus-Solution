@@ -1,3 +1,4 @@
+/* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
 import {
   useEffect,
   useMemo,
@@ -2500,19 +2501,6 @@ export function InventoryModuleHome({
             let fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
               nearExpiryValueByDate.get(dateKey) ?? 0,
             );
-
-            const nearExpiryTrendFallbackValue = Math.max(
-              alignedInventoryKpiNearExpiryValue,
-              apiInventoryKpiNearExpiryValue,
-              nearExpiryValue,
-              nearExpirySourceRows.reduce((sum, row) => sum + row.value, 0),
-            );
-
-            if (fullNearExpiryTrendValues.every((value) => value <= 0) && nearExpiryTrendFallbackValue > 0) {
-              fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
-                dateKey === analyticsAppliedDateToFilter ? nearExpiryTrendFallbackValue : 0,
-              );
-            }
 
             // REAL_STOCK_VALUE_TREND_FROM_BATCHES_V1
             // Build Stock Value Trend from real loaded stock batches.

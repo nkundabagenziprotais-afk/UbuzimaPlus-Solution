@@ -2515,6 +2515,7 @@ class ProductInventoryController extends Controller
     }
 
     /* LEGACY_COST_RESOLUTION_V1 */
+    /* INVENTORY_TREND_RESOLVED_COST_V1 */
     private function serializeBatch(StockBatch $batch): array
     {
         $metadata = is_array($batch->metadata) ? $batch->metadata : [];
