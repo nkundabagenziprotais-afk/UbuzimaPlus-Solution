@@ -1,3 +1,4 @@
+/* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
 import {
@@ -2303,6 +2304,7 @@ export function InventoryModuleHome({
               totalValue,
             );
 
+
             const displayedStockOnHandCount = Math.max(
               dashboardStockOnHandCount,
               analyticsVisibleKpiFallback.stockOnHandCount,
@@ -2441,6 +2443,39 @@ export function InventoryModuleHome({
             const selectedTrendDateKeys = analyticsTrendWeekSelection === 'all'
               ? analyticsTrendDateKeys
               : analyticsTrendDateKeys.filter((_, index) => `week-${Math.floor(index / 7) + 1}` === analyticsTrendWeekSelection);
+
+            const inventoryAnalyticsCardSourceTrendDateKeys =
+              selectedTrendDateKeys.length > 0
+                ? selectedTrendDateKeys
+                : [analyticsAppliedDateToFilter];
+
+            const inventoryAnalyticsCardSourceAsAtIndex = Math.max(
+              inventoryAnalyticsCardSourceTrendDateKeys.length - 1,
+              0,
+            );
+
+            const inventoryAnalyticsCardSourceStockValue = displayedTotalInventoryValue;
+
+            const inventoryAnalyticsCardSourceNearExpiryValue = Math.max(
+              apiInventoryKpiNearExpiryValue,
+              nearExpiryValue,
+              analyticsVisibleKpiFallback.nearExpiryValue,
+            );
+
+            const inventoryAnalyticsCardStockValueTrendValues =
+              inventoryAnalyticsCardSourceTrendDateKeys.map((_, index) =>
+                index === inventoryAnalyticsCardSourceAsAtIndex
+                  ? inventoryAnalyticsCardSourceStockValue
+                  : 0,
+              );
+
+            const inventoryAnalyticsCardNearExpiryTrendValues =
+              inventoryAnalyticsCardSourceTrendDateKeys.map((_, index) =>
+                index === inventoryAnalyticsCardSourceAsAtIndex
+                  ? inventoryAnalyticsCardSourceNearExpiryValue
+                  : 0,
+              );
+
 
             const stockMovementByDate = new Map<string, { received: number; issued: number }>();
 
@@ -2666,8 +2701,8 @@ export function InventoryModuleHome({
 
                     <div className="inventory-analytics-stacked-bar-trends">
                       {[
-                        { label: 'Total Inventory Trend', values: trendValues },
-                        { label: 'Near Expiry Trend', values: nearExpiryTrendValues },
+                        { label: 'Total Inventory Trend', values: inventoryAnalyticsCardStockValueTrendValues },
+                        { label: 'Near Expiry Trend', values: inventoryAnalyticsCardNearExpiryTrendValues },
                       ].map((chart) => {
                         const maxChartValue = Math.max(...chart.values, 1);
 
