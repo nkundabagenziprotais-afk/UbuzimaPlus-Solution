@@ -54466,3 +54466,87 @@ html.ubuzima-standalone-webapp .admin-header {
     padding-bottom: max(16px, calc(env(safe-area-inset-bottom) + 10px)) !important;
   }
 }
+
+/* Explicit POS product mode: no white bottom gap in installed mobile app */
+@media (max-width: 860px) {
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    background: #f6faf8 !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products > .dashboard-main {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    padding:
+      calc(52px + env(safe-area-inset-top))
+      0
+      0
+      0 !important;
+    overflow: hidden !important;
+    background: #f6faf8 !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .dashboard-scroll-panel,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .section-page,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-dedicated-counter-shell,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-counter-page,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-terminal-main-scroll,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-scroll-body-v16,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-counter-workbench {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #f6faf8 !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-product-stock-section {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+    margin: 0 !important;
+    padding:
+      9px
+      max(8px, env(safe-area-inset-right))
+      0
+      max(8px, env(safe-area-inset-left)) !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    border-width: 1px 0 0 !important;
+    background: #f6faf8 !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-mobile-sequence-header,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-mobile-step-actions {
+    display: none !important;
+  }
+
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-drug-list,
+  .dashboard-shell--fresh-mobile-app.dashboard-shell--native-pos-products .pos-drug-list--ten {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px)) !important;
+    background: #f6faf8 !important;
+  }
+}

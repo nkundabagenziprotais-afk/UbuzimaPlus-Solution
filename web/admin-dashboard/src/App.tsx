@@ -11269,7 +11269,13 @@ return (
     <main
       className={`dashboard-shell dashboard-shell--mobile-app-ready dashboard-shell--fresh-mobile-app ${
         isMobileDrawerOpen ? 'dashboard-shell--mobile-drawer-open' : ''
-      } ${mobileNativeWorkflow ? 'dashboard-shell--native-workflow-open' : ''}`}
+      } ${mobileNativeWorkflow ? 'dashboard-shell--native-workflow-open' : ''} ${
+        mobileNativeWorkflow?.section === 'pos' &&
+        activePosWorkspace === 'pos' &&
+        mobilePosStep === 'products'
+          ? 'dashboard-shell--native-pos-products'
+          : ''
+      }`}
       style={leftMenuStyle}
     >
       <UbuzimaMobileApp
