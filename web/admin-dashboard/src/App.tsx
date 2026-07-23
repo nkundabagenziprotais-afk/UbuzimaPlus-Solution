@@ -8002,9 +8002,13 @@ async function confirmTransaction() {
                           >
                             <strong className="pos-product-card-name">{product.name}</strong>
                             <span className="pos-product-card-row">
-                              <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
-                              <span className="pos-product-card-available">
-                                Stock {product.availableQuantity.toLocaleString('en-RW')}
+                              <span className="pos-product-card-metric pos-product-card-price">
+                                <span>Price</span>
+                                <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
+                              </span>
+                              <span className="pos-product-card-metric pos-product-card-stock">
+                                <span>Stock Qty</span>
+                                <strong>{product.availableQuantity.toLocaleString('en-RW')}</strong>
                               </span>
                             </span>
                           </button>
