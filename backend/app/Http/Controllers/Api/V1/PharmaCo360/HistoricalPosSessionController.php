@@ -208,14 +208,13 @@ class HistoricalPosSessionController extends Controller
 
                     $approval = null;
 
-                    // HISTORICAL_POS_ADMIN_OWNER_BYPASS_V1
-                    // Admin, Owner, and users with historical approval rights can open
-                    // a conflicted historical POS session directly. Other users must
-                    // request approval through POS Session Management.
-                    if (
-                        $summary['live_activity_exists']
-                        && ! $this->userCanBypassHistoricalPosApproval($request)
-                    ) {
+                    /*
+                     * When live activity exists and an approval code is supplied,
+                     * validate and consume it for every role. Previously users with
+                     * bypass rights skipped this block, which allowed invalid codes
+                     * and opened sessions without historical_approval_id.
+                     */
+                    if ($summary['live_activity_exists']) {
                         $approval =
                             PharmacoHistoricalPosApproval::query()
                                 ->whereKey(
