@@ -3108,6 +3108,34 @@ export type PharmaFinancePosRevenueShadowReportResponse = {
   data: PharmaFinancePosRevenueShadowReport;
 };
 
+export type PharmaFinanceReadinessHealthCheck = {
+  label: string;
+  status: string;
+  details: Record<string, unknown>;
+};
+
+export type PharmaFinanceReadinessHealthReport = {
+  mode: string;
+  overall_status: string;
+  dashboard_switch_status: string;
+  filters: {
+    tenant_id: number;
+    from: string | null;
+    to: string | null;
+    branch_id: number | null;
+  };
+  summary: {
+    blocking_failures: string[];
+    checks_passed: number;
+    checks_total: number;
+  };
+  checks: Record<string, PharmaFinanceReadinessHealthCheck>;
+};
+
+export type PharmaFinanceReadinessHealthReportResponse = {
+  data: PharmaFinanceReadinessHealthReport;
+};
+
 function financePosShadowReconciliationQuery(
   filters?: PharmaFinancePosShadowReconciliationFilters,
 ): string {
@@ -3205,6 +3233,18 @@ export async function getPharmaFinancePosRevenueShadowReport(
   return getJsonWithTenant<PharmaFinancePosRevenueShadowReportResponse>(
     token,
     `/pharmaco/finance/reports/pos-revenue-shadow${financePosShadowReconciliationQuery(filters)}`,
+    tenantSlug,
+  );
+}
+
+export async function getPharmaFinanceReadinessHealthReport(
+  token: string,
+  tenantSlug: string,
+  filters?: PharmaFinancePosShadowReconciliationFilters,
+): Promise<PharmaFinanceReadinessHealthReportResponse> {
+  return getJsonWithTenant<PharmaFinanceReadinessHealthReportResponse>(
+    token,
+    `/pharmaco/finance/reports/readiness-health${financePosShadowReconciliationQuery(filters)}`,
     tenantSlug,
   );
 }
