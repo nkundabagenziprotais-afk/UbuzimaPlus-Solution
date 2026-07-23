@@ -13,6 +13,7 @@ use App\Models\PharmacoPayment;
 use App\Models\PharmacoPosSession;
 use App\Models\StockBatch;
 use App\Models\StockMovement;
+use App\Services\PharmaCo360\InventoryCostResolver;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
 use App\Services\Finance\PharmacoPosPaymentShadowPostingService;
@@ -84,7 +85,7 @@ class SalesDispensingController extends Controller
         $tenant = $request->attributes->get('tenant');
 
         $sales = PharmacoSale::query()
-            ->with(['branch', 'customer', 'prescription', 'payments', 'items.product'])
+            ->with(['branch', 'customer', 'prescription', 'payments', 'items.product', 'items.stockBatch'])
             ->withCount(['items', 'payments'])
             ->where('tenant_id', $tenant->id)
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
@@ -2255,6 +2256,7 @@ class SalesDispensingController extends Controller
         }
     }
 
+    /* LEGACY_COST_MARGIN_COMPUTATION_V1 */
     private function serializeSale(PharmacoSale $sale, bool $includeDetails = false): array
     {
         $payload = [
