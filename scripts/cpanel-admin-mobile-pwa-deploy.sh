@@ -122,6 +122,56 @@ verify_live_api_health() {
   rm -f "$headers_file" "$body_file"
 }
 
+restore_admin_backup() {
+  echo "== Auto-restore previous production admin =="
+
+  if [ ! -d "$backup_dir" ]; then
+    echo "Backup directory is missing, cannot auto-restore: $backup_dir"
+    return 1
+  fi
+
+  if [ -f "$backup_dir/EMPTY_TARGET.txt" ]; then
+    echo "Backup target was empty before deploy; leaving current admin files for manual review."
+    return 0
+  fi
+
+  rsync -a --delete --exclude 'assets/***' "$backup_dir"/ "$ADMIN_WEB_ROOT"/
+
+  if [ -d "$backup_dir/assets" ]; then
+    mkdir -p "$ADMIN_WEB_ROOT/assets"
+    rsync -a "$backup_dir/assets"/ "$ADMIN_WEB_ROOT/assets"/
+  fi
+}
+
+run_live_verification() {
+  base_url="${PUBLIC_ADMIN_URL%/}"
+  asset_origin="${base_url%/admin}"
+
+  if [ "$asset_origin" = "$base_url" ]; then
+    asset_origin="$base_url"
+  fi
+
+  echo "== Live URL verification =="
+  verify_live_api_health "$asset_origin/api/v1/health?release=$release_short"
+
+  live_index="$(curl -fsSL "$base_url/?release=$release_short")"
+  while IFS= read -r asset_path; do
+    if [ -z "$asset_path" ]; then
+      continue
+    fi
+
+    echo "$live_index" | grep -Fq "$asset_path"
+    verify_live_asset "$asset_origin$asset_path?release=$release_short" "$asset_path"
+  done < <(grep -Eo '/admin/assets/[^"]+' "$ADMIN_DIR/dist/index.html" | sort -u)
+
+  expected_cache_line="$(grep -F 'const CACHE_NAME' "$ADMIN_DIR/dist/sw.js" | head -n 1)"
+  curl -fsSL "$base_url/sw.js?release=$release_short" | grep -Fq "$expected_cache_line"
+  curl -fsSL "$base_url/pwa-safe.html?release=$release_short" | grep -Fq "ubuzima-safe-landing"
+  curl -fsSL "$base_url/UBUZIMA_ADMIN_RELEASE.txt?release=$release_short" | grep -Fq "Commit: $current_commit"
+  curl -fsSI "$base_url/manifest.webmanifest?release=$release_short" \
+    | grep -Eiq 'content-type: *(application/manifest\+json|application/json)'
+}
+
 cd "$ROOT_DIR"
 "$AUDIT_SCRIPT"
 
@@ -181,33 +231,15 @@ MARKER
 test -f "$ADMIN_WEB_ROOT/index.html"
 test -f "$ADMIN_WEB_ROOT/manifest.webmanifest"
 test -f "$ADMIN_WEB_ROOT/sw.js"
+test -f "$ADMIN_WEB_ROOT/pwa-safe.html"
 
 if [ -n "$PUBLIC_ADMIN_URL" ] && command -v curl >/dev/null 2>&1; then
-  base_url="${PUBLIC_ADMIN_URL%/}"
-  asset_origin="${base_url%/admin}"
-
-  if [ "$asset_origin" = "$base_url" ]; then
-    asset_origin="$base_url"
+  if ! ( run_live_verification ); then
+    echo "Live verification failed. Restoring the admin backup created before this deploy."
+    restore_admin_backup
+    echo "Deploy failed and auto-restore was attempted. Review the verification error above before retrying."
+    exit 1
   fi
-
-  echo "== Live URL verification =="
-  verify_live_api_health "$asset_origin/api/v1/health?release=$release_short"
-
-  live_index="$(curl -fsSL "$base_url/?release=$release_short")"
-  while IFS= read -r asset_path; do
-    if [ -z "$asset_path" ]; then
-      continue
-    fi
-
-    echo "$live_index" | grep -Fq "$asset_path"
-    verify_live_asset "$asset_origin$asset_path?release=$release_short" "$asset_path"
-  done < <(grep -Eo '/admin/assets/[^"]+' "$ADMIN_DIR/dist/index.html" | sort -u)
-
-  expected_cache_line="$(grep -F 'const CACHE_NAME' "$ADMIN_DIR/dist/sw.js" | head -n 1)"
-  curl -fsSL "$base_url/sw.js?release=$release_short" | grep -Fq "$expected_cache_line"
-  curl -fsSL "$base_url/UBUZIMA_ADMIN_RELEASE.txt?release=$release_short" | grep -Fq "Commit: $current_commit"
-  curl -fsSI "$base_url/manifest.webmanifest?release=$release_short" \
-    | grep -Eiq 'content-type: *(application/manifest\+json|application/json)'
 fi
 
 echo "Deploy completed."

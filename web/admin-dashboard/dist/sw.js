@@ -1,7 +1,10 @@
-const CACHE_NAME = 'ubuzima-admin-shell-v21';
+const CACHE_NAME = 'ubuzima-admin-shell-v22';
+const FAILOVER_CACHE_NAME = 'ubuzima-admin-failover-v1';
+const SAFE_LANDING_PATH = '/admin/pwa-safe.html';
 const SHELL_ASSETS = [
   '/admin/',
   '/admin/index.html',
+  SAFE_LANDING_PATH,
   '/admin/manifest.webmanifest',
   '/admin/assets/ubuzima-pwa-icon.svg',
   '/admin/assets/ubuzima-pwa-maskable.svg',
@@ -23,6 +26,10 @@ function isAdminShellHtml(html) {
     html.includes('/admin/assets/') ||
     html.includes('/src/main.tsx')
   );
+}
+
+function isSafeLandingHtml(html) {
+  return html.includes('ubuzima-safe-landing') && html.includes('openStableApp');
 }
 
 function extractAdminAssetPaths(html) {
@@ -54,6 +61,8 @@ async function cacheSeedAssets(cache) {
       await cacheResponse(cache, assetPath, response);
     })
   );
+
+  await cacheSafeLanding(cache).catch(() => {});
 }
 
 async function cachedAdminShell(cache) {
@@ -75,6 +84,54 @@ async function cachedAdminShell(cache) {
   return undefined;
 }
 
+async function cacheSafeLanding(cache) {
+  const response = await fetch(SAFE_LANDING_PATH, { cache: 'reload' });
+
+  if (response.ok && isHtmlResponse(response)) {
+    const html = await response.clone().text();
+
+    if (isSafeLandingHtml(html)) {
+      await cache.put(SAFE_LANDING_PATH, response.clone());
+    }
+  }
+}
+
+async function cachedSafeLanding(cache) {
+  const cached = await cache.match(SAFE_LANDING_PATH);
+
+  if (!cached || !cached.ok || !isHtmlResponse(cached)) {
+    return undefined;
+  }
+
+  const html = await cached.clone().text();
+
+  return isSafeLandingHtml(html) ? cached : undefined;
+}
+
+async function safeLandingResponse(reason) {
+  const cache = await caches.open(CACHE_NAME);
+  const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
+  const cached = await cachedSafeLanding(cache) || await cachedSafeLanding(failoverCache);
+
+  return cached || shellRecoveryResponse(reason);
+}
+
+async function promoteFailoverSnapshot() {
+  const cache = await caches.open(CACHE_NAME);
+  const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
+  const shell = await cachedAdminShell(cache);
+
+  if (!shell) {
+    return;
+  }
+
+  const html = await shell.clone().text();
+  await failoverCache.put('/admin/index.html', shell.clone());
+  await failoverCache.put('/admin/', shell.clone());
+  await cacheDiscoveredShellAssets(failoverCache, html);
+  await cacheSafeLanding(failoverCache).catch(() => {});
+}
+
 async function refreshShellCache() {
   const cache = await caches.open(CACHE_NAME);
   const response = await fetch('/admin/index.html', { cache: 'reload' });
@@ -90,7 +147,9 @@ async function refreshShellCache() {
     }
   }
 
-  return cachedAdminShell(cache) || shellRecoveryResponse('Ubuzima+ could not confirm a valid admin app shell from the server.');
+  const cached = await cachedAdminShell(cache);
+
+  return cached || await safeLandingResponse('Ubuzima+ could not confirm a valid admin app shell from the server.');
 }
 
 function assetRecoveryResponse(url) {
@@ -102,7 +161,12 @@ function assetRecoveryResponse(url) {
         'var root = document.getElementById("root");',
         'if (root && window.__UBUZIMA_APP_READY__ !== true) {',
         '  root.innerHTML = ' + JSON.stringify('<div class="ubuzima-boot-fallback" role="alert" aria-live="assertive"><div class="ubuzima-boot-fallback__card"><strong>Refresh Ubuzima+</strong><span>The installed app cache is stale. Use Fix app to clear only the Ubuzima+ app cache and reopen.</span><div class="ubuzima-boot-fallback__actions"><button type="button" onclick="window.location.reload()">Reload</button><button class="primary" type="button" onclick="window.ubuzimaClearPwaCache && window.ubuzimaClearPwaCache()">Fix app</button></div></div></div>') + ';',
-        '}'
+        '}',
+        'window.setTimeout(function () {',
+        '  if (window.__UBUZIMA_APP_READY__ !== true) {',
+        '    window.location.replace("/admin/pwa-safe.html?reason=asset-load-failed");',
+        '  }',
+        '}, 1600);'
       ].join('\n'),
       {
         status: 200,
@@ -223,9 +287,19 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME && key.startsWith('ubuzima-admin-shell-'))
+          .map((key) => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'UBUZIMA_ADMIN_APP_READY') {
+    event.waitUntil(promoteFailoverSnapshot());
+  }
 });
 
 self.addEventListener('fetch', (event) => {
@@ -240,17 +314,43 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (url.pathname === SAFE_LANDING_PATH) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        return fetch(request, { cache: 'reload' }).then(async (response) => {
+          if (response.ok && isHtmlResponse(response)) {
+            const html = await response.clone().text();
+
+            if (isSafeLandingHtml(html)) {
+              await cache.put(SAFE_LANDING_PATH, response.clone());
+              const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
+              await failoverCache.put(SAFE_LANDING_PATH, response.clone());
+              return response;
+            }
+          }
+
+          return await cachedSafeLanding(cache) || await safeLandingResponse('Ubuzima+ could not load the safe app base.');
+        }).catch(async () => await cachedSafeLanding(cache) || await safeLandingResponse('Ubuzima+ opened the cached safe app base.'));
+      })
+    );
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
-        const cachedShell = await cachedAdminShell(cache);
+        const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
+        const useStableShell = url.searchParams.get('stable') === '1';
+        const cachedShell = useStableShell
+          ? await cachedAdminShell(failoverCache)
+          : await cachedAdminShell(cache);
         const refresh = refreshShellCache().catch(() => undefined);
 
         if (cachedShell) {
           return cachedShell;
         }
 
-        return refresh.then((response) => response || shellRecoveryResponse('Ubuzima+ could not open the admin app shell.'));
+        return refresh.then((response) => response || safeLandingResponse('Ubuzima+ could not open the admin app shell.'));
       })
     );
     return;
@@ -270,6 +370,13 @@ self.addEventListener('fetch', (event) => {
 
         if (cached) {
           await cache.delete(request);
+        }
+
+        const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
+        const failoverAsset = await failoverCache.match(request);
+
+        if (failoverAsset && isCacheableAssetResponse(failoverAsset)) {
+          return failoverAsset;
         }
 
         return fetch(request, { cache: 'reload' }).then((response) => {
@@ -298,6 +405,6 @@ self.addEventListener('fetch', (event) => {
 
         return response;
       })
-      .catch(() => caches.match(request).then((cached) => cached || caches.match('/admin/index.html')))
+      .catch(() => caches.match(request).then((cached) => cached || safeLandingResponse('Ubuzima+ could not reach this admin file.')))
   );
 });

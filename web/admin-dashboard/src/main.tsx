@@ -1130,4 +1130,13 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
 if (typeof window !== 'undefined') {
   (window as Window & { __UBUZIMA_APP_READY__?: boolean }).__UBUZIMA_APP_READY__ = true;
   window.dispatchEvent(new Event('ubuzima:app-ready'));
+
+  if ('serviceWorker' in navigator) {
+    const readyMessage = { type: 'UBUZIMA_ADMIN_APP_READY' };
+
+    navigator.serviceWorker.controller?.postMessage(readyMessage);
+    navigator.serviceWorker.ready
+      .then((registration) => registration.active?.postMessage(readyMessage))
+      .catch(() => {});
+  }
 }

@@ -86,6 +86,14 @@
           return window.__UBUZIMA_APP_READY__ === true;
         }
 
+        function openSafeMode(reason, delay) {
+          window.setTimeout(function () {
+            if (!appIsReady()) {
+              window.location.replace('/admin/pwa-safe.html?reason=' + encodeURIComponent(reason || 'app-startup'));
+            }
+          }, delay || 1200);
+        }
+
         function showRecovery(reason) {
           var root = rootNode();
 
@@ -153,6 +161,7 @@
 
             if (assetUrl && assetUrl.indexOf('/admin/assets/') !== -1) {
               showRecovery('The installed app could not load its latest files. Use Fix app to clear only the Ubuzima+ app cache and reopen.');
+              openSafeMode('asset-load-failed', 1600);
             }
           },
           true
@@ -160,6 +169,7 @@
 
         window.addEventListener('ubuzima:pwa-asset-failed', function () {
           showRecovery('The installed app cache is stale. Use Fix app to refresh the Ubuzima+ app without changing the rest of the system.');
+          openSafeMode('stale-app-cache', 1600);
         });
 
         window.setTimeout(function () {
@@ -167,6 +177,7 @@
 
           if (root && !appIsReady()) {
             showRecovery('The app is taking longer than expected to open. Use Fix app to refresh only the installed Ubuzima+ app cache.');
+            openSafeMode('startup-timeout', 2600);
           }
         }, 9000);
       })();

@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#4B5320" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Ubuzima+" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="/admin/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/admin/assets/ubuzima-pwa-icon.svg" />
+    <link rel="apple-touch-icon" href="/admin/assets/vitapharma-logo.png" />
+    <title>Ubuzima+ Safe Mode</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ubuzima-olive: #4b5320;
+        --ubuzima-ink: #10211b;
+        --ubuzima-muted: #65756b;
+        --ubuzima-line: rgba(75, 83, 32, 0.16);
+        --ubuzima-soft: #edf4f1;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-height: 100dvh;
+        padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(237, 244, 241, 0.96)),
+          var(--ubuzima-soft);
+        color: var(--ubuzima-ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .ubuzima-safe-landing {
+        width: min(420px, 100%);
+        min-height: calc(100dvh - max(18px, env(safe-area-inset-top)) - max(18px, env(safe-area-inset-bottom)) - 36px);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 18px;
+        margin: 0 auto;
+      }
+
+      .safe-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .safe-brand img {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        object-fit: cover;
+        box-shadow: 0 12px 24px rgba(16, 33, 27, 0.16);
+      }
+
+      .safe-brand strong,
+      .safe-status strong,
+      .safe-action strong {
+        display: block;
+      }
+
+      .safe-brand strong {
+        font-size: 1.08rem;
+        letter-spacing: 0;
+      }
+
+      .safe-brand span,
+      .safe-status span,
+      .safe-action span,
+      .safe-footnote {
+        color: var(--ubuzima-muted);
+        font-size: 0.84rem;
+        line-height: 1.4;
+      }
+
+      .safe-main {
+        display: grid;
+        align-content: center;
+        gap: 12px;
+      }
+
+      .safe-status,
+      .safe-action,
+      .safe-health {
+        border: 1px solid var(--ubuzima-line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 16px 38px rgba(16, 33, 27, 0.08);
+      }
+
+      .safe-status {
+        display: grid;
+        gap: 8px;
+        padding: 18px;
+      }
+
+      .safe-status small {
+        width: fit-content;
+        border-radius: 999px;
+        padding: 5px 9px;
+        background: rgba(75, 83, 32, 0.1);
+        color: var(--ubuzima-olive);
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .safe-status strong {
+        font-size: 1.14rem;
+        letter-spacing: 0;
+      }
+
+      .safe-actions {
+        display: grid;
+        gap: 10px;
+      }
+
+      .safe-action {
+        width: 100%;
+        min-height: 58px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 13px 14px;
+        border-color: var(--ubuzima-line);
+        color: var(--ubuzima-ink);
+        font: inherit;
+        text-align: left;
+      }
+
+      .safe-action.primary {
+        background: var(--ubuzima-olive);
+        color: #ffffff;
+      }
+
+      .safe-action.primary span {
+        color: rgba(255, 255, 255, 0.76);
+      }
+
+      .safe-action-icon {
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: rgba(75, 83, 32, 0.1);
+        color: var(--ubuzima-olive);
+        font-weight: 900;
+      }
+
+      .safe-action.primary .safe-action-icon {
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+      }
+
+      .safe-health {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        color: var(--ubuzima-muted);
+        font-size: 0.82rem;
+      }
+
+      .safe-health strong {
+        color: var(--ubuzima-ink);
+      }
+
+      .safe-footnote {
+        margin: 0;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="ubuzima-safe-landing">
+      <header class="safe-brand" aria-label="Ubuzima+ safe mode">
+        <img src="/admin/assets/ubuzima-pwa-icon.svg" alt="" />
+        <div>
+          <strong>Ubuzima+</strong>
+          <span>Safe app base</span>
+        </div>
+      </header>
+
+      <section class="safe-main">
+        <article class="safe-status">
+          <small>Protected mode</small>
+          <strong>Stable access is active</strong>
+          <span id="safe-reason">The latest app did not open normally, so Ubuzima+ moved you to a protected screen.</span>
+        </article>
+
+        <div class="safe-actions" aria-label="Recovery actions">
+          <button class="safe-action primary" type="button" onclick="openStableApp()">
+            <span>
+              <strong>Open stable app</strong>
+              <span>Use the last version that started successfully on this device.</span>
+            </span>
+            <span class="safe-action-icon" aria-hidden="true">Go</span>
+          </button>
+
+          <button class="safe-action" type="button" onclick="openLatestApp()">
+            <span>
+              <strong>Retry latest app</strong>
+              <span>Try the newest deployed admin mobile app again.</span>
+            </span>
+            <span class="safe-action-icon" aria-hidden="true">Re</span>
+          </button>
+
+          <button class="safe-action" type="button" onclick="clearAdminPwaCache()">
+            <span>
+              <strong>Refresh installed app</strong>
+              <span>Clear only the Ubuzima+ admin app cache and reopen.</span>
+            </span>
+            <span class="safe-action-icon" aria-hidden="true">Fx</span>
+          </button>
+        </div>
+
+        <div class="safe-health" role="status" aria-live="polite">
+          <span>Backend</span>
+          <strong id="safe-health">Checking</strong>
+        </div>
+      </section>
+
+      <p class="safe-footnote">This page does not change data, users, inventory, POS, or website settings.</p>
+    </main>
+
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var reason = params.get('reason');
+
+        if (reason) {
+          document.getElementById('safe-reason').textContent = reason.replace(/[-_]/g, ' ');
+        }
+
+        window.openLatestApp = function () {
+          window.location.replace('/admin/?fresh=' + Date.now());
+        };
+
+        window.openStableApp = function () {
+          window.location.replace('/admin/?stable=1&fresh=' + Date.now());
+        };
+
+        window.clearAdminPwaCache = async function () {
+          try {
+            if ('serviceWorker' in navigator) {
+              var registrations = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(
+                registrations
+                  .filter(function (registration) {
+                    return registration.scope.indexOf('/admin/') !== -1;
+                  })
+                  .map(function (registration) {
+                    return registration.unregister();
+                  })
+              );
+            }
+
+            if ('caches' in window) {
+              var keys = await caches.keys();
+              await Promise.all(
+                keys
+                  .filter(function (key) {
+                    return key.indexOf('ubuzima-admin-shell') === 0;
+                  })
+                  .map(function (key) {
+                    return caches.delete(key);
+                  })
+              );
+            }
+          } catch (error) {
+            console.warn('Unable to clear Ubuzima+ admin cache', error);
+          }
+
+          window.location.replace('/admin/?fresh=' + Date.now());
+        };
+
+        fetch('/api/v1/health?safe=' + Date.now(), {
+          cache: 'no-store',
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' }
+        })
+          .then(function (response) {
+            var contentType = response.headers.get('content-type') || '';
+            if (!response.ok || contentType.indexOf('json') === -1) {
+              throw new Error('Unavailable');
+            }
+
+            return response.json();
+          })
+          .then(function () {
+            document.getElementById('safe-health').textContent = 'Online';
+          })
+          .catch(function () {
+            document.getElementById('safe-health').textContent = 'Needs network';
+          });
+      })();
+    </script>
+  </body>
+</html>
