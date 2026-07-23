@@ -1,4 +1,4 @@
-/* INVENTORY_ANALYTICS_EOD_POSITION_TRENDS_V4 */
+/* INVENTORY_ANALYTICS_EOD_LIVE_POSITION_TRENDS_V5 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -2488,7 +2488,7 @@ const inventoryAnalyticsCardSourceTrendDateKeys =
                 maximumFractionDigits: 0,
               }).format(value)}`;
 
-                        const inventoryAnalyticsEodPositionTrendValues = (
+                        const inventoryAnalyticsEodLivePositionTrendValues = (
               map: Map<string, number>,
             ): number[] =>
               inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey) => {
@@ -2564,12 +2564,12 @@ const inventoryAnalyticsReconciledTrendValues = (
             };
 
 const inventoryAnalyticsCardStockValueTrendValues =
-              inventoryAnalyticsEodPositionTrendValues(
+              inventoryAnalyticsEodLivePositionTrendValues(
                 inventoryAnalyticsTotalInventoryDailyPositionMap,
               );
 
             const inventoryAnalyticsCardNearExpiryTrendValues =
-              inventoryAnalyticsEodPositionTrendValues(
+              inventoryAnalyticsEodLivePositionTrendValues(
                 inventoryAnalyticsNearExpiryDailyPositionMap,
               );
 
@@ -2808,10 +2808,9 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                   ].map((chart) => {
                     const chartEntries = chart.values
                       .map((value, index) => ({
-                        value,
+                        value: Number.isFinite(value) ? value : 0,
                         dateKey: inventoryAnalyticsCardSourceTrendDateKeys[index] ?? '',
-                      }))
-                      .filter((entry) => Number.isFinite(entry.value));
+                      }));
 
                     const chartMax = Math.max(...chartEntries.map((entry) => entry.value), 1);
                     const firstValue = chartEntries[0]?.value ?? 0;

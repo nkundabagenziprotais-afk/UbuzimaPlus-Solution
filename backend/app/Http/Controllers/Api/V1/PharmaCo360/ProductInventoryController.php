@@ -2775,12 +2775,15 @@ class ProductInventoryController extends Controller
         $movementValueExpression = "ABS(COALESCE(m.quantity, 0)) * (CASE WHEN b.cost_source IN ('legacy_equal_price_cost', 'inferred_from_price') AND COALESCE(b.inferred_unit_cost, 0) > 0 THEN COALESCE(b.inferred_unit_cost, 0) WHEN COALESCE(b.unit_cost, 0) > 0 THEN COALESCE(b.unit_cost, 0) WHEN COALESCE(b.selling_price, 0) > 0 THEN COALESCE(b.selling_price, 0) / 1.4 ELSE 0 END)";
 
 
-        /* INVENTORY_ANALYTICS_EOD_POSITION_TRENDS_V4 */
+        /* INVENTORY_ANALYTICS_EOD_LIVE_POSITION_TRENDS_V5 */
         /*
-         * Daily inventory trend must be an end-of-day position snapshot.
-         * For business date D, the position is calculated at 00:00:00
-         * of the next day. This creates one position for every selected
-         * date, even where there were no stock movements on that day.
+         * Inventory Analytics position trend rule:
+         * - Completed business date D uses closing position at D + 1 day 00:00:00.
+         * - Current business date uses live position as of now().
+         * - Today therefore equals yesterday close + receipts/positive adjustments
+         *   today - sales/dispensing/loss/negative adjustments today.
+         * - One row is produced for every selected business date, so the bar chart
+         *   is always visible for the selected range.
          */
         $trendDateFrom = (string) (
             $request->query('business_date_from')
@@ -2829,20 +2832,20 @@ class ProductInventoryController extends Controller
 
         $stockMovementTableExists = \Illuminate\Support\Facades\Schema::hasTable('stock_movements');
 
-        $movementDescriptorParts = [];
+        $movementDescriptorColumns = [];
 
         foreach (['direction', 'movement_type', 'type', 'reason', 'source_type'] as $column) {
             if (
                 $stockMovementTableExists
                 && \Illuminate\Support\Facades\Schema::hasColumn('stock_movements', $column)
             ) {
-                $movementDescriptorParts[] = "LOWER(COALESCE(sm.{$column}, ''))";
+                $movementDescriptorColumns[] = "LOWER(COALESCE(sm.{$column}, ''))";
             }
         }
 
-        $movementDescriptorExpression = $movementDescriptorParts === []
+        $movementDescriptorExpression = $movementDescriptorColumns === []
             ? "''"
-            : implode(" || ' ' || ", $movementDescriptorParts);
+            : "CONCAT_WS(' ', ".implode(', ', $movementDescriptorColumns).")";
 
         $signedMovementQuantityExpression = "(CASE
             WHEN {$movementDescriptorExpression} REGEXP 'sale|dispense|out|issue|damage|expired|loss|return_to_supplier|stock_out|negative'
@@ -2856,16 +2859,14 @@ class ProductInventoryController extends Controller
         $nearExpiryValueDailyPositionTrend = [];
 
         foreach ($trendDateKeys as $trendDateKey) {
-            /*
-             * End of business date D is the next midnight:
-             * D + 1 day at 00:00:00. Movements after or at this cutoff
-             * are removed from current quantity to reconstruct D closing.
-             */
-            $eodCutoff = \Carbon\Carbon::parse($trendDateKey)
-                ->addDay()
-                ->startOfDay();
+            $businessDate = \Carbon\Carbon::parse($trendDateKey)->startOfDay();
 
-            $nearExpiryEnd = \Carbon\Carbon::parse($trendDateKey)
+            $positionCutoff = $businessDate->isToday()
+                ? now()
+                : $businessDate->copy()->addDay()->startOfDay();
+
+            $nearExpiryEnd = $businessDate
+                ->copy()
                 ->addDays(180)
                 ->endOfDay();
 
@@ -2873,7 +2874,7 @@ class ProductInventoryController extends Controller
                 ? "(SELECT COALESCE(SUM({$signedMovementQuantityExpression}), 0)
                     FROM stock_movements sm
                     WHERE sm.stock_batch_id = stock_batches.id
-                      AND sm.created_at >= '".$eodCutoff->toDateTimeString()."')"
+                      AND sm.created_at >= '".$positionCutoff->toDateTimeString()."')"
                 : "0";
 
             $quantityAsAtExpression = "GREATEST(
@@ -2883,7 +2884,7 @@ class ProductInventoryController extends Controller
 
             $dailyBaseQuery = StockBatch::query()
                 ->where('tenant_id', $tenant->id)
-                ->where('created_at', '<', $eodCutoff->toDateTimeString());
+                ->where('created_at', '<', $positionCutoff->toDateTimeString());
 
             if (! empty($validated['branch_id'] ?? null)) {
                 $dailyBaseQuery->where('branch_id', $validated['branch_id']);
@@ -2905,29 +2906,35 @@ class ProductInventoryController extends Controller
             $inventoryValueDailyPositionTrend[] = [
                 'business_date' => $trendDateKey,
                 'date' => $trendDateKey,
-                'cutoff_at' => $eodCutoff->toDateTimeString(),
+                'cutoff_at' => $positionCutoff->toDateTimeString(),
+                'cutoff_type' => $businessDate->isToday() ? 'live_now' : 'next_midnight',
                 'value' => round((float) $dailyTotalInventoryValue, 2),
             ];
 
             $nearExpiryValueDailyPositionTrend[] = [
                 'business_date' => $trendDateKey,
                 'date' => $trendDateKey,
-                'cutoff_at' => $eodCutoff->toDateTimeString(),
+                'cutoff_at' => $positionCutoff->toDateTimeString(),
+                'cutoff_type' => $businessDate->isToday() ? 'live_now' : 'next_midnight',
                 'value' => round((float) $dailyNearExpiryValue, 2),
             ];
         }
+        /* INVENTORY_ANALYTICS_RECONCILE_LIVE_TODAY_TO_KPI_V5 */
+        $selectedTrendEndsToday = ! empty($trendDateKeys)
+            && end($trendDateKeys) === now()->toDateString();
 
-        /* INVENTORY_ANALYTICS_RECONCILE_DAILY_TREND_TO_KPI_V3 */
-        if (! empty($inventoryValueDailyPositionTrend ?? [])) {
+        if ($selectedTrendEndsToday && ! empty($inventoryValueDailyPositionTrend ?? [])) {
             $inventoryLastIndex = array_key_last($inventoryValueDailyPositionTrend);
             $inventoryValueDailyPositionTrend[$inventoryLastIndex]['value'] =
                 round((float) $totalInventoryValue, 2);
+            $inventoryValueDailyPositionTrend[$inventoryLastIndex]['cutoff_type'] = 'live_now_kpi_reconciled';
         }
 
-        if (! empty($nearExpiryValueDailyPositionTrend ?? [])) {
+        if ($selectedTrendEndsToday && ! empty($nearExpiryValueDailyPositionTrend ?? [])) {
             $nearExpiryLastIndex = array_key_last($nearExpiryValueDailyPositionTrend);
             $nearExpiryValueDailyPositionTrend[$nearExpiryLastIndex]['value'] =
                 round((float) ($nearExpiryValue ?? 0), 2);
+            $nearExpiryValueDailyPositionTrend[$nearExpiryLastIndex]['cutoff_type'] = 'live_now_kpi_reconciled';
         }
 
 return response()->json([

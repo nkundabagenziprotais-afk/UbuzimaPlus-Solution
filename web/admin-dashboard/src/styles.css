@@ -48593,3 +48593,17 @@ html.ubuzima-standalone-webapp .admin-header {
 .inventory-analytics-operational-empty {
   display: none !important;
 }
+
+/* INVENTORY_ANALYTICS_EOD_LIVE_POSITION_TRENDS_V5 */
+.inventory-analytics-operational-empty {
+  display: none !important;
+}
+
+.inventory-analytics-operational-chart {
+  display: grid !important;
+  min-height: 205px !important;
+}
+
+.inventory-analytics-operational-chart__bar {
+  visibility: visible !important;
+}
