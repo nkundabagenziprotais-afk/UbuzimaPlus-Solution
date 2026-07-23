@@ -210,6 +210,44 @@ class PharmacoPaymentRecordingApiTest extends TestCase
             ->assertJsonPath('data.payment_methods.0.payment_method', 'cash');
     }
 
+    public function test_finance_pos_revenue_shadow_report_endpoint_matches_payment_basis_revenue(): void
+    {
+        $this->seed();
+
+        $sale = $this->confirmSeededSale();
+        $token = $this->loginAs('admin@vitapharmaafrica.com');
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->postJson("/api/v1/pharmaco/sales/{$sale->id}/payments", [
+                'amount' => $sale->total_amount,
+                'payment_method' => 'cash',
+                'reference_number' => 'SHADOW-REVENUE-001',
+                'generate_receipt' => true,
+            ])
+            ->assertCreated();
+
+        $payment = $sale->fresh('payments')->payments()->latest('id')->firstOrFail();
+
+        $entry = \App\Models\FinanceJournalEntry::query()
+            ->where('source_module', 'pos')
+            ->where('source_type', 'payment')
+            ->where('source_id', (string) $payment->id)
+            ->where('status', 'shadow_posted')
+            ->firstOrFail();
+
+        $businessDate = $entry->business_date->toDateString();
+
+        $this->withHeader('X-Tenant-Slug', 'vitapharma')
+            ->withToken($token)
+            ->getJson('/api/v1/pharmaco/finance/reports/pos-revenue-shadow?from=' . $businessDate . '&to=' . $businessDate)
+            ->assertOk()
+            ->assertJsonPath('data.basis.mode', 'payment_basis_shadow')
+            ->assertJsonPath('data.summary.is_reconciled', true)
+            ->assertJsonPath('data.summary.dashboard_source_status', 'shadow_validated')
+            ->assertJsonPath('data.payment_methods.0.payment_method', 'cash');
+    }
+
     public function test_partial_payment_updates_sale_balance_and_status(): void
     {
         $this->seed();
