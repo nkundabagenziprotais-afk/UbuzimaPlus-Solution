@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ubuzima-admin-shell-v23';
+const CACHE_NAME = 'ubuzima-admin-shell-v24';
 const SHELL_ASSETS = [
   '/admin/',
   '/admin/index.html',
@@ -24,6 +24,17 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // UBUZIMA_SW_BYPASS_API_AUTH_V1
+  const requestUrl = new URL(event.request.url);
+
+  if (
+    event.request.method !== 'GET'
+    || requestUrl.pathname.startsWith('/api/')
+    || requestUrl.pathname.startsWith('/sanctum/')
+    || requestUrl.pathname.startsWith('/broadcasting/')
+  ) {
+    return;
+  }
   const request = event.request;
   const url = new URL(request.url);
 

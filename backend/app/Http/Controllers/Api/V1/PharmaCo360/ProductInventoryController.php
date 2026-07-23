@@ -2787,8 +2787,8 @@ class ProductInventoryController extends Controller
                 /* INVENTORY_ANALYTICS_TENANT_CONTEXT_FIX_V1 */
         $inventoryAnalyticsTenantId = null;
 
-        if (isset($tenant) && is_object($tenant) && isset($inventoryAnalyticsTenantId)) {
-            $inventoryAnalyticsTenantId = $inventoryAnalyticsTenantId;
+        if (isset($tenant) && is_object($tenant) && isset($tenant->id)) {
+            $inventoryAnalyticsTenantId = $tenant->id;
         }
 
         if (! $inventoryAnalyticsTenantId && isset($tenantId)) {
