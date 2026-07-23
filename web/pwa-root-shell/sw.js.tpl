@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ubuzima-root-mobile-self-destruct-__VERSION__';
+const CACHE_NAME = 'ubuzima-root-kill-switch-__VERSION__';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
