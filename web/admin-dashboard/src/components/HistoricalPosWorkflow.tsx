@@ -1,3 +1,5 @@
+/* HISTORICAL_POS_USE_PROFILE_ASSIGNED_BRANCHES_LONGTERM_V2 */
+/* HISTORICAL_POS_USE_PROFILE_ASSIGNED_BRANCHES_LONGTERM_V1 */
 /* HISTORICAL_POS_ADMIN_OWNER_BYPASS_NO_REASON_V2 */
 /* HISTORICAL_POS_NO_REASON_ADMIN_OWNER_BYPASS_FINAL_V1 */
 /* HISTORICAL_POS_REASON_REMOVED_V1 */
@@ -24,6 +26,86 @@ import "./HistoricalPosWorkflow.css";
 function historicalPosAutoReasonGlobal() {
   return 'Historical POS entry created through approved workflow.';
 }
+
+function historicalPosProfileAssignedBranches(): Array<Record<string, unknown>> {
+  const profile = historicalPosStoredAccessProfile();
+  const source = profile && typeof profile === 'object'
+    ? profile as Record<string, unknown>
+    : {};
+
+  const candidates: unknown[] = [
+    source.assigned_branches,
+    source.branches,
+    source.branch,
+    source.assigned_branch,
+    source.active_branch,
+    source.current_branch,
+    source.pharmacy_branch,
+  ];
+
+  if (source.branch_id || source.branch_name) {
+    candidates.push({
+      id: source.branch_id,
+      branch_id: source.branch_id,
+      name: source.branch_name ?? 'Assigned branch',
+      branch_name: source.branch_name,
+      is_active: true,
+      status: 'active',
+    });
+  }
+
+  const flat: Record<string, unknown>[] = [];
+
+  const pushCandidate = (candidate: unknown) => {
+    if (!candidate) return;
+
+    if (Array.isArray(candidate)) {
+      candidate.forEach(pushCandidate);
+      return;
+    }
+
+    if (typeof candidate !== 'object') return;
+
+    const branch = candidate as Record<string, unknown>;
+    const id = branch.id ?? branch.branch_id ?? branch.uuid ?? branch.code;
+    const name = branch.name ?? branch.branch_name ?? branch.title ?? branch.code ?? 'Assigned branch';
+
+    if (!id && !name) return;
+
+    flat.push({
+      ...branch,
+      id: id ?? name,
+      branch_id: branch.branch_id ?? id,
+      name,
+      branch_name: branch.branch_name ?? name,
+      is_active: branch.is_active ?? true,
+      status: branch.status ?? 'active',
+    });
+  };
+
+  candidates.forEach(pushCandidate);
+
+  const seen = new Set<string>();
+
+  return flat.filter((branch) => {
+    const id = String(branch.id ?? branch.branch_id ?? branch.uuid ?? branch.code ?? branch.name ?? '').trim();
+
+    if (!id || seen.has(id)) return false;
+
+    seen.add(id);
+
+    const status = String(branch.status ?? '').toLowerCase();
+    const active =
+      branch.is_active === undefined
+      || branch.is_active === true
+      || branch.is_active === 1
+      || branch.is_active === '1'
+      || branch.is_active === 'true';
+
+    return active && !['inactive', 'disabled', 'closed', 'archived'].includes(status);
+  });
+}
+
 
 function historicalPosStoredAccessProfile(): unknown {
   try {

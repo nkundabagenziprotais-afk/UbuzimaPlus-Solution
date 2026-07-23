@@ -49496,3 +49496,31 @@ html.ubuzima-standalone-webapp .admin-header {
 [data-hide-guidance="true"]::after {
   display: none !important;
 }
+
+
+/* HISTORICAL_POS_PROFILE_BRANCH_ASSIGNMENT_LONGTERM_V1 */
+.historical-pos-guidance,
+.historical-pos-workflow-guidance,
+.pos-workflow-guidance,
+.pos-guidance,
+[data-historical-pos-guidance],
+[data-pos-guidance],
+[data-hide-guidance="true"]::before,
+[data-hide-guidance="true"]::after {
+  display: none !important;
+  content: "" !important;
+}
+
+
+/* HISTORICAL_POS_PROFILE_BRANCH_ASSIGNMENT_LONGTERM_V2 */
+.historical-pos-guidance,
+.historical-pos-workflow-guidance,
+.pos-workflow-guidance,
+.pos-guidance,
+[data-historical-pos-guidance],
+[data-pos-guidance],
+[data-hide-guidance="true"]::before,
+[data-hide-guidance="true"]::after {
+  display: none !important;
+  content: "" !important;
+}

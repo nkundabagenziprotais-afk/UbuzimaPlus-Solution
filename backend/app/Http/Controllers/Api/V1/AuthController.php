@@ -1,8 +1,12 @@
 <?php
 
+/* USER_PROFILE_ASSIGNED_BRANCHES_LONGTERM_V2 */
+
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
+
+
+use Illuminate\Support\Facades\Schema;use Illuminate\Support\Facades\DB;use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\TwoFactorAuthenticationService;
 use App\Services\Auth\UserAccessProfileService;
@@ -121,7 +125,7 @@ class AuthController extends Controller
         return response()->json([
             'token_type' => 'Bearer',
             'access_token' => $token,
-            'profile' => $profileService->build($user->fresh()),
+            'profile' => $this->attachAssignedBranchesToProfile($profileService->build($user->fresh()), $user->fresh()),
             'login_experience' =>
                 $this->loginExperiencePayload(
                     $user,
@@ -175,14 +179,14 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Password changed successfully.',
-            'profile' => $profileService->build($user->fresh()),
+            'profile' => $this->attachAssignedBranchesToProfile($profileService->build($user->fresh()), $user->fresh()),
         ]);
     }
 
     public function me(Request $request, UserAccessProfileService $profileService): JsonResponse
     {
         return response()->json([
-            'profile' => $profileService->build($request->user()),
+            'profile' => $this->attachAssignedBranchesToProfile($profileService->build($request->user()), $request->user()),
         ]);
     }
 
@@ -242,4 +246,170 @@ class AuthController extends Controller
             $digits !== '' ? '+' . $digits : null,
         ])));
     }
+
+    private function assignedBranchesForProfile($user): array
+    {
+        if (! $user) {
+            return [];
+        }
+
+        $tenantId = $user->tenant_id ?? $user->current_tenant_id ?? null;
+        $branchIds = [];
+
+        foreach (['branch_id', 'assigned_branch_id', 'current_branch_id', 'pharmacy_branch_id'] as $field) {
+            if (isset($user->{$field}) && $user->{$field}) {
+                $branchIds[] = (int) $user->{$field};
+            }
+        }
+
+        try {
+            if (method_exists($user, 'branch') && $user->branch) {
+                $branchIds[] = (int) ($user->branch->id ?? 0);
+            }
+        } catch (\Throwable) {
+            // Ignore unknown relation shape.
+        }
+
+        try {
+            if (method_exists($user, 'branches')) {
+                foreach ($user->branches()->get() as $branch) {
+                    $branchIds[] = (int) ($branch->id ?? 0);
+                }
+            }
+        } catch (\Throwable) {
+            // Ignore unknown relation shape.
+        }
+
+        foreach ([
+            'branch_user',
+            'branches_users',
+            'branch_assignments',
+            'user_branch_assignments',
+            'pharmaco_branch_user',
+            'tenant_user_branches',
+            'tenant_assignments',
+            'tenant_user_assignments',
+            'user_tenant_assignments',
+            'pharmaco_tenant_users',
+        ] as $table) {
+            try {
+                if (! Schema::hasTable($table)) {
+                    continue;
+                }
+
+                $columns = Schema::getColumnListing($table);
+
+                if (! in_array('user_id', $columns, true) || ! in_array('branch_id', $columns, true)) {
+                    continue;
+                }
+
+                $query = DB::table($table)->where('user_id', $user->id);
+
+                if ($tenantId && in_array('tenant_id', $columns, true)) {
+                    $query->where('tenant_id', $tenantId);
+                }
+
+                foreach ($query->pluck('branch_id')->all() as $branchId) {
+                    if ($branchId) {
+                        $branchIds[] = (int) $branchId;
+                    }
+                }
+            } catch (\Throwable) {
+                // Ignore schema differences.
+            }
+        }
+
+        $branchIds = array_values(array_unique(array_filter($branchIds)));
+
+        $branchTable = null;
+
+        foreach (['branches', 'tenant_branches', 'pharmacy_branches'] as $candidate) {
+            try {
+                if (Schema::hasTable($candidate)) {
+                    $branchTable = $candidate;
+                    break;
+                }
+            } catch (\Throwable) {
+                // Ignore schema check failure.
+            }
+        }
+
+        if (empty($branchIds) && $tenantId && $branchTable) {
+            try {
+                $defaultQuery = DB::table($branchTable)->where('tenant_id', $tenantId);
+
+                $columns = Schema::getColumnListing($branchTable);
+
+                if (in_array('is_active', $columns, true)) {
+                    $defaultQuery->where(function ($query) {
+                        $query->where('is_active', 1)->orWhereNull('is_active');
+                    });
+                }
+
+                $defaultBranchId = $defaultQuery->orderBy('id')->value('id');
+
+                if ($defaultBranchId) {
+                    $branchIds[] = (int) $defaultBranchId;
+                }
+            } catch (\Throwable) {
+                // Ignore fallback failure.
+            }
+        }
+
+        if (empty($branchIds) || ! $branchTable) {
+            return [];
+        }
+
+        try {
+            $columns = Schema::getColumnListing($branchTable);
+
+            return DB::table($branchTable)
+                ->whereIn('id', $branchIds)
+                ->when($tenantId && in_array('tenant_id', $columns, true), fn ($query) => $query->where('tenant_id', $tenantId))
+                ->get()
+                ->map(function ($branch) {
+                    return [
+                        'id' => $branch->id,
+                        'branch_id' => $branch->id,
+                        'name' => $branch->name ?? $branch->branch_name ?? $branch->title ?? ('Branch '.$branch->id),
+                        'branch_name' => $branch->name ?? $branch->branch_name ?? $branch->title ?? ('Branch '.$branch->id),
+                        'code' => $branch->code ?? null,
+                        'is_active' => isset($branch->is_active) ? (bool) $branch->is_active : true,
+                        'status' => $branch->status ?? 'active',
+                    ];
+                })
+                ->values()
+                ->all();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    private function attachAssignedBranchesToProfile($profile, $user): array
+    {
+        $profile = is_array($profile) ? $profile : (array) $profile;
+        $assignedBranches = $this->assignedBranchesForProfile($user);
+
+        $profile['assigned_branches'] = $assignedBranches;
+
+        if (empty($profile['branches'])) {
+            $profile['branches'] = $assignedBranches;
+        }
+
+        if (! isset($profile['branch']) && ! empty($assignedBranches)) {
+            $profile['branch'] = $assignedBranches[0];
+        }
+
+        if (! isset($profile['branch_id']) && ! empty($assignedBranches)) {
+            $profile['branch_id'] = $assignedBranches[0]['id'] ?? null;
+        }
+
+        if (! isset($profile['branch_name']) && ! empty($assignedBranches)) {
+            $profile['branch_name'] = $assignedBranches[0]['name'] ?? null;
+        }
+
+        return $profile;
+    }
+
+
 }
