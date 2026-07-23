@@ -1126,3 +1126,8 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <App />
   </React.StrictMode>
 );
+
+if (typeof window !== 'undefined') {
+  (window as Window & { __UBUZIMA_APP_READY__?: boolean }).__UBUZIMA_APP_READY__ = true;
+  window.dispatchEvent(new Event('ubuzima:app-ready'));
+}
