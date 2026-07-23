@@ -54089,15 +54089,16 @@ html.ubuzima-standalone-webapp .admin-header {
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-tile,
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-tile-v16,
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-drug-list button {
-    min-height: 62px !important;
-    height: 62px !important;
-    max-height: 62px !important;
+    min-height: 78px !important;
+    height: auto !important;
+    max-height: none !important;
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: minmax(20px, auto) 22px !important;
+    grid-template-rows: minmax(34px, auto) 22px !important;
     align-content: center !important;
-    gap: 5px !important;
-    padding: 8px !important;
+    gap: 7px !important;
+    padding: 9px 10px !important;
+    overflow: visible !important;
   }
 
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-name,
@@ -54108,12 +54109,13 @@ html.ubuzima-standalone-webapp .admin-header {
     max-width: 100% !important;
     min-height: 0 !important;
     color: #10211b !important;
-    font-size: 0.68rem !important;
+    font-size: 0.72rem !important;
     font-weight: 950 !important;
-    line-height: 1.1 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    line-height: 1.18 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
   }
 
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-row {
@@ -54121,9 +54123,9 @@ html.ubuzima-standalone-webapp .admin-header {
     width: 100% !important;
     min-width: 0 !important;
     display: grid !important;
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 8px !important;
     background: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
@@ -54141,7 +54143,7 @@ html.ubuzima-standalone-webapp .admin-header {
     align-items: center !important;
     border-radius: 999px !important;
     padding: 0 7px !important;
-    font-size: 0.55rem !important;
+    font-size: 0.58rem !important;
     font-weight: 950 !important;
     line-height: 1 !important;
     white-space: nowrap !important;
@@ -54151,6 +54153,7 @@ html.ubuzima-standalone-webapp .admin-header {
 
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-row em {
     justify-self: start !important;
+    max-width: 100% !important;
     background: #10211b !important;
     color: #ffffff !important;
     font-style: normal !important;

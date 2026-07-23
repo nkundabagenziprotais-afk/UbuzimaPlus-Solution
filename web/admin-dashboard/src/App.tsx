@@ -8004,7 +8004,7 @@ async function confirmTransaction() {
                             <span className="pos-product-card-row">
                               <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
                               <span className="pos-product-card-available">
-                                Available {product.availableQuantity.toLocaleString('en-RW')}
+                                Stock {product.availableQuantity.toLocaleString('en-RW')}
                               </span>
                             </span>
                           </button>
