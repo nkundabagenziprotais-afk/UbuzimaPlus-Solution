@@ -2516,6 +2516,7 @@ class ProductInventoryController extends Controller
 
     /* LEGACY_COST_RESOLUTION_V1 */
     /* INVENTORY_TREND_RESOLVED_COST_V1 */
+    /* INVENTORY_ANALYTICS_TREND_RESOLVED_COST_V2 */
     private function serializeBatch(StockBatch $batch): array
     {
         $metadata = is_array($batch->metadata) ? $batch->metadata : [];
@@ -2771,7 +2772,7 @@ class ProductInventoryController extends Controller
             ->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(m.business_date, m.occurred_at, m.created_at)'), '>=', $startDate)
             ->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(m.business_date, m.occurred_at, m.created_at)'), '<=', $endDate);
 
-        $movementValueExpression = "ABS(COALESCE(m.quantity, 0)) * COALESCE(b.unit_cost, b.selling_price / 1.3, 0)";
+        $movementValueExpression = "ABS(COALESCE(m.quantity, 0)) * (CASE WHEN b.cost_source IN ('legacy_equal_price_cost', 'inferred_from_price') AND COALESCE(b.inferred_unit_cost, 0) > 0 THEN COALESCE(b.inferred_unit_cost, 0) WHEN COALESCE(b.unit_cost, 0) > 0 THEN COALESCE(b.unit_cost, 0) WHEN COALESCE(b.selling_price, 0) > 0 THEN COALESCE(b.selling_price, 0) / 1.4 ELSE 0 END)";
 
         $receivedTypes = ['receive', 'received', 'purchase', 'stock_in', 'inbound', 'adjustment_in', 'return_in', 'opening'];
         $issuedTypes = ['issue', 'issued', 'sale', 'sold', 'dispense', 'stock_out', 'outbound', 'adjustment_out'];
