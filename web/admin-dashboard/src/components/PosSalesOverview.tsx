@@ -1,4 +1,5 @@
 /* POS_SALES_TREND_DATA_LABEL_2_DECIMALS_V1 */
+/* POS_SALES_TREND_DATA_LABEL_COMPACT_K_V1 */
 /*
  POS_AND_SALES_OVERVIEW_DEPLOY_TARGET_V1 */
 import {
@@ -151,11 +152,36 @@ const defaultVisibility: VisibilityConfiguration = {
 
 
 
-const formatPosSalesTrendDataLabel = (value: number): string =>
-  Number(value || 0).toLocaleString('en-US', {
+const formatPosSalesTrendDataLabel = (value: number): string => {
+  const amount = Number(value || 0);
+  const absolute = Math.abs(amount);
+
+  if (absolute >= 1_000_000_000) {
+    return `${(amount / 1_000_000_000).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}B`;
+  }
+
+  if (absolute >= 1_000_000) {
+    return `${(amount / 1_000_000).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}M`;
+  }
+
+  if (absolute >= 1_000) {
+    return `${(amount / 1_000).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}K`;
+  }
+
+  return amount.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+};
 
 function tenantSlugFrom(
   profile: AccessProfile,
