@@ -48552,3 +48552,39 @@ html.ubuzima-standalone-webapp .admin-header {
     grid-template-columns: 1fr;
   }
 }
+
+/* INVENTORY_ANALYTICS_REAL_DAILY_POSITION_TRENDS_V3 */
+.inventory-analytics-operational-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 360px;
+}
+
+.inventory-analytics-operational-actions select {
+  max-width: 230px;
+}
+
+.inventory-analytics-operational-actions button {
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 999px;
+  padding: 0.52rem 0.82rem;
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.inventory-analytics-operational-empty {
+  grid-column: 1 / -1;
+  min-width: 100%;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: 16px;
+  padding: 1.4rem;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: center;
+}

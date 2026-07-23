@@ -2776,6 +2776,7 @@ class ProductInventoryController extends Controller
 
 
         /* INVENTORY_ANALYTICS_DAILY_POSITION_TRENDS_V1 */
+        /* INVENTORY_ANALYTICS_REAL_DAILY_POSITION_TRENDS_V3 */
         $trendDateFrom = (string) (
             $request->query('business_date_from')
             ?? $request->query('date_from')
@@ -2894,9 +2895,22 @@ class ProductInventoryController extends Controller
             ->sum(\Illuminate\Support\Facades\DB::raw($movementValueExpression));
         $stockIssuedCount = (clone $issuedRows)->count();
 
-        return response()->json([
+                /* INVENTORY_ANALYTICS_RECONCILE_DAILY_TREND_TO_KPI_V3 */
+        if (! empty($inventoryValueDailyPositionTrend ?? [])) {
+            $inventoryLastIndex = array_key_last($inventoryValueDailyPositionTrend);
+            $inventoryValueDailyPositionTrend[$inventoryLastIndex]['value'] =
+                round((float) $totalInventoryValue, 2);
+        }
+
+        if (! empty($nearExpiryValueDailyPositionTrend ?? [])) {
+            $nearExpiryLastIndex = array_key_last($nearExpiryValueDailyPositionTrend);
+            $nearExpiryValueDailyPositionTrend[$nearExpiryLastIndex]['value'] =
+                round((float) ($nearExpiryValue ?? 0), 2);
+        }
+
+return response()->json([
             'total_inventory_value' => round((float) $totalInventoryValue, 2),
-            'inventory_value_daily_position_trend' => $inventoryValueDailyPositionTrend ?? [],
+'inventory_value_daily_position_trend' => $inventoryValueDailyPositionTrend ?? [],
             'total_inventory_daily_position_trend' => $inventoryValueDailyPositionTrend ?? [],
             'near_expiry_value_daily_position_trend' => $nearExpiryValueDailyPositionTrend ?? [],
             'stock_on_hand_count' => round((float) $stockOnHandCount, 2),

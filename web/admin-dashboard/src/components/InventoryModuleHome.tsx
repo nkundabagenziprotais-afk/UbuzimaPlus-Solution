@@ -1,4 +1,4 @@
-/* INVENTORY_ANALYTICS_OPERATIONAL_TREND_CARDS_V2 */
+/* INVENTORY_ANALYTICS_REAL_DAILY_POSITION_TRENDS_V3 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -2488,7 +2488,18 @@ const inventoryAnalyticsCardSourceTrendDateKeys =
                 maximumFractionDigits: 0,
               }).format(value)}`;
 
-            const inventoryAnalyticsOperationalTrendValues = (
+                        const inventoryAnalyticsRealDailyTrendValues = (
+              map: Map<string, number>,
+            ): number[] =>
+              inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey) => {
+                const value = map.get(dateKey);
+
+                return typeof value === 'number' && Number.isFinite(value)
+                  ? value
+                  : Number.NaN;
+              });
+
+const inventoryAnalyticsOperationalTrendValues = (
               rawValues: number[],
               trustedEndingValue: number,
             ): number[] => {
@@ -2553,35 +2564,13 @@ const inventoryAnalyticsReconciledTrendValues = (
             };
 
 const inventoryAnalyticsCardStockValueTrendValues =
-              inventoryAnalyticsOperationalTrendValues(
-                inventoryAnalyticsReconciledTrendValues(
-                  inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey, index) =>
-                    inventoryAnalyticsTotalInventoryDailyPositionMap.get(dateKey)
-                    ?? (
-                      index === inventoryAnalyticsCardSourceAsAtIndex
-                        ? inventoryAnalyticsCardSourceStockValue
-                        : 0
-                    ),
-                  ),
-                  inventoryAnalyticsCardSourceStockValue,
-                ),
-                inventoryAnalyticsCardSourceStockValue,
+              inventoryAnalyticsRealDailyTrendValues(
+                inventoryAnalyticsTotalInventoryDailyPositionMap,
               );
 
             const inventoryAnalyticsCardNearExpiryTrendValues =
-              inventoryAnalyticsOperationalTrendValues(
-                inventoryAnalyticsReconciledTrendValues(
-                  inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey, index) =>
-                    inventoryAnalyticsNearExpiryDailyPositionMap.get(dateKey)
-                    ?? (
-                      index === inventoryAnalyticsCardSourceAsAtIndex
-                        ? inventoryAnalyticsCardSourceNearExpiryValue
-                        : 0
-                    ),
-                  ),
-                  inventoryAnalyticsCardSourceNearExpiryValue,
-                ),
-                inventoryAnalyticsCardSourceNearExpiryValue,
+              inventoryAnalyticsRealDailyTrendValues(
+                inventoryAnalyticsNearExpiryDailyPositionMap,
               );
 
 
@@ -2817,10 +2806,16 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                       tone: 'amber',
                     },
                   ].map((chart) => {
-                    const chartValues = chart.values.filter((value) => Number.isFinite(value));
-                    const chartMax = Math.max(...chartValues, 1);
-                    const firstValue = chartValues[0] ?? 0;
-                    const lastValue = chartValues[chartValues.length - 1] ?? 0;
+                    const chartEntries = chart.values
+                      .map((value, index) => ({
+                        value,
+                        dateKey: inventoryAnalyticsCardSourceTrendDateKeys[index] ?? '',
+                      }))
+                      .filter((entry) => Number.isFinite(entry.value));
+
+                    const chartMax = Math.max(...chartEntries.map((entry) => entry.value), 1);
+                    const firstValue = chartEntries[0]?.value ?? 0;
+                    const lastValue = chartEntries[chartEntries.length - 1]?.value ?? 0;
                     const netChange = lastValue - firstValue;
                     const percentChange = firstValue > 0 ? (netChange / firstValue) * 100 : 0;
 
@@ -2831,39 +2826,49 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                       >
                         <div className="inventory-analytics-operational-trend-card__head">
                           <h3>{chart.label}</h3>
-                          <select
-                            value={analyticsTrendWeekSelection}
-                            aria-label={`${chart.label} range`}
-                            onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value as typeof analyticsTrendWeekSelection)}
-                          >
-                            <option value="all">Full selected range</option>
-                            <option value="last7">Last 7 days</option>
-                            <option value="last14">Last 14 days</option>
-                            <option value="last30">Last 30 days</option>
-                          </select>
+                          <div className="inventory-analytics-operational-actions">
+                            <select
+                              value={analyticsTrendWeekSelection}
+                              aria-label={`${chart.label} range`}
+                              onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value as typeof analyticsTrendWeekSelection)}><option value="all">Full selected range</option>
+                              <option value="last7">Last 7 days</option>
+                              <option value="last14">Last 14 days</option>
+                              <option value="last30">Last 30 days</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => setAnalyticsTrendWeekSelection('all')}
+                            >
+                              More
+                            </button>
+                          </div>
                         </div>
 
                         <div className="inventory-analytics-operational-chart" role="img" aria-label={`${chart.label} daily position bar chart`}>
-                          {chartValues.map((value, index) => (
-                            <div key={`${chart.key}-${index}`} className="inventory-analytics-operational-chart__bar">
+                          {chartEntries.length > 0 ? chartEntries.map((entry, index) => (
+                            <div key={`${chart.key}-${entry.dateKey || index}`} className="inventory-analytics-operational-chart__bar">
                               <em>{new Intl.NumberFormat(undefined, {
-                                notation: value >= 1000000 ? 'compact' : 'standard',
-                                maximumFractionDigits: value >= 1000000 ? 2 : 0,
-                              }).format(value)}</em>
+                                notation: entry.value >= 1000000 ? 'compact' : 'standard',
+                                maximumFractionDigits: entry.value >= 1000000 ? 2 : 0,
+                              }).format(entry.value)}</em>
                               <i
                                 style={{
-                                  height: `${Math.max((value / chartMax) * 100, value > 0 ? 10 : 4)}%`,
+                                  height: `${Math.max((entry.value / chartMax) * 100, entry.value > 0 ? 10 : 4)}%`,
                                 }}
                               />
-                              <span>{inventoryAnalyticsCardSourceTrendDateKeys[index]?.slice(8) ?? ''}</span>
+                              <span>{entry.dateKey.slice(8)}</span>
                             </div>
-                          ))}
+                          )) : (
+                            <div className="inventory-analytics-operational-empty">
+                              No daily position data returned for this selected range.
+                            </div>
+                          )}
                         </div>
 
                         <div className="inventory-analytics-operational-axis">
-                          <strong>{inventoryAnalyticsCardSourceTrendDateKeys[0] ?? analyticsAppliedDateFromFilter}</strong>
+                          <strong>{chartEntries[0]?.dateKey ?? analyticsAppliedDateFromFilter}</strong>
                           <span>{chart.shortLabel}</span>
-                          <strong>{inventoryAnalyticsCardSourceTrendDateKeys[inventoryAnalyticsCardSourceTrendDateKeys.length - 1] ?? analyticsAppliedDateToFilter}</strong>
+                          <strong>{chartEntries[chartEntries.length - 1]?.dateKey ?? analyticsAppliedDateToFilter}</strong>
                         </div>
 
                         <div className="inventory-analytics-operational-summary">
