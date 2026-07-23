@@ -1,3 +1,4 @@
+/* POS_SALES_TREND_LABEL_RENDER_COMPACT_K_FINAL_V1 */
 /* POS_SALES_TREND_DATA_LABEL_2_DECIMALS_V1 */
 /* POS_SALES_TREND_DATA_LABEL_COMPACT_K_V1 */
 /*
@@ -1183,10 +1184,7 @@ export function PosSalesOverview({
                   }}
                 >
                   <strong>
-                    {Number(day.sales).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatPosSalesTrendDataLabel(Number(day.sales || 0))}
                   </strong>
                   <small>{day.label}</small>
                 </i>
