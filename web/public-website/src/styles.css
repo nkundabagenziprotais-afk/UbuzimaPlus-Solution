@@ -1386,3 +1386,237 @@ footer p {
     grid-template-columns: 1fr;
   }
 }
+
+/* Customer-facing mobile app polish */
+@media (max-width: 860px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background: #f4f8f6;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-size: 15px;
+  }
+
+  .site-header,
+  .website-top-header,
+  .vita-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    min-height: 58px;
+    padding:
+      max(8px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      8px
+      max(12px, env(safe-area-inset-left));
+    border-bottom: 1px solid rgba(91, 104, 87, 0.14);
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.06);
+    backdrop-filter: blur(14px);
+  }
+
+  .brand,
+  .website-brand,
+  .vita-brand {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .brand-logo,
+  .website-brand img,
+  .vita-brand img {
+    max-width: min(150px, 42vw);
+    border-radius: 8px;
+  }
+
+  .brand strong,
+  .website-brand strong,
+  .vita-brand strong {
+    font-size: 0.94rem;
+    line-height: 1.05;
+  }
+
+  .brand small,
+  .brand-caption,
+  .website-brand small,
+  .vita-brand small {
+    font-size: 0.62rem;
+    line-height: 1.12;
+  }
+
+  .website-app-shell,
+  .vita-website-shell {
+    display: block;
+    min-height: 100dvh;
+    background:
+      linear-gradient(180deg, #f8fbfa 0%, #eef4f1 48%, #f8faf8 100%);
+  }
+
+  .website-tree-panel {
+    position: sticky;
+    top: 58px;
+    z-index: 22;
+    padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
+    border: 0;
+    background: rgba(244, 248, 246, 0.96);
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.05);
+    overflow-x: auto;
+  }
+
+  .website-tree-nav {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(112px, 1fr);
+    gap: 7px;
+    min-width: max-content;
+  }
+
+  .website-tree-nav button,
+  .vita-status-strip button,
+  .language-selector button,
+  .header-action,
+  .primary-action,
+  .secondary-action {
+    min-height: 42px;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    line-height: 1.12;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .hero {
+    min-height: calc(100dvh - 58px);
+    padding: 22px max(14px, env(safe-area-inset-right)) 26px max(14px, env(safe-area-inset-left));
+    align-items: end;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.88) 52%, rgba(255, 255, 255, 0.98) 100%),
+      url("/assets/ubuzima-pharmaco-hero.png");
+    background-position: center;
+  }
+
+  .hero-content {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 9vw, 2.75rem);
+    line-height: 1.04;
+  }
+
+  h2 {
+    font-size: clamp(1.34rem, 6vw, 1.86rem);
+    line-height: 1.08;
+  }
+
+  h3 {
+    font-size: 0.94rem;
+    line-height: 1.12;
+  }
+
+  .hero-copy,
+  .section-heading p,
+  .solution-card p,
+  .module-card p,
+  .audience-grid p,
+  .channel-list p,
+  .ai-copy p,
+  .ai-grid p,
+  .pilot-section p,
+  .roadmap p,
+  .contact-band p,
+  footer p,
+  .vita-product-note,
+  .vita-service-grid p,
+  .vita-route-grid p {
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .hero-actions,
+  .hero-proof,
+  .quick-actions,
+  .solution-grid,
+  .module-grid,
+  .audience-grid,
+  .channel-list,
+  .ai-grid,
+  .website-mini-grid,
+  .section-quick-actions,
+  .compact-solution-grid,
+  .compact-audience-grid,
+  .vita-category-grid,
+  .vita-service-grid,
+  .vita-route-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .hero-actions,
+  .hero-proof {
+    display: grid;
+    width: 100%;
+  }
+
+  .hero-proof div,
+  .quick-actions a,
+  .solution-card,
+  .module-card,
+  .audience-grid article,
+  .channel-list article,
+  .website-card,
+  .vita-card,
+  .vita-service-grid article,
+  .vita-route-grid article {
+    min-width: 0;
+    border-radius: 8px;
+    padding: 12px;
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.055);
+  }
+
+  .section,
+  .website-content,
+  .vita-content {
+    padding:
+      18px
+      max(12px, env(safe-area-inset-right))
+      22px
+      max(12px, env(safe-area-inset-left));
+  }
+
+  .contact-band,
+  footer {
+    border-radius: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .hero-actions,
+  .hero-proof,
+  .quick-actions,
+  .solution-grid,
+  .module-grid,
+  .audience-grid,
+  .channel-list,
+  .ai-grid,
+  .website-mini-grid,
+  .section-quick-actions,
+  .compact-solution-grid,
+  .compact-audience-grid,
+  .vita-category-grid,
+  .vita-service-grid,
+  .vita-route-grid {
+    grid-template-columns: 1fr;
+  }
+}

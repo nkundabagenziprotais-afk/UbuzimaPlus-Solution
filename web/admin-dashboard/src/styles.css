@@ -52179,3 +52179,494 @@ html.ubuzima-standalone-webapp .admin-header {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Mobile workflow v2: login, POS sequencing, and compact operational forms */
+@media (max-width: 860px) {
+  .auth-shell.auth-shell--mobile-app-ready,
+  .auth-shell.auth-shell--mobile-app-ready .auth-panel {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .auth-shell.auth-shell--mobile-app-ready .auth-panel {
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-content: start !important;
+    padding:
+      max(11px, calc(env(safe-area-inset-top) + 8px))
+      max(11px, env(safe-area-inset-right))
+      max(10px, calc(env(safe-area-inset-bottom) + 6px))
+      max(11px, env(safe-area-inset-left)) !important;
+  }
+
+  .auth-shell--mobile-app-ready :is(.login-app-brand, .login-app-status, .login-card, .login-install-panel, .login-form, .password-input-row) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-app-brand {
+    gap: 8px !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-app-status {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .auth-shell--mobile-app-ready .login-app-status span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .auth-shell--mobile-app-ready .login-card {
+    align-self: start;
+    display: grid;
+    gap: 8px;
+    max-height: min(690px, calc(100dvh - 82px - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    padding: 13px !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-card h2,
+  .auth-shell--mobile-app-ready .login-card p,
+  .auth-shell--mobile-app-ready .login-card span,
+  .auth-shell--mobile-app-ready .login-card strong,
+  .auth-shell--mobile-app-ready .login-card small,
+  .auth-shell--mobile-app-ready .login-card button,
+  .auth-shell--mobile-app-ready .login-card a {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .auth-shell--mobile-app-ready .login-card .auth-copy {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .auth-shell--mobile-app-ready .login-method-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 3px !important;
+    border-radius: 8px !important;
+    background: #eef4f1 !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-method-tabs button {
+    min-width: 0 !important;
+    padding-inline: 7px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .auth-shell--mobile-app-ready .password-input-row {
+    grid-template-columns: minmax(0, 1fr) 56px !important;
+    align-items: stretch;
+  }
+
+  .auth-shell--mobile-app-ready .password-visibility-button {
+    width: 56px !important;
+    min-width: 56px !important;
+    padding: 0 !important;
+    font-size: 0.62rem !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-install-panel {
+    grid-template-columns: minmax(0, 1fr) 92px !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .auth-shell--mobile-app-ready .login-install-panel div,
+  .auth-shell--mobile-app-ready .login-install-panel small {
+    min-width: 0;
+  }
+
+  .auth-shell--mobile-app-ready .login-install-panel small {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .auth-shell--mobile-app-ready .login-install-panel button {
+    min-width: 0 !important;
+    padding-inline: 8px !important;
+    font-size: 0.68rem !important;
+    white-space: normal !important;
+  }
+
+  .pos-mobile-sequence-header,
+  .pos-mobile-step-actions,
+  .pos-mobile-payment-actions,
+  .pos-mobile-session-landing {
+    display: none;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-counter-page {
+    --pos-mobile-card: #ffffff;
+    --pos-mobile-line: rgba(91, 104, 87, 0.15);
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-sequence-header {
+    position: sticky;
+    top: 0;
+    z-index: 18;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 8px;
+    padding: 9px;
+    border: 1px solid var(--pos-mobile-line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.985);
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.075);
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-sequence-header div:first-child {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-sequence-header span {
+    color: #69796f;
+    font-size: 0.56rem;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-sequence-header strong {
+    color: #10211b;
+    font-size: 0.86rem;
+    line-height: 1.06;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-sequence-header small {
+    color: #64756d;
+    font-size: 0.6rem;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step-pills {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 4px;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step-pills span {
+    width: 19px;
+    height: 19px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #eef4f1;
+    color: #5f7068;
+    font-size: 0.56rem;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step-pills span.active {
+    background: #4b5320;
+    color: #ffffff;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-sale-transaction-section {
+    gap: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--session .pos-product-stock-section,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-sale-transaction-section,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--cart .pos-product-stock-section,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--payment .pos-product-stock-section,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--success .pos-product-stock-section {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--session .pos-sale-transaction-section > :not([data-pos-mobile-panel="session"]),
+  .dashboard-shell--native-workflow-open .pos-mobile-step--cart .pos-sale-transaction-section > :not([data-pos-mobile-panel="cart"]),
+  .dashboard-shell--native-workflow-open .pos-mobile-step--payment .pos-sale-transaction-section > :not([data-pos-mobile-panel="payment"]),
+  .dashboard-shell--native-workflow-open .pos-mobile-step--success .pos-sale-transaction-section > :not([data-pos-mobile-panel="payment"]) {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--session .pos-sale-transaction-section,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--cart .pos-sale-transaction-section,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--payment .pos-sale-transaction-section,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--success .pos-sale-transaction-section {
+    display: grid !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-live-business-performance-card,
+  .dashboard-shell--native-workflow-open .pos-recent-transactions-bottom {
+    display: none !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-session-landing {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--pos-mobile-line);
+    border-radius: 8px;
+    background:
+      linear-gradient(135deg, #ffffff 0%, #f4f8f6 70%, #fff9ef 100%);
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.055);
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-session-landing div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-session-landing span,
+  .dashboard-shell--native-workflow-open .pos-mobile-session-landing small {
+    color: #65766e;
+    font-size: 0.62rem;
+    font-weight: 850;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-session-landing strong {
+    color: #10211b;
+    font-size: 1rem;
+    line-height: 1.05;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-session-landing button,
+  .dashboard-shell--native-workflow-open .pos-mobile-step-actions button,
+  .dashboard-shell--native-workflow-open .pos-mobile-payment-actions button,
+  .dashboard-shell--native-workflow-open .pos-serve-next-customer-button {
+    width: 100%;
+    min-height: 44px !important;
+    border-radius: 8px !important;
+    font-size: 0.74rem !important;
+    font-weight: 950 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step-actions,
+  .dashboard-shell--native-workflow-open .pos-mobile-payment-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-summary-update-bridge[data-pos-mobile-panel="cart"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-summary-update-bridge[data-pos-mobile-panel="cart"] button {
+    min-width: 0;
+    padding-inline: 7px !important;
+    white-space: normal;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-search-input {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 16 !important;
+    margin-bottom: 7px !important;
+    border-color: rgba(75, 83, 32, 0.24) !important;
+    background: #ffffff !important;
+    box-shadow: 0 8px 18px rgba(16, 33, 27, 0.09) !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-stock-section {
+    padding-top: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog {
+    width: min(430px, calc(100vw - 18px)) !important;
+    max-height: calc(100dvh - 22px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    padding: 11px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-dialog__header {
+    align-items: start !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-selling-unit-hero,
+  .dashboard-shell--native-workflow-open .pos-quantity-readonly-grid,
+  .dashboard-shell--native-workflow-open .pos-quantity-total-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-readonly-grid article,
+  .dashboard-shell--native-workflow-open .pos-quantity-total-strip div {
+    min-width: 0;
+    padding: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-quantity-readonly-grid article strong,
+  .dashboard-shell--native-workflow-open .pos-quantity-total-strip strong {
+    font-size: 0.78rem !important;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-field-grid,
+  .dashboard-shell--native-workflow-open .pos-field-grid--two,
+  .inventory-popup-form__content .inventory-creation-grid,
+  .inventory-popup-form__content .procurement-popup-form-grid,
+  .inventory-popup-form__content .general-items-form-grid,
+  .inventory-popup-form__content .stock-location-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .inventory-popup-form__dialog {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .inventory-popup-form__header,
+  .inventory-popup-form__content,
+  .inventory-popup-form__footer {
+    padding-inline:
+      max(10px, env(safe-area-inset-left))
+      max(10px, env(safe-area-inset-right)) !important;
+  }
+
+  .inventory-popup-form__header {
+    padding-top: max(10px, calc(env(safe-area-inset-top) + 8px)) !important;
+    padding-bottom: 8px !important;
+  }
+
+  .inventory-popup-form__content {
+    min-height: 0;
+    overflow-y: auto !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .inventory-popup-form__footer {
+    padding-top: 8px !important;
+    padding-bottom: max(8px, calc(env(safe-area-inset-bottom) + 6px)) !important;
+  }
+
+  .inventory-popup-form__header h2 {
+    font-size: 1rem !important;
+    line-height: 1.08 !important;
+  }
+
+  .inventory-popup-form__header p:not(.inventory-popup-form__eyebrow),
+  .inventory-popup-form__footer span {
+    font-size: 0.66rem !important;
+    line-height: 1.22 !important;
+  }
+
+  .inventory-popup-form__content label,
+  .inventory-popup-form__content .procurement-popup-form-grid label,
+  .inventory-popup-form__content .general-items-form label {
+    min-width: 0;
+    gap: 4px !important;
+    font-size: 0.64rem !important;
+    line-height: 1.08 !important;
+  }
+
+  .inventory-popup-form__content :is(input, select, textarea) {
+    min-width: 0;
+    min-height: 39px !important;
+    border-radius: 8px !important;
+    padding: 7px 8px !important;
+    font-size: 16px !important;
+    line-height: 1.18 !important;
+  }
+
+  .inventory-popup-form__content textarea {
+    min-height: 42px !important;
+  }
+
+  .inventory-popup-form__content :is(button, .inventory-source-option) {
+    min-width: 0;
+    min-height: 40px !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    font-size: 0.68rem !important;
+    line-height: 1.14 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .inventory-receive-source-selector,
+  .procurement-purchase-type-selector,
+  .inventory-product-master-combobox-label,
+  .inventory-product-master-combobox,
+  .inventory-receive-mode-banner,
+  .inventory-create-summary,
+  .inventory-form-actions,
+  .procurement-popup-form-wide,
+  .procurement-po-preview,
+  .procurement-po-line-section,
+  .procurement-popup-actions,
+  .general-items-form-actions {
+    grid-column: 1 / -1 !important;
+  }
+
+  .inventory-receive-source-selector,
+  .procurement-purchase-type-selector {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .inventory-product-master-search-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 82px !important;
+    gap: 7px !important;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 6px 0;
+    background: #ffffff;
+  }
+
+  .inventory-product-master-options,
+  .procurement-po-line-list {
+    max-height: 42dvh !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+
+  .procurement-po-line-card {
+    border-radius: 8px !important;
+    padding: 9px !important;
+  }
+
+  .procurement-po-line-card,
+  .procurement-po-line-card .procurement-popup-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .inventory-popup-form__content .inventory-creation-grid,
+  .inventory-popup-form__content .procurement-popup-form-grid,
+  .inventory-popup-form__content .general-items-form-grid,
+  .inventory-popup-form__content .stock-location-form-grid {
+    gap: 7px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-summary-update-bridge[data-pos-mobile-panel="cart"] {
+    grid-template-columns: 1fr !important;
+  }
+}

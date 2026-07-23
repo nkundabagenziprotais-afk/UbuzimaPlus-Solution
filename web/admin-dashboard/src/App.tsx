@@ -412,6 +412,7 @@ type HomeWidgetKey =
   | 'role-workspaces';
 type MenuContextKey = ErpWorkspaceKey | SolutionKey | AiWorkspaceKey | AdminPanelWorkspaceKey;
 type LoginMethod = 'email' | 'phone';
+type MobilePosStep = 'session' | 'products' | 'cart' | 'payment' | 'success';
 type UbuzimaPwaInstallChangeEvent = CustomEvent<{ isAvailable: boolean }>;
 type MobileBottomNavItem = {
   key: string;
@@ -4151,6 +4152,7 @@ function App() {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [mobileAppScreen, setMobileAppScreen] = useState<UbuzimaMobileAppScreen>('business');
   const [mobileNativeWorkflow, setMobileNativeWorkflow] = useState<MobileNativeWorkflowState>(null);
+  const [mobilePosStep, setMobilePosStep] = useState<MobilePosStep>('session');
   const [isPwaInstallAvailable, setIsPwaInstallAvailable] = useState(false);
   const [isPwaInstalling, setIsPwaInstalling] = useState(false);
   const [isIosDevice, setIsIosDevice] = useState(false);
@@ -5196,6 +5198,10 @@ function App() {
       setActiveSupplierWorkspace(options.supplierWorkspace);
     }
 
+    if (section === 'pos' && options.posWorkspace === 'pos') {
+      setMobilePosStep('session');
+    }
+
     if (section === 'finance' && options.financeWorkspace) {
       setActiveFinanceWorkspace(options.financeWorkspace);
     }
@@ -5603,7 +5609,12 @@ function App() {
       : isIosDevice
         ? 'Add to Home Screen from Safari'
         : 'Open on a phone for app installation';
-  const shouldShowLoginInstallPanel = !isStandalonePwa && (isPwaInstallAvailable || isIosDevice);
+  const isLoginMobileViewport =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 860px)').matches;
+  const shouldShowLoginInstallPanel =
+    !isStandalonePwa &&
+    (isPwaInstallAvailable || isIosDevice || isLoginMobileViewport);
 
   if (isRestoringSession) {
     return (
@@ -5856,7 +5867,7 @@ function App() {
                   </button>
                 ) : (
                   <button type="button" onClick={() => setIsLoginIosInstallGuideOpen(true)}>
-                    iPhone install
+                    {isIosDevice ? 'iPhone install' : 'Install guide'}
                   </button>
                 )}
               </div>
@@ -6509,7 +6520,6 @@ function App() {
         ? `${posVisibleProducts.length} matching product${posVisibleProducts.length === 1 ? '' : 's'}`
         : `${posProducts.length} fast product tile${posProducts.length === 1 ? '' : 's'} ready`;
 
-
     async function loadPosInsurancePartners() {
       if (!session?.token) return;
 
@@ -6834,6 +6844,7 @@ function App() {
 
       commitPosCounterItems(nextItems);
       closePosQuantityPopup();
+      setMobilePosStep('cart');
 
       setPosNotice(
         `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}` +
@@ -6923,6 +6934,7 @@ function App() {
           String(response.session.expected_cash_amount),
         );
         setPosNotice(response.message);
+        setMobilePosStep('session');
       } catch (error: unknown) {
         setPosNotice(
           error instanceof Error
@@ -7035,6 +7047,7 @@ function App() {
         setPosDeclaredCashAmount('0');
         setPosTransactionConfirmed(false);
         setPosNotice(closeResponse.message);
+        setMobilePosStep('session');
       } catch (error: unknown) {
         setPosNotice(
           error instanceof Error
@@ -7310,6 +7323,7 @@ async function confirmTransaction() {
         setPosConfirmedSale(checkoutResponse.sale);
         setPosConfirmedPayment(checkoutResponse.payment);
         setPosTransactionConfirmed(true);
+        setMobilePosStep('success');
 
         setPosCartItems([]);
         setPosRenderedCartItems([]);
@@ -7630,6 +7644,31 @@ async function confirmTransaction() {
         0,
       );
       const posOperatingCart = buildPosCounterCartSnapshot(posLiveCartItems);
+      const isCurrentMobilePosSessionOpen = posSession?.status === 'open';
+      const mobilePosStepIndex =
+        mobilePosStep === 'session'
+          ? 1
+          : mobilePosStep === 'products'
+            ? 2
+            : mobilePosStep === 'cart'
+              ? 3
+              : mobilePosStep === 'payment'
+                ? 4
+                : 5;
+      const mobilePosStepTitle =
+        mobilePosStep === 'session'
+          ? isCurrentMobilePosSessionOpen
+            ? 'Current POS session'
+            : 'Open POS session'
+          : mobilePosStep === 'products'
+            ? 'Serve customer'
+            : mobilePosStep === 'cart'
+              ? 'Cart and setup'
+              : mobilePosStep === 'payment'
+                ? 'Payment summary'
+                : 'Transaction complete';
+      const mobilePosCanProceedToPayment =
+        posLiveCartItems.length > 0 && posCartOperatingUnits > 0;
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
       const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
@@ -7717,7 +7756,7 @@ async function confirmTransaction() {
 
       return (
         <section className="section-page pos-dedicated-counter-shell">
-          <section className="pos-counter-page pos-counter-page--dedicated pos-stable-page-v16">
+          <section className={`pos-counter-page pos-counter-page--dedicated pos-stable-page-v16 pos-mobile-step--${mobilePosStep}`}>
             <div className="pos-fixed-top-v16">
               {renderPosWorkspaceTopMenu('pos')}
 
@@ -7738,8 +7777,30 @@ async function confirmTransaction() {
             <div className="pos-terminal-main-scroll pos-scroll-body-v16">
               {posNotice && !posTransactionConfirmed && !/added:/i.test(posNotice) && <div className="form-success">{posNotice}</div>}
 
+              <section className="pos-mobile-sequence-header" aria-label="POS mobile checkout progress">
+                <div>
+                  <span>Step {mobilePosStepIndex} of 5</span>
+                  <strong>{mobilePosStepTitle}</strong>
+                  <small>
+                    {isCurrentMobilePosSessionOpen
+                      ? `${posSession?.session_number ?? 'Open session'} · RWF ${Number(posSession?.expected_cash_amount ?? 0).toLocaleString('en-RW')}`
+                      : 'Open a POS session before serving customers.'}
+                  </small>
+                </div>
+                <div className="pos-mobile-step-pills" aria-hidden="true">
+                  {['Session', 'Products', 'Cart', 'Pay', 'Done'].map((label, index) => (
+                    <span
+                      key={label}
+                      className={index + 1 === mobilePosStepIndex ? 'active' : ''}
+                    >
+                      {index + 1}
+                    </span>
+                  ))}
+                </div>
+              </section>
+
 <section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
-              <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
+              <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue" data-pos-mobile-panel="products">
                 <div className="section-heading">
                   <div>
                     <span>Step 1</span>
@@ -7771,8 +7832,8 @@ async function confirmTransaction() {
 
                 {posInventoryError && <div className="form-error">{posInventoryError}</div>}
 
-                <div className="pos-drug-list pos-drug-list--ten">
-                  {posProducts.length === 0 ? (
+	                <div className="pos-drug-list pos-drug-list--ten">
+	                  {posProducts.length === 0 ? (
                     <div className="pos-inventory-empty-state">
                       <strong>Loading stock…</strong>
                     </div>
@@ -7844,10 +7905,24 @@ async function confirmTransaction() {
                           </button>
                         );
                       })
-                    )
-                  )}
-                </div>
-              </section>
+	                    )
+	                  )}
+	                </div>
+
+                    <div className="pos-mobile-step-actions">
+                      <button type="button" onClick={() => setMobilePosStep('session')}>
+                        Session
+                      </button>
+                      <button
+                        type="button"
+                        className="primary"
+                        onClick={() => setMobilePosStep('cart')}
+                        disabled={posLiveCartItems.length === 0}
+                      >
+                        View cart
+                      </button>
+                    </div>
+	              </section>
 
               {posQuantityProduct && (() => {
                 const quantityPreviewSellingUnitPrice = Math.max(
@@ -8027,8 +8102,9 @@ async function confirmTransaction() {
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
 
-                <HistoricalPosWorkflow
-                  token={session!.token}
+	                <div className="pos-mobile-session-addon" data-pos-mobile-panel="session">
+	                <HistoricalPosWorkflow
+	                  token={session!.token}
                   tenantSlug={posSessionTenantSlug}
                   branchId={posSessionBranchId}
                   permissions={
@@ -8058,18 +8134,20 @@ async function confirmTransaction() {
                     setPosTillZeroized(
                       nextSession.balance_cleared,
                     );
-                    setPosDeclaredCashAmount(
-                      String(
-                        nextSession.expected_cash_amount,
-                      ),
-                    );
-                    setPosNotice(message);
-                  }}
-                  onNotice={setPosNotice}
-                />
+	                    setPosDeclaredCashAmount(
+	                      String(
+	                        nextSession.expected_cash_amount,
+	                      ),
+	                    );
+	                    setPosNotice(message);
+	                    setMobilePosStep('session');
+	                  }}
+	                  onNotice={setPosNotice}
+	                />
+	                </div>
 
 
-                <section className="pos-shift-control-section pos-session-control-card">
+	                <section className="pos-shift-control-section pos-session-control-card" data-pos-mobile-panel="session">
                   <div className="section-heading">
                     <div>
                       <span>Section 2 · Teller session</span>
@@ -8222,10 +8300,39 @@ async function confirmTransaction() {
                         : 'Zeroize & Close'}
                   </button>
                 </article>
-              </section>
-                </section>
+	              </section>
+	                </section>
 
-{(() => {
+                    <section className="pos-mobile-session-landing" data-pos-mobile-panel="session" aria-label="Current POS session landing">
+                      <div>
+                        <span>{isCurrentMobilePosSessionOpen ? 'Open session' : 'Session required'}</span>
+                        <strong>
+                          {isCurrentMobilePosSessionOpen
+                            ? posSession?.session_number ?? 'Current POS session'
+                            : 'Open POS session'}
+                        </strong>
+                        <small>
+                          {isCurrentMobilePosSessionOpen
+                            ? `Expected cash RWF ${Number(posSession?.expected_cash_amount ?? 0).toLocaleString('en-RW')}`
+                            : 'First open the session for this teller and branch.'}
+                        </small>
+                      </div>
+                      <button
+                        type="button"
+                        className="primary"
+                        onClick={() => {
+                          setMobilePosStep('products');
+                          if (!posInventoryLoadedAt && !isLoadingPosInventory) {
+                            void loadCurrentPosInventory();
+                          }
+                        }}
+                        disabled={!isCurrentMobilePosSessionOpen}
+                      >
+                        Serve customer
+                      </button>
+                    </section>
+
+	{(() => {
                   const visibleCartRows = posLiveCartItems;
                   const visibleCartLineCount = visibleCartRows.length;
                   const visibleCartUnitCount = visibleCartRows.reduce(
@@ -8247,9 +8354,10 @@ async function confirmTransaction() {
 
                   return (
                     <section
-                      key={visibleCartSignature}
-                      className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card"
-                      data-pos-cart-build="atomic-visible-cart-v1"
+	                      key={visibleCartSignature}
+	                      className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card"
+	                      data-pos-mobile-panel="cart"
+	                      data-pos-cart-build="atomic-visible-cart-v1"
                       data-pos-cart-signature={visibleCartSignature}
                       data-pos-cart-lines={visibleCartLineCount}
                       data-pos-cart-units={visibleCartUnitCount}
@@ -8334,7 +8442,7 @@ async function confirmTransaction() {
                   );
                 })()}
 
-                <section className="pos-transaction-setup-section pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
+	                <section className="pos-transaction-setup-section pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column" data-pos-mobile-panel="cart">
                   <div className="section-heading">
                     <div>
                       <span>Section 2 · Transaction Set-UP</span>
@@ -8456,16 +8564,31 @@ async function confirmTransaction() {
                   </div>
                 </section>
 
-                <div className="pos-summary-update-bridge">
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartOperatingUnits === 0}>
-                    Update Summary
-                  </button>
-                </div>
+	                <div className="pos-summary-update-bridge" data-pos-mobile-panel="cart">
+                      <button type="button" onClick={() => setMobilePosStep('products')}>
+                        Add products
+                      </button>
+	                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartOperatingUnits === 0}>
+	                    Update Summary
+	                  </button>
+                      <button
+                        type="button"
+                        className="primary"
+                        onClick={() => {
+                          forceRefreshSaleSummary();
+                          setMobilePosStep('payment');
+                        }}
+                        disabled={!mobilePosCanProceedToPayment}
+                      >
+                        Continue to payment
+                      </button>
+	                </div>
 
                 <section
                   key={posPaymentSummarySignature}
-                  className="pos-payment-summary-section pos-confirmation-rail"
-                  data-pos-summary-build="atomic-payment-summary-v1"
+	                  className="pos-payment-summary-section pos-confirmation-rail"
+	                  data-pos-mobile-panel="payment"
+	                  data-pos-summary-build="atomic-payment-summary-v1"
                   data-pos-summary-signature={posPaymentSummarySignature}
                   data-pos-summary-lines={posFinancialLineCount}
                   data-pos-summary-units={posCartOperatingUnits}
@@ -8549,7 +8672,7 @@ async function confirmTransaction() {
                       </article>
                     </div>
                   </div>
-                  {!posTransactionConfirmed && posNotice ? (
+	                  {!posTransactionConfirmed && posNotice ? (
                     <div
                       className="notice pos-confirmation-notice"
                       role="status"
@@ -8557,11 +8680,17 @@ async function confirmTransaction() {
                     >
                       {posNotice}
                     </div>
-                  ) : null}
+	                  ) : null}
 
-                  <button
-                    type="button"
-                    onClick={() => void confirmTransaction()}
+                      <div className="pos-mobile-payment-actions">
+                        <button type="button" onClick={() => setMobilePosStep('cart')}>
+                          Back to cart
+                        </button>
+                      </div>
+
+	                  <button
+	                    type="button"
+	                    onClick={() => void confirmTransaction()}
                     disabled={isConfirmingPosTransaction}
                   >
                     {isConfirmingPosTransaction
@@ -8584,17 +8713,30 @@ async function confirmTransaction() {
 
                       <article className="pos-summary-field-card pos-summary-field-card--financial pos-transaction-print-card">
                         <span>Print Receipt</span>
-                        <button
-                          type="button"
-                          className="pos-print-receipt-button"
-                          onClick={() => printUbuzimaPosDocument()}
-                          disabled={!posConfirmedPayment?.receipt_number}
-                        >
-                          Print Receipt
-                        </button>
-                      </article>
-                    </div>
-                  ) : null}
+	                        <button
+	                          type="button"
+	                          className="pos-print-receipt-button"
+	                          onClick={() => printUbuzimaPosDocument()}
+	                          disabled={!posConfirmedPayment?.receipt_number}
+	                        >
+	                          Print Receipt
+	                        </button>
+	                      </article>
+
+                          <button
+                            type="button"
+                            className="primary pos-serve-next-customer-button"
+                            onClick={() => {
+                              setPosTransactionConfirmed(false);
+                              setPosNotice('');
+                              setMobilePosStep('products');
+                              setPosTerminalSearch('');
+                            }}
+                          >
+                            Serve next customer
+                          </button>
+	                    </div>
+	                  ) : null}
                 </section>
 
                 {posCustomerInvoice === 'yes' && posTransactionConfirmed && (

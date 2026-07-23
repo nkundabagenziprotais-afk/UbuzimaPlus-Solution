@@ -2,8 +2,10 @@ Options -MultiViews
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
+# Send backend API requests to Laravel, not to the React SPA.
 RewriteRule ^api(?:/.*)?$ /index.php [QSA,L]
 
+# React public website SPA fallback.
 RewriteBase /
 RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
