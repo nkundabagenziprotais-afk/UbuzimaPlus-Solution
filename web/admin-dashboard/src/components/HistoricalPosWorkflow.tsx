@@ -1,3 +1,4 @@
+/* HISTORICAL_POS_ADMIN_OWNER_BYPASS_NO_REASON_V2 */
 /* HISTORICAL_POS_NO_REASON_ADMIN_OWNER_BYPASS_FINAL_V1 */
 /* HISTORICAL_POS_REASON_REMOVED_V1 */
 import {
@@ -23,6 +24,121 @@ import "./HistoricalPosWorkflow.css";
 function historicalPosAutoReasonGlobal() {
   return 'Historical POS entry created through approved workflow.';
 }
+
+function historicalPosStoredAccessProfile(): unknown {
+  try {
+    const candidates = [
+      localStorage.getItem('ubuzima:auth-session'),
+      localStorage.getItem('ubuzima:session'),
+      localStorage.getItem('ubuzima-admin-session'),
+      localStorage.getItem('auth_session'),
+      localStorage.getItem('session'),
+    ].filter(Boolean);
+
+    for (const candidate of candidates) {
+      const parsed = JSON.parse(candidate ?? '{}') as Record<string, unknown>;
+
+      if (parsed.profile) {
+        return parsed.profile;
+      }
+
+      if (parsed.user) {
+        return parsed.user;
+      }
+
+      if (parsed.data && typeof parsed.data === 'object') {
+        const data = parsed.data as Record<string, unknown>;
+
+        if (data.profile) {
+          return data.profile;
+        }
+
+        if (data.user) {
+          return data.user;
+        }
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function historicalPosProfileCanBypassApproval(profile: unknown): boolean {
+  const terms: string[] = [];
+  const source = profile && typeof profile === 'object'
+    ? profile as Record<string, unknown>
+    : {};
+
+  const pushValue = (value: unknown) => {
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      terms.push(String(value).toLowerCase());
+    }
+  };
+
+  [
+    source.role,
+    source.role_name,
+    source.role_code,
+    source.type,
+    source.user_type,
+    source.account_type,
+    source.email,
+    source.title,
+    source.designation,
+  ].forEach(pushValue);
+
+  ['is_admin', 'is_owner', 'owner', 'admin', 'is_super_admin'].forEach((flag) => {
+    if (source[flag] === true || source[flag] === 1 || source[flag] === '1' || source[flag] === 'true') {
+      terms.push(flag);
+    }
+  });
+
+  const pushRole = (role: unknown) => {
+    if (!role || typeof role !== 'object') {
+      return;
+    }
+
+    const item = role as Record<string, unknown>;
+
+    [
+      item.name,
+      item.code,
+      item.slug,
+      item.title,
+      item.label,
+    ].forEach(pushValue);
+  };
+
+  [source.role, source.primary_role, source.primaryRole, source.tenant_role, source.tenantRole].forEach(pushRole);
+
+  if (Array.isArray(source.roles)) {
+    source.roles.forEach(pushRole);
+  }
+
+  if (Array.isArray(source.permissions)) {
+    source.permissions.forEach(pushValue);
+  }
+
+  return terms.some((term) => {
+    const normalized = term.replace(/[_.-]+/g, ' ');
+
+    return (
+      normalized.includes('admin')
+      || normalized.includes('administrator')
+      || normalized.includes('owner')
+      || normalized.includes('super')
+      || normalized.includes('proprietor')
+      || normalized.includes('pharmaco pos historical approve')
+      || normalized.includes('pharmaco.pos.historical.approve')
+      || normalized.includes('pharmaco pos historical bypass')
+      || normalized.includes('pharmaco.pos.historical.bypass')
+    );
+  });
+}
+
+
 
 type HistoricalPosWorkflowProps = {
   token: string;
@@ -159,7 +275,8 @@ export function HistoricalPosWorkflow({
     [tenantSlug],
   );
 
-  const [isExpanded, setIsExpanded] =
+    const historicalPosCanBypassApproval = historicalPosProfileCanBypassApproval(historicalPosStoredAccessProfile());
+const [isExpanded, setIsExpanded] =
     useState(false);
 
   const [businessDate, setBusinessDate] =
@@ -349,8 +466,8 @@ export function HistoricalPosWorkflow({
       setAvailability(response);
 
       setSuccessMessage(
-        response.approval_required
-          ? "Live transactions already exist on this date. Admin or Owner authorization is required."
+        (!historicalPosCanBypassApproval && response.approval_required)
+          ? "Live transactions already exist on this date.  is required."
           : "No conflicting live activity was found. You may open the historical session directly.",
       );
     } catch (error: unknown) {
@@ -579,21 +696,21 @@ export function HistoricalPosWorkflow({
     }
 
     if (
-      availability.approval_required
+      (!historicalPosCanBypassApproval && availability.approval_required)
       && !approval?.id
     ) {
       setErrorMessage(
-        "Request historical authorization before opening this session.",
+        "",
       );
       return;
     }
 
     if (
-      availability.approval_required
+      (!historicalPosCanBypassApproval && availability.approval_required)
       && !/^\d{6}$/.test(approvalCode)
     ) {
       setErrorMessage(
-        "Enter the six-digit Admin or Owner authorization code.",
+        "",
       );
       return;
     }
@@ -621,11 +738,11 @@ export function HistoricalPosWorkflow({
               historicalReference.trim()
               || undefined,
             approval_id:
-              availability.approval_required
+              (!historicalPosCanBypassApproval && availability.approval_required)
                 ? approval?.id
                 : undefined,
             approval_code:
-              availability.approval_required
+              (!historicalPosCanBypassApproval && availability.approval_required)
                 ? approvalCode
                 : undefined,
           },
@@ -884,14 +1001,14 @@ export function HistoricalPosWorkflow({
                 <div
                   className={[
                     "historical-pos-conflict-card",
-                    availability.approval_required
+                    (!historicalPosCanBypassApproval && availability.approval_required)
                       ? "historical-pos-conflict-card--conflict"
                       : "historical-pos-conflict-card--clear",
                   ].join(" ")}
                 >
                   <div>
                     <span>
-                      {availability.approval_required
+                      {(!historicalPosCanBypassApproval && availability.approval_required)
                         ? "Authorization required"
                         : "No live conflict"}
                     </span>
@@ -923,11 +1040,11 @@ export function HistoricalPosWorkflow({
                 </div>
               ) : null}
 
-              {availability?.approval_required ? (
+              {(!historicalPosCanBypassApproval && availability?.approval_required) ? (
                 <section className="historical-pos-approval-card">
                   <div>
                     <span>
-                      Admin or Owner authorization
+                      
                     </span>
 
                     <h4>
@@ -953,7 +1070,7 @@ export function HistoricalPosWorkflow({
                         ? "Requesting..."
                         : approval
                           ? "Refresh request"
-                          : "Request authorization"}
+                          : "Open historical POS session"}
                     </button>
                   </div>
 
@@ -987,7 +1104,7 @@ export function HistoricalPosWorkflow({
 
                   <label>
                     <span>
-                      Six-digit authorization code
+                      
                     </span>
 
                     <input
@@ -1015,7 +1132,7 @@ export function HistoricalPosWorkflow({
                   role="status"
                 >
                   <span>
-                    One-time authorization code
+                    
                   </span>
 
                   <strong>

@@ -1,5 +1,7 @@
 <?php
 
+/* HISTORICAL_POS_ADMIN_OWNER_BYPASS_NO_REASON_V2 */
+
 /* HISTORICAL_POS_NO_REASON_ADMIN_OWNER_BYPASS_FINAL_V1 */
 
 namespace App\Http\Controllers\Api\V1\PharmaCo360;
@@ -746,33 +748,110 @@ class HistoricalPosSessionController extends Controller
 
         $terms = [];
 
-        foreach (['role', 'role_name', 'role_code', 'type', 'user_type', 'account_type'] as $field) {
+        foreach ([
+            'role',
+            'role_name',
+            'role_code',
+            'type',
+            'user_type',
+            'account_type',
+            'designation',
+            'position',
+            'title',
+            'email',
+        ] as $field) {
             if (isset($user->{$field}) && is_scalar($user->{$field})) {
                 $terms[] = strtolower((string) $user->{$field});
             }
         }
 
-        if (method_exists($user, 'roles')) {
-            try {
-                $roles = $user->roles()->get();
-
-                foreach ($roles as $role) {
-                    foreach (['name', 'code', 'slug', 'title'] as $field) {
-                        if (isset($role->{$field}) && is_scalar($role->{$field})) {
-                            $terms[] = strtolower((string) $role->{$field});
-                        }
-                    }
-                }
-            } catch (\Throwable) {
-                // Keep bypass detection resilient across role implementations.
+        foreach (['is_admin', 'is_owner', 'owner', 'admin', 'is_super_admin'] as $flag) {
+            if (isset($user->{$flag}) && (bool) $user->{$flag}) {
+                return true;
             }
         }
 
-        foreach (['admin', 'administrator', 'super admin', 'super-admin', 'owner', 'business owner', 'tenant owner', 'proprietor'] as $needle) {
-            foreach ($terms as $term) {
-                if (str_contains($term, $needle)) {
-                    return true;
+        $collectRoleTerms = function ($role) use (&$terms): void {
+            if (! $role || ! is_object($role)) {
+                return;
+            }
+
+            foreach (['name', 'code', 'slug', 'title', 'label'] as $field) {
+                if (isset($role->{$field}) && is_scalar($role->{$field})) {
+                    $terms[] = strtolower((string) $role->{$field});
                 }
+            }
+        };
+
+        foreach (['role', 'primaryRole', 'tenantRole'] as $relationName) {
+            try {
+                if (isset($user->{$relationName}) && is_object($user->{$relationName})) {
+                    $collectRoleTerms($user->{$relationName});
+                }
+            } catch (\Throwable) {
+                // Ignore unknown relation shape.
+            }
+        }
+
+        if (method_exists($user, 'roles')) {
+            try {
+                foreach ($user->roles()->get() as $role) {
+                    $collectRoleTerms($role);
+                }
+            } catch (\Throwable) {
+                // Ignore unsupported role relation.
+            }
+        }
+
+        try {
+            if (
+                \Illuminate\Support\Facades\Schema::hasTable('role_user')
+                && \Illuminate\Support\Facades\Schema::hasTable('roles')
+            ) {
+                $roleRows = \Illuminate\Support\Facades\DB::table('roles')
+                    ->join('role_user', 'role_user.role_id', '=', 'roles.id')
+                    ->where('role_user.user_id', $user->id)
+                    ->select('roles.*')
+                    ->get();
+
+                foreach ($roleRows as $role) {
+                    $collectRoleTerms($role);
+                }
+            }
+        } catch (\Throwable) {
+            // Ignore schema differences.
+        }
+
+        try {
+            if (
+                \Illuminate\Support\Facades\Schema::hasTable('model_has_roles')
+                && \Illuminate\Support\Facades\Schema::hasTable('roles')
+            ) {
+                $roleRows = \Illuminate\Support\Facades\DB::table('roles')
+                    ->join('model_has_roles', 'model_has_roles.role_id', '=', 'roles.id')
+                    ->where('model_has_roles.model_id', $user->id)
+                    ->select('roles.*')
+                    ->get();
+
+                foreach ($roleRows as $role) {
+                    $collectRoleTerms($role);
+                }
+            }
+        } catch (\Throwable) {
+            // Ignore schema differences.
+        }
+
+        foreach ($terms as $term) {
+            $normalized = str_replace(['_', '-', '.'], ' ', strtolower(trim($term)));
+
+            if (
+                str_contains($normalized, 'owner')
+                || str_contains($normalized, 'admin')
+                || str_contains($normalized, 'administrator')
+                || str_contains($normalized, 'super')
+                || str_contains($normalized, 'proprietor')
+            ) {
+                return true;
             }
         }
 
@@ -782,13 +861,15 @@ class HistoricalPosSessionController extends Controller
             'pharmaco.pos.historical.bypass',
             'pharmaco.pos.manage',
             'pharmaco.admin',
+            'roles.manage',
+            'security.permissions.add',
         ] as $permission) {
             try {
                 if (method_exists($user, 'can') && $user->can($permission)) {
                     return true;
                 }
             } catch (\Throwable) {
-                // Ignore unsupported permission guards.
+                // Ignore unsupported permission guard.
             }
         }
 
