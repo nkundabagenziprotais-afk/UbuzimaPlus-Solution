@@ -1,5 +1,4 @@
-/* INVENTORY_ANALYTICS_VISIBLE_AS_AT_VALUES_V1 */
-/* INVENTORY_ANALYTICS_VISIBLE_TREND_CARD_KPI_SOURCE_V1 */
+/* INVENTORY_ANALYTICS_BO_STYLE_VALUE_CARDS_V2 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -1535,55 +1534,8 @@ export function InventoryModuleHome({
   return presentation === 'general-stock' ? (
     <section className="inventory-module-general-stock-view">
 
-              <article className="inventory-home-chart-panel inventory-home-chart-panel--weekly-value">
-                <header>
-                  <small>Sunday to Saturday</small>
-                  <strong>Weekly Inventory Value</strong>
-                </header>
+              
 
-                <div
-                  className="inventory-weekly-value-chart"
-                  aria-label="Weekly Inventory Value"
-                >
-                  {weeklyInventoryValue.map(
-                    (day, index) => (
-                      <div
-                        key={`${day.label}-${index}`}
-                        className={
-                          day.isCurrent
-                            ? 'is-current'
-                            : ''
-                        }
-                      >
-                        <span
-                          style={{
-                            height: `${
-                              day.value > 0
-                                ? Math.max(
-                                    14,
-                                    (
-                                      day.value
-                                      / weeklyInventoryValueMaximum
-                                    ) * 100,
-                                  )
-                                : 6
-                            }%`,
-                          }}
-                        />
-
-                        <small>{day.label}</small>
-                      </div>
-                    ),
-                  )}
-                </div>
-
-                <p>
-                  Today’s verified inventory value
-                  is plotted on the current weekday.
-                  Historical closing values remain
-                  blank until daily snapshots exist.
-                </p>
-              </article>
 
 <InventoryExecutiveRisk
         valuation={valuation}
@@ -2680,67 +2632,47 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                   ))}
                 </div>
 
+                {/* INVENTORY_ANALYTICS_BO_STYLE_VALUE_CARDS_V2 */}
+                <div className="inventory-analytics-bo-value-grid" aria-label="Inventory Analytics value cards">
+                  {[
+                    {
+                      key: 'stock-value-as-at',
+                      label: 'Stock Value',
+                      value:
+                        kpiCards.find((card) => /Total Inventory Value|Inventory Value|Stock Value/i.test(card.label))?.value
+                        ?? kpiCards[0]?.value
+                        ?? '0',
+                      meta: `As at ${analyticsAppliedDateToFilter}`,
+                      tone: 'blue',
+                    },
+                    {
+                      key: 'near-expiry-value-as-at',
+                      label: 'Near Expiry Value',
+                      value:
+                        kpiCards.find((card) => /Near Expiry Value/i.test(card.label))?.value
+                        ?? '0',
+                      meta: `As at ${analyticsAppliedDateToFilter}`,
+                      tone: 'amber',
+                    },
+                  ].map((card) => (
+                    <article
+                      key={card.key}
+                      className={`inventory-analytics-bo-value-card inventory-analytics-bo-value-card--${card.tone}`}
+                    >
+                      <div>
+                        <span>{card.meta}</span>
+                        <h3>{card.label}</h3>
+                      </div>
+                      <strong>{card.value}</strong>
+                      <small>Source: Inventory Analytics KPI</small>
+                    </article>
+                  ))}
+                </div>
+
+
                 <div className="inventory-analytics-request-grid">
-                  <article className="inventory-analytics-request-card">
-                    <header>
-                      <h3>Stock Value As At Selected Date</h3><small className="muted">Inventory Analytics source: KPI as-at v1</small>
-                      <select
-                        className="inventory-analytics-trend-header-select"
-                        value={analyticsTrendWeekSelection}
-                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
-                      >
-                        <option value="all">Full range</option>
-                        {analyticsTrendWeeks.map((week) => (
-                          <option key={week} value={week}>
-                            {week.replace('week-', 'Week ')}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="inventory-analytics-trend-change">
-                        {trendPercentChange.toFixed(1)}%
-                      </span>
-                      <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
-                    </header>
+                  
 
-                    <div className="inventory-analytics-request-bars">
-                      {inventoryAnalyticsVisibleStockValueValues.map((value, index) => (
-                        <div key={`stock-trend-${index}`}>
-                          <i style={{ height: `${Math.max((value / trendMax) * 100, value > 0 ? 12 : 4)}%` }} />
-                          <small>{selectedTrendDateKeys[index] ?? String(index + 1)}</small>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="inventory-analytics-stacked-bar-trends">
-                      {[
-                        { label: 'Stock Value As At Selected Date', values: inventoryAnalyticsCardStockValueTrendValues },
-                        { label: 'Near Expiry Value As At Selected Date', values: inventoryAnalyticsCardNearExpiryTrendValues },
-                      ].map((chart) => {
-                        const maxChartValue = Math.max(...chart.values, 1);
-
-                        return (
-                          <div key={chart.label} className="inventory-analytics-bar-trend-card">
-                            <strong>{chart.label}</strong>
-                            <div className="inventory-analytics-bar-trend-bars">
-                              {chart.values.map((value, index) => {
-                                const height = value > 0
-                                  ? Math.max((value / maxChartValue) * 100, 7)
-                                  : 2;
-
-                                return (
-                                  <div key={`${chart.label}-${index}`}>
-                                    <span>{formatInventoryTrendMillion(value)}</span>
-                                    <i style={{ height: `${height}%` }} />
-                                    <small>{inventoryAnalyticsDayNumberLabel(selectedTrendDateKeys[index] ?? '', index)}</small>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </article>
 
                   <article className="inventory-analytics-request-card">
                     <header>

@@ -48069,3 +48069,58 @@ html.ubuzima-standalone-webapp .admin-header {
   font-weight: 800;
   white-space: nowrap;
 }
+
+/* INVENTORY_ANALYTICS_BO_STYLE_VALUE_CARDS_V2 */
+.inventory-analytics-bo-value-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0.9rem 0 1rem;
+}
+
+.inventory-analytics-bo-value-card {
+  min-height: 118px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 22px;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+}
+
+.inventory-analytics-bo-value-card span,
+.inventory-analytics-bo-value-card small {
+  display: inline-flex;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.inventory-analytics-bo-value-card h3 {
+  margin: 0.28rem 0 0;
+  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.inventory-analytics-bo-value-card strong {
+  display: block;
+  margin: 0.75rem 0 0.35rem;
+  color: #0f172a;
+  font-size: clamp(1.45rem, 3vw, 2.15rem);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.inventory-analytics-bo-value-card--amber {
+  background:
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.16), transparent 36%),
+    linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,251,235,0.92));
+}
+
+@media (max-width: 760px) {
+  .inventory-analytics-bo-value-grid {
+    grid-template-columns: 1fr;
+  }
+}

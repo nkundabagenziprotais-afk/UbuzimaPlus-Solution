@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ubuzima-admin-shell-v8';
+const CACHE_NAME = 'ubuzima-admin-shell-v9';
 const SHELL_ASSETS = [
   '/admin/',
   '/admin/index.html',
