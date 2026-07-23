@@ -54171,11 +54171,12 @@ html.ubuzima-standalone-webapp .admin-header {
 @media (max-width: 860px) {
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-terminal-main-scroll,
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-scroll-body-v16 {
-    min-height: calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    height: calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    min-height: calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     overflow: hidden !important;
     display: grid !important;
     grid-template-rows: auto minmax(0, 1fr) !important;
-    gap: 8px !important;
+    gap: 6px !important;
   }
 
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-counter-workbench,
@@ -54189,8 +54190,8 @@ html.ubuzima-standalone-webapp .admin-header {
   }
 
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-stock-section {
-    height: calc(100dvh - 144px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
-    min-height: min(620px, calc(100dvh - 144px - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
+    height: calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    min-height: calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     max-height: none !important;
     display: grid !important;
     grid-template-rows: auto auto minmax(0, 1fr) auto !important;
@@ -54248,6 +54249,7 @@ html.ubuzima-standalone-webapp .admin-header {
   .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-builder-product-panel > .pos-drug-list--ten {
     min-height: 0 !important;
     height: 100% !important;
+    max-height: 100% !important;
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-auto-rows: minmax(104px, auto) !important;
