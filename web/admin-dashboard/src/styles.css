@@ -48588,3 +48588,8 @@ html.ubuzima-standalone-webapp .admin-header {
   font-weight: 850;
   text-align: center;
 }
+
+/* INVENTORY_ANALYTICS_EOD_POSITION_TRENDS_V4 */
+.inventory-analytics-operational-empty {
+  display: none !important;
+}

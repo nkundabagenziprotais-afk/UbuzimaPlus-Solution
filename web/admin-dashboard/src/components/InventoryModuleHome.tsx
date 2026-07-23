@@ -1,4 +1,4 @@
-/* INVENTORY_ANALYTICS_REAL_DAILY_POSITION_TRENDS_V3 */
+/* INVENTORY_ANALYTICS_EOD_POSITION_TRENDS_V4 */
 /* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
 /* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
 /* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
@@ -2488,7 +2488,7 @@ const inventoryAnalyticsCardSourceTrendDateKeys =
                 maximumFractionDigits: 0,
               }).format(value)}`;
 
-                        const inventoryAnalyticsRealDailyTrendValues = (
+                        const inventoryAnalyticsEodPositionTrendValues = (
               map: Map<string, number>,
             ): number[] =>
               inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey) => {
@@ -2564,12 +2564,12 @@ const inventoryAnalyticsReconciledTrendValues = (
             };
 
 const inventoryAnalyticsCardStockValueTrendValues =
-              inventoryAnalyticsRealDailyTrendValues(
+              inventoryAnalyticsEodPositionTrendValues(
                 inventoryAnalyticsTotalInventoryDailyPositionMap,
               );
 
             const inventoryAnalyticsCardNearExpiryTrendValues =
-              inventoryAnalyticsRealDailyTrendValues(
+              inventoryAnalyticsEodPositionTrendValues(
                 inventoryAnalyticsNearExpiryDailyPositionMap,
               );
 
@@ -2830,7 +2830,8 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                             <select
                               value={analyticsTrendWeekSelection}
                               aria-label={`${chart.label} range`}
-                              onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value as typeof analyticsTrendWeekSelection)}><option value="all">Full selected range</option>
+                              onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value as typeof analyticsTrendWeekSelection)}>
+                              <option value="all">Full selected range</option>
                               <option value="last7">Last 7 days</option>
                               <option value="last14">Last 14 days</option>
                               <option value="last30">Last 30 days</option>
