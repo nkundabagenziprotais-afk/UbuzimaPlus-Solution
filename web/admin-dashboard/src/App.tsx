@@ -7997,13 +7997,16 @@ async function confirmTransaction() {
                             key={product.code}
                             type="button"
                             className={`pos-product-tile pos-product-tile-v16 product-expiry-${expiryStatusClass}`}
+                            title={`Expiry: ${expiryDateText} / ${expiryDaysText}`}
                             onClick={() => openPosQuantityPopup(product)}
                           >
-                            <strong>{product.name}</strong>
-                            <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
-                            <span className="pos-product-card-line">Stock {product.availableQuantity.toLocaleString('en-RW')}</span>
-                            <span className="pos-product-card-line">Exp: {expiryDateText}</span>
-                            <span className="pos-product-card-line">{expiryDaysText}</span>
+                            <strong className="pos-product-card-name">{product.name}</strong>
+                            <span className="pos-product-card-row">
+                              <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
+                              <span className="pos-product-card-available">
+                                Available {product.availableQuantity.toLocaleString('en-RW')}
+                              </span>
+                            </span>
                           </button>
                         );
                       })

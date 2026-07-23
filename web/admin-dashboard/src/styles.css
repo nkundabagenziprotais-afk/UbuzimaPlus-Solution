@@ -54053,3 +54053,83 @@ html.ubuzima-standalone-webapp .admin-header {
     text-align: center;
   }
 }
+
+/* Mobile POS product card polish: product name row, price/availability row */
+@media (max-width: 860px) {
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-tile,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-tile-v16,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-drug-list button {
+    min-height: 62px !important;
+    height: 62px !important;
+    max-height: 62px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(20px, auto) 22px !important;
+    align-content: center !important;
+    gap: 5px !important;
+    padding: 8px !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-name,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-tile strong,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-tile-v16 strong {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    color: #10211b !important;
+    font-size: 0.68rem !important;
+    font-weight: 950 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-row {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-row em,
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-available {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 19px !important;
+    height: 19px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    border-radius: 999px !important;
+    padding: 0 7px !important;
+    font-size: 0.55rem !important;
+    font-weight: 950 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-row em {
+    justify-self: start !important;
+    background: #10211b !important;
+    color: #ffffff !important;
+    font-style: normal !important;
+  }
+
+  .dashboard-shell--native-workflow-open .pos-mobile-step--products .pos-product-card-available {
+    justify-self: end !important;
+    background: rgba(75, 83, 32, 0.11) !important;
+    color: #2f3b15 !important;
+    text-align: right !important;
+  }
+}
