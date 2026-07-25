@@ -59825,3 +59825,138 @@ body .pos-quantity-dialog__product-name {
     padding: 0 6px 2px !important;
   }
 }
+
+/* UBUZIMA ACTUAL POS DRUG GRID EQUAL SPACING FIX */
+
+/*
+ * This is the real product-board container rendered by App.tsx.
+ * One variable controls both row and column separation.
+ */
+.pos-builder-product-panel
+  > .pos-drug-list.pos-drug-list--ten,
+.pos-product-stock-section
+  > .pos-drug-list.pos-drug-list--ten,
+.pos-drug-list.pos-drug-list--ten {
+  --ubuzima-actual-pos-card-gap: 14px;
+  --ubuzima-actual-pos-card-height: 160px;
+
+  width: 100% !important;
+  min-width: 0 !important;
+
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-auto-flow: row !important;
+  grid-auto-rows: var(--ubuzima-actual-pos-card-height) !important;
+
+  gap: var(--ubuzima-actual-pos-card-gap) !important;
+  row-gap: var(--ubuzima-actual-pos-card-gap) !important;
+  column-gap: var(--ubuzima-actual-pos-card-gap) !important;
+
+  align-items: stretch !important;
+  justify-items: stretch !important;
+  align-content: start !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+/*
+ * Reset all geometry on the real direct children. The card cannot
+ * exceed its grid row or move into the neighbouring row.
+ */
+.pos-drug-list.pos-drug-list--ten
+  > .pos-product-tile-v16,
+.pos-drug-list.pos-drug-list--ten
+  > .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"] {
+  position: relative !important;
+
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+
+  height: var(--ubuzima-actual-pos-card-height) !important;
+  min-height: var(--ubuzima-actual-pos-card-height) !important;
+  max-height: var(--ubuzima-actual-pos-card-height) !important;
+
+  margin: 0 !important;
+  margin-block: 0 !important;
+  margin-inline: 0 !important;
+  padding: 0 !important;
+
+  align-self: stretch !important;
+  justify-self: stretch !important;
+
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  z-index: auto !important;
+}
+
+/* Keep the replacement card completely inside its button track. */
+.pos-drug-list.pos-drug-list--ten
+  > .pos-product-tile-v16
+  .ubuzima-pos-replaced-card {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/*
+ * Neutralise pseudo-elements that might extend beyond a card and
+ * visually cover the space between rows.
+ */
+.pos-drug-list.pos-drug-list--ten
+  > .pos-product-tile-v16::before,
+.pos-drug-list.pos-drug-list--ten
+  > .pos-product-tile-v16::after {
+  box-sizing: border-box !important;
+  max-height: 100% !important;
+}
+
+/* Tablet layout. */
+@media (max-width: 1100px) {
+  .pos-builder-product-panel
+    > .pos-drug-list.pos-drug-list--ten,
+  .pos-product-stock-section
+    > .pos-drug-list.pos-drug-list--ten,
+  .pos-drug-list.pos-drug-list--ten {
+    --ubuzima-actual-pos-card-gap: 11px;
+    --ubuzima-actual-pos-card-height: 152px;
+
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Phone and installed-PWA layout. */
+@media (max-width: 767px) {
+  .pos-builder-product-panel
+    > .pos-drug-list.pos-drug-list--ten,
+  .pos-product-stock-section
+    > .pos-drug-list.pos-drug-list--ten,
+  .pos-drug-list.pos-drug-list--ten {
+    --ubuzima-actual-pos-card-gap: 9px;
+    --ubuzima-actual-pos-card-height: 148px;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
