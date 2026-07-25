@@ -330,7 +330,7 @@ export function PosSessionAdminControl({
       </div>
 
       <div className="pos-admin-control__table-shell">
-        <table>
+        <table className="pos-admin-session-table">
           <thead>
             <tr>
               <th>Session</th>
@@ -443,7 +443,7 @@ export function PosSessionAdminControl({
                   </small>
                 </td>
 
-                <td>
+                <td className="pos-admin-session-actions-cell">
                   <div className="pos-admin-control__actions">
                     <button
                       type="button"
@@ -482,7 +482,10 @@ export function PosSessionAdminControl({
             {!isLoading
               && visibleSessions.length === 0 && (
                 <tr>
-                  <td colSpan={7}>
+                  <td
+                    colSpan={9}
+                    className="pos-admin-session-empty"
+                  >
                     No POS sessions match the selected
                     support filters.
                   </td>
