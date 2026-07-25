@@ -8257,6 +8257,10 @@ async function confirmTransaction() {
                       aria-modal="true"
                       aria-label="Quantity and price"
                     >
+                      <h3 className="pos-quantity-dialog__product-name">
+                        {posQuantityProduct.name}
+                      </h3>
+
                       <section className="pos-quantity-selling-unit-hero" aria-label="Quantity input">
                         <label>
                           <span>Quantity</span>
