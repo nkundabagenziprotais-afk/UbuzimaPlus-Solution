@@ -59960,3 +59960,211 @@ body .pos-quantity-dialog__product-name {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* UBUZIMA BATCH 5A SYSTEM TABLE SCROLL AND ACTION GRID */
+
+/* Table scroll shells: preserve full columns and allow right-left scrolling. */
+.system-table-wrap,
+.ubuzima-user-table-scroll,
+.security-permission-table-shell,
+.insurance-table-scroll,
+.insurance-live-table-wrap,
+.managed-sales-table-wrap,
+.general-items-table-scroll,
+.inventory-analytics-request-table-scroll,
+.procurement-register-table-wrap,
+.procurement-po-detail-table-wrap,
+.payables-register-table-wrap,
+.payables-line-table-wrap,
+.payables-history-table,
+.receivables-table-wrap,
+.pos-admin-control__table-shell,
+.responsive-table-scroll,
+.sql-result-table,
+.data-table-preview {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-gutter: stable both-edges !important;
+}
+
+/* Real tables should keep natural column width instead of squeezing. */
+.system-table-wrap table,
+.ubuzima-user-table-scroll table,
+.security-permission-table-shell table,
+.insurance-table-scroll table,
+.insurance-live-table-wrap table,
+.managed-sales-table-wrap table,
+.general-items-table-scroll table,
+.inventory-analytics-request-table-scroll table,
+.procurement-register-table-wrap table,
+.procurement-po-detail-table-wrap table,
+.payables-register-table-wrap table,
+.payables-line-table-wrap table,
+.payables-history-table table,
+.receivables-table-wrap table,
+.pos-admin-control__table-shell table,
+.responsive-table-scroll table,
+.sql-result-table table,
+.data-table-preview table,
+table.system-table,
+table.pos-admin-session-table,
+table.payables-register-table,
+table.procurement-po-detail-table,
+table.managed-sales-table,
+table.inventory-data-table,
+table.receivables-table {
+  width: max-content !important;
+  min-width: 100% !important;
+  table-layout: auto !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* Prevent distorted wrapping in critical cells. */
+.system-table th,
+.system-table td,
+.pos-admin-session-table th,
+.pos-admin-session-table td,
+.payables-register-table th,
+.payables-register-table td,
+.procurement-po-detail-table th,
+.procurement-po-detail-table td,
+.managed-sales-table th,
+.managed-sales-table td,
+.inventory-data-table th,
+.inventory-data-table td,
+.receivables-table th,
+.receivables-table td,
+.insurance-table-scroll th,
+.insurance-table-scroll td,
+.insurance-live-table-wrap th,
+.insurance-live-table-wrap td,
+.procurement-register-table-wrap th,
+.procurement-register-table-wrap td,
+.general-items-table-scroll th,
+.general-items-table-scroll td {
+  white-space: nowrap !important;
+  vertical-align: top !important;
+  text-align: left !important;
+  max-width: none !important;
+}
+
+/* Human-readable long-name columns may grow naturally but still scroll. */
+.inventory-data-table .col-product,
+.inventory-data-table td.col-product,
+.procurement-po-detail-table td:first-child,
+.general-items-table-scroll td:first-child,
+.insurance-table-scroll td:first-child,
+.managed-sales-table td:first-child {
+  min-width: 220px !important;
+}
+
+/* Action cells: enough width for 2×2 action layout. */
+.col-actions,
+.table-cell-actions,
+.procurement-register-actions-column,
+.pos-admin-session-actions-cell,
+.security-user-control-actions,
+.security-user-control-panel,
+.ubuzima-user-row-actions,
+.tenant-user-list-actions {
+  min-width: 190px !important;
+  width: 190px !important;
+  max-width: 220px !important;
+}
+
+/* 2-column action layouts for confirmed action containers. */
+.insurance-action-grid,
+.insurance-action-grid-2x2,
+.procurement-row-actions,
+.table-action-grid,
+.pos-admin-control__actions,
+.pos-admin-session-actions-cell,
+.security-user-control-actions,
+.security-user-control-panel,
+.ubuzima-user-row-actions,
+.tenant-user-list-actions,
+.managed-sales-row-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  justify-items: stretch !important;
+  gap: 8px !important;
+  min-width: 176px !important;
+  max-width: 220px !important;
+}
+
+/* Action buttons fit in their cells without stretching table height badly. */
+.insurance-action-grid button,
+.insurance-action-grid-2x2 button,
+.procurement-row-actions button,
+.table-action-grid button,
+.pos-admin-control__actions button,
+.pos-admin-session-actions-cell button,
+.security-user-control-actions button,
+.security-user-control-panel button,
+.ubuzima-user-row-actions button,
+.tenant-user-list-actions button,
+.managed-sales-row-actions button,
+.insurance-action-grid a,
+.insurance-action-grid-2x2 a,
+.procurement-row-actions a,
+.table-action-grid a,
+.security-user-control-actions a,
+.security-user-control-panel a,
+.managed-sales-row-actions a {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  padding: 7px 8px !important;
+  border-radius: 8px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep dense 9-action security rows readable in two columns instead of one long stack. */
+.security-user-control-actions,
+.security-user-control-panel {
+  max-width: 260px !important;
+  grid-template-columns: repeat(2, minmax(96px, 1fr)) !important;
+}
+
+/* Mobile: keep horizontal scroll rather than collapsing columns into unreadable cards. */
+@media (max-width: 767px) {
+  .system-table-wrap,
+  .ubuzima-user-table-scroll,
+  .security-permission-table-shell,
+  .insurance-table-scroll,
+  .insurance-live-table-wrap,
+  .managed-sales-table-wrap,
+  .general-items-table-scroll,
+  .inventory-analytics-request-table-scroll,
+  .procurement-register-table-wrap,
+  .procurement-po-detail-table-wrap,
+  .payables-register-table-wrap,
+  .payables-line-table-wrap,
+  .payables-history-table,
+  .receivables-table-wrap,
+  .pos-admin-control__table-shell,
+  .responsive-table-scroll,
+  .sql-result-table,
+  .data-table-preview {
+    overflow-x: auto !important;
+  }
+
+  .col-actions,
+  .table-cell-actions,
+  .procurement-register-actions-column,
+  .pos-admin-session-actions-cell,
+  .security-user-control-actions,
+  .security-user-control-panel,
+  .ubuzima-user-row-actions,
+  .tenant-user-list-actions {
+    min-width: 176px !important;
+    width: 176px !important;
+  }
+}
