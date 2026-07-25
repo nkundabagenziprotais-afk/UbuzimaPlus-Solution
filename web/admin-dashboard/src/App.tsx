@@ -7956,18 +7956,14 @@ async function confirmTransaction() {
                 : 5;
       const mobilePosStepTitle =
         mobilePosStep === 'session'
-          ? isCurrentMobilePosSessionOpen
-            ? 'Current POS session'
-            : 'Open POS session'
+          ? 'Current POS session'
           : mobilePosStep === 'products'
-            ? 'Serve customer'
+            ? 'Products'
             : mobilePosStep === 'cart'
               ? 'Cart and setup'
               : mobilePosStep === 'payment'
                 ? 'Payment summary'
                 : 'Transaction complete';
-      const mobilePosCanProceedToPayment =
-        posLiveCartItems.length > 0 && posCartOperatingUnits > 0;
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
       const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
@@ -8609,35 +8605,6 @@ async function confirmTransaction() {
 	              </section>
 	                </section>
 
-                    <section className="pos-mobile-session-landing" data-pos-mobile-panel="session" aria-label="Current POS session landing">
-                      <div>
-                        <span>{isCurrentMobilePosSessionOpen ? 'Open session' : 'Session required'}</span>
-                        <strong>
-                          {isCurrentMobilePosSessionOpen
-                            ? posSession?.session_number ?? 'Current POS session'
-                            : 'Open POS session'}
-                        </strong>
-                        <small>
-                          {isCurrentMobilePosSessionOpen
-                            ? `Expected cash RWF ${Number(posSession?.expected_cash_amount ?? 0).toLocaleString('en-RW')}`
-                            : 'First open the session for this teller and branch.'}
-                        </small>
-                      </div>
-                      <button
-                        type="button"
-                        className="primary"
-                        onClick={() => {
-                          setMobilePosStep('products');
-                          if (!posInventoryLoadedAt && !isLoadingPosInventory) {
-                            void loadCurrentPosInventory();
-                          }
-                        }}
-                        disabled={!isCurrentMobilePosSessionOpen}
-                      >
-                        Serve customer
-                      </button>
-                    </section>
-
 	{(() => {
                   const visibleCartRows = posLiveCartItems;
                   const visibleCartLineCount = visibleCartRows.length;
@@ -8870,26 +8837,6 @@ async function confirmTransaction() {
                   </div>
                 </section>
 
-	                <div className="pos-summary-update-bridge" data-pos-mobile-panel="cart">
-                      <button type="button" onClick={() => setMobilePosStep('products')}>
-                        Add products
-                      </button>
-	                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartOperatingUnits === 0}>
-	                    Update Summary
-	                  </button>
-                      <button
-                        type="button"
-                        className="primary"
-                        onClick={() => {
-                          forceRefreshSaleSummary();
-                          setMobilePosStep('payment');
-                        }}
-                        disabled={!mobilePosCanProceedToPayment}
-                      >
-                        Continue to payment
-                      </button>
-	                </div>
-
                 <section
                   key={posPaymentSummarySignature}
 	                  className="pos-payment-summary-section pos-confirmation-rail"
@@ -8988,11 +8935,6 @@ async function confirmTransaction() {
                     </div>
 	                  ) : null}
 
-                      <div className="pos-mobile-payment-actions">
-                        <button type="button" onClick={() => setMobilePosStep('cart')}>
-                          Back to cart
-                        </button>
-                      </div>
 
 	                  <button
 	                    type="button"
