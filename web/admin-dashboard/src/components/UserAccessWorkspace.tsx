@@ -601,11 +601,9 @@ const legacyPermissionMap: Record<string, string[]> = {
 };
 
 const defaultStaffPermissions = [
+  // POS defaults must start with Open Session only.
   'tenant.profile.view',
-  'pos.sales.view',
-  'pos.sales.add',
-  'pos.receipts.view',
-  'pos.payments.view',
+  'pharmaco.pos.open_session',
 ];
 
 type AccessAssignmentMode =
