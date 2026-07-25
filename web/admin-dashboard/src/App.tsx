@@ -6722,7 +6722,11 @@ function App() {
     const posProducts = posInventoryBatches
       .filter((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
-        const batchIsActive = !batch.status || batch.status === 'active';
+        const batchIsActive =
+          !batch.status
+          || ['active', 'available'].includes(
+            String(batch.status).toLowerCase(),
+          );
         const productIsActive = !batch.product || true;
         const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
 
