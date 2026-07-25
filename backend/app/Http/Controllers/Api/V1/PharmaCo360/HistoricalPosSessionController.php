@@ -218,7 +218,7 @@ class HistoricalPosSessionController extends Controller
                      * bypass rights skipped this block, which allowed invalid codes
                      * and opened sessions without historical_approval_id.
                      */
-                    if ($summary['live_activity_exists'] && ! $this->userCanBypassHistoricalPosApproval($request)) {
+                    if ($summary['live_activity_exists']) {
                         $approval =
                             PharmacoHistoricalPosApproval::query()
                                 ->whereKey(
