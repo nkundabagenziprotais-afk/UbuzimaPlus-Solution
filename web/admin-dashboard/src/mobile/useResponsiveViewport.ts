@@ -10,7 +10,7 @@ export type ResponsiveViewport = {
   isWideScreen: boolean;
 };
 
-const SMALL_MOBILE_MAX = 359;
+const SMALL_MOBILE_MAX = 360;
 const MOBILE_MAX = 767;
 const TABLET_MAX = 1023;
 const LAPTOP_MAX = 1439;
