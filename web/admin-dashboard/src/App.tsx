@@ -8255,128 +8255,38 @@ async function confirmTransaction() {
                       className="pos-quantity-dialog"
                       role="dialog"
                       aria-modal="true"
-                      aria-labelledby="pos-quantity-dialog-title"
+                      aria-label="Quantity and price"
                     >
-                      <div className="pos-quantity-dialog__header">
-                        <div>
-                          <span>POS quantity configuration</span>
-                          <h3 id="pos-quantity-dialog-title">
-                            {posQuantityProduct.name}
-                          </h3>
-                          <small>
-                            Batch {posQuantityProduct.batchNumber} · Available{' '}
-                            {posQuantityProduct.availableQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </small>
-                        </div>
-
-                        <button
-                          type="button"
-                          aria-label="Close quantity popup"
-                          onClick={closePosQuantityPopup}
-                        >
-                          ×
-                        </button>
-                      </div>
-
-                      <section className="pos-quantity-selling-unit-hero">
-                        <div>
-                          <span>Product Master selling unit</span>
-                          <strong>{posQuantityProduct.sellingUnit}</strong>
-                          <small>
-                            1 {posQuantityProduct.sellingUnit} ={' '}
-                            {posQuantityProduct.quantityPerSellingUnit.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </small>
-                        </div>
-
+                      <section className="pos-quantity-selling-unit-hero" aria-label="Quantity input">
                         <label>
                           <span>Quantity</span>
                           <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            autoFocus
-                            inputMode="numeric"
-                            value={posSellingUnitQuantity}
-                            onChange={(event) => {
-                              setPosSellingUnitQuantity(event.target.value);
-                              setPosOtherQuantity('0');
-                            }}
-                            aria-label={`Quantity in ${posQuantityProduct.sellingUnit}`}
-                          />
-                          <small>Enter the number of {posQuantityProduct.sellingUnit} selected from Product Master.</small>
+                                                      type="number"
+                                                      min="1"
+                                                      step="1"
+                                                      autoFocus
+                                                      inputMode="numeric"
+                                                      value={posSellingUnitQuantity}
+                                                      onChange={(event) => {
+                                                        setPosSellingUnitQuantity(event.target.value);
+                                                        setPosOtherQuantity('0');
+                                                      }}
+                                                      aria-label={`Quantity in ${posQuantityProduct.sellingUnit}`}
+                                                    />
                         </label>
                       </section>
 
-                      <section className="pos-quantity-readonly-grid" aria-label="Selected product information">
-                        <article>
-                          <span>Available stock</span>
-                          <strong>
-                            {posQuantityProduct.availableQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </strong>
-                        </article>
-                        <article>
-                          <span>Unit price</span>
-                          <strong>
-                            RWF {posQuantityProduct.unitPrice.toLocaleString('en-RW')} /{' '}
-                            {posQuantityProduct.sellingUnit}
-                          </strong>
-                        </article>
-                        <article>
-                          <span>Batch</span>
-                          <strong>{posQuantityProduct.batchNumber}</strong>
-                        </article>
-                        <article>
-                          <span>Expiry</span>
-                          <strong>{posQuantityProduct.expiryDate || 'Not recorded'}</strong>
-                        </article>
-                        <article>
-                          <span>Stock location</span>
-                          <strong>{posQuantityProduct.locationName}</strong>
-                        </article>
-                        <article>
-                          <span>Converted quantity</span>
-                          <strong>
-                            {quantityPreview.totalBaseQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </strong>
-                        </article>
-                      </section>
-
-                      <section className="pos-quantity-price-override-card" aria-label="Selling amount override">
+                      <section className="pos-quantity-price-override-card" aria-label="Price input">
                         <label>
-                          <span>Selling amount</span>
+                          <span>Price</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={posSellingAmount}
-                            onChange={(event) => setPosSellingAmount(event.target.value)}
-                          />
-                          <small>
-                            Defaults to system price. Adjust only when the agreed customer price is different.
-                          </small>
+                                                      type="number"
+                                                      min="0"
+                                                      step="0.01"
+                                                      value={posSellingAmount}
+                                                      onChange={(event) => setPosSellingAmount(event.target.value)}
+                                                    />
                         </label>
-                      </section>
-
-                      <section className="pos-quantity-total-strip">
-                        <div>
-                          <span>Quantity to add</span>
-                          <strong>
-                            {quantityPreview.sellingUnitQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.sellingUnit}
-                          </strong>
-                        </div>
-                        <div>
-                          <span>Calculated total</span>
-                          <strong>
-                            RWF {quantityPreview.totalPrice.toLocaleString('en-RW', {
-                              maximumFractionDigits: 2,
-                            })}
-                          </strong>
-                        </div>
                       </section>
 
                       <div className="pos-quantity-dialog__actions">
