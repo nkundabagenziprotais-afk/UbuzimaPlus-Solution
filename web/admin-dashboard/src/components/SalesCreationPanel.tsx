@@ -136,55 +136,6 @@ function money(value: number): string {
   }).format(value);
 }
 
-
-/* POS_PRODUCT_CARD_RESPONSIVE_LAYOUT_V1 */
-function posProductCardDate(value: unknown): string {
-  if (!value) {
-    return 'No batch';
-  }
-
-  const date = new Date(String(value));
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
-  return date.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function posProductCardRemainingDays(value: unknown): string {
-  if (!value) {
-    return 'Not set';
-  }
-
-  const expiry = new Date(String(value));
-
-  if (Number.isNaN(expiry.getTime())) {
-    return 'Not set';
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  expiry.setHours(0, 0, 0, 0);
-
-  const days = Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
-
-  if (days < 0) {
-    return `${Math.abs(days)} days expired`;
-  }
-
-  if (days === 0) {
-    return 'Expires today';
-  }
-
-  return `${days} days`;
-}
-
-
 export function SalesCreationPanel({
   token,
   tenantSlug,
@@ -649,26 +600,7 @@ export function SalesCreationPanel({
                   <strong>{product.name}</strong>
                   <small>{product.sku} · {product.category?.name ?? 'Uncategorised'}</small>
                   <em>
-                    <span className="pos-product-card-info" data-pos-card-layout="responsive-v1">
-             <span className="pos-product-card-info-row pos-product-card-info-row--price">
-               <span className="pos-product-card-info-label">Price</span>
-               <strong>{price ? money(Number(price)) : 'Set price in cart'}</strong>
-             </span>
-             <span className="pos-product-card-info-row pos-product-card-info-row--stock">
-               <span className="pos-product-card-info-label pos-product-card-info-label--desktop">Stock Quantity</span>
-               <span className="pos-product-card-info-label pos-product-card-info-label--mobile">Available Quantity</span>
-               <strong>{product.stock_summary?.available_quantity ?? 0}</strong>
-             </span>
-             <span className="pos-product-card-info-row pos-product-card-info-row--expiry">
-               <span className="pos-product-card-info-label">Expiry Date</span>
-               <strong>{posProductCardDate(bestBatch(product.id)?.expiry_date)}</strong>
-             </span>
-             <span className="pos-product-card-info-row pos-product-card-info-row--days">
-               <span className="pos-product-card-info-label">Remaining Days</span>
-               <strong>{posProductCardRemainingDays(bestBatch(product.id)?.expiry_date)}</strong>
-             </span>
-             <span className="pos-product-mobile-add-indicator" aria-hidden="true">+</span>
-           </span>
+                    {price ? money(Number(price)) : 'Set price in cart'} · stock {product.stock_summary?.available_quantity ?? 0}
                   </em>
                   <small>FEFO batch: {batch?.batch_number ?? 'No active batch'}</small>
                 </button>
