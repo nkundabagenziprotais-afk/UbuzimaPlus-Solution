@@ -993,13 +993,43 @@ function LineChart({
   const pointCount = Math.max(safeValues.length, 1);
   const maxValue = Math.max(...safeValues, 1);
 
-  const barWidth = 46;
-  const gap = 22;
-  const leftPadding = 44;
-  const rightPadding = 36;
-  const topPadding = 50;
-  const bottomPadding = 60;
-  const chartHeight = 230;
+  const isTwelveDayOperationalChart =
+    maxVisibleBars === 12;
+
+  const barWidth =
+    isTwelveDayOperationalChart
+      ? 30
+      : 46;
+
+  const gap =
+    isTwelveDayOperationalChart
+      ? 6
+      : 22;
+
+  const leftPadding =
+    isTwelveDayOperationalChart
+      ? 30
+      : 44;
+
+  const rightPadding =
+    isTwelveDayOperationalChart
+      ? 20
+      : 36;
+
+  const topPadding =
+    isTwelveDayOperationalChart
+      ? 54
+      : 50;
+
+  const bottomPadding =
+    isTwelveDayOperationalChart
+      ? 64
+      : 60;
+
+  const chartHeight =
+    isTwelveDayOperationalChart
+      ? 250
+      : 230;
 
   const visibleBarLimit = Math.max(
     1,
