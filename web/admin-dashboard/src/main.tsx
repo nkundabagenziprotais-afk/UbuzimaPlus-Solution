@@ -1120,6 +1120,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles.css';
 import App from './App';
+import "./launch/desktopDock";
+import "./launch/posWebRestore";
+import "./launch/mobilePwaScopeGuard";
+import "./launch/posInventorySwBridge";
+import "./launch/homeScrollUnlock";
+import "./launch/sourceDockFallbackV5";
+import "./launch/posProductCardReplaceFinal";
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

@@ -101,6 +101,21 @@ import { calculatePosQuantity } from './lib/posQuantity';
 import './styles.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 import { BusinessOverviewReviewPage } from './components/business-overview/BusinessOverviewReviewPage';
+
+function formatLaunchDateDdMmYyyy(value: string | null | undefined): string {
+  if (!value) return "";
+
+  const raw = String(value).trim();
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (isoMatch) {
+    return `${isoMatch[3]}-${isoMatch[2]}-${isoMatch[1]}`;
+  }
+
+  return raw;
+}
+
+
 import {
   InsuranceManagementWorkspace,
   type InsuranceWorkspaceKey,
@@ -9251,7 +9266,7 @@ async function confirmTransaction() {
                       posRecentTransactionRows.map(({ dateTime, businessDate, saleNumber, customer, method, status, originalPrice, usedPrice, priceDifference, amount }) => (
                         <tr key={saleNumber}>
                           <td>{dateTime}</td>
-                          <td>{businessDate}</td>
+                          <td>{formatLaunchDateDdMmYyyy(businessDate)}</td>
                           <td>{saleNumber}</td>
                           <td>{customer}</td>
                           <td>{method}</td>
@@ -11376,7 +11391,7 @@ return (
         summary: 'Review dispensing queues, product master, batches, low stock, and expiry risk.',
         status: 'Clinical operations',
         actions: [
-          ...nativeSalesActions.filter((action) => action.key === 'dispensing-review'),
+          ...nativeSalesActions.filter((action) => ['pos-counter', 'dispensing-review'].includes(action.key)),
           ...nativeStockActions.filter((action) => ['stock-master', 'stock-batches', 'stock-expiry'].includes(action.key)),
         ].slice(0, 4),
       };
