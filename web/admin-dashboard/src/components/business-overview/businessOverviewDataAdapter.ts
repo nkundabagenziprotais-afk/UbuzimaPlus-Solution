@@ -282,9 +282,13 @@ function salesFromRows(rows: SaleRow[], startDate: string, endDate: string) {
     total_amount,
   }));
 
-  const trend = [...trendGroups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([label, value]) => ({ label: label.slice(5), value }));
+  const trend: BusinessOverviewTrendPoint[] =
+    [...trendGroups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([label, value]) => ({
+        label: label.slice(5),
+        value,
+      }));
 
   return {
     periodLabel: startDate === endDate ? startDate : `${startDate} → ${endDate}`,
@@ -297,6 +301,101 @@ function salesFromRows(rows: SaleRow[], startDate: string, endDate: string) {
     paymentMethods,
     trend,
   };
+}
+
+function businessDateKeysForSalesTrend(
+  startDate: string,
+  endDate: string,
+  maximumDays = 31,
+): string[] {
+  const start = new Date(
+    `${startDate}T00:00:00Z`,
+  );
+
+  const end = new Date(
+    `${endDate}T00:00:00Z`,
+  );
+
+  if (
+    Number.isNaN(start.getTime())
+    || Number.isNaN(end.getTime())
+    || start > end
+  ) {
+    return [];
+  }
+
+  const dates: string[] = [];
+  const cursor = new Date(start);
+
+  while (
+    cursor <= end
+    && dates.length < maximumDays
+  ) {
+    dates.push(
+      cursor.toISOString().slice(0, 10),
+    );
+
+    cursor.setUTCDate(
+      cursor.getUTCDate() + 1,
+    );
+  }
+
+  return dates;
+}
+
+async function salesValueTrendFromDailySummaries(
+  token: string,
+  tenantSlug: string,
+  startDate: string,
+  endDate: string,
+): Promise<BusinessOverviewTrendPoint[]> {
+  const dates = businessDateKeysForSalesTrend(
+    startDate,
+    endDate,
+  );
+
+  const results = await Promise.allSettled(
+    dates.map((date) =>
+      fetchTenantJson<unknown>(
+        token,
+        tenantSlug,
+        buildSalesSummaryEndpoint(
+          date,
+          date,
+        ),
+      )
+    ),
+  );
+
+  const trend: BusinessOverviewTrendPoint[] = [];
+
+  results.forEach((result, index) => {
+    if (result.status !== 'fulfilled') {
+      return;
+    }
+
+    const date = dates[index];
+
+    const dailySales = salesFromSummary(
+      result.value,
+      date,
+      date,
+    );
+
+    if (
+      dailySales.grossSales <= 0
+      && dailySales.transactionCount <= 0
+    ) {
+      return;
+    }
+
+    trend.push({
+      label: date.slice(5),
+      value: dailySales.grossSales,
+    });
+  });
+
+  return trend;
 }
 
 function textValue(value: unknown): string {
@@ -644,14 +743,34 @@ export async function loadBusinessOverviewDataAdapter({
           endDate,
         );
 
-  let sales =
+  const summarySales =
     summaryResult.status === 'fulfilled'
       ? salesFromSummary(
           summaryResult.value,
           startDate,
           endDate,
         )
-      : registerSales;
+      : null;
+
+  let sales =
+    summarySales
+    ?? registerSales;
+
+  let dailySummaryTrend:
+    BusinessOverviewTrendPoint[] = [];
+
+  if (
+    registerSales.trend.length === 0
+    && sales.grossSales > 0
+  ) {
+    dailySummaryTrend =
+      await salesValueTrendFromDailySummaries(
+        token,
+        tenantSlug,
+        startDate,
+        endDate,
+      );
+  }
 
   if (
     sales.grossSales <= 0
@@ -665,7 +784,21 @@ export async function loadBusinessOverviewDataAdapter({
       ...sales,
       trend: registerSales.trend,
     };
+  } else if (
+    dailySummaryTrend.length > 0
+  ) {
+    sales = {
+      ...sales,
+      trend: dailySummaryTrend,
+    };
   }
+
+  const salesTrendSource =
+    registerSales.trend.length > 0
+      ? 'Daily sales register by Business Date'
+      : dailySummaryTrend.length > 0
+        ? 'Daily sales summary by Business Date'
+        : 'No sales recorded for the selected Business Date range';
 
   const inventory =
     inventoryResult.status === 'fulfilled'
@@ -733,6 +866,7 @@ export async function loadBusinessOverviewDataAdapter({
     kpiHelpers: {
       'Gross Revenue': `Business Date ${sales.periodLabel}`,
       'Net Revenue': 'Business-date sales summary with register fallback',
+      'Sales Trend Source': salesTrendSource,
       Collections: 'Collected payments for selected Business Date range',
       'Outstanding Balance': 'Uncollected sales balance for selected period',
       'Inventory Value': `Inventory valuation as of ${endDate}`,
