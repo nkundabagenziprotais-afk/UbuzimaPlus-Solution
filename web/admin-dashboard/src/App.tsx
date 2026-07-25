@@ -25,6 +25,7 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   getCorporateMailOverview,
   getPharmaBranches,
   getPharmaInventoryBatches,
+  getAllPharmaInventoryBatches,
   getPharmacyProfile,
   login,
   logout,
@@ -5779,11 +5780,38 @@ function App() {
     const posProducts = posInventoryBatches
       .filter((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
-        const batchIsActive = !batch.status || batch.status === 'active';
-        const productIsActive = !batch.product || true;
-        const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
+        const normalizedBatchStatus = String(
+          batch.status || 'active',
+        ).toLowerCase();
 
-        return availableQuantity > 0 && batchIsActive && productIsActive && expiryIsValid;
+        const batchIsSellable = [
+          'active',
+          'available',
+          'sellable',
+          'in_stock',
+        ].includes(normalizedBatchStatus);
+
+        const normalizedProductStatus = String(
+          (
+            batch.product as {
+              status?: string;
+            } | undefined
+          )?.status || 'active',
+        ).toLowerCase();
+
+        const productIsActive =
+          normalizedProductStatus === 'active';
+
+        const expiryIsValid =
+          !batch.expiry_date
+          || batch.expiry_date >= todayDate;
+
+        return (
+          availableQuantity > 0
+          && batchIsSellable
+          && productIsActive
+          && expiryIsValid
+        );
       })
       .sort((left, right) => {
         const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
@@ -5803,6 +5831,10 @@ function App() {
         return {
           code: `${sku}-B${batch.id}`,
           name: productName,
+          genericName: (batch.product as { generic_name?: string | null } | undefined)?.generic_name || '',
+          brandName: (batch.product as { brand_name?: string | null } | undefined)?.brand_name || '',
+          sku,
+          barcode: (batch.product as { barcode?: string | null } | undefined)?.barcode || '',
           strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
           quantity: 1,
           unitPrice: sellingPrice,
@@ -5850,6 +5882,10 @@ function App() {
       ? posProducts.filter((product) =>
           [
             product.name,
+            product.genericName,
+            product.brandName,
+            product.sku,
+            product.barcode,
             product.strength,
             product.code,
             product.batchNumber,
@@ -5913,7 +5949,14 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
+        const response = await getAllPharmaInventoryBatches(
+          session!.token,
+          posTenantSlug,
+          undefined,
+          {
+            sellableOnly: true,
+          },
+        );
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
