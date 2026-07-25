@@ -159,8 +159,6 @@ export function HistoricalPosWorkflow({
   const [businessDate, setBusinessDate] =
     useState(dateBounds.maximum);
 
-  const [historicalReason, setHistoricalReason] =
-    useState("");
 
   const [
     historicalReference,
@@ -368,13 +366,6 @@ export function HistoricalPosWorkflow({
       return;
     }
 
-    if (historicalReason.trim().length < 10) {
-      setErrorMessage(
-        "Provide a clear reason of at least 10 characters.",
-      );
-      return;
-    }
-
     setIsRequesting(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -559,13 +550,6 @@ export function HistoricalPosWorkflow({
     if (!availability) {
       setErrorMessage(
         "Check the business date before opening the session.",
-      );
-      return;
-    }
-
-    if (historicalReason.trim().length < 10) {
-      setErrorMessage(
-        "Provide a clear historical-entry reason.",
       );
       return;
     }
@@ -837,23 +821,6 @@ export function HistoricalPosWorkflow({
                   />
                 </label>
 
-                <label className="historical-pos-form-grid__wide">
-                  <span>
-                    Reason for historical entry
-                  </span>
-
-                  <textarea
-                    rows={3}
-                    maxLength={1000}
-                    value={historicalReason}
-                    placeholder="Explain why these transactions were not recorded on the original business date."
-                    onChange={(event) =>
-                      setHistoricalReason(
-                        event.target.value,
-                      )
-                    }
-                  />
-                </label>
               </div>
 
               <div className="historical-pos-actions">
