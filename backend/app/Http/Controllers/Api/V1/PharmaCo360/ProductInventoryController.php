@@ -464,44 +464,6 @@ class ProductInventoryController extends Controller
     public function batches(Request $request): JsonResponse
     {
 
-        /* UBUZIMA FORCE POS READABLE STOCK LOCATION START */
-        try {
-            $ubuzimaTenantId = isset($tenant) && isset($tenant->id) ? (int) $tenant->id : (int) ($request->query('tenant_id') ?: 1);
-            $ubuzimaBranchId = (int) ($request->query('branch_id') ?: 1);
-            $ubuzimaRequestedLocationId = (int) ($request->query('stock_location_id') ?: 0);
-
-            $ubuzimaLocationQuery = \Illuminate\Support\Facades\DB::table('stock_locations')
-                ->where('tenant_id', $ubuzimaTenantId)
-                ->where('branch_id', $ubuzimaBranchId)
-                ->whereIn('status', ['active', 'available', 'enabled']);
-
-            $ubuzimaLocationIds = $ubuzimaLocationQuery
-                ->orderBy('id')
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->values()
-                ->all();
-
-            $ubuzimaTargetLocationId = null;
-
-            if (count($ubuzimaLocationIds) === 1) {
-                $ubuzimaTargetLocationId = $ubuzimaLocationIds[0];
-            } elseif ($ubuzimaRequestedLocationId > 0 && ! in_array($ubuzimaRequestedLocationId, $ubuzimaLocationIds, true) && count($ubuzimaLocationIds) > 0) {
-                $ubuzimaTargetLocationId = $ubuzimaLocationIds[0];
-            }
-
-            if ($ubuzimaTargetLocationId) {
-                $request->query->set('stock_location_id', $ubuzimaTargetLocationId);
-                $request->merge([
-                    'stock_location_id' => $ubuzimaTargetLocationId,
-                    'include_all_locations' => false,
-                ]);
-            }
-        } catch (\Throwable $ubuzimaLocationError) {
-            // Keep the original request if detection fails.
-        }
-        /* UBUZIMA FORCE POS READABLE STOCK LOCATION END */
-
         $tenant = $request->attributes->get('tenant');
 
         $batches = StockBatch::query()
