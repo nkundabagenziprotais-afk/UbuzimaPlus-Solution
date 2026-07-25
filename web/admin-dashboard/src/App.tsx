@@ -11830,6 +11830,17 @@ return (
                   >
                     Change Password
                   </button>
+
+                  <button
+                    type="button"
+                    className="profile-popover-logout-button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      void handleLogout();
+                    }}
+                  >
+                    Log out
+                  </button>
                 </section>
               )}
             </div>
