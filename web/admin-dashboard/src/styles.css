@@ -42769,28 +42769,69 @@ thead
   white-space: nowrap !important;
 }
 
-/* Business Overview: professional bar charts for trend cards */
+/* Business Overview: readable and horizontally scrollable trend bars */
+
 .bo-pro-bar-chart-shell {
   width: 100%;
+  max-width: 100%;
+
   overflow-x: auto;
-  overflow-y: visible;
-  padding: 0.2rem 0 0.1rem;
+  overflow-y: hidden;
+
+  padding: 0.35rem 0 0.6rem;
+
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  scroll-behavior: smooth;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 118, 110, 0.42) transparent;
+}
+
+.bo-pro-bar-chart-shell:focus-visible {
+  outline: 2px solid rgba(15, 118, 110, 0.54);
+  outline-offset: -2px;
+  border-radius: 0.65rem;
+}
+
+.bo-pro-bar-chart-shell::-webkit-scrollbar {
+  height: 0.5rem;
+}
+
+.bo-pro-bar-chart-shell::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bo-pro-bar-chart-shell::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.42);
+  background-clip: padding-box;
 }
 
 .bo-pro-bar-chart {
   display: block;
   min-width: 100%;
+  height: auto;
+  overflow: visible;
 }
 
 .bo-pro-chart-baseline {
-  stroke: rgba(100, 116, 139, 0.34);
+  stroke: rgba(100, 116, 139, 0.38);
   stroke-width: 1;
 }
 
 .bo-pro-bar {
   fill: #0f766e;
-  opacity: 0.92;
+  opacity: 0.94;
+
+  transition:
+    opacity 160ms ease,
+    filter 160ms ease;
+}
+
+.bo-pro-bar-chart-shell:hover .bo-pro-bar {
+  opacity: 1;
 }
 
 .bo-pro-card--trend .bo-pro-bar {
@@ -42810,73 +42851,38 @@ thead
 }
 
 .bo-pro-bar-data-label {
-  font-size: 8px !important;
-  font-weight: 850 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+
   fill: #0f172a !important;
-  stroke: rgba(255, 255, 255, 0.95);
-  stroke-width: 1.1px;
+  stroke: rgba(255, 255, 255, 0.98);
+  stroke-width: 1.4px;
   paint-order: stroke;
+
+  font-variant-numeric: tabular-nums;
 }
 
 .bo-pro-bar-axis-label {
-  font-size: 8px !important;
-  font-weight: 700 !important;
+  font-size: 10px !important;
+  font-weight: 750 !important;
+
   fill: #475569 !important;
+
+  font-variant-numeric: tabular-nums;
 }
 
-/* Business Overview: bar chart renderer replacing trend lines */
-.bo-pro-bar-chart-shell {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding: 0.2rem 0 0.1rem;
-  -webkit-overflow-scrolling: touch;
-}
+@media (max-width: 767px) {
+  .bo-pro-bar-chart-shell {
+    padding-bottom: 0.72rem;
+  }
 
-.bo-pro-bar-chart {
-  display: block;
-  min-width: 100%;
-}
+  .bo-pro-bar-data-label {
+    font-size: 10.5px !important;
+  }
 
-.bo-pro-chart-baseline {
-  stroke: rgba(100, 116, 139, 0.34);
-  stroke-width: 1;
-}
-
-.bo-pro-bar {
-  fill: #0f766e;
-  opacity: 0.92;
-}
-
-.bo-pro-card--trend .bo-pro-bar {
-  fill: #2563eb;
-}
-
-.bo-pro-order-insurance .bo-pro-bar {
-  fill: #7c3aed;
-}
-
-.bo-pro-order-near-expiry .bo-pro-bar {
-  fill: #f97316;
-}
-
-.bo-pro-order-inventory-movement .bo-pro-bar {
-  fill: #0f766e;
-}
-
-.bo-pro-bar-data-label {
-  font-size: 8px !important;
-  font-weight: 850 !important;
-  fill: #0f172a !important;
-  stroke: rgba(255, 255, 255, 0.95);
-  stroke-width: 1.1px;
-  paint-order: stroke;
-}
-
-.bo-pro-bar-axis-label {
-  font-size: 8px !important;
-  font-weight: 700 !important;
-  fill: #475569 !important;
+  .bo-pro-bar-axis-label {
+    font-size: 9.5px !important;
+  }
 }
 
 /* Product Inventory: completely remove old upper heading/search/category/blank panel */

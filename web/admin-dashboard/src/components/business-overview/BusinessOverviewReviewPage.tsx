@@ -939,23 +939,36 @@ function LineChart({
   const pointCount = Math.max(safeValues.length, 1);
   const maxValue = Math.max(...safeValues, 1);
 
-  const barWidth = 34;
-  const gap = 18;
-  const leftPadding = 34;
-  const rightPadding = 26;
-  const topPadding = 28;
-  const bottomPadding = 34;
-  const chartHeight = 170;
+  const barWidth = 40;
+  const gap = 22;
+  const leftPadding = 38;
+  const rightPadding = 30;
+  const topPadding = 34;
+  const bottomPadding = 42;
+  const chartHeight = 176;
 
-  const width = Math.max(
-    leftPadding + rightPadding + pointCount * (barWidth + gap),
-    leftPadding + rightPadding + maxVisibleBars * (barWidth + gap),
+  const visibleBarLimit = Math.max(
+    1,
+    maxVisibleBars,
   );
+
+  const width =
+    leftPadding
+    + rightPadding
+    + pointCount * (barWidth + gap);
 
   const height = chartHeight + topPadding + bottomPadding;
 
   return (
-    <div className="bo-pro-bar-chart-shell" role="img" aria-label={label}>
+    <div
+      className="bo-pro-bar-chart-shell"
+      role="img"
+      aria-label={label}
+      data-chart-readability="scrollable-bars"
+      data-point-count={pointCount}
+      data-visible-bar-limit={visibleBarLimit}
+      tabIndex={0}
+    >
       <svg
         className="bo-pro-bar-chart"
         viewBox={`0 0 ${width} ${height}`}
@@ -980,6 +993,9 @@ function LineChart({
 
           return (
             <g key={`${axisLabel}-${index}`}>
+              <title>
+                {`${axisLabel}: ${safeValue > 0 ? formatChartCompact(safeValue) : '0'}`}
+              </title>
               <rect
                 className="bo-pro-bar"
                 x={x}
@@ -991,7 +1007,7 @@ function LineChart({
               <text
                 className="bo-pro-data-label bo-pro-bar-data-label"
                 x={x + barWidth / 2}
-                y={Math.max(y - 7, 12)}
+                y={Math.max(y - 9, 17)}
                 textAnchor="middle"
               >
                 {safeValue > 0 ? formatChartCompact(safeValue) : ''}
@@ -999,7 +1015,7 @@ function LineChart({
               <text
                 className="bo-pro-axis-label bo-pro-bar-axis-label"
                 x={x + barWidth / 2}
-                y={topPadding + chartHeight + 20}
+                y={topPadding + chartHeight + 25}
                 textAnchor="middle"
               >
                 {axisLabel}
