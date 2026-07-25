@@ -199,15 +199,49 @@ function money(value: number): string {
 }
 
 function shortMoney(value: number): string {
-  if (Math.abs(value) >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
+  const safeValue =
+    Number.isFinite(value)
+      ? value
+      : 0;
+
+  const absoluteValue = Math.abs(safeValue);
+
+  const units: Array<{
+    threshold: number;
+    suffix: string;
+  }> = [
+    {
+      threshold: 1_000_000_000,
+      suffix: 'B',
+    },
+    {
+      threshold: 1_000_000,
+      suffix: 'M',
+    },
+    {
+      threshold: 1_000,
+      suffix: 'K',
+    },
+  ];
+
+  const unit = units.find(
+    ({ threshold }) =>
+      absoluteValue >= threshold,
+  );
+
+  if (unit) {
+    return `${(
+      safeValue / unit.threshold
+    ).toFixed(2)}${unit.suffix}`;
   }
 
-  if (Math.abs(value) >= 1_000) {
-    return `${(value / 1_000).toFixed(0)}K`;
-  }
-
-  return Math.round(value).toLocaleString('en-RW');
+  return safeValue.toLocaleString(
+    'en-GB',
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  );
 }
 
 function percentage(value: number): string {
@@ -997,7 +1031,10 @@ export function PosSalesOverview({
         <div className="pos-analytics-dashboard-grid pos-analytics-dashboard-grid-all">
           <article className="pos-analytics-card sales-trend">
             <header><strong>Sales Trend</strong>{posAnalyticsWeekSelector}</header>
-            <div className="pos-analytics-bar-chart">
+            <div
+              className="pos-analytics-bar-chart"
+              data-number-format="two-decimal-compact"
+            >
               {analytics.daily.map((day) => (
                 <i
                   key={day.label}
@@ -1006,10 +1043,9 @@ export function PosSalesOverview({
                   }}
                 >
                   <strong>
-                    {Number(day.sales).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {shortMoney(
+                      Number(day.sales),
+                    )}
                   </strong>
                   <small>{day.label}</small>
                 </i>

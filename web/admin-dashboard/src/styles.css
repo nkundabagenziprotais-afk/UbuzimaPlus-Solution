@@ -60356,3 +60356,188 @@ body .pos-quantity-calculated-total-card output {
     font-size: 1.14rem !important;
   }
 }
+
+/* UBIZIMA_BO_12_DAY_LARGE_CHARTS_V3 */
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement {
+  --ubuzima-bo-12-day-chart-width: 896px;
+  --ubuzima-bo-data-label-size: 18px;
+  --ubuzima-bo-axis-label-size: 15px;
+
+  grid-column: 1 / -1 !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-movement-layout,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-movement-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 1.15rem !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-bar-chart-shell,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-bar-chart-shell,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-bar-chart-shell {
+  width: 100% !important;
+
+  max-width:
+    var(
+      --ubuzima-bo-12-day-chart-width
+    ) !important;
+
+  margin-inline: auto !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-bar-data-label,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-bar-data-label,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-bar-data-label {
+  font-size:
+    var(
+      --ubuzima-bo-data-label-size
+    ) !important;
+
+  font-weight: 900 !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-bar-axis-label,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-bar-axis-label,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-bar-axis-label {
+  font-size:
+    var(
+      --ubuzima-bo-axis-label-size
+    ) !important;
+
+  font-weight: 850 !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact {
+  width: 100% !important;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    ) !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact article span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact article span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact article span {
+  font-size: 1.05rem !important;
+  line-height: 1.4 !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact article strong,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact article strong,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact article strong {
+  font-size: 1.22rem !important;
+  line-height: 1.35 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-chart-footer,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-chart-footer,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-chart-footer {
+  font-size: 1rem !important;
+  line-height: 1.4 !important;
+}
+
+@media (max-width: 900px) {
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-insurance,
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-near-expiry,
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-inventory-movement {
+    --ubuzima-bo-data-label-size: 16px;
+    --ubuzima-bo-axis-label-size: 13px;
+  }
+
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-insurance
+    .bo-pro-metric-list.compact,
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-near-expiry
+    .bo-pro-metric-list.compact,
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-inventory-movement
+    .bo-pro-metric-list.compact {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-insurance
+    .bo-pro-metric-list.compact,
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-near-expiry
+    .bo-pro-metric-list.compact,
+  .bo-pro-page
+    .bo-pro-card.bo-pro-order-inventory-movement
+    .bo-pro-metric-list.compact {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+}

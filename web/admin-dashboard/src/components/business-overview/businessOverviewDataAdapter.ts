@@ -631,13 +631,40 @@ export async function loadBusinessOverviewDataAdapter({
     throw summaryResult.reason;
   }
 
+  const registerSales =
+    registerResult.status === 'fulfilled'
+      ? salesFromRows(
+          registerRows,
+          startDate,
+          endDate,
+        )
+      : salesFromRows(
+          [],
+          startDate,
+          endDate,
+        );
+
   let sales =
     summaryResult.status === 'fulfilled'
-      ? salesFromSummary(summaryResult.value, startDate, endDate)
-      : salesFromRows([], startDate, endDate);
+      ? salesFromSummary(
+          summaryResult.value,
+          startDate,
+          endDate,
+        )
+      : registerSales;
 
-  if (sales.grossSales <= 0 && registerResult.status === 'fulfilled') {
-    sales = salesFromRows(registerRows, startDate, endDate);
+  if (
+    sales.grossSales <= 0
+    && registerResult.status === 'fulfilled'
+  ) {
+    sales = registerSales;
+  } else if (
+    registerSales.trend.length > 0
+  ) {
+    sales = {
+      ...sales,
+      trend: registerSales.trend,
+    };
   }
 
   const inventory =
@@ -743,13 +770,6 @@ export async function loadBusinessOverviewDataAdapter({
     ],
     paymentMix,
     topProducts: buildTopProductsFromRows(registerRows),
-    trend: sales.trend.length > 0
-      ? sales.trend
-      : (sales.grossSales > 0 || sales.transactionCount > 0)
-        ? [{
-            label: endDate,
-            value: sales.grossSales,
-          }]
-        : [],
+    trend: sales.trend,
   };
 }

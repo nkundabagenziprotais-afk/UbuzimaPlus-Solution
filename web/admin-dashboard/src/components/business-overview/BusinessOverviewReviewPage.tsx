@@ -1629,6 +1629,11 @@ export function BusinessOverviewReviewPage({
             startDate={salesTrendRange.startDate}
             endDate={salesTrendRange.endDate}
             maxVisibleBars={30}
+            valueFormat={
+              trendMetric === 'count'
+                ? 'daily-transaction-count'
+                : 'daily-sales-value'
+            }
           />
         </article>
 
