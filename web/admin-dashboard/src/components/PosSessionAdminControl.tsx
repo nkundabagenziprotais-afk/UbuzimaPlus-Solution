@@ -79,7 +79,7 @@ export function PosSessionAdminControl({
   const [data, setData] =
     useState<PosSessionAdminResponse | null>(null);
 
-  const [status, setStatus] = useState("all");
+  const [status, setStatus] = useState("open");
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
