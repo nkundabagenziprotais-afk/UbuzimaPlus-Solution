@@ -23,7 +23,7 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   getBranchDepartments,
   getCorporateMailOverview,
   getPharmaBranches,
-  getPharmaInventoryBatches,
+  getAllPharmaInventoryBatches,
   getPharmacyProfile,
   login,
   logout,
@@ -6711,6 +6711,25 @@ function App() {
 
     const todayDate = new Date().toISOString().slice(0, 10);
 
+    function normalizePosSearchText(value: unknown) {
+      const normalized = String(value ?? '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+
+      return normalized
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((term) =>
+          term.length > 4
+            ? term.replace(/e$/, '')
+            : term
+        )
+        .join(' ');
+    }
+
     function resolveBatchAvailableQuantity(batch: PharmaStockBatch) {
       const quantityOnHand = Number(batch.quantity_on_hand ?? 0);
       const quantityReserved = Number((batch as PharmaStockBatch & { quantity_reserved?: number | string }).quantity_reserved ?? 0);
@@ -6747,9 +6766,27 @@ function App() {
         const sku = batch.product?.sku || `BATCH-${batch.id}`;
         const locationName = batch.stock_location?.name || 'Current stock';
 
+        const searchText = normalizePosSearchText(
+          [
+            productName,
+            sku,
+            batch.batch_number,
+            locationName,
+            String(
+              batch.product?.metadata?.rhia_drug_code
+                ?? ''
+            ),
+            batch.product?.selling_unit,
+            batch.product?.base_unit,
+          ]
+            .filter(Boolean)
+            .join(' '),
+        );
+
         return {
           code: `${sku}-B${batch.id}`,
           name: productName,
+          searchText,
           strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
           quantity: 1,
           unitPrice: sellingPrice,
@@ -6793,19 +6830,21 @@ function App() {
       posPartnerCustomerContributionPercent(selectedInsurancePartner);
 
     const normalizedPosTerminalSearch = posTerminalSearch.trim().toLowerCase();
-    const posVisibleProducts = normalizedPosTerminalSearch
-      ? posProducts.filter((product) =>
-          [
-            product.name,
-            product.strength,
-            product.code,
-            product.batchNumber,
-            product.locationName,
-          ]
-            .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(normalizedPosTerminalSearch)),
-        )
-      : posProducts;
+    const normalizedPosSearch =
+      normalizePosSearchText(posTerminalSearch);
+
+    const posSearchTerms = normalizedPosSearch
+      .split(' ')
+      .filter(Boolean);
+
+    const posVisibleProducts =
+      posSearchTerms.length === 0
+        ? posProducts
+        : posProducts.filter((product) =>
+            posSearchTerms.every((term) =>
+              product.searchText.includes(term),
+            ),
+          );
 
     const posSearchHelperText = posInventoryBatches.length === 0
       ? ''
@@ -6849,27 +6888,50 @@ function App() {
       }
     }
 
-    async function loadCurrentPosInventory() {
+    async function loadCurrentPosInventory(force = false) {
       if (!session?.token) return;
 
       void loadPosInsurancePartners();
+
+      if (force) {
+        window.__ubuzimaPosInventoryHydrator?.clearCache();
+      }
 
       setIsLoadingPosInventory(true);
       setPosInventoryError('');
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
+        const response = await getAllPharmaInventoryBatches(
+          session!.token,
+          posTenantSlug,
+          undefined,
+          {
+            sellableOnly: true,
+            cacheBust: force ? Date.now() : undefined,
+          },
+        );
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
         setPosInventoryLoadedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-        setPosCartItems([]);
-        setPosCounterItems([]);
-        setPosCounterCart({ items: [], lineCount: 0, totalQuantity: 0, subtotal: 0 });
-        setPosTransactionConfirmed(false);
+        if (!force) {
+          setPosCartItems([]);
+          setPosCounterItems([]);
+          setPosCounterCart({
+            items: [],
+            lineCount: 0,
+            totalQuantity: 0,
+            subtotal: 0,
+          });
+          setPosTransactionConfirmed(false);
+        }
 
-        setPosNotice('');
+        setPosNotice(
+          force
+            ? `${batches.length.toLocaleString('en-GB')} eligible stock batches loaded from live inventory.`
+            : '',
+        );
       } catch (err) {
         setPosInventoryError(err instanceof Error ? err.message : 'Unable to load current inventory for POS.');
       } finally {
@@ -8117,7 +8179,7 @@ async function confirmTransaction() {
                 />
 
                 <div className="pos-inventory-load-panel">
-                  <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
+                  <button type="button" onClick={() => void loadCurrentPosInventory(true)} disabled={isLoadingPosInventory}>
                     {isLoadingPosInventory ? 'Loading stock…' : 'Refresh stock'}
                   </button>
                   <span>

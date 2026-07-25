@@ -986,6 +986,7 @@ export async function getPharmaInventoryBatches(
     search?: string;
     perPage?: number;
     sellableOnly?: boolean;
+    cacheBust?: string | number;
 
     offset?: number;},
 ): Promise<PharmaInventoryBatchesResponse> {
@@ -1002,6 +1003,9 @@ export async function getPharmaInventoryBatches(
     params.set('offset', String(options.offset));
   }
   if (options?.sellableOnly) params.set('sellable_only', '1');
+  if (options?.cacheBust !== undefined) {
+    params.set('_fresh', String(options.cacheBust));
+  }
 
   const query = params.toString();
 
@@ -1026,6 +1030,7 @@ export async function getAllPharmaInventoryBatches(
   options?: {
     search?: string;
     sellableOnly?: boolean;
+    cacheBust?: string | number;
   },
 ): Promise<PharmaInventoryBatchesResponse> {
   const perPage = 150;
@@ -1058,6 +1063,7 @@ export async function getAllPharmaInventoryBatches(
             options?.sellableOnly,
           perPage,
           offset,
+          cacheBust: options?.cacheBust,
         },
       );
 
