@@ -42774,6 +42774,7 @@ thead
 .bo-pro-bar-chart-shell {
   width: 100%;
   max-width: 100%;
+  margin-inline: auto;
 
   overflow-x: auto;
   overflow-y: hidden;
@@ -42851,8 +42852,8 @@ thead
 }
 
 .bo-pro-bar-data-label {
-  font-size: 11px !important;
-  font-weight: 800 !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
 
   fill: #0f172a !important;
   stroke: rgba(255, 255, 255, 0.98);
@@ -42863,11 +42864,39 @@ thead
 }
 
 .bo-pro-bar-axis-label {
-  font-size: 10px !important;
-  font-weight: 750 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
 
   fill: #475569 !important;
 
+  font-variant-numeric: tabular-nums;
+}
+
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact article span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact article span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact article span {
+  font-size: 0.88rem !important;
+  line-height: 1.35 !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact article strong,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact article strong,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact article strong {
+  font-size: 1rem !important;
+  line-height: 1.3 !important;
   font-variant-numeric: tabular-nums;
 }
 
@@ -42877,11 +42906,11 @@ thead
   }
 
   .bo-pro-bar-data-label {
-    font-size: 10.5px !important;
+    font-size: 11.5px !important;
   }
 
   .bo-pro-bar-axis-label {
-    font-size: 9.5px !important;
+    font-size: 10.5px !important;
   }
 }
 

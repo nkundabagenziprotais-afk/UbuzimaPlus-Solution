@@ -919,6 +919,54 @@ function analyticsText(label: string, values: {
   }
 }
 
+function formatTwoDecimalCompact(
+  value: number,
+): string {
+  const safeValue =
+    Number.isFinite(value)
+      ? value
+      : 0;
+
+  const absoluteValue = Math.abs(safeValue);
+
+  const units: Array<{
+    threshold: number;
+    suffix: string;
+  }> = [
+    {
+      threshold: 1_000_000_000,
+      suffix: 'B',
+    },
+    {
+      threshold: 1_000_000,
+      suffix: 'M',
+    },
+    {
+      threshold: 1_000,
+      suffix: 'K',
+    },
+  ];
+
+  const unit = units.find(
+    ({ threshold }) =>
+      absoluteValue >= threshold,
+  );
+
+  if (unit) {
+    return `${(
+      safeValue / unit.threshold
+    ).toFixed(2)}${unit.suffix}`;
+  }
+
+  return safeValue.toLocaleString(
+    'en-GB',
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  );
+}
+
 function LineChart({
   values,
   label,
@@ -926,6 +974,8 @@ function LineChart({
   startDate,
   endDate,
   maxVisibleBars = 14,
+  valueFormatter = formatChartCompact,
+  valueFormat = 'standard-compact',
 }: {
   values: number[];
   label: string;
@@ -933,14 +983,18 @@ function LineChart({
   startDate?: string;
   endDate?: string;
   maxVisibleBars?: number;
+  valueFormatter?: (
+    value: number,
+  ) => string;
+  valueFormat?: string;
 }) {
   const safeValues = values.length ? values : [0];
   const safeLabels = labels?.length ? labels : safeValues.map((_, index) => String(index + 1));
   const pointCount = Math.max(safeValues.length, 1);
   const maxValue = Math.max(...safeValues, 1);
 
-  const barWidth = 40;
-  const gap = 22;
+  const barWidth = 34;
+  const gap = 14;
   const leftPadding = 38;
   const rightPadding = 30;
   const topPadding = 34;
@@ -951,6 +1005,12 @@ function LineChart({
     1,
     maxVisibleBars,
   );
+
+  const viewportWidth =
+    leftPadding
+    + rightPadding
+    + visibleBarLimit
+      * (barWidth + gap);
 
   const width =
     leftPadding
@@ -967,7 +1027,11 @@ function LineChart({
       data-chart-readability="scrollable-bars"
       data-point-count={pointCount}
       data-visible-bar-limit={visibleBarLimit}
+      data-value-format={valueFormat}
       tabIndex={0}
+      style={{
+        maxWidth: `${viewportWidth}px`,
+      }}
     >
       <svg
         className="bo-pro-bar-chart"
@@ -994,7 +1058,7 @@ function LineChart({
           return (
             <g key={`${axisLabel}-${index}`}>
               <title>
-                {`${axisLabel}: ${safeValue > 0 ? formatChartCompact(safeValue) : '0'}`}
+                {`${axisLabel}: ${safeValue > 0 ? valueFormatter(safeValue) : '0'}`}
               </title>
               <rect
                 className="bo-pro-bar"
@@ -1010,7 +1074,7 @@ function LineChart({
                 y={Math.max(y - 9, 17)}
                 textAnchor="middle"
               >
-                {safeValue > 0 ? formatChartCompact(safeValue) : ''}
+                {safeValue > 0 ? valueFormatter(safeValue) : ''}
               </text>
               <text
                 className="bo-pro-axis-label bo-pro-bar-axis-label"
@@ -1733,7 +1797,14 @@ export function BusinessOverviewReviewPage({
             </div>
           </header>
 
-          <LineChart values={insuranceTrendValues} label="Receivable Trend" labels={insuranceTrendDateLabels} startDate={insuranceTrendRange.startDate} endDate={insuranceTrendRange.endDate} maxVisibleBars={14} />
+          <LineChart
+            values={insuranceTrendValues}
+            label="Receivable Trend"
+            labels={insuranceTrendDateLabels}
+            startDate={insuranceTrendRange.startDate}
+            endDate={insuranceTrendRange.endDate}
+            maxVisibleBars={12}
+          />
 
           <div className="bo-pro-metric-list compact">
             <article><span>Insurance Sales</span><strong>{dataLabelValue(displayLiveData, ['Insurance Sales'], '—')}</strong></article>
@@ -1771,7 +1842,14 @@ export function BusinessOverviewReviewPage({
               <article><span>Net Change</span><strong>{formatMoney(0)} · {formatPercent(0)}</strong></article>
               <article><span>Near Expiry Count</span><strong>{dataLabelValue(displayLiveData, ['Near Expiry Count', 'Expiring Items'])}</strong></article>
             </div>
-            <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" labels={nearExpiryTrendDateLabels} startDate={nearExpiryTrendRange.startDate} endDate={nearExpiryTrendRange.endDate} maxVisibleBars={14} />
+            <LineChart
+              values={nearExpiryTrendValues}
+              label="Near Expiry Movement"
+              labels={nearExpiryTrendDateLabels}
+              startDate={nearExpiryTrendRange.startDate}
+              endDate={nearExpiryTrendRange.endDate}
+              maxVisibleBars={12}
+            />
           </div>
         </article>
 
@@ -1803,7 +1881,16 @@ export function BusinessOverviewReviewPage({
               <article><span>Total Quantity</span><strong>{dataLabelValue(displayLiveData, ['Total Quantity On Hand', 'Total Quantity'])}</strong></article>
               <article><span>Stock Batches</span><strong>{dataLabelValue(displayLiveData, ['Stock Batches Count', 'Stock Batches'])}</strong></article>
             </div>
-            <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" labels={inventoryMovementTrendDateLabels} startDate={inventoryMovementTrendRange.startDate} endDate={inventoryMovementTrendRange.endDate} maxVisibleBars={14} />
+            <LineChart
+              values={inventoryMovementTrendValues}
+              label="Total Inventory Movement"
+              labels={inventoryMovementTrendDateLabels}
+              startDate={inventoryMovementTrendRange.startDate}
+              endDate={inventoryMovementTrendRange.endDate}
+              maxVisibleBars={12}
+              valueFormatter={formatTwoDecimalCompact}
+              valueFormat="two-decimal-compact"
+            />
           </div>
         </article>
 
