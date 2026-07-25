@@ -56,3 +56,48 @@ All future work must branch from this foundation branch or the printed foundatio
 - source_changed=YES
 - assets_changed=YES
 - rollback_admin=`/home/inzoeqqx/deployment_releases/stable-foundation-20260725-20260725T131801Z/admin-before.live-swap`
+
+---
+
+## Foundation V2 correction
+
+Established: 2026-07-25T13:27:46Z
+
+Foundation V2 repairs the incomplete Foundation V1 validation by restoring the missing inventory loading and POS card name/price rendering pieces from the preserved pre-R3 cPanel source snapshot.
+
+### Foundation V2 source
+
+- Foundation V1 base: `8e5853a900a32135618c6a4285c3e8abc699c7da`
+- Selective restore source: `c3f08fdb583a18e7f7f880bf888f73150ea682c8`
+
+### Files selectively restored
+
+- `backend/app/Http/Controllers/Api/V1/PharmaCo360/ProductInventoryController.php`
+- `backend/app/Http/Controllers/Api/V1/PharmaCo360/SalesDispensingController.php`
+- `web/admin-dashboard/src/components/SalesCreationPanel.tsx`
+- `web/admin-dashboard/src/styles.css`
+
+### Historical POS preservation
+
+The following files were preserved from Foundation V1 to avoid losing the restored Historical POS date picker:
+
+- `web/admin-dashboard/src/App.tsx`
+- `web/admin-dashboard/src/components/HistoricalPosWorkflow.tsx`
+- `web/admin-dashboard/src/lib/api.ts`
+
+### Foundation V2 deployed assets
+
+| Asset | Path | SHA256 |
+|---|---|---|
+| App JS | `/admin/assets/index-B8gNYKv8.js` | `7aa1705f8484975ec855d75369e9e67f30d53a3caca0039f242c572b76ef1025` |
+| App CSS | `/admin/assets/index-CdwuW59V.css` | `a002c053bf95b11fd0411e59817a3b7f3e9636081f2cef5cdd6a1c663c34062a` |
+
+### Foundation V2 safety result
+
+- php_syntax=PASSED
+- typecheck=PASSED
+- build=PASSED
+- migrations_run=NO
+- database_changed=NO
+- source_changed=YES
+- assets_changed=YES
