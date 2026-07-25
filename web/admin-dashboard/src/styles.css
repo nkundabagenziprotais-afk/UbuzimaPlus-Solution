@@ -59457,59 +59457,78 @@ body .pos-quantity-dialog__actions button {
   }
 }
 
-/* UBUZIMA BATCH 4 FINAL COMPACT CARD GRID */
+/* UBUZIMA BATCH 4 DEFINITIVE FIVE ROW CARD GRID */
 
 /*
- * One authoritative grid measurement controls both axes.
- * Cards fill their complete tracks and each row uses the exact
- * same height as the rendered card.
+ * One geometry contract:
+ * - five visible information rows
+ * - fixed compact height
+ * - identical horizontal and vertical gaps
+ * - no legacy offsets or transforms
  */
 .pos-builder-product-panel
   .pos-product-grid:not(.pos-product-grid--list),
 .pos-product-grid:not(.pos-product-grid--list) {
-  --ubuzima-pos-card-gap-final: 12px;
-  --ubuzima-pos-card-height-final: 188px;
+  --ubuzima-pos-card-gap-definitive: 14px;
+  --ubuzima-pos-card-height-definitive: 160px;
 
-  gap: var(--ubuzima-pos-card-gap-final) !important;
-  row-gap: var(--ubuzima-pos-card-gap-final) !important;
-  column-gap: var(--ubuzima-pos-card-gap-final) !important;
+  display: grid !important;
+  grid-auto-flow: row !important;
+  grid-auto-rows: var(--ubuzima-pos-card-height-definitive) !important;
 
-  grid-auto-rows: var(--ubuzima-pos-card-height-final) !important;
+  gap: var(--ubuzima-pos-card-gap-definitive) !important;
+  row-gap: var(--ubuzima-pos-card-gap-definitive) !important;
+  column-gap: var(--ubuzima-pos-card-gap-definitive) !important;
+
   align-items: stretch !important;
   justify-items: stretch !important;
+  align-content: start !important;
 }
 
 /*
- * Fill the column track completely. Removing width constraints and
- * matching the grid row height prevents both horizontal whitespace
- * and vertical card overlap.
+ * Reset legacy geometry that can make adjacent cards touch.
  */
 .pos-builder-product-panel
   .pos-product-grid:not(.pos-product-grid--list)
   > .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"],
 .pos-product-grid:not(.pos-product-grid--list)
   > .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"] {
+  position: relative !important;
+
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+
+  transform: none !important;
+  translate: none !important;
+
   width: 100% !important;
   min-width: 0 !important;
   max-width: none !important;
 
-  height: var(--ubuzima-pos-card-height-final) !important;
-  min-height: var(--ubuzima-pos-card-height-final) !important;
-  max-height: var(--ubuzima-pos-card-height-final) !important;
+  height: var(--ubuzima-pos-card-height-definitive) !important;
+  min-height: var(--ubuzima-pos-card-height-definitive) !important;
+  max-height: var(--ubuzima-pos-card-height-definitive) !important;
 
   margin: 0 !important;
   padding: 0 !important;
 
-  justify-self: stretch !important;
   align-self: stretch !important;
+  justify-self: stretch !important;
 
   overflow: hidden !important;
   box-sizing: border-box !important;
 }
 
 /*
- * Compact internal layout. The card height is not increased.
- * All rows, including Days, must fit inside the fixed card.
+ * Exact five-row compact layout:
+ * 1. Product
+ * 2. Amount
+ * 3. Quantity
+ * 4. Expiry date
+ * 5. Remaining days
  */
 .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
   .ubuzima-pos-replaced-card {
@@ -59521,26 +59540,50 @@ body .pos-quantity-dialog__actions button {
 
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
-  grid-auto-rows: minmax(0, auto) !important;
-  align-content: space-between !important;
+  grid-template-rows:
+    minmax(24px, 1.35fr)
+    minmax(18px, 1fr)
+    minmax(18px, 1fr)
+    minmax(18px, 1fr)
+    minmax(18px, 1fr) !important;
 
-  gap: 1px !important;
-  row-gap: 1px !important;
-  column-gap: 1px !important;
+  align-content: stretch !important;
+  align-items: stretch !important;
+
+  gap: 2px !important;
+  row-gap: 2px !important;
+  column-gap: 2px !important;
 
   margin: 0 !important;
-  padding: 11px 14px 10px !important;
+  padding: 9px 12px 8px !important;
 
+  text-align: left !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
 }
 
-/* Remove accumulated row spacing from earlier card revisions. */
+/*
+ * Every row remains static, compact and left-aligned.
+ */
 .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
   .ubuzima-pos-replaced-card__row {
+  position: static !important;
+
+  inset: auto !important;
+  transform: none !important;
+  translate: none !important;
+
+  width: 100% !important;
   min-width: 0 !important;
-  min-height: 0 !important;
   max-width: 100% !important;
+
+  min-height: 0 !important;
+  max-height: none !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
 
   gap: 0 !important;
   row-gap: 0 !important;
@@ -59549,35 +59592,63 @@ body .pos-quantity-dialog__actions button {
   margin: 0 !important;
   padding: 0 !important;
 
-  line-height: 1.05 !important;
+  text-align: left !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
 }
 
 /*
- * Reduce every visible value, not only the medicine name.
- * The amount remains slightly stronger but is substantially smaller
- * than the previous card version.
+ * Ensure expiry and days cannot be hidden by earlier responsive rules.
+ */
+.pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
+  .ubuzima-pos-replaced-card__row--expiry,
+.pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
+  .ubuzima-pos-replaced-card__row--date,
+.pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
+  .ubuzima-pos-replaced-card__row--days {
+  position: static !important;
+
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  min-height: 0 !important;
+  max-height: none !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  overflow: hidden !important;
+}
+
+/*
+ * Base value styling for product, amount, quantity, date and days.
  */
 .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
   .ubuzima-pos-replaced-card__value {
+  width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
 
   margin: 0 !important;
   padding: 0 !important;
 
-  font-size: 10.5px !important;
-  font-weight: 850 !important;
-  line-height: 1.08 !important;
+  color: inherit !important;
+
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+
+  text-align: left !important;
 
   overflow: hidden !important;
   overflow-wrap: anywhere !important;
   word-break: break-word !important;
+
   box-sizing: border-box !important;
 }
 
-/* Product name: two compact lines. */
+/* Product name remains left-aligned and may use two compact lines. */
 .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
   .ubuzima-pos-replaced-card__row--product
   .ubuzima-pos-replaced-card__value {
@@ -59585,26 +59656,30 @@ body .pos-quantity-dialog__actions button {
   -webkit-box-orient: vertical !important;
   -webkit-line-clamp: 2 !important;
 
-  font-size: 10px !important;
+  font-size: 9.5px !important;
   font-weight: 900 !important;
-  line-height: 1.08 !important;
+  line-height: 1.06 !important;
+
+  text-align: left !important;
 }
 
-/* Amount and price: reduced while retaining visual priority. */
+/* Amount stays prominent but compact. */
 .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
   .ubuzima-pos-replaced-card__row--amount
   .ubuzima-pos-replaced-card__value,
 .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
   .ubuzima-pos-replaced-card__row--price
   .ubuzima-pos-replaced-card__value {
-  font-size: 11.5px !important;
+  font-size: 10px !important;
   font-weight: 900 !important;
-  line-height: 1.05 !important;
+  line-height: 1 !important;
+
+  text-align: left !important;
   white-space: nowrap !important;
   text-overflow: ellipsis !important;
 }
 
-/* Quantity, dates, expiry and days all use a compact one-line value. */
+/* Quantity, date and days use identical compact measurements. */
 .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
   .ubuzima-pos-replaced-card__row--quantity
   .ubuzima-pos-replaced-card__value,
@@ -59617,26 +59692,21 @@ body .pos-quantity-dialog__actions button {
 .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
   .ubuzima-pos-replaced-card__row--days
   .ubuzima-pos-replaced-card__value {
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  line-height: 1.04 !important;
+  display: block !important;
 
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+
+  text-align: left !important;
   white-space: nowrap !important;
   text-overflow: ellipsis !important;
 }
 
-/* Days must remain inside the fixed card rather than extend below it. */
-.pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-  .ubuzima-pos-replaced-card__row--days {
-  display: grid !important;
-  min-height: 12px !important;
-  max-height: 16px !important;
-  overflow: hidden !important;
-}
-
-/* Preserve the accepted product heading above Quantity and Price. */
+/* Preserve centred product heading only inside the popup. */
 body .pos-quantity-dialog__product-name {
   grid-column: 1 / -1 !important;
+
   width: 100% !important;
   min-width: 0 !important;
 
@@ -59644,12 +59714,14 @@ body .pos-quantity-dialog__product-name {
   padding: 2px 8px 4px !important;
 
   color: #0f172a !important;
+
   font-size: 1rem !important;
   font-weight: 950 !important;
   line-height: 1.25 !important;
-  text-align: center !important;
 
+  text-align: center !important;
   overflow-wrap: anywhere !important;
+
   box-sizing: border-box !important;
 }
 
@@ -59657,33 +59729,13 @@ body .pos-quantity-dialog__product-name {
   .pos-builder-product-panel
     .pos-product-grid:not(.pos-product-grid--list),
   .pos-product-grid:not(.pos-product-grid--list) {
-    --ubuzima-pos-card-gap-final: 10px;
-    --ubuzima-pos-card-height-final: 182px;
+    --ubuzima-pos-card-gap-definitive: 12px;
+    --ubuzima-pos-card-height-definitive: 156px;
   }
 
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
     .ubuzima-pos-replaced-card {
-    padding: 10px 12px 9px !important;
-  }
-
-  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__value {
-    font-size: 10px !important;
-  }
-
-  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__row--product
-    .ubuzima-pos-replaced-card__value {
-    font-size: 9.5px !important;
-  }
-
-  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__row--amount
-    .ubuzima-pos-replaced-card__value,
-  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__row--price
-    .ubuzima-pos-replaced-card__value {
-    font-size: 11px !important;
+    padding: 8px 11px 7px !important;
   }
 }
 
@@ -59691,22 +59743,16 @@ body .pos-quantity-dialog__product-name {
   .pos-builder-product-panel
     .pos-product-grid:not(.pos-product-grid--list),
   .pos-product-grid:not(.pos-product-grid--list) {
-    --ubuzima-pos-card-gap-final: 9px;
-    --ubuzima-pos-card-height-final: 176px;
+    --ubuzima-pos-card-gap-definitive: 10px;
+    --ubuzima-pos-card-height-definitive: 152px;
   }
 
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
     .ubuzima-pos-replaced-card {
-    padding: 9px 11px 8px !important;
+    padding: 7px 10px 6px !important;
   }
 
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__value {
-    font-size: 9.5px !important;
-  }
-
-  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__row--product
     .ubuzima-pos-replaced-card__value {
     font-size: 9px !important;
   }
@@ -59717,7 +59763,7 @@ body .pos-quantity-dialog__product-name {
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
     .ubuzima-pos-replaced-card__row--price
     .ubuzima-pos-replaced-card__value {
-    font-size: 10.5px !important;
+    font-size: 9.5px !important;
   }
 }
 
@@ -59725,35 +59771,31 @@ body .pos-quantity-dialog__product-name {
   .pos-builder-product-panel
     .pos-product-grid:not(.pos-product-grid--list),
   .pos-product-grid:not(.pos-product-grid--list) {
-    --ubuzima-pos-card-gap-final: 8px;
-    --ubuzima-pos-card-height-final: 168px;
+    --ubuzima-pos-card-gap-definitive: 9px;
+    --ubuzima-pos-card-height-definitive: 148px;
   }
 
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
     .ubuzima-pos-replaced-card {
-    padding: 8px 9px 7px !important;
+    grid-template-rows:
+      minmax(22px, 1.3fr)
+      minmax(17px, 1fr)
+      minmax(17px, 1fr)
+      minmax(17px, 1fr)
+      minmax(17px, 1fr) !important;
+
+    gap: 1px !important;
+    row-gap: 1px !important;
+    column-gap: 1px !important;
+
+    padding: 7px 9px 6px !important;
   }
 
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__value {
-    font-size: 9px !important;
-  }
-
-  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__row--product
-    .ubuzima-pos-replaced-card__value {
-    font-size: 8.8px !important;
-  }
-
-  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__row--amount
     .ubuzima-pos-replaced-card__value,
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
-    .ubuzima-pos-replaced-card__row--price
-    .ubuzima-pos-replaced-card__value {
-    font-size: 10px !important;
-  }
-
+    .ubuzima-pos-replaced-card__row--product
+    .ubuzima-pos-replaced-card__value,
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
     .ubuzima-pos-replaced-card__row--quantity
     .ubuzima-pos-replaced-card__value,
@@ -59766,7 +59808,16 @@ body .pos-quantity-dialog__product-name {
   .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
     .ubuzima-pos-replaced-card__row--days
     .ubuzima-pos-replaced-card__value {
-    font-size: 8.8px !important;
+    font-size: 8.5px !important;
+  }
+
+  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
+    .ubuzima-pos-replaced-card__row--amount
+    .ubuzima-pos-replaced-card__value,
+  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"]
+    .ubuzima-pos-replaced-card__row--price
+    .ubuzima-pos-replaced-card__value {
+    font-size: 9px !important;
   }
 
   body .pos-quantity-dialog__product-name {
