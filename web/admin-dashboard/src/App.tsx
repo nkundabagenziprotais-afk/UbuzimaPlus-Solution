@@ -8303,6 +8303,12 @@ async function confirmTransaction() {
                   sellingUnitPrice: quantityPreviewSellingUnitPrice,
                 });
 
+                const quantityPreviewTotalAmount =
+                  Math.max(
+                    0,
+                    Number(posSellingUnitQuantity || 0),
+                  ) * quantityPreviewSellingUnitPrice;
+
                 return (
                   <div
                     className="pos-quantity-dialog-backdrop"
@@ -8353,6 +8359,19 @@ async function confirmTransaction() {
                                                       onChange={(event) => setPosSellingAmount(event.target.value)}
                                                     />
                         </label>
+                      </section>
+
+                      <section
+                        className="pos-quantity-calculated-total-card"
+                        aria-label="Calculated total amount"
+                      >
+                        <span>Total Amount</span>
+                        <output
+                          aria-live="polite"
+                          aria-label="Quantity multiplied by price"
+                        >
+                          RWF {quantityPreviewTotalAmount.toLocaleString('en-RW')}
+                        </output>
                       </section>
 
                       <div className="pos-quantity-dialog__actions">

@@ -60220,3 +60220,89 @@ table.receivables-table {
   white-space: normal !important;
   text-align: center !important;
 }
+
+/* UBUZIMA POS POPUP TOTAL AMOUNT CARD */
+
+body .pos-quantity-dialog {
+  max-height: min(560px, calc(100dvh - 48px)) !important;
+  overflow-y: auto !important;
+}
+
+body .pos-quantity-calculated-total-card {
+  grid-column: 1 / -1 !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 92px !important;
+
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  gap: 8px !important;
+
+  margin: 0 !important;
+  padding: 16px 20px !important;
+
+  border: 1px solid rgba(13, 148, 136, 0.28) !important;
+  border-radius: 16px !important;
+  background: rgba(240, 253, 250, 0.96) !important;
+
+  text-align: center !important;
+  box-sizing: border-box !important;
+}
+
+body .pos-quantity-calculated-total-card > span {
+  display: block !important;
+  margin: 0 !important;
+
+  color: #334155 !important;
+
+  font-size: 0.86rem !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+}
+
+body .pos-quantity-calculated-total-card output {
+  display: block !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  color: #0f766e !important;
+
+  font-size: 1.4rem !important;
+  font-weight: 950 !important;
+  line-height: 1.15 !important;
+
+  text-align: center !important;
+  white-space: nowrap !important;
+
+  cursor: default !important;
+  user-select: text !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  body .pos-quantity-calculated-total-card {
+    min-height: 86px !important;
+    padding: 14px 16px !important;
+  }
+
+  body .pos-quantity-calculated-total-card output {
+    font-size: 1.24rem !important;
+  }
+}
+
+@media (max-width: 430px) {
+  body .pos-quantity-calculated-total-card {
+    min-height: 80px !important;
+    padding: 12px 14px !important;
+  }
+
+  body .pos-quantity-calculated-total-card output {
+    font-size: 1.14rem !important;
+  }
+}
