@@ -410,13 +410,12 @@ export function SalesDispensingReview({
 
     const notReadyItems = items.filter((item) => {
       const hasBatch = Boolean(Number(batchSelections[item.id]));
-      const prescriptionOk = true; // RX_WARNING_ALLOW_POS_RECORDING_V2: warn pharmacist, do not block confirmation.
 
-      return !hasBatch || !prescriptionOk;
+      return !hasBatch;
     });
 
     if (notReadyItems.length > 0) {
-      setError('Prescription-controlled item warning acknowledged. Confirming is allowed, but pharmacist review should be completed.');
+      setError('Every sale item must have an eligible batch before confirmation.');
       return;
     }
 
@@ -558,7 +557,7 @@ export function SalesDispensingReview({
     const selectedBatch = state.batches.find((batch) => batch.id === Number(batchSelections[item.id]));
     const needsPrescription = item.requires_prescription && !prescriptionChecks[item.id];
     const needsBatch = !selectedBatch;
-    const ready = !needsPrescription && !needsBatch;
+    const ready = !needsBatch;
 
     return {
       item,
