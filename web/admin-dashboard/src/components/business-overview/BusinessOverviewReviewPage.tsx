@@ -993,13 +993,13 @@ function LineChart({
   const pointCount = Math.max(safeValues.length, 1);
   const maxValue = Math.max(...safeValues, 1);
 
-  const barWidth = 34;
-  const gap = 14;
-  const leftPadding = 38;
-  const rightPadding = 30;
-  const topPadding = 34;
-  const bottomPadding = 42;
-  const chartHeight = 176;
+  const barWidth = 46;
+  const gap = 22;
+  const leftPadding = 44;
+  const rightPadding = 36;
+  const topPadding = 50;
+  const bottomPadding = 60;
+  const chartHeight = 230;
 
   const visibleBarLimit = Math.max(
     1,
@@ -1028,6 +1028,9 @@ function LineChart({
       data-point-count={pointCount}
       data-visible-bar-limit={visibleBarLimit}
       data-value-format={valueFormat}
+      data-chart-size="business-overview-large-bars"
+      data-bar-width={barWidth}
+      data-chart-height={chartHeight}
       tabIndex={0}
       style={{
         maxWidth: `${viewportWidth}px`,
@@ -1066,12 +1069,12 @@ function LineChart({
                 y={y}
                 width={barWidth}
                 height={barHeight}
-                rx="7"
+                rx="10"
               />
               <text
                 className="bo-pro-data-label bo-pro-bar-data-label"
                 x={x + barWidth / 2}
-                y={Math.max(y - 9, 17)}
+                y={Math.max(y - 12, 24)}
                 textAnchor="middle"
               >
                 {safeValue > 0 ? valueFormatter(safeValue) : ''}
@@ -1079,7 +1082,7 @@ function LineChart({
               <text
                 className="bo-pro-axis-label bo-pro-bar-axis-label"
                 x={x + barWidth / 2}
-                y={topPadding + chartHeight + 25}
+                y={topPadding + chartHeight + 34}
                 textAnchor="middle"
               >
                 {axisLabel}
