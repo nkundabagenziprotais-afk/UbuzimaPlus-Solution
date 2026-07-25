@@ -13,11 +13,8 @@ use App\Models\PharmacoPayment;
 use App\Models\PharmacoPosSession;
 use App\Models\StockBatch;
 use App\Models\StockMovement;
-use App\Services\PharmaCo360\InventoryCostResolver;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
-use App\Services\Finance\PharmacoPosPaymentShadowPostingService;
-use Throwable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -85,19 +82,12 @@ class SalesDispensingController extends Controller
         $tenant = $request->attributes->get('tenant');
 
         $sales = PharmacoSale::query()
-            ->with(['branch', 'customer', 'prescription', 'payments', 'items.product', 'items.stockBatch'])
+            ->with(['branch', 'customer', 'prescription', 'payments'])
             ->withCount(['items', 'payments'])
             ->where('tenant_id', $tenant->id)
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
             ->when($request->query('payment_status'), fn ($query, $status) => $query->where('payment_status', $status))
             ->when($request->query('sale_type'), fn ($query, $saleType) => $query->where('sale_type', $saleType))
-            // POS_SALES_BUSINESS_DATE_FILTERS_V1
-            ->when($request->query('business_date_from'), fn ($query, $dateFrom) =>
-                $query->whereDate('business_date', '>=', $dateFrom)
-            )
-            ->when($request->query('business_date_to'), fn ($query, $dateTo) =>
-                $query->whereDate('business_date', '<=', $dateTo)
-            )
             ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($request->query('pos_session_id'), fn ($query, $sessionId) => $query->where('pos_session_id', $sessionId))
             ->latest('created_at')
@@ -1991,8 +1981,6 @@ class SalesDispensingController extends Controller
 
         $scope = $scopeResolver->resolveForUser($request->user());
 
-        $this->shadowPostPaymentToFinance($result['payment'], $result['sale']);
-
         $auditLogService->record(
             action: 'pharmaco.payment.recorded',
             scope: $scope,
@@ -2244,19 +2232,6 @@ class SalesDispensingController extends Controller
         return $payload;
     }
 
-    private function shadowPostPaymentToFinance(PharmacoPayment $payment, PharmacoSale $sale): void
-    {
-        try {
-            app(PharmacoPosPaymentShadowPostingService::class)->postPayment(
-                $payment,
-                $sale
-            );
-        } catch (Throwable $exception) {
-            report($exception);
-        }
-    }
-
-    /* LEGACY_COST_MARGIN_COMPUTATION_V1 */
     private function serializeSale(PharmacoSale $sale, bool $includeDetails = false): array
     {
         $payload = [
