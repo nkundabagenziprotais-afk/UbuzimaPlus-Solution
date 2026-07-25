@@ -60168,3 +60168,55 @@ table.receivables-table {
     width: 176px !important;
   }
 }
+
+/* UBUZIMA BATCH 5B POS SESSION ACTION CELL WIDTH FIX */
+
+.pos-admin-control__table-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.pos-admin-control__table-shell table.pos-admin-session-table {
+  width: max-content !important;
+  min-width: 1960px !important;
+  table-layout: auto !important;
+}
+
+.pos-admin-control__table-shell .pos-admin-session-table th,
+.pos-admin-control__table-shell .pos-admin-session-table td {
+  white-space: nowrap !important;
+  max-width: none !important;
+}
+
+.pos-admin-control__table-shell .pos-admin-session-table th:last-child,
+.pos-admin-control__table-shell .pos-admin-session-table td.pos-admin-session-actions-cell {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  display: table-cell !important;
+  vertical-align: middle !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+.pos-admin-control__table-shell .pos-admin-session-actions-cell > .pos-admin-control__actions {
+  width: 100% !important;
+  min-width: 240px !important;
+  max-width: 260px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(108px, 1fr)) !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+}
+
+.pos-admin-control__table-shell .pos-admin-session-actions-cell .pos-admin-control__actions button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 36px !important;
+  padding: 7px 8px !important;
+  white-space: normal !important;
+  text-align: center !important;
+}
