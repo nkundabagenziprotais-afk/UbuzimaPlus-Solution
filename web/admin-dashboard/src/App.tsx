@@ -1,5 +1,7 @@
 /* APP_RX_WARNING_ALLOW_POS_RECORDING_V1 */
 /* POS_SALES_ANALYTICS_VISIBLE_ENTRY_V1 */
+import { ReactMobileNavigation } from './mobile/ReactMobileNavigation';
+import { mobileRuntimeFlags } from './mobile/mobileRuntimeFlags';
 import {
   InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
   useEffect,
@@ -4095,6 +4097,16 @@ function App() {
   const principalMenuItems = useMemo(
     () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
     [visibleMenuGroups],
+  );
+  const reactMobileNavigationItems = useMemo(
+    () =>
+      principalMenuItems.map(({ item }) => ({
+        key: item.key,
+        label: item.label,
+        icon: item.icon,
+        description: item.description,
+      })),
+    [principalMenuItems],
   );
   const currentSection = sectionMeta[activeSection] ?? sectionMeta.overview;
   const activeLeftSubmenuLabel =
@@ -9612,6 +9624,13 @@ return (
 
   return (
     <main className="dashboard-shell" style={leftMenuStyle}>
+      {mobileRuntimeFlags.reactMobileNavigation && (
+        <ReactMobileNavigation
+          items={reactMobileNavigationItems}
+          activeSection={activeSection}
+          onNavigate={navigateToSection}
+        />
+      )}
       <aside className="sidebar">
         <div className="sidebar-inner">
           <div className="sidebar-brand">
