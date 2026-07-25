@@ -58735,3 +58735,119 @@ html.ubuzima-mobile-pwa-active .ubuzima-pos-replaced-card__row--days {
 }
 
 /* UBUZIMA POS CARD REPLACEMENT FINAL END */
+
+
+/* UBUZIMA FOUNDATION V2.1 POS CARD ROW SPACING FIX START */
+
+/*
+  Purpose:
+  - Make POS product-card row spacing consistent with the card column spacing.
+  - Remove the extra vertical distance between Amount, Quantity, Date, and Days.
+  - Keep the same compact rhythm used between Product Name and Price.
+*/
+
+/* External card grid: row spacing should match column spacing */
+.pos-builder-product-panel .pos-drug-list,
+.pos-builder-product-panel .pos-drug-list--ten,
+.pos-builder-product-panel .pos-product-grid,
+.pos-drug-list--ten {
+  --ubuzima-pos-grid-gap-v21: 22px !important;
+  row-gap: var(--ubuzima-pos-grid-gap-v21) !important;
+  column-gap: var(--ubuzima-pos-grid-gap-v21) !important;
+}
+
+/* Internal card rhythm: all stacked rows use one compact spacing rule */
+.pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"] .ubuzima-pos-replaced-card,
+[data-ubuzima-real-pos-tile="true"] .ubuzima-real-pos-card,
+.ubuzima-pos-card-clean,
+.ubuzima-pos-card-final {
+  --ubuzima-pos-row-gap-v21: 3px !important;
+  gap: var(--ubuzima-pos-row-gap-v21) !important;
+  row-gap: var(--ubuzima-pos-row-gap-v21) !important;
+}
+
+/* Remove hidden spacing caused by margin, padding, or min-height on card rows */
+.ubuzima-pos-replaced-card__row,
+.ubuzima-real-pos-card__row,
+.ubuzima-pos-card-clean-row,
+.ubuzima-pos-card-final-row {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 1px !important;
+  row-gap: 1px !important;
+  line-height: 1.08 !important;
+}
+
+/* Keep Amount/Price, Quantity, Date, and Days as tight as Name/Price */
+.ubuzima-pos-replaced-card__row--amount,
+.ubuzima-pos-replaced-card__row--price,
+.ubuzima-pos-replaced-card__row--quantity,
+.ubuzima-pos-replaced-card__row--date,
+.ubuzima-pos-replaced-card__row--expiry,
+.ubuzima-pos-replaced-card__row--days,
+.ubuzima-real-pos-card__row--price,
+.ubuzima-real-pos-card__row--quantity,
+.ubuzima-real-pos-card__row--date,
+.ubuzima-real-pos-card__row--expiry,
+.ubuzima-real-pos-card__row--days,
+.ubuzima-pos-card-clean-row--price,
+.ubuzima-pos-card-clean-row--stock,
+.ubuzima-pos-card-clean-row--expiry,
+.ubuzima-pos-card-clean-row--days,
+.ubuzima-pos-card-final-row--price,
+.ubuzima-pos-card-final-row--stock,
+.ubuzima-pos-card-final-row--expiry,
+.ubuzima-pos-card-final-row--days {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Normalise label and value line-height so rows do not look separated */
+.ubuzima-pos-replaced-card__value,
+.ubuzima-real-pos-card__row strong,
+.ubuzima-real-pos-card__row span,
+.ubuzima-pos-card-clean-row strong,
+.ubuzima-pos-card-clean-row span,
+.ubuzima-pos-card-final-row strong,
+.ubuzima-pos-card-final-row span {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  line-height: 1.08 !important;
+}
+
+/* Responsive grid: keep row and column spacing equal */
+@media (max-width: 1400px) {
+  .pos-builder-product-panel .pos-drug-list,
+  .pos-builder-product-panel .pos-drug-list--ten,
+  .pos-builder-product-panel .pos-product-grid,
+  .pos-drug-list--ten {
+    --ubuzima-pos-grid-gap-v21: 20px !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .pos-builder-product-panel .pos-drug-list,
+  .pos-builder-product-panel .pos-drug-list--ten,
+  .pos-builder-product-panel .pos-product-grid,
+  .pos-drug-list--ten {
+    --ubuzima-pos-grid-gap-v21: 16px !important;
+  }
+}
+
+html.ubuzima-mobile-pwa-active .pos-builder-product-panel .pos-drug-list,
+html.ubuzima-mobile-pwa-active .pos-builder-product-panel .pos-drug-list--ten,
+html.ubuzima-mobile-pwa-active .pos-builder-product-panel .pos-product-grid,
+html.ubuzima-mobile-pwa-active .pos-drug-list--ten {
+  --ubuzima-pos-grid-gap-v21: 10px !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"] .ubuzima-pos-replaced-card,
+html.ubuzima-mobile-pwa-active [data-ubuzima-real-pos-tile="true"] .ubuzima-real-pos-card,
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-clean,
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-final {
+  --ubuzima-pos-row-gap-v21: 2px !important;
+}
+
+/* UBUZIMA FOUNDATION V2.1 POS CARD ROW SPACING FIX END */
+

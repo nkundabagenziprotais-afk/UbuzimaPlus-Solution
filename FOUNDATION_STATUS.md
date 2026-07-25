@@ -101,3 +101,33 @@ The following files were preserved from Foundation V1 to avoid losing the restor
 - database_changed=NO
 - source_changed=YES
 - assets_changed=YES
+
+---
+
+## Foundation V2.1 POS card spacing correction
+
+Established: 2026-07-25T13:34:53Z
+
+Foundation V2.1 tightens POS Product Card spacing after browser review.
+
+### Correction
+
+- POS product-card grid row spacing now matches column spacing.
+- Internal spacing between Amount, Quantity, Date, and Days is compacted.
+- The internal row rhythm now follows the same structure used between Product Name and Price.
+
+### Deployment assets
+
+| Asset | Path | SHA256 |
+|---|---|---|
+| App JS | `/admin/assets/index-Wp7tn0jV.js` | `7aa1705f8484975ec855d75369e9e67f30d53a3caca0039f242c572b76ef1025` |
+| App CSS | `/admin/assets/index-CC1jLyel.css` | `fec3e1d3f604103c5b7d3f23ff7c98d4d6c4ec6a94b636f78eb244065f24a40b` |
+
+### Safety result
+
+- typecheck=PASSED
+- build=PASSED
+- migrations_run=NO
+- database_changed=NO
+- source_changed=YES
+- assets_changed=YES
