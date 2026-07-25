@@ -55323,3 +55323,3415 @@ textarea {
     width: 100%;
   }
 }
+
+/* POS_PRODUCT_CARD_RESPONSIVE_LAYOUT_V1 */
+.pos-product-card {
+  position: relative;
+}
+
+.pos-product-card .pos-product-card-info {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.32rem;
+  width: 100%;
+}
+
+.pos-product-card .pos-product-card-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  width: 100%;
+  line-height: 1.25;
+}
+
+.pos-product-card .pos-product-card-info-label {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.pos-product-card .pos-product-card-info-row strong {
+  color: #0f172a;
+  font-size: 0.84rem;
+  text-align: right;
+}
+
+.pos-product-card .pos-product-card-info-label--mobile,
+.pos-product-card .pos-product-mobile-add-indicator {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .retail-pos-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pos-product-browser {
+    width: 100%;
+  }
+
+  .pos-product-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.65rem !important;
+  }
+
+  .pos-product-grid--list {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.55rem !important;
+  }
+
+  .pos-product-grid .pos-product-card {
+    min-height: auto;
+    padding: 0.72rem;
+    border-radius: 16px;
+  }
+
+  .pos-product-grid .pos-product-card h3,
+  .pos-product-grid .pos-product-card strong:first-child {
+    font-size: 0.9rem;
+    line-height: 1.18;
+  }
+
+  .pos-product-card .pos-product-card-info {
+    gap: 0.24rem;
+  }
+
+  .pos-product-card .pos-product-card-info-row {
+    font-size: 0.8rem;
+  }
+
+  .pos-product-card .pos-product-card-info-row--expiry,
+  .pos-product-card .pos-product-card-info-row--days {
+    display: none;
+  }
+
+  .pos-product-card .pos-product-card-info-label--desktop {
+    display: none;
+  }
+
+  .pos-product-card .pos-product-card-info-label--mobile {
+    display: inline;
+  }
+
+  .pos-product-grid--list .pos-product-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 0.7rem;
+    text-align: left;
+  }
+
+  .pos-product-grid--list .pos-product-card > *:not(.pos-product-mobile-add-indicator) {
+    grid-column: 1;
+  }
+
+  .pos-product-grid--list .pos-product-mobile-add-indicator {
+    display: inline-flex;
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: #0f766e;
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 12px 24px rgba(15, 118, 110, 0.28);
+  }
+
+  .pos-product-grid:not(.pos-product-grid--list) .pos-product-mobile-add-indicator {
+    display: none;
+  }
+}
+
+
+/* UbuzimaPlus source-built Mac-style dock polish */
+@media (min-width: 768px) {
+  html.ubuzima-device-tablet body,
+  html.ubuzima-device-desktop body {
+    padding-bottom: 96px;
+  }
+
+  html.ubuzima-device-desktop .dashboard-shell {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html.ubuzima-device-desktop .sidebar {
+    position: fixed !important;
+    left: -420px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 360px !important;
+    min-width: 360px !important;
+    max-width: 360px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+  }
+
+  html.ubuzima-device-desktop .dashboard-main {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  html.ubuzima-device-desktop .ubuzima-mobile-topbar,
+  html.ubuzima-device-desktop .ubuzima-mobile-bottom-nav,
+  html.ubuzima-device-desktop .ubuzima-mobile-action-strip {
+    display: none !important;
+  }
+
+  .ubuzima-source-dock {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    z-index: 9995;
+    width: fit-content;
+    max-width: calc(100vw - 32px);
+    min-height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.42);
+    box-shadow:
+      0 26px 74px rgba(15, 23, 42, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.74);
+    transform: translateX(-50%);
+    backdrop-filter: blur(26px) saturate(170%);
+    -webkit-backdrop-filter: blur(26px) saturate(170%);
+    overflow: visible;
+  }
+
+  .ubuzima-source-dock__main,
+  .ubuzima-source-dock__tasks {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    scrollbar-width: none;
+  }
+
+  .ubuzima-source-dock__main {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .ubuzima-source-dock__tasks {
+    flex: 1 1 auto;
+    max-width: min(420px, 34vw);
+    overflow-x: auto;
+    padding: 0 2px;
+  }
+
+  .ubuzima-source-dock__main::-webkit-scrollbar,
+  .ubuzima-source-dock__tasks::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ubuzima-source-dock__divider {
+    width: 1px;
+    flex: 0 0 1px;
+    align-self: stretch;
+    min-height: 50px;
+    background: rgba(15, 23, 42, 0.14);
+  }
+
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task {
+    position: relative;
+    width: 54px;
+    height: 54px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 18px;
+    background: transparent;
+    color: #10211b;
+    font: inherit;
+    cursor: pointer;
+    transform-origin: center bottom;
+    transition: filter 120ms ease, opacity 120ms ease;
+  }
+
+  /* No bounce, no scale. Mac-like stable focus only. */
+  .ubuzima-source-dock__app:hover,
+  .ubuzima-source-dock__app:focus-visible,
+  .ubuzima-source-dock__task:hover,
+  .ubuzima-source-dock__task:focus-visible {
+    transform: none !important;
+    filter: drop-shadow(0 12px 14px rgba(15, 23, 42, 0.16));
+    outline: none;
+    z-index: 2;
+  }
+
+  .ubuzima-source-dock__glass-icon {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.72), rgba(255,255,255,0.20) 42%, rgba(255,255,255,0.06)),
+      rgba(255, 255, 255, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    box-shadow:
+      0 10px 24px rgba(15, 23, 42, 0.13),
+      inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    overflow: hidden;
+  }
+
+  .ubuzima-source-dock__glass-icon img {
+    width: 35px;
+    height: 35px;
+    display: block;
+    object-fit: contain;
+    opacity: 0.98;
+    pointer-events: none;
+  }
+
+  .ubuzima-source-dock__app.is-active::after,
+  .ubuzima-source-dock__task.is-active::after {
+    content: "";
+    position: absolute;
+    bottom: -7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #0f766e;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  }
+
+  .ubuzima-source-dock__close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 17px;
+    height: 17px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.72);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 900;
+    opacity: 0;
+    transform: translate(4px, -4px);
+    transition: opacity 120ms ease;
+  }
+
+  .ubuzima-source-dock__task:hover .ubuzima-source-dock__close,
+  .ubuzima-source-dock__task:focus-visible .ubuzima-source-dock__close {
+    opacity: 1;
+  }
+
+  .ubuzima-source-dock__tip {
+    position: fixed;
+    bottom: 96px;
+    left: 50%;
+    z-index: 9998;
+    max-width: 280px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.92);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 850;
+    transform: translateX(-50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .ubuzima-source-dock__tip.is-visible {
+    opacity: 1;
+  }
+
+  .ubuzima-source-update-recovery {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 10001;
+    width: min(360px, calc(100vw - 36px));
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 20px;
+    background: white;
+    color: #10211b;
+    box-shadow: 0 24px 72px rgba(15, 23, 42, 0.22);
+    font-family: system-ui;
+  }
+
+  .ubuzima-source-update-recovery strong {
+    font-size: 1.1rem;
+  }
+
+  .ubuzima-source-update-recovery span {
+    color: #64756d;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .ubuzima-source-update-recovery button {
+    min-height: 46px;
+    border: 0;
+    border-radius: 14px;
+    background: #0f766e;
+    color: white;
+    font-weight: 900;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .ubuzima-source-dock {
+    max-width: calc(100vw - 24px);
+    min-height: 68px;
+    bottom: 12px;
+    padding: 8px 10px;
+    border-radius: 22px;
+  }
+
+  .ubuzima-source-dock__tasks {
+    max-width: min(260px, 30vw);
+  }
+
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task {
+    width: 48px;
+    height: 48px;
+  }
+
+  .ubuzima-source-dock__glass-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+  }
+
+  .ubuzima-source-dock__glass-icon img {
+    width: 31px;
+    height: 31px;
+  }
+
+  html.ubuzima-device-tablet .dashboard-shell {
+    grid-template-columns: 92px minmax(0, 1fr) !important;
+  }
+
+  html.ubuzima-device-tablet .sidebar {
+    width: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
+    overflow-x: hidden !important;
+  }
+
+  html.ubuzima-device-tablet .sidebar .principal-menu-title,
+  html.ubuzima-device-tablet .sidebar .sidebar-brand div,
+  html.ubuzima-device-tablet .sidebar small,
+  html.ubuzima-device-tablet .sidebar p {
+    display: none !important;
+  }
+
+  html.ubuzima-device-tablet .dashboard-scroll-panel {
+    padding: 16px 16px 96px !important;
+  }
+
+  html.ubuzima-device-tablet button,
+  html.ubuzima-device-tablet input,
+  html.ubuzima-device-tablet select {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 767px) {
+  .ubuzima-source-dock,
+  .ubuzima-source-dock__tip {
+    display: none !important;
+  }
+}
+
+/* Hide module landing-page filter/customizer panels for staff users.
+   Admin and Owner keep them. */
+html.ubuzima-role-staff [data-ubuzima-staff-filter-hidden="true"],
+html.ubuzima-role-staff .home-control-panel,
+html.ubuzima-role-staff .dashboard-card-customizer {
+  display: none !important;
+}
+
+/* Bounded table auto-fit */
+html.ubuzima-device-desktop .table-wrapper,
+html.ubuzima-device-desktop .scrollable-table,
+html.ubuzima-device-desktop .responsive-table-scroll,
+html.ubuzima-device-desktop [class*="table-wrapper"],
+html.ubuzima-device-desktop [class*="table-scroll"],
+html.ubuzima-device-tablet .table-wrapper,
+html.ubuzima-device-tablet .scrollable-table,
+html.ubuzima-device-tablet .responsive-table-scroll,
+html.ubuzima-device-tablet [class*="table-wrapper"],
+html.ubuzima-device-tablet [class*="table-scroll"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  contain: inline-size;
+}
+
+html.ubuzima-device-desktop table,
+html.ubuzima-device-tablet table {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: auto !important;
+}
+
+html.ubuzima-device-desktop th,
+html.ubuzima-device-desktop td,
+html.ubuzima-device-tablet th,
+html.ubuzima-device-tablet td {
+  width: auto !important;
+  max-width: 34ch !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  vertical-align: top;
+}
+
+html.ubuzima-device-desktop th,
+html.ubuzima-device-tablet th {
+  white-space: nowrap !important;
+}
+
+html.ubuzima-device-desktop td:has(button),
+html.ubuzima-device-desktop td:has(a),
+html.ubuzima-device-tablet td:has(button),
+html.ubuzima-device-tablet td:has(a) {
+  width: 1% !important;
+  min-width: max-content !important;
+  white-space: nowrap !important;
+}
+
+
+/* UbuzimaPlus permanent web/tablet interface guard.
+   Mobile/PWA interface is for installed phone PWA only.
+   This does not force Product Inventory grids/cards or taskbar styling. */
+
+html.ubuzima-web-interface-restored .dashboard-shell--fresh-mobile-app,
+html.ubuzima-web-interface-restored .dashboard-shell--native-workflow-open,
+html.ubuzima-web-interface-restored .dashboard-shell--native-pos-products,
+html.ubuzima-web-interface-restored .auth-shell--mobile-app-ready,
+html.ubuzima-pos-web-restored .dashboard-shell--fresh-mobile-app,
+html.ubuzima-pos-web-restored .dashboard-shell--native-workflow-open,
+html.ubuzima-pos-web-restored .dashboard-shell--native-pos-products {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+html.ubuzima-web-interface-restored .mobile-native-flow,
+html.ubuzima-web-interface-restored .ubuzima-native-tabbar,
+html.ubuzima-web-interface-restored .pos-mobile-sequence-header,
+html.ubuzima-web-interface-restored .pos-mobile-step-actions,
+html.ubuzima-pos-web-restored .pos-mobile-sequence-header,
+html.ubuzima-pos-web-restored .pos-mobile-step-actions,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-mobile-neutralized="true"] {
+  display: none !important;
+}
+
+html.ubuzima-web-interface-restored .dashboard-main,
+html.ubuzima-pos-web-restored .dashboard-main {
+  padding-bottom: 104px !important;
+}
+
+html.ubuzima-pos-web-restored [role="dialog"]:has(input),
+html.ubuzima-pos-web-restored [role="alertdialog"]:has(input),
+html.ubuzima-pos-web-restored .modal:has(input),
+html.ubuzima-pos-web-restored [class*="modal"]:has(input),
+html.ubuzima-pos-web-restored [class*="dialog"]:has(input),
+html.ubuzima-pos-web-restored [class*="quantity"]:has(input),
+html.ubuzima-pos-web-restored [class*="price"]:has(input) {
+  max-width: min(460px, calc(100vw - 28px)) !important;
+  max-height: calc(100dvh - 124px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  overflow-y: auto !important;
+  margin-bottom: 92px !important;
+  font-size: 0.82rem !important;
+  line-height: 1.25 !important;
+}
+
+html.ubuzima-web-interface-restored .ubuzima-source-dock,
+html.ubuzima-pos-web-restored .ubuzima-source-dock {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 9995 !important;
+}
+
+
+/* UbuzimaPlus final taskbar fix persisted in source */
+@media (min-width: 768px) {
+  .ubuzima-source-dock {
+    left: 50% !important;
+    width: fit-content !important;
+    max-width: calc(100vw - 32px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .ubuzima-source-dock__main {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+  }
+
+  .ubuzima-source-dock__tasks {
+    flex: 1 1 auto !important;
+    max-width: min(420px, 34vw) !important;
+    overflow-x: auto !important;
+  }
+
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task,
+  .ubuzima-source-dock__app:hover,
+  .ubuzima-source-dock__app:focus-visible,
+  .ubuzima-source-dock__task:hover,
+  .ubuzima-source-dock__task:focus-visible {
+    transform: none !important;
+  }
+
+  .ubuzima-source-dock__update {
+    display: none !important;
+  }
+}
+
+
+
+/* UbuzimaPlus final POS confirmation popup and permanent taskbar polish */
+
+/* Professional POS quantity/price confirmation dialog */
+.ubuzima-pos-confirmation-dialog {
+  width: min(520px, calc(100vw - 28px)) !important;
+  max-width: min(520px, calc(100vw - 28px)) !important;
+  min-width: 0 !important;
+  max-height: calc(100dvh - 126px) !important;
+  margin-bottom: 92px !important;
+  padding: 16px !important;
+  border-radius: 18px !important;
+  overflow: visible !important;
+  color: #10211b !important;
+  background: #ffffff !important;
+  box-shadow: 0 26px 76px rgba(15, 23, 42, 0.24) !important;
+}
+
+.ubuzima-pos-confirmation-dialog *,
+.ubuzima-pos-confirmation-dialog label,
+.ubuzima-pos-confirmation-dialog span,
+.ubuzima-pos-confirmation-dialog p,
+.ubuzima-pos-confirmation-dialog small {
+  font-size: 0.78rem !important;
+  line-height: 1.24 !important;
+}
+
+.ubuzima-pos-confirmation-dialog h1,
+.ubuzima-pos-confirmation-dialog h2,
+.ubuzima-pos-confirmation-dialog h3,
+.ubuzima-pos-confirmation-dialog h4,
+.ubuzima-pos-confirmation-dialog strong {
+  font-size: 0.94rem !important;
+  line-height: 1.18 !important;
+  font-weight: 950 !important;
+  color: #10211b !important;
+}
+
+.ubuzima-pos-confirmation-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) !important;
+  gap: 10px !important;
+  align-items: end !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.ubuzima-pos-confirmation-grid > .ubuzima-pos-confirmation-grid-item--full {
+  grid-column: 1 / -1 !important;
+}
+
+.ubuzima-pos-confirmation-grid-item--quantity {
+  grid-column: 1 !important;
+}
+
+.ubuzima-pos-confirmation-grid-item--price {
+  grid-column: 2 !important;
+}
+
+.ubuzima-pos-confirmation-field {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 5px !important;
+  margin: 0 !important;
+}
+
+.ubuzima-pos-confirmation-field label,
+.ubuzima-pos-confirmation-field span,
+.ubuzima-pos-confirmation-field small {
+  color: #5f7169 !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.02em !important;
+}
+
+.ubuzima-pos-confirmation-input,
+.ubuzima-pos-confirmation-dialog input,
+.ubuzima-pos-confirmation-dialog select {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 7px 10px !important;
+  border: 1px solid rgba(15, 118, 110, 0.18) !important;
+  border-radius: 10px !important;
+  background: #f8fbfa !important;
+  color: #10211b !important;
+  font-size: 0.88rem !important;
+  font-weight: 850 !important;
+  line-height: 1.1 !important;
+}
+
+.ubuzima-pos-confirmation-input:focus,
+.ubuzima-pos-confirmation-dialog input:focus,
+.ubuzima-pos-confirmation-dialog select:focus {
+  outline: 3px solid rgba(15, 118, 110, 0.14) !important;
+  border-color: #0f766e !important;
+  background: #ffffff !important;
+}
+
+.ubuzima-pos-confirmation-dialog textarea {
+  min-height: 54px !important;
+  max-height: 70px !important;
+  padding: 8px 10px !important;
+  border-radius: 10px !important;
+  font-size: 0.78rem !important;
+}
+
+.ubuzima-pos-confirmation-dialog button {
+  min-height: 38px !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
+  font-size: 0.76rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+.ubuzima-pos-confirmation-dialog [class*="actions"],
+.ubuzima-pos-confirmation-dialog footer,
+.ubuzima-pos-confirmation-dialog .modal-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin-top: 10px !important;
+}
+
+/* Taskbar permanence and MacBook-style stability */
+.ubuzima-source-dock {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 14px !important;
+  z-index: 9995 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: translateX(-50%) !important;
+  transition: none !important;
+}
+
+.ubuzima-source-dock__app,
+.ubuzima-source-dock__task,
+.ubuzima-source-dock__app:hover,
+.ubuzima-source-dock__app:focus-visible,
+.ubuzima-source-dock__task:hover,
+.ubuzima-source-dock__task:focus-visible {
+  transform: none !important;
+  transition: filter 120ms ease, opacity 120ms ease !important;
+}
+
+.ubuzima-source-dock__glass-icon {
+  font-size: 0 !important;
+  text-indent: 0 !important;
+}
+
+.ubuzima-source-dock__glass-icon img {
+  display: block !important;
+  width: 35px !important;
+  height: 35px !important;
+  object-fit: contain !important;
+  pointer-events: none !important;
+}
+
+.ubuzima-source-dock__app,
+.ubuzima-source-dock__task {
+  font-size: 0 !important;
+}
+
+.ubuzima-source-dock__tip {
+  font-size: 0.78rem !important;
+  font-weight: 850 !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 767px) {
+  .ubuzima-pos-confirmation-dialog {
+    width: min(440px, calc(100vw - 22px)) !important;
+    max-width: min(440px, calc(100vw - 22px)) !important;
+    padding: 13px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .ubuzima-pos-confirmation-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .ubuzima-pos-confirmation-input,
+  .ubuzima-pos-confirmation-dialog input,
+  .ubuzima-pos-confirmation-dialog select {
+    min-height: 36px !important;
+    height: 36px !important;
+    font-size: 0.84rem !important;
+  }
+}
+
+
+
+/* Base POS card color states by expiry. */
+[data-ubuzima-pos-device-card="true"] {
+  position: relative !important;
+  overflow: hidden !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+[data-ubuzima-pos-device-card="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  border-radius: inherit 0 0 inherit;
+  pointer-events: none;
+}
+
+.ubuzima-pos-expiry-expired {
+  border-color: rgba(185, 28, 28, 0.34) !important;
+  background: linear-gradient(180deg, #fff7f7, #ffffff 48%, #fef2f2) !important;
+}
+
+.ubuzima-pos-expiry-expired::before {
+  background: #b91c1c;
+}
+
+.ubuzima-pos-expiry-critical {
+  border-color: rgba(217, 119, 6, 0.36) !important;
+  background: linear-gradient(180deg, #fff8ed, #ffffff 48%, #fffbeb) !important;
+}
+
+.ubuzima-pos-expiry-critical::before {
+  background: #d97706;
+}
+
+.ubuzima-pos-expiry-warning {
+  border-color: rgba(202, 138, 4, 0.28) !important;
+  background: linear-gradient(180deg, #fffdf2, #ffffff 48%, #fefce8) !important;
+}
+
+.ubuzima-pos-expiry-warning::before {
+  background: #ca8a04;
+}
+
+.ubuzima-pos-expiry-safe {
+  border-color: rgba(15, 118, 110, 0.22) !important;
+  background: linear-gradient(180deg, #f7fffd, #ffffff 48%, #f0fdfa) !important;
+}
+
+.ubuzima-pos-expiry-safe::before {
+  background: #0f766e;
+}
+
+.ubuzima-pos-expiry-unknown {
+  border-color: rgba(100, 116, 139, 0.22) !important;
+  background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+}
+
+.ubuzima-pos-expiry-unknown::before {
+  background: #94a3b8;
+}
+
+/* Web/tablet POS product cards: 1 column, 5 information rows. */
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"],
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"],
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] {
+  min-height: 176px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto auto auto !important;
+  gap: 7px !important;
+  align-content: start !important;
+  padding: 14px 14px 14px 18px !important;
+  border-radius: 16px !important;
+  text-align: left !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .pos-product-card-info,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 6px !important;
+  width: 100% !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  line-height: 1.18 !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--name,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--name,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--name,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] h3,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] h3,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] h3 {
+  order: 1 !important;
+  display: block !important;
+  color: #10211b !important;
+  font-size: 0.92rem !important;
+  font-weight: 950 !important;
+  line-height: 1.18 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--price,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--price,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--price {
+  order: 2 !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--stock,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--available,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--stock,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--available,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--stock,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--available {
+  order: 3 !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--expiry,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row--expiry,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--expiry,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row--expiry,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--expiry,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row--expiry {
+  order: 4 !important;
+  display: flex !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--days,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row--days,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--days,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row--days,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--days,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row--days {
+  order: 5 !important;
+  display: flex !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] .pos-product-card-info-label,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info-label,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] .pos-product-card-info-label {
+  color: #64748b !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] strong,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-device-card="true"] em,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] strong,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-device-card="true"] em,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] strong,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-device-card="true"] em {
+  color: #0f172a !important;
+  font-size: 0.82rem !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+  text-align: right !important;
+}
+
+/* Installed mobile PWA POS product cards: 3 rows only. */
+html.ubuzima-mobile-pwa-active .pos-product-grid,
+html.ubuzima-mobile-pwa-active .pos-drug-list,
+html.ubuzima-mobile-pwa-active .pos-drug-list--ten,
+html.ubuzima-mobile-pwa-active .pos-builder-product-panel > .pos-drug-list--ten {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  align-items: start !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid--list {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 8px !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] {
+  min-height: 118px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto !important;
+  gap: 7px !important;
+  align-content: start !important;
+  padding: 11px 11px 11px 15px !important;
+  border-radius: 14px !important;
+  text-align: left !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .pos-product-card-info {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 5px !important;
+  width: 100% !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--name,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] h3,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] strong:first-child {
+  order: 1 !important;
+  display: block !important;
+  color: #10211b !important;
+  font-size: 0.8rem !important;
+  font-weight: 950 !important;
+  line-height: 1.14 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--price {
+  order: 2 !important;
+  display: flex !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--stock,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--available {
+  order: 3 !important;
+  display: flex !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--expiry,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .ubuzima-pos-card-row--days,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row--expiry,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .pos-product-card-info-row--days,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .pos-product-card-info-label--desktop {
+  display: none !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .pos-product-card-info-label--mobile {
+  display: inline !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] .pos-product-card-info-label {
+  color: #64748b !important;
+  font-size: 0.58rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] strong,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-device-card="true"] em {
+  color: #0f172a !important;
+  font-size: 0.72rem !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+  text-align: right !important;
+}
+
+/* Mobile list view: keep 3 rows and add + control on the right. */
+html.ubuzima-mobile-pwa-active .pos-product-grid--list [data-ubuzima-pos-device-card="true"] {
+  min-height: 94px !important;
+  grid-template-columns: minmax(0, 1fr) 42px !important;
+  grid-template-rows: auto auto auto !important;
+  align-items: center !important;
+  gap: 6px 10px !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid--list [data-ubuzima-pos-device-card="true"] > *:not(.pos-product-mobile-add-indicator) {
+  grid-column: 1 !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid--list .pos-product-mobile-add-indicator {
+  grid-column: 2 !important;
+  grid-row: 1 / span 3 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-self: end !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 999px !important;
+  background: #0f766e !important;
+  color: #ffffff !important;
+  font-size: 1.35rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.28) !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid:not(.pos-product-grid--list) .pos-product-mobile-add-indicator,
+html:not(.ubuzima-mobile-pwa-active) .pos-product-mobile-add-indicator {
+  display: none !important;
+}
+
+@media (max-width: 370px) {
+  html.ubuzima-mobile-pwa-active .pos-product-grid,
+  html.ubuzima-mobile-pwa-active .pos-drug-list,
+  html.ubuzima-mobile-pwa-active .pos-drug-list--ten {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+
+/* UbuzimaPlus final centered POS quantity price confirmation */
+
+/* True centered overlay/backdrop */
+.ubuzima-pos-confirmation-backdrop,
+.pos-quantity-dialog-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10030 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    18px
+    calc(104px + env(safe-area-inset-bottom))
+    18px !important;
+  background: rgba(15, 23, 42, 0.32) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* The actual POS quantity/price card */
+.ubuzima-pos-confirmation-dialog,
+.pos-quantity-dialog {
+  position: fixed !important;
+  left: 50% !important;
+  top: calc(50% - 42px) !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 10031 !important;
+  width: min(500px, calc(100vw - 34px)) !important;
+  max-width: min(500px, calc(100vw - 34px)) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(430px, calc(100dvh - 142px)) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-auto-rows: auto !important;
+  gap: 10px !important;
+  align-content: start !important;
+  margin: 0 !important;
+  padding: 16px !important;
+  border: 1px solid rgba(15, 118, 110, 0.16) !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  color: #10211b !important;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.34) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Make existing POS quantity dialog sections compact and placed professionally */
+.pos-quantity-dialog__header,
+.ubuzima-pos-confirmation-dialog > header,
+.ubuzima-pos-confirmation-dialog > h1,
+.ubuzima-pos-confirmation-dialog > h2,
+.ubuzima-pos-confirmation-dialog > h3,
+.ubuzima-pos-confirmation-dialog > p,
+.ubuzima-pos-confirmation-grid-item--full,
+.pos-quantity-readonly-grid,
+.pos-quantity-total-strip,
+.pos-quantity-dialog footer,
+.ubuzima-pos-confirmation-dialog footer,
+.ubuzima-pos-confirmation-dialog [class*="actions"],
+.ubuzima-pos-confirmation-dialog .modal-footer {
+  grid-column: 1 / -1 !important;
+}
+
+.pos-quantity-dialog__header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  align-items: start !important;
+  padding: 0 0 4px !important;
+}
+
+.pos-quantity-dialog__header h3,
+.ubuzima-pos-confirmation-dialog h1,
+.ubuzima-pos-confirmation-dialog h2,
+.ubuzima-pos-confirmation-dialog h3,
+.ubuzima-pos-confirmation-dialog h4 {
+  margin: 0 !important;
+  color: #10211b !important;
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.pos-quantity-dialog__header span,
+.pos-quantity-dialog__header small,
+.ubuzima-pos-confirmation-dialog p,
+.ubuzima-pos-confirmation-dialog small,
+.ubuzima-pos-confirmation-dialog span {
+  color: #64756d !important;
+  font-size: 0.74rem !important;
+  line-height: 1.25 !important;
+}
+
+.pos-quantity-dialog__header > button {
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  font-size: 1rem !important;
+}
+
+/* Quantity and Price on the same row */
+.pos-quantity-selling-unit-hero,
+.ubuzima-pos-confirmation-grid-item--quantity {
+  grid-column: 1 !important;
+  grid-row: auto !important;
+}
+
+.pos-quantity-price-override-card,
+.ubuzima-pos-confirmation-grid-item--price {
+  grid-column: 2 !important;
+  grid-row: auto !important;
+}
+
+.pos-quantity-selling-unit-hero,
+.pos-quantity-price-override-card,
+.ubuzima-pos-confirmation-field {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 6px !important;
+  align-content: start !important;
+  margin: 0 !important;
+  padding: 10px !important;
+  border: 1px solid rgba(15, 118, 110, 0.12) !important;
+  border-radius: 14px !important;
+  background: #f8fbfa !important;
+  box-shadow: none !important;
+}
+
+.ubuzima-pos-confirmation-grid {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.pos-quantity-selling-unit-hero label,
+.pos-quantity-price-override-card label,
+.ubuzima-pos-confirmation-field label,
+.ubuzima-pos-confirmation-field span,
+.ubuzima-pos-confirmation-field small {
+  color: #5f7169 !important;
+  font-size: 0.7rem !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Reasonable input font/height */
+.pos-quantity-selling-unit-hero input,
+.pos-quantity-price-override-card input,
+.ubuzima-pos-confirmation-input,
+.ubuzima-pos-confirmation-dialog input,
+.ubuzima-pos-confirmation-dialog select {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  padding: 8px 10px !important;
+  border: 1px solid rgba(15, 118, 110, 0.18) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: #10211b !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  box-sizing: border-box !important;
+}
+
+.pos-quantity-selling-unit-hero input:focus,
+.pos-quantity-price-override-card input:focus,
+.ubuzima-pos-confirmation-input:focus,
+.ubuzima-pos-confirmation-dialog input:focus,
+.ubuzima-pos-confirmation-dialog select:focus {
+  outline: 3px solid rgba(15, 118, 110, 0.14) !important;
+  border-color: #0f766e !important;
+}
+
+/* Compact support sections */
+.pos-quantity-readonly-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  padding: 0 !important;
+}
+
+.pos-quantity-readonly-grid article {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 2px !important;
+  padding: 8px !important;
+  border-radius: 12px !important;
+  background: #f7faf9 !important;
+  border: 1px solid rgba(15, 118, 110, 0.08) !important;
+}
+
+.pos-quantity-readonly-grid span,
+.pos-quantity-total-strip span {
+  color: #64756d !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+  line-height: 1.12 !important;
+}
+
+.pos-quantity-readonly-grid strong,
+.pos-quantity-total-strip strong {
+  color: #10211b !important;
+  font-size: 0.82rem !important;
+  font-weight: 950 !important;
+  line-height: 1.12 !important;
+}
+
+.pos-quantity-total-strip {
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 9px 10px !important;
+  border-radius: 14px !important;
+  background: #0f766e !important;
+  color: #ffffff !important;
+}
+
+.pos-quantity-total-strip span,
+.pos-quantity-total-strip strong {
+  color: #ffffff !important;
+}
+
+/* Buttons */
+.pos-quantity-dialog footer,
+.ubuzima-pos-confirmation-dialog footer,
+.ubuzima-pos-confirmation-dialog [class*="actions"],
+.ubuzima-pos-confirmation-dialog .modal-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.pos-quantity-dialog button,
+.ubuzima-pos-confirmation-dialog button {
+  min-height: 38px !important;
+  height: 38px !important;
+  border-radius: 11px !important;
+  padding: 0 13px !important;
+  font-size: 0.78rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+/* No internal scroll for this commercial confirmation card */
+.ubuzima-pos-confirmation-dialog,
+.ubuzima-pos-confirmation-dialog *,
+.pos-quantity-dialog,
+.pos-quantity-dialog * {
+  scrollbar-width: none !important;
+}
+
+.ubuzima-pos-confirmation-dialog::-webkit-scrollbar,
+.pos-quantity-dialog::-webkit-scrollbar {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  .ubuzima-pos-confirmation-backdrop,
+  .pos-quantity-dialog-backdrop {
+    padding:
+      max(12px, env(safe-area-inset-top))
+      12px
+      max(12px, env(safe-area-inset-bottom))
+      12px !important;
+  }
+
+  .ubuzima-pos-confirmation-dialog,
+  .pos-quantity-dialog {
+    top: 50% !important;
+    width: min(420px, calc(100vw - 22px)) !important;
+    max-width: min(420px, calc(100vw - 22px)) !important;
+    max-height: min(410px, calc(100dvh - 28px)) !important;
+    gap: 8px !important;
+    padding: 13px !important;
+    border-radius: 18px !important;
+  }
+
+  .pos-quantity-selling-unit-hero,
+  .pos-quantity-price-override-card,
+  .ubuzima-pos-confirmation-field {
+    padding: 8px !important;
+  }
+
+  .pos-quantity-selling-unit-hero input,
+  .pos-quantity-price-override-card input,
+  .ubuzima-pos-confirmation-input,
+  .ubuzima-pos-confirmation-dialog input,
+  .ubuzima-pos-confirmation-dialog select {
+    min-height: 38px !important;
+    height: 38px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .pos-quantity-readonly-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .pos-quantity-readonly-grid article {
+    padding: 6px !important;
+  }
+
+  .pos-quantity-dialog button,
+  .ubuzima-pos-confirmation-dialog button {
+    min-height: 36px !important;
+    height: 36px !important;
+  }
+}
+
+
+/* UbuzimaPlus final ordered-left POS product cards */
+
+/* Maintain professional separation between product cards */
+.pos-product-grid,
+.pos-drug-list,
+.pos-drug-list--ten,
+.pos-builder-product-panel > .pos-drug-list--ten {
+  gap: 14px !important;
+  row-gap: 14px !important;
+  column-gap: 14px !important;
+}
+
+.pos-product-grid--list {
+  gap: 12px !important;
+  row-gap: 12px !important;
+}
+
+/* Every POS card must flow from top to bottom and left-align all information */
+[data-ubuzima-pos-card-flow="ordered-left"],
+[data-ubuzima-pos-card-flow="ordered-left"] *,
+[data-ubuzima-pos-device-card="true"],
+[data-ubuzima-pos-device-card="true"] * {
+  text-align: left !important;
+}
+
+[data-ubuzima-pos-card-flow="ordered-left"] {
+  justify-items: stretch !important;
+  align-items: stretch !important;
+}
+
+/* Web/tablet: exactly one column, five ordered rows */
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"],
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"],
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] {
+  min-height: 190px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto auto auto !important;
+  gap: 8px !important;
+  align-content: start !important;
+  padding: 15px 15px 15px 20px !important;
+  border-radius: 16px !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info {
+  display: contents !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-items: start !important;
+  align-items: start !important;
+  justify-content: start !important;
+  gap: 2px !important;
+  line-height: 1.18 !important;
+  white-space: normal !important;
+}
+
+/* Web/tablet row order */
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--name,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--name,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--name {
+  order: 1 !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--price,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--price,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--price {
+  order: 2 !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--stock,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--available,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--stock,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--available,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--stock,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--available {
+  order: 3 !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--expiry,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row--expiry,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--expiry,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row--expiry,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--expiry,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row--expiry {
+  order: 4 !important;
+  display: grid !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--days,
+html:not(.ubuzima-mobile-pwa-active) [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row--days,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--days,
+html.ubuzima-web-interface-restored [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row--days,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--days,
+html.ubuzima-pos-web-restored [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row--days {
+  order: 5 !important;
+  display: grid !important;
+}
+
+/* Typography: every row starts left and uses a readable hierarchy */
+[data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--name,
+[data-ubuzima-pos-card-flow="ordered-left"] h3,
+[data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-name {
+  color: #10211b !important;
+  font-size: 0.92rem !important;
+  font-weight: 950 !important;
+  line-height: 1.18 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+[data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-label,
+[data-ubuzima-pos-card-flow="ordered-left"] span {
+  color: #64748b !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  line-height: 1.12 !important;
+  justify-self: start !important;
+}
+
+[data-ubuzima-pos-card-flow="ordered-left"] strong,
+[data-ubuzima-pos-card-flow="ordered-left"] em {
+  color: #0f172a !important;
+  font-size: 0.82rem !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+  line-height: 1.16 !important;
+  text-align: left !important;
+  justify-self: start !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Mobile installed PWA: 2-column grid, card still top-to-bottom and left-aligned */
+html.ubuzima-mobile-pwa-active .pos-product-grid,
+html.ubuzima-mobile-pwa-active .pos-drug-list,
+html.ubuzima-mobile-pwa-active .pos-drug-list--ten,
+html.ubuzima-mobile-pwa-active .pos-builder-product-panel > .pos-drug-list--ten {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  row-gap: 12px !important;
+  column-gap: 12px !important;
+  align-items: start !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid--list {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] {
+  min-height: 124px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto !important;
+  gap: 7px !important;
+  align-content: start !important;
+  justify-items: start !important;
+  padding: 12px 12px 12px 16px !important;
+  border-radius: 14px !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info {
+  display: contents !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-items: start !important;
+  gap: 2px !important;
+}
+
+/* Mobile row order: Product, Price, Available Quantity */
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--name {
+  order: 1 !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--price {
+  order: 2 !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--stock,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--available {
+  order: 3 !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--expiry,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .ubuzima-pos-card-row--days,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row--expiry,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-row--days,
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-flow="ordered-left"] .pos-product-card-info-label--desktop {
+  display: none !important;
+}
+
+/* Mobile list view keeps + button, but card information remains left ordered */
+html.ubuzima-mobile-pwa-active .pos-product-grid--list [data-ubuzima-pos-card-flow="ordered-left"] {
+  grid-template-columns: minmax(0, 1fr) 42px !important;
+  grid-template-rows: auto auto auto !important;
+  align-items: center !important;
+  gap: 6px 12px !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid--list [data-ubuzima-pos-card-flow="ordered-left"] > *:not(.pos-product-mobile-add-indicator) {
+  grid-column: 1 !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid--list .pos-product-mobile-add-indicator {
+  grid-column: 2 !important;
+  grid-row: 1 / span 3 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-self: end !important;
+  align-self: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 999px !important;
+  background: #0f766e !important;
+  color: #ffffff !important;
+  font-size: 1.35rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.28) !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid:not(.pos-product-grid--list) .pos-product-mobile-add-indicator,
+html:not(.ubuzima-mobile-pwa-active) .pos-product-mobile-add-indicator {
+  display: none !important;
+}
+
+@media (max-width: 370px) {
+  html.ubuzima-mobile-pwa-active .pos-product-grid,
+  html.ubuzima-mobile-pwa-active .pos-drug-list,
+  html.ubuzima-mobile-pwa-active .pos-drug-list--ten {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+
+/* UbuzimaPlus stable MacBook-style taskbar with real icons */
+
+.ubuzima-source-dock,
+#ubuzimaSourceDock,
+.ubuzima-source-dock--stable-real-icons {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  top: auto !important;
+  z-index: 9995 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: max-content !important;
+  max-width: calc(100vw - 28px) !important;
+  min-width: 0 !important;
+  min-height: 62px !important;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.48) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  box-shadow:
+    0 18px 54px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(22px) saturate(1.35) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.35) !important;
+  transform: translateX(-50%) !important;
+  translate: none !important;
+  scale: 1 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-width: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+
+.ubuzima-source-dock::-webkit-scrollbar,
+#ubuzimaSourceDock::-webkit-scrollbar {
+  display: none !important;
+}
+
+.ubuzima-source-dock__main,
+.ubuzima-source-dock__tasks {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  min-width: 0 !important;
+}
+
+.ubuzima-source-dock__divider {
+  width: 1px !important;
+  height: 38px !important;
+  flex: 0 0 1px !important;
+  background: rgba(15, 118, 110, 0.18) !important;
+  border-radius: 99px !important;
+}
+
+/* No bouncing, no jumping, no magnification movement */
+.ubuzima-source-dock__app,
+.ubuzima-source-dock__task,
+.ubuzima-source-dock button,
+.ubuzima-source-dock a[role="button"] {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  max-width: 48px !important;
+  max-height: 48px !important;
+  flex: 0 0 48px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.56) !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-indent: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    filter 120ms ease,
+    opacity 120ms ease !important;
+  will-change: auto !important;
+}
+
+.ubuzima-source-dock__app:hover,
+.ubuzima-source-dock__app:focus-visible,
+.ubuzima-source-dock__task:hover,
+.ubuzima-source-dock__task:focus-visible,
+.ubuzima-source-dock button:hover,
+.ubuzima-source-dock button:focus-visible {
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.16) !important;
+  outline: none !important;
+}
+
+.ubuzima-source-dock__glass-icon {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-indent: 0 !important;
+  overflow: hidden !important;
+}
+
+.ubuzima-source-dock__glass-icon img,
+.ubuzima-source-dock img[data-ubuzima-real-icon="true"] {
+  display: block !important;
+  width: 34px !important;
+  height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  border: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide initials/text inside icons while keeping tooltip and aria-label */
+.ubuzima-source-dock__label,
+.ubuzima-source-dock__app > span:not(.ubuzima-source-dock__glass-icon),
+.ubuzima-source-dock__task > span:not(.ubuzima-source-dock__glass-icon):not(.ubuzima-source-dock__task-close),
+.ubuzima-source-dock [data-initials],
+.ubuzima-source-dock [class*="initial"] {
+  display: none !important;
+}
+
+.ubuzima-source-dock__task-close,
+.ubuzima-source-dock [aria-label*="close" i],
+.ubuzima-source-dock [class*="close"] {
+  font-size: 0.72rem !important;
+  line-height: 1 !important;
+  color: #475569 !important;
+  text-indent: 0 !important;
+}
+
+/* MacBook-like label on hover; labels are not displayed inside icons */
+.ubuzima-source-dock__tip,
+#ubuzimaSourceDockTip {
+  position: fixed !important;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 70px) !important;
+  left: 50% !important;
+  z-index: 10020 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  max-width: min(280px, calc(100vw - 32px)) !important;
+  min-height: 30px !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  background: rgba(15, 23, 42, 0.88) !important;
+  color: #ffffff !important;
+  font-size: 0.76rem !important;
+  font-weight: 850 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.24) !important;
+  transform: translateX(-50%) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 100ms ease, visibility 100ms ease !important;
+}
+
+.ubuzima-source-dock__tip.is-visible,
+#ubuzimaSourceDockTip.is-visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Preserve space so the permanent taskbar does not cover content */
+.dashboard-main,
+.dashboard-scroll-panel,
+.section-page,
+main {
+  scroll-padding-bottom: 96px !important;
+}
+
+@media (max-width: 767px) {
+  .ubuzima-source-dock,
+  #ubuzimaSourceDock,
+  .ubuzima-source-dock--stable-real-icons {
+    min-height: 56px !important;
+    padding: 7px 10px !important;
+    border-radius: 22px !important;
+  }
+
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task,
+  .ubuzima-source-dock button,
+  .ubuzima-source-dock a[role="button"] {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
+    flex-basis: 44px !important;
+    border-radius: 15px !important;
+  }
+
+  .ubuzima-source-dock__glass-icon {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+
+  .ubuzima-source-dock__glass-icon img,
+  .ubuzima-source-dock img[data-ubuzima-real-icon="true"] {
+    width: 31px !important;
+    height: 31px !important;
+    max-width: 31px !important;
+    max-height: 31px !important;
+  }
+}
+
+
+/* UbuzimaPlus QA blocker fix: scroll, POS cards, popup, taskbar */
+
+/* 1. Home page and authenticated pages must scroll */
+html.ubuzima-home-scroll-unlocked,
+html.ubuzima-home-scroll-unlocked body {
+  height: auto !important;
+  min-height: 100dvh !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+html.ubuzima-home-scroll-unlocked #root,
+html.ubuzima-home-scroll-unlocked .dashboard-shell,
+html.ubuzima-home-scroll-unlocked .dashboard-main,
+html.ubuzima-home-scroll-unlocked .dashboard-scroll-panel,
+html.ubuzima-home-scroll-unlocked .section-page,
+html.ubuzima-home-scroll-unlocked .dashboard-content,
+html.ubuzima-home-scroll-unlocked main {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+}
+
+/* 2. POS product cards: canonical, ordered, left-aligned, separated */
+.pos-product-grid,
+.pos-drug-list,
+.pos-drug-list--ten,
+.pos-builder-product-panel > .pos-drug-list--ten {
+  gap: 16px !important;
+  row-gap: 16px !important;
+  column-gap: 16px !important;
+  align-items: stretch !important;
+}
+
+.pos-product-grid--list {
+  gap: 12px !important;
+}
+
+[data-ubuzima-pos-card-canonical="true"] {
+  position: relative !important;
+  min-height: 196px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-content: start !important;
+  justify-items: stretch !important;
+  padding: 15px 15px 15px 22px !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  text-align: left !important;
+}
+
+[data-ubuzima-pos-card-canonical="true"]::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  width: 6px !important;
+  border-radius: 16px 0 0 16px !important;
+  background: #94a3b8 !important;
+}
+
+[data-ubuzima-expiry-state="expired"]::before { background: #b91c1c !important; }
+[data-ubuzima-expiry-state="critical"]::before { background: #d97706 !important; }
+[data-ubuzima-expiry-state="warning"]::before { background: #ca8a04 !important; }
+[data-ubuzima-expiry-state="safe"]::before { background: #0f766e !important; }
+[data-ubuzima-expiry-state="unknown"]::before { background: #94a3b8 !important; }
+
+[data-ubuzima-pos-card-source="hidden"] {
+  display: none !important;
+}
+
+.ubuzima-pos-card-canonical {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto auto auto !important;
+  gap: 8px !important;
+  align-content: start !important;
+  justify-items: start !important;
+  text-align: left !important;
+  pointer-events: none !important;
+}
+
+.ubuzima-pos-card-canonical-row {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 2px !important;
+  justify-items: start !important;
+  align-items: start !important;
+  text-align: left !important;
+  line-height: 1.16 !important;
+}
+
+.ubuzima-pos-card-canonical-row--name { order: 1 !important; }
+.ubuzima-pos-card-canonical-row--price { order: 2 !important; }
+.ubuzima-pos-card-canonical-row--stock { order: 3 !important; }
+.ubuzima-pos-card-canonical-row--expiry { order: 4 !important; }
+.ubuzima-pos-card-canonical-row--days { order: 5 !important; }
+
+.ubuzima-pos-card-canonical-row span {
+  color: #64748b !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+}
+
+.ubuzima-pos-card-canonical-row strong {
+  color: #0f172a !important;
+  font-size: 0.84rem !important;
+  font-weight: 950 !important;
+  font-style: normal !important;
+  line-height: 1.16 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ubuzima-pos-card-canonical-row--name strong {
+  color: #10211b !important;
+  font-size: 0.94rem !important;
+  line-height: 1.18 !important;
+}
+
+/* Installed mobile app: only Product, Price, Available Quantity */
+html.ubuzima-mobile-pwa-active .pos-product-grid,
+html.ubuzima-mobile-pwa-active .pos-drug-list,
+html.ubuzima-mobile-pwa-active .pos-drug-list--ten {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-canonical="true"] {
+  min-height: 126px !important;
+  padding: 12px 12px 12px 18px !important;
+  border-radius: 14px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-canonical {
+  grid-template-rows: auto auto auto !important;
+  gap: 7px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-canonical-row--expiry,
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-canonical-row--days {
+  display: none !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid--list [data-ubuzima-pos-card-canonical="true"] {
+  grid-template-columns: minmax(0, 1fr) 42px !important;
+  gap: 6px 12px !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid--list .pos-product-mobile-add-indicator {
+  grid-column: 2 !important;
+  grid-row: 1 / span 3 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-self: end !important;
+  align-self: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 999px !important;
+  background: #0f766e !important;
+  color: #ffffff !important;
+  font-size: 1.35rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+
+html:not(.ubuzima-mobile-pwa-active) .pos-product-mobile-add-indicator,
+html.ubuzima-mobile-pwa-active .pos-product-grid:not(.pos-product-grid--list) .pos-product-mobile-add-indicator {
+  display: none !important;
+}
+
+/* 3. Quantity/price popup: centered, compact, no awkward scroll */
+.pos-quantity-dialog-backdrop,
+.ubuzima-pos-confirmation-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10030 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 18px 18px calc(108px + env(safe-area-inset-bottom)) !important;
+  background: rgba(15, 23, 42, 0.32) !important;
+  overflow: hidden !important;
+}
+
+.pos-quantity-dialog,
+.ubuzima-pos-confirmation-dialog {
+  position: fixed !important;
+  left: 50% !important;
+  top: calc(50% - 42px) !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 10031 !important;
+  width: min(500px, calc(100vw - 34px)) !important;
+  max-height: min(430px, calc(100dvh - 146px)) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 10px !important;
+  padding: 16px !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.34) !important;
+  overflow: hidden !important;
+}
+
+.pos-quantity-dialog__header,
+.pos-quantity-readonly-grid,
+.pos-quantity-total-strip,
+.pos-quantity-dialog footer,
+.ubuzima-pos-confirmation-grid,
+.ubuzima-pos-confirmation-dialog footer,
+.ubuzima-pos-confirmation-dialog [class*="actions"] {
+  grid-column: 1 / -1 !important;
+}
+
+.pos-quantity-selling-unit-hero,
+.ubuzima-pos-confirmation-grid-item--quantity {
+  grid-column: 1 !important;
+}
+
+.pos-quantity-price-override-card,
+.ubuzima-pos-confirmation-grid-item--price {
+  grid-column: 2 !important;
+}
+
+.pos-quantity-selling-unit-hero,
+.pos-quantity-price-override-card,
+.ubuzima-pos-confirmation-field {
+  display: grid !important;
+  gap: 6px !important;
+  padding: 10px !important;
+  border-radius: 14px !important;
+  background: #f8fbfa !important;
+  border: 1px solid rgba(15, 118, 110, 0.12) !important;
+}
+
+.pos-quantity-dialog input,
+.ubuzima-pos-confirmation-dialog input {
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 8px 10px !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  border-radius: 12px !important;
+}
+
+.pos-quantity-dialog label,
+.ubuzima-pos-confirmation-dialog label,
+.ubuzima-pos-confirmation-dialog span,
+.ubuzima-pos-confirmation-dialog small {
+  font-size: 0.72rem !important;
+  line-height: 1.15 !important;
+}
+
+/* 4. Taskbar hard-lock */
+.ubuzima-source-dock,
+#ubuzimaSourceDock,
+.ubuzima-source-dock--hard-locked {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  z-index: 9995 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: max-content !important;
+  max-width: calc(100vw - 28px) !important;
+  min-height: 62px !important;
+  padding: 8px 12px !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.74) !important;
+  box-shadow: 0 18px 54px rgba(15, 23, 42, 0.18) !important;
+  backdrop-filter: blur(22px) saturate(1.35) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.35) !important;
+  transform: translateX(-50%) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: none !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-width: none !important;
+}
+
+.ubuzima-source-dock::-webkit-scrollbar,
+#ubuzimaSourceDock::-webkit-scrollbar {
+  display: none !important;
+}
+
+.ubuzima-source-dock__app,
+.ubuzima-source-dock__task,
+.ubuzima-source-dock button,
+.ubuzima-source-dock a[role="button"] {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  max-width: 48px !important;
+  max-height: 48px !important;
+  flex: 0 0 48px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 16px !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  color: transparent !important;
+  transform: none !important;
+  scale: 1 !important;
+  transition: background-color 120ms ease, box-shadow 120ms ease !important;
+}
+
+.ubuzima-source-dock__app:hover,
+.ubuzima-source-dock__task:hover,
+.ubuzima-source-dock button:hover {
+  transform: none !important;
+  scale: 1 !important;
+}
+
+.ubuzima-source-dock__glass-icon {
+  width: 40px !important;
+  height: 40px !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 0 !important;
+  color: transparent !important;
+}
+
+.ubuzima-source-dock__glass-icon img,
+.ubuzima-source-dock img[data-ubuzima-real-icon="true"] {
+  width: 34px !important;
+  height: 34px !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+.ubuzima-source-dock__label,
+.ubuzima-source-dock [data-initials],
+.ubuzima-source-dock [class*="initial"] {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  html.ubuzima-mobile-pwa-active .pos-product-grid,
+  html.ubuzima-mobile-pwa-active .pos-drug-list,
+  html.ubuzima-mobile-pwa-active .pos-drug-list--ten {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pos-quantity-dialog,
+  .ubuzima-pos-confirmation-dialog {
+    top: 50% !important;
+    width: min(420px, calc(100vw - 22px)) !important;
+    max-height: min(410px, calc(100dvh - 28px)) !important;
+    padding: 13px !important;
+  }
+}
+
+
+/* UbuzimaPlus final QA acceptance: POS cards, popup, taskbar icons */
+
+.pos-product-grid,
+.pos-drug-list,
+.pos-drug-list--ten,
+.pos-builder-product-panel > .pos-drug-list--ten {
+  gap: 12px !important;
+  row-gap: 12px !important;
+  column-gap: 12px !important;
+}
+
+[data-ubuzima-pos-card-final="true"] {
+  position: relative !important;
+  min-height: 188px !important;
+  padding: 14px 14px 14px 20px !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  text-align: left !important;
+}
+
+[data-ubuzima-pos-card-original-hidden="true"] {
+  display: none !important;
+}
+
+.ubuzima-pos-card-final {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto auto auto !important;
+  gap: 7px !important;
+  text-align: left !important;
+  justify-items: start !important;
+  pointer-events: none !important;
+}
+
+.ubuzima-pos-card-final-strip {
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  width: 7px !important;
+  border-radius: 16px 0 0 16px !important;
+  background: #94a3b8 !important;
+}
+
+[data-ubuzima-expiry-state="expired"] .ubuzima-pos-card-final-strip { background: #b91c1c !important; }
+[data-ubuzima-expiry-state="critical"] .ubuzima-pos-card-final-strip { background: #d97706 !important; }
+[data-ubuzima-expiry-state="warning"] .ubuzima-pos-card-final-strip { background: #ca8a04 !important; }
+[data-ubuzima-expiry-state="safe"] .ubuzima-pos-card-final-strip { background: #0f766e !important; }
+[data-ubuzima-expiry-state="unknown"] .ubuzima-pos-card-final-strip { background: #94a3b8 !important; }
+
+.ubuzima-pos-card-final-row {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 2px !important;
+  text-align: left !important;
+  justify-items: start !important;
+}
+
+.ubuzima-pos-card-final-row--name { order: 1 !important; }
+.ubuzima-pos-card-final-row--price { order: 2 !important; }
+.ubuzima-pos-card-final-row--stock { order: 3 !important; }
+.ubuzima-pos-card-final-row--expiry { order: 4 !important; }
+.ubuzima-pos-card-final-row--days { order: 5 !important; }
+
+.ubuzima-pos-card-final-row span {
+  color: #64748b !important;
+  font-size: 0.64rem !important;
+  font-weight: 850 !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+}
+
+.ubuzima-pos-card-final-row strong {
+  color: #0f172a !important;
+  font-size: 0.84rem !important;
+  font-weight: 950 !important;
+  line-height: 1.16 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ubuzima-pos-card-final-row--name strong {
+  color: #10211b !important;
+  font-size: 0.94rem !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-pos-card-final="true"] {
+  min-height: 124px !important;
+  padding: 12px 12px 12px 18px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-final {
+  grid-template-rows: auto auto auto !important;
+  gap: 7px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-final-row--expiry,
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-final-row--days {
+  display: none !important;
+}
+
+/* Quantity/price popup final revamp */
+.ubuzima-pos-popup-final-backdrop,
+.pos-quantity-dialog-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10030 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 20px 20px calc(96px + env(safe-area-inset-bottom)) !important;
+  background: rgba(15, 23, 42, 0.34) !important;
+  overflow: hidden !important;
+}
+
+.ubuzima-pos-popup-final,
+.pos-quantity-dialog {
+  position: fixed !important;
+  left: 50% !important;
+  top: calc(50% - 32px) !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 10031 !important;
+  width: min(720px, calc(100vw - 48px)) !important;
+  max-width: min(720px, calc(100vw - 48px)) !important;
+  max-height: min(560px, calc(100dvh - 128px)) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 12px !important;
+  padding: 18px !important;
+  border-radius: 22px !important;
+  background: #ffffff !important;
+  box-shadow: 0 34px 100px rgba(15, 23, 42, 0.34) !important;
+  overflow: hidden !important;
+}
+
+.pos-quantity-dialog__header,
+.pos-quantity-readonly-grid,
+.pos-quantity-total-strip,
+.pos-quantity-dialog footer,
+.ubuzima-pos-popup-final [class*="actions"],
+.ubuzima-pos-popup-final footer {
+  grid-column: 1 / -1 !important;
+}
+
+.pos-quantity-selling-unit-hero,
+.ubuzima-pos-popup-final-card--quantity {
+  grid-column: 1 !important;
+  order: 20 !important;
+}
+
+.pos-quantity-price-override-card,
+.ubuzima-pos-popup-final-card--price {
+  grid-column: 2 !important;
+  order: 21 !important;
+}
+
+.pos-quantity-selling-unit-hero,
+.pos-quantity-price-override-card,
+.ubuzima-pos-popup-final-card,
+.ubuzima-pos-popup-final-info-card {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 6px !important;
+  padding: 11px !important;
+  border-radius: 15px !important;
+  background: #f8fbfa !important;
+  border: 1px solid rgba(15, 118, 110, 0.12) !important;
+}
+
+.pos-quantity-readonly-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+.pos-quantity-total-strip {
+  min-height: 44px !important;
+  padding: 10px 12px !important;
+  border-radius: 15px !important;
+  background: #0f766e !important;
+  color: #ffffff !important;
+}
+
+.pos-quantity-dialog input,
+.ubuzima-pos-popup-final input {
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 8px 11px !important;
+  border-radius: 12px !important;
+  font-size: 0.98rem !important;
+  font-weight: 900 !important;
+}
+
+.pos-quantity-dialog label,
+.ubuzima-pos-popup-final label,
+.ubuzima-pos-popup-final span,
+.ubuzima-pos-popup-final small {
+  font-size: 0.72rem !important;
+  line-height: 1.15 !important;
+}
+
+.pos-quantity-dialog button,
+.ubuzima-pos-popup-final button {
+  min-height: 38px !important;
+  border-radius: 11px !important;
+  font-size: 0.78rem !important;
+  font-weight: 950 !important;
+}
+
+/* Taskbar icon final fix */
+.ubuzima-source-dock__glass-icon svg,
+.ubuzima-source-dock [data-ubuzima-inline-real-icon="true"] svg {
+  width: 34px !important;
+  height: 34px !important;
+  display: block !important;
+}
+
+.ubuzima-source-dock__glass-icon {
+  color: transparent !important;
+  font-size: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.ubuzima-source-dock__app,
+.ubuzima-source-dock__task,
+.ubuzima-source-dock button {
+  transform: none !important;
+  scale: 1 !important;
+}
+
+@media (max-width: 767px) {
+  .ubuzima-pos-popup-final,
+  .pos-quantity-dialog {
+    top: 50% !important;
+    width: min(520px, calc(100vw - 24px)) !important;
+    max-height: min(540px, calc(100dvh - 32px)) !important;
+    padding: 14px !important;
+    gap: 9px !important;
+  }
+
+  .pos-quantity-readonly-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+}
+
+
+/* UbuzimaPlus clean source POS, popup and taskbar implementation */
+
+.pos-product-grid,
+.pos-drug-list,
+.pos-drug-list--ten,
+.pos-builder-product-panel > .pos-drug-list--ten {
+  gap: 8px !important;
+  row-gap: 8px !important;
+  column-gap: 8px !important;
+  align-items: stretch !important;
+}
+
+.ubuzima-pos-card-clean {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+  min-height: 176px !important;
+  padding: 12px 12px 12px 17px !important;
+  border-left: 7px solid #94a3b8 !important;
+  border-radius: 14px !important;
+  text-align: left !important;
+  overflow: hidden !important;
+}
+
+.ubuzima-pos-card-clean[data-ubuzima-expiry-state="expired"] { border-left-color: #b91c1c !important; }
+.ubuzima-pos-card-clean[data-ubuzima-expiry-state="critical"] { border-left-color: #d97706 !important; }
+.ubuzima-pos-card-clean[data-ubuzima-expiry-state="warning"] { border-left-color: #ca8a04 !important; }
+.ubuzima-pos-card-clean[data-ubuzima-expiry-state="safe"] { border-left-color: #0f766e !important; }
+.ubuzima-pos-card-clean[data-ubuzima-expiry-state="unknown"] { border-left-color: #94a3b8 !important; }
+
+.ubuzima-pos-card-clean-row {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-items: start !important;
+  text-align: left !important;
+  gap: 2px !important;
+}
+
+.ubuzima-pos-card-clean-row--name { order: 1 !important; }
+.ubuzima-pos-card-clean-row--price { order: 2 !important; }
+.ubuzima-pos-card-clean-row--stock { order: 3 !important; }
+.ubuzima-pos-card-clean-row--expiry { order: 4 !important; }
+.ubuzima-pos-card-clean-row--days { order: 5 !important; }
+
+.ubuzima-pos-card-clean-row,
+.ubuzima-pos-card-clean-row *,
+.ubuzima-pos-card-clean strong,
+.ubuzima-pos-card-clean span,
+.ubuzima-pos-card-clean em {
+  text-align: left !important;
+}
+
+.ubuzima-pos-card-clean-row span,
+.ubuzima-pos-card-clean .pos-product-card-info-label {
+  color: #64748b !important;
+  font-size: 0.62rem !important;
+  font-weight: 850 !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+}
+
+.ubuzima-pos-card-clean-row strong,
+.ubuzima-pos-card-clean-row em {
+  color: #0f172a !important;
+  font-size: 0.82rem !important;
+  font-weight: 950 !important;
+  line-height: 1.12 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ubuzima-pos-card-clean-row--name strong,
+.ubuzima-pos-card-clean-row--name {
+  color: #10211b !important;
+  font-size: 0.92rem !important;
+  line-height: 1.14 !important;
+  font-weight: 950 !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-clean {
+  min-height: 118px !important;
+  padding: 11px 10px 11px 16px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-clean-row--expiry,
+html.ubuzima-mobile-pwa-active .ubuzima-pos-card-clean-row--days {
+  display: none !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-grid,
+html.ubuzima-mobile-pwa-active .pos-drug-list,
+html.ubuzima-mobile-pwa-active .pos-drug-list--ten {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.ubuzima-pos-popup-clean,
+.pos-quantity-dialog {
+  width: min(800px, calc(100vw - 42px)) !important;
+  max-width: min(800px, calc(100vw - 42px)) !important;
+  max-height: min(620px, calc(100dvh - 112px)) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 10px !important;
+  padding: 16px !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+}
+
+.pos-quantity-dialog__header,
+.pos-quantity-dialog footer,
+.ubuzima-pos-popup-clean footer,
+.ubuzima-pos-popup-clean [class*="actions"],
+.pos-quantity-readonly-grid,
+.pos-quantity-total-strip {
+  grid-column: 1 / -1 !important;
+}
+
+.ubuzima-pos-popup-clean-edit,
+.pos-quantity-selling-unit-hero,
+.pos-quantity-price-override-card {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 5px !important;
+  padding: 10px !important;
+  border-radius: 15px !important;
+  background: #f8fbfa !important;
+  border: 1px solid rgba(15, 118, 110, 0.14) !important;
+}
+
+.ubuzima-pos-popup-clean-edit--quantity,
+.pos-quantity-selling-unit-hero {
+  grid-column: 1 !important;
+  order: 1 !important;
+}
+
+.ubuzima-pos-popup-clean-edit--price,
+.pos-quantity-price-override-card {
+  grid-column: 2 !important;
+  order: 2 !important;
+}
+
+.ubuzima-pos-popup-clean-input,
+.ubuzima-pos-popup-clean input,
+.pos-quantity-dialog input {
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 7px 10px !important;
+  border-radius: 12px !important;
+  font-size: 0.96rem !important;
+  font-weight: 900 !important;
+}
+
+.pos-quantity-readonly-grid {
+  order: 3 !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.ubuzima-pos-popup-clean-info,
+.pos-quantity-readonly-grid article {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 3px !important;
+  padding: 8px 9px !important;
+  border-radius: 13px !important;
+  background: #f7faf9 !important;
+  border: 1px solid rgba(15, 118, 110, 0.10) !important;
+  overflow: hidden !important;
+}
+
+.pos-quantity-total-strip {
+  order: 4 !important;
+  min-height: 40px !important;
+  padding: 8px 10px !important;
+  border-radius: 14px !important;
+}
+
+.ubuzima-pos-popup-clean-hide {
+  display: none !important;
+}
+
+.ubuzima-clean-taskbar-icon,
+.ubuzima-source-dock__glass-icon,
+.ubuzima-mac-dock__icon {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+.ubuzima-clean-taskbar-icon svg,
+.ubuzima-source-dock__glass-icon svg,
+.ubuzima-mac-dock__icon svg {
+  width: 34px !important;
+  height: 34px !important;
+  display: block !important;
+}
+
+.ubuzima-source-dock__app,
+.ubuzima-source-dock__task,
+.ubuzima-source-dock button,
+.ubuzima-mac-dock__app,
+.ubuzima-mac-dock__recent-app,
+.ubuzima-mac-dock button {
+  transform: none !important;
+  scale: 1 !important;
+}
+
+@media (max-width: 767px) {
+  .ubuzima-pos-popup-clean,
+  .pos-quantity-dialog {
+    width: min(560px, calc(100vw - 22px)) !important;
+    max-width: min(560px, calc(100vw - 22px)) !important;
+    max-height: min(620px, calc(100dvh - 28px)) !important;
+    padding: 12px !important;
+    gap: 8px !important;
+  }
+
+  .pos-quantity-readonly-grid {
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)) !important;
+    gap: 6px !important;
+  }
+}
+
+
+/* UbuzimaPlus real POS tile v16 / popup / taskbar final source patch */
+
+.pos-drug-list--ten,
+.pos-builder-product-panel > .pos-drug-list--ten {
+  gap: 8px !important;
+  row-gap: 8px !important;
+  column-gap: 8px !important;
+}
+
+[data-ubuzima-real-pos-tile="true"] {
+  position: relative !important;
+  min-height: 176px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-content: start !important;
+  padding: 12px 12px 12px 18px !important;
+  border-left: 7px solid #94a3b8 !important;
+  border-radius: 14px !important;
+  text-align: left !important;
+  overflow: hidden !important;
+}
+
+[data-ubuzima-expiry-state="expired"] { border-left-color: #b91c1c !important; }
+[data-ubuzima-expiry-state="critical"] { border-left-color: #d97706 !important; }
+[data-ubuzima-expiry-state="warning"] { border-left-color: #ca8a04 !important; }
+[data-ubuzima-expiry-state="watch"] { border-left-color: #eab308 !important; }
+[data-ubuzima-expiry-state="safe"] { border-left-color: #0f766e !important; }
+[data-ubuzima-expiry-state="unknown"] { border-left-color: #94a3b8 !important; }
+
+[data-ubuzima-real-pos-original="hidden"] {
+  display: none !important;
+}
+
+.ubuzima-real-pos-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto auto auto !important;
+  gap: 6px !important;
+  text-align: left !important;
+  justify-items: start !important;
+  pointer-events: none !important;
+}
+
+.ubuzima-real-pos-card__row {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 2px !important;
+  text-align: left !important;
+  justify-items: start !important;
+}
+
+.ubuzima-real-pos-card__row--name { order: 1 !important; }
+.ubuzima-real-pos-card__row--price { order: 2 !important; }
+.ubuzima-real-pos-card__row--stock { order: 3 !important; }
+.ubuzima-real-pos-card__row--expiry { order: 4 !important; }
+.ubuzima-real-pos-card__row--days { order: 5 !important; }
+
+.ubuzima-real-pos-card__row span {
+  color: #64748b !important;
+  font-size: 0.62rem !important;
+  font-weight: 850 !important;
+  line-height: 1.05 !important;
+  text-align: left !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+}
+
+.ubuzima-real-pos-card__row strong {
+  color: #0f172a !important;
+  font-size: 0.82rem !important;
+  font-weight: 950 !important;
+  line-height: 1.12 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ubuzima-real-pos-card__row--name strong {
+  color: #10211b !important;
+  font-size: 0.92rem !important;
+  line-height: 1.14 !important;
+}
+
+html.ubuzima-mobile-pwa-active [data-ubuzima-real-pos-tile="true"] {
+  min-height: 118px !important;
+  padding: 11px 10px 11px 16px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-real-pos-card {
+  grid-template-rows: auto auto auto !important;
+  gap: 6px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-real-pos-card__row--expiry,
+html.ubuzima-mobile-pwa-active .ubuzima-real-pos-card__row--days {
+  display: none !important;
+}
+
+.ubuzima-real-pos-dialog,
+.pos-quantity-dialog {
+  width: min(800px, calc(100vw - 42px)) !important;
+  max-width: min(800px, calc(100vw - 42px)) !important;
+  max-height: min(620px, calc(100dvh - 112px)) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 10px !important;
+  padding: 16px !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+}
+
+.pos-quantity-dialog__header,
+.pos-quantity-dialog footer,
+.pos-quantity-readonly-grid,
+.pos-quantity-total-strip,
+.ubuzima-real-pos-dialog footer,
+.ubuzima-real-pos-dialog [class*="actions"] {
+  grid-column: 1 / -1 !important;
+}
+
+.ubuzima-real-pos-dialog__edit,
+.pos-quantity-selling-unit-hero,
+.pos-quantity-price-override-card {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 5px !important;
+  padding: 10px !important;
+  border-radius: 15px !important;
+  background: #f8fbfa !important;
+  border: 1px solid rgba(15, 118, 110, 0.14) !important;
+}
+
+.ubuzima-real-pos-dialog__edit--quantity,
+.pos-quantity-selling-unit-hero {
+  grid-column: 1 !important;
+  order: 1 !important;
+}
+
+.ubuzima-real-pos-dialog__edit--price,
+.pos-quantity-price-override-card {
+  grid-column: 2 !important;
+  order: 2 !important;
+}
+
+.ubuzima-real-pos-dialog__input,
+.pos-quantity-dialog input {
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 7px 10px !important;
+  border-radius: 12px !important;
+  font-size: 0.96rem !important;
+  font-weight: 900 !important;
+}
+
+.pos-quantity-readonly-grid {
+  order: 3 !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.ubuzima-real-pos-dialog__info,
+.pos-quantity-readonly-grid article {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 3px !important;
+  padding: 8px 9px !important;
+  border-radius: 13px !important;
+  background: #f7faf9 !important;
+  border: 1px solid rgba(15, 118, 110, 0.10) !important;
+  overflow: hidden !important;
+}
+
+.ubuzima-real-pos-dialog__noise {
+  display: none !important;
+}
+
+.ubuzima-source-dock__icon,
+.ubuzima-source-dock__glass-icon,
+.ubuzima-mac-dock__icon {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+.ubuzima-source-dock__icon svg,
+.ubuzima-source-dock__glass-icon svg,
+.ubuzima-mac-dock__icon svg,
+[data-ubuzima-real-icon-v2="true"] svg {
+  width: 34px !important;
+  height: 34px !important;
+  display: block !important;
+}
+
+.ubuzima-source-dock button,
+.ubuzima-source-dock__app,
+.ubuzima-source-dock__task,
+.ubuzima-mac-dock button {
+  transform: none !important;
+  scale: 1 !important;
+}
+
+@media (max-width: 767px) {
+  .ubuzima-real-pos-dialog,
+  .pos-quantity-dialog {
+    width: min(560px, calc(100vw - 22px)) !important;
+    max-width: min(560px, calc(100vw - 22px)) !important;
+    max-height: min(620px, calc(100dvh - 28px)) !important;
+    padding: 12px !important;
+    gap: 8px !important;
+  }
+
+  .pos-quantity-readonly-grid {
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)) !important;
+  }
+}
+
+
+
+
+/* UbuzimaPlus dock fallback v5 and POS snap */
+
+.pos-drug-list--ten {
+  scroll-snap-type: y proximity !important;
+  scroll-padding-top: 10px !important;
+}
+
+.pos-drug-list--ten > [data-ubuzima-pos-v4="true"],
+.pos-drug-list--ten > [data-ubuzima-pos-v3="true"] {
+  scroll-snap-align: start !important;
+  scroll-snap-stop: normal !important;
+}
+
+#ubuzimaSourceDockV5,
+.ubuzima-source-dock,
+#ubuzimaSourceDock {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  top: auto !important;
+  z-index: 999999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: max-content !important;
+  max-width: calc(100vw - 28px) !important;
+  min-height: 62px !important;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.52) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  box-shadow: 0 18px 54px rgba(15, 23, 42, 0.18), inset 0 1px rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(22px) saturate(1.35) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.35) !important;
+  transform: translateX(-50%) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  pointer-events: auto !important;
+  scrollbar-width: none !important;
+}
+
+#ubuzimaSourceDockV5::-webkit-scrollbar,
+.ubuzima-source-dock::-webkit-scrollbar,
+#ubuzimaSourceDock::-webkit-scrollbar {
+  display: none !important;
+}
+
+.ubuzima-source-dock__main,
+.ubuzima-source-dock__tasks {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  min-width: 0 !important;
+}
+
+.ubuzima-source-dock__divider {
+  width: 1px !important;
+  height: 38px !important;
+  flex: 0 0 1px !important;
+  background: rgba(15, 118, 110, 0.20) !important;
+  border-radius: 999px !important;
+}
+
+.ubuzima-source-dock__app,
+.ubuzima-source-dock__task,
+.ubuzima-source-dock button,
+#ubuzimaSourceDockV5 button,
+[data-ubuzima-dock-v5-button="true"] {
+  position: relative !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  max-width: 48px !important;
+  max-height: 48px !important;
+  flex: 0 0 48px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.60) !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  transform: none !important;
+  scale: 1 !important;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+.ubuzima-source-dock__app:hover,
+.ubuzima-source-dock__task:hover,
+.ubuzima-source-dock button:hover,
+#ubuzimaSourceDockV5 button:hover,
+[data-ubuzima-dock-v5-button="true"]:hover {
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.16) !important;
+  transform: none !important;
+  scale: 1 !important;
+}
+
+.ubuzima-source-dock__app.is-active,
+.ubuzima-source-dock__task.is-active,
+#ubuzimaSourceDockV5 button.is-active {
+  background: rgba(230, 246, 243, 0.96) !important;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.18) !important;
+}
+
+.ubuzima-source-dock__glass-icon,
+.ubuzima-source-dock__icon,
+[data-ubuzima-dock-v5-icon="true"] {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.ubuzima-source-dock__glass-icon img,
+.ubuzima-source-dock__icon img,
+img[data-ubuzima-dock-icon-v5="true"] {
+  width: 34px !important;
+  height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
+  display: block !important;
+  object-fit: contain !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.ubuzima-source-dock__close {
+  position: absolute !important;
+  top: -5px !important;
+  right: -5px !important;
+  width: 17px !important;
+  height: 17px !important;
+  min-width: 17px !important;
+  min-height: 17px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  font-size: 0.78rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.18) !important;
+}
+
+.dashboard-main,
+.dashboard-scroll-panel,
+.section-page,
+main {
+  scroll-padding-bottom: 104px !important;
+}
+
+@media (max-width: 767px) {
+  #ubuzimaSourceDockV5,
+  .ubuzima-source-dock,
+  #ubuzimaSourceDock {
+    min-height: 56px !important;
+    padding: 7px 10px !important;
+    border-radius: 22px !important;
+  }
+
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task,
+  .ubuzima-source-dock button,
+  #ubuzimaSourceDockV5 button {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
+    flex-basis: 44px !important;
+    border-radius: 15px !important;
+  }
+
+  .ubuzima-source-dock__glass-icon,
+  .ubuzima-source-dock__icon,
+  [data-ubuzima-dock-v5-icon="true"] {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+
+  .ubuzima-source-dock__glass-icon img,
+  .ubuzima-source-dock__icon img,
+  img[data-ubuzima-dock-icon-v5="true"] {
+    width: 31px !important;
+    height: 31px !important;
+    max-width: 31px !important;
+    max-height: 31px !important;
+  }
+}
+
+
+/* UBUZIMA POS CARD REPLACEMENT FINAL START */
+
+.pos-builder-product-panel .pos-drug-list,
+.pos-builder-product-panel .pos-drug-list--ten,
+.pos-builder-product-panel .pos-product-grid,
+.pos-drug-list--ten {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  padding: 18px !important;
+  gap: 24px 22px !important;
+  align-items: stretch !important;
+  box-sizing: border-box !important;
+}
+
+.pos-drug-list--ten > .pos-product-tile-v16,
+.pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"] {
+  position: relative !important;
+  min-height: 176px !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 16px 16px 16px 20px !important;
+  border: 1px solid rgba(15, 23, 42, 0.10) !important;
+  border-left-width: 6px !important;
+  border-left-style: solid !important;
+  border-left-color: #10b981 !important;
+  border-radius: 13px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08) !important;
+  overflow: hidden !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  box-sizing: border-box !important;
+}
+
+.pos-product-tile-v16[data-ubuzima-expiry-state="expired"] {
+  border-left-color: #dc2626 !important;
+}
+
+.pos-product-tile-v16[data-ubuzima-expiry-state="critical"] {
+  border-left-color: #f97316 !important;
+}
+
+.pos-product-tile-v16[data-ubuzima-expiry-state="warning"],
+.pos-product-tile-v16[data-ubuzima-expiry-state="watch"] {
+  border-left-color: #f59e0b !important;
+}
+
+.pos-product-tile-v16[data-ubuzima-expiry-state="safe"] {
+  border-left-color: #10b981 !important;
+}
+
+.ubuzima-pos-replaced-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+}
+
+.ubuzima-pos-replaced-card__row {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  box-sizing: border-box !important;
+}
+
+.ubuzima-pos-replaced-card__value {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.15 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+.ubuzima-pos-replaced-card__row--product .ubuzima-pos-replaced-card__value {
+  color: #020617 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.01em !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.ubuzima-pos-replaced-card__row--quantity .ubuzima-pos-replaced-card__value {
+  font-weight: 750 !important;
+}
+
+@media (max-width: 1400px) {
+  .pos-builder-product-panel .pos-drug-list,
+  .pos-builder-product-panel .pos-drug-list--ten,
+  .pos-builder-product-panel .pos-product-grid,
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 22px 20px !important;
+  }
+
+  .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"] {
+    min-height: 170px !important;
+    padding: 15px 14px 15px 19px !important;
+  }
+
+  .ubuzima-pos-replaced-card__value {
+    font-size: 12.5px !important;
+  }
+
+  .ubuzima-pos-replaced-card__row--product .ubuzima-pos-replaced-card__value {
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .pos-builder-product-panel .pos-drug-list,
+  .pos-builder-product-panel .pos-drug-list--ten,
+  .pos-builder-product-panel .pos-product-grid,
+  .pos-drug-list--ten {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    padding: 14px !important;
+    gap: 18px 16px !important;
+  }
+}
+
+html.ubuzima-mobile-pwa-active .pos-builder-product-panel .pos-drug-list,
+html.ubuzima-mobile-pwa-active .pos-builder-product-panel .pos-drug-list--ten,
+html.ubuzima-mobile-pwa-active .pos-builder-product-panel .pos-product-grid,
+html.ubuzima-mobile-pwa-active .pos-drug-list--ten {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  padding: 10px !important;
+  gap: 12px 10px !important;
+}
+
+html.ubuzima-mobile-pwa-active .pos-product-tile-v16[data-ubuzima-pos-card-replaced-final="true"] {
+  min-height: 112px !important;
+  padding: 11px 10px 11px 16px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-replaced-card {
+  gap: 6px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-replaced-card__value {
+  font-size: 12px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-replaced-card__row--product .ubuzima-pos-replaced-card__value {
+  font-size: 13px !important;
+}
+
+html.ubuzima-mobile-pwa-active .ubuzima-pos-replaced-card__row--expiry,
+html.ubuzima-mobile-pwa-active .ubuzima-pos-replaced-card__row--days {
+  display: none !important;
+}
+
+/* UBUZIMA POS CARD REPLACEMENT FINAL END */

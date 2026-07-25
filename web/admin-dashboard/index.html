@@ -89,7 +89,7 @@
         function openSafeMode(reason, delay) {
           window.setTimeout(function () {
             if (!appIsReady()) {
-              window.location.replace('/admin/pwa-safe.html?reason=' + encodeURIComponent(reason || 'app-startup'));
+              console.warn('Startup fallback suppressed for stable main admin release.', reason || 'app-startup');
             }
           }, delay || 1200);
         }
@@ -182,7 +182,16 @@
         }, 9000);
       })();
     </script>
-  </head>
+  
+
+
+
+
+
+
+
+
+</head>
   <body>
     <div id="root">
       <div class="ubuzima-boot-fallback" role="status" aria-live="polite">

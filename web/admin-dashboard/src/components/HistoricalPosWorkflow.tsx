@@ -18,6 +18,20 @@ import {
 } from "../lib/posSessionApi";
 import "./HistoricalPosWorkflow.css";
 
+
+
+function formatLaunchDateDdMmYyyy(value: string | null | undefined): string {
+  if (!value) return "";
+  const raw = String(value).trim();
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) return `${isoMatch[3]}-${isoMatch[2]}-${isoMatch[1]}`;
+  return raw;
+}
+
+
+const HISTORICAL_POS_AUTO_REASON = 'Historical POS entry created through approved workflow.';
+
+
 type HistoricalPosWorkflowProps = {
   token: string;
   tenantSlug: string;
@@ -89,7 +103,7 @@ function normalizeHistoricalSession(
     sequence_number: session.sequence_number,
     business_date: session.business_date,
     session_mode: "historical",
-    historical_reason: session.historical_reason,
+    historical_reason: HISTORICAL_POS_AUTO_REASON,
     historical_reference:
       session.historical_reference,
     historical_approval_id:
@@ -367,15 +381,7 @@ export function HistoricalPosWorkflow({
       );
       return;
     }
-
-    if (historicalReason.trim().length < 10) {
-      setErrorMessage(
-        "Provide a clear reason of at least 10 characters.",
-      );
-      return;
-    }
-
-    setIsRequesting(true);
+setIsRequesting(true);
     setErrorMessage("");
     setSuccessMessage("");
 
@@ -389,7 +395,7 @@ export function HistoricalPosWorkflow({
           {
             branch_id: branchId,
             business_date: businessDate,
-            request_reason: historicalPosAutoReason(),
+            request_reason: HISTORICAL_POS_AUTO_REASON,
             historical_reference:
               historicalReference.trim()
               || undefined,
@@ -562,15 +568,7 @@ export function HistoricalPosWorkflow({
       );
       return;
     }
-
-    if (historicalReason.trim().length < 10) {
-      setErrorMessage(
-        "Provide a clear historical-entry reason.",
-      );
-      return;
-    }
-
-    const numericOpeningFloat = Number(
+const numericOpeningFloat = Number(
       openingFloat,
     );
 
@@ -622,7 +620,7 @@ export function HistoricalPosWorkflow({
               numericOpeningFloat,
             opening_mode:
               selectedOpeningMode,
-            historical_reason: historicalPosAutoReason(),
+            historical_reason: HISTORICAL_POS_AUTO_REASON,
             historical_reference:
               historicalReference.trim()
               || undefined,
@@ -697,8 +695,8 @@ export function HistoricalPosWorkflow({
 
             <div>
               <strong>
-                Business date{" "}
-                {currentSession.business_date}
+                Business date (DD-MM-YYYY){" "}
+                {formatLaunchDateDdMmYyyy(currentSession.business_date)}
               </strong>
 
               <small>
@@ -760,7 +758,7 @@ export function HistoricalPosWorkflow({
                     type="date"
                     min={dateBounds.minimum}
                     max={dateBounds.maximum}
-                    value={businessDate}
+                    value={formatLaunchDateDdMmYyyy(businessDate)}
                     onChange={(event) => {
                       setBusinessDate(
                         event.target.value,
@@ -836,25 +834,7 @@ export function HistoricalPosWorkflow({
                     }
                   />
                 </label>
-
-                <label className="historical-pos-form-grid__wide">
-                  <span>
-                    Reason for historical entry
-                  </span>
-
-                  <textarea
-                    rows={3}
-                    maxLength={1000}
-                    value={historicalReason}
-                    placeholder="Explain why these transactions were not recorded on the original business date."
-                    onChange={(event) =>
-                      setHistoricalReason(
-                        event.target.value,
-                      )
-                    }
-                  />
-                </label>
-              </div>
+</div>
 
               <div className="historical-pos-actions">
                 <button
@@ -905,7 +885,7 @@ export function HistoricalPosWorkflow({
                     </span>
 
                     <strong>
-                      {availability.business_date}
+                      {formatLaunchDateDdMmYyyy(availability.business_date)}
                     </strong>
                   </div>
 
@@ -1082,7 +1062,7 @@ export function HistoricalPosWorkflow({
                         <article key={item.id}>
                           <div>
                             <strong>
-                              {item.business_date}
+                              {formatLaunchDateDdMmYyyy(item.business_date)}
                             </strong>
 
                             <span>
