@@ -1,22 +1,41 @@
 const BUILD_MARKER =
-  'UBIZIMA_LEGACY_DOCK_REMOVAL_PREVIEW_V1';
+  'UBIZIMA_PERMANENT_TASKBAR_REMOVAL_PREVIEW_V2B';
+
+const RUNTIME_MARKER =
+  'UBIZIMA_TASKBAR_DOM_REMOVAL_RUNTIME_V2B';
 
 const ROOT_CLASS =
-  'ubuzima-legacy-dock-removal-preview-v1';
+  'ubuzima-permanent-taskbar-removal-v2b';
 
 const STYLE_ID =
-  'ubuzima-legacy-dock-removal-preview-v1-style';
+  'ubuzima-permanent-taskbar-removal-v2b-style';
 
-type RemovalPreviewWindow = Window & {
-  __ubuzimaLegacyDockRemovalPreviewV1?: boolean;
+const TASKBAR_SELECTORS = [
+  '.ubuzima-permanent-taskbar',
+  '[data-ubuzima-permanent-taskbar]',
+  '#ubuzima-taskbar',
+  '.ubuzima-taskbar',
+  '#ubuzima-desktop-dock',
+  '.ubuzima-desktop-dock',
+  '[data-ubuzima-desktop-dock]',
+  '[data-ubuzima-permanent-dock]',
+];
+
+type TaskbarRemovalWindow = Window & {
+  __ubuzimaPermanentTaskbarRemovalV2B?: boolean;
 };
 
-const previewWindow =
-  window as RemovalPreviewWindow;
+const taskbarWindow =
+  window as TaskbarRemovalWindow;
 
-let resizeTimer = 0;
+let removalTimer = 0;
+let totalRemoved = 0;
 
-function ensureStyle(): void {
+function desktopOrTablet(): boolean {
+  return window.innerWidth >= 768;
+}
+
+function ensureRemovalStyle(): void {
   if (document.getElementById(STYLE_ID)) {
     return;
   }
@@ -35,13 +54,7 @@ function ensureStyle(): void {
       }
 
       html.${ROOT_CLASS}
-        .ubuzima-mobile-bottom-nav,
-      html.${ROOT_CLASS}
-        #ubuzima-desktop-dock,
-      html.${ROOT_CLASS}
-        .ubuzima-desktop-dock,
-      html.${ROOT_CLASS}
-        [data-ubuzima-desktop-dock],
+        .ubuzima-permanent-taskbar,
       html.${ROOT_CLASS}
         [data-ubuzima-permanent-taskbar],
       html.${ROOT_CLASS}
@@ -49,23 +62,13 @@ function ensureStyle(): void {
       html.${ROOT_CLASS}
         .ubuzima-taskbar,
       html.${ROOT_CLASS}
-        [id*="desktop-dock"],
+        #ubuzima-desktop-dock,
       html.${ROOT_CLASS}
-        [class*="desktop-dock"],
+        .ubuzima-desktop-dock,
       html.${ROOT_CLASS}
-        [id*="desktopDock"],
+        [data-ubuzima-desktop-dock],
       html.${ROOT_CLASS}
-        [class*="desktopDock"],
-      html.${ROOT_CLASS}
-        [id*="source-dock"],
-      html.${ROOT_CLASS}
-        [class*="source-dock"],
-      html.${ROOT_CLASS}
-        [data-source-dock],
-      html.${ROOT_CLASS}
-        [id*="taskbar"],
-      html.${ROOT_CLASS}
-        [class*="taskbar"],
+        [data-ubuzima-permanent-dock],
       html.${ROOT_CLASS}
         [data-ubuzima-workspace-dock-preview],
       html.${ROOT_CLASS}
@@ -86,10 +89,36 @@ function ensureStyle(): void {
   document.head.appendChild(style);
 }
 
+function removeTaskbarNodes(): number {
+  if (!desktopOrTablet()) {
+    return 0;
+  }
+
+  let removedNow = 0;
+
+  document
+    .querySelectorAll<HTMLElement>(
+      TASKBAR_SELECTORS.join(','),
+    )
+    .forEach((candidate) => {
+      candidate.remove();
+      removedNow += 1;
+    });
+
+  totalRemoved += removedNow;
+
+  document.documentElement.setAttribute(
+    'data-ubuzima-taskbar-nodes-removed',
+    String(totalRemoved),
+  );
+
+  return removedNow;
+}
+
 function ensureBadge(): void {
   if (
     document.querySelector(
-      '[data-ubuzima-legacy-dock-removal-preview]',
+      '[data-ubuzima-taskbar-removal-preview-v2b]',
     )
   ) {
     return;
@@ -99,12 +128,12 @@ function ensureBadge(): void {
     document.createElement('div');
 
   badge.setAttribute(
-    'data-ubuzima-legacy-dock-removal-preview',
+    'data-ubuzima-taskbar-removal-preview-v2b',
     BUILD_MARKER,
   );
 
   badge.textContent =
-    'OLD DOCK REMOVAL PREVIEW';
+    'OLD TASKBAR REMOVED V2B';
 
   Object.assign(
     badge.style,
@@ -119,7 +148,7 @@ function ensureBadge(): void {
       borderRadius: '999px',
       color: '#145d51',
       background:
-        'rgba(245,255,252,0.92)',
+        'rgba(245,255,252,0.94)',
       boxShadow:
         '0 6px 16px rgba(20,45,40,0.12)',
       backdropFilter: 'blur(12px)',
@@ -136,21 +165,25 @@ function ensureBadge(): void {
 function removeBadge(): void {
   document
     .querySelector(
-      '[data-ubuzima-legacy-dock-removal-preview]',
+      '[data-ubuzima-taskbar-removal-preview-v2b]',
     )
     ?.remove();
 }
 
-function synchroniseRemoval(): void {
-  ensureStyle();
+function applyTaskbarRemoval(): void {
+  ensureRemovalStyle();
 
-  if (window.innerWidth < 768) {
+  if (!desktopOrTablet()) {
     document.documentElement.classList.remove(
       ROOT_CLASS,
     );
 
     document.documentElement.removeAttribute(
-      'data-ubuzima-legacy-dock-removal',
+      'data-ubuzima-permanent-taskbar-removal',
+    );
+
+    document.documentElement.removeAttribute(
+      'data-ubuzima-taskbar-removal-runtime',
     );
 
     removeBadge();
@@ -162,8 +195,13 @@ function synchroniseRemoval(): void {
   );
 
   document.documentElement.setAttribute(
-    'data-ubuzima-legacy-dock-removal',
+    'data-ubuzima-permanent-taskbar-removal',
     BUILD_MARKER,
+  );
+
+  document.documentElement.setAttribute(
+    'data-ubuzima-taskbar-removal-runtime',
+    RUNTIME_MARKER,
   );
 
   document.documentElement.removeAttribute(
@@ -174,35 +212,49 @@ function synchroniseRemoval(): void {
     'data-ubuzima-workspace-dock-build',
   );
 
+  removeTaskbarNodes();
   ensureBadge();
 }
 
-function scheduleSynchronisation(): void {
-  window.clearTimeout(resizeTimer);
+function scheduleTaskbarRemoval(): void {
+  window.clearTimeout(removalTimer);
 
-  resizeTimer = window.setTimeout(
-    synchroniseRemoval,
-    50,
+  removalTimer = window.setTimeout(
+    applyTaskbarRemoval,
+    20,
   );
 }
 
-function startRemovalPreview(): void {
+function startTaskbarRemoval(): void {
   if (
-    previewWindow
-      .__ubuzimaLegacyDockRemovalPreviewV1
+    taskbarWindow
+      .__ubuzimaPermanentTaskbarRemovalV2B
   ) {
     return;
   }
 
-  previewWindow
-    .__ubuzimaLegacyDockRemovalPreviewV1 =
+  taskbarWindow
+    .__ubuzimaPermanentTaskbarRemovalV2B =
     true;
 
-  synchroniseRemoval();
+  applyTaskbarRemoval();
+
+  const observer =
+    new MutationObserver(
+      scheduleTaskbarRemoval,
+    );
+
+  observer.observe(
+    document.documentElement,
+    {
+      childList: true,
+      subtree: true,
+    },
+  );
 
   window.addEventListener(
     'resize',
-    scheduleSynchronisation,
+    scheduleTaskbarRemoval,
     {
       passive: true,
     },
@@ -210,7 +262,7 @@ function startRemovalPreview(): void {
 
   window.addEventListener(
     'orientationchange',
-    scheduleSynchronisation,
+    scheduleTaskbarRemoval,
     {
       passive: true,
     },
@@ -218,20 +270,25 @@ function startRemovalPreview(): void {
 
   window.addEventListener(
     'pageshow',
-    scheduleSynchronisation,
+    scheduleTaskbarRemoval,
+  );
+
+  window.setInterval(
+    applyTaskbarRemoval,
+    500,
   );
 }
 
 if (document.readyState === 'loading') {
   document.addEventListener(
     'DOMContentLoaded',
-    startRemovalPreview,
+    startTaskbarRemoval,
     {
       once: true,
     },
   );
 } else {
-  startRemovalPreview();
+  startTaskbarRemoval();
 }
 
 export {};
