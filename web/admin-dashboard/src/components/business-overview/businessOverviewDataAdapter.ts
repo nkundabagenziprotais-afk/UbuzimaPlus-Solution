@@ -286,7 +286,7 @@ function salesFromRows(rows: SaleRow[], startDate: string, endDate: string) {
     [...trendGroups.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([label, value]) => ({
-        label: label.slice(5),
+        label,
         value,
       }));
 
@@ -390,7 +390,7 @@ async function salesValueTrendFromDailySummaries(
     }
 
     trend.push({
-      label: date.slice(5),
+      label: date,
       value: dailySales.grossSales,
     });
   });

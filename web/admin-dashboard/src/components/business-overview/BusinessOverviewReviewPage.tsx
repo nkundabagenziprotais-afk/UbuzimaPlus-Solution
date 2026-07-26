@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   emptyBusinessOverviewLiveData,
   type BusinessOverviewLiveData,
@@ -529,13 +529,39 @@ function trendPointDate(point: unknown): string | null {
   ];
 
   for (const candidate of candidates) {
-    if (typeof candidate === 'string') {
-      const match = candidate.match(/\d{4}-\d{2}-\d{2}/);
-      if (match) return match[0];
+    if (typeof candidate !== 'string') {
+      continue;
+    }
 
-      if (/^\d{1,2}$/.test(candidate)) {
-        return candidate.padStart(2, '0');
-      }
+    const normalizedCandidate =
+      candidate.trim();
+
+    const fullDateMatch =
+      normalizedCandidate.match(
+        /\d{4}-\d{2}-\d{2}/,
+      );
+
+    if (fullDateMatch) {
+      return fullDateMatch[0];
+    }
+
+    if (
+      /^\d{2}-\d{2}$/.test(
+        normalizedCandidate,
+      )
+    ) {
+      return normalizedCandidate;
+    }
+
+    if (
+      /^\d{1,2}$/.test(
+        normalizedCandidate,
+      )
+    ) {
+      return normalizedCandidate.padStart(
+        2,
+        '0',
+      );
     }
   }
 
@@ -567,43 +593,92 @@ function buildDailyTrendSeries(
   metric: 'value' | 'count' = 'value',
   maxDays = 62,
 ): Array<{ label: string; value: number }> {
-  const valuesByDate = new Map<string, number>();
+  const selectedDates =
+    selectedDateKeys(
+      startDate,
+      endDate,
+    ).slice(
+      0,
+      Math.max(maxDays, 1),
+    );
+
+  const valuesByDate =
+    new Map<string, number>();
 
   points.forEach((point) => {
-    const date = trendPointDate(point);
-    if (!date) return;
+    const rawDate =
+      trendPointDate(point);
 
-    const record = point as unknown as Record<string, unknown>;
-    const value = metric === 'count'
-      ? parseAmount(
-          record.count ??
-          record.transaction_count ??
-          record.transactions ??
-          0,
-        )
-      : parseAmount(
-          record.value ??
-          record.sales_value ??
-          record.salesValue ??
-          record.gross_sales ??
-          record.grossSales ??
-          record.net_sales ??
-          record.netSales ??
-          record.sales ??
-          record.amount ??
-          record.total ??
-          0,
-        );
+    if (!rawDate) {
+      return;
+    }
 
-    valuesByDate.set(date, (valuesByDate.get(date) ?? 0) + value);
+    const normalizedDate =
+      /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+        ? rawDate
+        : /^\d{2}-\d{2}$/.test(rawDate)
+          ? selectedDates.find(
+              (date) =>
+                date.endsWith(
+                  `-${rawDate}`,
+                ),
+            )
+          : /^\d{1,2}$/.test(rawDate)
+            ? selectedDates.find(
+                (date) =>
+                  date.endsWith(
+                    `-${rawDate.padStart(2, '0')}`,
+                  ),
+              )
+            : undefined;
+
+    if (!normalizedDate) {
+      return;
+    }
+
+    const record =
+      point as unknown as Record<
+        string,
+        unknown
+      >;
+
+    const value =
+      metric === 'count'
+        ? parseAmount(
+            record.count ??
+            record.transaction_count ??
+            record.transactions ??
+            0,
+          )
+        : parseAmount(
+            record.value ??
+            record.sales_value ??
+            record.salesValue ??
+            record.gross_sales ??
+            record.grossSales ??
+            record.net_sales ??
+            record.netSales ??
+            record.sales ??
+            record.amount ??
+            record.total ??
+            0,
+          );
+
+    valuesByDate.set(
+      normalizedDate,
+      (
+        valuesByDate.get(
+          normalizedDate,
+        ) ?? 0
+      ) + value,
+    );
   });
 
-  return selectedDateKeys(startDate, endDate)
-    .slice(0, maxDays)
-    .map((date) => ({
-      label: businessDateDayLabel(date),
-      value: valuesByDate.get(date) ?? 0,
-    }));
+  return selectedDates.map((date) => ({
+    label: businessDateDayLabel(date),
+    value:
+      valuesByDate.get(date) ?? 0,
+  }));
 }
 
 function linePath(values: number[], width = 900, height = 140): string {
@@ -1476,6 +1551,193 @@ export function BusinessOverviewReviewPage({
 
   const dashboardIsLoading = isLoading;
 
+  const paymentMixCardRef =
+    useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const paymentMixCard =
+      paymentMixCardRef.current;
+
+    if (!paymentMixCard) {
+      return undefined;
+    }
+
+    const pageRoot =
+      paymentMixCard.closest(
+        '.bo-pro-page',
+      ) as HTMLElement | null;
+
+    if (!pageRoot) {
+      return undefined;
+    }
+
+    let measurementFrame = 0;
+    let shortDelayTimer = 0;
+    let longDelayTimer = 0;
+    let disposed = false;
+    let lastPageWidth = -1;
+    let lastAppliedHeight = '';
+
+    const syncPaymentMixStandardHeight = () => {
+      if (disposed) {
+        return;
+      }
+
+      window.cancelAnimationFrame(
+        measurementFrame,
+      );
+
+      measurementFrame =
+        window.requestAnimationFrame(() => {
+          if (disposed) {
+            return;
+          }
+
+          pageRoot.setAttribute(
+            'data-payment-height-measuring',
+            'true',
+          );
+
+          const measuredHeight = Math.ceil(
+            paymentMixCard
+              .getBoundingClientRect()
+              .height,
+          );
+
+          pageRoot.removeAttribute(
+            'data-payment-height-measuring',
+          );
+
+          if (measuredHeight <= 0) {
+            return;
+          }
+
+          const nextHeight =
+            `${measuredHeight}px`;
+
+          if (
+            nextHeight === lastAppliedHeight
+          ) {
+            return;
+          }
+
+          lastAppliedHeight = nextHeight;
+
+          pageRoot.style.setProperty(
+            '--ubuzima-bo-payment-standard-card-height',
+            nextHeight,
+          );
+        });
+    };
+
+    const pageResizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver((entries) => {
+            const entry = entries[0];
+
+            if (!entry) {
+              return;
+            }
+
+            const currentWidth = Math.round(
+              entry.contentRect.width,
+            );
+
+            if (
+              currentWidth === lastPageWidth
+            ) {
+              return;
+            }
+
+            lastPageWidth = currentWidth;
+
+            syncPaymentMixStandardHeight();
+          })
+        : null;
+
+    const paymentContentObserver =
+      typeof MutationObserver !== 'undefined'
+        ? new MutationObserver(
+            syncPaymentMixStandardHeight,
+          )
+        : null;
+
+    lastPageWidth = Math.round(
+      pageRoot
+        .getBoundingClientRect()
+        .width,
+    );
+
+    pageResizeObserver?.observe(
+      pageRoot,
+    );
+
+    paymentContentObserver?.observe(
+      paymentMixCard,
+      {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: [
+          'class',
+        ],
+      },
+    );
+
+    window.addEventListener(
+      'resize',
+      syncPaymentMixStandardHeight,
+    );
+
+    syncPaymentMixStandardHeight();
+
+    shortDelayTimer =
+      window.setTimeout(
+        syncPaymentMixStandardHeight,
+        250,
+      );
+
+    longDelayTimer =
+      window.setTimeout(
+        syncPaymentMixStandardHeight,
+        1000,
+      );
+
+    return () => {
+      disposed = true;
+
+      window.cancelAnimationFrame(
+        measurementFrame,
+      );
+
+      window.clearTimeout(
+        shortDelayTimer,
+      );
+
+      window.clearTimeout(
+        longDelayTimer,
+      );
+
+      pageResizeObserver?.disconnect();
+      paymentContentObserver?.disconnect();
+
+      window.removeEventListener(
+        'resize',
+        syncPaymentMixStandardHeight,
+      );
+
+      pageRoot.removeAttribute(
+        'data-payment-height-measuring',
+      );
+
+      pageRoot.style.removeProperty(
+        '--ubuzima-bo-payment-standard-card-height',
+      );
+    };
+  }, []);
+
+
   const refreshInventoryRiskOverview = () => {
     // Do not clear Business Overview cache here. The inventory valuation endpoint can fail
     // independently, and the latest good inventory cache is used as a safety fallback.
@@ -1628,7 +1890,10 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--trend ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          data-sales-trend-date-mapping="full-business-date"
+          className={`bo-pro-card bo-pro-card--trend ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Sales Trend</h2>
@@ -1707,7 +1972,11 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          ref={paymentMixCardRef}
+          data-height-standard="payment-mix-height-standard"
+          className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Payment Mix</h2>
