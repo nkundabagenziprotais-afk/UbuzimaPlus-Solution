@@ -1049,6 +1049,7 @@ function LineChart({
   startDate,
   endDate,
   maxVisibleBars = 14,
+  chartHeightOverride,
   valueFormatter = formatChartCompact,
   valueFormat = 'standard-compact',
 }: {
@@ -1058,6 +1059,7 @@ function LineChart({
   startDate?: string;
   endDate?: string;
   maxVisibleBars?: number;
+  chartHeightOverride?: number;
   valueFormatter?: (
     value: number,
   ) => string;
@@ -1101,10 +1103,14 @@ function LineChart({
       ? 64
       : 60;
 
-  const chartHeight =
+  const defaultChartHeight =
     isTwelveDayOperationalChart
       ? 300
       : 280;
+
+  const chartHeight =
+    chartHeightOverride
+    ?? defaultChartHeight;
 
   const visibleBarLimit = Math.max(
     1,
@@ -1117,10 +1123,16 @@ function LineChart({
     + visibleBarLimit
       * (barWidth + gap);
 
+  const renderPointCount = Math.max(
+    pointCount,
+    visibleBarLimit,
+  );
+
   const width =
     leftPadding
     + rightPadding
-    + pointCount * (barWidth + gap);
+    + renderPointCount
+      * (barWidth + gap);
 
   const height = chartHeight + topPadding + bottomPadding;
 
@@ -1131,6 +1143,8 @@ function LineChart({
       aria-label={label}
       data-chart-readability="scrollable-bars"
       data-point-count={pointCount}
+      data-render-slot-count={renderPointCount}
+      data-chart-geometry="date-independent"
       data-visible-bar-limit={visibleBarLimit}
       data-value-format={valueFormat}
       data-chart-size="business-overview-large-bars"
@@ -1554,11 +1568,27 @@ export function BusinessOverviewReviewPage({
   const businessOverviewGridRef =
     useRef<HTMLElement | null>(null);
 
+  const paymentMixCardRef =
+    useRef<HTMLElement | null>(null);
+
+  const inventoryRiskCardRef =
+    useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     const grid =
       businessOverviewGridRef.current;
 
-    if (!grid) {
+    const paymentMixCard =
+      paymentMixCardRef.current;
+
+    const inventoryRiskCard =
+      inventoryRiskCardRef.current;
+
+    if (
+      !grid
+      || !paymentMixCard
+      || !inventoryRiskCard
+    ) {
       return undefined;
     }
 
@@ -1566,17 +1596,15 @@ export function BusinessOverviewReviewPage({
     let shortDelayTimer = 0;
     let longDelayTimer = 0;
     let disposed = false;
-    let lastGridWidth = -1;
-    let lastAppliedHeight = '';
-
-    const cards = () =>
-      Array.from(
-        grid.querySelectorAll<HTMLElement>(
-          ':scope > .bo-pro-card',
-        ),
+    let lastGridWidth =
+      Math.round(
+        grid.getBoundingClientRect().width,
       );
 
-    const syncUniformCardHeight = () => {
+    let lastPaymentHeight = '';
+    let lastRiskHeight = '';
+
+    const syncViewportCardHeights = () => {
       if (disposed) {
         return;
       }
@@ -1592,141 +1620,149 @@ export function BusinessOverviewReviewPage({
           }
 
           grid.removeAttribute(
-            'data-uniform-card-height-ready',
+            'data-viewport-card-heights-ready',
           );
 
           grid.setAttribute(
-            'data-uniform-card-height-measuring',
+            'data-viewport-card-heights-measuring',
             'true',
           );
 
           grid.style.removeProperty(
-            '--ubuzima-bo-uniform-card-height',
+            '--ubuzima-bo-payment-pair-height',
           );
 
-          const tallestNaturalHeight =
-            Math.ceil(
-              cards().reduce(
-                (
-                  maximumHeight,
-                  card,
-                ) =>
-                  Math.max(
-                    maximumHeight,
-                    card.getBoundingClientRect().height,
-                    card.scrollHeight,
-                  ),
-                0,
-              ),
-            );
+          grid.style.removeProperty(
+            '--ubuzima-bo-risk-pair-height',
+          );
+
+          const paymentHeight = Math.ceil(
+            Math.max(
+              paymentMixCard
+                .getBoundingClientRect()
+                .height,
+              paymentMixCard.scrollHeight,
+            ),
+          );
+
+          const riskHeight = Math.ceil(
+            Math.max(
+              inventoryRiskCard
+                .getBoundingClientRect()
+                .height,
+              inventoryRiskCard.scrollHeight,
+            ),
+          );
 
           grid.removeAttribute(
-            'data-uniform-card-height-measuring',
+            'data-viewport-card-heights-measuring',
           );
 
-          if (tallestNaturalHeight <= 0) {
-            return;
+          if (paymentHeight > 0) {
+            const nextPaymentHeight =
+              `${paymentHeight}px`;
+
+            if (
+              nextPaymentHeight
+              !== lastPaymentHeight
+            ) {
+              lastPaymentHeight =
+                nextPaymentHeight;
+
+              grid.style.setProperty(
+                '--ubuzima-bo-payment-pair-height',
+                nextPaymentHeight,
+              );
+            }
           }
 
-          const nextHeight =
-            `${tallestNaturalHeight}px`;
+          if (riskHeight > 0) {
+            const nextRiskHeight =
+              `${riskHeight}px`;
+
+            if (
+              nextRiskHeight
+              !== lastRiskHeight
+            ) {
+              lastRiskHeight =
+                nextRiskHeight;
+
+              grid.style.setProperty(
+                '--ubuzima-bo-risk-pair-height',
+                nextRiskHeight,
+              );
+            }
+          }
 
           if (
-            nextHeight !== lastAppliedHeight
+            paymentHeight > 0
+            && riskHeight > 0
           ) {
-            lastAppliedHeight =
-              nextHeight;
-
-            grid.style.setProperty(
-              '--ubuzima-bo-uniform-card-height',
-              nextHeight,
+            grid.setAttribute(
+              'data-viewport-card-heights-ready',
+              'true',
             );
           }
-
-          grid.setAttribute(
-            'data-uniform-card-height-ready',
-            'true',
-          );
         });
+    };
+
+    const syncIfGridWidthChanged = () => {
+      if (disposed) {
+        return;
+      }
+
+      const currentWidth =
+        Math.round(
+          grid.getBoundingClientRect().width,
+        );
+
+      if (
+        currentWidth === lastGridWidth
+      ) {
+        return;
+      }
+
+      lastGridWidth =
+        currentWidth;
+
+      syncViewportCardHeights();
     };
 
     const gridResizeObserver =
       typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver((entries) => {
-            const entry = entries[0];
-
-            if (!entry) {
-              return;
-            }
-
-            const currentWidth =
-              Math.round(
-                entry.contentRect.width,
-              );
-
-            if (
-              currentWidth === lastGridWidth
-            ) {
-              return;
-            }
-
-            lastGridWidth =
-              currentWidth;
-
-            syncUniformCardHeight();
-          })
-        : null;
-
-    const contentObserver =
-      typeof MutationObserver !== 'undefined'
-        ? new MutationObserver(
-            syncUniformCardHeight,
+        ? new ResizeObserver(
+            syncIfGridWidthChanged,
           )
         : null;
 
-    lastGridWidth =
-      Math.round(
-        grid.getBoundingClientRect().width,
-      );
-
     gridResizeObserver?.observe(grid);
-
-    contentObserver?.observe(
-      grid,
-      {
-        childList: true,
-        subtree: true,
-        characterData: true,
-        attributes: true,
-        attributeFilter: [
-          'class',
-          'hidden',
-          'aria-expanded',
-        ],
-      },
-    );
 
     window.addEventListener(
       'resize',
-      syncUniformCardHeight,
+      syncIfGridWidthChanged,
     );
 
-    syncUniformCardHeight();
+    window.addEventListener(
+      'orientationchange',
+      syncIfGridWidthChanged,
+    );
+
+    syncViewportCardHeights();
 
     shortDelayTimer =
       window.setTimeout(
-        syncUniformCardHeight,
+        syncViewportCardHeights,
         250,
       );
 
     longDelayTimer =
       window.setTimeout(
-        syncUniformCardHeight,
+        syncViewportCardHeights,
         1000,
       );
 
     document.fonts?.ready
-      .then(syncUniformCardHeight)
+      .then(syncViewportCardHeights)
       .catch(() => undefined);
 
     return () => {
@@ -1745,23 +1781,31 @@ export function BusinessOverviewReviewPage({
       );
 
       gridResizeObserver?.disconnect();
-      contentObserver?.disconnect();
 
       window.removeEventListener(
         'resize',
-        syncUniformCardHeight,
+        syncIfGridWidthChanged,
+      );
+
+      window.removeEventListener(
+        'orientationchange',
+        syncIfGridWidthChanged,
       );
 
       grid.removeAttribute(
-        'data-uniform-card-height-ready',
+        'data-viewport-card-heights-ready',
       );
 
       grid.removeAttribute(
-        'data-uniform-card-height-measuring',
+        'data-viewport-card-heights-measuring',
       );
 
       grid.style.removeProperty(
-        '--ubuzima-bo-uniform-card-height',
+        '--ubuzima-bo-payment-pair-height',
+      );
+
+      grid.style.removeProperty(
+        '--ubuzima-bo-risk-pair-height',
       );
     };
   }, []);
@@ -1902,7 +1946,8 @@ export function BusinessOverviewReviewPage({
 
       <section
         ref={businessOverviewGridRef}
-        data-uniform-card-height-standard="tallest-natural-card"
+        data-card-height-trigger="viewport-only"
+        data-card-height-standard="paired-reference-cards"
         className="bo-pro-grid"
       >
         <article className={`bo-pro-card bo-pro-card--daily ${dashboardIsLoading ? 'is-loading' : ''}`}>
@@ -2004,7 +2049,12 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          ref={paymentMixCardRef}
+          data-height-pair="payment-profit"
+          data-height-authority="payment-mix"
+          className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Payment Mix</h2>
@@ -2039,7 +2089,10 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--profit ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          data-height-pair="payment-profit"
+          className={`bo-pro-card bo-pro-card--profit ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Expenses & Profitability</h2>
@@ -2057,7 +2110,12 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--risk ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          ref={inventoryRiskCardRef}
+          data-height-pair="risk-insurance"
+          data-height-authority="inventory-risk"
+          className={`bo-pro-card bo-pro-card--risk ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <div className="bo-pro-risk-heading-row">
@@ -2111,7 +2169,10 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--insurance bo-pro-order-insurance ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          data-height-pair="risk-insurance"
+          className={`bo-pro-card bo-pro-card--insurance bo-pro-order-insurance ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Insurance & Receivables</h2>
@@ -2184,6 +2245,7 @@ export function BusinessOverviewReviewPage({
               startDate={nearExpiryTrendRange.startDate}
               endDate={nearExpiryTrendRange.endDate}
               maxVisibleBars={12}
+            chartHeightOverride={150}
             />
           </div>
         </article>
@@ -2225,6 +2287,7 @@ export function BusinessOverviewReviewPage({
               maxVisibleBars={12}
               valueFormatter={formatTwoDecimalCompact}
               valueFormat="two-decimal-compact"
+            chartHeightOverride={150}
             />
           </div>
         </article>

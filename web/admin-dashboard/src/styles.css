@@ -60357,12 +60357,14 @@ body .pos-quantity-calculated-total-card output {
   }
 }
 
-/* UBIZIMA_BO_EQUAL_HEIGHT_VISIBILITY_V14B */
+/* UBIZIMA_BO_DATE_INDEPENDENT_GEOMETRY_V16D */
 
 .bo-pro-page {
   --ubuzima-bo-number-font-size: 13px;
   --ubuzima-bo-data-label-font-size: 8px;
+  --ubuzima-bo-sales-data-label-font-size: 9.5px;
   --ubuzima-bo-axis-label-font-size: 10px;
+  --ubuzima-bo-risk-category-font-size: 0.74rem;
 }
 
 /* Consistent numbers outside chart labels. */
@@ -60380,8 +60382,12 @@ body .pos-quantity-calculated-total-card output {
   font-variant-numeric: tabular-nums;
 }
 
-/* Compact values designed to fit the approved bar widths. */
-.bo-pro-page .bo-pro-bar-data-label {
+/* Standard chart data labels. */
+.bo-pro-page .bo-pro-bar-data-label,
+.bo-pro-page
+  .bo-pro-line-chart
+  svg
+  text.bo-pro-data-label {
   font-size:
     var(
       --ubuzima-bo-data-label-font-size
@@ -60392,10 +60398,32 @@ body .pos-quantity-calculated-total-card output {
   letter-spacing: -0.06em !important;
   font-variant-numeric: tabular-nums;
   text-rendering: geometricPrecision;
+  stroke-width: 1px !important;
 }
 
-/* Consistent dates and category-axis labels. */
-.bo-pro-page .bo-pro-bar-axis-label {
+/* Slightly larger Sales Trend labels. */
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--trend
+  .bo-pro-bar-data-label,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--trend
+  .bo-pro-line-chart
+  svg
+  text.bo-pro-data-label {
+  font-size:
+    var(
+      --ubuzima-bo-sales-data-label-font-size
+    ) !important;
+
+  letter-spacing: -0.04em !important;
+}
+
+/* Stable category and date labels. */
+.bo-pro-page .bo-pro-bar-axis-label,
+.bo-pro-page
+  .bo-pro-line-chart
+  svg
+  text.bo-pro-axis-label {
   font-size:
     var(
       --ubuzima-bo-axis-label-font-size
@@ -60407,33 +60435,53 @@ body .pos-quantity-calculated-total-card output {
 }
 
 /*
-  All cards use the tallest natural card height.
-  The selected maximum means content is not clipped.
+  Pair heights are measured during initial rendering and
+  viewport-width changes only. Date changes do not remeasure.
 */
-.bo-pro-grid[data-uniform-card-height-ready="true"]
-  > .bo-pro-card {
+.bo-pro-grid[data-viewport-card-heights-ready="true"]
+  > [data-height-pair="risk-insurance"] {
   height:
     var(
-      --ubuzima-bo-uniform-card-height
+      --ubuzima-bo-risk-pair-height
     ) !important;
 
   min-height:
     var(
-      --ubuzima-bo-uniform-card-height
+      --ubuzima-bo-risk-pair-height
     ) !important;
 
   max-height:
     var(
-      --ubuzima-bo-uniform-card-height
+      --ubuzima-bo-risk-pair-height
     ) !important;
 
   overflow: visible !important;
   box-sizing: border-box !important;
 }
 
-/* Natural sizing during measurement. */
-.bo-pro-grid[data-uniform-card-height-measuring="true"]
-  > .bo-pro-card {
+.bo-pro-grid[data-viewport-card-heights-ready="true"]
+  > [data-height-pair="payment-profit"] {
+  height:
+    var(
+      --ubuzima-bo-payment-pair-height
+    ) !important;
+
+  min-height:
+    var(
+      --ubuzima-bo-payment-pair-height
+    ) !important;
+
+  max-height:
+    var(
+      --ubuzima-bo-payment-pair-height
+    ) !important;
+
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.bo-pro-grid[data-viewport-card-heights-measuring="true"]
+  > [data-height-pair] {
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
@@ -60441,53 +60489,120 @@ body .pos-quantity-calculated-total-card output {
   align-self: start !important;
 }
 
-/* Preserve horizontal scrolling for the approved charts. */
+/* Match Inventory Risk category typography. */
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--risk
+  .bo-pro-table-wrap
+  th,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--risk
+  .bo-pro-table-wrap
+  td,
 .bo-pro-page
   .bo-pro-card.bo-pro-order-insurance
-  .bo-pro-line-chart,
+  .bo-pro-table-wrap
+  th,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-table-wrap
+  td,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-table-wrap
+  th,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-table-wrap
+  td,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-table-wrap
+  th,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-table-wrap
+  td,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact
+  article
+  span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact
+  article
+  strong,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact
+  article
+  span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact
+  article
+  strong,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact
+  article
+  span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact
+  article
+  strong {
+  font-size:
+    var(
+      --ubuzima-bo-risk-category-font-size
+    ) !important;
+
+  line-height: 1.22 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Allow explicit compact chart height. */
 .bo-pro-page
   .bo-pro-card.bo-pro-order-near-expiry
   .bo-pro-line-chart,
 .bo-pro-page
   .bo-pro-card.bo-pro-order-inventory-movement
-  .bo-pro-line-chart,
-.bo-pro-page
-  .bo-pro-card.bo-pro-order-insurance
-  .bo-pro-bar-chart-shell,
+  .bo-pro-line-chart {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  padding-block: 0.35rem !important;
+}
+
 .bo-pro-page
   .bo-pro-card.bo-pro-order-near-expiry
-  .bo-pro-bar-chart-shell,
+  .bo-pro-line-chart
+  svg,
 .bo-pro-page
   .bo-pro-card.bo-pro-order-inventory-movement
-  .bo-pro-bar-chart-shell {
+  .bo-pro-line-chart
+  svg {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/*
+  Short ranges retain the configured visible-slot width.
+  Longer ranges continue through horizontal scrolling.
+*/
+.bo-pro-page .bo-pro-bar-chart-shell,
+.bo-pro-page .bo-pro-line-chart {
   width: 100% !important;
   max-width: 100% !important;
-
   overflow-x: auto !important;
   overflow-y: hidden !important;
-
   overscroll-behavior-inline: contain;
   -webkit-overflow-scrolling: touch;
 }
 
-.bo-pro-page
-  .bo-pro-card.bo-pro-order-insurance
-  .bo-pro-line-chart svg,
-.bo-pro-page
-  .bo-pro-card.bo-pro-order-near-expiry
-  .bo-pro-line-chart svg,
-.bo-pro-page
-  .bo-pro-card.bo-pro-order-inventory-movement
-  .bo-pro-line-chart svg,
-.bo-pro-page
-  .bo-pro-card.bo-pro-order-insurance
-  .bo-pro-bar-chart-shell svg,
-.bo-pro-page
-  .bo-pro-card.bo-pro-order-near-expiry
-  .bo-pro-bar-chart-shell svg,
-.bo-pro-page
-  .bo-pro-card.bo-pro-order-inventory-movement
-  .bo-pro-bar-chart-shell svg {
+.bo-pro-page .bo-pro-bar-chart,
+.bo-pro-page .bo-pro-line-chart svg {
   display: block !important;
   width: auto !important;
   min-width: 100% !important;
@@ -60499,6 +60614,7 @@ body .pos-quantity-calculated-total-card output {
   .bo-pro-page {
     --ubuzima-bo-number-font-size: 12px;
     --ubuzima-bo-data-label-font-size: 7px;
+    --ubuzima-bo-sales-data-label-font-size: 8.5px;
     --ubuzima-bo-axis-label-font-size: 9px;
   }
 }
