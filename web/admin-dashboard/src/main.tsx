@@ -1,3 +1,4 @@
+import "./launch/workspaceGlassDock";
 
 function installUbuzimaRealMobileAppHomeV1(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
