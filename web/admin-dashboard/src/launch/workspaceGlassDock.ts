@@ -31,6 +31,12 @@ const CONTINUOUS_GLASS_MARKER =
 const OVERFLOW_MARKER =
   'UBIZIMA_MAIN_SCROLL_ONLY_AS_FINAL_FALLBACK_V7';
 
+const PROFILE_VISIBILITY_MARKER =
+  'UBIZIMA_SOLID_OPAQUE_PROFILE_POPOVER_V7C';
+
+const SEPARATOR_VISIBILITY_MARKER =
+  'UBIZIMA_HIGH_CONTRAST_MENU_RECENT_SEPARATOR_V7C';
+
 const MOUNT_MARKER =
   'UBIZIMA_SIDEBAR_HIDE_AFTER_DOCK_MOUNT_V6D';
 
@@ -3611,6 +3617,221 @@ function injectStyles(): void {
     }
   `;
 
+  style.textContent += `
+    @media (min-width: 768px) {
+      .ubuzima-workspace-dock-v5__profile-popover {
+        opacity: 1 !important;
+
+        color-scheme: light;
+
+        background:
+          linear-gradient(
+            180deg,
+            #ffffff 0%,
+            #f3fbf8 100%
+          ) !important;
+
+        border:
+          1px solid
+          #cbded8 !important;
+
+        box-shadow:
+          0 28px 72px
+            rgba(10, 42, 36, 0.30),
+          0 8px 24px
+            rgba(15, 118, 110, 0.12),
+          0 0 0 1px
+            rgba(255, 255, 255, 0.92),
+          inset 0 1px 0
+            #ffffff !important;
+
+        -webkit-backdrop-filter:
+          none !important;
+
+        backdrop-filter:
+          none !important;
+
+        isolation: isolate;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-popover::before {
+        content: '';
+
+        position: absolute;
+        z-index: -1;
+
+        inset: 0;
+
+        border-radius: inherit;
+
+        background:
+          #f7fffc;
+
+        opacity: 1;
+
+        pointer-events: none;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-summary {
+        border:
+          1px solid
+          #dcebe7;
+
+        border-radius:
+          14px;
+
+        background:
+          #ffffff;
+
+        box-shadow:
+          inset 0 1px 0
+            #ffffff;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-summary strong {
+        color:
+          #123c35 !important;
+
+        text-shadow:
+          none !important;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-summary small {
+        color:
+          #55766f !important;
+
+        text-shadow:
+          none !important;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-action {
+        border-color:
+          #d4e5e0 !important;
+
+        background:
+          #ffffff !important;
+
+        color:
+          #183f39 !important;
+
+        box-shadow:
+          0 2px 7px
+            rgba(18, 60, 53, 0.055),
+          inset 0 1px 0
+            #ffffff !important;
+
+        text-shadow:
+          none !important;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-action:hover,
+      .ubuzima-workspace-dock-v5__profile-action:focus-visible {
+        border-color:
+          #88b8ad !important;
+
+        background:
+          #eaf7f3 !important;
+
+        color:
+          #0e5c51 !important;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-action:disabled {
+        border-color:
+          #e2ece9 !important;
+
+        background:
+          #f4f8f7 !important;
+
+        color:
+          #91a5a0 !important;
+
+        opacity: 1 !important;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-action--danger {
+        border-color:
+          #efcdcd !important;
+
+        background:
+          #fff8f8 !important;
+
+        color:
+          #a52f2f !important;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-action--danger:hover,
+      .ubuzima-workspace-dock-v5__profile-action--danger:focus-visible {
+        border-color:
+          #d99a9a !important;
+
+        background:
+          #ffeded !important;
+
+        color:
+          #8f2222 !important;
+      }
+
+      .ubuzima-workspace-dock-v7__separator {
+        width:
+          2px !important;
+
+        min-width:
+          2px !important;
+
+        max-width:
+          2px !important;
+
+        height:
+          46px !important;
+
+        min-height:
+          46px !important;
+
+        flex:
+          0 0 2px !important;
+
+        align-self:
+          center !important;
+
+        margin:
+          0 8px !important;
+
+        border-radius:
+          999px !important;
+
+        background:
+          linear-gradient(
+            to bottom,
+            transparent 0%,
+            rgba(15, 118, 110, 0.30) 14%,
+            rgba(15, 118, 110, 0.78) 48%,
+            rgba(15, 118, 110, 0.48) 72%,
+            transparent 100%
+          ) !important;
+
+        box-shadow:
+          1px 0 0
+            rgba(255, 255, 255, 0.88),
+          -1px 0 0
+            rgba(18, 60, 53, 0.07),
+          0 0 12px
+            rgba(15, 118, 110, 0.13) !important;
+
+        opacity:
+          1 !important;
+
+        visibility:
+          visible !important;
+      }
+
+      .ubuzima-workspace-dock-v7__separator[hidden] {
+        display:
+          none !important;
+      }
+    }
+  `;
+
   document.head.appendChild(
     style,
   );
@@ -4183,6 +4404,26 @@ function ensureDock(): HTMLElement {
   dock.setAttribute(
     'data-overflow-marker',
     OVERFLOW_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-profile-visibility-marker',
+    PROFILE_VISIBILITY_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-separator-visibility-marker',
+    SEPARATOR_VISIBILITY_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-profile-popover-visual',
+    'solid-opaque-high-contrast',
+  );
+
+  dock.setAttribute(
+    'data-menu-recent-separator',
+    'visible-high-contrast-vertical',
   );
 
   dock.setAttribute(
