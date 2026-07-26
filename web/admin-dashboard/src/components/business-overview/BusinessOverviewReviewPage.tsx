@@ -1073,6 +1073,9 @@ function LineChart({
   const isTwelveDayOperationalChart =
     maxVisibleBars === 12;
 
+  const isSalesTrendChart =
+    maxVisibleBars === 30;
+
   const barWidth =
     isTwelveDayOperationalChart
       ? 30
@@ -1081,7 +1084,9 @@ function LineChart({
   const gap =
     isTwelveDayOperationalChart
       ? 6
-      : 22;
+      : isSalesTrendChart
+        ? 18
+        : 22;
 
   const leftPadding =
     isTwelveDayOperationalChart
@@ -1145,6 +1150,11 @@ function LineChart({
       data-point-count={pointCount}
       data-render-slot-count={renderPointCount}
       data-chart-geometry="date-independent"
+      data-sales-trend-gap={
+        isSalesTrendChart
+          ? 'compact-18'
+          : 'standard'
+      }
       data-visible-bar-limit={visibleBarLimit}
       data-value-format={valueFormat}
       data-chart-size="business-overview-large-bars"
@@ -2200,7 +2210,6 @@ export function BusinessOverviewReviewPage({
             startDate={insuranceTrendRange.startDate}
             endDate={insuranceTrendRange.endDate}
             maxVisibleBars={12}
-          chartHeightOverride={150}
           />
 
           <div className="bo-pro-metric-list compact">
