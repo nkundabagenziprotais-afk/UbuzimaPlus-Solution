@@ -408,3 +408,5 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(request).then((cached) => cached || safeLandingResponse('Ubuzima+ could not reach this admin file.')))
   );
 });
+
+// UBIZIMA_MAIN_ADMIN_TASKBAR_REMOVAL_SW_BUMP_V1 20260726T120052Z

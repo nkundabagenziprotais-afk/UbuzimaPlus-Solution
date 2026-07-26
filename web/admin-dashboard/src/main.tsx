@@ -1120,13 +1120,20 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles.css';
 import App from './App';
-import "./launch/desktopDock";
 import "./launch/posWebRestore";
 import "./launch/mobilePwaScopeGuard";
 import "./launch/posInventorySwBridge";
 import "./launch/homeScrollUnlock";
-import "./launch/sourceDockFallbackV5";
 import "./launch/posProductCardReplaceFinal";
+
+if (
+  typeof window !== 'undefined'
+) {
+  document.documentElement.setAttribute(
+    'data-ubuzima-main-taskbar-removal',
+    'UBIZIMA_MAIN_ADMIN_TASKBAR_REMOVAL_V1',
+  );
+}
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
