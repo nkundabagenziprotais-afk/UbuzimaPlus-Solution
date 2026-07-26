@@ -5,19 +5,6 @@ return [
     |--------------------------------------------------------------------------
     | POS Finance posting mode
     |--------------------------------------------------------------------------
-    |
-    | shadow:
-    |   Preserve the current validated payment-shadow ledger.
-    |
-    | dual:
-    |   Preserve shadow accounting while also creating authoritative journals
-    |   for controlled reconciliation.
-    |
-    | authoritative:
-    |   Use authoritative sale, payment, COGS and inventory journals.
-    |
-    | Production remains in shadow mode until reconciliation gates pass.
-    |
     */
 
     'pos_posting_mode' => env(
@@ -35,14 +22,15 @@ return [
         'completed',
     ],
 
+    'prospective_cutover_date' => env(
+        'FINANCE_PROSPECTIVE_CUTOVER_DATE',
+        '2026-08-01'
+    ),
+
     /*
     |--------------------------------------------------------------------------
     | Authoritative payment mappings
     |--------------------------------------------------------------------------
-    |
-    | There is deliberately no fallback. Unknown methods must be quarantined
-    | instead of being silently classified as cash.
-    |
     */
 
     'authoritative_payment_mappings' => [
@@ -65,5 +53,26 @@ return [
         'sales.returns',
         'inventory.asset',
         'inventory.cogs',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Controlled inventory-cost approval methods
+    |--------------------------------------------------------------------------
+    |
+    | These methods require human approval. Selling price is never an
+    | acceptable cost source.
+    |
+    */
+
+    'inventory_cost_approval_methods' => [
+        'documentary_exact' =>
+            'Exact unit cost from a verified purchase or receipt document',
+
+        'product_history_approved' =>
+            'Historical product cost approved after documentary review',
+
+        'opening_valuation' =>
+            'Accountant-approved opening inventory valuation',
     ],
 ];

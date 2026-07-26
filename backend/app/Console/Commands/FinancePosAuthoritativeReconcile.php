@@ -8,12 +8,13 @@ use Illuminate\Support\Facades\DB;
 
 class FinancePosAuthoritativeReconcile extends Command
 {
-    protected $signature = 'finance:pos-authoritative:reconcile
+    protected $signature =
+        'finance:pos-authoritative:reconcile
         {--tenant_id=1 : Tenant ID}
         {--branch_id= : Optional branch ID}';
 
     protected $description =
-        'Report authoritative POS Finance readiness and reconciliation gaps.';
+        'Report prospective authoritative POS Finance readiness and historical exceptions.';
 
     public function handle(
         FinanceAuthoritativePostingReadinessService $readiness,
@@ -38,12 +39,18 @@ class FinancePosAuthoritativeReconcile extends Command
         $saleQuery = DB::table(
             'pharmaco_sales'
         )
-            ->where('tenant_id', $tenantId)
+            ->where(
+                'tenant_id',
+                $tenantId
+            )
             ->whereIn(
                 'status',
                 (array) config(
                     'finance.authoritative_sale_statuses',
-                    ['dispensed', 'completed']
+                    [
+                        'dispensed',
+                        'completed',
+                    ]
                 )
             );
 
@@ -54,14 +61,24 @@ class FinancePosAuthoritativeReconcile extends Command
             );
         }
 
-        $eligibleSales = $saleQuery->count();
+        $eligibleSales =
+            $saleQuery->count();
 
         $postedSales = DB::table(
             'finance_journal_entries'
         )
-            ->where('tenant_id', $tenantId)
-            ->where('source_module', 'pos')
-            ->where('source_type', 'sale')
+            ->where(
+                'tenant_id',
+                $tenantId
+            )
+            ->where(
+                'source_module',
+                'pos'
+            )
+            ->where(
+                'source_type',
+                'sale'
+            )
             ->where(
                 'idempotency_key',
                 'like',
@@ -72,16 +89,31 @@ class FinancePosAuthoritativeReconcile extends Command
         $completedPayments = DB::table(
             'pharmaco_payments'
         )
-            ->where('tenant_id', $tenantId)
-            ->where('status', 'completed')
+            ->where(
+                'tenant_id',
+                $tenantId
+            )
+            ->where(
+                'status',
+                'completed'
+            )
             ->count();
 
         $postedPayments = DB::table(
             'finance_journal_entries'
         )
-            ->where('tenant_id', $tenantId)
-            ->where('source_module', 'pos')
-            ->where('source_type', 'payment')
+            ->where(
+                'tenant_id',
+                $tenantId
+            )
+            ->where(
+                'source_module',
+                'pos'
+            )
+            ->where(
+                'source_type',
+                'payment'
+            )
             ->where(
                 'idempotency_key',
                 'like',
@@ -92,7 +124,10 @@ class FinancePosAuthoritativeReconcile extends Command
         $unbalanced = DB::table(
             'finance_journal_entries'
         )
-            ->where('tenant_id', $tenantId)
+            ->where(
+                'tenant_id',
+                $tenantId
+            )
             ->where(
                 'idempotency_key',
                 'like',
@@ -104,7 +139,7 @@ class FinancePosAuthoritativeReconcile extends Command
             ->count();
 
         $this->info(
-            'Finance POS Authoritative Reconciliation'
+            'Finance POS Prospective Authoritative Reconciliation'
         );
 
         $this->line(
@@ -112,11 +147,25 @@ class FinancePosAuthoritativeReconcile extends Command
         );
 
         $this->line(
+            'Prospective cutover date: '
+            . $report[
+                'prospective_cutover_date'
+            ]
+        );
+
+        $this->line(
             "Overall readiness: {$report['overall_status']}"
         );
 
         $this->line(
-            "Eligible sales: {$eligibleSales}"
+            'Approved inventory cost records: '
+            . $report[
+                'approved_inventory_cost_records'
+            ]
+        );
+
+        $this->line(
+            "Eligible historical sales: {$eligibleSales}"
         );
 
         $this->line(
@@ -125,7 +174,10 @@ class FinancePosAuthoritativeReconcile extends Command
 
         $this->line(
             'Missing authoritative sale journals: '
-            . max(0, $eligibleSales - $postedSales)
+            . max(
+                0,
+                $eligibleSales - $postedSales
+            )
         );
 
         $this->line(
@@ -157,13 +209,26 @@ class FinancePosAuthoritativeReconcile extends Command
             );
         }
 
+        foreach (
+            $report[
+                'historical_exception_counts'
+            ]
+            as $key => $value
+        ) {
+            $this->line(
+                "historical_{$key}: {$value}"
+            );
+        }
+
         $this->line(
             'Missing mappings: '
             . (
                 $report['missing_mappings']
                     ? implode(
                         ', ',
-                        $report['missing_mappings']
+                        $report[
+                            'missing_mappings'
+                        ]
                     )
                     : 'none'
             )
@@ -172,7 +237,9 @@ class FinancePosAuthoritativeReconcile extends Command
         $this->line(
             'Unknown payment methods: '
             . (
-                $report['unknown_payment_methods']
+                $report[
+                    'unknown_payment_methods'
+                ]
                     ? implode(
                         ', ',
                         $report[
