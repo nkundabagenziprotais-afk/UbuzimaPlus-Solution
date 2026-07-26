@@ -37,6 +37,12 @@ const PROFILE_VISIBILITY_MARKER =
 const SEPARATOR_VISIBILITY_MARKER =
   'UBIZIMA_HIGH_CONTRAST_MENU_RECENT_SEPARATOR_V7C';
 
+const MOBILE_TASKBAR_REMOVAL_MARKER =
+  'UBIZIMA_MOBILE_APP_TASKBAR_REMOVED_V7D';
+
+const MOBILE_TASKBAR_STYLE_ID =
+  'ubuzima-mobile-no-taskbar-v7d-style';
+
 const MOUNT_MARKER =
   'UBIZIMA_SIDEBAR_HIDE_AFTER_DOCK_MOUNT_V6D';
 
@@ -128,10 +134,157 @@ function isLikelyPhone(): boolean {
   );
 }
 
+function shouldSuppressDockForMobile(): boolean {
+  return (
+    isLikelyPhone()
+    || window.matchMedia(
+      '(max-width: 767px)',
+    ).matches
+  );
+}
+
+function installMobileTaskbarRemovalStyle(): void {
+  if (
+    document.getElementById(
+      MOBILE_TASKBAR_STYLE_ID,
+    )
+  ) {
+    return;
+  }
+
+  const style =
+    document.createElement('style');
+
+  style.id =
+    MOBILE_TASKBAR_STYLE_ID;
+
+  style.textContent = `
+    @media (max-width: 767px) {
+      .ubuzima-workspace-dock-v5,
+      .ubuzima-workspace-dock-v4,
+      .ubuzima-glass-workspace-dock,
+      .desktop-dock,
+      .source-dock,
+      .desktop-taskbar,
+      .workspace-taskbar,
+      .taskbar,
+      [data-ubuzima-workspace-dock-v5],
+      [data-ubuzima-workspace-dock-v4],
+      [data-ubuzima-workspace-dock-preview] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    }
+
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      .ubuzima-workspace-dock-v5,
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      .ubuzima-workspace-dock-v4,
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      .ubuzima-glass-workspace-dock,
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      .desktop-dock,
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      .source-dock,
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      .desktop-taskbar,
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      .workspace-taskbar,
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      .taskbar,
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      [data-ubuzima-workspace-dock-v5],
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      [data-ubuzima-workspace-dock-v4],
+    html[data-ubuzima-mobile-taskbar-removed="true"]
+      [data-ubuzima-workspace-dock-preview] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function removeMobileTaskbarDom(): void {
+  const selectors = [
+    '[data-ubuzima-workspace-dock-v5]',
+    '[data-ubuzima-workspace-dock-v4]',
+    '[data-ubuzima-workspace-dock-preview]',
+    '.ubuzima-workspace-dock-v5',
+    '.ubuzima-workspace-dock-v4',
+    '.ubuzima-glass-workspace-dock',
+    '.desktop-dock',
+    '.source-dock',
+    '.desktop-taskbar',
+    '.workspace-taskbar',
+    '.taskbar',
+    '[class*="taskbar"]',
+    '[id*="taskbar"]',
+  ];
+
+  document
+    .querySelectorAll<HTMLElement>(
+      selectors.join(','),
+    )
+    .forEach((element) => {
+      if (
+        element.classList.contains(
+          'ubuzima-mobile-bottom-nav',
+        )
+      ) {
+        return;
+      }
+
+      element.remove();
+    });
+}
+
+function enforceMobileNoTaskbar(): void {
+  if (!shouldSuppressDockForMobile()) {
+    return;
+  }
+
+  installMobileTaskbarRemovalStyle();
+
+  document.documentElement
+    .classList.remove(ROOT_CLASS);
+
+  document.documentElement
+    .setAttribute(
+      'data-ubuzima-mobile-taskbar-removed',
+      'true',
+    );
+
+  document.documentElement
+    .setAttribute(
+      'data-ubuzima-mobile-taskbar-removal-marker',
+      MOBILE_TASKBAR_REMOVAL_MARKER,
+    );
+
+  document.documentElement
+    .removeAttribute(
+      'data-ubuzima-workspace-dock-mounted',
+    );
+
+  document.documentElement
+    .setAttribute(
+      'data-ubuzima-workspace-dock-bootstrap',
+      'mobile-taskbar-disabled',
+    );
+
+  removeMobileTaskbarDom();
+  hideTooltip();
+}
+
 function shouldRenderDock(): boolean {
   return (
     window.innerWidth >= MINIMUM_WIDTH
-    && !isLikelyPhone()
+    && !shouldSuppressDockForMobile()
   );
 }
 
@@ -4427,6 +4580,16 @@ function ensureDock(): HTMLElement {
   );
 
   dock.setAttribute(
+    'data-mobile-taskbar-removal-marker',
+    MOBILE_TASKBAR_REMOVAL_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-mobile-scope',
+    'desktop-tablet-only-no-phone-taskbar',
+  );
+
+  dock.setAttribute(
     'data-mount-marker',
     MOUNT_MARKER,
   );
@@ -4747,6 +4910,11 @@ function renderDock(
   forceStructure = false,
 ): void {
   if (isRendering) {
+    return;
+  }
+
+  if (shouldSuppressDockForMobile()) {
+    enforceMobileNoTaskbar();
     return;
   }
 
@@ -5271,6 +5439,33 @@ function startDock(): void {
   window
     .__ubuzimaWorkspaceDockV5 =
     true;
+
+  if (shouldSuppressDockForMobile()) {
+    enforceMobileNoTaskbar();
+
+    window.addEventListener(
+      'resize',
+      enforceMobileNoTaskbar,
+      {
+        passive: true,
+      },
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      enforceMobileNoTaskbar,
+      {
+        passive: true,
+      },
+    );
+
+    window.addEventListener(
+      'pageshow',
+      enforceMobileNoTaskbar,
+    );
+
+    return;
+  }
 
   let activationFrame = 0;
 
