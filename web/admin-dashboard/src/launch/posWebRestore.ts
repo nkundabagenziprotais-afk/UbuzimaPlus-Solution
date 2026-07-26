@@ -54,12 +54,8 @@ function restorePosWebInterface(): void {
         node.setAttribute("data-ubuzima-pos-mobile-neutralized", "true");
       });
 
-    const dock = document.getElementById("ubuzimaSourceDock");
-    if (dock) {
-      dock.style.display = "";
-      dock.style.visibility = "visible";
-      dock.style.opacity = "1";
-    }
+    // Legacy source taskbar ownership removed by
+    // UBIZIMA_SOURCE_TASKBAR_OWNERSHIP_REMOVAL_V2.
   });
 }
 

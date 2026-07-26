@@ -1,4 +1,3 @@
-import './launch/workspaceGlassDockPreviewV1B';
 function installUbuzimaRealMobileAppHomeV1(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return;
@@ -1127,6 +1126,59 @@ import "./launch/posInventorySwBridge";
 import "./launch/homeScrollUnlock";
 
 import "./launch/posProductCardReplaceFinal";
+
+if (
+  typeof window !== 'undefined'
+  && window.location.pathname.startsWith(
+    '/admin-dock-preview/',
+  )
+) {
+  document.documentElement.setAttribute(
+    'data-ubuzima-source-taskbar-removed',
+    'UBIZIMA_SOURCE_TASKBAR_OWNERSHIP_REMOVAL_V2',
+  );
+
+  document.title =
+    'Ubuzima+ · Taskbar Removed Preview';
+
+  const sourceRemovalBadge =
+    document.createElement('div');
+
+  sourceRemovalBadge.setAttribute(
+    'data-ubuzima-source-taskbar-removal-badge',
+    'UBIZIMA_SOURCE_TASKBAR_OWNERSHIP_REMOVAL_V2',
+  );
+
+  sourceRemovalBadge.textContent =
+    'SOURCE TASKBAR REMOVED';
+
+  Object.assign(
+    sourceRemovalBadge.style,
+    {
+      position: 'fixed',
+      zIndex: '2147483000',
+      top: '12px',
+      right: '12px',
+      padding: '7px 10px',
+      border:
+        '1px solid rgba(31, 122, 104, 0.28)',
+      borderRadius: '999px',
+      color: '#145d51',
+      background:
+        'rgba(245, 255, 252, 0.96)',
+      boxShadow:
+        '0 6px 18px rgba(20, 45, 40, 0.12)',
+      fontSize: '9px',
+      fontWeight: '900',
+      letterSpacing: '0.07em',
+      pointerEvents: 'none',
+    },
+  );
+
+  document.body.appendChild(
+    sourceRemovalBadge,
+  );
+}
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
