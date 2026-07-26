@@ -215,7 +215,7 @@
         }, 9000);
       })();
     </script>
-  
+
 
 
 
@@ -235,5 +235,515 @@
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+  <!-- UBIZIMA_TASKBAR_KILL_SWITCH_PREVIEW_V3 -->
+  <script>
+    (function () {
+      'use strict';
+
+      var BUILD_MARKER =
+        'UBIZIMA_TASKBAR_KILL_SWITCH_PREVIEW_V3';
+
+      var RUNTIME_MARKER =
+        'UBIZIMA_PRE_REACT_TASKBAR_REMOVAL_RUNTIME_V3';
+
+      var ROOT_ATTRIBUTE =
+        'data-ubuzima-taskbar-kill-switch';
+
+      var BADGE_ATTRIBUTE =
+        'data-ubuzima-taskbar-kill-switch-badge';
+
+      var STYLE_ID =
+        'ubuzima-taskbar-kill-switch-v3-style';
+
+      var removedTotal = 0;
+      var scheduledTimer = 0;
+
+      var exactSelectors = [
+        '.ubuzima-permanent-taskbar',
+        '[data-ubuzima-permanent-taskbar]',
+        '#ubuzima-taskbar',
+        '.ubuzima-taskbar',
+        '[class*="taskbar"]',
+        '[id*="taskbar"]',
+        '#ubuzima-desktop-dock',
+        '.ubuzima-desktop-dock',
+        '[data-ubuzima-desktop-dock]',
+        '[class*="desktop-dock"]',
+        '[id*="desktop-dock"]',
+        '[data-ubuzima-permanent-dock]',
+        '[data-ubuzima-workspace-dock-preview]',
+        '.ubuzima-glass-workspace-dock'
+      ];
+
+      function isPreviewRoute() {
+        return (
+          window.location.pathname.indexOf(
+            '/admin-dock-preview/'
+          ) === 0
+        );
+      }
+
+      function desktopOrTablet() {
+        var width = Math.max(
+          window.innerWidth || 0,
+          document.documentElement.clientWidth || 0
+        );
+
+        return width >= 768;
+      }
+
+      function ensureStyle() {
+        if (document.getElementById(STYLE_ID)) {
+          return;
+        }
+
+        var style =
+          document.createElement('style');
+
+        style.id = STYLE_ID;
+
+        style.textContent =
+          '@media (min-width:768px){'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"]{'
+          + '--ubuzima-taskbar-height:0px!important;'
+          + '--ubuzima-dock-height:0px!important;'
+          + '--ubuzima-bottom-nav-height:0px!important;'
+          + '}'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] .ubuzima-permanent-taskbar,'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] [data-ubuzima-permanent-taskbar],'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] #ubuzima-taskbar,'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] .ubuzima-taskbar,'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] [class*="taskbar"],'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] [id*="taskbar"],'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] .ubuzima-desktop-dock,'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] [data-ubuzima-desktop-dock]{'
+          + 'display:none!important;'
+          + 'visibility:hidden!important;'
+          + 'opacity:0!important;'
+          + 'pointer-events:none!important;'
+          + 'transform:none!important;'
+          + '}'
+          + 'html['
+          + ROOT_ATTRIBUTE
+          + '="'
+          + BUILD_MARKER
+          + '"] body{'
+          + 'padding-bottom:0!important;'
+          + 'scroll-padding-bottom:0!important;'
+          + '}'
+          + '}';
+
+        document.head.appendChild(style);
+      }
+
+      function getBadge() {
+        return document.querySelector(
+          '[' + BADGE_ATTRIBUTE + ']'
+        );
+      }
+
+      function ensureBadge() {
+        var existing = getBadge();
+
+        if (existing) {
+          return existing;
+        }
+
+        var badge =
+          document.createElement('div');
+
+        badge.setAttribute(
+          BADGE_ATTRIBUTE,
+          BUILD_MARKER
+        );
+
+        Object.assign(
+          badge.style,
+          {
+            position: 'fixed',
+            zIndex: '2147483647',
+            top: '12px',
+            right: '12px',
+            padding: '7px 10px',
+            border:
+              '1px solid rgba(31,122,104,0.35)',
+            borderRadius: '999px',
+            color: '#145d51',
+            background:
+              'rgba(245,255,252,0.96)',
+            boxShadow:
+              '0 6px 18px rgba(20,45,40,0.14)',
+            backdropFilter: 'blur(12px)',
+            fontSize: '9px',
+            fontWeight: '900',
+            letterSpacing: '0.07em',
+            pointerEvents: 'none'
+          }
+        );
+
+        document.body.appendChild(badge);
+
+        return badge;
+      }
+
+      function updateBadge() {
+        var badge = ensureBadge();
+
+        badge.textContent =
+          'TASKBAR KILL SWITCH V3 · REMOVED '
+          + String(removedTotal);
+      }
+
+      function isProtected(element) {
+        if (!element) {
+          return true;
+        }
+
+        if (
+          element === document.body
+          || element === document.documentElement
+        ) {
+          return true;
+        }
+
+        if (
+          element.hasAttribute
+          && element.hasAttribute(BADGE_ATTRIBUTE)
+        ) {
+          return true;
+        }
+
+        if (
+          element.closest
+          && element.closest(
+            '[' + BADGE_ATTRIBUTE + ']'
+          )
+        ) {
+          return true;
+        }
+
+        if (
+          element.matches
+          && element.matches(
+            '[role="dialog"],dialog,.modal,.popover'
+          )
+        ) {
+          return true;
+        }
+
+        return false;
+      }
+
+      function removeElement(element) {
+        if (
+          !element
+          || !element.isConnected
+          || isProtected(element)
+        ) {
+          return false;
+        }
+
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+          removedTotal += 1;
+          return true;
+        }
+
+        return false;
+      }
+
+      function removeExactMatches() {
+        if (!document.body) {
+          return;
+        }
+
+        var matches =
+          document.body.querySelectorAll(
+            exactSelectors.join(',')
+          );
+
+        Array.prototype.forEach.call(
+          matches,
+          function (element) {
+            removeElement(element);
+          }
+        );
+      }
+
+      function countActions(element) {
+        return element.querySelectorAll(
+          'button,a,[role="button"],'
+          + 'input[type="button"],'
+          + 'input[type="submit"]'
+        ).length;
+      }
+
+      function findFixedOwner(element) {
+        var current = element;
+        var depth = 0;
+
+        while (
+          current
+          && current !== document.body
+          && current !== document.documentElement
+          && depth < 10
+        ) {
+          var style =
+            window.getComputedStyle(current);
+
+          if (
+            style.position === 'fixed'
+            || style.position === 'sticky'
+          ) {
+            return current;
+          }
+
+          current = current.parentElement;
+          depth += 1;
+        }
+
+        return element;
+      }
+
+      function looksLikeTaskbar(element) {
+        if (
+          !element
+          || isProtected(element)
+          || !element.getBoundingClientRect
+        ) {
+          return false;
+        }
+
+        var rect =
+          element.getBoundingClientRect();
+
+        var viewportWidth = Math.max(
+          window.innerWidth || 0,
+          document.documentElement.clientWidth || 0
+        );
+
+        var viewportHeight = Math.max(
+          window.innerHeight || 0,
+          document.documentElement.clientHeight || 0
+        );
+
+        var minimumWidth = Math.max(
+          460,
+          viewportWidth * 0.35
+        );
+
+        if (rect.width < minimumWidth) {
+          return false;
+        }
+
+        if (
+          rect.height < 42
+          || rect.height > 190
+        ) {
+          return false;
+        }
+
+        if (
+          rect.bottom < viewportHeight - 90
+          || rect.top < viewportHeight - 270
+        ) {
+          return false;
+        }
+
+        if (countActions(element) < 6) {
+          return false;
+        }
+
+        var owner =
+          findFixedOwner(element);
+
+        var ownerRect =
+          owner.getBoundingClientRect();
+
+        var ownerStyle =
+          window.getComputedStyle(owner);
+
+        var ownerNearBottom =
+          ownerRect.bottom >= viewportHeight - 90
+          && ownerRect.top >= viewportHeight - 300;
+
+        var ownerFixed =
+          ownerStyle.position === 'fixed'
+          || ownerStyle.position === 'sticky';
+
+        return ownerNearBottom || ownerFixed;
+      }
+
+      function removeGeometricMatches() {
+        if (!document.body) {
+          return;
+        }
+
+        var candidates =
+          document.body.querySelectorAll(
+            'div,nav,section,aside'
+          );
+
+        var owners = [];
+
+        Array.prototype.forEach.call(
+          candidates,
+          function (candidate) {
+            if (!looksLikeTaskbar(candidate)) {
+              return;
+            }
+
+            var owner =
+              findFixedOwner(candidate);
+
+            if (
+              owners.indexOf(owner) === -1
+            ) {
+              owners.push(owner);
+            }
+          }
+        );
+
+        owners.forEach(function (owner) {
+          removeElement(owner);
+        });
+      }
+
+      function applyKillSwitch() {
+        if (
+          !isPreviewRoute()
+          || !desktopOrTablet()
+        ) {
+          return;
+        }
+
+        ensureStyle();
+
+        document.documentElement.setAttribute(
+          ROOT_ATTRIBUTE,
+          BUILD_MARKER
+        );
+
+        document.documentElement.setAttribute(
+          'data-ubuzima-taskbar-kill-runtime',
+          RUNTIME_MARKER
+        );
+
+        removeExactMatches();
+        removeGeometricMatches();
+
+        document.documentElement.setAttribute(
+          'data-ubuzima-taskbar-kill-removed',
+          String(removedTotal)
+        );
+
+        updateBadge();
+      }
+
+      function scheduleKillSwitch() {
+        window.clearTimeout(scheduledTimer);
+
+        scheduledTimer = window.setTimeout(
+          applyKillSwitch,
+          20
+        );
+      }
+
+      function startKillSwitch() {
+        if (!isPreviewRoute()) {
+          return;
+        }
+
+        window
+          .__UBIZIMA_TASKBAR_KILL_SWITCH_V3__ =
+          BUILD_MARKER;
+
+        applyKillSwitch();
+
+        var observer =
+          new MutationObserver(
+            scheduleKillSwitch
+          );
+
+        observer.observe(
+          document.documentElement,
+          {
+            childList: true,
+            subtree: true
+          }
+        );
+
+        window.addEventListener(
+          'resize',
+          scheduleKillSwitch,
+          { passive: true }
+        );
+
+        window.addEventListener(
+          'orientationchange',
+          scheduleKillSwitch,
+          { passive: true }
+        );
+
+        window.addEventListener(
+          'pageshow',
+          scheduleKillSwitch
+        );
+
+        window.setInterval(
+          applyKillSwitch,
+          400
+        );
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener(
+          'DOMContentLoaded',
+          startKillSwitch,
+          { once: true }
+        );
+      } else {
+        startKillSwitch();
+      }
+    })();
+  </script>
+
+</body>
 </html>
