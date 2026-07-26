@@ -60357,84 +60357,83 @@ body .pos-quantity-calculated-total-card output {
   }
 }
 
-/* UBIZIMA_BO_SALES_TREND_CARD_STANDARD_V13 */
-
-/*
-  Business Overview visual standards:
-
-  - Chart data values use the same size as category/date labels.
-  - Table body values use that same size.
-  - Payment Mix dynamically determines every card's height.
-  - Card positions, order, spans and approved chart geometry
-    remain unchanged.
-*/
+/* UBIZIMA_BO_EQUAL_HEIGHT_VISIBILITY_V14B */
 
 .bo-pro-page {
-  --ubuzima-bo-category-row-font-size: 15px;
+  --ubuzima-bo-number-font-size: 13px;
+  --ubuzima-bo-data-label-font-size: 8px;
+  --ubuzima-bo-axis-label-font-size: 10px;
 }
 
-/* Data labels match Category rows exactly. */
-.bo-pro-page .bo-pro-bar-data-label,
-.bo-pro-page .bo-pro-bar-axis-label {
-  font-size:
-    var(
-      --ubuzima-bo-category-row-font-size
-    ) !important;
-
-  line-height: 1.2 !important;
-  font-weight: 750 !important;
-}
-
-/* Table values use the same Category row font size. */
-.bo-pro-page table tbody td,
+/* Consistent numbers outside chart labels. */
+.bo-pro-page .bo-pro-card strong,
+.bo-pro-page .bo-pro-card output,
+.bo-pro-page .bo-pro-card table tbody td,
 .bo-pro-page .bo-pro-table-wrap tbody td,
 .bo-pro-page .bo-pro-fit-table tbody td {
   font-size:
     var(
-      --ubuzima-bo-category-row-font-size
+      --ubuzima-bo-number-font-size
     ) !important;
 
   line-height: 1.35 !important;
   font-variant-numeric: tabular-nums;
 }
 
+/* Compact values designed to fit the approved bar widths. */
+.bo-pro-page .bo-pro-bar-data-label {
+  font-size:
+    var(
+      --ubuzima-bo-data-label-font-size
+    ) !important;
+
+  line-height: 1 !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.06em !important;
+  font-variant-numeric: tabular-nums;
+  text-rendering: geometricPrecision;
+}
+
+/* Consistent dates and category-axis labels. */
+.bo-pro-page .bo-pro-bar-axis-label {
+  font-size:
+    var(
+      --ubuzima-bo-axis-label-font-size
+    ) !important;
+
+  line-height: 1.15 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
 /*
-  The runtime-measured Payment Mix height is applied to all
-  direct Business Overview cards.
+  All cards use the tallest natural card height.
+  The selected maximum means content is not clipped.
 */
-.bo-pro-page
-  .bo-pro-grid
+.bo-pro-grid[data-uniform-card-height-ready="true"]
   > .bo-pro-card {
   height:
     var(
-      --ubuzima-bo-payment-standard-card-height
+      --ubuzima-bo-uniform-card-height
     ) !important;
 
   min-height:
     var(
-      --ubuzima-bo-payment-standard-card-height
+      --ubuzima-bo-uniform-card-height
     ) !important;
 
   max-height:
     var(
-      --ubuzima-bo-payment-standard-card-height
+      --ubuzima-bo-uniform-card-height
     ) !important;
 
-  overflow: auto !important;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
+  overflow: visible !important;
+  box-sizing: border-box !important;
 }
 
-/*
-  Payment Mix temporarily returns to natural height while its
-  authoritative height is being measured.
-*/
-.bo-pro-page[
-  data-payment-height-measuring="true"
-]
-  .bo-pro-card[
-    data-height-standard="payment-mix-height-standard"
-  ] {
+/* Natural sizing during measurement. */
+.bo-pro-grid[data-uniform-card-height-measuring="true"]
+  > .bo-pro-card {
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
@@ -60442,7 +60441,7 @@ body .pos-quantity-calculated-total-card output {
   align-self: start !important;
 }
 
-/* Preserve the approved 12-day operational chart viewport. */
+/* Preserve horizontal scrolling for the approved charts. */
 .bo-pro-page
   .bo-pro-card.bo-pro-order-insurance
   .bo-pro-line-chart,
@@ -60490,16 +60489,16 @@ body .pos-quantity-calculated-total-card output {
   .bo-pro-card.bo-pro-order-inventory-movement
   .bo-pro-bar-chart-shell svg {
   display: block !important;
-
   width: auto !important;
   min-width: 100% !important;
   max-width: none !important;
-
   height: auto !important;
 }
 
 @media (max-width: 520px) {
   .bo-pro-page {
-    --ubuzima-bo-category-row-font-size: 13px;
+    --ubuzima-bo-number-font-size: 12px;
+    --ubuzima-bo-data-label-font-size: 7px;
+    --ubuzima-bo-axis-label-font-size: 9px;
   }
 }

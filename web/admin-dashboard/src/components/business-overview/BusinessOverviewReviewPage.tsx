@@ -1103,8 +1103,8 @@ function LineChart({
 
   const chartHeight =
     isTwelveDayOperationalChart
-      ? 250
-      : 230;
+      ? 300
+      : 280;
 
   const visibleBarLimit = Math.max(
     1,
@@ -1551,23 +1551,14 @@ export function BusinessOverviewReviewPage({
 
   const dashboardIsLoading = isLoading;
 
-  const paymentMixCardRef =
+  const businessOverviewGridRef =
     useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const paymentMixCard =
-      paymentMixCardRef.current;
+    const grid =
+      businessOverviewGridRef.current;
 
-    if (!paymentMixCard) {
-      return undefined;
-    }
-
-    const pageRoot =
-      paymentMixCard.closest(
-        '.bo-pro-page',
-      ) as HTMLElement | null;
-
-    if (!pageRoot) {
+    if (!grid) {
       return undefined;
     }
 
@@ -1575,10 +1566,17 @@ export function BusinessOverviewReviewPage({
     let shortDelayTimer = 0;
     let longDelayTimer = 0;
     let disposed = false;
-    let lastPageWidth = -1;
+    let lastGridWidth = -1;
     let lastAppliedHeight = '';
 
-    const syncPaymentMixStandardHeight = () => {
+    const cards = () =>
+      Array.from(
+        grid.querySelectorAll<HTMLElement>(
+          ':scope > .bo-pro-card',
+        ),
+      );
+
+    const syncUniformCardHeight = () => {
       if (disposed) {
         return;
       }
@@ -1593,44 +1591,66 @@ export function BusinessOverviewReviewPage({
             return;
           }
 
-          pageRoot.setAttribute(
-            'data-payment-height-measuring',
+          grid.removeAttribute(
+            'data-uniform-card-height-ready',
+          );
+
+          grid.setAttribute(
+            'data-uniform-card-height-measuring',
             'true',
           );
 
-          const measuredHeight = Math.ceil(
-            paymentMixCard
-              .getBoundingClientRect()
-              .height,
+          grid.style.removeProperty(
+            '--ubuzima-bo-uniform-card-height',
           );
 
-          pageRoot.removeAttribute(
-            'data-payment-height-measuring',
+          const tallestNaturalHeight =
+            Math.ceil(
+              cards().reduce(
+                (
+                  maximumHeight,
+                  card,
+                ) =>
+                  Math.max(
+                    maximumHeight,
+                    card.getBoundingClientRect().height,
+                    card.scrollHeight,
+                  ),
+                0,
+              ),
+            );
+
+          grid.removeAttribute(
+            'data-uniform-card-height-measuring',
           );
 
-          if (measuredHeight <= 0) {
+          if (tallestNaturalHeight <= 0) {
             return;
           }
 
           const nextHeight =
-            `${measuredHeight}px`;
+            `${tallestNaturalHeight}px`;
 
           if (
-            nextHeight === lastAppliedHeight
+            nextHeight !== lastAppliedHeight
           ) {
-            return;
+            lastAppliedHeight =
+              nextHeight;
+
+            grid.style.setProperty(
+              '--ubuzima-bo-uniform-card-height',
+              nextHeight,
+            );
           }
 
-          lastAppliedHeight = nextHeight;
-
-          pageRoot.style.setProperty(
-            '--ubuzima-bo-payment-standard-card-height',
-            nextHeight,
+          grid.setAttribute(
+            'data-uniform-card-height-ready',
+            'true',
           );
         });
     };
 
-    const pageResizeObserver =
+    const gridResizeObserver =
       typeof ResizeObserver !== 'undefined'
         ? new ResizeObserver((entries) => {
             const entry = entries[0];
@@ -1639,41 +1659,40 @@ export function BusinessOverviewReviewPage({
               return;
             }
 
-            const currentWidth = Math.round(
-              entry.contentRect.width,
-            );
+            const currentWidth =
+              Math.round(
+                entry.contentRect.width,
+              );
 
             if (
-              currentWidth === lastPageWidth
+              currentWidth === lastGridWidth
             ) {
               return;
             }
 
-            lastPageWidth = currentWidth;
+            lastGridWidth =
+              currentWidth;
 
-            syncPaymentMixStandardHeight();
+            syncUniformCardHeight();
           })
         : null;
 
-    const paymentContentObserver =
+    const contentObserver =
       typeof MutationObserver !== 'undefined'
         ? new MutationObserver(
-            syncPaymentMixStandardHeight,
+            syncUniformCardHeight,
           )
         : null;
 
-    lastPageWidth = Math.round(
-      pageRoot
-        .getBoundingClientRect()
-        .width,
-    );
+    lastGridWidth =
+      Math.round(
+        grid.getBoundingClientRect().width,
+      );
 
-    pageResizeObserver?.observe(
-      pageRoot,
-    );
+    gridResizeObserver?.observe(grid);
 
-    paymentContentObserver?.observe(
-      paymentMixCard,
+    contentObserver?.observe(
+      grid,
       {
         childList: true,
         subtree: true,
@@ -1681,28 +1700,34 @@ export function BusinessOverviewReviewPage({
         attributes: true,
         attributeFilter: [
           'class',
+          'hidden',
+          'aria-expanded',
         ],
       },
     );
 
     window.addEventListener(
       'resize',
-      syncPaymentMixStandardHeight,
+      syncUniformCardHeight,
     );
 
-    syncPaymentMixStandardHeight();
+    syncUniformCardHeight();
 
     shortDelayTimer =
       window.setTimeout(
-        syncPaymentMixStandardHeight,
+        syncUniformCardHeight,
         250,
       );
 
     longDelayTimer =
       window.setTimeout(
-        syncPaymentMixStandardHeight,
+        syncUniformCardHeight,
         1000,
       );
+
+    document.fonts?.ready
+      .then(syncUniformCardHeight)
+      .catch(() => undefined);
 
     return () => {
       disposed = true;
@@ -1719,24 +1744,27 @@ export function BusinessOverviewReviewPage({
         longDelayTimer,
       );
 
-      pageResizeObserver?.disconnect();
-      paymentContentObserver?.disconnect();
+      gridResizeObserver?.disconnect();
+      contentObserver?.disconnect();
 
       window.removeEventListener(
         'resize',
-        syncPaymentMixStandardHeight,
+        syncUniformCardHeight,
       );
 
-      pageRoot.removeAttribute(
-        'data-payment-height-measuring',
+      grid.removeAttribute(
+        'data-uniform-card-height-ready',
       );
 
-      pageRoot.style.removeProperty(
-        '--ubuzima-bo-payment-standard-card-height',
+      grid.removeAttribute(
+        'data-uniform-card-height-measuring',
+      );
+
+      grid.style.removeProperty(
+        '--ubuzima-bo-uniform-card-height',
       );
     };
   }, []);
-
 
   const refreshInventoryRiskOverview = () => {
     // Do not clear Business Overview cache here. The inventory valuation endpoint can fail
@@ -1872,7 +1900,11 @@ export function BusinessOverviewReviewPage({
         ))}
       </section>
 
-      <section className="bo-pro-grid">
+      <section
+        ref={businessOverviewGridRef}
+        data-uniform-card-height-standard="tallest-natural-card"
+        className="bo-pro-grid"
+      >
         <article className={`bo-pro-card bo-pro-card--daily ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
@@ -1972,11 +2004,7 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article
-          ref={paymentMixCardRef}
-          data-height-standard="payment-mix-height-standard"
-          className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}
-        >
+        <article className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
               <h2>Payment Mix</h2>
