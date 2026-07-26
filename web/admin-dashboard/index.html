@@ -117,12 +117,35 @@
 
         window.ubuzimaClearPwaCache = async function () {
           try {
+            var ubuzimaDockPreviewRouteFix =
+              window.location.pathname.indexOf(
+                '/admin-dock-preview/'
+              ) === 0;
+
+            var ubuzimaRecoveryBase =
+              ubuzimaDockPreviewRouteFix
+                ? '/admin-dock-preview/'
+                : '/admin/';
+
+            var ubuzimaPreviewRouteMarker =
+              'UBIZIMA_DOCK_PREVIEW_ROUTE_PRESERVE_V1D';
+
+            if (ubuzimaDockPreviewRouteFix) {
+              document.documentElement.setAttribute(
+                'data-ubuzima-preview-route-fix',
+                ubuzimaPreviewRouteMarker
+              );
+            }
+
             if ('serviceWorker' in navigator) {
               var registrations = await navigator.serviceWorker.getRegistrations();
               await Promise.all(
                 registrations
                   .filter(function (registration) {
-                    return registration.scope.indexOf('/admin/') !== -1;
+                    return (
+                      !ubuzimaDockPreviewRouteFix
+                      && registration.scope.indexOf('/admin/') !== -1
+                    );
                   })
                   .map(function (registration) {
                     return registration.unregister();
@@ -146,7 +169,11 @@
             console.warn('Unable to clear Ubuzima+ app cache', error);
           }
 
-          window.location.replace('/admin/?fresh=' + Date.now());
+          window.location.replace(
+            ubuzimaRecoveryBase
+              + '?fresh='
+              + Date.now()
+          );
         };
 
         window.addEventListener('ubuzima:app-ready', function () {
@@ -159,7 +186,13 @@
             var target = event.target;
             var assetUrl = target && (target.src || target.href);
 
-            if (assetUrl && assetUrl.indexOf('/admin/assets/') !== -1) {
+            if (assetUrl
+              && (
+                assetUrl.indexOf('/admin/assets/') !== -1
+                || assetUrl.indexOf(
+                  '/admin-dock-preview/assets/'
+                ) !== -1
+              )) {
               showRecovery('The installed app could not load its latest files. Use Fix app to clear only the Ubuzima+ app cache and reopen.');
               openSafeMode('asset-load-failed', 1600);
             }
