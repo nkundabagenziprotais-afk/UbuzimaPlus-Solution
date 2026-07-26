@@ -1,12 +1,11 @@
 const BUILD_MARKER =
-  'UBIZIMA_GLASS_WORKSPACE_DOCK_PREVIEW_V1B';
+  'UBIZIMA_GLASS_WORKSPACE_DOCK_PREVIEW_V1C';
 
-const PREVIEW_PREFIX = '/admin-dock-preview';
 const MINIMUM_WIDTH = 768;
 const MAXIMUM_RECENT = 4;
 
 const RECENT_STORAGE_KEY =
-  'ubuzima.workspace-dock.preview-v1b.recent';
+  'ubuzima.workspace-dock.preview-v1c.recent';
 
 type DockModule = {
   key: string;
@@ -23,7 +22,7 @@ type RecentWorkspace = {
 };
 
 type DockPreviewWindow = Window & {
-  __ubuzimaWorkspaceDockPreviewV1B?: boolean;
+  __ubuzimaWorkspaceDockPreviewV1C?: boolean;
 };
 
 const previewWindow =
@@ -398,23 +397,20 @@ function moduleIllustration(
 }
 
 function isLikelyPhone(): boolean {
+  const userAgent =
+    navigator.userAgent || '';
+
   return (
-    window.matchMedia(
-      '(pointer: coarse)',
-    ).matches
-    && Math.min(
-      window.screen.width,
-      window.screen.height,
-    ) < 700
+    /iPhone|iPod|Windows Phone|IEMobile/i
+      .test(userAgent)
+    || /Android/i.test(userAgent)
+      && /Mobile/i.test(userAgent)
   );
 }
 
 function shouldRenderDock(): boolean {
   return (
-    location.pathname.startsWith(
-      PREVIEW_PREFIX,
-    )
-    && window.innerWidth >= MINIMUM_WIDTH
+    window.innerWidth >= MINIMUM_WIDTH
     && !isLikelyPhone()
   );
 }
@@ -809,10 +805,151 @@ function navigateToModule(
   );
 }
 
+function ensureV1CRuntimeStyle(): void {
+  if (
+    document.getElementById(
+      'ubuzima-workspace-dock-v1c-runtime-style',
+    )
+  ) {
+    return;
+  }
+
+  const runtimeStyle =
+    document.createElement('style');
+
+  runtimeStyle.id =
+    'ubuzima-workspace-dock-v1c-runtime-style';
+
+  runtimeStyle.textContent = `
+    .ubuzima-mobile-bottom-nav,
+    #ubuzima-desktop-dock,
+    .ubuzima-desktop-dock,
+    [data-ubuzima-desktop-dock],
+    [id*="desktop-dock"],
+    [class*="desktop-dock"],
+    [id*="desktopDock"],
+    [class*="desktopDock"],
+    [id*="taskbar"],
+    [class*="taskbar"],
+    [id*="source-dock"],
+    [class*="source-dock"],
+    [data-source-dock] {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    [data-ubuzima-workspace-dock-preview],
+    .ubuzima-glass-workspace-dock {
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+  `;
+
+  document.head.appendChild(
+    runtimeStyle,
+  );
+}
+
+function removeResidualLegacyDockDom(): number {
+  const selectors = [
+    '#ubuzima-desktop-dock',
+    '.ubuzima-desktop-dock',
+    '[data-ubuzima-desktop-dock]',
+    '[id*="desktop-dock"]',
+    '[class*="desktop-dock"]',
+    '[id*="desktopDock"]',
+    '[class*="desktopDock"]',
+    '[id*="taskbar"]',
+    '[class*="taskbar"]',
+    '[id*="source-dock"]',
+    '[class*="source-dock"]',
+    '[data-source-dock]',
+  ];
+
+  let removed = 0;
+
+  document
+    .querySelectorAll<HTMLElement>(
+      selectors.join(','),
+    )
+    .forEach((candidate) => {
+      if (
+        candidate.closest(
+          '[data-ubuzima-workspace-dock-preview]',
+        )
+      ) {
+        return;
+      }
+
+      candidate.remove();
+      removed += 1;
+    });
+
+  return removed;
+}
+
+function ensurePreviewSentinel(): void {
+  if (
+    document.querySelector(
+      '[data-ubuzima-dock-preview-sentinel]',
+    )
+  ) {
+    return;
+  }
+
+  const sentinel =
+    document.createElement('div');
+
+  sentinel.setAttribute(
+    'data-ubuzima-dock-preview-sentinel',
+    'V1C',
+  );
+
+  sentinel.textContent =
+    'DOCK PREVIEW V1C';
+
+  Object.assign(
+    sentinel.style,
+    {
+      position: 'fixed',
+      zIndex: '2147483000',
+      top: '12px',
+      right: '12px',
+      padding: '6px 9px',
+      border:
+        '1px solid rgba(31,122,104,0.28)',
+      borderRadius: '999px',
+      color: '#145d51',
+      background:
+        'rgba(245,255,252,0.92)',
+      boxShadow:
+        '0 6px 16px rgba(20,45,40,0.12)',
+      backdropFilter: 'blur(12px)',
+      fontSize: '9px',
+      fontWeight: '900',
+      letterSpacing: '0.08em',
+      pointerEvents: 'none',
+    },
+  );
+
+  document.body.appendChild(
+    sentinel,
+  );
+}
+
+function removePreviewSentinel(): void {
+  document
+    .querySelector(
+      '[data-ubuzima-dock-preview-sentinel]',
+    )
+    ?.remove();
+}
+
 function injectStyles(): void {
   if (
     document.getElementById(
-      'ubuzima-workspace-dock-preview-v1b-styles',
+      'ubuzima-workspace-dock-preview-v1c-styles',
     )
   ) {
     return;
@@ -822,7 +959,7 @@ function injectStyles(): void {
     document.createElement('style');
 
   style.id =
-    'ubuzima-workspace-dock-preview-v1b-styles';
+    'ubuzima-workspace-dock-preview-v1c-styles';
 
   style.textContent = `
     :root {
@@ -1346,11 +1483,27 @@ function renderDock(): void {
       )
       ?.remove();
 
+    removePreviewSentinel();
     restoreLayout();
     return;
   }
 
   injectStyles();
+  ensureV1CRuntimeStyle();
+  ensurePreviewSentinel();
+
+  const removedLegacyDockNodes =
+    removeResidualLegacyDockDom();
+
+  document.documentElement.setAttribute(
+    'data-ubuzima-workspace-dock-runtime',
+    'UBIZIMA_WORKSPACE_DOCK_RUNTIME_V1C',
+  );
+
+  document.documentElement.setAttribute(
+    'data-ubuzima-residual-legacy-dock-removed',
+    String(removedLegacyDockNodes),
+  );
 
   const modules = discoverModules();
 
@@ -1592,13 +1745,13 @@ function scheduleRender(): void {
 function startDockPreview(): void {
   if (
     previewWindow
-      .__ubuzimaWorkspaceDockPreviewV1B
+      .__ubuzimaWorkspaceDockPreviewV1C
   ) {
     return;
   }
 
   previewWindow
-    .__ubuzimaWorkspaceDockPreviewV1B = true;
+    .__ubuzimaWorkspaceDockPreviewV1C = true;
 
   document.addEventListener(
     'click',
@@ -1665,22 +1818,16 @@ function startDockPreview(): void {
   );
 }
 
-if (
-  location.pathname.startsWith(
-    PREVIEW_PREFIX,
-  )
-) {
-  if (document.readyState === 'loading') {
-    document.addEventListener(
-      'DOMContentLoaded',
-      startDockPreview,
-      {
-        once: true,
-      },
-    );
-  } else {
-    startDockPreview();
-  }
+if (document.readyState === 'loading') {
+  document.addEventListener(
+    'DOMContentLoaded',
+    startDockPreview,
+    {
+      once: true,
+    },
+  );
+} else {
+  startDockPreview();
 }
 
 export {};
