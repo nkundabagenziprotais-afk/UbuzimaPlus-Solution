@@ -1,147 +1,75 @@
 const BUILD_MARKER =
-  'UBIZIMA_WORKSPACE_DOCK_REFINED_V4';
+  'UBIZIMA_WORKSPACE_DOCK_REFINED_V5';
 
-const ICON_REGISTRY_MARKER =
-  'UBIZIMA_STABLE_ICON_REGISTRY_V4';
+const ICON_MARKER =
+  'UBIZIMA_COLOURFUL_UNIQUE_ICON_FAMILY_V5';
 
-const NAVIGATION_MARKER =
-  'UBIZIMA_AUTHORITATIVE_MENU_CLICK_WITH_SUBMENU_FALLBACK_V4';
+const PROFILE_MARKER =
+  'UBIZIMA_DOCK_PROFILE_HUB_V5';
 
-const GLASS_MARKER =
-  'UBIZIMA_REAL_GLASS_TRANSPARENCY_V4';
+const HEADER_MARKER =
+  'UBIZIMA_SHARED_HEADER_RELOCATION_V5';
 
 const RECENT_MARKER =
-  'UBIZIMA_RECENT_TASK_CARDS_V4';
+  'UBIZIMA_FIXED_RECENT_TASK_CARDS_V5';
 
-const RENDER_MARKER =
-  'UBIZIMA_SIGNATURE_GUARDED_RENDER_V4';
+const GLASS_MARKER =
+  'UBIZIMA_DEEP_GLASS_TRANSPARENCY_V5';
+
+const NAVIGATION_MARKER =
+  'UBIZIMA_AUTHORITATIVE_NAVIGATION_V5';
 
 const MINIMUM_WIDTH = 768;
 const MAXIMUM_RECENT = 4;
 
 const ROOT_CLASS =
-  'ubuzima-workspace-dock-refined-v4';
-
-const STYLE_ID =
-  'ubuzima-workspace-dock-refined-v4-style';
+  'ubuzima-workspace-dock-v5-active';
 
 const DOCK_ATTRIBUTE =
-  'data-ubuzima-workspace-dock';
+  'data-ubuzima-workspace-dock-v5';
+
+const STYLE_ID =
+  'ubuzima-workspace-dock-v5-style';
+
+const TOOLTIP_ID =
+  'ubuzima-workspace-dock-v5-tooltip';
 
 const RECENT_STORAGE_KEY =
-  'ubuzima_workspace_dock_recent_v4';
-
-const BUNDLED_ICON_REGISTRY_MARKER =
-  'UBIZIMA_BUNDLED_REVIEWED_ICON_REGISTRY_V4B';
-
-const ICON_REGISTRY: Record<string, string> = {
-  'admin.svg': new URL(
-    '../assets/dock-icons/admin.svg',
-    import.meta.url,
-  ).href,
-  'ai.svg': new URL(
-    '../assets/dock-icons/ai.svg',
-    import.meta.url,
-  ).href,
-  'dashboard.svg': new URL(
-    '../assets/dock-icons/dashboard.svg',
-    import.meta.url,
-  ).href,
-  'email.svg': new URL(
-    '../assets/dock-icons/email.svg',
-    import.meta.url,
-  ).href,
-  'finance.svg': new URL(
-    '../assets/dock-icons/finance.svg',
-    import.meta.url,
-  ).href,
-  'general-stock.svg': new URL(
-    '../assets/dock-icons/general-stock.svg',
-    import.meta.url,
-  ).href,
-  'home.svg': new URL(
-    '../assets/dock-icons/home.svg',
-    import.meta.url,
-  ).href,
-  'insurance.svg': new URL(
-    '../assets/dock-icons/insurance.svg',
-    import.meta.url,
-  ).href,
-  'inventory.svg': new URL(
-    '../assets/dock-icons/inventory.svg',
-    import.meta.url,
-  ).href,
-  'module.svg': new URL(
-    '../assets/dock-icons/module.svg',
-    import.meta.url,
-  ).href,
-  'pharmacy.svg': new URL(
-    '../assets/dock-icons/pharmacy.svg',
-    import.meta.url,
-  ).href,
-  'pos.svg': new URL(
-    '../assets/dock-icons/pos.svg',
-    import.meta.url,
-  ).href,
-  'procurement.svg': new URL(
-    '../assets/dock-icons/procurement.svg',
-    import.meta.url,
-  ).href,
-  'product-master.svg': new URL(
-    '../assets/dock-icons/product-master.svg',
-    import.meta.url,
-  ).href,
-  'reports.svg': new URL(
-    '../assets/dock-icons/reports.svg',
-    import.meta.url,
-  ).href,
-  'sales.svg': new URL(
-    '../assets/dock-icons/sales.svg',
-    import.meta.url,
-  ).href,
-  'settings.svg': new URL(
-    '../assets/dock-icons/settings.svg',
-    import.meta.url,
-  ).href,
-  'suppliers.svg': new URL(
-    '../assets/dock-icons/suppliers.svg',
-    import.meta.url,
-  ).href,
-  'tenant.svg': new URL(
-    '../assets/dock-icons/tenant.svg',
-    import.meta.url,
-  ).href,
-  'users.svg': new URL(
-    '../assets/dock-icons/users.svg',
-    import.meta.url,
-  ).href,
-};
+  'ubuzima_workspace_dock_recent_v5';
 
 type DockModule = {
   key: string;
   label: string;
   icon: string;
   active: boolean;
+  badge: number;
 };
 
 type RecentWorkspace = {
   key: string;
   label: string;
-  icon: string;
   scrollTop: number;
   updatedAt: number;
 };
 
+type ProfileSnapshot = {
+  name: string;
+  initials: string;
+  language: string;
+  websiteLabel: string;
+  hasWebsite: boolean;
+};
+
 declare global {
   interface Window {
-    __ubuzimaWorkspaceDockRefinedV4?: boolean;
+    __ubuzimaWorkspaceDockV5?: boolean;
   }
 }
 
 let renderTimer = 0;
 let lastStructureSignature = '';
-let lastActiveKey = '';
 let isRendering = false;
+let profileOpen = false;
 
 function isLikelyPhone(): boolean {
   const userAgent =
@@ -164,7 +92,9 @@ function shouldRenderDock(): boolean {
   );
 }
 
-function escapeHtml(value: string): string {
+function escapeHtml(
+  value: string,
+): string {
   return value
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -173,7 +103,9 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#039;');
 }
 
-function normaliseKey(value: string): string {
+function normaliseKey(
+  value: string,
+): string {
   return value
     .trim()
     .toLowerCase()
@@ -182,191 +114,237 @@ function normaliseKey(value: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-function iconNameFor(
-  key: string,
-  label: string,
-): string {
-  const identity =
-    `${key} ${label}`.toLowerCase();
+function hashValue(
+  value: string,
+): number {
+  let hash = 2166136261;
 
-  if (
-    key === 'dashboard'
-    || key === 'overview'
-    || identity.includes('dashboard')
-    || identity.includes('business overview')
+  for (
+    let index = 0;
+    index < value.length;
+    index += 1
   ) {
-    return 'dashboard.svg';
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(
+      hash,
+      16777619,
+    );
   }
 
-  if (
-    key === 'pos'
-    || identity.includes('point of sale')
-    || identity.includes('pos and sales')
-  ) {
-    return 'pos.svg';
-  }
-
-  if (
-    identity.includes('product master')
-    || key === 'product-master'
-  ) {
-    return 'product-master.svg';
-  }
-
-  if (
-    identity.includes('general stock')
-    || key === 'general-stock'
-  ) {
-    return 'general-stock.svg';
-  }
-
-  if (
-    identity.includes('inventory')
-    || identity.includes('stock control')
-  ) {
-    return 'inventory.svg';
-  }
-
-  if (
-    identity.includes('procurement')
-    || identity.includes('purchase order')
-  ) {
-    return 'procurement.svg';
-  }
-
-  if (
-    identity.includes('supplier')
-  ) {
-    return 'suppliers.svg';
-  }
-
-  if (
-    identity.includes('finance')
-    || identity.includes('account')
-    || identity.includes('reconciliation')
-  ) {
-    return 'finance.svg';
-  }
-
-  if (
-    identity.includes('insurance')
-    || identity.includes('claim')
-  ) {
-    return 'insurance.svg';
-  }
-
-  if (
-    identity.includes('corporate email')
-    || identity.includes('communication')
-    || identity.includes('mail')
-  ) {
-    return 'email.svg';
-  }
-
-  if (
-    identity.includes('artificial intelligence')
-    || identity.includes('ai ')
-    || key.startsWith('ai')
-  ) {
-    return 'ai.svg';
-  }
-
-  if (
-    identity.includes('report')
-    || identity.includes('analytics')
-    || identity.includes('business intelligence')
-  ) {
-    return 'reports.svg';
-  }
-
-  if (
-    identity.includes('sale')
-  ) {
-    return 'sales.svg';
-  }
-
-  if (
-    identity.includes('tenant')
-    || identity.includes('branch')
-    || identity.includes('institution')
-  ) {
-    return 'tenant.svg';
-  }
-
-  if (
-    identity.includes('user')
-    || identity.includes('profile')
-    || identity.includes('access')
-  ) {
-    return 'users.svg';
-  }
-
-  if (
-    identity.includes('admin')
-    || identity.includes('platform management')
-  ) {
-    return 'admin.svg';
-  }
-
-  if (
-    identity.includes('setting')
-    || identity.includes('configuration')
-  ) {
-    return 'settings.svg';
-  }
-
-  if (
-    identity.includes('pharmacy')
-    || identity.includes('dispensing')
-  ) {
-    return 'pharmacy.svg';
-  }
-
-  if (
-    identity.includes('home')
-  ) {
-    return 'home.svg';
-  }
-
-  return 'module.svg';
+  return hash >>> 0;
 }
 
-function iconUrl(
-  key: string,
+function iconInitials(
   label: string,
 ): string {
-  const iconName =
-    iconNameFor(
-      key,
-      label,
-    );
+  const words =
+    label
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (words.length === 0) {
+    return 'U+';
+  }
+
+  if (words.length === 1) {
+    return words[0]
+      .slice(0, 2)
+      .toUpperCase();
+  }
 
   return (
-    ICON_REGISTRY[iconName]
-    || ICON_REGISTRY['module.svg']
-  );
+    words[0][0]
+    + words[
+      words.length - 1
+    ][0]
+  ).toUpperCase();
 }
 
-function findMenuSection(
+function colourfulIconDataUri(
   key: string,
-): HTMLElement | null {
-  const sections =
-    document.querySelectorAll<HTMLElement>(
-      '.sidebar[data-admin-sidebar] '
-      + '.principal-menu-section'
-      + '[data-principal-menu]',
+  label: string,
+): string {
+  const hash =
+    hashValue(
+      `${key}:${label}`,
     );
 
-  for (const section of sections) {
-    if (
-      section.dataset.principalMenu
-      === key
-    ) {
-      return section;
-    }
-  }
+  const firstHue =
+    hash % 360;
 
-  return null;
+  const secondHue =
+    (
+      firstHue
+      + 58
+      + (
+        hash % 47
+      )
+    ) % 360;
+
+  const accentHue =
+    (
+      firstHue
+      + 176
+    ) % 360;
+
+  const initials =
+    iconInitials(label);
+
+  const orbitX =
+    15
+    + (
+      hash % 13
+    );
+
+  const orbitY =
+    13
+    + (
+      (
+        hash >>> 5
+      ) % 15
+    );
+
+  const svg = `
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 64 64"
+      role="img"
+      aria-label="${escapeHtml(label)}"
+    >
+      <defs>
+        <linearGradient
+          id="g"
+          x1="5"
+          y1="4"
+          x2="58"
+          y2="61"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop
+            offset="0"
+            stop-color="hsl(${firstHue} 92% 62%)"
+          />
+          <stop
+            offset="0.52"
+            stop-color="hsl(${secondHue} 88% 56%)"
+          />
+          <stop
+            offset="1"
+            stop-color="hsl(${accentHue} 90% 48%)"
+          />
+        </linearGradient>
+
+        <radialGradient
+          id="shine"
+          cx="0"
+          cy="0"
+          r="1"
+          gradientTransform="translate(20 12) rotate(58) scale(47)"
+        >
+          <stop
+            stop-color="white"
+            stop-opacity="0.74"
+          />
+          <stop
+            offset="1"
+            stop-color="white"
+            stop-opacity="0"
+          />
+        </radialGradient>
+
+        <filter
+          id="shadow"
+          x="-30%"
+          y="-30%"
+          width="160%"
+          height="160%"
+        >
+          <feDropShadow
+            dx="0"
+            dy="4"
+            stdDeviation="4"
+            flood-color="hsl(${firstHue} 65% 22%)"
+            flood-opacity="0.25"
+          />
+        </filter>
+      </defs>
+
+      <rect
+        x="4"
+        y="4"
+        width="56"
+        height="56"
+        rx="18"
+        fill="url(#g)"
+        filter="url(#shadow)"
+      />
+
+      <circle
+        cx="${orbitX}"
+        cy="${orbitY}"
+        r="13"
+        fill="url(#shine)"
+      />
+
+      <circle
+        cx="49"
+        cy="47"
+        r="12"
+        fill="white"
+        fill-opacity="0.11"
+      />
+
+      <path
+        d="M13 42C22 28 34 22 51 17"
+        fill="none"
+        stroke="white"
+        stroke-opacity="0.17"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
+
+      <rect
+        x="13"
+        y="13"
+        width="38"
+        height="38"
+        rx="13"
+        fill="white"
+        fill-opacity="0.13"
+        stroke="white"
+        stroke-opacity="0.21"
+      />
+
+      <text
+        x="32"
+        y="38"
+        text-anchor="middle"
+        fill="white"
+        font-family="Inter, Arial, sans-serif"
+        font-size="${initials.length > 2 ? 14 : 17}"
+        font-weight="850"
+        letter-spacing="-0.8"
+      >
+        ${escapeHtml(initials)}
+      </text>
+
+      <circle
+        cx="49"
+        cy="15"
+        r="3.5"
+        fill="white"
+        fill-opacity="0.82"
+      />
+    </svg>
+  `;
+
+  return (
+    'data:image/svg+xml;charset=UTF-8,'
+    + encodeURIComponent(
+      svg.trim(),
+    )
+  );
 }
 
 function sourceButtonForKey(
@@ -376,7 +354,7 @@ function sourceButtonForKey(
     key === 'dashboard'
     || key === 'overview'
   ) {
-    const dashboardButton =
+    const dashboard =
       document.querySelector(
         '.sidebar[data-admin-sidebar] '
         + '.principal-menu-button'
@@ -384,73 +362,127 @@ function sourceButtonForKey(
       );
 
     return (
-      dashboardButton
+      dashboard
       instanceof HTMLButtonElement
-        ? dashboardButton
+        ? dashboard
+        : null
+    );
+  }
+
+  if (key === 'corporate-email') {
+    const emailButton =
+      document.querySelector(
+        '.dashboard-header '
+        + '.header-mail-button',
+      );
+
+    return (
+      emailButton
+      instanceof HTMLButtonElement
+        ? emailButton
         : null
     );
   }
 
   const section =
-    findMenuSection(key);
-
-  if (!section) {
-    return null;
-  }
+    document.querySelector<HTMLElement>(
+      '.sidebar[data-admin-sidebar] '
+      + `.principal-menu-section`
+      + `[data-principal-menu="${CSS.escape(key)}"]`,
+    );
 
   const button =
-    section.querySelector(
+    section?.querySelector(
       '.principal-menu-button'
       + '[data-section]',
     );
 
   return (
-    button instanceof HTMLButtonElement
+    button
+    instanceof HTMLButtonElement
       ? button
       : null
+  );
+}
+
+function currentHeaderTitle(): string {
+  return (
+    document
+      .querySelector<HTMLElement>(
+        '.dashboard-title-card h1',
+      )
+      ?.textContent
+      ?.trim()
+    || ''
   );
 }
 
 function moduleIsActive(
   key: string,
 ): boolean {
-  if (
-    key === 'dashboard'
-    || key === 'overview'
-  ) {
-    return Boolean(
-      sourceButtonForKey('dashboard')
-        ?.classList.contains('active'),
+  if (key === 'corporate-email') {
+    return (
+      currentHeaderTitle()
+        .toLowerCase()
+        .includes(
+          'corporate email',
+        )
     );
   }
-
-  const section =
-    findMenuSection(key);
 
   const button =
     sourceButtonForKey(key);
 
+  const section =
+    button?.closest(
+      '.principal-menu-section',
+    );
+
   return Boolean(
-    section?.classList.contains('active')
-    || button?.classList.contains('active')
+    button?.classList
+      .contains('active')
     || button?.getAttribute(
       'aria-current',
     ) === 'page'
+    || section?.classList
+      .contains('active')
   );
+}
+
+function unreadEmailCount(): number {
+  const badge =
+    document.querySelector<HTMLElement>(
+      '.dashboard-header '
+      + '.header-mail-button '
+      + '.action-badge',
+    );
+
+  const parsed =
+    Number(
+      badge?.textContent?.trim()
+      || 0,
+    );
+
+  return Number.isFinite(parsed)
+    ? Math.max(
+      0,
+      parsed,
+    )
+    : 0;
 }
 
 function discoverModules(): DockModule[] {
   const modules: DockModule[] = [];
   const seen = new Set<string>();
 
-  const dashboardButton =
+  const dashboard =
     sourceButtonForKey('dashboard');
 
-  if (dashboardButton) {
+  if (dashboard) {
     modules.push({
       key: 'dashboard',
       label:
-        dashboardButton
+        dashboard
           .querySelector<HTMLElement>(
             '.principal-menu-title',
           )
@@ -458,15 +490,45 @@ function discoverModules(): DockModule[] {
           ?.trim()
         || 'Dashboard',
       icon:
-        iconUrl(
+        colourfulIconDataUri(
           'dashboard',
           'Dashboard',
         ),
       active:
-        moduleIsActive('dashboard'),
+        moduleIsActive(
+          'dashboard',
+        ),
+      badge: 0,
     });
 
     seen.add('dashboard');
+  }
+
+  const emailButton =
+    sourceButtonForKey(
+      'corporate-email',
+    );
+
+  if (emailButton) {
+    modules.push({
+      key: 'corporate-email',
+      label: 'Corporate Email',
+      icon:
+        colourfulIconDataUri(
+          'corporate-email',
+          'Corporate Email',
+        ),
+      active:
+        moduleIsActive(
+          'corporate-email',
+        ),
+      badge:
+        unreadEmailCount(),
+    });
+
+    seen.add(
+      'corporate-email',
+    );
   }
 
   document
@@ -483,24 +545,30 @@ function discoverModules(): DockModule[] {
         );
 
       if (
-        !(button instanceof HTMLButtonElement)
+        !(
+          button
+          instanceof HTMLButtonElement
+        )
       ) {
         return;
       }
 
       const rawKey =
-        section.dataset.principalMenu
+        section.dataset
+          .principalMenu
         || button.dataset.section
         || '';
 
-      const title =
-        button.querySelector<HTMLElement>(
-          '.principal-menu-title',
-        );
-
       const label =
-        title?.textContent?.trim()
-        || button.textContent?.trim()
+        button
+          .querySelector<HTMLElement>(
+            '.principal-menu-title',
+          )
+          ?.textContent
+          ?.trim()
+        || button
+          .textContent
+          ?.trim()
         || rawKey
         || 'Module';
 
@@ -511,6 +579,8 @@ function discoverModules(): DockModule[] {
       if (
         !key
         || seen.has(key)
+        || key === 'overview'
+        || key === 'corporate-email'
       ) {
         return;
       }
@@ -519,18 +589,72 @@ function discoverModules(): DockModule[] {
         key,
         label,
         icon:
-          iconUrl(
+          colourfulIconDataUri(
             key,
             label,
           ),
         active:
           moduleIsActive(key),
+        badge: 0,
       });
 
       seen.add(key);
     });
 
   return modules;
+}
+
+function profileSnapshot(): ProfileSnapshot {
+  const avatarImage =
+    document.querySelector<HTMLImageElement>(
+      '.dashboard-header '
+      + '.profile-avatar-button img',
+    );
+
+  const avatarText =
+    document.querySelector<HTMLElement>(
+      '.dashboard-header '
+      + '.profile-avatar-button span',
+    );
+
+  const name =
+    avatarImage?.alt?.trim()
+    || 'Staff Profile';
+
+  const initials =
+    avatarText?.textContent?.trim()
+    || iconInitials(name);
+
+  const language =
+    document
+      .querySelector<HTMLElement>(
+        '.dashboard-header '
+        + '.language-corner-button',
+      )
+      ?.textContent
+      ?.trim()
+    || 'Language';
+
+  const websiteAnchor =
+    document.querySelector<HTMLAnchorElement>(
+      '.dashboard-header-center-actions '
+      + 'a[target="_blank"]',
+    );
+
+  return {
+    name,
+    initials,
+    language,
+    websiteLabel:
+      websiteAnchor
+        ?.textContent
+        ?.trim()
+      || 'Visit Website',
+    hasWebsite:
+      Boolean(
+        websiteAnchor?.href,
+      ),
+  };
 }
 
 function currentScrollTop(): number {
@@ -544,18 +668,19 @@ function currentScrollTop(): number {
   }
 
   return (
-    document.scrollingElement?.scrollTop
+    document.scrollingElement
+      ?.scrollTop
     ?? window.scrollY
     ?? 0
   );
 }
 
 function restoreScrollTop(
-  scrollTop: number,
+  value: number,
 ): void {
-  const safeScrollTop =
-    Number.isFinite(scrollTop)
-      ? Math.max(0, scrollTop)
+  const scrollTop =
+    Number.isFinite(value)
+      ? Math.max(0, value)
       : 0;
 
   const apply = (): void => {
@@ -565,12 +690,14 @@ function restoreScrollTop(
       );
 
     if (panel) {
-      panel.scrollTop = safeScrollTop;
+      panel.scrollTop =
+        scrollTop;
+
       return;
     }
 
     window.scrollTo({
-      top: safeScrollTop,
+      top: scrollTop,
       left: 0,
       behavior: 'auto',
     });
@@ -620,7 +747,8 @@ function readRecent(): RecentWorkspace[] {
 
       if (
         typeof record.key !== 'string'
-        || typeof record.label !== 'string'
+        || typeof record.label
+          !== 'string'
       ) {
         return;
       }
@@ -628,13 +756,6 @@ function readRecent(): RecentWorkspace[] {
       entries.push({
         key: record.key,
         label: record.label,
-        icon:
-          typeof record.icon === 'string'
-            ? record.icon
-            : iconUrl(
-              record.key,
-              record.label,
-            ),
         scrollTop:
           typeof record.scrollTop
           === 'number'
@@ -671,8 +792,7 @@ function writeRecent(
       ),
     );
   } catch {
-    // Navigation remains available
-    // when session storage is unavailable.
+    // Dock navigation remains available.
   }
 }
 
@@ -689,7 +809,6 @@ function rememberWorkspace(
   entries.unshift({
     key: module.key,
     label: module.label,
-    icon: module.icon,
     scrollTop,
     updatedAt: Date.now(),
   });
@@ -698,11 +817,8 @@ function rememberWorkspace(
 }
 
 function rememberCurrentWorkspace(): void {
-  const modules =
-    discoverModules();
-
   const current =
-    modules.find(
+    discoverModules().find(
       (module) => module.active,
     );
 
@@ -716,78 +832,60 @@ function rememberCurrentWorkspace(): void {
   );
 }
 
-function removeRecentWorkspace(
+function removeRecent(
   key: string,
 ): void {
   writeRecent(
     readRecent().filter(
-      (entry) => entry.key !== key,
+      (entry) =>
+        entry.key !== key,
     ),
   );
 }
 
-function recentTaskText(
-  module: DockModule,
-): string {
-  const identity =
-    `${module.key} ${module.label}`
-      .toLowerCase();
+function normalisedRecent(
+  modules: DockModule[],
+): RecentWorkspace[] {
+  const moduleMap =
+    new Map(
+      modules.map(
+        (module) => [
+          module.key,
+          module,
+        ],
+      ),
+    );
 
-  if (
-    identity.includes('pos')
-    || identity.includes('sale')
-  ) {
-    return 'Resume sales work';
-  }
-
-  if (
-    identity.includes('inventory')
-    || identity.includes('stock')
-  ) {
-    return 'Continue stock work';
-  }
-
-  if (
-    identity.includes('supplier')
-    || identity.includes('procurement')
-  ) {
-    return 'Continue supply work';
-  }
-
-  if (
-    identity.includes('finance')
-  ) {
-    return 'Review finance work';
-  }
-
-  if (
-    identity.includes('report')
-    || identity.includes('analytics')
-  ) {
-    return 'Continue analysis';
-  }
-
-  if (
-    identity.includes('email')
-    || identity.includes('communication')
-  ) {
-    return 'Return to messages';
-  }
-
-  return 'Resume workspace';
+  return readRecent()
+    .filter(
+      (entry) =>
+        moduleMap.has(entry.key),
+    )
+    .map((entry) => ({
+      ...entry,
+      label:
+        moduleMap.get(
+          entry.key,
+        )?.label
+        || entry.label,
+    }))
+    .slice(
+      0,
+      MAXIMUM_RECENT,
+    );
 }
 
-function invokeAuthoritativeMenu(
+function invokeModule(
   key: string,
 ): boolean {
-  const sourceButton =
+  const button =
     sourceButtonForKey(key);
 
-  if (!sourceButton) {
+  if (!button) {
     return false;
   }
 
-  sourceButton.click();
+  button.click();
 
   window.dispatchEvent(
     new CustomEvent(
@@ -804,7 +902,7 @@ function invokeAuthoritativeMenu(
 
   if (
     key === 'dashboard'
-    || key === 'overview'
+    || key === 'corporate-email'
   ) {
     return true;
   }
@@ -815,35 +913,25 @@ function invokeAuthoritativeMenu(
         return;
       }
 
-      const refreshedSection =
-        findMenuSection(key);
+      const section =
+        document.querySelector<HTMLElement>(
+          '.sidebar[data-admin-sidebar] '
+          + '.principal-menu-section'
+          + `[data-principal-menu="${CSS.escape(key)}"]`,
+        );
 
-      const firstSubmenuButton =
-        refreshedSection
-          ?.querySelector(
-            '.tree-child-submenu '
-            + 'button[data-section]'
-            + '[data-submenu]',
-          );
+      const firstChild =
+        section?.querySelector(
+          '.tree-child-submenu '
+          + 'button[data-section]'
+          + '[data-submenu]',
+        );
 
       if (
-        firstSubmenuButton
+        firstChild
         instanceof HTMLButtonElement
       ) {
-        firstSubmenuButton.click();
-
-        window.dispatchEvent(
-          new CustomEvent(
-            'ubuzima:workspace-dock-submenu-fallback',
-            {
-              detail: {
-                key,
-                marker:
-                  NAVIGATION_MARKER,
-              },
-            },
-          ),
-        );
+        firstChild.click();
       }
     },
     140,
@@ -861,29 +949,29 @@ function navigateToModule(
 
   const target =
     modules.find(
-      (module) => module.key === key,
+      (module) =>
+        module.key === key,
     );
 
   if (!target) {
-    removeRecentWorkspace(key);
+    removeRecent(key);
     scheduleRender(true);
     return;
   }
 
   rememberCurrentWorkspace();
 
-  const invoked =
-    invokeAuthoritativeMenu(key);
-
-  if (!invoked) {
-    removeRecentWorkspace(key);
+  if (!invokeModule(key)) {
+    removeRecent(key);
     scheduleRender(true);
     return;
   }
 
+  profileOpen = false;
+
   window.setTimeout(
     () => {
-      const refreshedTarget =
+      const refreshed =
         discoverModules().find(
           (module) =>
             module.key === key,
@@ -891,12 +979,13 @@ function navigateToModule(
         || target;
 
       rememberWorkspace(
-        refreshedTarget,
+        refreshed,
         restoreScroll ?? 0,
       );
 
       if (
-        typeof restoreScroll === 'number'
+        typeof restoreScroll
+        === 'number'
       ) {
         restoreScrollTop(
           restoreScroll,
@@ -907,6 +996,273 @@ function navigateToModule(
     },
     340,
   );
+}
+
+function findButtonByText(
+  root: ParentNode,
+  label: string,
+): HTMLButtonElement | null {
+  const expected =
+    label.trim().toLowerCase();
+
+  const buttons =
+    root.querySelectorAll<HTMLButtonElement>(
+      'button',
+    );
+
+  for (const button of buttons) {
+    const text =
+      button
+        .textContent
+        ?.trim()
+        .toLowerCase()
+      || '';
+
+    if (text === expected) {
+      return button;
+    }
+  }
+
+  return null;
+}
+
+function ensureOriginalProfileMenu(
+  callback: (
+    popover: HTMLElement,
+  ) => void,
+): void {
+  const existing =
+    document.querySelector<HTMLElement>(
+      '.dashboard-header '
+      + '.profile-popover',
+    );
+
+  if (existing) {
+    callback(existing);
+    return;
+  }
+
+  const avatarButton =
+    document.querySelector<HTMLButtonElement>(
+      '.dashboard-header '
+      + '.profile-avatar-button',
+    );
+
+  avatarButton?.click();
+
+  window.setTimeout(
+    () => {
+      const popover =
+        document.querySelector<HTMLElement>(
+          '.dashboard-header '
+          + '.profile-popover',
+        );
+
+      if (popover) {
+        callback(popover);
+      }
+    },
+    70,
+  );
+}
+
+function performProfileAction(
+  action: string,
+): void {
+  profileOpen = false;
+
+  if (action === 'language') {
+    document
+      .querySelector<HTMLButtonElement>(
+        '.dashboard-header '
+        + '.language-corner-button',
+      )
+      ?.click();
+
+    window.setTimeout(
+      () => scheduleRender(true),
+      120,
+    );
+
+    return;
+  }
+
+  if (action === 'website') {
+    const anchor =
+      document.querySelector<HTMLAnchorElement>(
+        '.dashboard-header-center-actions '
+        + 'a[target="_blank"]',
+      );
+
+    if (anchor?.href) {
+      window.open(
+        anchor.href,
+        '_blank',
+        'noopener,noreferrer',
+      );
+    }
+
+    scheduleRender(true);
+    return;
+  }
+
+  if (action === 'back') {
+    const buttons =
+      document.querySelectorAll<HTMLButtonElement>(
+        '.dashboard-header-center-actions button',
+      );
+
+    for (const button of buttons) {
+      if (
+        button.textContent
+          ?.trim()
+          .toLowerCase()
+        === 'back'
+      ) {
+        button.click();
+        break;
+      }
+    }
+
+    scheduleRender(true);
+    return;
+  }
+
+  if (action === 'sign-out') {
+    document
+      .querySelector<HTMLButtonElement>(
+        '.sidebar[data-admin-sidebar] '
+        + '.logout-button',
+      )
+      ?.click();
+
+    return;
+  }
+
+  const label =
+    action === 'edit-profile'
+      ? 'Edit Profile'
+      : action === 'change-password'
+        ? 'Change Password'
+        : '';
+
+  if (!label) {
+    scheduleRender(true);
+    return;
+  }
+
+  ensureOriginalProfileMenu(
+    (popover) => {
+      findButtonByText(
+        popover,
+        label,
+      )?.click();
+
+      scheduleRender(true);
+    },
+  );
+}
+
+function ensureTooltip(): HTMLElement {
+  const existing =
+    document.getElementById(
+      TOOLTIP_ID,
+    );
+
+  if (existing) {
+    return existing;
+  }
+
+  const tooltip =
+    document.createElement('div');
+
+  tooltip.id =
+    TOOLTIP_ID;
+
+  tooltip.className =
+    'ubuzima-workspace-dock-v5__tooltip';
+
+  tooltip.setAttribute(
+    'role',
+    'tooltip',
+  );
+
+  document.body.appendChild(
+    tooltip,
+  );
+
+  return tooltip;
+}
+
+function showTooltip(
+  target: HTMLElement,
+): void {
+  const label =
+    target.dataset.dockTooltip
+    || '';
+
+  if (!label) {
+    return;
+  }
+
+  const tooltip =
+    ensureTooltip();
+
+  tooltip.textContent =
+    label;
+
+  tooltip.classList.add(
+    'is-visible',
+  );
+
+  const rect =
+    target.getBoundingClientRect();
+
+  const tooltipRect =
+    tooltip.getBoundingClientRect();
+
+  const left =
+    Math.min(
+      window.innerWidth
+        - tooltipRect.width
+        - 10,
+      Math.max(
+        10,
+        rect.left
+          + (
+            rect.width
+            / 2
+          )
+          - (
+            tooltipRect.width
+            / 2
+          ),
+      ),
+    );
+
+  const top =
+    Math.max(
+      8,
+      rect.top
+        - tooltipRect.height
+        - 10,
+    );
+
+  tooltip.style.left =
+    `${left}px`;
+
+  tooltip.style.top =
+    `${top}px`;
+}
+
+function hideTooltip(): void {
+  document
+    .getElementById(
+      TOOLTIP_ID,
+    )
+    ?.classList.remove(
+      'is-visible',
+    );
 }
 
 function injectStyles(): void {
@@ -921,17 +1277,25 @@ function injectStyles(): void {
   const style =
     document.createElement('style');
 
-  style.id = STYLE_ID;
+  style.id =
+    STYLE_ID;
 
   style.textContent = `
     @media (min-width: 768px) {
       html.${ROOT_CLASS} {
         --ubuzima-workspace-dock-safe-area:
-          118px;
+          96px;
       }
 
       html.${ROOT_CLASS}
         .sidebar[data-admin-sidebar] {
+        display: none !important;
+      }
+
+      html.${ROOT_CLASS}
+        .dashboard-header.dashboard-header--fixed.dashboard-header--refined,
+      html.${ROOT_CLASS}
+        .mail-notification-banner {
         display: none !important;
       }
 
@@ -947,6 +1311,7 @@ function injectStyles(): void {
         width: 100% !important;
         max-width: none !important;
         margin-left: 0 !important;
+        padding-top: 0 !important;
         padding-bottom:
           var(
             --ubuzima-workspace-dock-safe-area
@@ -965,67 +1330,67 @@ function injectStyles(): void {
           ) !important;
       }
 
-      .ubuzima-workspace-dock-v4 {
+      .ubuzima-workspace-dock-v5 {
         position: fixed;
         z-index: 9998;
         left: 50%;
         bottom:
           max(
-            13px,
+            12px,
             env(safe-area-inset-bottom)
           );
 
         width:
           min(
-            1380px,
-            calc(100vw - 28px)
+            1420px,
+            calc(100vw - 26px)
           );
-        min-width: 0;
+        height: 76px;
         max-width:
-          calc(100vw - 28px);
+          calc(100vw - 26px);
 
         display: grid;
         grid-template-columns:
           minmax(0, 1fr)
-          minmax(250px, 410px);
+          minmax(220px, 390px);
         align-items: stretch;
-        gap: 8px;
+        gap: 7px;
 
-        padding: 8px;
+        padding: 7px;
 
         border:
           1px solid
-          rgba(255, 255, 255, 0.66);
+          rgba(255, 255, 255, 0.50);
         border-radius: 25px;
 
         background:
           linear-gradient(
             138deg,
-            rgba(255, 255, 255, 0.34),
-            rgba(240, 253, 250, 0.20)
+            rgba(255, 255, 255, 0.17),
+            rgba(225, 249, 243, 0.08)
               48%,
-            rgba(226, 245, 241, 0.26)
+            rgba(207, 239, 233, 0.13)
           );
 
         box-shadow:
-          0 26px 72px
-            rgba(15, 35, 33, 0.20),
-          0 8px 24px
-            rgba(15, 118, 110, 0.08),
+          0 28px 74px
+            rgba(13, 39, 35, 0.20),
+          0 8px 25px
+            rgba(15, 118, 110, 0.07),
           inset 0 1px 0
-            rgba(255, 255, 255, 0.82),
+            rgba(255, 255, 255, 0.62),
           inset 0 -1px 0
-            rgba(255, 255, 255, 0.24);
+            rgba(255, 255, 255, 0.12);
 
         -webkit-backdrop-filter:
-          blur(28px)
-          saturate(1.72)
-          contrast(1.03);
+          blur(32px)
+          saturate(1.82)
+          contrast(1.04);
 
         backdrop-filter:
-          blur(28px)
-          saturate(1.72)
-          contrast(1.03);
+          blur(32px)
+          saturate(1.82)
+          contrast(1.04);
 
         transform:
           translateX(-50%);
@@ -1035,32 +1400,33 @@ function injectStyles(): void {
         box-sizing: border-box;
       }
 
-      .ubuzima-workspace-dock-v4::before {
+      .ubuzima-workspace-dock-v5::before {
         content: '';
         position: absolute;
         z-index: -1;
         inset: 1px;
+
         border-radius: 23px;
 
         background:
           linear-gradient(
-            115deg,
-            rgba(255, 255, 255, 0.24),
-            transparent 42%,
-            rgba(15, 118, 110, 0.04)
+            118deg,
+            rgba(255, 255, 255, 0.17),
+            transparent 38%,
+            rgba(29, 181, 160, 0.035)
           );
 
         pointer-events: none;
       }
 
-      .ubuzima-workspace-dock-v4__modules {
+      .ubuzima-workspace-dock-v5__modules {
         min-width: 0;
 
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
 
-        padding: 5px 7px;
+        padding: 4px 6px;
 
         overflow-x: auto;
         overflow-y: hidden;
@@ -1068,126 +1434,105 @@ function injectStyles(): void {
 
         border:
           1px solid
-          rgba(255, 255, 255, 0.42);
+          rgba(255, 255, 255, 0.30);
         border-radius: 18px;
 
         background:
-          rgba(255, 255, 255, 0.10);
+          rgba(255, 255, 255, 0.055);
 
         box-shadow:
           inset 0 1px 0
-            rgba(255, 255, 255, 0.46);
+            rgba(255, 255, 255, 0.32);
       }
 
-      .ubuzima-workspace-dock-v4__modules
-        ::-webkit-scrollbar {
+      .ubuzima-workspace-dock-v5__modules::-webkit-scrollbar,
+      .ubuzima-workspace-dock-v5__recent-list::-webkit-scrollbar {
         display: none;
       }
 
-      .ubuzima-workspace-dock-v4__module {
+      .ubuzima-workspace-dock-v5__module,
+      .ubuzima-workspace-dock-v5__profile {
         position: relative;
 
-        width: 64px;
-        min-width: 64px;
-        height: 64px;
-        min-height: 64px;
-        flex: 0 0 64px;
+        width: 57px;
+        min-width: 57px;
+        height: 57px;
+        min-height: 57px;
+        flex: 0 0 57px;
 
         display: grid;
-        grid-template-rows:
-          39px 14px;
         place-items: center;
-        align-content: center;
-        gap: 2px;
 
-        padding: 4px 3px;
+        padding: 4px;
 
         border:
           1px solid
-          rgba(255, 255, 255, 0.38);
+          rgba(255, 255, 255, 0.30);
         border-radius: 17px;
 
         background:
-          rgba(255, 255, 255, 0.17);
+          rgba(255, 255, 255, 0.08);
 
         color: #153e38;
         cursor: pointer;
 
         box-shadow:
           inset 0 1px 0
-            rgba(255, 255, 255, 0.55);
-
-        transform: none !important;
-        scale: 1 !important;
+            rgba(255, 255, 255, 0.40);
 
         transition:
           background-color 120ms ease,
           border-color 120ms ease,
           box-shadow 120ms ease;
 
-        contain:
-          layout paint;
+        transform: none !important;
+        scale: 1 !important;
         box-sizing: border-box;
       }
 
-      .ubuzima-workspace-dock-v4__module:hover {
+      .ubuzima-workspace-dock-v5__module:hover,
+      .ubuzima-workspace-dock-v5__module:focus-visible,
+      .ubuzima-workspace-dock-v5__profile:hover,
+      .ubuzima-workspace-dock-v5__profile:focus-visible {
+        outline: none;
+
         background:
-          rgba(255, 255, 255, 0.34);
+          rgba(255, 255, 255, 0.24);
+
         border-color:
-          rgba(255, 255, 255, 0.72);
+          rgba(255, 255, 255, 0.62);
+
         box-shadow:
           0 8px 18px
             rgba(20, 83, 73, 0.10),
           inset 0 1px 0
-            rgba(255, 255, 255, 0.70);
-
-        transform: none !important;
-        scale: 1 !important;
+            rgba(255, 255, 255, 0.62);
       }
 
-      .ubuzima-workspace-dock-v4__module.is-active {
+      .ubuzima-workspace-dock-v5__module.is-active,
+      .ubuzima-workspace-dock-v5__profile.is-open {
         background:
-          rgba(226, 248, 243, 0.60);
+          rgba(224, 249, 243, 0.37);
+
         border-color:
-          rgba(15, 118, 110, 0.34);
+          rgba(15, 118, 110, 0.35);
 
         box-shadow:
           0 0 0 2px
-            rgba(15, 118, 110, 0.10),
+            rgba(15, 118, 110, 0.08),
           0 8px 18px
             rgba(15, 118, 110, 0.10),
           inset 0 1px 0
-            rgba(255, 255, 255, 0.84);
+            rgba(255, 255, 255, 0.72);
       }
 
-      .ubuzima-workspace-dock-v4__icon-shell {
-        width: 39px;
-        min-width: 39px;
-        height: 39px;
-        min-height: 39px;
-
-        display: grid;
-        place-items: center;
-
-        border-radius: 13px;
-
-        background:
-          rgba(255, 255, 255, 0.30);
-
-        box-shadow:
-          inset 0 1px 0
-            rgba(255, 255, 255, 0.64);
-
-        overflow: hidden;
-      }
-
-      .ubuzima-workspace-dock-v4__icon {
-        width: 31px !important;
-        min-width: 31px !important;
-        max-width: 31px !important;
-        height: 31px !important;
-        min-height: 31px !important;
-        max-height: 31px !important;
+      .ubuzima-workspace-dock-v5__icon {
+        width: 43px !important;
+        min-width: 43px !important;
+        max-width: 43px !important;
+        height: 43px !important;
+        min-height: 43px !important;
+        max-height: 43px !important;
 
         display: block !important;
         object-fit: contain !important;
@@ -1203,24 +1548,7 @@ function injectStyles(): void {
         user-select: none;
       }
 
-      .ubuzima-workspace-dock-v4__module-label {
-        width: 100%;
-        min-width: 0;
-
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-
-        color: #244b45;
-
-        font-size: 9px;
-        font-weight: 850;
-        line-height: 1;
-        letter-spacing: -0.01em;
-        text-align: center;
-      }
-
-      .ubuzima-workspace-dock-v4__active-dot {
+      .ubuzima-workspace-dock-v5__active-dot {
         position: absolute;
         left: 50%;
         bottom: 2px;
@@ -1235,71 +1563,104 @@ function injectStyles(): void {
           translateX(-50%);
       }
 
-      .ubuzima-workspace-dock-v4__module.is-active
-        .ubuzima-workspace-dock-v4__active-dot {
+      .ubuzima-workspace-dock-v5__module.is-active
+        .ubuzima-workspace-dock-v5__active-dot {
         background: #0f766e;
+
         box-shadow:
           0 0 0 2px
-            rgba(255, 255, 255, 0.70);
+            rgba(255, 255, 255, 0.72);
       }
 
-      .ubuzima-workspace-dock-v4__recent {
+      .ubuzima-workspace-dock-v5__badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+
+        min-width: 18px;
+        height: 18px;
+
+        display: grid;
+        place-items: center;
+
+        padding: 0 4px;
+
+        border:
+          2px solid
+          rgba(245, 255, 252, 0.86);
+        border-radius: 999px;
+
+        background: #d94646;
+        color: white;
+
+        font-size: 8px;
+        font-weight: 950;
+        line-height: 1;
+      }
+
+      .ubuzima-workspace-dock-v5__divider {
+        width: 1px;
+        min-width: 1px;
+        height: 36px;
+        flex: 0 0 1px;
+
+        margin: 0 2px;
+
+        background:
+          linear-gradient(
+            transparent,
+            rgba(255, 255, 255, 0.54),
+            transparent
+          );
+      }
+
+      .ubuzima-workspace-dock-v5__recent {
         min-width: 0;
 
         display: grid;
         grid-template-rows:
-          auto minmax(0, 1fr);
-        gap: 5px;
+          18px 43px;
+        gap: 3px;
 
-        padding: 6px;
+        padding: 4px 5px;
 
         border:
           1px solid
-          rgba(255, 255, 255, 0.50);
+          rgba(255, 255, 255, 0.31);
         border-radius: 18px;
 
         background:
-          linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.22),
-            rgba(238, 252, 248, 0.13)
-          );
+          rgba(255, 255, 255, 0.055);
 
         box-shadow:
           inset 0 1px 0
-            rgba(255, 255, 255, 0.62);
+            rgba(255, 255, 255, 0.34);
+
+        overflow: hidden;
+        box-sizing: border-box;
       }
 
-      .ubuzima-workspace-dock-v4__recent-header {
+      .ubuzima-workspace-dock-v5__recent-header {
         min-width: 0;
 
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
+        gap: 6px;
 
-        padding: 0 4px;
+        padding: 0 3px;
       }
 
-      .ubuzima-workspace-dock-v4__recent-heading {
-        min-width: 0;
-
-        display: flex;
-        align-items: center;
-        gap: 7px;
-      }
-
-      .ubuzima-workspace-dock-v4__recent-heading
-        strong {
-        color: #173f39;
-        font-size: 10px;
+      .ubuzima-workspace-dock-v5__recent-header strong {
+        color: #1c4b44;
+        font-size: 9px;
         font-weight: 900;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.04em;
       }
 
-      .ubuzima-workspace-dock-v4__recent-count {
-        min-width: 19px;
-        height: 19px;
+      .ubuzima-workspace-dock-v5__recent-count {
+        min-width: 17px;
+        height: 17px;
 
         display: inline-grid;
         place-items: center;
@@ -1310,75 +1671,76 @@ function injectStyles(): void {
         border-radius: 999px;
 
         background:
-          rgba(255, 255, 255, 0.38);
+          rgba(255, 255, 255, 0.23);
+
         color: #0f766e;
 
-        font-size: 9px;
+        font-size: 8px;
         font-weight: 950;
       }
 
-      .ubuzima-workspace-dock-v4__recent-list {
+      .ubuzima-workspace-dock-v5__recent-list {
         min-width: 0;
+        height: 43px;
 
         display: flex;
         align-items: stretch;
-        gap: 6px;
+        gap: 5px;
 
         overflow-x: auto;
         overflow-y: hidden;
         scrollbar-width: none;
       }
 
-      .ubuzima-workspace-dock-v4__recent-list
-        ::-webkit-scrollbar {
-        display: none;
-      }
-
-      .ubuzima-workspace-dock-v4__recent-card {
+      .ubuzima-workspace-dock-v5__recent-card {
         position: relative;
 
-        width: 150px;
-        min-width: 150px;
-        min-height: 57px;
-        flex: 0 0 150px;
+        width: 126px;
+        min-width: 126px;
+        height: 43px;
+        min-height: 43px;
+        flex: 0 0 126px;
 
         display: grid;
         grid-template-columns:
-          minmax(0, 1fr) auto;
+          minmax(0, 1fr)
+          20px;
 
         border:
           1px solid
-          rgba(255, 255, 255, 0.44);
-        border-radius: 14px;
+          rgba(255, 255, 255, 0.31);
+        border-radius: 13px;
 
         background:
-          rgba(255, 255, 255, 0.22);
+          rgba(255, 255, 255, 0.075);
 
         box-shadow:
           inset 0 1px 0
-            rgba(255, 255, 255, 0.56);
+            rgba(255, 255, 255, 0.35);
 
         overflow: hidden;
         box-sizing: border-box;
       }
 
-      .ubuzima-workspace-dock-v4__recent-card.is-current {
+      .ubuzima-workspace-dock-v5__recent-card.is-current {
         border-color:
           rgba(15, 118, 110, 0.30);
+
         background:
-          rgba(226, 248, 243, 0.42);
+          rgba(224, 249, 243, 0.25);
       }
 
-      .ubuzima-workspace-dock-v4__recent-open {
+      .ubuzima-workspace-dock-v5__recent-open {
         min-width: 0;
+        height: 41px;
 
         display: grid;
         grid-template-columns:
-          34px minmax(0, 1fr);
+          31px minmax(0, 1fr);
         align-items: center;
-        gap: 7px;
+        gap: 6px;
 
-        padding: 6px 3px 6px 7px;
+        padding: 4px 3px 4px 5px;
 
         border: 0;
         background: transparent;
@@ -1390,31 +1752,13 @@ function injectStyles(): void {
         scale: 1 !important;
       }
 
-      .ubuzima-workspace-dock-v4__recent-icon-shell {
-        width: 34px;
-        min-width: 34px;
-        height: 34px;
-        min-height: 34px;
-
-        display: grid;
-        place-items: center;
-
-        border:
-          1px solid
-          rgba(255, 255, 255, 0.44);
-        border-radius: 11px;
-
-        background:
-          rgba(255, 255, 255, 0.30);
-      }
-
-      .ubuzima-workspace-dock-v4__recent-icon {
-        width: 27px !important;
-        min-width: 27px !important;
-        max-width: 27px !important;
-        height: 27px !important;
-        min-height: 27px !important;
-        max-height: 27px !important;
+      .ubuzima-workspace-dock-v5__recent-icon {
+        width: 31px !important;
+        min-width: 31px !important;
+        max-width: 31px !important;
+        height: 31px !important;
+        min-height: 31px !important;
+        max-height: 31px !important;
 
         display: block !important;
         object-fit: contain !important;
@@ -1426,25 +1770,7 @@ function injectStyles(): void {
         pointer-events: none;
       }
 
-      .ubuzima-workspace-dock-v4__recent-copy {
-        min-width: 0;
-
-        display: grid;
-        gap: 2px;
-      }
-
-      .ubuzima-workspace-dock-v4__recent-copy
-        small {
-        color: #57817a;
-        font-size: 7px;
-        font-weight: 900;
-        line-height: 1;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .ubuzima-workspace-dock-v4__recent-copy
-        strong {
+      .ubuzima-workspace-dock-v5__recent-name {
         min-width: 0;
 
         overflow: hidden;
@@ -1452,28 +1778,16 @@ function injectStyles(): void {
         white-space: nowrap;
 
         color: #173f39;
-        font-size: 10px;
+
+        font-size: 9px;
         font-weight: 900;
-        line-height: 1.08;
+        line-height: 1.05;
       }
 
-      .ubuzima-workspace-dock-v4__recent-copy
-        span {
-        min-width: 0;
-
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-
-        color: #648780;
-        font-size: 8px;
-        font-weight: 750;
-        line-height: 1;
-      }
-
-      .ubuzima-workspace-dock-v4__recent-close {
-        width: 23px;
-        min-width: 23px;
+      .ubuzima-workspace-dock-v5__recent-close {
+        width: 20px;
+        min-width: 20px;
+        height: 41px;
 
         display: grid;
         place-items: center;
@@ -1483,46 +1797,222 @@ function injectStyles(): void {
         border: 0;
         border-left:
           1px solid
-          rgba(255, 255, 255, 0.30);
+          rgba(255, 255, 255, 0.20);
 
         background:
-          rgba(255, 255, 255, 0.12);
-        color: #55746f;
+          rgba(255, 255, 255, 0.04);
+        color: #64827c;
 
         cursor: pointer;
-        font-size: 14px;
-        font-weight: 800;
+        font-size: 13px;
+        font-weight: 850;
 
         transform: none !important;
         scale: 1 !important;
       }
 
-      .ubuzima-workspace-dock-v4__recent-close:hover {
+      .ubuzima-workspace-dock-v5__recent-close:hover {
         background:
-          rgba(255, 255, 255, 0.34);
+          rgba(255, 255, 255, 0.21);
         color: #9f3030;
       }
 
-      .ubuzima-workspace-dock-v4__recent-empty {
-        min-width: 210px;
+      .ubuzima-workspace-dock-v5__recent-empty {
+        width: 100%;
+        height: 43px;
 
         display: flex;
         align-items: center;
 
-        padding: 8px 10px;
+        padding: 0 9px;
 
         border:
           1px dashed
-          rgba(15, 118, 110, 0.18);
-        border-radius: 13px;
+          rgba(15, 118, 110, 0.17);
+        border-radius: 12px;
 
         color: #62817c;
         background:
-          rgba(255, 255, 255, 0.14);
+          rgba(255, 255, 255, 0.045);
+
+        font-size: 8px;
+        font-weight: 750;
+        line-height: 1.2;
+
+        box-sizing: border-box;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-popover {
+        position: absolute;
+        z-index: 2;
+        left: 7px;
+        bottom: calc(100% + 10px);
+
+        width: min(310px, calc(100vw - 32px));
+
+        display: grid;
+        gap: 8px;
+
+        padding: 11px;
+
+        border:
+          1px solid
+          rgba(255, 255, 255, 0.55);
+        border-radius: 19px;
+
+        background:
+          linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.55),
+            rgba(229, 249, 244, 0.34)
+          );
+
+        box-shadow:
+          0 22px 58px
+            rgba(13, 39, 35, 0.23),
+          inset 0 1px 0
+            rgba(255, 255, 255, 0.75);
+
+        -webkit-backdrop-filter:
+          blur(30px)
+          saturate(1.76);
+
+        backdrop-filter:
+          blur(30px)
+          saturate(1.76);
+      }
+
+      .ubuzima-workspace-dock-v5__profile-summary {
+        display: grid;
+        grid-template-columns:
+          42px minmax(0, 1fr);
+        align-items: center;
+        gap: 9px;
+
+        padding: 3px;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-summary img {
+        width: 42px;
+        height: 42px;
+
+        display: block;
+
+        border-radius: 14px;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-summary div {
+        min-width: 0;
+
+        display: grid;
+        gap: 2px;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-summary strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        color: #173f39;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-summary small {
+        color: #62817c;
+        font-size: 8px;
+        font-weight: 750;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-actions {
+        display: grid;
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .ubuzima-workspace-dock-v5__profile-action {
+        min-width: 0;
+        min-height: 35px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 6px 8px;
+
+        border:
+          1px solid
+          rgba(255, 255, 255, 0.55);
+        border-radius: 11px;
+
+        background:
+          rgba(255, 255, 255, 0.26);
+        color: #244b45;
+
+        cursor: pointer;
+        font-size: 9px;
+        font-weight: 850;
+        text-align: center;
+        text-decoration: none;
+
+        box-shadow:
+          inset 0 1px 0
+            rgba(255, 255, 255, 0.55);
+      }
+
+      .ubuzima-workspace-dock-v5__profile-action:hover,
+      .ubuzima-workspace-dock-v5__profile-action:focus-visible {
+        outline: none;
+
+        background:
+          rgba(255, 255, 255, 0.48);
+
+        border-color:
+          rgba(15, 118, 110, 0.25);
+      }
+
+      .ubuzima-workspace-dock-v5__profile-action--danger {
+        color: #9f3030;
+      }
+
+      .ubuzima-workspace-dock-v5__tooltip {
+        position: fixed;
+        z-index: 2147483000;
+
+        max-width: 210px;
+
+        padding: 6px 9px;
+
+        border:
+          1px solid
+          rgba(255, 255, 255, 0.55);
+        border-radius: 9px;
+
+        background:
+          rgba(20, 55, 49, 0.90);
+        color: white;
+
+        box-shadow:
+          0 8px 20px
+            rgba(8, 31, 27, 0.20);
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
 
         font-size: 9px;
-        font-weight: 750;
-        line-height: 1.25;
+        font-weight: 800;
+        line-height: 1.15;
+
+        transition:
+          opacity 90ms ease,
+          visibility 90ms ease;
+      }
+
+      .ubuzima-workspace-dock-v5__tooltip.is-visible {
+        opacity: 1;
+        visibility: visible;
       }
     }
 
@@ -1531,27 +2021,32 @@ function injectStyles(): void {
     ) and (
       max-width: 1023px
     ) {
-      .ubuzima-workspace-dock-v4 {
+      .ubuzima-workspace-dock-v5 {
         grid-template-columns:
           minmax(0, 1fr)
-          minmax(210px, 35vw);
+          minmax(190px, 34vw);
       }
 
-      .ubuzima-workspace-dock-v4__module {
-        width: 59px;
-        min-width: 59px;
-        flex-basis: 59px;
+      .ubuzima-workspace-dock-v5__module,
+      .ubuzima-workspace-dock-v5__profile {
+        width: 53px;
+        min-width: 53px;
+        flex-basis: 53px;
       }
 
-      .ubuzima-workspace-dock-v4__recent-card {
-        width: 132px;
-        min-width: 132px;
-        flex-basis: 132px;
+      .ubuzima-workspace-dock-v5__icon {
+        width: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
       }
 
-      .ubuzima-workspace-dock-v4__recent-copy
-        span {
-        display: none;
+      .ubuzima-workspace-dock-v5__recent-card {
+        width: 112px;
+        min-width: 112px;
+        flex-basis: 112px;
       }
     }
 
@@ -1566,20 +2061,28 @@ function injectStyles(): void {
           blur(1px)
       )
     ) {
-      .ubuzima-workspace-dock-v4 {
+      .ubuzima-workspace-dock-v5 {
         background:
-          rgba(244, 252, 250, 0.92);
+          rgba(241, 251, 248, 0.90);
+      }
+
+      .ubuzima-workspace-dock-v5__profile-popover {
+        background:
+          rgba(241, 251, 248, 0.96);
       }
     }
 
     @media (max-width: 767px) {
-      .ubuzima-workspace-dock-v4 {
+      .ubuzima-workspace-dock-v5,
+      .ubuzima-workspace-dock-v5__tooltip {
         display: none !important;
       }
     }
   `;
 
-  document.head.appendChild(style);
+  document.head.appendChild(
+    style,
+  );
 }
 
 function removeDock(): void {
@@ -1596,11 +2099,12 @@ function removeDock(): void {
 
   document.documentElement
     .removeAttribute(
-      'data-ubuzima-workspace-dock-build',
+      'data-ubuzima-workspace-dock-v5-build',
     );
 
+  hideTooltip();
+  profileOpen = false;
   lastStructureSignature = '';
-  lastActiveKey = '';
 }
 
 function ensureDock(): HTMLElement {
@@ -1612,7 +2116,7 @@ function ensureDock(): HTMLElement {
   if (
     existing
     && existing.dataset
-      .ubuzimaWorkspaceDockBuild
+      .ubuzimaWorkspaceDockV5
       === BUILD_MARKER
   ) {
     return existing;
@@ -1624,7 +2128,7 @@ function ensureDock(): HTMLElement {
     document.createElement('nav');
 
   dock.className =
-    'ubuzima-workspace-dock-v4';
+    'ubuzima-workspace-dock-v5';
 
   dock.setAttribute(
     DOCK_ATTRIBUTE,
@@ -1632,23 +2136,28 @@ function ensureDock(): HTMLElement {
   );
 
   dock.setAttribute(
-    'data-ubuzima-workspace-dock-build',
+    'data-ubuzima-workspace-dock-v5-build',
     BUILD_MARKER,
   );
 
   dock.setAttribute(
-    'data-icon-registry-marker',
-    ICON_REGISTRY_MARKER,
+    'data-colourful-icon-family',
+    ICON_MARKER,
   );
 
   dock.setAttribute(
-    'data-bundled-icon-registry-marker',
-    BUNDLED_ICON_REGISTRY_MARKER,
+    'data-profile-hub-marker',
+    PROFILE_MARKER,
   );
 
   dock.setAttribute(
-    'data-navigation-marker',
-    NAVIGATION_MARKER,
+    'data-header-relocation-marker',
+    HEADER_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-recent-task-marker',
+    RECENT_MARKER,
   );
 
   dock.setAttribute(
@@ -1657,13 +2166,8 @@ function ensureDock(): HTMLElement {
   );
 
   dock.setAttribute(
-    'data-recent-marker',
-    RECENT_MARKER,
-  );
-
-  dock.setAttribute(
-    'data-render-marker',
-    RENDER_MARKER,
+    'data-navigation-marker',
+    NAVIGATION_MARKER,
   );
 
   dock.setAttribute(
@@ -1677,9 +2181,23 @@ function ensureDock(): HTMLElement {
   );
 
   dock.addEventListener(
-    'error',
-    handleIconError,
-    true,
+    'mouseover',
+    handleDockMouseOver,
+  );
+
+  dock.addEventListener(
+    'mouseout',
+    handleDockMouseOut,
+  );
+
+  dock.addEventListener(
+    'focusin',
+    handleDockFocusIn,
+  );
+
+  dock.addEventListener(
+    'focusout',
+    handleDockFocusOut,
   );
 
   dock.addEventListener(
@@ -1689,83 +2207,91 @@ function ensureDock(): HTMLElement {
     },
   );
 
-  document.body.appendChild(dock);
+  document.body.appendChild(
+    dock,
+  );
 
   return dock;
 }
 
-function normalisedRecent(
-  modules: DockModule[],
-): RecentWorkspace[] {
-  const moduleMap =
-    new Map(
-      modules.map(
-        (module) => [
-          module.key,
-          module,
-        ],
-      ),
+function profileButtonMarkup(
+  snapshot: ProfileSnapshot,
+): string {
+  const profileIcon =
+    colourfulIconDataUri(
+      'profile',
+      snapshot.name === 'Staff Profile'
+        ? 'Profile'
+        : snapshot.name,
     );
 
-  const entries: RecentWorkspace[] = [];
-
-  readRecent().forEach((entry) => {
-    const module =
-      moduleMap.get(entry.key);
-
-    if (!module) {
-      return;
-    }
-
-    entries.push({
-      ...entry,
-      label: module.label,
-      icon: module.icon,
-    });
-  });
-
-  return entries.slice(
-    0,
-    MAXIMUM_RECENT,
-  );
+  return `
+    <button
+      type="button"
+      class="
+        ubuzima-workspace-dock-v5__profile
+        ${profileOpen ? 'is-open' : ''}
+      "
+      data-profile-toggle="true"
+      data-dock-tooltip="Profile"
+      aria-label="Open Profile"
+      aria-expanded="${profileOpen ? 'true' : 'false'}"
+      title="Profile"
+    >
+      <img
+        class="ubuzima-workspace-dock-v5__icon"
+        src="${profileIcon}"
+        alt=""
+        draggable="false"
+      />
+    </button>
+  `;
 }
 
 function moduleMarkup(
   module: DockModule,
 ): string {
+  const badge =
+    module.badge > 0
+      ? `
+        <span
+          class="ubuzima-workspace-dock-v5__badge"
+          aria-label="${module.badge} unread"
+        >
+          ${
+            module.badge > 99
+              ? '99+'
+              : module.badge
+          }
+        </span>
+      `
+      : '';
+
   return `
     <button
       type="button"
       class="
-        ubuzima-workspace-dock-v4__module
+        ubuzima-workspace-dock-v5__module
         ${module.active ? 'is-active' : ''}
       "
       data-workspace-module-key="${escapeHtml(module.key)}"
+      data-dock-tooltip="${escapeHtml(module.label)}"
+      data-colourful-icon-identity="${escapeHtml(module.key)}"
       aria-label="Open ${escapeHtml(module.label)}"
       aria-pressed="${module.active ? 'true' : 'false'}"
       title="${escapeHtml(module.label)}"
     >
-      <span
-        class="ubuzima-workspace-dock-v4__icon-shell"
-        aria-hidden="true"
-      >
-        <img
-          class="ubuzima-workspace-dock-v4__icon"
-          src="${escapeHtml(module.icon)}"
-          alt=""
-          draggable="false"
-          data-dock-stable-icon="${ICON_REGISTRY_MARKER}"
-        />
-      </span>
+      <img
+        class="ubuzima-workspace-dock-v5__icon"
+        src="${module.icon}"
+        alt=""
+        draggable="false"
+      />
+
+      ${badge}
 
       <span
-        class="ubuzima-workspace-dock-v4__module-label"
-      >
-        ${escapeHtml(module.label)}
-      </span>
-
-      <span
-        class="ubuzima-workspace-dock-v4__active-dot"
+        class="ubuzima-workspace-dock-v5__active-dot"
         aria-hidden="true"
       ></span>
     </button>
@@ -1776,63 +2302,146 @@ function recentMarkup(
   entry: RecentWorkspace,
   module: DockModule,
 ): string {
-  const current =
-    module.active;
-
   return `
     <article
       class="
-        ubuzima-workspace-dock-v4__recent-card
-        ${current ? 'is-current' : ''}
+        ubuzima-workspace-dock-v5__recent-card
+        ${module.active ? 'is-current' : ''}
       "
       data-recent-task-key="${escapeHtml(entry.key)}"
     >
       <button
         type="button"
-        class="ubuzima-workspace-dock-v4__recent-open"
+        class="ubuzima-workspace-dock-v5__recent-open"
         data-recent-open-key="${escapeHtml(entry.key)}"
-        aria-label="Resume ${escapeHtml(entry.label)}"
+        data-dock-tooltip="${escapeHtml(entry.label)}"
+        aria-label="Open ${escapeHtml(entry.label)}"
+        title="${escapeHtml(entry.label)}"
       >
-        <span
-          class="ubuzima-workspace-dock-v4__recent-icon-shell"
-          aria-hidden="true"
-        >
-          <img
-            class="ubuzima-workspace-dock-v4__recent-icon"
-            src="${escapeHtml(module.icon)}"
-            alt=""
-            draggable="false"
-            data-dock-stable-icon="${ICON_REGISTRY_MARKER}"
-          />
-        </span>
+        <img
+          class="ubuzima-workspace-dock-v5__recent-icon"
+          src="${module.icon}"
+          alt=""
+          draggable="false"
+        />
 
         <span
-          class="ubuzima-workspace-dock-v4__recent-copy"
+          class="ubuzima-workspace-dock-v5__recent-name"
         >
-          <small>
-            ${current ? 'Current task' : 'Recent task'}
-          </small>
-
-          <strong>
-            ${escapeHtml(entry.label)}
-          </strong>
-
-          <span>
-            ${escapeHtml(recentTaskText(module))}
-          </span>
+          ${escapeHtml(entry.label)}
         </span>
       </button>
 
       <button
         type="button"
-        class="ubuzima-workspace-dock-v4__recent-close"
+        class="ubuzima-workspace-dock-v5__recent-close"
         data-recent-close-key="${escapeHtml(entry.key)}"
+        data-dock-tooltip="Close ${escapeHtml(entry.label)}"
         aria-label="Close ${escapeHtml(entry.label)} from recent tasks"
-        title="Close recent task"
       >
         ×
       </button>
     </article>
+  `;
+}
+
+function profilePopoverMarkup(
+  snapshot: ProfileSnapshot,
+): string {
+  if (!profileOpen) {
+    return '';
+  }
+
+  const icon =
+    colourfulIconDataUri(
+      'profile',
+      snapshot.name === 'Staff Profile'
+        ? 'Profile'
+        : snapshot.name,
+    );
+
+  return `
+    <section
+      class="ubuzima-workspace-dock-v5__profile-popover"
+      data-profile-popover="true"
+      aria-label="Profile and workspace controls"
+    >
+      <div
+        class="ubuzima-workspace-dock-v5__profile-summary"
+      >
+        <img
+          src="${icon}"
+          alt=""
+          draggable="false"
+        />
+
+        <div>
+          <strong>
+            ${escapeHtml(snapshot.name)}
+          </strong>
+
+          <small>
+            Profile, language and workspace controls
+          </small>
+        </div>
+      </div>
+
+      <div
+        class="ubuzima-workspace-dock-v5__profile-actions"
+      >
+        <button
+          type="button"
+          class="ubuzima-workspace-dock-v5__profile-action"
+          data-profile-action="edit-profile"
+        >
+          Edit Profile
+        </button>
+
+        <button
+          type="button"
+          class="ubuzima-workspace-dock-v5__profile-action"
+          data-profile-action="change-password"
+        >
+          Change Password
+        </button>
+
+        <button
+          type="button"
+          class="ubuzima-workspace-dock-v5__profile-action"
+          data-profile-action="language"
+        >
+          Language · ${escapeHtml(snapshot.language)}
+        </button>
+
+        <button
+          type="button"
+          class="ubuzima-workspace-dock-v5__profile-action"
+          data-profile-action="website"
+          ${snapshot.hasWebsite ? '' : 'disabled'}
+        >
+          ${escapeHtml(snapshot.websiteLabel)}
+        </button>
+
+        <button
+          type="button"
+          class="ubuzima-workspace-dock-v5__profile-action"
+          data-profile-action="back"
+        >
+          Back
+        </button>
+
+        <button
+          type="button"
+          class="
+            ubuzima-workspace-dock-v5__profile-action
+            ubuzima-workspace-dock-v5__profile-action--danger
+          "
+          data-profile-action="sign-out"
+        >
+          Sign Out
+        </button>
+      </div>
+    </section>
   `;
 }
 
@@ -1869,37 +2478,39 @@ function renderDock(
     const recent =
       normalisedRecent(modules);
 
-    const activeModule =
-      modules.find(
-        (module) => module.active,
-      );
+    const snapshot =
+      profileSnapshot();
 
-    const activeKey =
-      activeModule?.key || '';
-
-    const moduleSignature =
-      modules.map(
-        (module) =>
-          `${module.key}:${module.label}:${module.icon}`,
-      )
-      .join('|');
-
-    const recentSignature =
-      recent.map(
-        (entry) =>
-          `${entry.key}:${entry.label}`,
-      )
-      .join('|');
-
-    const structureSignature =
-      `${moduleSignature}::${recentSignature}`;
+    const signature =
+      JSON.stringify({
+        profileOpen,
+        profileName: snapshot.name,
+        language: snapshot.language,
+        website:
+          snapshot.websiteLabel,
+        modules:
+          modules.map(
+            (module) => ({
+              key: module.key,
+              label: module.label,
+              badge: module.badge,
+            }),
+          ),
+        recent:
+          recent.map(
+            (entry) => ({
+              key: entry.key,
+              label: entry.label,
+            }),
+          ),
+      });
 
     const dock =
       ensureDock();
 
     if (
       forceStructure
-      || structureSignature
+      || signature
         !== lastStructureSignature
       || !dock.firstElementChild
     ) {
@@ -1928,44 +2539,49 @@ function renderDock(
         .join('');
 
       dock.innerHTML = `
+        ${profilePopoverMarkup(snapshot)}
+
         <section
-          class="ubuzima-workspace-dock-v4__modules"
+          class="ubuzima-workspace-dock-v5__modules"
           aria-label="Available modules"
         >
+          ${profileButtonMarkup(snapshot)}
+
+          <span
+            class="ubuzima-workspace-dock-v5__divider"
+            aria-hidden="true"
+          ></span>
+
           ${modules.map(moduleMarkup).join('')}
         </section>
 
         <section
-          class="ubuzima-workspace-dock-v4__recent"
+          class="ubuzima-workspace-dock-v5__recent"
           aria-label="Recent tasks"
         >
           <header
-            class="ubuzima-workspace-dock-v4__recent-header"
+            class="ubuzima-workspace-dock-v5__recent-header"
           >
-            <div
-              class="ubuzima-workspace-dock-v4__recent-heading"
-            >
-              <strong>Recent tasks</strong>
+            <strong>Recent Tasks</strong>
 
-              <span
-                class="ubuzima-workspace-dock-v4__recent-count"
-                aria-label="${recent.length} recent tasks"
-              >
-                ${recent.length}
-              </span>
-            </div>
+            <span
+              class="ubuzima-workspace-dock-v5__recent-count"
+              aria-label="${recent.length} recent tasks"
+            >
+              ${recent.length}
+            </span>
           </header>
 
           <div
-            class="ubuzima-workspace-dock-v4__recent-list"
+            class="ubuzima-workspace-dock-v5__recent-list"
           >
             ${
               recentCards
               || `
                 <div
-                  class="ubuzima-workspace-dock-v4__recent-empty"
+                  class="ubuzima-workspace-dock-v5__recent-empty"
                 >
-                  Open a module to build your recent workspace list.
+                  Open a module to create a recent task.
                 </div>
               `
             }
@@ -1974,21 +2590,24 @@ function renderDock(
       `;
 
       lastStructureSignature =
-        structureSignature;
+        signature;
     }
+
+    const activeKey =
+      modules.find(
+        (module) => module.active,
+      )?.key
+      || '';
 
     dock
       .querySelectorAll<HTMLElement>(
         '[data-workspace-module-key]',
       )
       .forEach((button) => {
-        const key =
+        const active =
           button.dataset
             .workspaceModuleKey
-          || '';
-
-        const active =
-          key === activeKey;
+          === activeKey;
 
         button.classList.toggle(
           'is-active',
@@ -2006,24 +2625,12 @@ function renderDock(
         '[data-recent-task-key]',
       )
       .forEach((card) => {
-        const key =
-          card.dataset.recentTaskKey
-          || '';
-
         card.classList.toggle(
           'is-current',
-          key === activeKey,
+          card.dataset
+            .recentTaskKey
+          === activeKey,
         );
-
-        const taskLabel =
-          card.querySelector('small');
-
-        if (taskLabel) {
-          taskLabel.textContent =
-            key === activeKey
-              ? 'Current task'
-              : 'Recent task';
-        }
       });
 
     dock.setAttribute(
@@ -2032,76 +2639,48 @@ function renderDock(
     );
 
     dock.setAttribute(
-      'data-recent-workspace-count',
+      'data-recent-task-count',
       String(recent.length),
     );
 
     dock.setAttribute(
-      'data-recent-workspace-limit',
+      'data-recent-task-limit',
       String(MAXIMUM_RECENT),
     );
 
     dock.setAttribute(
-      'data-icon-render-mode',
-      'bundled-reviewed-svg-assets',
+      'data-icon-mode',
+      'colourful-deterministic-unique',
     );
 
     dock.setAttribute(
-      'data-render-mode',
-      'signature-guarded',
+      'data-label-mode',
+      'tooltip-only',
     );
 
     dock.setAttribute(
-      'data-navigation-mode',
-      'authoritative-menu-click-with-submenu-fallback',
+      'data-header-mode',
+      'hidden-controls-relocated-to-profile',
+    );
+
+    dock.setAttribute(
+      'data-recent-card-mode',
+      'fixed-height-icon-and-name',
     );
 
     dock.setAttribute(
       'data-glass-mode',
-      'transparent-blur-saturation',
+      'low-opacity-deep-blur',
     );
 
     document.documentElement
       .setAttribute(
-        'data-ubuzima-workspace-dock-build',
+        'data-ubuzima-workspace-dock-v5-build',
         BUILD_MARKER,
       );
-
-    lastActiveKey = activeKey;
   } finally {
     isRendering = false;
   }
-}
-
-function handleIconError(
-  event: Event,
-): void {
-  const target =
-    event.target;
-
-  if (
-    !(target instanceof HTMLImageElement)
-    || !target.hasAttribute(
-      'data-dock-stable-icon',
-    )
-  ) {
-    return;
-  }
-
-  if (
-    target.dataset
-      .dockFallbackApplied
-    === 'true'
-  ) {
-    return;
-  }
-
-  target.dataset
-    .dockFallbackApplied =
-    'true';
-
-  target.src =
-    ICON_REGISTRY['module.svg'];
 }
 
 function handleDockClick(
@@ -2111,6 +2690,41 @@ function handleDockClick(
     event.target;
 
   if (!(target instanceof Element)) {
+    return;
+  }
+
+  const profileToggle =
+    target.closest(
+      '[data-profile-toggle]',
+    );
+
+  if (
+    profileToggle
+    instanceof HTMLButtonElement
+  ) {
+    profileOpen =
+      !profileOpen;
+
+    hideTooltip();
+    scheduleRender(true);
+    return;
+  }
+
+  const profileAction =
+    target.closest(
+      '[data-profile-action]',
+    );
+
+  if (
+    profileAction
+    instanceof HTMLButtonElement
+  ) {
+    performProfileAction(
+      profileAction.dataset
+        .profileAction
+      || '',
+    );
+
     return;
   }
 
@@ -2129,7 +2743,7 @@ function handleDockClick(
       || '';
 
     if (key) {
-      removeRecentWorkspace(key);
+      removeRecent(key);
       scheduleRender(true);
     }
 
@@ -2189,15 +2803,95 @@ function handleDockClick(
   }
 }
 
+function handleDockMouseOver(
+  event: MouseEvent,
+): void {
+  const target =
+    event.target;
+
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+  const tooltipTarget =
+    target.closest<HTMLElement>(
+      '[data-dock-tooltip]',
+    );
+
+  if (tooltipTarget) {
+    showTooltip(
+      tooltipTarget,
+    );
+  }
+}
+
+function handleDockMouseOut(
+  event: MouseEvent,
+): void {
+  const target =
+    event.target;
+
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+  const tooltipTarget =
+    target.closest<HTMLElement>(
+      '[data-dock-tooltip]',
+    );
+
+  if (!tooltipTarget) {
+    return;
+  }
+
+  const related =
+    event.relatedTarget;
+
+  if (
+    related instanceof Node
+    && tooltipTarget.contains(
+      related,
+    )
+  ) {
+    return;
+  }
+
+  hideTooltip();
+}
+
+function handleDockFocusIn(
+  event: FocusEvent,
+): void {
+  const target =
+    event.target;
+
+  if (
+    target instanceof HTMLElement
+    && target.matches(
+      '[data-dock-tooltip]',
+    )
+  ) {
+    showTooltip(target);
+  }
+}
+
+function handleDockFocusOut(): void {
+  hideTooltip();
+}
+
 function scheduleRender(
   forceStructure = false,
 ): void {
-  window.clearTimeout(renderTimer);
+  window.clearTimeout(
+    renderTimer,
+  );
 
   renderTimer =
     window.setTimeout(
       () => {
-        renderDock(forceStructure);
+        renderDock(
+          forceStructure,
+        );
       },
       90,
     );
@@ -2224,13 +2918,13 @@ function mutationBelongsToDock(
 function startDock(): void {
   if (
     window
-      .__ubuzimaWorkspaceDockRefinedV4
+      .__ubuzimaWorkspaceDockV5
   ) {
     return;
   }
 
   window
-    .__ubuzimaWorkspaceDockRefinedV4 =
+    .__ubuzimaWorkspaceDockV5 =
     true;
 
   renderDock(true);
@@ -2258,6 +2952,7 @@ function startDock(): void {
       subtree: true,
       childList: true,
       attributes: true,
+      characterData: true,
       attributeFilter: [
         'class',
         'aria-current',
@@ -2280,18 +2975,38 @@ function startDock(): void {
           `[${DOCK_ATTRIBUTE}]`,
         )
       ) {
+        if (profileOpen) {
+          profileOpen = false;
+          scheduleRender(true);
+          return;
+        }
+
         window.setTimeout(
           () => scheduleRender(false),
-          60,
+          70,
         );
 
         window.setTimeout(
           () => scheduleRender(false),
-          240,
+          250,
         );
       }
     },
     true,
+  );
+
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (
+        event.key === 'Escape'
+        && profileOpen
+      ) {
+        profileOpen = false;
+        hideTooltip();
+        scheduleRender(true);
+      }
+    },
   );
 
   window.addEventListener(
@@ -2325,11 +3040,6 @@ function startDock(): void {
     () => scheduleRender(false),
   );
 
-  window.addEventListener(
-    'ubuzima:app-ready',
-    () => scheduleRender(true),
-  );
-
   window.setTimeout(
     () => renderDock(true),
     400,
@@ -2341,7 +3051,10 @@ function startDock(): void {
   );
 }
 
-if (document.readyState === 'loading') {
+if (
+  document.readyState
+  === 'loading'
+) {
   document.addEventListener(
     'DOMContentLoaded',
     startDock,
