@@ -60926,3 +60926,120 @@ body .pos-quantity-calculated-total-card output {
       3.35rem;
   }
 }
+
+/* UBIZIMA_BO_PROFITABILITY_INNER_FIT_V20C */
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit {
+  --ubuzima-bo-profitability-inner-fit-v20c: 1;
+
+  padding: 0.78rem !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  > header,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-card-head,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-card-header {
+  margin-top: 0 !important;
+  margin-bottom: 0.28rem !important;
+  padding-top: 0 !important;
+  padding-bottom: 0.12rem !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  > * + * {
+  margin-top: 0.28rem !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-card-section,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-section,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-panel {
+  margin-top: 0.18rem !important;
+  margin-bottom: 0.18rem !important;
+  padding-top: 0.08rem !important;
+  padding-bottom: 0.08rem !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-metric-list,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-metric-list.compact,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-summary-grid,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-kpi-grid {
+  gap: 0.32rem !important;
+  margin-top: 0.18rem !important;
+  margin-bottom: 0.18rem !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-metric-list
+  article,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-summary-grid
+  article,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-kpi-grid
+  article {
+  min-height: 0 !important;
+  padding: 0.34rem 0.46rem !important;
+  box-sizing: border-box !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-table-wrap {
+  margin-top: 0.18rem !important;
+  margin-bottom: 0.18rem !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  table
+  th,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  table
+  td {
+  padding-top: 0.26rem !important;
+  padding-bottom: 0.26rem !important;
+}
+
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-card-body,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  .bo-pro-card-content,
+.bo-pro-page
+  .bo-pro-card.bo-pro-card--profit
+  [data-card-content] {
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
