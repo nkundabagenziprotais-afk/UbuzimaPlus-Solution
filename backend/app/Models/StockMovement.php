@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 class StockMovement extends Model
 {
@@ -26,6 +27,11 @@ class StockMovement extends Model
         'reason',
         'performed_by',
         'occurred_at',
+        'unit_cost_snapshot',
+        'total_cost_snapshot',
+        'cost_source_snapshot',
+        'cost_snapshot_at',
+        'cost_snapshot_metadata',
         'metadata',
     ];
 
@@ -34,8 +40,37 @@ class StockMovement extends Model
         'business_date' => 'date',
         'running_balance' => 'decimal:2',
         'occurred_at' => 'datetime',
+        'unit_cost_snapshot' => 'decimal:4',
+        'total_cost_snapshot' => 'decimal:4',
+        'cost_snapshot_at' => 'datetime',
+        'cost_snapshot_metadata' => 'array',
         'metadata' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $movement): void {
+            foreach (
+                [
+                    'unit_cost_snapshot',
+                    'total_cost_snapshot',
+                    'cost_source_snapshot',
+                    'cost_snapshot_at',
+                    'cost_snapshot_metadata',
+                ]
+                as $field
+            ) {
+                if (
+                    $movement->getOriginal($field) !== null
+                    && $movement->isDirty($field)
+                ) {
+                    throw new LogicException(
+                        "Inventory cost snapshot field {$field} is immutable."
+                    );
+                }
+            }
+        });
+    }
 
     public function tenant(): BelongsTo
     {

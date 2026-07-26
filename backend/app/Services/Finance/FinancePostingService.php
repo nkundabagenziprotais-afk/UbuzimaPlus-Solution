@@ -51,6 +51,14 @@ class FinancePostingService
                     $payload->tenantId,
                     $payload->branchId,
                     $payload->businessDate,
+                    in_array(
+                        $payload->mode,
+                        (array) config(
+                            'finance.strict_period_modes',
+                            ['dual', 'authoritative']
+                        ),
+                        true
+                    ),
                 );
 
                 $resolvedLines = [];
@@ -148,6 +156,38 @@ class FinancePostingService
                 );
             }
         });
+    }
+
+    public function quarantineExternal(
+        FinancePostingPayload $payload,
+        string $code,
+        string $message,
+    ): FinanceJournalEntry|FinancePostingLog {
+        return DB::transaction(
+            function () use (
+                $payload,
+                $code,
+                $message,
+            ): FinanceJournalEntry|FinancePostingLog {
+                $existing = FinanceJournalEntry::query()
+                    ->where('tenant_id', $payload->tenantId)
+                    ->where(
+                        'idempotency_key',
+                        $payload->idempotencyKey
+                    )
+                    ->first();
+
+                if ($existing) {
+                    return $existing->load('lines');
+                }
+
+                return $this->quarantine(
+                    $payload,
+                    $code,
+                    $message,
+                );
+            }
+        );
     }
 
     private function markPosted(

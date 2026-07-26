@@ -11,6 +11,7 @@ class FinancePeriodGuard
         int $tenantId,
         ?int $branchId,
         string $businessDate,
+        bool $required = false,
     ): ?FinanceAccountingPeriod {
         $period = FinanceAccountingPeriod::query()
             ->where('tenant_id', $tenantId)
@@ -25,6 +26,12 @@ class FinancePeriodGuard
             })
             ->orderByRaw('CASE WHEN branch_id IS NULL THEN 1 ELSE 0 END')
             ->first();
+
+        if (! $period && $required) {
+            throw new RuntimeException(
+                'No open accounting period exists for the Business Date.'
+            );
+        }
 
         if ($period && $period->isClosedOrLocked()) {
             throw new RuntimeException('Accounting period is closed or locked.');
