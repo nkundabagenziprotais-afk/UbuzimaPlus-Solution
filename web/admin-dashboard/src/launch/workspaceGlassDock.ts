@@ -1,8 +1,17 @@
 const BUILD_MARKER =
-  'UBIZIMA_WORKSPACE_DOCK_REFINED_V5';
+  'UBIZIMA_WORKSPACE_DOCK_PERFORMANCE_V6';
 
 const ICON_MARKER =
-  'UBIZIMA_COLOURFUL_UNIQUE_ICON_FAMILY_V5';
+  'UBIZIMA_AI_STYLE_PICTURE_ICON_FAMILY_V6';
+
+const PHOTO_ICON_MARKER =
+  'UBIZIMA_REAL_PICTURE_ICONS_NO_INITIALS_V6';
+
+const PERFORMANCE_MARKER =
+  'UBIZIMA_IMMEDIATE_DOCK_NAVIGATION_V6';
+
+const CENTERING_MARKER =
+  'UBIZIMA_CENTRALIZED_APPLICATION_RAIL_V6';
 
 const PROFILE_MARKER =
   'UBIZIMA_DOCK_PROFILE_HUB_V5';
@@ -11,13 +20,13 @@ const HEADER_MARKER =
   'UBIZIMA_SHARED_HEADER_RELOCATION_V5';
 
 const RECENT_MARKER =
-  'UBIZIMA_FIXED_RECENT_TASK_CARDS_V5';
+  'UBIZIMA_FITTED_RECENT_TASK_PICTURE_CARDS_V6';
 
 const GLASS_MARKER =
   'UBIZIMA_DEEP_GLASS_TRANSPARENCY_V5';
 
 const NAVIGATION_MARKER =
-  'UBIZIMA_AUTHORITATIVE_NAVIGATION_V5';
+  'UBIZIMA_ZERO_DELAY_AUTHORITATIVE_NAVIGATION_V6';
 
 const MINIMUM_WIDTH = 768;
 const MAXIMUM_RECENT = 4;
@@ -66,7 +75,10 @@ declare global {
   }
 }
 
-let renderTimer = 0;
+let renderFrame = 0;
+let forceNextRender = false;
+let navigationSequence = 0;
+let pendingActiveKey = '';
 let lastStructureSignature = '';
 let isRendering = false;
 let profileOpen = false;
@@ -125,6 +137,7 @@ function hashValue(
     index += 1
   ) {
     hash ^= value.charCodeAt(index);
+
     hash = Math.imul(
       hash,
       16777619,
@@ -134,41 +147,344 @@ function hashValue(
   return hash >>> 0;
 }
 
-function iconInitials(
+type DockIconName =
+  | 'admin.svg'
+  | 'ai.svg'
+  | 'dashboard.svg'
+  | 'email.svg'
+  | 'finance.svg'
+  | 'general-stock.svg'
+  | 'home.svg'
+  | 'insurance.svg'
+  | 'inventory.svg'
+  | 'module.svg'
+  | 'pharmacy.svg'
+  | 'pos.svg'
+  | 'procurement.svg'
+  | 'product-master.svg'
+  | 'reports.svg'
+  | 'sales.svg'
+  | 'settings.svg'
+  | 'suppliers.svg'
+  | 'tenant.svg'
+  | 'users.svg';
+
+const DOCK_ICON_ASSETS:
+  Record<DockIconName, string> = {
+    'admin.svg': new URL(
+      '../assets/dock-icons/admin.svg',
+      import.meta.url,
+    ).href,
+
+    'ai.svg': new URL(
+      '../assets/dock-icons/ai.svg',
+      import.meta.url,
+    ).href,
+
+    'dashboard.svg': new URL(
+      '../assets/dock-icons/dashboard.svg',
+      import.meta.url,
+    ).href,
+
+    'email.svg': new URL(
+      '../assets/dock-icons/email.svg',
+      import.meta.url,
+    ).href,
+
+    'finance.svg': new URL(
+      '../assets/dock-icons/finance.svg',
+      import.meta.url,
+    ).href,
+
+    'general-stock.svg': new URL(
+      '../assets/dock-icons/general-stock.svg',
+      import.meta.url,
+    ).href,
+
+    'home.svg': new URL(
+      '../assets/dock-icons/home.svg',
+      import.meta.url,
+    ).href,
+
+    'insurance.svg': new URL(
+      '../assets/dock-icons/insurance.svg',
+      import.meta.url,
+    ).href,
+
+    'inventory.svg': new URL(
+      '../assets/dock-icons/inventory.svg',
+      import.meta.url,
+    ).href,
+
+    'module.svg': new URL(
+      '../assets/dock-icons/module.svg',
+      import.meta.url,
+    ).href,
+
+    'pharmacy.svg': new URL(
+      '../assets/dock-icons/pharmacy.svg',
+      import.meta.url,
+    ).href,
+
+    'pos.svg': new URL(
+      '../assets/dock-icons/pos.svg',
+      import.meta.url,
+    ).href,
+
+    'procurement.svg': new URL(
+      '../assets/dock-icons/procurement.svg',
+      import.meta.url,
+    ).href,
+
+    'product-master.svg': new URL(
+      '../assets/dock-icons/product-master.svg',
+      import.meta.url,
+    ).href,
+
+    'reports.svg': new URL(
+      '../assets/dock-icons/reports.svg',
+      import.meta.url,
+    ).href,
+
+    'sales.svg': new URL(
+      '../assets/dock-icons/sales.svg',
+      import.meta.url,
+    ).href,
+
+    'settings.svg': new URL(
+      '../assets/dock-icons/settings.svg',
+      import.meta.url,
+    ).href,
+
+    'suppliers.svg': new URL(
+      '../assets/dock-icons/suppliers.svg',
+      import.meta.url,
+    ).href,
+
+    'tenant.svg': new URL(
+      '../assets/dock-icons/tenant.svg',
+      import.meta.url,
+    ).href,
+
+    'users.svg': new URL(
+      '../assets/dock-icons/users.svg',
+      import.meta.url,
+    ).href,
+  };
+
+const FALLBACK_PICTURE_CACHE =
+  new Map<string, string>();
+
+function semanticIconName(
+  key: string,
   label: string,
-): string {
-  const words =
-    label
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+): DockIconName | null {
+  const identity =
+    `${key} ${label}`.toLowerCase();
 
-  if (words.length === 0) {
-    return 'U+';
+  if (
+    key === 'dashboard'
+    || key === 'overview'
+    || identity.includes(
+      'business overview',
+    )
+  ) {
+    return 'dashboard.svg';
   }
 
-  if (words.length === 1) {
-    return words[0]
-      .slice(0, 2)
-      .toUpperCase();
+  if (
+    key === 'corporate-email'
+    || identity.includes('email')
+    || identity.includes('mail')
+    || identity.includes(
+      'communication',
+    )
+  ) {
+    return 'email.svg';
   }
 
-  return (
-    words[0][0]
-    + words[
-      words.length - 1
-    ][0]
-  ).toUpperCase();
+  if (
+    identity.includes(
+      'artificial intelligence',
+    )
+    || identity.includes(' ai')
+    || key === 'ai'
+    || key.startsWith('ai-')
+  ) {
+    return 'ai.svg';
+  }
+
+  if (
+    identity.includes(
+      'product master',
+    )
+  ) {
+    return 'product-master.svg';
+  }
+
+  if (
+    identity.includes(
+      'general stock',
+    )
+  ) {
+    return 'general-stock.svg';
+  }
+
+  if (
+    identity.includes(
+      'point of sale',
+    )
+    || key === 'pos'
+    || key.startsWith('pos-')
+  ) {
+    return 'pos.svg';
+  }
+
+  if (
+    identity.includes('inventory')
+    || identity.includes(
+      'stock control',
+    )
+    || identity.includes(
+      'stock pick',
+    )
+  ) {
+    return 'inventory.svg';
+  }
+
+  if (
+    identity.includes('procurement')
+    || identity.includes(
+      'purchase order',
+    )
+  ) {
+    return 'procurement.svg';
+  }
+
+  if (
+    identity.includes('supplier')
+  ) {
+    return 'suppliers.svg';
+  }
+
+  if (
+    identity.includes('finance')
+    || identity.includes('accounting')
+    || identity.includes('ledger')
+    || identity.includes(
+      'reconciliation',
+    )
+  ) {
+    return 'finance.svg';
+  }
+
+  if (
+    identity.includes('insurance')
+    || identity.includes('claim')
+    || identity.includes('payer')
+  ) {
+    return 'insurance.svg';
+  }
+
+  if (
+    identity.includes('report')
+    || identity.includes('analytics')
+    || identity.includes(
+      'business intelligence',
+    )
+  ) {
+    return 'reports.svg';
+  }
+
+  if (
+    identity.includes('sales')
+    || identity.includes(
+      'sales register',
+    )
+  ) {
+    return 'sales.svg';
+  }
+
+  if (
+    identity.includes('pharmacy')
+    || identity.includes(
+      'dispensing',
+    )
+    || identity.includes(
+      'prescription',
+    )
+  ) {
+    return 'pharmacy.svg';
+  }
+
+  if (
+    identity.includes('tenant')
+    || identity.includes('branch')
+    || identity.includes(
+      'institution',
+    )
+  ) {
+    return 'tenant.svg';
+  }
+
+  if (
+    identity.includes('user')
+    || identity.includes('staff')
+    || identity.includes('role')
+    || identity.includes(
+      'permission',
+    )
+    || identity.includes('access')
+    || identity.includes('profile')
+  ) {
+    return 'users.svg';
+  }
+
+  if (
+    identity.includes('admin')
+    || identity.includes(
+      'platform management',
+    )
+  ) {
+    return 'admin.svg';
+  }
+
+  if (
+    identity.includes('setting')
+    || identity.includes(
+      'configuration',
+    )
+  ) {
+    return 'settings.svg';
+  }
+
+  if (
+    identity.includes('home')
+  ) {
+    return 'home.svg';
+  }
+
+  return null;
 }
 
-function colourfulIconDataUri(
+function fallbackPictureDataUri(
   key: string,
   label: string,
 ): string {
-  const hash =
-    hashValue(
-      `${key}:${label}`,
+  const cacheKey =
+    `${key}:${label}`;
+
+  const cached =
+    FALLBACK_PICTURE_CACHE.get(
+      cacheKey,
     );
+
+  if (cached) {
+    return cached;
+  }
+
+  const hash =
+    hashValue(cacheKey);
 
   const firstHue =
     hash % 360;
@@ -178,31 +494,17 @@ function colourfulIconDataUri(
       firstHue
       + 58
       + (
-        hash % 47
+        hash % 67
       )
     ) % 360;
 
-  const accentHue =
-    (
-      firstHue
-      + 176
-    ) % 360;
+  const rotation =
+    hash % 180;
 
-  const initials =
-    iconInitials(label);
-
-  const orbitX =
+  const point =
     15
     + (
-      hash % 13
-    );
-
-  const orbitY =
-    13
-    + (
-      (
-        hash >>> 5
-      ) % 15
+      hash % 20
     );
 
   const svg = `
@@ -214,137 +516,151 @@ function colourfulIconDataUri(
     >
       <defs>
         <linearGradient
-          id="g"
-          x1="5"
-          y1="4"
-          x2="58"
-          y2="61"
+          id="fallback-gradient"
+          x1="4"
+          y1="5"
+          x2="59"
+          y2="58"
           gradientUnits="userSpaceOnUse"
         >
           <stop
             offset="0"
-            stop-color="hsl(${firstHue} 92% 62%)"
+            stop-color="hsl(${firstHue} 91% 63%)"
           />
-          <stop
-            offset="0.52"
-            stop-color="hsl(${secondHue} 88% 56%)"
-          />
+
           <stop
             offset="1"
-            stop-color="hsl(${accentHue} 90% 48%)"
+            stop-color="hsl(${secondHue} 84% 48%)"
           />
         </linearGradient>
-
-        <radialGradient
-          id="shine"
-          cx="0"
-          cy="0"
-          r="1"
-          gradientTransform="translate(20 12) rotate(58) scale(47)"
-        >
-          <stop
-            stop-color="white"
-            stop-opacity="0.74"
-          />
-          <stop
-            offset="1"
-            stop-color="white"
-            stop-opacity="0"
-          />
-        </radialGradient>
-
-        <filter
-          id="shadow"
-          x="-30%"
-          y="-30%"
-          width="160%"
-          height="160%"
-        >
-          <feDropShadow
-            dx="0"
-            dy="4"
-            stdDeviation="4"
-            flood-color="hsl(${firstHue} 65% 22%)"
-            flood-opacity="0.25"
-          />
-        </filter>
       </defs>
 
       <rect
-        x="4"
-        y="4"
-        width="56"
-        height="56"
+        x="3"
+        y="3"
+        width="58"
+        height="58"
         rx="18"
-        fill="url(#g)"
-        filter="url(#shadow)"
+        fill="url(#fallback-gradient)"
       />
 
       <circle
-        cx="${orbitX}"
-        cy="${orbitY}"
-        r="13"
-        fill="url(#shine)"
-      />
-
-      <circle
-        cx="49"
-        cy="47"
+        cx="19"
+        cy="17"
         r="12"
         fill="white"
-        fill-opacity="0.11"
+        fill-opacity="0.18"
       />
 
-      <path
-        d="M13 42C22 28 34 22 51 17"
+      <g
+        transform="rotate(${rotation} 32 32)"
         fill="none"
         stroke="white"
-        stroke-opacity="0.17"
-        stroke-width="3"
+        stroke-width="4"
         stroke-linecap="round"
-      />
-
-      <rect
-        x="13"
-        y="13"
-        width="38"
-        height="38"
-        rx="13"
-        fill="white"
-        fill-opacity="0.13"
-        stroke="white"
-        stroke-opacity="0.21"
-      />
-
-      <text
-        x="32"
-        y="38"
-        text-anchor="middle"
-        fill="white"
-        font-family="Inter, Arial, sans-serif"
-        font-size="${initials.length > 2 ? 14 : 17}"
-        font-weight="850"
-        letter-spacing="-0.8"
+        stroke-linejoin="round"
       >
-        ${escapeHtml(initials)}
-      </text>
+        <path
+          d="M${point} 32h${49 - point}"
+        />
 
-      <circle
-        cx="49"
-        cy="15"
-        r="3.5"
-        fill="white"
-        fill-opacity="0.82"
-      />
+        <path
+          d="M32 ${point}v${49 - point}"
+        />
+
+        <rect
+          x="19"
+          y="19"
+          width="26"
+          height="26"
+          rx="9"
+          stroke-opacity="0.72"
+        />
+
+        <circle
+          cx="32"
+          cy="32"
+          r="7"
+          fill="white"
+          fill-opacity="0.20"
+        />
+      </g>
     </svg>
   `;
 
-  return (
+  const uri =
     'data:image/svg+xml;charset=UTF-8,'
     + encodeURIComponent(
       svg.trim(),
-    )
+    );
+
+  FALLBACK_PICTURE_CACHE.set(
+    cacheKey,
+    uri,
   );
+
+  return uri;
+}
+
+function moduleIconUrl(
+  key: string,
+  label: string,
+): string {
+  const semantic =
+    semanticIconName(
+      key,
+      label,
+    );
+
+  if (semantic) {
+    return DOCK_ICON_ASSETS[
+      semantic
+    ];
+  }
+
+  return fallbackPictureDataUri(
+    key,
+    label,
+  );
+}
+
+function moduleHue(
+  key: string,
+): number {
+  return hashValue(key) % 360;
+}
+
+function profileFallbackInitials(
+  name: string,
+): string {
+  const words =
+    name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (words.length === 0) {
+    return 'U';
+  }
+
+  if (words.length === 1) {
+    return words[0]
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
+  return (
+    (
+      words[0][0]
+      || ''
+    )
+    + (
+      words[
+        words.length - 1
+      ][0]
+      || ''
+    )
+  ).toUpperCase();
 }
 
 function sourceButtonForKey(
@@ -490,7 +806,7 @@ function discoverModules(): DockModule[] {
           ?.trim()
         || 'Dashboard',
       icon:
-        colourfulIconDataUri(
+        moduleIconUrl(
           'dashboard',
           'Dashboard',
         ),
@@ -514,7 +830,7 @@ function discoverModules(): DockModule[] {
       key: 'corporate-email',
       label: 'Corporate Email',
       icon:
-        colourfulIconDataUri(
+        moduleIconUrl(
           'corporate-email',
           'Corporate Email',
         ),
@@ -589,7 +905,7 @@ function discoverModules(): DockModule[] {
         key,
         label,
         icon:
-          colourfulIconDataUri(
+          moduleIconUrl(
             key,
             label,
           ),
@@ -623,7 +939,7 @@ function profileSnapshot(): ProfileSnapshot {
 
   const initials =
     avatarText?.textContent?.trim()
-    || iconInitials(name);
+    || profileFallbackInitials(name);
 
   const language =
     document
@@ -875,6 +1191,58 @@ function normalisedRecent(
     );
 }
 
+function applyOptimisticActiveState(
+  key: string,
+): void {
+  const dock =
+    document.querySelector<HTMLElement>(
+      `[${DOCK_ATTRIBUTE}]`,
+    );
+
+  if (!dock) {
+    return;
+  }
+
+  dock
+    .querySelectorAll<HTMLElement>(
+      '[data-workspace-module-key]',
+    )
+    .forEach((button) => {
+      const active =
+        button.dataset
+          .workspaceModuleKey
+        === key;
+
+      button.classList.toggle(
+        'is-active',
+        active,
+      );
+
+      button.setAttribute(
+        'aria-pressed',
+        active ? 'true' : 'false',
+      );
+    });
+
+  dock
+    .querySelectorAll<HTMLElement>(
+      '[data-recent-task-key]',
+    )
+    .forEach((card) => {
+      card.classList.toggle(
+        'is-current',
+        card.dataset
+          .recentTaskKey
+        === key,
+      );
+    });
+
+  dock.setAttribute(
+    'data-pending-active-key',
+    key,
+  );
+}
+
 function invokeModule(
   key: string,
 ): boolean {
@@ -883,6 +1251,14 @@ function invokeModule(
 
   if (!button) {
     return false;
+  }
+
+  try {
+    button.focus({
+      preventScroll: true,
+    });
+  } catch {
+    button.focus();
   }
 
   button.click();
@@ -895,6 +1271,8 @@ function invokeModule(
           key,
           marker:
             NAVIGATION_MARKER,
+          response:
+            'immediate-primary-click',
         },
       },
     ),
@@ -907,35 +1285,47 @@ function invokeModule(
     return true;
   }
 
-  window.setTimeout(
-    () => {
-      if (moduleIsActive(key)) {
-        return;
-      }
+  const section =
+    document.querySelector<HTMLElement>(
+      '.sidebar[data-admin-sidebar] '
+      + '.principal-menu-section'
+      + `[data-principal-menu="${CSS.escape(key)}"]`,
+    );
 
-      const section =
-        document.querySelector<HTMLElement>(
-          '.sidebar[data-admin-sidebar] '
-          + '.principal-menu-section'
-          + `[data-principal-menu="${CSS.escape(key)}"]`,
-        );
+  const firstChild =
+    section?.querySelector(
+      '.tree-child-submenu '
+      + 'button[data-section]'
+      + '[data-submenu]',
+    );
 
-      const firstChild =
-        section?.querySelector(
-          '.tree-child-submenu '
-          + 'button[data-section]'
-          + '[data-submenu]',
-        );
+  if (
+    firstChild
+    instanceof HTMLButtonElement
+  ) {
+    window.requestAnimationFrame(
+      () => {
+        if (!moduleIsActive(key)) {
+          firstChild.click();
 
-      if (
-        firstChild
-        instanceof HTMLButtonElement
-      ) {
-        firstChild.click();
-      }
-    },
-    140,
-  );
+          window.dispatchEvent(
+            new CustomEvent(
+              'ubuzima:workspace-dock-submenu-navigation',
+              {
+                detail: {
+                  key,
+                  marker:
+                    NAVIGATION_MARKER,
+                  response:
+                    'next-animation-frame',
+                },
+              },
+            ),
+          );
+        }
+      },
+    );
+  }
 
   return true;
 }
@@ -959,42 +1349,103 @@ function navigateToModule(
     return;
   }
 
+  const sequence =
+    ++navigationSequence;
+
+  pendingActiveKey =
+    key;
+
   rememberCurrentWorkspace();
 
+  rememberWorkspace(
+    target,
+    restoreScroll ?? 0,
+  );
+
+  profileOpen = false;
+
+  hideTooltip();
+
+  applyOptimisticActiveState(
+    key,
+  );
+
   if (!invokeModule(key)) {
+    pendingActiveKey = '';
     removeRecent(key);
     scheduleRender(true);
     return;
   }
 
-  profileOpen = false;
+  scheduleRender(false);
+
+  if (
+    typeof restoreScroll
+    === 'number'
+  ) {
+    window.requestAnimationFrame(
+      () => {
+        if (
+          sequence
+          === navigationSequence
+        ) {
+          restoreScrollTop(
+            restoreScroll,
+          );
+        }
+      },
+    );
+  }
+
+  window.requestAnimationFrame(
+    () => {
+      if (
+        sequence
+        !== navigationSequence
+      ) {
+        return;
+      }
+
+      scheduleRender(false);
+
+      window.requestAnimationFrame(
+        () => {
+          if (
+            sequence
+            === navigationSequence
+          ) {
+            scheduleRender(false);
+          }
+        },
+      );
+    },
+  );
 
   window.setTimeout(
     () => {
-      const refreshed =
-        discoverModules().find(
-          (module) =>
-            module.key === key,
-        )
-        || target;
-
-      rememberWorkspace(
-        refreshed,
-        restoreScroll ?? 0,
-      );
-
       if (
-        typeof restoreScroll
-        === 'number'
+        sequence
+        !== navigationSequence
       ) {
-        restoreScrollTop(
-          restoreScroll,
-        );
+        return;
       }
 
-      scheduleRender(true);
+      const active =
+        discoverModules().find(
+          (module) =>
+            module.active,
+        )?.key
+        || '';
+
+      if (
+        active === key
+      ) {
+        pendingActiveKey = '';
+      }
+
+      scheduleRender(false);
     },
-    340,
+    180,
   );
 }
 
@@ -2080,6 +2531,236 @@ function injectStyles(): void {
     }
   `;
 
+  style.textContent += `
+    @media (min-width: 1200px) {
+      .ubuzima-workspace-dock-v5 {
+        width:
+          min(
+            1500px,
+            calc(100vw - 24px)
+          );
+
+        grid-template-columns:
+          minmax(260px, 370px)
+          minmax(0, 1fr)
+          minmax(260px, 370px);
+      }
+
+      .ubuzima-workspace-dock-v6__balance {
+        display: block;
+        grid-column: 1;
+        min-width: 0;
+      }
+
+      .ubuzima-workspace-dock-v5__modules {
+        grid-column: 2;
+        min-width: 0;
+        justify-content: safe center;
+      }
+
+      .ubuzima-workspace-dock-v5__recent {
+        grid-column: 3;
+        min-width: 0;
+      }
+    }
+
+    @media (
+      min-width: 768px
+    ) and (
+      max-width: 1199px
+    ) {
+      .ubuzima-workspace-dock-v5 {
+        grid-template-columns:
+          minmax(0, 1fr)
+          minmax(210px, 34vw);
+      }
+
+      .ubuzima-workspace-dock-v6__balance {
+        display: none;
+      }
+
+      .ubuzima-workspace-dock-v5__modules {
+        grid-column: 1;
+        justify-content: safe center;
+      }
+
+      .ubuzima-workspace-dock-v5__recent {
+        grid-column: 2;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .ubuzima-workspace-dock-v5__module,
+      .ubuzima-workspace-dock-v5__profile {
+        background:
+          linear-gradient(
+            145deg,
+            hsl(
+              var(--dock-icon-hue)
+              88%
+              68%
+              / 0.18
+            ),
+            hsl(
+              calc(
+                var(--dock-icon-hue)
+                + 48
+              )
+              84%
+              52%
+              / 0.08
+            )
+          );
+
+        contain:
+          layout paint style;
+      }
+
+      .ubuzima-workspace-dock-v5__icon-shell {
+        width: 45px;
+        min-width: 45px;
+        height: 45px;
+        min-height: 45px;
+
+        display: grid;
+        place-items: center;
+
+        border:
+          1px solid
+          rgba(255, 255, 255, 0.30);
+
+        border-radius: 14px;
+
+        background:
+          linear-gradient(
+            145deg,
+            hsl(
+              var(--dock-icon-hue)
+              92%
+              70%
+              / 0.23
+            ),
+            rgba(255, 255, 255, 0.10)
+          );
+
+        box-shadow:
+          inset 0 1px 0
+            rgba(255, 255, 255, 0.45),
+          0 4px 10px
+            rgba(17, 61, 53, 0.08);
+
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+
+      .ubuzima-workspace-dock-v5__icon {
+        width: 35px !important;
+        min-width: 35px !important;
+        max-width: 35px !important;
+        height: 35px !important;
+        min-height: 35px !important;
+        max-height: 35px !important;
+
+        object-fit: contain !important;
+
+        filter:
+          drop-shadow(
+            0 2px 2px
+            rgba(20, 55, 49, 0.08)
+          ) !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-card {
+        width: 134px;
+        min-width: 134px;
+        height: 45px;
+        min-height: 45px;
+        flex-basis: 134px;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-open {
+        height: 43px;
+
+        grid-template-columns:
+          36px minmax(0, 1fr);
+
+        gap: 6px;
+
+        padding:
+          4px 3px
+          4px 5px;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-icon-shell {
+        width: 34px;
+        min-width: 34px;
+        height: 34px;
+        min-height: 34px;
+
+        display: grid;
+        place-items: center;
+
+        border:
+          1px solid
+          rgba(255, 255, 255, 0.30);
+
+        border-radius: 10px;
+
+        background:
+          linear-gradient(
+            145deg,
+            hsl(
+              var(--dock-icon-hue)
+              91%
+              68%
+              / 0.22
+            ),
+            rgba(255, 255, 255, 0.11)
+          );
+
+        box-shadow:
+          inset 0 1px 0
+            rgba(255, 255, 255, 0.38);
+
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-icon {
+        width: 26px !important;
+        min-width: 26px !important;
+        max-width: 26px !important;
+        height: 26px !important;
+        min-height: 26px !important;
+        max-height: 26px !important;
+
+        display: block !important;
+        object-fit: contain !important;
+
+        filter:
+          drop-shadow(
+            0 1px 2px
+            rgba(20, 55, 49, 0.08)
+          ) !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-name {
+        padding-right: 2px;
+
+        font-size: 9px;
+        line-height: 1.05;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-close {
+        height: 43px;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-list {
+        align-items: center;
+      }
+    }
+  `;
+
   document.head.appendChild(
     style,
   );
@@ -2171,6 +2852,26 @@ function ensureDock(): HTMLElement {
   );
 
   dock.setAttribute(
+    'data-photo-icon-marker',
+    PHOTO_ICON_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-performance-marker',
+    PERFORMANCE_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-v6b-typecheck-fix',
+    'UBIZIMA_PROFILE_FALLBACK_TYPECHECK_FIX_V6B',
+  );
+
+  dock.setAttribute(
+    'data-centering-marker',
+    CENTERING_MARKER,
+  );
+
+  dock.setAttribute(
     'aria-label',
     'Ubuzima workspace dock',
   );
@@ -2218,7 +2919,7 @@ function profileButtonMarkup(
   snapshot: ProfileSnapshot,
 ): string {
   const profileIcon =
-    colourfulIconDataUri(
+    moduleIconUrl(
       'profile',
       snapshot.name === 'Staff Profile'
         ? 'Profile'
@@ -2234,16 +2935,23 @@ function profileButtonMarkup(
       "
       data-profile-toggle="true"
       data-dock-tooltip="Profile"
+      data-photo-icon-source="${PHOTO_ICON_MARKER}"
       aria-label="Open Profile"
       aria-expanded="${profileOpen ? 'true' : 'false'}"
       title="Profile"
+      style="--dock-icon-hue: ${moduleHue('profile')};"
     >
-      <img
-        class="ubuzima-workspace-dock-v5__icon"
-        src="${profileIcon}"
-        alt=""
-        draggable="false"
-      />
+      <span
+        class="ubuzima-workspace-dock-v5__icon-shell"
+        aria-hidden="true"
+      >
+        <img
+          class="ubuzima-workspace-dock-v5__icon"
+          src="${profileIcon}"
+          alt=""
+          draggable="false"
+        />
+      </span>
     </button>
   `;
 }
@@ -2276,17 +2984,24 @@ function moduleMarkup(
       "
       data-workspace-module-key="${escapeHtml(module.key)}"
       data-dock-tooltip="${escapeHtml(module.label)}"
-      data-colourful-icon-identity="${escapeHtml(module.key)}"
+      data-photo-icon-source="${PHOTO_ICON_MARKER}"
+      data-semantic-icon-key="${escapeHtml(module.key)}"
       aria-label="Open ${escapeHtml(module.label)}"
       aria-pressed="${module.active ? 'true' : 'false'}"
       title="${escapeHtml(module.label)}"
+      style="--dock-icon-hue: ${moduleHue(module.key)};"
     >
-      <img
-        class="ubuzima-workspace-dock-v5__icon"
-        src="${module.icon}"
-        alt=""
-        draggable="false"
-      />
+      <span
+        class="ubuzima-workspace-dock-v5__icon-shell"
+        aria-hidden="true"
+      >
+        <img
+          class="ubuzima-workspace-dock-v5__icon"
+          src="${module.icon}"
+          alt=""
+          draggable="false"
+        />
+      </span>
 
       ${badge}
 
@@ -2309,6 +3024,7 @@ function recentMarkup(
         ${module.active ? 'is-current' : ''}
       "
       data-recent-task-key="${escapeHtml(entry.key)}"
+      style="--dock-icon-hue: ${moduleHue(module.key)};"
     >
       <button
         type="button"
@@ -2318,12 +3034,17 @@ function recentMarkup(
         aria-label="Open ${escapeHtml(entry.label)}"
         title="${escapeHtml(entry.label)}"
       >
-        <img
-          class="ubuzima-workspace-dock-v5__recent-icon"
-          src="${module.icon}"
-          alt=""
-          draggable="false"
-        />
+        <span
+          class="ubuzima-workspace-dock-v5__recent-icon-shell"
+          aria-hidden="true"
+        >
+          <img
+            class="ubuzima-workspace-dock-v5__recent-icon"
+            src="${module.icon}"
+            alt=""
+            draggable="false"
+          />
+        </span>
 
         <span
           class="ubuzima-workspace-dock-v5__recent-name"
@@ -2353,7 +3074,7 @@ function profilePopoverMarkup(
   }
 
   const icon =
-    colourfulIconDataUri(
+    moduleIconUrl(
       'profile',
       snapshot.name === 'Staff Profile'
         ? 'Profile'
@@ -2542,6 +3263,11 @@ function renderDock(
         ${profilePopoverMarkup(snapshot)}
 
         <section
+          class="ubuzima-workspace-dock-v6__balance"
+          aria-hidden="true"
+        ></section>
+
+        <section
           class="ubuzima-workspace-dock-v5__modules"
           aria-label="Available modules"
         >
@@ -2593,11 +3319,23 @@ function renderDock(
         signature;
     }
 
-    const activeKey =
+    const discoveredActiveKey =
       modules.find(
         (module) => module.active,
       )?.key
       || '';
+
+    if (
+      pendingActiveKey
+      && discoveredActiveKey
+        === pendingActiveKey
+    ) {
+      pendingActiveKey = '';
+    }
+
+    const activeKey =
+      pendingActiveKey
+      || discoveredActiveKey;
 
     dock
       .querySelectorAll<HTMLElement>(
@@ -2650,7 +3388,12 @@ function renderDock(
 
     dock.setAttribute(
       'data-icon-mode',
-      'colourful-deterministic-unique',
+      'semantic-picture-images-no-initials',
+    );
+
+    dock.setAttribute(
+      'data-ai-icon-source',
+      'original-ai-svg-picture',
     );
 
     dock.setAttribute(
@@ -2882,18 +3625,28 @@ function handleDockFocusOut(): void {
 function scheduleRender(
   forceStructure = false,
 ): void {
-  window.clearTimeout(
-    renderTimer,
-  );
+  forceNextRender =
+    forceNextRender
+    || forceStructure;
 
-  renderTimer =
-    window.setTimeout(
+  if (renderFrame) {
+    return;
+  }
+
+  renderFrame =
+    window.requestAnimationFrame(
       () => {
-        renderDock(
-          forceStructure,
-        );
+        const force =
+          forceNextRender;
+
+        forceNextRender =
+          false;
+
+        renderFrame =
+          0;
+
+        renderDock(force);
       },
-      90,
     );
 }
 
@@ -2931,28 +3684,16 @@ function startDock(): void {
 
   const observer =
     new MutationObserver(
-      (mutations) => {
-        const relevant =
-          mutations.some(
-            (mutation) =>
-              !mutationBelongsToDock(
-                mutation,
-              ),
-          );
-
-        if (relevant) {
-          scheduleRender(false);
-        }
+      () => {
+        scheduleRender(false);
       },
     );
 
-  observer.observe(
-    document.body,
-    {
+  const observerOptions:
+    MutationObserverInit = {
       subtree: true,
       childList: true,
       attributes: true,
-      characterData: true,
       attributeFilter: [
         'class',
         'aria-current',
@@ -2960,8 +3701,31 @@ function startDock(): void {
         'data-section',
         'data-principal-menu',
       ],
-    },
-  );
+    };
+
+  const sidebar =
+    document.querySelector(
+      '.sidebar[data-admin-sidebar]',
+    );
+
+  const header =
+    document.querySelector(
+      '.dashboard-header',
+    );
+
+  if (sidebar) {
+    observer.observe(
+      sidebar,
+      observerOptions,
+    );
+  }
+
+  if (header) {
+    observer.observe(
+      header,
+      observerOptions,
+    );
+  }
 
   document.addEventListener(
     'click',
@@ -2970,27 +3734,24 @@ function startDock(): void {
         event.target;
 
       if (
-        target instanceof Element
-        && !target.closest(
+        !(
+          target
+          instanceof Element
+        )
+        || target.closest(
           `[${DOCK_ATTRIBUTE}]`,
         )
       ) {
-        if (profileOpen) {
-          profileOpen = false;
-          scheduleRender(true);
-          return;
-        }
-
-        window.setTimeout(
-          () => scheduleRender(false),
-          70,
-        );
-
-        window.setTimeout(
-          () => scheduleRender(false),
-          250,
-        );
+        return;
       }
+
+      if (profileOpen) {
+        profileOpen = false;
+        scheduleRender(true);
+        return;
+      }
+
+      scheduleRender(false);
     },
     true,
   );
@@ -3040,14 +3801,18 @@ function startDock(): void {
     () => scheduleRender(false),
   );
 
-  window.setTimeout(
-    () => renderDock(true),
-    400,
+  window.addEventListener(
+    'ubuzima:app-ready',
+    () => scheduleRender(true),
+  );
+
+  window.requestAnimationFrame(
+    () => renderDock(false),
   );
 
   window.setTimeout(
     () => renderDock(false),
-    1200,
+    320,
   );
 }
 
