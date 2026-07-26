@@ -60618,3 +60618,301 @@ body .pos-quantity-calculated-total-card output {
     --ubuzima-bo-axis-label-font-size: 9px;
   }
 }
+
+/* UBIZIMA_BO_RECEIVABLES_RANGE_STABILITY_DATES_V17 */
+
+.bo-pro-page {
+  --ubuzima-bo-range-date-font-size:
+    var(
+      --ubuzima-bo-axis-label-font-size
+    );
+
+  --ubuzima-bo-fixed-operational-chart-height:
+    150px;
+
+  --ubuzima-bo-fixed-operational-shell-height:
+    180px;
+
+  --ubuzima-bo-fixed-operational-metric-height:
+    3.2rem;
+}
+
+/*
+  All visible ISO date ranges, such as 2026-06-30, use the
+  same scale as the chart x-axis labels.
+*/
+.bo-pro-page .bo-pro-chart-footer,
+.bo-pro-page .bo-pro-chart-footer span,
+.bo-pro-page .bo-pro-chart-footer time,
+.bo-pro-page .bo-pro-card time,
+.bo-pro-page .bo-pro-card [data-date-label],
+.bo-pro-page .bo-pro-card [data-range-date],
+.bo-pro-page .bo-pro-card input[type="date"] {
+  font-size:
+    var(
+      --ubuzima-bo-range-date-font-size
+    ) !important;
+
+  line-height: 1.15 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.bo-pro-page .bo-pro-chart-footer {
+  min-height: 0.8rem !important;
+  white-space: nowrap !important;
+}
+
+/*
+  Receivables must remain the exact height of Inventory Risk.
+  Its content is kept inside the paired card boundary.
+*/
+.bo-pro-grid[data-viewport-card-heights-ready="true"]
+  > .bo-pro-card.bo-pro-order-insurance[data-height-pair="risk-insurance"] {
+  height:
+    var(
+      --ubuzima-bo-risk-pair-height
+    ) !important;
+
+  min-height:
+    var(
+      --ubuzima-bo-risk-pair-height
+    ) !important;
+
+  max-height:
+    var(
+      --ubuzima-bo-risk-pair-height
+    ) !important;
+
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/*
+  Receivables uses the Inventory Risk category typography.
+*/
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-table-wrap
+  th,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-table-wrap
+  td,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact
+  article
+  span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact
+  article
+  strong {
+  font-size:
+    var(
+      --ubuzima-bo-risk-category-font-size
+    ) !important;
+
+  line-height: 1.22 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+  Metric rows use fixed geometry so value length or selected
+  dates cannot increase the card height.
+*/
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact
+  article,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact
+  article,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact
+  article {
+  height:
+    var(
+      --ubuzima-bo-fixed-operational-metric-height
+    ) !important;
+
+  min-height:
+    var(
+      --ubuzima-bo-fixed-operational-metric-height
+    ) !important;
+
+  max-height:
+    var(
+      --ubuzima-bo-fixed-operational-metric-height
+    ) !important;
+
+  padding: 0.36rem 0.46rem !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* Labels can use two compact lines without changing row height. */
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact
+  article
+  span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact
+  article
+  span,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact
+  article
+  span {
+  white-space: normal !important;
+  overflow: hidden !important;
+}
+
+/* Values stay on one line and cannot expand the metric row. */
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-metric-list.compact
+  article
+  strong,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-metric-list.compact
+  article
+  strong,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-metric-list.compact
+  article
+  strong {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/*
+  Fixed shell geometry prevents date-range changes from
+  altering the card height.
+*/
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-line-chart,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-line-chart,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-line-chart {
+  height:
+    var(
+      --ubuzima-bo-fixed-operational-shell-height
+    ) !important;
+
+  min-height:
+    var(
+      --ubuzima-bo-fixed-operational-shell-height
+    ) !important;
+
+  max-height:
+    var(
+      --ubuzima-bo-fixed-operational-shell-height
+    ) !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  padding: 0.35rem !important;
+  box-sizing: border-box !important;
+
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+
+  align-content: start !important;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/*
+  The actual chart drawing height remains 150px regardless
+  of whether 7, 12, or more dates are selected.
+*/
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-line-chart
+  svg,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-line-chart
+  svg,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-line-chart
+  svg,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-bar-chart,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-bar-chart,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-bar-chart {
+  height:
+    var(
+      --ubuzima-bo-fixed-operational-chart-height
+    ) !important;
+
+  min-height:
+    var(
+      --ubuzima-bo-fixed-operational-chart-height
+    ) !important;
+
+  max-height:
+    var(
+      --ubuzima-bo-fixed-operational-chart-height
+    ) !important;
+
+  width: auto !important;
+  min-width: 100% !important;
+  max-width: none !important;
+
+  flex: 0 0 auto !important;
+  display: block !important;
+}
+
+/*
+  Horizontal scrolling handles additional days without
+  scaling the bars or changing the card dimensions.
+*/
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-insurance
+  .bo-pro-bar-chart-shell,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-near-expiry
+  .bo-pro-bar-chart-shell,
+.bo-pro-page
+  .bo-pro-card.bo-pro-order-inventory-movement
+  .bo-pro-bar-chart-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 520px) {
+  .bo-pro-page {
+    --ubuzima-bo-fixed-operational-shell-height:
+      178px;
+
+    --ubuzima-bo-fixed-operational-metric-height:
+      3.35rem;
+  }
+}

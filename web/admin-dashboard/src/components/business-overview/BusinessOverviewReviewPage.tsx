@@ -2200,6 +2200,7 @@ export function BusinessOverviewReviewPage({
             startDate={insuranceTrendRange.startDate}
             endDate={insuranceTrendRange.endDate}
             maxVisibleBars={12}
+          chartHeightOverride={150}
           />
 
           <div className="bo-pro-metric-list compact">
