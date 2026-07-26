@@ -1614,6 +1614,138 @@ export function BusinessOverviewReviewPage({
     let lastPaymentHeight = '';
     let lastRiskHeight = '';
 
+    const paymentPairCards =
+      Array.from(
+        grid.querySelectorAll<HTMLElement>(
+          '[data-height-pair="payment-profit"]',
+        ),
+      );
+
+    const riskPairCards =
+      Array.from(
+        grid.querySelectorAll<HTMLElement>(
+          '[data-height-pair="risk-insurance"]',
+        ),
+      );
+
+    if (
+      paymentPairCards.length !== 2
+      || riskPairCards.length !== 2
+    ) {
+      grid.setAttribute(
+        'data-paired-height-error',
+        'missing-pair-member',
+      );
+
+      return undefined;
+    }
+
+    grid.removeAttribute(
+      'data-paired-height-error',
+    );
+
+    grid.setAttribute(
+      'data-paired-height-controller',
+      'inline-authority-v19',
+    );
+
+    const clearPairHeight = (
+      cards: HTMLElement[],
+    ) => {
+      cards.forEach((card) => {
+        card.style.removeProperty(
+          'height',
+        );
+
+        card.style.removeProperty(
+          'min-height',
+        );
+
+        card.style.removeProperty(
+          'max-height',
+        );
+
+        card.style.removeProperty(
+          'block-size',
+        );
+
+        card.style.removeProperty(
+          'min-block-size',
+        );
+
+        card.style.removeProperty(
+          'max-block-size',
+        );
+
+        card.removeAttribute(
+          'data-paired-height-px',
+        );
+      });
+    };
+
+    const applyPairHeight = (
+      cards: HTMLElement[],
+      height: number,
+    ) => {
+      const heightValue =
+        `${height}px`;
+
+      cards.forEach((card) => {
+        card.style.setProperty(
+          'height',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'min-height',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'max-height',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'block-size',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'min-block-size',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'max-block-size',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'box-sizing',
+          'border-box',
+          'important',
+        );
+
+        card.style.setProperty(
+          'align-self',
+          'start',
+          'important',
+        );
+
+        card.setAttribute(
+          'data-paired-height-px',
+          String(height),
+        );
+      });
+    };
+
     const syncViewportCardHeights = () => {
       if (disposed) {
         return;
@@ -1636,6 +1768,14 @@ export function BusinessOverviewReviewPage({
           grid.setAttribute(
             'data-viewport-card-heights-measuring',
             'true',
+          );
+
+          clearPairHeight(
+            paymentPairCards,
+          );
+
+          clearPairHeight(
+            riskPairCards,
           );
 
           grid.style.removeProperty(
@@ -1672,36 +1812,46 @@ export function BusinessOverviewReviewPage({
             const nextPaymentHeight =
               `${paymentHeight}px`;
 
-            if (
-              nextPaymentHeight
-              !== lastPaymentHeight
-            ) {
-              lastPaymentHeight =
-                nextPaymentHeight;
+            lastPaymentHeight =
+              nextPaymentHeight;
 
-              grid.style.setProperty(
-                '--ubuzima-bo-payment-pair-height',
-                nextPaymentHeight,
-              );
-            }
+            grid.style.setProperty(
+              '--ubuzima-bo-payment-pair-height',
+              nextPaymentHeight,
+            );
+
+            applyPairHeight(
+              paymentPairCards,
+              paymentHeight,
+            );
+
+            grid.setAttribute(
+              'data-payment-pair-height-px',
+              String(paymentHeight),
+            );
           }
 
           if (riskHeight > 0) {
             const nextRiskHeight =
               `${riskHeight}px`;
 
-            if (
-              nextRiskHeight
-              !== lastRiskHeight
-            ) {
-              lastRiskHeight =
-                nextRiskHeight;
+            lastRiskHeight =
+              nextRiskHeight;
 
-              grid.style.setProperty(
-                '--ubuzima-bo-risk-pair-height',
-                nextRiskHeight,
-              );
-            }
+            grid.style.setProperty(
+              '--ubuzima-bo-risk-pair-height',
+              nextRiskHeight,
+            );
+
+            applyPairHeight(
+              riskPairCards,
+              riskHeight,
+            );
+
+            grid.setAttribute(
+              'data-risk-pair-height-px',
+              String(riskHeight),
+            );
           }
 
           if (
@@ -1710,6 +1860,11 @@ export function BusinessOverviewReviewPage({
           ) {
             grid.setAttribute(
               'data-viewport-card-heights-ready',
+              'true',
+            );
+
+            grid.setAttribute(
+              'data-height-pair-lock-ready',
               'true',
             );
           }
@@ -1808,6 +1963,30 @@ export function BusinessOverviewReviewPage({
 
       grid.removeAttribute(
         'data-viewport-card-heights-measuring',
+      );
+
+      clearPairHeight(
+        paymentPairCards,
+      );
+
+      clearPairHeight(
+        riskPairCards,
+      );
+
+      grid.removeAttribute(
+        'data-paired-height-controller',
+      );
+
+      grid.removeAttribute(
+        'data-height-pair-lock-ready',
+      );
+
+      grid.removeAttribute(
+        'data-payment-pair-height-px',
+      );
+
+      grid.removeAttribute(
+        'data-risk-pair-height-px',
       );
 
       grid.style.removeProperty(
