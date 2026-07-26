@@ -1,5 +1,5 @@
 const BUILD_MARKER =
-  'UBIZIMA_WORKSPACE_DOCK_PERFORMANCE_V6';
+  'UBIZIMA_CONTINUOUS_MAC_WORKSPACE_DOCK_V7';
 
 const ICON_MARKER =
   'UBIZIMA_AI_STYLE_PICTURE_ICON_FAMILY_V6';
@@ -11,19 +11,32 @@ const PERFORMANCE_MARKER =
   'UBIZIMA_IMMEDIATE_DOCK_NAVIGATION_V6';
 
 const CENTERING_MARKER =
-  'UBIZIMA_CENTRALIZED_APPLICATION_RAIL_V6';
+  'UBIZIMA_SINGLE_CONTINUOUS_DOCK_RAIL_V7';
 
 const STABILITY_MARKER =
   'UBIZIMA_RELIABLE_PERMISSION_MENU_BOOTSTRAP_V6D';
 
 const EXPOSURE_MARKER =
-  'UBIZIMA_SHRINK_BEFORE_MODULE_OVERFLOW_V6D';
+  'UBIZIMA_MAIN_MODULES_OWN_DOCK_WIDTH_V7';
+
+const RECENT_PRIORITY_MARKER =
+  'UBIZIMA_RECENT_TASKS_REDUCE_BEFORE_MAIN_MODULES_V7';
+
+const MAGNIFICATION_MARKER =
+  'UBIZIMA_POINTER_DISTANCE_MAGNIFICATION_V7';
+
+const CONTINUOUS_GLASS_MARKER =
+  'UBIZIMA_SINGLE_CONTINUOUS_GLASS_CAPSULE_V7';
+
+const OVERFLOW_MARKER =
+  'UBIZIMA_MAIN_SCROLL_ONLY_AS_FINAL_FALLBACK_V7';
 
 const MOUNT_MARKER =
   'UBIZIMA_SIDEBAR_HIDE_AFTER_DOCK_MOUNT_V6D';
 
 const MINIMUM_MODULE_SIZE = 44;
 const MAXIMUM_MODULE_SIZE = 57;
+const RECENT_ICON_SIZE = 49;
 
 const PROFILE_MARKER =
   'UBIZIMA_DOCK_PROFILE_HUB_V5';
@@ -32,16 +45,16 @@ const HEADER_MARKER =
   'UBIZIMA_SHARED_HEADER_RELOCATION_V5';
 
 const RECENT_MARKER =
-  'UBIZIMA_FITTED_RECENT_TASK_PICTURE_CARDS_V6';
+  'UBIZIMA_MAC_STYLE_ICON_ONLY_RECENT_TASKS_V7';
 
 const GLASS_MARKER =
-  'UBIZIMA_DEEP_GLASS_TRANSPARENCY_V5';
+  'UBIZIMA_CONTINUOUS_GLASS_TRANSPARENCY_V7';
 
 const NAVIGATION_MARKER =
   'UBIZIMA_ZERO_DELAY_AUTHORITATIVE_NAVIGATION_V6';
 
 const MINIMUM_WIDTH = 768;
-const MAXIMUM_RECENT = 4;
+const MAXIMUM_RECENT = 3;
 
 const ROOT_CLASS =
   'ubuzima-workspace-dock-v5-active';
@@ -2949,14 +2962,811 @@ function injectStyles(): void {
     }
   `;
 
+  style.textContent += `
+    @media (min-width: 768px) {
+      .ubuzima-workspace-dock-v5 {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0 !important;
+
+        width: max-content;
+        min-width: 0;
+        max-width:
+          calc(100vw - 24px) !important;
+
+        height: 76px !important;
+        padding: 7px !important;
+
+        overflow: visible !important;
+
+        border:
+          1px solid
+          rgba(255, 255, 255, 0.54) !important;
+
+        border-radius:
+          25px !important;
+
+        background:
+          linear-gradient(
+            138deg,
+            rgba(255, 255, 255, 0.16),
+            rgba(226, 248, 243, 0.075)
+              46%,
+            rgba(204, 239, 231, 0.12)
+          ) !important;
+
+        box-shadow:
+          0 30px 78px
+            rgba(10, 42, 36, 0.21),
+          0 8px 24px
+            rgba(15, 118, 110, 0.065),
+          inset 0 1px 0
+            rgba(255, 255, 255, 0.68),
+          inset 0 -1px 0
+            rgba(255, 255, 255, 0.11) !important;
+
+        -webkit-backdrop-filter:
+          blur(34px)
+          saturate(1.88)
+          contrast(1.04) !important;
+
+        backdrop-filter:
+          blur(34px)
+          saturate(1.88)
+          contrast(1.04) !important;
+      }
+
+      .ubuzima-workspace-dock-v6__balance {
+        display: none !important;
+      }
+
+      .ubuzima-workspace-dock-v5__modules {
+        --ubuzima-dock-module-size:
+          57px;
+
+        flex:
+          0 1 auto !important;
+
+        min-width: 0 !important;
+        height: 62px !important;
+
+        display: flex !important;
+        align-items: flex-end !important;
+        justify-content:
+          safe center !important;
+        gap: 5px !important;
+
+        padding:
+          3px 5px 2px !important;
+
+        border: 0 !important;
+        border-radius: 0 !important;
+
+        background:
+          transparent !important;
+
+        box-shadow:
+          none !important;
+
+        overflow-x:
+          hidden !important;
+        overflow-y:
+          visible !important;
+
+        scrollbar-width: none;
+      }
+
+      .ubuzima-workspace-dock-v5__modules.is-fully-exposed {
+        overflow:
+          visible !important;
+      }
+
+      .ubuzima-workspace-dock-v5__modules.is-overflowing {
+        flex:
+          1 1 auto !important;
+
+        justify-content:
+          flex-start !important;
+
+        overflow-x:
+          auto !important;
+        overflow-y:
+          visible !important;
+
+        scroll-snap-type:
+          x proximity;
+
+        overscroll-behavior-x:
+          contain;
+      }
+
+      .ubuzima-workspace-dock-v5__modules.is-overflowing
+        .ubuzima-workspace-dock-v5__profile,
+      .ubuzima-workspace-dock-v5__modules.is-overflowing
+        .ubuzima-workspace-dock-v5__module {
+        scroll-snap-align:
+          center;
+      }
+
+      .ubuzima-workspace-dock-v5__profile,
+      .ubuzima-workspace-dock-v5__module {
+        width:
+          var(
+            --ubuzima-dock-module-size
+          ) !important;
+
+        min-width:
+          var(
+            --ubuzima-dock-module-size
+          ) !important;
+
+        max-width:
+          var(
+            --ubuzima-dock-module-size
+          ) !important;
+
+        height:
+          var(
+            --ubuzima-dock-module-size
+          ) !important;
+
+        min-height:
+          var(
+            --ubuzima-dock-module-size
+          ) !important;
+
+        max-height:
+          var(
+            --ubuzima-dock-module-size
+          ) !important;
+
+        flex:
+          0 0
+          var(
+            --ubuzima-dock-module-size
+          ) !important;
+
+        transform-origin:
+          center bottom !important;
+
+        transform:
+          translateY(
+            calc(
+              -1
+              * var(
+                --mac-dock-lift,
+                0px
+              )
+            )
+          )
+          scale(
+            var(
+              --mac-dock-scale,
+              1
+            )
+          ) !important;
+
+        transition:
+          transform
+            88ms
+            cubic-bezier(
+              0.22,
+              1,
+              0.36,
+              1
+            ),
+          background-color
+            100ms ease,
+          border-color
+            100ms ease,
+          box-shadow
+            100ms ease !important;
+
+        will-change:
+          transform;
+      }
+
+      .ubuzima-workspace-dock-v5__icon-shell {
+        width:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 12px
+          ) !important;
+
+        min-width:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 12px
+          ) !important;
+
+        max-width:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 12px
+          ) !important;
+
+        height:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 12px
+          ) !important;
+
+        min-height:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 12px
+          ) !important;
+
+        max-height:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 12px
+          ) !important;
+      }
+
+      .ubuzima-workspace-dock-v5__icon {
+        width:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 22px
+          ) !important;
+
+        min-width:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 22px
+          ) !important;
+
+        max-width:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 22px
+          ) !important;
+
+        height:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 22px
+          ) !important;
+
+        min-height:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 22px
+          ) !important;
+
+        max-height:
+          calc(
+            var(
+              --ubuzima-dock-module-size
+            )
+            - 22px
+          ) !important;
+      }
+
+      .ubuzima-workspace-dock-v7__separator {
+        width: 1px;
+        min-width: 1px;
+        height: 38px;
+        flex: 0 0 1px;
+
+        margin:
+          0 5px;
+
+        border-radius:
+          999px;
+
+        background:
+          linear-gradient(
+            transparent,
+            rgba(255, 255, 255, 0.72),
+            rgba(15, 118, 110, 0.15),
+            transparent
+          );
+
+        box-shadow:
+          1px 0 0
+            rgba(0, 0, 0, 0.035);
+      }
+
+      .ubuzima-workspace-dock-v7__separator[hidden] {
+        display:
+          none !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent {
+        width: auto !important;
+        min-width: 0 !important;
+        height: 62px !important;
+        flex: 0 0 auto !important;
+
+        display: flex !important;
+        align-items: flex-end !important;
+
+        padding:
+          3px 3px 2px !important;
+
+        border: 0 !important;
+        border-radius: 0 !important;
+
+        background:
+          transparent !important;
+
+        box-shadow:
+          none !important;
+
+        overflow:
+          visible !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent[hidden] {
+        display:
+          none !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-header,
+      .ubuzima-workspace-dock-v5__recent-count,
+      .ubuzima-workspace-dock-v5__recent-empty,
+      .ubuzima-workspace-dock-v5__recent-name {
+        display:
+          none !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-list {
+        width: auto !important;
+        height: 57px !important;
+
+        display: flex !important;
+        align-items: flex-end !important;
+        gap: 4px !important;
+
+        overflow:
+          visible !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-card {
+        position: relative;
+
+        width:
+          ${RECENT_ICON_SIZE}px !important;
+
+        min-width:
+          ${RECENT_ICON_SIZE}px !important;
+
+        max-width:
+          ${RECENT_ICON_SIZE}px !important;
+
+        height: 57px !important;
+        min-height: 57px !important;
+        max-height: 57px !important;
+
+        flex:
+          0 0
+          ${RECENT_ICON_SIZE}px !important;
+
+        display:
+          block !important;
+
+        border: 0 !important;
+        border-radius: 16px !important;
+
+        background:
+          transparent !important;
+
+        box-shadow:
+          none !important;
+
+        overflow:
+          visible !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-card[hidden] {
+        display:
+          none !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-open {
+        position: relative;
+
+        width:
+          ${RECENT_ICON_SIZE}px !important;
+
+        min-width:
+          ${RECENT_ICON_SIZE}px !important;
+
+        max-width:
+          ${RECENT_ICON_SIZE}px !important;
+
+        height: 57px !important;
+        min-height: 57px !important;
+        max-height: 57px !important;
+
+        display: grid !important;
+        place-items: center !important;
+
+        padding: 4px !important;
+
+        border:
+          1px solid
+          rgba(255, 255, 255, 0.30) !important;
+
+        border-radius:
+          16px !important;
+
+        background:
+          linear-gradient(
+            145deg,
+            hsl(
+              var(
+                --dock-icon-hue
+              )
+              91%
+              69%
+              / 0.18
+            ),
+            rgba(255, 255, 255, 0.075)
+          ) !important;
+
+        box-shadow:
+          inset 0 1px 0
+            rgba(255, 255, 255, 0.42) !important;
+
+        transform-origin:
+          center bottom !important;
+
+        transform:
+          translateY(
+            calc(
+              -1
+              * var(
+                --mac-dock-lift,
+                0px
+              )
+            )
+          )
+          scale(
+            var(
+              --mac-dock-scale,
+              1
+            )
+          ) !important;
+
+        transition:
+          transform
+            88ms
+            cubic-bezier(
+              0.22,
+              1,
+              0.36,
+              1
+            ),
+          background-color
+            100ms ease,
+          border-color
+            100ms ease,
+          box-shadow
+            100ms ease !important;
+
+        will-change:
+          transform;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-card.is-current
+        .ubuzima-workspace-dock-v5__recent-open {
+        border-color:
+          rgba(15, 118, 110, 0.38) !important;
+
+        background:
+          rgba(224, 249, 243, 0.31) !important;
+
+        box-shadow:
+          0 0 0 2px
+            rgba(15, 118, 110, 0.08),
+          inset 0 1px 0
+            rgba(255, 255, 255, 0.66) !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-card.is-current
+        .ubuzima-workspace-dock-v5__active-dot {
+        background:
+          #0f766e;
+
+        box-shadow:
+          0 0 0 2px
+            rgba(255, 255, 255, 0.72);
+      }
+
+      .ubuzima-workspace-dock-v5__recent-icon-shell {
+        width: 41px !important;
+        min-width: 41px !important;
+        max-width: 41px !important;
+
+        height: 41px !important;
+        min-height: 41px !important;
+        max-height: 41px !important;
+
+        display: grid !important;
+        place-items: center !important;
+
+        border-radius:
+          13px !important;
+
+        overflow:
+          hidden !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-icon {
+        width: 33px !important;
+        min-width: 33px !important;
+        max-width: 33px !important;
+
+        height: 33px !important;
+        min-height: 33px !important;
+        max-height: 33px !important;
+
+        display:
+          block !important;
+
+        object-fit:
+          contain !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-close {
+        position: absolute;
+        z-index: 260;
+        top: -5px;
+        right: -5px;
+
+        width: 17px !important;
+        min-width: 17px !important;
+        max-width: 17px !important;
+
+        height: 17px !important;
+        min-height: 17px !important;
+        max-height: 17px !important;
+
+        display: grid !important;
+        place-items: center !important;
+
+        padding: 0 !important;
+
+        border:
+          1px solid
+          rgba(255, 255, 255, 0.72) !important;
+
+        border-radius:
+          999px !important;
+
+        background:
+          rgba(25, 55, 51, 0.88) !important;
+
+        color:
+          white !important;
+
+        font-size:
+          11px !important;
+
+        line-height:
+          1 !important;
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+
+        transform: none !important;
+
+        transition:
+          opacity 90ms ease,
+          visibility 90ms ease,
+          background-color 90ms ease !important;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-card:hover
+        .ubuzima-workspace-dock-v5__recent-close,
+      .ubuzima-workspace-dock-v5__recent-card:focus-within
+        .ubuzima-workspace-dock-v5__recent-close {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+
+      .ubuzima-workspace-dock-v5__recent-close:hover {
+        background:
+          rgba(158, 42, 42, 0.94) !important;
+      }
+    }
+
+    @media (
+      min-width: 768px
+    ) and (
+      max-width: 1023px
+    ) {
+      .ubuzima-workspace-dock-v5 {
+        max-width:
+          calc(100vw - 16px) !important;
+      }
+    }
+  `;
+
   document.head.appendChild(
     style,
   );
 }
 
-let railFitFrame = 0;
+let macDockFitFrame = 0;
+let magnificationFrame = 0;
+let magnificationPointerX = 0;
 
-function fitModuleRail(): void {
+function resetDockMagnification(): void {
+  const dock =
+    document.querySelector<HTMLElement>(
+      `[${DOCK_ATTRIBUTE}]`,
+    );
+
+  if (!dock) {
+    return;
+  }
+
+  dock
+    .querySelectorAll<HTMLElement>(
+      '.ubuzima-workspace-dock-v5__profile, '
+      + '.ubuzima-workspace-dock-v5__module, '
+      + '.ubuzima-workspace-dock-v5__recent-open',
+    )
+    .forEach((button) => {
+      button.style.removeProperty(
+        '--mac-dock-scale',
+      );
+
+      button.style.removeProperty(
+        '--mac-dock-lift',
+      );
+
+      button.style.removeProperty(
+        'z-index',
+      );
+    });
+}
+
+function applyDockMagnification(): void {
+  const dock =
+    document.querySelector<HTMLElement>(
+      `[${DOCK_ATTRIBUTE}]`,
+    );
+
+  if (!dock) {
+    return;
+  }
+
+  const buttons =
+    Array.from(
+      dock.querySelectorAll<HTMLElement>(
+        '.ubuzima-workspace-dock-v5__profile, '
+        + '.ubuzima-workspace-dock-v5__module, '
+        + '.ubuzima-workspace-dock-v5__recent-open',
+      ),
+    ).filter(
+      (button) =>
+        !button.closest<HTMLElement>(
+          '[hidden]',
+        ),
+    );
+
+  buttons.forEach((button) => {
+    const rect =
+      button.getBoundingClientRect();
+
+    const centre =
+      rect.left
+      + (
+        rect.width / 2
+      );
+
+    const distance =
+      Math.abs(
+        magnificationPointerX
+        - centre,
+      );
+
+    let scale = 1;
+
+    if (distance <= 30) {
+      scale = 1.34;
+    } else if (distance <= 72) {
+      scale = 1.16;
+    } else if (distance <= 118) {
+      scale = 1.07;
+    }
+
+    const lift =
+      Math.max(
+        0,
+        Math.round(
+          (
+            scale - 1
+          ) * 28,
+        ),
+      );
+
+    button.style.setProperty(
+      '--mac-dock-scale',
+      scale.toFixed(3),
+    );
+
+    button.style.setProperty(
+      '--mac-dock-lift',
+      `${lift}px`,
+    );
+
+    button.style.zIndex =
+      scale > 1
+        ? String(
+          Math.round(
+            scale * 100,
+          ),
+        )
+        : '';
+  });
+}
+
+function scheduleDockMagnification(
+  clientX: number,
+): void {
+  magnificationPointerX =
+    clientX;
+
+  if (magnificationFrame) {
+    return;
+  }
+
+  magnificationFrame =
+    window.requestAnimationFrame(
+      () => {
+        magnificationFrame = 0;
+        applyDockMagnification();
+      },
+    );
+}
+
+function handleDockPointerMove(
+  event: PointerEvent,
+): void {
+  if (
+    event.pointerType
+    && event.pointerType !== 'mouse'
+  ) {
+    return;
+  }
+
+  scheduleDockMagnification(
+    event.clientX,
+  );
+}
+
+function fitMacDock(): void {
   const dock =
     document.querySelector<HTMLElement>(
       `[${DOCK_ATTRIBUTE}]`,
@@ -2967,97 +3777,178 @@ function fitModuleRail(): void {
       '.ubuzima-workspace-dock-v5__modules',
     );
 
-  if (!rail) {
+  if (
+    !dock
+    || !rail
+  ) {
     return;
   }
 
-  const buttons =
+  const mainButtons =
     rail.querySelectorAll<HTMLElement>(
       '.ubuzima-workspace-dock-v5__profile, '
       + '.ubuzima-workspace-dock-v5__module',
     );
 
   const moduleCount =
-    buttons.length;
+    mainButtons.length;
 
   if (moduleCount === 0) {
     return;
   }
 
-  const computed =
-    window.getComputedStyle(rail);
-
-  const paddingLeft =
-    Number.parseFloat(
-      computed.paddingLeft,
-    )
-    || 0;
-
-  const paddingRight =
-    Number.parseFloat(
-      computed.paddingRight,
-    )
-    || 0;
-
-  const gap =
-    Number.parseFloat(
-      computed.columnGap
-      || computed.gap,
-    )
-    || 5;
-
-  const divider =
-    rail.querySelector<HTMLElement>(
-      '.ubuzima-workspace-dock-v5__divider',
+  const recentSection =
+    dock.querySelector<HTMLElement>(
+      '[data-recent-section]',
     );
 
-  const dividerWidth =
-    divider
-      ? divider.offsetWidth + 4
-      : 0;
+  const recentSeparator =
+    dock.querySelector<HTMLElement>(
+      '[data-recent-separator]',
+    );
 
-  const visualItemCount =
-    moduleCount
+  const recentItems =
+    Array.from(
+      dock.querySelectorAll<HTMLElement>(
+        '[data-recent-task-key]',
+      ),
+    );
+
+  const maximumDockWidth =
+    Math.max(
+      320,
+      window.innerWidth - 24,
+    );
+
+  const dockPadding = 14;
+  const railPadding = 10;
+  const mainGap = 5;
+  const dividerWidth = 5;
+  const recentGap = 4;
+  const recentSectionPadding = 6;
+  const recentSeparatorWidth = 11;
+
+  const mainWidth = (
+    size: number,
+  ): number =>
+    railPadding
+    + dividerWidth
     + (
-      divider ? 1 : 0
+      moduleCount * size
+    )
+    + (
+      moduleCount * mainGap
     );
 
-  const gapCount =
-    Math.max(
-      0,
-      visualItemCount - 1,
+  const recentWidth = (
+    count: number,
+  ): number => {
+    if (count <= 0) {
+      return 0;
+    }
+
+    return (
+      recentSeparatorWidth
+      + recentSectionPadding
+      + (
+        count * RECENT_ICON_SIZE
+      )
+      + (
+        Math.max(
+          0,
+          count - 1,
+        ) * recentGap
+      )
+    );
+  };
+
+  const totalWidth = (
+    size: number,
+    recentCount: number,
+  ): number =>
+    dockPadding
+    + mainWidth(size)
+    + recentWidth(recentCount);
+
+  let visibleRecentCount =
+    Math.min(
+      MAXIMUM_RECENT,
+      recentItems.length,
     );
 
-  const usableWidth =
-    Math.max(
-      0,
-      rail.clientWidth
-      - paddingLeft
-      - paddingRight
-      - dividerWidth
-      - (
-        gap * gapCount
-      ),
-    );
+  while (
+    visibleRecentCount > 0
+    && totalWidth(
+      MAXIMUM_MODULE_SIZE,
+      visibleRecentCount,
+    ) > maximumDockWidth
+  ) {
+    visibleRecentCount -= 1;
+  }
 
-  const calculatedSize =
-    Math.floor(
-      usableWidth
-      / moduleCount,
-    );
+  let moduleSize =
+    MAXIMUM_MODULE_SIZE;
 
-  const moduleSize =
-    Math.max(
-      MINIMUM_MODULE_SIZE,
-      Math.min(
-        MAXIMUM_MODULE_SIZE,
-        calculatedSize,
-      ),
-    );
+  if (
+    totalWidth(
+      moduleSize,
+      visibleRecentCount,
+    ) > maximumDockWidth
+  ) {
+    visibleRecentCount = 0;
 
-  const overflowing =
-    calculatedSize
-    < MINIMUM_MODULE_SIZE;
+    const fixedMainWidth =
+      dockPadding
+      + railPadding
+      + dividerWidth
+      + (
+        moduleCount * mainGap
+      );
+
+    moduleSize =
+      Math.floor(
+        (
+          maximumDockWidth
+          - fixedMainWidth
+        )
+        / moduleCount,
+      );
+
+    moduleSize =
+      Math.max(
+        MINIMUM_MODULE_SIZE,
+        Math.min(
+          MAXIMUM_MODULE_SIZE,
+          moduleSize,
+        ),
+      );
+  }
+
+  const mainOverflowing =
+    totalWidth(
+      moduleSize,
+      visibleRecentCount,
+    ) > maximumDockWidth;
+
+  recentItems.forEach(
+    (
+      item,
+      index,
+    ) => {
+      item.hidden =
+        index >= visibleRecentCount;
+    },
+  );
+
+  if (recentSection) {
+    recentSection.hidden =
+      visibleRecentCount === 0;
+  }
+
+  if (recentSeparator) {
+    recentSeparator.hidden =
+      visibleRecentCount === 0;
+  }
 
   rail.style.setProperty(
     '--ubuzima-dock-module-size',
@@ -3066,57 +3957,84 @@ function fitModuleRail(): void {
 
   rail.classList.toggle(
     'is-overflowing',
-    overflowing,
+    mainOverflowing,
   );
 
   rail.classList.toggle(
     'is-fully-exposed',
-    !overflowing,
+    !mainOverflowing,
   );
 
-  rail.setAttribute(
-    'data-module-visibility-mode',
-    overflowing
-      ? 'overflow-after-full-utilisation'
-      : 'all-modules-exposed',
+  const requestedWidth =
+    Math.ceil(
+      totalWidth(
+        moduleSize,
+        visibleRecentCount,
+      ),
+    );
+
+  const appliedWidth =
+    Math.min(
+      maximumDockWidth,
+      requestedWidth,
+    );
+
+  dock.style.width =
+    `${appliedWidth}px`;
+
+  dock.classList.toggle(
+    'has-recent-tasks',
+    visibleRecentCount > 0,
   );
 
-  rail.setAttribute(
-    'data-module-count',
+  dock.setAttribute(
+    'data-main-module-priority',
+    'true',
+  );
+
+  dock.setAttribute(
+    'data-main-module-count',
     String(moduleCount),
   );
 
-  rail.setAttribute(
-    'data-calculated-module-size',
-    String(calculatedSize),
+  dock.setAttribute(
+    'data-visible-recent-count',
+    String(visibleRecentCount),
   );
 
-  rail.setAttribute(
+  dock.setAttribute(
+    'data-stored-recent-count',
+    String(recentItems.length),
+  );
+
+  dock.setAttribute(
     'data-applied-module-size',
     String(moduleSize),
   );
 
-  rail.setAttribute(
-    'data-minimum-module-size',
-    String(MINIMUM_MODULE_SIZE),
+  dock.setAttribute(
+    'data-main-overflow-mode',
+    mainOverflowing
+      ? 'horizontal-scroll-final-fallback'
+      : 'all-main-modules-exposed',
   );
 
-  rail.setAttribute(
-    'data-maximum-module-size',
-    String(MAXIMUM_MODULE_SIZE),
+  dock.setAttribute(
+    'data-space-reduction-order',
+    'recent-tasks-then-main-size-then-main-scroll',
   );
 }
 
-function scheduleRailFit(): void {
-  if (railFitFrame) {
+function scheduleMacDockFit(): void {
+  if (macDockFitFrame) {
     return;
   }
 
-  railFitFrame =
+  macDockFitFrame =
     window.requestAnimationFrame(
       () => {
-        railFitFrame = 0;
-        fitModuleRail();
+        macDockFitFrame = 0;
+        fitMacDock();
       },
     );
 }
@@ -3248,6 +4166,26 @@ function ensureDock(): HTMLElement {
   );
 
   dock.setAttribute(
+    'data-recent-priority-marker',
+    RECENT_PRIORITY_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-magnification-marker',
+    MAGNIFICATION_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-continuous-glass-marker',
+    CONTINUOUS_GLASS_MARKER,
+  );
+
+  dock.setAttribute(
+    'data-overflow-marker',
+    OVERFLOW_MARKER,
+  );
+
+  dock.setAttribute(
     'data-mount-marker',
     MOUNT_MARKER,
   );
@@ -3287,6 +4225,24 @@ function ensureDock(): HTMLElement {
     (event) => {
       event.preventDefault();
     },
+  );
+
+  dock.addEventListener(
+    'pointermove',
+    handleDockPointerMove,
+    {
+      passive: true,
+    },
+  );
+
+  dock.addEventListener(
+    'pointerleave',
+    resetDockMagnification,
+  );
+
+  dock.addEventListener(
+    'pointercancel',
+    resetDockMagnification,
   );
 
   document.body.appendChild(
@@ -3428,10 +4384,9 @@ function recentMarkup(
         </span>
 
         <span
-          class="ubuzima-workspace-dock-v5__recent-name"
-        >
-          ${escapeHtml(entry.label)}
-        </span>
+          class="ubuzima-workspace-dock-v5__active-dot"
+          aria-hidden="true"
+        ></span>
       </button>
 
       <button
@@ -3649,11 +4604,6 @@ function renderDock(
         ${profilePopoverMarkup(snapshot)}
 
         <section
-          class="ubuzima-workspace-dock-v6__balance"
-          aria-hidden="true"
-        ></section>
-
-        <section
           class="ubuzima-workspace-dock-v5__modules"
           aria-label="Available modules"
         >
@@ -3667,38 +4617,29 @@ function renderDock(
           ${modules.map(moduleMarkup).join('')}
         </section>
 
-        <section
-          class="ubuzima-workspace-dock-v5__recent"
-          aria-label="Recent tasks"
-        >
-          <header
-            class="ubuzima-workspace-dock-v5__recent-header"
-          >
-            <strong>Recent Tasks</strong>
+        ${
+          recentCards
+            ? `
+              <span
+                class="ubuzima-workspace-dock-v7__separator"
+                data-recent-separator="true"
+                aria-hidden="true"
+              ></span>
 
-            <span
-              class="ubuzima-workspace-dock-v5__recent-count"
-              aria-label="${recent.length} recent tasks"
-            >
-              ${recent.length}
-            </span>
-          </header>
-
-          <div
-            class="ubuzima-workspace-dock-v5__recent-list"
-          >
-            ${
-              recentCards
-              || `
+              <section
+                class="ubuzima-workspace-dock-v5__recent"
+                data-recent-section="true"
+                aria-label="Recent tasks"
+              >
                 <div
-                  class="ubuzima-workspace-dock-v5__recent-empty"
+                  class="ubuzima-workspace-dock-v5__recent-list"
                 >
-                  Open a module to create a recent task.
+                  ${recentCards}
                 </div>
-              `
-            }
-          </div>
-        </section>
+              </section>
+            `
+            : ''
+        }
       `;
 
       lastStructureSignature =
@@ -3794,7 +4735,7 @@ function renderDock(
 
     dock.setAttribute(
       'data-recent-card-mode',
-      'fixed-height-icon-and-name',
+      'mac-icon-only-recent-section',
     );
 
     dock.setAttribute(
@@ -3822,7 +4763,7 @@ function renderDock(
 
     dock.setAttribute(
       'data-module-exposure-policy',
-      'shrink-before-overflow',
+      'main-modules-before-recent-tasks',
     );
 
     dock.setAttribute(
@@ -3830,7 +4771,7 @@ function renderDock(
       'mounted-before-hide',
     );
 
-    scheduleRailFit();
+    scheduleMacDockFit();
   } finally {
     isRendering = false;
   }
@@ -4102,7 +5043,7 @@ function startDock(): void {
     new MutationObserver(
       () => {
         scheduleRender(false);
-        scheduleRailFit();
+        scheduleMacDockFit();
       },
     );
 
@@ -4199,7 +5140,7 @@ function startDock(): void {
         );
 
       if (mounted) {
-        scheduleRailFit();
+        scheduleMacDockFit();
       }
 
       return mounted;
@@ -4304,7 +5245,7 @@ function startDock(): void {
       }
 
       scheduleRender(false);
-      scheduleRailFit();
+      scheduleMacDockFit();
     },
     true,
   );
@@ -4327,7 +5268,7 @@ function startDock(): void {
     'resize',
     () => {
       scheduleRender(false);
-      scheduleRailFit();
+      scheduleMacDockFit();
     },
     {
       passive: true,
@@ -4338,7 +5279,7 @@ function startDock(): void {
     'orientationchange',
     () => {
       scheduleRender(false);
-      scheduleRailFit();
+      scheduleMacDockFit();
     },
     {
       passive: true,
@@ -4354,7 +5295,7 @@ function startDock(): void {
     'popstate',
     () => {
       scheduleRender(false);
-      scheduleRailFit();
+      scheduleMacDockFit();
     },
   );
 
@@ -4362,7 +5303,7 @@ function startDock(): void {
     'hashchange',
     () => {
       scheduleRender(false);
-      scheduleRailFit();
+      scheduleMacDockFit();
     },
   );
 
