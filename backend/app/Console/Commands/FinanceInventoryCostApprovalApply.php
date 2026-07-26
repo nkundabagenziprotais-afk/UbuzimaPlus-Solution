@@ -34,6 +34,9 @@ class FinanceInventoryCostApprovalApply extends Command
         'expected_quantity_on_hand',
         'expected_quantity_reserved',
         'expected_batch_updated_at',
+        'expected_selling_price',
+        'derivation_divisor',
+        'derivation_formula',
         'decision',
         'approved_unit_cost',
         'currency_code',
@@ -333,6 +336,17 @@ class FinanceInventoryCostApprovalApply extends Command
             )
         );
 
+        $sellingPriceDerivedRows = count(
+            array_filter(
+                $approvalRows,
+                static fn (array $row): bool =>
+                    (bool) (
+                        $row['selling_price_used']
+                        ?? false
+                    )
+            )
+        );
+
         $this->line(
             'Rows reviewed: '
             . count($validatedRows)
@@ -349,6 +363,19 @@ class FinanceInventoryCostApprovalApply extends Command
 
         $this->line(
             "Idempotent rows: {$idempotentRows}"
+        );
+
+        $this->line(
+            "Selling-price-derived approvals: {$sellingPriceDerivedRows}"
+        );
+
+        $this->line(
+            'Selling price used as cost: '
+            . (
+                $sellingPriceDerivedRows > 0
+                    ? 'YES_CONTROLLED_OWNER_APPROVED'
+                    : 'NO'
+            )
         );
 
         if (! $apply) {
@@ -390,10 +417,6 @@ class FinanceInventoryCostApprovalApply extends Command
 
         $this->line(
             "Held rows unchanged: {$heldRows}"
-        );
-
-        $this->line(
-            'Selling price used as cost: NO'
         );
 
         $this->line(

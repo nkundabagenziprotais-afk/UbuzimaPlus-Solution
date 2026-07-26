@@ -109,6 +109,54 @@ class FinanceInventoryCostApprovalService
             }
         }
 
+        $expectedSellingPriceRaw = trim(
+            (string) (
+                $row['expected_selling_price']
+                ?? ''
+            )
+        );
+
+        $actualSellingPrice =
+            $batch->selling_price;
+
+        if ($expectedSellingPriceRaw === '') {
+            if (
+                $actualSellingPrice !== null
+                && abs(
+                    (float) $actualSellingPrice
+                ) > 0.0001
+            ) {
+                throw new RuntimeException(
+                    "Stock batch {$batchId} selling price is missing from the reviewed template."
+                );
+            }
+
+            $expectedSellingPrice = null;
+        } else {
+            if (! is_numeric($expectedSellingPriceRaw)) {
+                throw new RuntimeException(
+                    'Expected selling price must be numeric.'
+                );
+            }
+
+            $expectedSellingPrice = round(
+                (float) $expectedSellingPriceRaw,
+                4
+            );
+
+            if (
+                $actualSellingPrice === null
+                || abs(
+                    $expectedSellingPrice
+                    - (float) $actualSellingPrice
+                ) > 0.0001
+            ) {
+                throw new RuntimeException(
+                    "Stock batch {$batchId} selling price changed after template generation."
+                );
+            }
+        }
+
         if ($decision === 'hold') {
             return [
                 'decision' => 'hold',
@@ -116,6 +164,8 @@ class FinanceInventoryCostApprovalService
                 'stock_batch_id' => $batchId,
                 'expected_quantity_on_hand' =>
                     (float) $expectedQuantity,
+                'expected_selling_price' =>
+                    $expectedSellingPrice,
                 'source_file_sha256' =>
                     $sourceFileHash,
             ];
@@ -318,10 +368,121 @@ class FinanceInventoryCostApprovalService
             )
         );
 
-        if ($sellingPriceUsed !== 'no') {
-            throw new RuntimeException(
-                'Selling price cannot be used as inventory cost.'
+        $derivationDivisorRaw = trim(
+            (string) (
+                $row['derivation_divisor']
+                ?? ''
+            )
+        );
+
+        $derivationFormula = trim(
+            (string) (
+                $row['derivation_formula']
+                ?? ''
+            )
+        );
+
+        $ownerApprovedMethod =
+            'owner_approved_price_divisor';
+
+        $requiredFormula =
+            'approved_unit_cost = expected_selling_price / derivation_divisor';
+
+        $sellingPriceWasUsed = false;
+        $derivationDivisor = null;
+
+        if ($approvalMethod === $ownerApprovedMethod) {
+            if ($sellingPriceUsed !== 'yes') {
+                throw new RuntimeException(
+                    'Owner-approved price-divisor valuations must explicitly mark selling_price_used as yes.'
+                );
+            }
+
+            if (
+                $expectedSellingPrice === null
+                || $expectedSellingPrice <= 0
+            ) {
+                throw new RuntimeException(
+                    'Owner-approved price-divisor valuation requires a positive selling-price snapshot.'
+                );
+            }
+
+            if (
+                ! is_numeric($derivationDivisorRaw)
+                || (float) $derivationDivisorRaw <= 0
+            ) {
+                throw new RuntimeException(
+                    'Owner-approved price-divisor valuation requires a positive divisor.'
+                );
+            }
+
+            $derivationDivisor = round(
+                (float) $derivationDivisorRaw,
+                4
             );
+
+            $configuredDivisor = round(
+                (float) config(
+                    'finance.owner_approved_price_divisor',
+                    1.4
+                ),
+                4
+            );
+
+            if (
+                abs(
+                    $derivationDivisor
+                    - $configuredDivisor
+                ) > 0.0001
+            ) {
+                throw new RuntimeException(
+                    'The submitted divisor does not match the controlled owner-approved divisor.'
+                );
+            }
+
+            if ($derivationFormula !== $requiredFormula) {
+                throw new RuntimeException(
+                    'The submitted derivation formula does not match the controlled formula.'
+                );
+            }
+
+            $calculatedUnitCost = round(
+                $expectedSellingPrice
+                / $derivationDivisor,
+                4
+            );
+
+            if (
+                abs(
+                    $approvedUnitCost
+                    - $calculatedUnitCost
+                ) > 0.0001
+            ) {
+                throw new RuntimeException(
+                    sprintf(
+                        'Approved unit cost %.4f does not match controlled selling-price calculation %.4f.',
+                        $approvedUnitCost,
+                        $calculatedUnitCost,
+                    )
+                );
+            }
+
+            $sellingPriceWasUsed = true;
+        } else {
+            if ($sellingPriceUsed !== 'no') {
+                throw new RuntimeException(
+                    'Selling price can only be used through the owner-approved price-divisor method.'
+                );
+            }
+
+            if (
+                $derivationDivisorRaw !== ''
+                || $derivationFormula !== ''
+            ) {
+                throw new RuntimeException(
+                    'Derivation fields must remain empty for non-derived approval methods.'
+                );
+            }
         }
 
         $approvedBy = filter_var(
@@ -359,6 +520,14 @@ class FinanceInventoryCostApprovalService
                     'approval_method' => $approvalMethod,
                     'source_reference' => $sourceReference,
                     'approved_by' => $approvedBy,
+                    'selling_price_used' =>
+                        $sellingPriceWasUsed,
+                    'expected_selling_price' =>
+                        $expectedSellingPrice,
+                    'derivation_divisor' =>
+                        $derivationDivisor,
+                    'derivation_formula' =>
+                        $derivationFormula,
                 ],
                 JSON_THROW_ON_ERROR
                 | JSON_UNESCAPED_SLASHES
@@ -446,6 +615,14 @@ class FinanceInventoryCostApprovalService
                 $approvedBy,
             'source_file_sha256' =>
                 $sourceFileHash,
+            'expected_selling_price' =>
+                $expectedSellingPrice,
+            'selling_price_used' =>
+                $sellingPriceWasUsed,
+            'derivation_divisor' =>
+                $derivationDivisor,
+            'derivation_formula' =>
+                $derivationFormula,
             'raw_row' =>
                 $row,
         ];
@@ -642,7 +819,23 @@ class FinanceInventoryCostApprovalService
                                 'submitted_row' =>
                                     $validated['raw_row'],
                                 'selling_price_used' =>
-                                    false,
+                                    (bool) (
+                                        $validated[
+                                            'selling_price_used'
+                                        ] ?? false
+                                    ),
+                                'selling_price_snapshot' =>
+                                    $validated[
+                                        'expected_selling_price'
+                                    ] ?? null,
+                                'derivation_divisor' =>
+                                    $validated[
+                                        'derivation_divisor'
+                                    ] ?? null,
+                                'derivation_formula' =>
+                                    $validated[
+                                        'derivation_formula'
+                                    ] ?? null,
                                 'evidence_reviewed' =>
                                     true,
                                 'source_file_sha256' =>
@@ -655,6 +848,20 @@ class FinanceInventoryCostApprovalService
                                     self::class,
                                 'prospective_cutover' =>
                                     true,
+                                'selling_price_used' =>
+                                    (bool) (
+                                        $validated[
+                                            'selling_price_used'
+                                        ] ?? false
+                                    ),
+                                'derivation_divisor' =>
+                                    $validated[
+                                        'derivation_divisor'
+                                    ] ?? null,
+                                'derivation_formula' =>
+                                    $validated[
+                                        'derivation_formula'
+                                    ] ?? null,
                             ],
                         ]);
 
@@ -704,6 +911,24 @@ class FinanceInventoryCostApprovalService
                         ],
                     'approved_at' =>
                         $approvedAt->toISOString(),
+                    'selling_price_used' =>
+                        (bool) (
+                            $validated[
+                                'selling_price_used'
+                            ] ?? false
+                        ),
+                    'selling_price_snapshot' =>
+                        $validated[
+                            'expected_selling_price'
+                        ] ?? null,
+                    'derivation_divisor' =>
+                        $validated[
+                            'derivation_divisor'
+                        ] ?? null,
+                    'derivation_formula' =>
+                        $validated[
+                            'derivation_formula'
+                        ] ?? null,
                 ];
 
                 $batch->forceFill([

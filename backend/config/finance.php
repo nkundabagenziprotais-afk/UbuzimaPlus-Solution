@@ -27,6 +27,11 @@ return [
         '2026-08-01'
     ),
 
+    'owner_approved_price_divisor' => (float) env(
+        'FINANCE_OWNER_APPROVED_PRICE_DIVISOR',
+        1.4
+    ),
+
     /*
     |--------------------------------------------------------------------------
     | Authoritative payment mappings
@@ -60,8 +65,9 @@ return [
     | Controlled inventory-cost approval methods
     |--------------------------------------------------------------------------
     |
-    | These methods require human approval. Selling price is never an
-    | acceptable cost source.
+    | These methods require human approval. Selling price is permitted
+    | only through the explicit owner-approved divisor method, with the
+    | selling-price snapshot, divisor and formula preserved in the audit log.
     |
     */
 
@@ -74,5 +80,8 @@ return [
 
         'opening_valuation' =>
             'Accountant-approved opening inventory valuation',
+
+        'owner_approved_price_divisor' =>
+            'Owner-approved opening valuation derived from current selling price divided by the controlled divisor',
     ],
 ];

@@ -244,6 +244,170 @@ class PharmacoFinanceInventoryCostApprovalTest extends TestCase
         );
     }
 
+    public function test_owner_approved_price_divisor_applies_exact_formula(): void
+    {
+        $batch = $this->prepareUnresolvedBatch();
+
+        $file = $this->approvalCsv(
+            $batch,
+            [
+                'approved_unit_cost' =>
+                    3571.4286,
+                'approval_method' =>
+                    'owner_approved_price_divisor',
+                'valuation_basis' =>
+                    'Owner-approved opening valuation using selling price divided by 1.4.',
+                'source_reference' =>
+                    'OWNER-PRICE-DIVISOR-TEST-001',
+                'source_document_date' =>
+                    '',
+                'approval_notes' =>
+                    'Owner approved the prospective selling-price divisor valuation method.',
+                'selling_price_used' =>
+                    'yes',
+                'derivation_divisor' =>
+                    '1.4',
+                'derivation_formula' =>
+                    'approved_unit_cost = expected_selling_price / derivation_divisor',
+            ]
+        );
+
+        $hash = hash_file(
+            'sha256',
+            $file
+        );
+
+        $journalsBefore = DB::table(
+            'finance_journal_entries'
+        )->count();
+
+        $status = Artisan::call(
+            'finance:inventory-cost-approvals:apply',
+            [
+                'file' => $file,
+                '--tenant_id' => 1,
+                '--cutover_date' =>
+                    '2026-08-01',
+                '--confirm-sha256' =>
+                    $hash,
+                '--apply' => true,
+            ]
+        );
+
+        $this->assertSame(0, $status);
+
+        $commandOutput = Artisan::output();
+
+        $this->assertStringContainsString(
+            'Selling-price-derived approvals: 1',
+            $commandOutput
+        );
+
+        $this->assertStringContainsString(
+            'Selling price used as cost: YES_CONTROLLED_OWNER_APPROVED',
+            $commandOutput
+        );
+
+        $approval =
+            FinanceInventoryCostApproval::query()
+                ->firstOrFail();
+
+        $this->assertSame(
+            'owner_approved_price_divisor',
+            $approval->approval_method
+        );
+
+        $this->assertTrue(
+            (bool) data_get(
+                $approval->approval_evidence,
+                'selling_price_used'
+            )
+        );
+
+        $this->assertEqualsWithDelta(
+            5000.0,
+            (float) data_get(
+                $approval->approval_evidence,
+                'selling_price_snapshot'
+            ),
+            0.0001
+        );
+
+        $this->assertEqualsWithDelta(
+            1.4,
+            (float) data_get(
+                $approval->approval_evidence,
+                'derivation_divisor'
+            ),
+            0.0001
+        );
+
+        $this->assertEqualsWithDelta(
+            3571.4286,
+            (float) $batch->fresh()
+                ->inferred_unit_cost,
+            0.0001
+        );
+
+        $this->assertSame(
+            $journalsBefore,
+            DB::table(
+                'finance_journal_entries'
+            )->count()
+        );
+    }
+
+    public function test_owner_approved_price_divisor_rejects_incorrect_calculation(): void
+    {
+        $batch = $this->prepareUnresolvedBatch();
+
+        $file = $this->approvalCsv(
+            $batch,
+            [
+                'approved_unit_cost' =>
+                    3500,
+                'approval_method' =>
+                    'owner_approved_price_divisor',
+                'valuation_basis' =>
+                    'Owner-approved opening valuation using selling price divided by 1.4.',
+                'source_reference' =>
+                    'OWNER-PRICE-DIVISOR-TEST-002',
+                'source_document_date' =>
+                    '',
+                'approval_notes' =>
+                    'This intentionally incorrect calculation must be rejected.',
+                'selling_price_used' =>
+                    'yes',
+                'derivation_divisor' =>
+                    '1.4',
+                'derivation_formula' =>
+                    'approved_unit_cost = expected_selling_price / derivation_divisor',
+            ]
+        );
+
+        $status = Artisan::call(
+            'finance:inventory-cost-approvals:apply',
+            [
+                'file' => $file,
+                '--tenant_id' => 1,
+                '--cutover_date' =>
+                    '2026-08-01',
+            ]
+        );
+
+        $this->assertSame(1, $status);
+
+        $this->assertDatabaseCount(
+            'finance_inventory_cost_approvals',
+            0
+        );
+
+        $this->assertNull(
+            $batch->fresh()
+                ->inferred_unit_cost
+        );
+    }
+
     public function test_approval_record_is_immutable(): void
     {
         $batch = $this->prepareUnresolvedBatch();
@@ -366,6 +530,9 @@ class PharmacoFinanceInventoryCostApprovalTest extends TestCase
                 'expected_quantity_on_hand' => 5,
                 'expected_quantity_reserved' => 0,
                 'expected_batch_updated_at' => '',
+                'expected_selling_price' => 5000,
+                'derivation_divisor' => '',
+                'derivation_formula' => '',
                 'decision' => 'approve',
                 'approved_unit_cost' => 1250,
                 'currency_code' => 'RWF',
