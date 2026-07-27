@@ -1,4 +1,3 @@
-import { mobileRuntimeFlags } from './mobile/mobileRuntimeFlags';
 import { installDashboardLastGoodFetchCache } from './lib/dashboardReporting';
 installDashboardLastGoodFetchCache();
 
@@ -240,9 +239,7 @@ function installUbuzimaRealMobileAppHomeV1(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-if (mobileRuntimeFlags.legacyMobileRuntime) {
-  installUbuzimaRealMobileAppHomeV1();
-}
+installUbuzimaRealMobileAppHomeV1();
 
 
 
@@ -403,9 +400,7 @@ function installUbuzimaNativeMobileDrawerV2(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-if (mobileRuntimeFlags.legacyMobileRuntime) {
-  installUbuzimaNativeMobileDrawerV2();
-}
+installUbuzimaNativeMobileDrawerV2();
 
 
 
@@ -607,9 +602,7 @@ function installUbuzimaNativeMobileInterfaceV1(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-if (mobileRuntimeFlags.legacyMobileRuntime) {
-  installUbuzimaNativeMobileInterfaceV1();
-}
+installUbuzimaNativeMobileInterfaceV1();
 
 
 
@@ -817,9 +810,7 @@ function installUbuzimaInstallAppPrompt(): void {
   });
 }
 
-if (mobileRuntimeFlags.legacyMobileRuntime) {
-  installUbuzimaMobileAppShellNavigation();
-}
+installUbuzimaMobileAppShellNavigation();
 installUbuzimaInstallAppPrompt();
 
 

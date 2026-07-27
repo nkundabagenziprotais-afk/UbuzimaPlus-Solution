@@ -263,12 +263,6 @@ export function SalesCreationPanel({
         return leftRisk - rightRisk || left.name.localeCompare(right.name);
       });
   }, [activeCategory, activeProducts, productSearch]);
-  const productBrowserLimit = productSearch.trim()
-    ? visibleProducts.length
-    : productBrowserView === 'grid'
-      ? 24
-      : 40;
-  const displayedProducts = visibleProducts.slice(0, productBrowserLimit);
 
   function preferredPrice(product: PharmaProduct): string {
     const price = bestBatch(product.id)?.selling_price;
@@ -279,30 +273,7 @@ export function SalesCreationPanel({
   function stockBatchesForProduct(productId: number): PharmaStockBatch[] {
     return batches
       .filter((batch) => batch.product.id === productId)
-      .filter((batch) => {
-        const normalizedStatus = String(
-          batch.status || 'active',
-        ).toLowerCase();
-
-        const expiryDate = batch.expiry_date
-          ? String(batch.expiry_date).slice(0, 10)
-          : '';
-
-        const today = new Date()
-          .toISOString()
-          .slice(0, 10);
-
-        return (
-          [
-            'active',
-            'available',
-            'sellable',
-            'in_stock',
-          ].includes(normalizedStatus)
-          && Number(batch.available_quantity || 0) > 0
-          && (!expiryDate || expiryDate >= today)
-        );
-      })
+      .filter((batch) => batch.status === 'active' && batch.available_quantity > 0)
       .sort((left, right) => {
         const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
         const rightExpiry = right.expiry_date ? new Date(right.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
@@ -622,7 +593,7 @@ export function SalesCreationPanel({
           </div>
 
           <div className={`pos-product-grid ${productBrowserView === 'list' ? 'pos-product-grid--list' : ''}`}>
-            {displayedProducts.map((product) => {
+            {visibleProducts.slice(0, productBrowserView === 'grid' ? 10 : 16).map((product) => {
               const batch = bestBatch(product.id);
               const price = preferredPrice(product);
 

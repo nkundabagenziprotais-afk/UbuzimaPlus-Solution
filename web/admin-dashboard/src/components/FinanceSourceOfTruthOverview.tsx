@@ -14,14 +14,10 @@ type FinanceTab =
   | 'overview'
   | 'profit-loss'
   | 'cash-flow'
-  | 'sales'
   | 'receivables'
   | 'payables'
-  | 'expenses'
-  | 'inventory-finance'
   | 'banking'
-  | 'reports'
-  | 'accounting';
+  | 'reports';
 
 function tenantSlugFromProfile(profile: any): string {
   return (
@@ -38,15 +34,18 @@ function isoDate(daysBack = 0): string {
   return date.toISOString().slice(0, 10);
 }
 
-function money(value: number | string | null | undefined): string {
+function numberValue(value: unknown): number {
   const amount = Number(value ?? 0);
-
-  return new Intl.NumberFormat('en-RW', {
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
+  return Number.isFinite(amount) ? amount : 0;
 }
 
-function readable(value: string | boolean | null | undefined): string {
+function money(value: unknown): string {
+  return new Intl.NumberFormat('en-RW', {
+    maximumFractionDigits: 0,
+  }).format(numberValue(value));
+}
+
+function readable(value: unknown): string {
   if (typeof value === 'boolean') {
     return value ? 'Passed' : 'Failed';
   }
@@ -56,17 +55,23 @@ function readable(value: string | boolean | null | undefined): string {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function statusClass(value: string | boolean | null | undefined): string {
+function statusTone(value: unknown): string {
   if (
     value === true
     || value === 'ready'
     || value === 'passed'
     || value === 'ready_for_staged_switch'
+    || value === 'reconciled'
   ) {
     return 'success';
   }
 
-  if (value === false || value === 'failed' || value === 'not_ready') {
+  if (
+    value === false
+    || value === 'failed'
+    || value === 'not_ready'
+    || value === 'unreconciled'
+  ) {
     return 'danger';
   }
 
@@ -77,65 +82,84 @@ function statusClass(value: string | boolean | null | undefined): string {
   return 'warning';
 }
 
-function StatusBadge({ value }: { value: string | boolean | null | undefined }) {
+function StatusBadge({ value }: { value: unknown }) {
   return (
-    <span className={`finance-v2-status finance-v2-status--${statusClass(value)}`}>
+    <span className={`finance-inclusive-status finance-inclusive-status--${statusTone(value)}`}>
       {readable(value)}
     </span>
   );
 }
 
-function MiniBars({
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone = 'neutral',
+  icon,
+  meta,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  tone?: string;
+  icon: string;
+  meta?: string;
+}) {
+  return (
+    <article className={`finance-inclusive-card finance-inclusive-card--${tone}`}>
+      <div className="finance-inclusive-card__top">
+        <span className="finance-inclusive-card__icon">{icon}</span>
+        {meta && <small>{meta}</small>}
+      </div>
+      <div>
+        <p>{label}</p>
+        <strong>{value}</strong>
+        <small>{helper}</small>
+      </div>
+    </article>
+  );
+}
+
+function ProfessionalBars({
   title,
   subtitle,
-  revenue,
-  expense,
+  primary,
+  secondary,
 }: {
   title: string;
   subtitle: string;
-  revenue: number;
-  expense: number;
+  primary: number;
+  secondary: number;
 }) {
   const months = ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
-  const values = months.map((month, index) => ({
-    month,
-    revenue: Math.max(1, revenue * (0.55 + index * 0.09)),
-    expense: Math.max(1, expense * (0.45 + index * 0.07)),
-  }));
-  const max = Math.max(...values.flatMap((item) => [item.revenue, item.expense]), 1);
+  const values = months.map((month, index) => {
+    const factor = 0.58 + index * 0.085;
+    return {
+      month,
+      primary: Math.max(1, primary * factor),
+      secondary: Math.max(1, secondary * Math.max(0.18, factor - 0.16)),
+    };
+  });
+  const max = Math.max(...values.flatMap((item) => [item.primary, item.secondary]), 1);
 
   return (
-    <article className="finance-v2-card finance-v2-chart-card">
-      <div className="finance-v2-card-head">
+    <article className="finance-inclusive-panel finance-inclusive-panel--chart">
+      <header>
         <div>
           <h3>{title}</h3>
           <small>{subtitle}</small>
         </div>
-        <select aria-label={`${title} period`}>
-          <option>6 Months</option>
-          <option>This Month</option>
-        </select>
-      </div>
+        <span>6M</span>
+      </header>
 
-      <div className="finance-v2-legend">
-        <span><i className="finance-v2-dot finance-v2-dot--green" /> Revenue</span>
-        <span><i className="finance-v2-dot finance-v2-dot--red" /> Expenses</span>
-        <span><i className="finance-v2-dot finance-v2-dot--blue" /> Net</span>
-      </div>
-
-      <div className="finance-v2-bars">
-        {values.map((item) => {
-          const net = Math.max(item.revenue - item.expense, 1);
-
-          return (
-            <div key={item.month}>
-              <span style={{ height: `${Math.max(8, item.revenue / max * 100)}%` }} />
-              <span style={{ height: `${Math.max(8, item.expense / max * 100)}%` }} />
-              <span style={{ height: `${Math.max(8, net / max * 100)}%` }} />
-              <small>{item.month}</small>
-            </div>
-          );
-        })}
+      <div className="finance-inclusive-chart">
+        {values.map((item) => (
+          <div key={item.month}>
+            <i style={{ height: `${Math.max(7, (item.primary / max) * 100)}%` }} />
+            <b style={{ height: `${Math.max(7, (item.secondary / max) * 100)}%` }} />
+            <small>{item.month}</small>
+          </div>
+        ))}
       </div>
     </article>
   );
@@ -196,25 +220,44 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
   const revenueSummary = revenue?.summary ?? {};
   const paymentMethods = payments?.payment_methods ?? [];
 
-  const totalRevenue = Number(
+  const totalRevenue = numberValue(
     revenueSummary.finance_shadow_revenue
     ?? revenueSummary.pos_revenue_total
+    ?? revenueSummary.pos_sales_revenue_total
     ?? 0,
   );
-  const taxShadow = Number(revenueSummary.finance_shadow_tax ?? 0);
-  const cashTotal = Number(
-    paymentMethods.find((item: any) => item.payment_method === 'cash')?.finance_shadow_total ?? 0,
+
+  const taxShadow = numberValue(
+    revenueSummary.finance_shadow_tax
+    ?? revenueSummary.pos_tax_total
+    ?? 0,
   );
-  const momoTotal = Number(
-    paymentMethods.find((item: any) => item.payment_method === 'momo')?.finance_shadow_total ?? 0,
+
+  const completedPayments = numberValue(
+    paymentSummary.pos_completed_payments_total
+    ?? paymentSummary.finance_shadow_payment_total
+    ?? 0,
   );
-  const cardTotal = Number(
-    paymentMethods.find((item: any) => item.payment_method === 'card')?.finance_shadow_total ?? 0,
+
+  const financePayments = numberValue(paymentSummary.finance_shadow_payment_total);
+  const paymentDifference = numberValue(paymentSummary.difference);
+  const revenueDifference = numberValue(revenueSummary.revenue_difference);
+  const taxDifference = numberValue(revenueSummary.tax_difference);
+
+  const cashTotal = numberValue(
+    paymentMethods.find((item: any) => item.payment_method === 'cash')?.finance_shadow_total,
   );
-  const paymentTotal = Number(paymentSummary.finance_shadow_payment_total ?? 0);
-  const expenseSignal = taxShadow;
+  const momoTotal = numberValue(
+    paymentMethods.find((item: any) => item.payment_method === 'momo')?.finance_shadow_total,
+  );
+  const cardTotal = numberValue(
+    paymentMethods.find((item: any) => item.payment_method === 'card')?.finance_shadow_total,
+  );
+
   const grossProfit = Math.max(totalRevenue - taxShadow, 0);
-  const netProfit = grossProfit;
+  const availableFinancialSignal = Math.max(totalRevenue, completedPayments, financePayments);
+  const expenseSignal = taxShadow;
+  const isReconciled = Boolean(paymentSummary.is_reconciled);
 
   const readinessChecks = useMemo(
     () => Object.entries(health?.checks ?? {}) as Array<[string, any]>,
@@ -225,57 +268,120 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
     ['overview', 'Overview'],
     ['profit-loss', 'Profit & Loss'],
     ['cash-flow', 'Cash Flow'],
-    ['sales', 'Sales'],
     ['receivables', 'Receivables'],
     ['payables', 'Payables'],
-    ['expenses', 'Expenses'],
-    ['inventory-finance', 'Inventory Finance'],
     ['banking', 'Banking'],
     ['reports', 'Reports'],
-    ['accounting', 'Accounting'],
   ];
 
-  const kpis = [
-    ['Total Revenue', totalRevenue, 'Payment-basis shadow revenue', 'success'],
-    ['Gross Margin', grossProfit, 'Revenue less tax shadow', 'info'],
-    ['Total Expenses', 0, 'Expense ledger feed pending', 'warning'],
-    ['Net Profit', netProfit, 'Interim shadow profit signal', 'success'],
-    ['Cash in Hand', cashTotal, 'Cash payment shadow', 'info'],
-    ['Insurance Receivables', 0, 'Insurance AR feed pending', 'warning'],
-    ['Accounts Payable', 0, 'Supplier AP feed pending', 'warning'],
-    ['Inventory Value', 0, 'Inventory valuation feed pending', 'warning'],
-  ] as const;
+  const cards = [
+    {
+      label: 'Total Revenue',
+      value: `RWF ${money(totalRevenue)}`,
+      helper: 'POS revenue shadow validated by Finance',
+      tone: totalRevenue > 0 ? 'success' : 'warning',
+      icon: '↗',
+      meta: totalRevenue > 0 ? 'Live' : 'No period data',
+    },
+    {
+      label: 'Completed Payments',
+      value: `RWF ${money(completedPayments)}`,
+      helper: 'Operational POS payment total',
+      tone: completedPayments > 0 ? 'info' : 'warning',
+      icon: '◉',
+      meta: 'POS',
+    },
+    {
+      label: 'Finance Shadow Payments',
+      value: `RWF ${money(financePayments)}`,
+      helper: 'Finance-side shadow payment total',
+      tone: financePayments > 0 ? 'success' : 'warning',
+      icon: '◆',
+      meta: isReconciled ? 'Reconciled' : 'Review',
+    },
+    {
+      label: 'Gross Profit Signal',
+      value: `RWF ${money(grossProfit)}`,
+      helper: 'Revenue less tax shadow',
+      tone: grossProfit > 0 ? 'success' : 'neutral',
+      icon: '▰',
+      meta: 'Interim',
+    },
+    {
+      label: 'Cash',
+      value: `RWF ${money(cashTotal)}`,
+      helper: 'Cash payment method shadow',
+      tone: cashTotal > 0 ? 'info' : 'neutral',
+      icon: '₣',
+      meta: 'Cash',
+    },
+    {
+      label: 'Mobile Money',
+      value: `RWF ${money(momoTotal)}`,
+      helper: 'MoMo payment method shadow',
+      tone: momoTotal > 0 ? 'info' : 'neutral',
+      icon: 'M',
+      meta: 'MoMo',
+    },
+    {
+      label: 'Card',
+      value: `RWF ${money(cardTotal)}`,
+      helper: 'Card payment method shadow',
+      tone: cardTotal > 0 ? 'info' : 'neutral',
+      icon: '▣',
+      meta: 'Card',
+    },
+    {
+      label: 'Exception Difference',
+      value: `RWF ${money(paymentDifference + revenueDifference + taxDifference)}`,
+      helper: 'Payment, revenue and tax variance',
+      tone: paymentDifference + revenueDifference + taxDifference === 0 ? 'success' : 'danger',
+      icon: '!',
+      meta: paymentDifference + revenueDifference + taxDifference === 0 ? 'Clean' : 'Action',
+    },
+  ];
 
   return (
-    <section className="finance-v2-page">
-      <header className="finance-v2-header">
+    <section className="finance-inclusive-page">
+      <header className="finance-inclusive-hero">
         <div>
-          <h2>Finance Overview</h2>
-          <p>Real-time financial performance of your business</p>
+          <span>Finance source of truth</span>
+          <h2>Inclusive Finance Dashboard</h2>
+          <p>
+            One operational dashboard for revenue, payments, reconciliation, cash movement,
+            readiness health, and Finance-controlled source data.
+          </p>
         </div>
 
-        <div className="finance-v2-filters">
-          <label>
-            <span>Date From</span>
-            <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-          </label>
-          <label>
-            <span>Date To</span>
-            <input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
-          </label>
-          <label>
-            <span>Branch</span>
-            <select value={branchId} onChange={(event) => setBranchId(event.target.value)}>
-              <option value="">All Branches</option>
-            </select>
-          </label>
-          <button type="button" onClick={() => void loadDashboard()} disabled={isLoading}>
-            {isLoading ? 'Refreshing…' : 'Refresh'}
-          </button>
+        <div className="finance-inclusive-hero__status">
+          <small>Readiness</small>
+          <StatusBadge value={health?.overall_status ?? 'pending'} />
+          <small>Switch status</small>
+          <StatusBadge value={health?.dashboard_switch_status ?? 'not_ready'} />
         </div>
       </header>
 
-      <nav className="finance-v2-tabs" aria-label="Finance dashboard tabs">
+      <section className="finance-inclusive-toolbar">
+        <label>
+          <span>Date From</span>
+          <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+        </label>
+        <label>
+          <span>Date To</span>
+          <input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+        </label>
+        <label>
+          <span>Branch</span>
+          <select value={branchId} onChange={(event) => setBranchId(event.target.value)}>
+            <option value="">All Branches</option>
+          </select>
+        </label>
+        <button type="button" onClick={() => void loadDashboard()} disabled={isLoading}>
+          {isLoading ? 'Refreshing…' : 'Refresh Dashboard'}
+        </button>
+      </section>
+
+      <nav className="finance-inclusive-tabs" aria-label="Finance dashboard sections">
         {tabs.map(([key, label]) => (
           <button
             key={key}
@@ -288,109 +394,94 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
         ))}
       </nav>
 
-      <div className="finance-v2-sync-line">
-        <span>Readiness: <StatusBadge value={health?.overall_status ?? 'pending'} /></span>
-        <span>Dashboard switch: <StatusBadge value={health?.dashboard_switch_status ?? 'not_ready'} /></span>
+      <div className="finance-inclusive-sync">
         <span>Last updated: {loadedAt || 'Awaiting refresh'}</span>
+        <span>Period: {from} → {to}</span>
+        <span>Tenant: {tenantSlug}</span>
       </div>
 
       {error && <div className="form-error">{error}</div>}
 
       {activeTab === 'overview' ? (
         <>
-          <section className="finance-v2-kpi-grid">
-            {kpis.map(([label, value, helper, tone]) => (
-              <article className={`finance-v2-kpi finance-v2-kpi--${tone}`} key={label}>
-                <span>{label}</span>
-                <strong>RWF {money(value)}</strong>
-                <small>{helper}</small>
-              </article>
+          <section className="finance-inclusive-card-grid">
+            {cards.map((card) => (
+              <MetricCard key={card.label} {...card} />
             ))}
           </section>
 
-          <section className="finance-v2-analytics-grid">
-            <MiniBars
-              title="Revenue vs Expenses Trend"
-              subtitle="Finance shadow revenue, expense signal, and net movement"
-              revenue={totalRevenue}
-              expense={expenseSignal}
+          <section className="finance-inclusive-main-grid">
+            <ProfessionalBars
+              title="Revenue vs Finance Signal"
+              subtitle="Revenue shadow compared with tax and exception signal"
+              primary={availableFinancialSignal}
+              secondary={expenseSignal}
             />
 
-            <MiniBars
-              title="Cash Flow Overview"
-              subtitle="Payment receipts and estimated cash movement"
-              revenue={paymentTotal}
-              expense={expenseSignal}
+            <ProfessionalBars
+              title="Cash Flow Signal"
+              subtitle="Payments received versus Finance shadow movement"
+              primary={completedPayments}
+              secondary={Math.abs(paymentDifference)}
             />
 
-            <article className="finance-v2-card">
-              <div className="finance-v2-card-head">
+            <article className="finance-inclusive-panel">
+              <header>
                 <div>
                   <h3>Profit & Loss Summary</h3>
-                  <small>Shadow-mode interim summary</small>
+                  <small>Available Finance source data</small>
                 </div>
-                <select aria-label="Profit and loss period">
-                  <option>This Month</option>
-                </select>
-              </div>
-
-              <dl className="finance-v2-summary-list">
+              </header>
+              <dl className="finance-inclusive-summary">
                 <div><dt>Total Revenue</dt><dd>RWF {money(totalRevenue)}</dd></div>
                 <div><dt>Tax Shadow</dt><dd>RWF {money(taxShadow)}</dd></div>
-                <div><dt>Gross Profit</dt><dd>RWF {money(grossProfit)}</dd></div>
-                <div><dt>Total Expenses</dt><dd>RWF {money(0)}</dd></div>
-                <div><dt>Net Profit</dt><dd>RWF {money(netProfit)}</dd></div>
-                <div><dt>Payment Difference</dt><dd>RWF {money(paymentSummary.difference)}</dd></div>
+                <div><dt>Gross Profit Signal</dt><dd>RWF {money(grossProfit)}</dd></div>
+                <div><dt>Completed Payments</dt><dd>RWF {money(completedPayments)}</dd></div>
+                <div><dt>Finance Shadow Payments</dt><dd>RWF {money(financePayments)}</dd></div>
+                <div><dt>Payment Difference</dt><dd>RWF {money(paymentDifference)}</dd></div>
               </dl>
             </article>
 
-            <article className="finance-v2-card">
-              <div className="finance-v2-card-head">
+            <article className="finance-inclusive-panel">
+              <header>
                 <div>
-                  <h3>Expense Breakdown</h3>
-                  <small>Expense ledger feed pending</small>
+                  <h3>Payment Method Mix</h3>
+                  <small>Source: Finance POS shadow reconciliation</small>
                 </div>
-                <select aria-label="Expense period">
-                  <option>This Month</option>
-                </select>
-              </div>
-
-              <div className="finance-v2-donut-wrap">
-                <div className="finance-v2-donut">
-                  <strong>RWF</strong>
-                  <b>0</b>
-                  <small>Pending</small>
-                </div>
-
-                <div className="finance-v2-donut-list">
-                  {['Staff Expenses', 'Rent & Utilities', 'Transport', 'Administrative', 'Marketing', 'Others'].map((item, index) => (
-                    <span key={item}>
-                      <i className={`finance-v2-dot finance-v2-dot--${index + 1}`} />
-                      {item}
-                      <strong>Pending</strong>
-                    </span>
-                  ))}
-                </div>
+              </header>
+              <div className="finance-inclusive-methods">
+                {paymentMethods.map((item: any) => (
+                  <div key={item.payment_method}>
+                    <span>{readable(item.payment_method)}</span>
+                    <strong>RWF {money(item.finance_shadow_total)}</strong>
+                    <StatusBadge value={numberValue(item.difference) === 0} />
+                  </div>
+                ))}
+                {paymentMethods.length === 0 && (
+                  <div className="finance-inclusive-empty">
+                    No payment method records for this selected period.
+                  </div>
+                )}
               </div>
             </article>
           </section>
 
-          <section className="finance-v2-tables-grid">
-            <article className="finance-v2-card finance-v2-table-card finance-v2-table-card--wide">
-              <div className="finance-v2-card-head">
+          <section className="finance-inclusive-lower-grid">
+            <article className="finance-inclusive-panel finance-inclusive-panel--wide">
+              <header>
                 <div>
-                  <h3>Recent Transactions</h3>
-                  <small>Finance shadow journal movement summary</small>
+                  <h3>Recent Finance Transactions</h3>
+                  <small>Derived from available Finance shadow payment methods</small>
                 </div>
-              </div>
+              </header>
 
-              <table className="finance-v2-table">
+              <table className="finance-inclusive-table">
                 <thead>
                   <tr>
                     <th>Date</th>
                     <th>Type</th>
                     <th>Description</th>
-                    <th>Account</th>
+                    <th>Finance Account</th>
                     <th>Amount</th>
                     <th>Status</th>
                   </tr>
@@ -403,105 +494,49 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
                       <td>{readable(item.payment_method)} POS shadow posting</td>
                       <td>Finance Shadow Ledger</td>
                       <td>RWF {money(item.finance_shadow_total)}</td>
-                      <td><StatusBadge value={Number(item.difference ?? 0) === 0} /></td>
+                      <td><StatusBadge value={numberValue(item.difference) === 0} /></td>
                     </tr>
                   ))}
                   {paymentMethods.length === 0 && (
                     <tr>
-                      <td colSpan={6}>No Finance payment shadow records are available for this period.</td>
+                      <td colSpan={6}>No Finance shadow transactions are available for this period.</td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </article>
 
-            <article className="finance-v2-card">
-              <div className="finance-v2-card-head">
+            <article className="finance-inclusive-panel">
+              <header>
                 <div>
-                  <h3>Top Receivables</h3>
-                  <small>Receivable source feed pending</small>
+                  <h3>Readiness Health</h3>
+                  <small>Dashboard switch controls</small>
                 </div>
-              </div>
-              <div className="finance-v2-empty-state">
-                Module dashboard remains active. Finance AR feed will populate this panel.
-              </div>
-            </article>
-
-            <article className="finance-v2-card">
-              <div className="finance-v2-card-head">
-                <div>
-                  <h3>Upcoming Payables</h3>
-                  <small>Payables source feed pending</small>
-                </div>
-              </div>
-              <div className="finance-v2-empty-state">
-                Supplier dashboard remains active. Finance AP feed will populate this panel.
-              </div>
-            </article>
-          </section>
-
-          <section className="finance-v2-bottom-grid">
-            <article className="finance-v2-card">
-              <div className="finance-v2-card-head">
-                <div>
-                  <h3>Quick Actions</h3>
-                  <small>Finance operating shortcuts</small>
-                </div>
-              </div>
-              <div className="finance-v2-action-grid">
-                {['Add Income', 'Add Expense', 'Record Payment', 'Transfer Money', 'New Journal'].map((item) => (
-                  <button type="button" key={item}>{item}</button>
+              </header>
+              <div className="finance-inclusive-checks">
+                {readinessChecks.map(([name, check]) => (
+                  <div key={name}>
+                    <span>{check?.label || readable(name)}</span>
+                    <StatusBadge value={check?.status} />
+                  </div>
                 ))}
-              </div>
-            </article>
-
-            <article className="finance-v2-card">
-              <div className="finance-v2-card-head">
-                <div>
-                  <h3>Bank Accounts</h3>
-                  <small>Cash, card, bank and mobile money summary</small>
-                </div>
-              </div>
-              <div className="finance-v2-bank-grid">
-                <article><span>Main Bank Account</span><strong>RWF {money(cardTotal)}</strong><small>Card shadow</small></article>
-                <article><span>Cash on Hand</span><strong>RWF {money(cashTotal)}</strong><small>Cash shadow</small></article>
-                <article><span>Mobile Money</span><strong>RWF {money(momoTotal)}</strong><small>MoMo shadow</small></article>
-                <article><span>Insurance Clearing</span><strong>RWF 0</strong><small>Pending feed</small></article>
-              </div>
-            </article>
-
-            <article className="finance-v2-card">
-              <div className="finance-v2-card-head">
-                <div>
-                  <h3>Report Shortcuts</h3>
-                  <small>Financial statements and reconciliation</small>
-                </div>
-              </div>
-              <div className="finance-v2-action-grid finance-v2-action-grid--reports">
-                {['Profit & Loss', 'Balance Sheet', 'Cash Flow Statement', 'Trial Balance', 'General Ledger', 'A/R Aging Report'].map((item) => (
-                  <button type="button" key={item}>{item}</button>
-                ))}
+                {readinessChecks.length === 0 && (
+                  <div className="finance-inclusive-empty">Readiness checks are loading.</div>
+                )}
               </div>
             </article>
           </section>
         </>
       ) : (
-        <section className="finance-v2-card finance-v2-tab-placeholder">
+        <section className="finance-inclusive-panel finance-inclusive-detail">
           <h3>{tabs.find(([key]) => key === activeTab)?.[1]}</h3>
           <p>
-            This detailed Finance workflow will use the same Finance source-of-truth APIs.
-            The overview already fetches readiness, POS payment reconciliation, and POS revenue shadow reports.
+            This section is part of the same inclusive dashboard. It uses the same Finance
+            source-of-truth API data and will be expanded without creating a separate old/new interface.
           </p>
-
-          <div className="finance-v2-check-list">
-            {readinessChecks.map(([name, check]) => (
-              <article key={name}>
-                <div>
-                  <strong>{check?.label || readable(name)}</strong>
-                  <small>{name.replaceAll('_', ' ')}</small>
-                </div>
-                <StatusBadge value={check?.status} />
-              </article>
+          <div className="finance-inclusive-card-grid">
+            {cards.slice(0, 4).map((card) => (
+              <MetricCard key={card.label} {...card} />
             ))}
           </div>
         </section>

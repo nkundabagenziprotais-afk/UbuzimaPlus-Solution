@@ -1,7 +1,5 @@
 /* APP_RX_WARNING_ALLOW_POS_RECORDING_V1 */
 /* POS_SALES_ANALYTICS_VISIBLE_ENTRY_V1 */
-import { ReactMobileNavigation } from './mobile/ReactMobileNavigation';
-import { mobileRuntimeFlags } from './mobile/mobileRuntimeFlags';
 import {
   InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
   useEffect,
@@ -27,7 +25,6 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   getCorporateMailOverview,
   getPharmaBranches,
   getPharmaInventoryBatches,
-  getAllPharmaInventoryBatches,
   getPharmacyProfile,
   login,
   logout,
@@ -4098,16 +4095,6 @@ function App() {
     () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
     [visibleMenuGroups],
   );
-  const reactMobileNavigationItems = useMemo(
-    () =>
-      principalMenuItems.map(({ item }) => ({
-        key: item.key,
-        label: item.label,
-        icon: item.icon,
-        description: item.description,
-      })),
-    [principalMenuItems],
-  );
   const currentSection = sectionMeta[activeSection] ?? sectionMeta.overview;
   const activeLeftSubmenuLabel =
     leftMenuSubmenus[activeSection]?.find((submenu) => {
@@ -5792,38 +5779,11 @@ function App() {
     const posProducts = posInventoryBatches
       .filter((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
-        const normalizedBatchStatus = String(
-          batch.status || 'active',
-        ).toLowerCase();
+        const batchIsActive = !batch.status || batch.status === 'active';
+        const productIsActive = !batch.product || true;
+        const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
 
-        const batchIsSellable = [
-          'active',
-          'available',
-          'sellable',
-          'in_stock',
-        ].includes(normalizedBatchStatus);
-
-        const normalizedProductStatus = String(
-          (
-            batch.product as {
-              status?: string;
-            } | undefined
-          )?.status || 'active',
-        ).toLowerCase();
-
-        const productIsActive =
-          normalizedProductStatus === 'active';
-
-        const expiryIsValid =
-          !batch.expiry_date
-          || batch.expiry_date >= todayDate;
-
-        return (
-          availableQuantity > 0
-          && batchIsSellable
-          && productIsActive
-          && expiryIsValid
-        );
+        return availableQuantity > 0 && batchIsActive && productIsActive && expiryIsValid;
       })
       .sort((left, right) => {
         const leftExpiry = left.expiry_date ? new Date(left.expiry_date).getTime() : Number.MAX_SAFE_INTEGER;
@@ -5843,10 +5803,6 @@ function App() {
         return {
           code: `${sku}-B${batch.id}`,
           name: productName,
-          genericName: (batch.product as { generic_name?: string | null } | undefined)?.generic_name || '',
-          brandName: (batch.product as { brand_name?: string | null } | undefined)?.brand_name || '',
-          sku,
-          barcode: (batch.product as { barcode?: string | null } | undefined)?.barcode || '',
           strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
           quantity: 1,
           unitPrice: sellingPrice,
@@ -5894,10 +5850,6 @@ function App() {
       ? posProducts.filter((product) =>
           [
             product.name,
-            product.genericName,
-            product.brandName,
-            product.sku,
-            product.barcode,
             product.strength,
             product.code,
             product.batchNumber,
@@ -5961,14 +5913,7 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getAllPharmaInventoryBatches(
-          session!.token,
-          posTenantSlug,
-          undefined,
-          {
-            sellableOnly: true,
-          },
-        );
+        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
@@ -9624,13 +9569,6 @@ return (
 
   return (
     <main className="dashboard-shell" style={leftMenuStyle}>
-      {mobileRuntimeFlags.reactMobileNavigation && (
-        <ReactMobileNavigation
-          items={reactMobileNavigationItems}
-          activeSection={activeSection}
-          onNavigate={navigateToSection}
-        />
-      )}
       <aside className="sidebar">
         <div className="sidebar-inner">
           <div className="sidebar-brand">
