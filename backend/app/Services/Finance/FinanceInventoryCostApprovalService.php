@@ -15,6 +15,155 @@ class FinanceInventoryCostApprovalService
      * @param array<string, mixed> $row
      * @return array<string, mixed>
      */
+    /**
+     * Return a previously approved row before mutable batch-state
+     * validation when, and only when, the exact reviewed file was
+     * already applied for the same tenant and stock batch.
+     *
+     * A different file hash continues through the complete validation
+     * path, including quantity, timestamp, selling-price and cost-state
+     * checks.
+     */
+    public function exactFileIdempotentRow(
+        array $row,
+        string $sourceFileHash,
+        int $tenantId,
+    ): ?array {
+        $decision = strtolower(
+            trim(
+                (string) (
+                    $row['decision']
+                    ?? ''
+                )
+            )
+        );
+
+        $rowTenantId = (int) (
+            $row['tenant_id']
+            ?? 0
+        );
+
+        $batchId = (int) (
+            $row['stock_batch_id']
+            ?? 0
+        );
+
+        if (
+            $decision !== 'approve'
+            || $tenantId <= 0
+            || $rowTenantId !== $tenantId
+            || $batchId <= 0
+            || trim($sourceFileHash) === ''
+        ) {
+            return null;
+        }
+
+        $approvals =
+            FinanceInventoryCostApproval::query()
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'stock_batch_id',
+                    $batchId
+                )
+                ->where(
+                    'source_file_sha256',
+                    $sourceFileHash
+                )
+                ->where(
+                    'status',
+                    'approved'
+                )
+                ->limit(2)
+                ->get();
+
+        if ($approvals->count() > 1) {
+            throw new RuntimeException(
+                "Multiple approvals exist for tenant {$tenantId}, stock batch {$batchId} and the exact reviewed file."
+            );
+        }
+
+        $approval = $approvals->first();
+
+        if ($approval === null) {
+            return null;
+        }
+
+        $evidence =
+            $approval->approval_evidence;
+
+        if (is_string($evidence)) {
+            $decoded = json_decode(
+                $evidence,
+                true
+            );
+
+            $evidence = is_array($decoded)
+                ? $decoded
+                : [];
+        }
+
+        if (! is_array($evidence)) {
+            $evidence = [];
+        }
+
+        return [
+            'decision' =>
+                'approve',
+
+            'idempotent' =>
+                true,
+
+            'existing_approval_id' =>
+                $approval->id,
+
+            'tenant_id' =>
+                $tenantId,
+
+            'stock_batch_id' =>
+                $batchId,
+
+            'approval_key' =>
+                $approval->approval_key,
+
+            'approval_method' =>
+                $approval->approval_method,
+
+            'approved_unit_cost' =>
+                (float) $approval
+                    ->approved_unit_cost,
+
+            'source_file_sha256' =>
+                $sourceFileHash,
+
+            'selling_price_used' =>
+                (bool) (
+                    $evidence[
+                        'selling_price_used'
+                    ] ?? false
+                ),
+
+            'expected_selling_price' =>
+                $evidence[
+                    'selling_price_snapshot'
+                ] ?? null,
+
+            'derivation_divisor' =>
+                $evidence[
+                    'derivation_divisor'
+                ] ?? null,
+
+            'derivation_formula' =>
+                $evidence[
+                    'derivation_formula'
+                ] ?? null,
+
+            'raw_row' =>
+                $row,
+        ];
+    }
     public function validateRow(
         array $row,
         string $sourceFileHash,

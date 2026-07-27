@@ -273,8 +273,17 @@ class FinanceInventoryCostApprovalApply extends Command
 
         foreach ($rows as $row) {
             try {
+                $idempotentRow =
+                    $service
+                        ->exactFileIdempotentRow(
+                            $row,
+                            $fileHash,
+                            $tenantId,
+                        );
+
                 $validatedRows[] =
-                    $service->validateRow(
+                    $idempotentRow
+                    ?? $service->validateRow(
                         $row,
                         $fileHash,
                         $tenantId,
@@ -395,18 +404,18 @@ class FinanceInventoryCostApprovalApply extends Command
                 &$applied,
             ): void {
                 foreach ($approvalRows as $row) {
+                    if (
+                        $row['idempotent']
+                        ?? false
+                    ) {
+                        continue;
+                    }
+
                     $service->applyValidated(
                         $row
                     );
 
-                    if (
-                        ! (
-                            $row['idempotent']
-                            ?? false
-                        )
-                    ) {
-                        $applied++;
-                    }
+                    $applied++;
                 }
             }
         );
@@ -420,7 +429,12 @@ class FinanceInventoryCostApprovalApply extends Command
         );
 
         $this->line(
-            'Database writes: YES'
+            'Database writes: '
+            . (
+                $applied > 0
+                    ? 'YES'
+                    : 'NO'
+            )
         );
 
         return self::SUCCESS;

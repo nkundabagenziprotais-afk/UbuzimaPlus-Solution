@@ -214,6 +214,234 @@ class PharmacoFinanceInventoryCostApprovalTest extends TestCase
         );
     }
 
+    public function test_generated_timestamp_file_reapplication_is_idempotent(): void
+    {
+        $batch = $this->prepareUnresolvedBatch();
+
+        $expectedUpdatedAt =
+            $batch->fresh()
+                ->updated_at
+                ?->toISOString();
+
+        $this->assertNotNull(
+            $expectedUpdatedAt
+        );
+
+        $file = $this->approvalCsv(
+            $batch,
+            [
+                'expected_batch_updated_at' =>
+                    $expectedUpdatedAt,
+            ]
+        );
+
+        $hash = hash_file(
+            'sha256',
+            $file
+        );
+
+        $arguments = [
+            'file' => $file,
+            '--tenant_id' => 1,
+            '--cutover_date' =>
+                '2026-08-01',
+            '--confirm-sha256' =>
+                $hash,
+            '--apply' => true,
+        ];
+
+        $this->assertSame(
+            0,
+            Artisan::call(
+                'finance:inventory-cost-approvals:apply',
+                $arguments
+            )
+        );
+
+        $approval =
+            FinanceInventoryCostApproval::query()
+                ->firstOrFail();
+
+        $approvalId = $approval->id;
+
+        $batchUpdatedAtAfterFirstApply =
+            $batch->fresh()
+                ->updated_at
+                ?->toISOString();
+
+        $this->assertSame(
+            0,
+            Artisan::call(
+                'finance:inventory-cost-approvals:apply',
+                $arguments
+            )
+        );
+
+        $commandOutput =
+            Artisan::output();
+
+        $this->assertStringContainsString(
+            'Idempotent rows: 1',
+            $commandOutput
+        );
+
+        $this->assertStringContainsString(
+            'New approvals applied: 0',
+            $commandOutput
+        );
+
+        $this->assertStringContainsString(
+            'Database writes: NO',
+            $commandOutput
+        );
+
+        $this->assertDatabaseCount(
+            'finance_inventory_cost_approvals',
+            1
+        );
+
+        $this->assertSame(
+            $approvalId,
+            FinanceInventoryCostApproval::query()
+                ->firstOrFail()
+                ->id
+        );
+
+        $this->assertSame(
+            $batchUpdatedAtAfterFirstApply,
+            $batch->fresh()
+                ->updated_at
+                ?->toISOString()
+        );
+    }
+
+    public function test_different_file_does_not_bypass_stale_timestamp_guard(): void
+    {
+        $batch = $this->prepareUnresolvedBatch();
+
+        $expectedUpdatedAt =
+            $batch->fresh()
+                ->updated_at
+                ?->toISOString();
+
+        $this->assertNotNull(
+            $expectedUpdatedAt
+        );
+
+        $firstFile = $this->approvalCsv(
+            $batch,
+            [
+                'expected_batch_updated_at' =>
+                    $expectedUpdatedAt,
+
+                'source_reference' =>
+                    'IDEMPOTENCY-EXACT-FILE-001',
+            ]
+        );
+
+        $firstHash = hash_file(
+            'sha256',
+            $firstFile
+        );
+
+        $this->assertSame(
+            0,
+            Artisan::call(
+                'finance:inventory-cost-approvals:apply',
+                [
+                    'file' =>
+                        $firstFile,
+
+                    '--tenant_id' =>
+                        1,
+
+                    '--cutover_date' =>
+                        '2026-08-01',
+
+                    '--confirm-sha256' =>
+                        $firstHash,
+
+                    '--apply' =>
+                        true,
+                ]
+            )
+        );
+
+        DB::table(
+            'stock_batches'
+        )
+            ->where(
+                'id',
+                $batch->id
+            )
+            ->update([
+                'updated_at' =>
+                    now()->addMinutes(5),
+            ]);
+
+        $this->assertNotSame(
+            $expectedUpdatedAt,
+            $batch->fresh()
+                ->updated_at
+                ?->toISOString()
+        );
+        $differentFile = $this->approvalCsv(
+            $batch,
+            [
+                'expected_batch_updated_at' =>
+                    $expectedUpdatedAt,
+
+                'source_reference' =>
+                    'IDEMPOTENCY-DIFFERENT-FILE-002',
+
+                'approval_notes' =>
+                    'A different reviewed file must not bypass stale-state validation.',
+            ]
+        );
+
+        $this->assertNotSame(
+            $firstHash,
+            hash_file(
+                'sha256',
+                $differentFile
+            )
+        );
+
+        $this->assertSame(
+            1,
+            Artisan::call(
+                'finance:inventory-cost-approvals:apply',
+                [
+                    'file' =>
+                        $differentFile,
+
+                    '--tenant_id' =>
+                        1,
+
+                    '--cutover_date' =>
+                        '2026-08-01',
+                ]
+            )
+        );
+
+        $commandOutput =
+            Artisan::output();
+
+        $this->assertStringContainsString(
+            'changed after template generation',
+            $commandOutput
+        );
+
+        $this->assertStringContainsString(
+            'Database writes: NO',
+            $commandOutput
+        );
+
+        $this->assertDatabaseCount(
+            'finance_inventory_cost_approvals',
+            1
+        );
+    }
     public function test_selling_price_cost_basis_is_rejected(): void
     {
         $batch = $this->prepareUnresolvedBatch();
