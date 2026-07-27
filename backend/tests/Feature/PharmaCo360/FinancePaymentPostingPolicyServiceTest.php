@@ -174,6 +174,62 @@ final class FinancePaymentPostingPolicyServiceTest extends TestCase
         }
     }
 
+
+    public function test_classifies_historical_payment_cohort_without_attempt_writes(): void
+    {
+        $this->createPolicy(
+            tenantId: 1,
+            paymentId: 11,
+            action:
+                FinancePaymentPostingPolicyService::ACTION_DO_NOT_BACKFILL
+        );
+
+        $this->createPolicy(
+            tenantId: 1,
+            paymentId: 10,
+            action:
+                FinancePaymentPostingPolicyService::ACTION_DEFER_REVIEW
+        );
+
+        $classified = app(
+            FinancePaymentPostingPolicyService::class
+        )->classifyPayments([
+            (object) [
+                'tenant_id' => 1,
+                'id' => 11,
+            ],
+            (object) [
+                'tenant_id' => 1,
+                'id' => 10,
+            ],
+            (object) [
+                'tenant_id' => 1,
+                'id' => 12,
+            ],
+        ]);
+
+        self::assertSame(
+            [12],
+            $classified['allowed']
+        );
+
+        self::assertSame(
+            [11],
+            $classified['blocked']
+        );
+
+        self::assertSame(
+            [10],
+            $classified['deferred']
+        );
+
+        self::assertSame(
+            0,
+            FinancePaymentPostingPolicyAttempt::query()
+                ->count()
+        );
+    }
+
     private function createPolicy(
         int $tenantId,
         int $paymentId,

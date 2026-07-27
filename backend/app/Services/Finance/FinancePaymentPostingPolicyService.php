@@ -8,6 +8,7 @@ use App\Exceptions\Finance\FinancePaymentPostingBlockedException;
 use App\Models\FinancePaymentPostingPolicy;
 use App\Models\FinancePaymentPostingPolicyAttempt;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class FinancePaymentPostingPolicyService
@@ -105,6 +106,77 @@ final class FinancePaymentPostingPolicyService
                     'Unknown active Finance payment-posting policy action.'
                 ),
         };
+    }
+
+
+    /**
+     * UBUZIMA_FINANCE_POLICY_CLASSIFICATION_V3D2B
+     *
+     * Classify historical payment candidates without recording an
+     * attempted posting. This is suitable for dry-run and reconciliation.
+     *
+     * @return array{
+     *     allowed:array<int,int>,
+     *     blocked:array<int,int>,
+     *     deferred:array<int,int>
+     * }
+     */
+    public function classifyPayments(
+        iterable $payments
+    ): array {
+        $classified = [
+            'allowed' => [],
+            'blocked' => [],
+            'deferred' => [],
+        ];
+
+        foreach ($payments as $payment) {
+            $tenantId = (int) data_get(
+                $payment,
+                'tenant_id'
+            );
+
+            $paymentId = (int) data_get(
+                $payment,
+                'id'
+            );
+
+            if (
+                $tenantId <= 0
+                || $paymentId <= 0
+            ) {
+                throw new InvalidArgumentException(
+                    'Historical payment classification requires positive tenant and payment IDs.'
+                );
+            }
+
+            $decision = $this->decisionFor(
+                $tenantId,
+                'payment',
+                $paymentId
+            );
+
+            match ($decision['decision']) {
+                self::DECISION_ALLOW =>
+                    $classified['allowed'][] =
+                        $paymentId,
+
+                self::DECISION_BLOCK =>
+                    $classified['blocked'][] =
+                        $paymentId,
+
+                self::DECISION_DEFER =>
+                    $classified['deferred'][] =
+                        $paymentId,
+
+                default =>
+                    throw new RuntimeException(
+                        'Unknown Finance payment policy decision.'
+                    ),
+            };
+        }
+
+        return $classified;
     }
 
     public function assertBackfillAllowed(

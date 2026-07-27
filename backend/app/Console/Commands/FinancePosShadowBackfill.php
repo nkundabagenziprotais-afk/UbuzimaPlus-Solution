@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\FinanceJournalEntry;
 use App\Models\FinancePostingLog;
+use App\Exceptions\Finance\FinancePaymentPostingBlockedException;
 use App\Models\PharmacoPayment;
+use App\Services\Finance\FinancePaymentPostingPolicyService;
 use App\Services\Finance\PharmacoPosPaymentShadowPostingService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -24,13 +26,37 @@ class FinancePosShadowBackfill extends Command
 
     protected $description = 'Backfill missing Finance shadow postings for completed POS payments. Dry-run by default.';
 
-    public function handle(PharmacoPosPaymentShadowPostingService $postingService): int
-    {
+    public function handle(
+        PharmacoPosPaymentShadowPostingService $postingService,
+        FinancePaymentPostingPolicyService $policyService
+    ): int {
         if (! $this->requiredTablesExist()) {
             $this->error('Required POS or Finance tables do not exist.');
 
             return self::FAILURE;
         }
+
+        if (
+            ! Schema::hasTable(
+                'finance_payment_posting_policies'
+            )
+            || ! Schema::hasTable(
+                'finance_payment_posting_policy_attempts'
+            )
+        ) {
+            $this->error(
+                'Durable Finance payment-policy tables do not exist.'
+            );
+
+            return self::FAILURE;
+        }
+
+        /*
+         * UBUZIMA_FINANCE_BACKFILL_POLICY_GUARD_V3D2B
+         *
+         * Dry-run classification is read-only. Execute mode records a
+         * durable blocked/deferred attempt before any Finance posting.
+         */
 
         $execute = (bool) $this->option('execute');
         $limit = max(1, min((int) $this->option('limit'), 5000));
@@ -53,6 +79,8 @@ class FinancePosShadowBackfill extends Command
 
         $posted = 0;
         $skipped = 0;
+        $policyBlocked = 0;
+        $policyDeferred = 0;
         $quarantined = 0;
         $failed = 0;
 
@@ -64,6 +92,39 @@ class FinancePosShadowBackfill extends Command
             }
 
             if (! $execute) {
+                $policyDecision =
+                    $policyService->decisionFor(
+                        (int) $payment->tenant_id,
+                        'payment',
+                        (int) $payment->id
+                    );
+
+                if (
+                    $policyDecision['decision']
+                    === FinancePaymentPostingPolicyService::DECISION_BLOCK
+                ) {
+                    $policyBlocked++;
+
+                    $this->warn(
+                        "POLICY-BLOCKED payment {$payment->id}: owner-approved no-backfill policy."
+                    );
+
+                    continue;
+                }
+
+                if (
+                    $policyDecision['decision']
+                    === FinancePaymentPostingPolicyService::DECISION_DEFER
+                ) {
+                    $policyDeferred++;
+
+                    $this->warn(
+                        "POLICY-DEFERRED payment {$payment->id}: human evidence review required."
+                    );
+
+                    continue;
+                }
+
                 $this->line(sprintf(
                     'DRY-RUN payment=%s date=%s method=%s amount=%s sale=%s',
                     $payment->id,
@@ -78,7 +139,30 @@ class FinancePosShadowBackfill extends Command
             }
 
             try {
-                $result = $postingService->postPayment($payment, $payment->sale);
+                $policyService->assertBackfillAllowed(
+                    (int) $payment->tenant_id,
+                    'payment',
+                    (int) $payment->id,
+                    'finance:pos-shadow-backfill',
+                    null,
+                    null,
+                    [
+                        'execute' => true,
+                        'tenant_filter' =>
+                            $this->option('tenant_id'),
+                        'branch_filter' =>
+                            $this->option('branch_id'),
+                        'from' =>
+                            $this->option('from'),
+                        'to' =>
+                            $this->option('to'),
+                    ]
+                );
+
+                $result = $postingService->postPayment(
+                    $payment,
+                    $payment->sale
+                );
 
                 if ($result instanceof FinanceJournalEntry) {
                     $posted++;
@@ -100,6 +184,27 @@ class FinancePosShadowBackfill extends Command
 
                 $failed++;
                 $this->error("Failed payment {$payment->id}: unknown posting result.");
+            } catch (
+                FinancePaymentPostingBlockedException $exception
+            ) {
+                if (
+                    $exception->decision
+                    === FinancePaymentPostingPolicyService::DECISION_DEFER
+                ) {
+                    $policyDeferred++;
+
+                    $this->warn(
+                        "POLICY-DEFERRED payment {$payment->id}: {$exception->getMessage()}"
+                    );
+                } else {
+                    $policyBlocked++;
+
+                    $this->warn(
+                        "POLICY-BLOCKED payment {$payment->id}: {$exception->getMessage()}"
+                    );
+                }
+
+                continue;
             } catch (Throwable $exception) {
                 $failed++;
                 report($exception);
@@ -112,6 +217,14 @@ class FinancePosShadowBackfill extends Command
         $this->line('Found: ' . $payments->count());
         $this->line('Posted: ' . $posted);
         $this->line('Skipped: ' . $skipped);
+        $this->line(
+            'Policy blocked: '
+            . $policyBlocked
+        );
+        $this->line(
+            'Policy deferred: '
+            . $policyDeferred
+        );
         $this->line('Quarantined: ' . $quarantined);
         $this->line('Failed: ' . $failed);
 
