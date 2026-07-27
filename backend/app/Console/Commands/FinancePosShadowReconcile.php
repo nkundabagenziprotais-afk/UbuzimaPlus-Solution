@@ -229,7 +229,11 @@ class FinancePosShadowReconcile extends Command
         }
 
         $this->info(
-            'POS payments and Finance shadow postings reconcile after approved policy classification.'
+            'POS payments and Finance shadow postings reconcile.'
+        );
+
+        $this->line(
+            'Approved payment-policy classification applied.'
         );
 
         return self::SUCCESS;
