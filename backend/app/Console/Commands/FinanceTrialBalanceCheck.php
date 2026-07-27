@@ -2,12 +2,19 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Finance\FinanceLedgerReportingScope;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class FinanceTrialBalanceCheck extends Command
 {
+    public function __construct(
+        private readonly FinanceLedgerReportingScope $reportingScope,
+    ) {
+        parent::__construct();
+    }
+
     protected $signature = 'finance:trial-balance-check
         {--tenant_id= : Tenant ID to validate}
         {--from= : Business date from, YYYY-MM-DD}
@@ -47,13 +54,40 @@ class FinanceTrialBalanceCheck extends Command
             $query->where('lines.branch_id', (int) $branchId);
         }
 
-        $statuses = ['posted'];
+        $tenantId = $tenantId
+            ? (int) $tenantId
+            : null;
 
         if ($this->option('include-shadow')) {
-            $statuses[] = 'shadow_posted';
-        }
+            $statuses = [
+                'posted',
+                'shadow_posted',
+            ];
 
-        $query->whereIn('entries.status', $statuses);
+            $query->whereIn(
+                'entries.status',
+                $statuses
+            );
+
+            $reportingBasis =
+                'shadow_diagnostic';
+        } else {
+            $statuses = [
+                'posted',
+            ];
+
+            $this->reportingScope
+                ->applyAuthoritative(
+                    query: $query,
+                    tenantId: $tenantId,
+                    entriesAlias: 'entries',
+                    asOfDate: $to
+                        ?: now()->toDateString(),
+                );
+
+            $reportingBasis =
+                'authoritative';
+        }
 
         $totals = $query
             ->selectRaw('COALESCE(SUM(lines.debit), 0) as total_debit')
@@ -70,6 +104,17 @@ class FinanceTrialBalanceCheck extends Command
         $this->line('Business Date To: ' . ($to ?: 'end'));
         $this->line('Branch ID: ' . ($branchId ?: 'all'));
         $this->line('Statuses: ' . implode(', ', $statuses));
+        $this->line('Reporting Basis: ' . $reportingBasis);
+        $this->line(
+            'Reporting Exclusion Policy: '
+            . (
+                Schema::hasTable(
+                    'finance_reporting_exclusions'
+                )
+                    ? 'available'
+                    : 'not_migrated'
+            )
+        );
         $this->line('Total Debit: ' . number_format($totalDebit, 4, '.', ''));
         $this->line('Total Credit: ' . number_format($totalCredit, 4, '.', ''));
         $this->line('Difference: ' . number_format($difference, 4, '.', ''));
