@@ -27,3 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*'),
         );
     })->create();
+
+
+if (isset($app) && method_exists($app, 'middleware')) {
+    $app->middleware([
+        \App\Http\Middleware\NormalizeHistoricalPosDate::class,
+    ]);
+}
