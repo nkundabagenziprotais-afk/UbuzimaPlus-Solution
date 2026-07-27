@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Finance\FinancePaymentPostingPolicyService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -17,13 +18,33 @@ class FinancePosShadowReconcile extends Command
 
     protected $description = 'Compare completed POS payments against Finance shadow payment postings.';
 
-    public function handle(): int
-    {
+    public function handle(
+        FinancePaymentPostingPolicyService $policyService
+    ): int {
         if (! $this->requiredTablesExist()) {
             $this->error('Required POS or Finance tables do not exist.');
 
             return self::FAILURE;
         }
+
+        if (
+            ! Schema::hasTable(
+                'finance_payment_posting_policies'
+            )
+        ) {
+            $this->error(
+                'Durable Finance payment-policy table does not exist.'
+            );
+
+            return self::FAILURE;
+        }
+
+        /*
+         * UBUZIMA_FINANCE_RECONCILIATION_POLICY_CLASSIFICATION_V3D2B
+         *
+         * Reconciliation is read-only. It classifies approved exclusions
+         * without recording a posting attempt.
+         */
 
         $tenantId = $this->option('tenant_id');
         $from = $this->option('from');
@@ -40,6 +61,67 @@ class FinancePosShadowReconcile extends Command
         $missingPaymentIds = $this->missingFinancePostingPaymentIds($tenantId, $from, $to, $branchId);
         $orphanSourceIds = $this->orphanFinancePostingSourceIds($tenantId, $from, $to, $branchId);
 
+        $missingPaymentRows = DB::table(
+            'pharmaco_payments'
+        )
+            ->whereIn(
+                'id',
+                $missingPaymentIds->all()
+            )
+            ->get([
+                'id',
+                'tenant_id',
+                'amount',
+                'payment_method',
+            ]);
+
+        $policyClassification =
+            $policyService->classifyPayments(
+                $missingPaymentRows
+            );
+
+        $actionableMissingPaymentIds = collect(
+            $policyClassification['allowed']
+        );
+
+        $policyBlockedPaymentIds = collect(
+            $policyClassification['blocked']
+        );
+
+        $policyDeferredPaymentIds = collect(
+            $policyClassification['deferred']
+        );
+
+        $policyExcludedPaymentIds =
+            $policyBlockedPaymentIds
+                ->merge(
+                    $policyDeferredPaymentIds
+                )
+                ->unique()
+                ->values();
+
+        $policyExcludedAmount = round(
+            (float) $missingPaymentRows
+                ->whereIn(
+                    'id',
+                    $policyExcludedPaymentIds
+                )
+                ->sum('amount'),
+            4
+        );
+
+        $actionablePosTotal = round(
+            $posTotal
+            - $policyExcludedAmount,
+            4
+        );
+
+        $actionableDifference = round(
+            $actionablePosTotal
+            - $financeTotal,
+            4
+        );
+
         $this->line('Finance POS Shadow Reconciliation');
         $this->line('Tenant ID: ' . ($tenantId ?: 'all'));
         $this->line('Business Date From: ' . ($from ?: 'beginning'));
@@ -47,12 +129,54 @@ class FinancePosShadowReconcile extends Command
         $this->line('Branch ID: ' . ($branchId ?: 'all'));
         $this->line('POS Completed Payments Total: ' . number_format($posTotal, 4, '.', ''));
         $this->line('Finance Shadow Payment Debit Total: ' . number_format($financeTotal, 4, '.', ''));
-        $this->line('Difference: ' . number_format($difference, 4, '.', ''));
-        $this->line('Missing Finance Postings: ' . $missingPaymentIds->count());
-        $this->line('Orphan Finance Shadow Postings: ' . $orphanSourceIds->count());
+        $this->line(
+            'Raw Difference: '
+            . number_format(
+                $difference,
+                4,
+                '.',
+                ''
+            )
+        );
+        $this->line(
+            'Policy-excluded Missing Payment Total: '
+            . number_format(
+                $policyExcludedAmount,
+                4,
+                '.',
+                ''
+            )
+        );
+        $this->line(
+            'Actionable Difference: '
+            . number_format(
+                $actionableDifference,
+                4,
+                '.',
+                ''
+            )
+        );
+        $this->line(
+            'Actionable Missing Finance Postings: '
+            . $actionableMissingPaymentIds->count()
+        );
+        $this->line(
+            'Policy-blocked Missing Payments: '
+            . $policyBlockedPaymentIds->count()
+        );
+        $this->line(
+            'Policy-deferred Missing Payments: '
+            . $policyDeferredPaymentIds->count()
+        );
+        $this->line(
+            'Orphan Finance Shadow Postings: '
+            . $orphanSourceIds->count()
+        );
 
         $this->line('');
-        $this->line('By Payment Method:');
+        $this->line(
+            'By Payment Method (raw before policy exclusions):'
+        );
 
         $methods = $posTotals->pluck('payment_method')
             ->merge($financeTotals->pluck('payment_method'))
@@ -76,17 +200,41 @@ class FinancePosShadowReconcile extends Command
 
         if ($this->option('show-details')) {
             $this->line('');
-            $this->line('Missing Finance Payment IDs: ' . $missingPaymentIds->implode(', '));
-            $this->line('Orphan Finance Source IDs: ' . $orphanSourceIds->implode(', '));
+            $this->line(
+                'Actionable Missing Finance Payment IDs: '
+                . $actionableMissingPaymentIds->implode(', ')
+            );
+            $this->line(
+                'Policy-blocked Payment IDs: '
+                . $policyBlockedPaymentIds->implode(', ')
+            );
+            $this->line(
+                'Policy-deferred Payment IDs: '
+                . $policyDeferredPaymentIds->implode(', ')
+            );
+            $this->line(
+                'Orphan Finance Source IDs: '
+                . $orphanSourceIds->implode(', ')
+            );
         }
 
-        if ($difference !== 0.0 || $missingPaymentIds->isNotEmpty() || $orphanSourceIds->isNotEmpty()) {
+        if (
+            $actionableDifference !== 0.0
+            || $actionableMissingPaymentIds->isNotEmpty()
+            || $orphanSourceIds->isNotEmpty()
+        ) {
             $this->error('POS payments and Finance shadow postings do not reconcile.');
 
             return self::FAILURE;
         }
 
-        $this->info('POS payments and Finance shadow postings reconcile.');
+        $this->info(
+            'POS payments and Finance shadow postings reconcile.'
+        );
+
+        $this->line(
+            'Approved payment-policy classification applied.'
+        );
 
         return self::SUCCESS;
     }
