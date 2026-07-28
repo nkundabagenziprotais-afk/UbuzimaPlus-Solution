@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceMembershipController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceClaimController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InsuranceReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductInventoryController;
+use App\Http\Controllers\Api\V1\PharmaCo360\TaxRegistryController;
 use App\Http\Controllers\Api\V1\PharmaCo360\ProductReconciliationController;
 use App\Http\Controllers\Api\V1\PharmaCo360\InventoryIntelligenceController;
 use App\Http\Controllers\Api\V1\PharmaCo360\TrendAnalysisController;
@@ -1007,6 +1008,27 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
     )->middleware([
         'permission:pharmaco.product_master.view',
         'tenant.module:pharmaco.inventory',
+    ]);
+
+    Route::get(
+        '/tax/registry/summary',
+        [TaxRegistryController::class, 'summary']
+    )->middleware([
+        'permission:pharmaco.tax.registry.view',
+    ]);
+
+    Route::get(
+        '/tax/registry/editions',
+        [TaxRegistryController::class, 'editions']
+    )->middleware([
+        'permission:pharmaco.tax.registry.view',
+    ]);
+
+    Route::get(
+        '/tax/registry/search',
+        [TaxRegistryController::class, 'search']
+    )->middleware([
+        'permission:pharmaco.tax.registry.view',
     ]);
 
 
