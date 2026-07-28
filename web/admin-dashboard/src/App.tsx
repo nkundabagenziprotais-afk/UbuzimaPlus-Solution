@@ -85,6 +85,7 @@ import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { FinanceOverviewRedesign } from './components/FinanceOverviewRedesign';
 import { ProfitLossWorkspace } from './components/ProfitLossWorkspace';
 import { CashFlowWorkspace } from './components/CashFlowWorkspace';
+import { FinanceSalesWorkspace } from './components/FinanceSalesWorkspace';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
@@ -260,7 +261,8 @@ type FinanceWorkspaceKey =
   | 'receivable-register'
   | 'collection'
   | 'financial-statements'
-  | 'cash-flow';
+  | 'cash-flow'
+  | 'sales';
 type AdhocReportWorkspaceKey =
   | 'overview'
   | 'operation-alerts'
@@ -653,6 +655,8 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'finance-statement', label: 'Profit & Loss', target: 'financial-statements' },
 
     { key: 'finance-cash-flow', label: 'Cash Flow', target: 'cash-flow' },
+
+    { key: 'finance-sales', label: 'Sales', target: 'sales' },
   ],
   reports: [
     { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
@@ -3145,6 +3149,8 @@ const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; de
   { key: 'financial-statements', label: 'Profit & Loss', description: 'Income, expenses, margins, trends, comparisons, and statement review' },
 
   { key: 'cash-flow', label: 'Cash Flow', description: 'Cash inflows, outflows, balances, trends, comparisons, and activity review' },
+
+  { key: 'sales', label: 'Sales', description: 'Live Sales performance, revenue trends, returns, and Business Date payment balancing' },
 ];
 
 const adhocReportWorkspaceItems: Array<{ key: AdhocReportWorkspaceKey; label: string; description: string }> = [
@@ -9441,7 +9447,11 @@ async function confirmTransaction() {
 
     return (
       <section className="section-page dedicated-module-page">
-        {activeFinanceWorkspace !== 'overview' && (
+        {activeFinanceWorkspace !== 'overview' && ![
+  'financial-statements',
+  'cash-flow',
+  'sales',
+].includes(activeFinanceWorkspace) && (
         <DedicatedModuleHeader
           eyebrow="Finance and control"
           title="Finance Workspace"
@@ -9549,6 +9559,15 @@ async function confirmTransaction() {
 
           {activeFinanceWorkspace === 'cash-flow' && (
             <CashFlowWorkspace
+              onBack={() => setActiveFinanceWorkspace('overview')}
+              onMainDashboard={() => navigateToSection('overview')}
+            />
+          )}
+
+          {activeFinanceWorkspace === 'sales' && (
+            <FinanceSalesWorkspace
+              token={session!.token}
+              profile={profile!}
               onBack={() => setActiveFinanceWorkspace('overview')}
               onMainDashboard={() => navigateToSection('overview')}
             />
