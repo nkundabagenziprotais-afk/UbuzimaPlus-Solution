@@ -82,6 +82,7 @@ import {
   GeneralItemsManagementWorkspace,
 } from './components/GeneralItemsManagementWorkspace';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
+import { FinanceOverviewRedesign } from './components/FinanceOverviewRedesign';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
@@ -9433,6 +9434,7 @@ async function confirmTransaction() {
 
     return (
       <section className="section-page dedicated-module-page">
+        {activeFinanceWorkspace !== 'overview' && (
         <DedicatedModuleHeader
           eyebrow="Finance and control"
           title="Finance Workspace"
@@ -9451,20 +9453,56 @@ async function confirmTransaction() {
             setActiveFinanceWorkspace('overview');
           }}
         />
-        {activeFinanceWorkspace === 'overview' && (
-          <ModuleLandingCards
-            moduleName="Finance"
-            items={financeWorkspaceItems.filter((item) => item.key !== 'overview')}
-            activeKey={activeFinanceWorkspace}
-            onOpen={setActiveFinanceWorkspace}
-          />
         )}
-        <div className="module-section-stage">
+        <div
+          className="module-section-stage"
+          data-finance-module-stage="active"
+          tabIndex={-1}
+        >
           {activeFinanceWorkspace === 'overview' && (
-            <FocusRegisterPreview
-              title="Finance Overview"
-              description="Cash, MoMo, card, credit, receivables, payables, and exception status."
-              rows={financeRows}
+            <FinanceOverviewRedesign
+              token={session!.token}
+              profile={profile!}
+              financeModules={financeWorkspaceItems.filter(
+                (item) => item.key !== 'overview',
+              )}
+              onOpenFinanceModule={(key) => {
+                const destination = financeWorkspaceItems.find(
+                  (item) => item.key === key,
+                );
+
+                if (
+                  !destination
+                  || destination.key === activeFinanceWorkspace
+                ) {
+                  return;
+                }
+
+                setActiveFinanceWorkspace(destination.key);
+
+                window.requestAnimationFrame(() => {
+                  window.requestAnimationFrame(() => {
+                    const stage =
+                      document.querySelector<HTMLElement>(
+                        '[data-finance-module-stage="active"]',
+                      );
+
+                    if (!stage) {
+                      return;
+                    }
+
+                    stage.scrollIntoView({
+                      block: 'start',
+                      inline: 'nearest',
+                      behavior: 'auto',
+                    });
+
+                    stage.focus({
+                      preventScroll: true,
+                    });
+                  });
+                });
+              }}
             />
           )}
 
