@@ -2,34 +2,34 @@ import {
   useMemo,
   useState,
 } from 'react';
-import './ProfitLossWorkspace.css';
+import './CashFlowWorkspace.css';
 
-type ProfitLossWorkspaceProps = {
+type CashFlowWorkspaceProps = {
   onBack: () => void;
   onMainDashboard: () => void;
 };
 
-type ProfitLossAmount = number | null;
+type CashFlowAmount = number | null;
 
-type ProfitLossStatementRow = {
+type CashFlowStatementRow = {
   label: string;
-  section?: 'income' | 'expenses';
+  section?: 'operating' | 'investing' | 'financing';
   emphasis?: 'positive' | 'negative' | 'strong';
-  current: ProfitLossAmount;
-  comparison: ProfitLossAmount;
-  change: ProfitLossAmount;
+  current: CashFlowAmount;
+  comparison: CashFlowAmount;
+  change: CashFlowAmount;
   changePercent: number | null;
 };
 
 function localIsoDate(
   date: Date,
 ): string {
-  const timezoneOffset =
+  const offset =
     date.getTimezoneOffset();
 
   return new Date(
     date.getTime()
-    - timezoneOffset * 60_000,
+    - offset * 60_000,
   )
     .toISOString()
     .slice(0, 10);
@@ -72,7 +72,7 @@ function previousMonthRange() {
 }
 
 function formatMoney(
-  value: ProfitLossAmount,
+  value: CashFlowAmount,
 ): string {
   if (value === null) {
     return '—';
@@ -105,10 +105,6 @@ function readableDate(
     return '—';
   }
 
-  const date = new Date(
-    `${value}T00:00:00`,
-  );
-
   return new Intl.DateTimeFormat(
     'en-GB',
     {
@@ -116,7 +112,11 @@ function readableDate(
       month: 'short',
       year: 'numeric',
     },
-  ).format(date);
+  ).format(
+    new Date(
+      `${value}T00:00:00`,
+    ),
+  );
 }
 
 function EmptyChart({
@@ -127,7 +127,7 @@ function EmptyChart({
   return (
     <div
       aria-label={`${label}: no data available`}
-      className="profit-loss-v1__empty-chart"
+      className="cash-flow-v1__empty-chart"
       data-chart-state="empty"
     >
       <svg
@@ -167,31 +167,45 @@ function EmptyChart({
   );
 }
 
-const EMPTY_STATEMENT: ProfitLossStatementRow[] = [
+const EMPTY_STATEMENT: CashFlowStatementRow[] = [
   {
-    label: 'INCOME',
-    section: 'income',
+    label: 'OPERATING ACTIVITIES',
+    section: 'operating',
     current: null,
     comparison: null,
     change: null,
     changePercent: null,
   },
   {
-    label: 'Sales Revenue',
+    label: 'Cash Received from Customers',
     current: null,
     comparison: null,
     change: null,
     changePercent: null,
   },
   {
-    label: 'Other Income',
+    label: 'Cash Paid to Suppliers & Vendors',
     current: null,
     comparison: null,
     change: null,
     changePercent: null,
   },
   {
-    label: 'Total Income',
+    label: 'Cash Paid to Employees',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Other Operating Cash Outflows',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Net Cash from Operating Activities',
     emphasis: 'positive',
     current: null,
     comparison: null,
@@ -199,57 +213,29 @@ const EMPTY_STATEMENT: ProfitLossStatementRow[] = [
     changePercent: null,
   },
   {
-    label: 'EXPENSES',
-    section: 'expenses',
+    label: 'INVESTING ACTIVITIES',
+    section: 'investing',
     current: null,
     comparison: null,
     change: null,
     changePercent: null,
   },
   {
-    label: 'Cost of Goods Sold',
+    label: 'Purchase of Equipment',
     current: null,
     comparison: null,
     change: null,
     changePercent: null,
   },
   {
-    label: 'Employee Expenses',
+    label: 'Proceeds from Sale of Assets',
     current: null,
     comparison: null,
     change: null,
     changePercent: null,
   },
   {
-    label: 'Rent & Utilities',
-    current: null,
-    comparison: null,
-    change: null,
-    changePercent: null,
-  },
-  {
-    label: 'Marketing Expenses',
-    current: null,
-    comparison: null,
-    change: null,
-    changePercent: null,
-  },
-  {
-    label: 'Administrative Expenses',
-    current: null,
-    comparison: null,
-    change: null,
-    changePercent: null,
-  },
-  {
-    label: 'Depreciation',
-    current: null,
-    comparison: null,
-    change: null,
-    changePercent: null,
-  },
-  {
-    label: 'Total Expenses',
+    label: 'Net Cash from Investing Activities',
     emphasis: 'negative',
     current: null,
     comparison: null,
@@ -257,7 +243,29 @@ const EMPTY_STATEMENT: ProfitLossStatementRow[] = [
     changePercent: null,
   },
   {
-    label: 'Net Profit',
+    label: 'FINANCING ACTIVITIES',
+    section: 'financing',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Proceeds from Loans',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Loan Repayments',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Net Cash from Financing Activities',
     emphasis: 'positive',
     current: null,
     comparison: null,
@@ -265,7 +273,39 @@ const EMPTY_STATEMENT: ProfitLossStatementRow[] = [
     changePercent: null,
   },
   {
-    label: 'Profit Margin',
+    label: 'Total Cash Inflows',
+    emphasis: 'positive',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Total Cash Outflows',
+    emphasis: 'negative',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Net Cash Flow',
+    emphasis: 'positive',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Opening Balance',
+    emphasis: 'strong',
+    current: null,
+    comparison: null,
+    change: null,
+    changePercent: null,
+  },
+  {
+    label: 'Closing Balance',
     emphasis: 'positive',
     current: null,
     comparison: null,
@@ -274,10 +314,10 @@ const EMPTY_STATEMENT: ProfitLossStatementRow[] = [
   },
 ];
 
-export function ProfitLossWorkspace({
+export function CashFlowWorkspace({
   onBack,
   onMainDashboard,
-}: ProfitLossWorkspaceProps) {
+}: CashFlowWorkspaceProps) {
   const initialCurrent =
     useMemo(
       currentMonthRange,
@@ -328,65 +368,60 @@ export function ProfitLossWorkspace({
     setFiltersOpen,
   ] = useState(false);
 
+  const metrics = [
+    {
+      label: 'Cash Inflow',
+      value: null,
+      icon: '↓',
+      tone: 'green',
+    },
+    {
+      label: 'Cash Outflow',
+      value: null,
+      icon: '↑',
+      tone: 'red',
+    },
+    {
+      label: 'Net Cash Flow',
+      value: null,
+      icon: '⌁',
+      tone: 'green',
+    },
+    {
+      label: 'Closing Balance',
+      value: null,
+      icon: '▣',
+      tone: 'green',
+    },
+  ];
+
   const currentPeriodLabel =
     `${readableDate(currentFrom)} – ${readableDate(currentTo)}`;
 
   const comparisonPeriodLabel =
     `${readableDate(comparisonFrom)} – ${readableDate(comparisonTo)}`;
 
-  const metrics = [
-    {
-      label: 'Total Income',
-      value: null,
-      comparison: null,
-      icon: '↗',
-      tone: 'green',
-    },
-    {
-      label: 'Total Expenses',
-      value: null,
-      comparison: null,
-      icon: '◷',
-      tone: 'red',
-    },
-    {
-      label: 'Net Profit',
-      value: null,
-      comparison: null,
-      icon: '◉',
-      tone: 'green',
-    },
-    {
-      label: 'Profit Margin',
-      value: null,
-      comparison: null,
-      icon: '%',
-      tone: 'blue',
-      percentage: true,
-    },
-  ] as const;
-
   return (
     <section
-      className="profit-loss-v1"
-      data-finance-workspace="profit-loss"
-      data-profit-loss-source="backend-contract-pending"
+      className="cash-flow-v1"
+      data-finance-workspace="cash-flow"
+      data-cash-flow-source="backend-contract-pending"
       data-empty-policy="no-fabricated-values"
     >
-      <header className="profit-loss-v1__header">
+      <header className="cash-flow-v1__header">
         <div>
           <span>
             Finance · Financial Statements
           </span>
 
-          <h1>Profit &amp; Loss</h1>
+          <h1>Cash Flow</h1>
 
           <p>
-            View your business profitability and performance summary.
+            Track money moving in and out of your business.
           </p>
         </div>
 
-        <div className="profit-loss-v1__header-actions">
+        <div className="cash-flow-v1__header-actions">
           <button
             className="navigation"
             onClick={onBack}
@@ -409,7 +444,7 @@ export function ProfitLossWorkspace({
 
           <button
             disabled
-            title="Export becomes available when Profit and Loss data is available."
+            title="Export becomes available when Cash Flow data is available."
             type="button"
           >
             <span aria-hidden="true">⇧</span>
@@ -432,7 +467,7 @@ export function ProfitLossWorkspace({
         </div>
       </header>
 
-      <div className="profit-loss-v1__period-bar">
+      <div className="cash-flow-v1__period-bar">
         <label>
           <span>Current period</span>
 
@@ -493,7 +528,7 @@ export function ProfitLossWorkspace({
           </div>
         </label>
 
-        <label className="profit-loss-v1__view-by">
+        <label className="cash-flow-v1__view-by">
           <span>View by</span>
 
           <select
@@ -504,40 +539,30 @@ export function ProfitLossWorkspace({
             }
             value={viewBy}
           >
-            <option value="monthly">
-              Monthly
-            </option>
-            <option value="weekly">
-              Weekly
-            </option>
-            <option value="quarterly">
-              Quarterly
-            </option>
-            <option value="yearly">
-              Yearly
-            </option>
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
           </select>
         </label>
       </div>
 
       {filtersOpen && (
-        <aside className="profit-loss-v1__filter-note">
-          <strong>
-            Profit &amp; Loss filters
-          </strong>
+        <aside className="cash-flow-v1__filter-note">
+          <strong>Cash Flow filters</strong>
 
           <span>
-            Date comparison and reporting frequency are active. Branch,
-            department and account filters will be connected when their
-            backend contract is available.
+            Date comparison and reporting frequency are active. Account,
+            payment-channel, branch and cash-activity filters will use
+            verified backend contracts when connected.
           </span>
         </aside>
       )}
 
-      <div className="profit-loss-v1__metrics">
+      <div className="cash-flow-v1__metrics">
         {metrics.map((metric) => (
           <article
-            className="profit-loss-v1__metric"
+            className="cash-flow-v1__metric"
             key={metric.label}
           >
             <header>
@@ -545,20 +570,14 @@ export function ProfitLossWorkspace({
 
               <i
                 aria-hidden="true"
-                className={`profit-loss-v1__metric-icon profit-loss-v1__metric-icon--${metric.tone}`}
+                className={`cash-flow-v1__metric-icon cash-flow-v1__metric-icon--${metric.tone}`}
               >
                 {metric.icon}
               </i>
             </header>
 
             <strong>
-              {metric.percentage
-                ? formatPercent(
-                    metric.value,
-                  )
-                : formatMoney(
-                    metric.value,
-                  )}
+              {formatMoney(metric.value)}
             </strong>
 
             <small>
@@ -568,55 +587,49 @@ export function ProfitLossWorkspace({
         ))}
       </div>
 
-      <div className="profit-loss-v1__charts">
-        <article className="profit-loss-v1__panel">
+      <div className="cash-flow-v1__charts">
+        <article className="cash-flow-v1__panel">
           <header>
-            <h2>
-              Income vs Expenses
-            </h2>
+            <h2>Cash Inflow vs Cash Outflow</h2>
           </header>
 
-          <div className="profit-loss-v1__legend">
+          <div className="cash-flow-v1__legend">
             <span>
               <i className="green" />
-              Income
+              Inflow
             </span>
 
             <span>
               <i className="red" />
-              Expenses
+              Outflow
             </span>
           </div>
 
-          <EmptyChart label="Income versus expenses" />
+          <EmptyChart label="Cash inflow versus cash outflow" />
         </article>
 
-        <article className="profit-loss-v1__panel">
+        <article className="cash-flow-v1__panel">
           <header>
-            <h2>
-              Net Profit Trend
-            </h2>
+            <h2>Net Cash Flow Trend</h2>
           </header>
 
-          <div className="profit-loss-v1__legend">
+          <div className="cash-flow-v1__legend">
             <span>
               <i className="green" />
-              Net Profit
+              Net Cash Flow
             </span>
           </div>
 
-          <EmptyChart label="Net profit trend" />
+          <EmptyChart label="Net cash flow trend" />
         </article>
       </div>
 
-      <article className="profit-loss-v1__panel profit-loss-v1__statement">
+      <article className="cash-flow-v1__panel cash-flow-v1__statement">
         <header>
-          <h2>
-            Profit &amp; Loss Statement
-          </h2>
+          <h2>Cash Flow Statement</h2>
         </header>
 
-        <div className="profit-loss-v1__table-scroll">
+        <div className="cash-flow-v1__table-scroll">
           <table>
             <thead>
               <tr>
@@ -634,7 +647,7 @@ export function ProfitLossWorkspace({
                   if (row.section) {
                     return (
                       <tr
-                        className={`profit-loss-v1__section-row profit-loss-v1__section-row--${row.section}`}
+                        className={`cash-flow-v1__section-row cash-flow-v1__section-row--${row.section}`}
                         key={row.label}
                       >
                         <td colSpan={5}>
@@ -646,11 +659,8 @@ export function ProfitLossWorkspace({
 
                   const className =
                     row.emphasis
-                      ? `profit-loss-v1__statement-row profit-loss-v1__statement-row--${row.emphasis}`
-                      : 'profit-loss-v1__statement-row';
-
-                  const isMargin =
-                    row.label === 'Profit Margin';
+                      ? `cash-flow-v1__statement-row cash-flow-v1__statement-row--${row.emphasis}`
+                      : 'cash-flow-v1__statement-row';
 
                   return (
                     <tr
@@ -658,42 +668,10 @@ export function ProfitLossWorkspace({
                       key={row.label}
                     >
                       <td>{row.label}</td>
-
-                      <td>
-                        {isMargin
-                          ? formatPercent(
-                              row.current,
-                            )
-                          : formatMoney(
-                              row.current,
-                            )}
-                      </td>
-
-                      <td>
-                        {isMargin
-                          ? formatPercent(
-                              row.comparison,
-                            )
-                          : formatMoney(
-                              row.comparison,
-                            )}
-                      </td>
-
-                      <td>
-                        {isMargin
-                          ? formatPercent(
-                              row.change,
-                            )
-                          : formatMoney(
-                              row.change,
-                            )}
-                      </td>
-
-                      <td>
-                        {formatPercent(
-                          row.changePercent,
-                        )}
-                      </td>
+                      <td>{formatMoney(row.current)}</td>
+                      <td>{formatMoney(row.comparison)}</td>
+                      <td>{formatMoney(row.change)}</td>
+                      <td>{formatPercent(row.changePercent)}</td>
                     </tr>
                   );
                 },
@@ -703,15 +681,16 @@ export function ProfitLossWorkspace({
         </div>
       </article>
 
-      <aside className="profit-loss-v1__insight">
+      <aside className="cash-flow-v1__insight">
         <div aria-hidden="true">↗</div>
 
         <section>
           <strong>Insight</strong>
 
           <p>
-            Profit and Loss insight will appear when both the current and
-            comparison periods contain complete income and expense data.
+            Cash Flow insight will appear after complete inflow, outflow,
+            opening-balance and closing-balance information is available
+            for both reporting periods.
           </p>
         </section>
       </aside>

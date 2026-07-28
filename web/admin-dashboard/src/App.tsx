@@ -84,6 +84,7 @@ import {
 import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { FinanceOverviewRedesign } from './components/FinanceOverviewRedesign';
 import { ProfitLossWorkspace } from './components/ProfitLossWorkspace';
+import { CashFlowWorkspace } from './components/CashFlowWorkspace';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
@@ -258,7 +259,8 @@ type FinanceWorkspaceKey =
   | 'credits-receivables'
   | 'receivable-register'
   | 'collection'
-  | 'financial-statements';
+  | 'financial-statements'
+  | 'cash-flow';
 type AdhocReportWorkspaceKey =
   | 'overview'
   | 'operation-alerts'
@@ -649,6 +651,8 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'finance-receivable-register', label: 'Receivable Register', target: 'receivable-register' },
     { key: 'finance-collection', label: 'Collection', target: 'collection' },
     { key: 'finance-statement', label: 'Profit & Loss', target: 'financial-statements' },
+
+    { key: 'finance-cash-flow', label: 'Cash Flow', target: 'cash-flow' },
   ],
   reports: [
     { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
@@ -3139,6 +3143,8 @@ const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; de
   { key: 'receivable-register', label: 'Receivable Register', description: '15-row register with bulk and export tools' },
   { key: 'collection', label: 'Collection', description: 'Payment collection and selected detail' },
   { key: 'financial-statements', label: 'Profit & Loss', description: 'Income, expenses, margins, trends, comparisons, and statement review' },
+
+  { key: 'cash-flow', label: 'Cash Flow', description: 'Cash inflows, outflows, balances, trends, comparisons, and activity review' },
 ];
 
 const adhocReportWorkspaceItems: Array<{ key: AdhocReportWorkspaceKey; label: string; description: string }> = [
@@ -9535,7 +9541,17 @@ async function confirmTransaction() {
           )}
 
           {activeFinanceWorkspace === 'financial-statements' && (
-            <ProfitLossWorkspace />
+            <ProfitLossWorkspace
+              onBack={() => setActiveFinanceWorkspace('overview')}
+              onMainDashboard={() => navigateToSection('overview')}
+            />
+          )}
+
+          {activeFinanceWorkspace === 'cash-flow' && (
+            <CashFlowWorkspace
+              onBack={() => setActiveFinanceWorkspace('overview')}
+              onMainDashboard={() => navigateToSection('overview')}
+            />
           )}
         </div>
       </section>

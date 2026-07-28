@@ -1533,6 +1533,39 @@ export function FinanceOverviewRedesign({
         <div className="finance-reference-v1__utilities">
           <article className="finance-reference-v1__panel">
             <header>
+              <h2>Bank Accounts</h2>
+
+              <select
+                aria-label="Bank-account period"
+                defaultValue="this-month"
+              >
+                <option value="this-month">
+                  This Month
+                </option>
+              </select>
+            </header>
+
+            <div className="finance-reference-v1__bank-accounts">
+              {model.bankAccounts.map(
+                (account) => (
+                  <div key={account.id}>
+                    <span>{account.label}</span>
+
+                    <strong>
+                      {formatMoney(
+                        account.balance,
+                      )}
+                    </strong>
+
+                    <small>Balance</small>
+                  </div>
+                ),
+              )}
+            </div>
+          </article>
+
+        <article className="finance-reference-v1__panel">
+            <header>
               <h2>Quick Actions</h2>
             </header>
 
@@ -1569,40 +1602,7 @@ export function FinanceOverviewRedesign({
             </div>
           </article>
 
-          <article className="finance-reference-v1__panel">
-            <header>
-              <h2>Bank Accounts</h2>
-
-              <select
-                aria-label="Bank-account period"
-                defaultValue="this-month"
-              >
-                <option value="this-month">
-                  This Month
-                </option>
-              </select>
-            </header>
-
-            <div className="finance-reference-v1__bank-accounts">
-              {model.bankAccounts.map(
-                (account) => (
-                  <div key={account.id}>
-                    <span>{account.label}</span>
-
-                    <strong>
-                      {formatMoney(
-                        account.balance,
-                      )}
-                    </strong>
-
-                    <small>Balance</small>
-                  </div>
-                ),
-              )}
-            </div>
-          </article>
-
-          <article className="finance-reference-v1__panel">
+        <article className="finance-reference-v1__panel">
             <header>
               <h2>Report Shortcuts</h2>
             </header>
