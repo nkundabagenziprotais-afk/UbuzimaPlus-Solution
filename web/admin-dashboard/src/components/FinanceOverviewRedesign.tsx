@@ -1184,457 +1184,463 @@ export function FinanceOverviewRedesign({
         ))}
       </div>
 
-      <div className="finance-reference-v1__analytics">
-        <article className="finance-reference-v1__panel finance-reference-v1__panel--revenue">
-          <header>
-            <h2>
-              Revenue vs Expenses Trend
-            </h2>
+      <div
+        className="finance-reference-v1__two-column-sections"
+        data-finance-two-column-sections="active"
+      >
+        <div className="finance-reference-v1__analytics">
+          <article className="finance-reference-v1__panel finance-reference-v1__panel--revenue">
+            <header>
+              <h2>
+                Revenue vs Expenses Trend
+              </h2>
 
-            <select
-              aria-label="Revenue trend period"
-              defaultValue="6-months"
-            >
-              <option value="6-months">
-                6 Months
-              </option>
-            </select>
-          </header>
+              <select
+                aria-label="Revenue trend period"
+                defaultValue="6-months"
+              >
+                <option value="6-months">
+                  6 Months
+                </option>
+              </select>
+            </header>
 
-          <div className="finance-reference-v1__legend">
-            <span>
-              <i className="green" />
-              Revenue
-            </span>
-            <span>
-              <i className="red" />
-              Expenses
-            </span>
-            <span>
-              <i className="blue" />
-              Net Profit
-            </span>
-          </div>
-
-          <EmptyChart kind="bar" />
-        </article>
-
-        <article className="finance-reference-v1__panel finance-reference-v1__panel--cash-flow">
-          <header>
-            <h2>Cash Flow Overview</h2>
-
-            <select
-              aria-label="Cash-flow period"
-              defaultValue="6-months"
-            >
-              <option value="6-months">
-                6 Months
-              </option>
-            </select>
-          </header>
-
-          <div className="finance-reference-v1__legend">
-            <span>
-              <i className="green" />
-              Cash In
-            </span>
-            <span>
-              <i className="red" />
-              Cash Out
-            </span>
-            <span>
-              <i className="blue" />
-              Net Cash Flow
-            </span>
-          </div>
-
-          <EmptyChart kind="line" />
-        </article>
-
-        <article className="finance-reference-v1__panel finance-reference-v1__panel--profit-loss">
-          <header>
-            <h2>Profit &amp; Loss Summary</h2>
-
-            <select
-              aria-label="Profit-and-loss period"
-              defaultValue="this-month"
-            >
-              <option value="this-month">
-                This Month
-              </option>
-            </select>
-          </header>
-
-          <div className="finance-reference-v1__pnl">
-            {profitAndLossRows.map(
-              (row) => (
-                <div
-                  className={
-                    row.emphasis
-                      ? `finance-reference-v1__pnl-row finance-reference-v1__pnl-row--${row.emphasis}`
-                      : 'finance-reference-v1__pnl-row'
-                  }
-                  key={row.label}
-                >
-                  <span>{row.label}</span>
-
-                  <strong>
-                    {formatMoney(
-                      row.value,
-                    )}
-                  </strong>
-                </div>
-              ),
-            )}
-
-            <div className="finance-reference-v1__pnl-margin">
-              <span>Profit Margin</span>
-
-              <strong>
-                {model.profitAndLoss
-                  .profitMargin === null
-                  ? '—'
-                  : `${model.profitAndLoss.profitMargin.toFixed(1)}%`}
-              </strong>
+            <div className="finance-reference-v1__legend">
+              <span>
+                <i className="green" />
+                Revenue
+              </span>
+              <span>
+                <i className="red" />
+                Expenses
+              </span>
+              <span>
+                <i className="blue" />
+                Net Profit
+              </span>
             </div>
-          </div>
-        </article>
 
-        <article className="finance-reference-v1__panel finance-reference-v1__panel--expenses">
-          <header>
-            <h2>Expense Breakdown</h2>
+            <EmptyChart kind="bar" />
+          </article>
 
-            <select
-              aria-label="Expense period"
-              defaultValue="this-month"
-            >
-              <option value="this-month">
-                This Month
-              </option>
-            </select>
-          </header>
+          <article className="finance-reference-v1__panel finance-reference-v1__panel--cash-flow">
+            <header>
+              <h2>Cash Flow Overview</h2>
 
-          <div className="finance-reference-v1__expense-chart">
-            <EmptyDonut />
+              <select
+                aria-label="Cash-flow period"
+                defaultValue="6-months"
+              >
+                <option value="6-months">
+                  6 Months
+                </option>
+              </select>
+            </header>
 
-            <div className="finance-reference-v1__expense-legend">
-              {[
-                'Staff Expenses',
-                'Rent & Utilities',
-                'Transport',
-                'Administrative',
-                'Marketing',
-                'Others',
-              ].map((label) => (
-                <div key={label}>
-                  <span>{label}</span>
-                  <strong>—</strong>
-                </div>
-              ))}
+            <div className="finance-reference-v1__legend">
+              <span>
+                <i className="green" />
+                Cash In
+              </span>
+              <span>
+                <i className="red" />
+                Cash Out
+              </span>
+              <span>
+                <i className="blue" />
+                Net Cash Flow
+              </span>
             </div>
-          </div>
-        </article>
-      </div>
 
-      <div className="finance-reference-v1__records">
-        <article className="finance-reference-v1__panel finance-reference-v1__panel--transactions">
-          <header>
-            <h2>Recent Transactions</h2>
-          </header>
+            <EmptyChart kind="line" />
+          </article>
 
-          <div className="finance-reference-v1__table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                  <th>Account</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
+          <article className="finance-reference-v1__panel finance-reference-v1__panel--profit-loss">
+            <header>
+              <h2>Profit &amp; Loss Summary</h2>
 
-              <tbody>
-                {model.recentTransactions.map(
-                  (transaction) => (
-                    <tr key={transaction.id}>
-                      <td>{transaction.date}</td>
-                      <td>{transaction.type}</td>
-                      <td>
-                        {transaction.description}
-                      </td>
-                      <td>
-                        {transaction.account}
-                      </td>
-                      <td>
-                        {formatMoney(
-                          transaction.amount,
-                        )}
-                      </td>
-                      <td>
-                        {transaction.status}
-                      </td>
-                    </tr>
-                  ),
-                )}
+              <select
+                aria-label="Profit-and-loss period"
+                defaultValue="this-month"
+              >
+                <option value="this-month">
+                  This Month
+                </option>
+              </select>
+            </header>
 
-                {model.recentTransactions.length === 0 && (
-                  <EmptyTableRow columns={6} />
-                )}
-              </tbody>
-            </table>
-          </div>
+            <div className="finance-reference-v1__pnl">
+              {profitAndLossRows.map(
+                (row) => (
+                  <div
+                    className={
+                      row.emphasis
+                        ? `finance-reference-v1__pnl-row finance-reference-v1__pnl-row--${row.emphasis}`
+                        : 'finance-reference-v1__pnl-row'
+                    }
+                    key={row.label}
+                  >
+                    <span>{row.label}</span>
 
-          <button
-            className="finance-reference-v1__text-link"
-            disabled={!findModule([
-              'transaction',
-              'general ledger',
-            ])}
-            onClick={() =>
-              openModule([
+                    <strong>
+                      {formatMoney(
+                        row.value,
+                      )}
+                    </strong>
+                  </div>
+                ),
+              )}
+
+              <div className="finance-reference-v1__pnl-margin">
+                <span>Profit Margin</span>
+
+                <strong>
+                  {model.profitAndLoss
+                    .profitMargin === null
+                    ? '—'
+                    : `${model.profitAndLoss.profitMargin.toFixed(1)}%`}
+                </strong>
+              </div>
+            </div>
+          </article>
+
+          <article className="finance-reference-v1__panel finance-reference-v1__panel--expenses">
+            <header>
+              <h2>Expense Breakdown</h2>
+
+              <select
+                aria-label="Expense period"
+                defaultValue="this-month"
+              >
+                <option value="this-month">
+                  This Month
+                </option>
+              </select>
+            </header>
+
+            <div className="finance-reference-v1__expense-chart">
+              <EmptyDonut />
+
+              <div className="finance-reference-v1__expense-legend">
+                {[
+                  'Staff Expenses',
+                  'Rent & Utilities',
+                  'Transport',
+                  'Administrative',
+                  'Marketing',
+                  'Others',
+                ].map((label) => (
+                  <div key={label}>
+                    <span>{label}</span>
+                    <strong>—</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div className="finance-reference-v1__records">
+          <article className="finance-reference-v1__panel finance-reference-v1__panel--transactions">
+            <header>
+              <h2>Recent Transactions</h2>
+            </header>
+
+            <div className="finance-reference-v1__table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Account</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {model.recentTransactions.map(
+                    (transaction) => (
+                      <tr key={transaction.id}>
+                        <td>{transaction.date}</td>
+                        <td>{transaction.type}</td>
+                        <td>
+                          {transaction.description}
+                        </td>
+                        <td>
+                          {transaction.account}
+                        </td>
+                        <td>
+                          {formatMoney(
+                            transaction.amount,
+                          )}
+                        </td>
+                        <td>
+                          {transaction.status}
+                        </td>
+                      </tr>
+                    ),
+                  )}
+
+                  {model.recentTransactions.length === 0 && (
+                    <EmptyTableRow columns={6} />
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              className="finance-reference-v1__text-link"
+              disabled={!findModule([
                 'transaction',
                 'general ledger',
-              ])
-            }
-            type="button"
-          >
-            View All Transactions
-            <span aria-hidden="true">→</span>
-          </button>
-        </article>
-
-        <article className="finance-reference-v1__panel finance-reference-v1__panel--receivables">
-          <header>
-            <h2>Top Receivables</h2>
-          </header>
-
-          <div className="finance-reference-v1__table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Customer/Payer</th>
-                  <th>Outstanding</th>
-                  <th>Ageing</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {model.topReceivables.map(
-                  (receivable) => (
-                    <tr key={receivable.id}>
-                      <td>
-                        {receivable.customer}
-                      </td>
-                      <td>
-                        {formatMoney(
-                          receivable.outstanding,
-                        )}
-                      </td>
-                      <td>
-                        {receivable.ageing}
-                      </td>
-                    </tr>
-                  ),
-                )}
-
-                {model.topReceivables.length === 0 && (
-                  <EmptyTableRow columns={3} />
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <button
-            className="finance-reference-v1__text-link"
-            disabled={!findModule([
-              'receivable',
-            ])}
-            onClick={() =>
-              openModule([
-                'receivable',
-              ])
-            }
-            type="button"
-          >
-            View All Receivables
-            <span aria-hidden="true">→</span>
-          </button>
-        </article>
-
-        <article className="finance-reference-v1__panel finance-reference-v1__panel--payables">
-          <header>
-            <h2>Upcoming Payables</h2>
-          </header>
-
-          <div className="finance-reference-v1__table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Supplier</th>
-                  <th>Due Date</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {model.upcomingPayables.map(
-                  (payable) => (
-                    <tr key={payable.id}>
-                      <td>
-                        {payable.supplier}
-                      </td>
-                      <td>
-                        {payable.dueDate}
-                      </td>
-                      <td>
-                        {formatMoney(
-                          payable.amount,
-                        )}
-                      </td>
-                      <td>
-                        {payable.status}
-                      </td>
-                    </tr>
-                  ),
-                )}
-
-                {model.upcomingPayables.length === 0 && (
-                  <EmptyTableRow columns={4} />
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <button
-            className="finance-reference-v1__text-link"
-            disabled={!findModule([
-              'payable',
-            ])}
-            onClick={() =>
-              openModule([
-                'payable',
-              ])
-            }
-            type="button"
-          >
-            View All Payables
-            <span aria-hidden="true">→</span>
-          </button>
-        </article>
-      </div>
-
-      <div className="finance-reference-v1__utilities">
-        <article className="finance-reference-v1__panel">
-          <header>
-            <h2>Quick Actions</h2>
-          </header>
-
-          <div className="finance-reference-v1__quick-actions">
-            {QUICK_ACTIONS.map(
-              (action) => {
-                const destination =
-                  findModule(
-                    action.aliases,
-                  );
-
-                return (
-                  <button
-                    disabled={!destination}
-                    key={action.label}
-                    onClick={() =>
-                      openModule(
-                        action.aliases,
-                      )
-                    }
-                    type="button"
-                  >
-                    <span aria-hidden="true">
-                      {action.icon}
-                    </span>
-
-                    <small>
-                      {action.label}
-                    </small>
-                  </button>
-                );
-              },
-            )}
-          </div>
-        </article>
-
-        <article className="finance-reference-v1__panel">
-          <header>
-            <h2>Bank Accounts</h2>
-
-            <select
-              aria-label="Bank-account period"
-              defaultValue="this-month"
+              ])}
+              onClick={() =>
+                openModule([
+                  'transaction',
+                  'general ledger',
+                ])
+              }
+              type="button"
             >
-              <option value="this-month">
-                This Month
-              </option>
-            </select>
-          </header>
+              View All Transactions
+              <span aria-hidden="true">→</span>
+            </button>
+          </article>
 
-          <div className="finance-reference-v1__bank-accounts">
-            {model.bankAccounts.map(
-              (account) => (
-                <div key={account.id}>
-                  <span>{account.label}</span>
+          <article className="finance-reference-v1__panel finance-reference-v1__panel--receivables">
+            <header>
+              <h2>Top Receivables</h2>
+            </header>
 
-                  <strong>
-                    {formatMoney(
-                      account.balance,
-                    )}
-                  </strong>
+            <div className="finance-reference-v1__table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Customer/Payer</th>
+                    <th>Outstanding</th>
+                    <th>Ageing</th>
+                  </tr>
+                </thead>
 
-                  <small>Balance</small>
-                </div>
-              ),
-            )}
-          </div>
-        </article>
+                <tbody>
+                  {model.topReceivables.map(
+                    (receivable) => (
+                      <tr key={receivable.id}>
+                        <td>
+                          {receivable.customer}
+                        </td>
+                        <td>
+                          {formatMoney(
+                            receivable.outstanding,
+                          )}
+                        </td>
+                        <td>
+                          {receivable.ageing}
+                        </td>
+                      </tr>
+                    ),
+                  )}
 
-        <article className="finance-reference-v1__panel">
-          <header>
-            <h2>Report Shortcuts</h2>
-          </header>
+                  {model.topReceivables.length === 0 && (
+                    <EmptyTableRow columns={3} />
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="finance-reference-v1__report-shortcuts">
-            {REPORT_SHORTCUTS.map(
-              (report) => {
-                const destination =
-                  findModule(
-                    report.aliases,
+            <button
+              className="finance-reference-v1__text-link"
+              disabled={!findModule([
+                'receivable',
+              ])}
+              onClick={() =>
+                openModule([
+                  'receivable',
+                ])
+              }
+              type="button"
+            >
+              View All Receivables
+              <span aria-hidden="true">→</span>
+            </button>
+          </article>
+
+          <article className="finance-reference-v1__panel finance-reference-v1__panel--payables">
+            <header>
+              <h2>Upcoming Payables</h2>
+            </header>
+
+            <div className="finance-reference-v1__table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Supplier</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {model.upcomingPayables.map(
+                    (payable) => (
+                      <tr key={payable.id}>
+                        <td>
+                          {payable.supplier}
+                        </td>
+                        <td>
+                          {payable.dueDate}
+                        </td>
+                        <td>
+                          {formatMoney(
+                            payable.amount,
+                          )}
+                        </td>
+                        <td>
+                          {payable.status}
+                        </td>
+                      </tr>
+                    ),
+                  )}
+
+                  {model.upcomingPayables.length === 0 && (
+                    <EmptyTableRow columns={4} />
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              className="finance-reference-v1__text-link"
+              disabled={!findModule([
+                'payable',
+              ])}
+              onClick={() =>
+                openModule([
+                  'payable',
+                ])
+              }
+              type="button"
+            >
+              View All Payables
+              <span aria-hidden="true">→</span>
+            </button>
+          </article>
+        </div>
+
+        <div className="finance-reference-v1__utilities">
+          <article className="finance-reference-v1__panel">
+            <header>
+              <h2>Quick Actions</h2>
+            </header>
+
+            <div className="finance-reference-v1__quick-actions">
+              {QUICK_ACTIONS.map(
+                (action) => {
+                  const destination =
+                    findModule(
+                      action.aliases,
+                    );
+
+                  return (
+                    <button
+                      disabled={!destination}
+                      key={action.label}
+                      onClick={() =>
+                        openModule(
+                          action.aliases,
+                        )
+                      }
+                      type="button"
+                    >
+                      <span aria-hidden="true">
+                        {action.icon}
+                      </span>
+
+                      <small>
+                        {action.label}
+                      </small>
+                    </button>
                   );
+                },
+              )}
+            </div>
+          </article>
 
-                return (
-                  <button
-                    disabled={!destination}
-                    key={report.label}
-                    onClick={() =>
-                      openModule(
-                        report.aliases,
-                      )
-                    }
-                    type="button"
-                  >
-                    <span aria-hidden="true">
-                      {report.icon}
-                    </span>
+          <article className="finance-reference-v1__panel">
+            <header>
+              <h2>Bank Accounts</h2>
 
-                    <small>
-                      {report.label}
-                    </small>
-                  </button>
-                );
-              },
-            )}
-          </div>
-        </article>
+              <select
+                aria-label="Bank-account period"
+                defaultValue="this-month"
+              >
+                <option value="this-month">
+                  This Month
+                </option>
+              </select>
+            </header>
+
+            <div className="finance-reference-v1__bank-accounts">
+              {model.bankAccounts.map(
+                (account) => (
+                  <div key={account.id}>
+                    <span>{account.label}</span>
+
+                    <strong>
+                      {formatMoney(
+                        account.balance,
+                      )}
+                    </strong>
+
+                    <small>Balance</small>
+                  </div>
+                ),
+              )}
+            </div>
+          </article>
+
+          <article className="finance-reference-v1__panel">
+            <header>
+              <h2>Report Shortcuts</h2>
+            </header>
+
+            <div className="finance-reference-v1__report-shortcuts">
+              {REPORT_SHORTCUTS.map(
+                (report) => {
+                  const destination =
+                    findModule(
+                      report.aliases,
+                    );
+
+                  return (
+                    <button
+                      disabled={!destination}
+                      key={report.label}
+                      onClick={() =>
+                        openModule(
+                          report.aliases,
+                        )
+                      }
+                      type="button"
+                    >
+                      <span aria-hidden="true">
+                        {report.icon}
+                      </span>
+
+                      <small>
+                        {report.label}
+                      </small>
+                    </button>
+                  );
+                },
+              )}
+            </div>
+          </article>
+        </div>
+
       </div>
 
       <div

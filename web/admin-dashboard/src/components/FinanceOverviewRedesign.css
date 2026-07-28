@@ -801,3 +801,56 @@
     scroll-margin-top: 4rem;
   }
 }
+
+/* UBIZIMA_FINANCE_CONTINUOUS_TWO_COLUMN_GRID_V1 */
+.finance-reference-v1__two-column-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.finance-reference-v1__two-column-sections
+  > .finance-reference-v1__analytics,
+.finance-reference-v1__two-column-sections
+  > .finance-reference-v1__records,
+.finance-reference-v1__two-column-sections
+  > .finance-reference-v1__utilities {
+  display: contents;
+}
+
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__panel,
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__panel--revenue,
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__panel--cash-flow,
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__panel--profit-loss,
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__panel--expenses,
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__panel--transactions,
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__panel--receivables,
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__panel--payables,
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__utilities
+  > article:nth-child(1),
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__utilities
+  > article:nth-child(2),
+.finance-reference-v1__two-column-sections
+  .finance-reference-v1__utilities
+  > article:nth-child(3) {
+  grid-column: auto;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 768px) {
+  .finance-reference-v1__two-column-sections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
