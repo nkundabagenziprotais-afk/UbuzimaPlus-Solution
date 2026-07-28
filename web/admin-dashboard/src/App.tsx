@@ -83,6 +83,7 @@ import {
 } from './components/GeneralItemsManagementWorkspace';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { FinanceOverviewRedesign } from './components/FinanceOverviewRedesign';
+import { ProfitLossWorkspace } from './components/ProfitLossWorkspace';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
@@ -647,7 +648,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'finance-credits-receivables', label: 'Customer Credits and Receivables', target: 'credits-receivables' },
     { key: 'finance-receivable-register', label: 'Receivable Register', target: 'receivable-register' },
     { key: 'finance-collection', label: 'Collection', target: 'collection' },
-    { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statements' },
+    { key: 'finance-statement', label: 'Profit & Loss', target: 'financial-statements' },
   ],
   reports: [
     { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
@@ -3137,7 +3138,7 @@ const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; de
   { key: 'credits-receivables', label: 'Customer Credits / Receivables', description: 'Credit setup and receivable creation' },
   { key: 'receivable-register', label: 'Receivable Register', description: '15-row register with bulk and export tools' },
   { key: 'collection', label: 'Collection', description: 'Payment collection and selected detail' },
-  { key: 'financial-statements', label: 'AI Financial Statements', description: 'Manual refresh statements and reconciliations' },
+  { key: 'financial-statements', label: 'Profit & Loss', description: 'Income, expenses, margins, trends, comparisons, and statement review' },
 ];
 
 const adhocReportWorkspaceItems: Array<{ key: AdhocReportWorkspaceKey; label: string; description: string }> = [
@@ -9534,25 +9535,7 @@ async function confirmTransaction() {
           )}
 
           {activeFinanceWorkspace === 'financial-statements' && (
-            <article className="panel wide">
-              <div className="panel-heading-row">
-                <div>
-                  <h2>Financial Statement</h2>
-                  <p className="muted">
-                    AI-assisted Trial Balance, General Ledger, Cash Flow Statement, Income Statement, Balance Sheet, Bank, MoMo, and Cash Reconciliation.
-                  </p>
-                </div>
-                <button type="button">Manual refresh</button>
-              </div>
-              <div className="document-action-grid document-action-grid--tablelike">
-                {financialStatementItems.map(([title, text]) => (
-                  <article key={title}>
-                    <strong>{title}</strong>
-                    <span>{text}</span>
-                  </article>
-                ))}
-              </div>
-            </article>
+            <ProfitLossWorkspace />
           )}
         </div>
       </section>
