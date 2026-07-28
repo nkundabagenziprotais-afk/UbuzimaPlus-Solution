@@ -6897,6 +6897,7 @@ function ProductMasterTable({
 }) {
   return (
     <ManagedInventoryTableBlock tableKey="product-master" title="Inventory">
+      <div className="product-master-table-scroll" role="region" aria-label="Product Master products table" tabIndex={0}>
       <table className="inventory-data-table inventory-data-table--product-master">
         <colgroup>
           <col className="col-sn" />
@@ -6976,6 +6977,7 @@ function ProductMasterTable({
           )}
         </tbody>
       </table>
+      </div>
     </ManagedInventoryTableBlock>
   );
 }
