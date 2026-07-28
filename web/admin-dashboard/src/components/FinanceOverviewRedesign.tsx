@@ -4,7 +4,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type FormEvent,
 } from 'react';
 import {
   getPharmaFinancePosRevenueShadowReport,
@@ -29,7 +28,313 @@ type FinanceOverviewRedesignProps = {
   onOpenFinanceModule?: (key: string) => void;
 };
 
-function tenantSlugFromProfile(profile: any): string {
+type RangeKey =
+  | 'this-month'
+  | 'last-30-days'
+  | 'previous-month'
+  | 'this-year';
+
+type NullableAmount = number | null;
+
+type FinanceOverviewModel = {
+  totalRevenue: NullableAmount;
+  grossMargin: NullableAmount;
+  totalExpenses: NullableAmount;
+  netProfit: NullableAmount;
+  cashInHand: NullableAmount;
+  insuranceReceivables: NullableAmount;
+  accountsPayable: NullableAmount;
+  inventoryValue: NullableAmount;
+
+  profitAndLoss: {
+    totalRevenue: NullableAmount;
+    costOfGoodsSold: NullableAmount;
+    grossProfit: NullableAmount;
+    totalExpenses: NullableAmount;
+    netProfit: NullableAmount;
+    profitMargin: number | null;
+  };
+
+  revenueExpenseTrend: Array<{
+    period: string;
+    revenue: number | null;
+    expenses: number | null;
+    netProfit: number | null;
+  }>;
+
+  cashFlowTrend: Array<{
+    period: string;
+    cashIn: number | null;
+    cashOut: number | null;
+    netCashFlow: number | null;
+  }>;
+
+  expenseBreakdown: Array<{
+    label: string;
+    value: number;
+  }>;
+
+  recentTransactions: Array<{
+    id: string;
+    date: string;
+    type: string;
+    description: string;
+    account: string;
+    amount: number | null;
+    status: string;
+  }>;
+
+  topReceivables: Array<{
+    id: string;
+    customer: string;
+    outstanding: number | null;
+    ageing: string;
+  }>;
+
+  upcomingPayables: Array<{
+    id: string;
+    supplier: string;
+    dueDate: string;
+    amount: number | null;
+    status: string;
+  }>;
+
+  bankAccounts: Array<{
+    id: string;
+    label: string;
+    balance: number | null;
+  }>;
+};
+
+const EMPTY_MODEL: FinanceOverviewModel = {
+  totalRevenue: null,
+  grossMargin: null,
+  totalExpenses: null,
+  netProfit: null,
+  cashInHand: null,
+  insuranceReceivables: null,
+  accountsPayable: null,
+  inventoryValue: null,
+
+  profitAndLoss: {
+    totalRevenue: null,
+    costOfGoodsSold: null,
+    grossProfit: null,
+    totalExpenses: null,
+    netProfit: null,
+    profitMargin: null,
+  },
+
+  revenueExpenseTrend: [],
+  cashFlowTrend: [],
+  expenseBreakdown: [],
+  recentTransactions: [],
+  topReceivables: [],
+  upcomingPayables: [],
+
+  bankAccounts: [
+    {
+      id: 'main-bank',
+      label: 'Main Bank Account',
+      balance: null,
+    },
+    {
+      id: 'cash-on-hand',
+      label: 'Cash on Hand',
+      balance: null,
+    },
+    {
+      id: 'mobile-money',
+      label: 'Mobile Money',
+      balance: null,
+    },
+    {
+      id: 'insurance-clearing',
+      label: 'Insurance Clearing',
+      balance: null,
+    },
+  ],
+};
+
+const NAVIGATION_ITEMS = [
+  {
+    label: 'Overview',
+    aliases: [] as string[],
+  },
+  {
+    label: 'Profit & Loss',
+    aliases: [
+      'profit loss',
+      'profit and loss',
+      'p&l',
+    ],
+  },
+  {
+    label: 'Cash Flow',
+    aliases: [
+      'cash flow',
+    ],
+  },
+  {
+    label: 'Sales',
+    aliases: [
+      'sales',
+      'revenue',
+    ],
+  },
+  {
+    label: 'Receivables',
+    aliases: [
+      'receivable',
+      'accounts receivable',
+    ],
+  },
+  {
+    label: 'Payables',
+    aliases: [
+      'payable',
+      'accounts payable',
+    ],
+  },
+  {
+    label: 'Expenses',
+    aliases: [
+      'expense',
+    ],
+  },
+  {
+    label: 'Inventory Finance',
+    aliases: [
+      'inventory finance',
+      'inventory',
+    ],
+  },
+  {
+    label: 'Banking',
+    aliases: [
+      'banking',
+      'bank',
+      'cash',
+    ],
+  },
+  {
+    label: 'Reports',
+    aliases: [
+      'financial report',
+      'reports',
+      'reporting',
+    ],
+  },
+  {
+    label: 'Accounting',
+    aliases: [
+      'accounting',
+      'general ledger',
+      'chart of accounts',
+    ],
+  },
+] as const;
+
+const QUICK_ACTIONS = [
+  {
+    label: 'Add Income',
+    icon: '+',
+    aliases: [
+      'receivable',
+      'sales',
+      'revenue',
+    ],
+  },
+  {
+    label: 'Add Expense',
+    icon: '−',
+    aliases: [
+      'expense',
+      'payable',
+    ],
+  },
+  {
+    label: 'Record Payment',
+    icon: '✓',
+    aliases: [
+      'payment',
+      'receivable',
+      'payable',
+    ],
+  },
+  {
+    label: 'Transfer Money',
+    icon: '⇄',
+    aliases: [
+      'bank',
+      'cash',
+    ],
+  },
+  {
+    label: 'New Journal',
+    icon: '▤',
+    aliases: [
+      'journal',
+      'general ledger',
+      'accounting',
+    ],
+  },
+] as const;
+
+const REPORT_SHORTCUTS = [
+  {
+    label: 'Profit & Loss',
+    icon: '▥',
+    aliases: [
+      'profit loss',
+      'profit and loss',
+      'p&l',
+    ],
+  },
+  {
+    label: 'Balance Sheet',
+    icon: '▧',
+    aliases: [
+      'balance sheet',
+      'financial report',
+    ],
+  },
+  {
+    label: 'Cash Flow Statement',
+    icon: '↗',
+    aliases: [
+      'cash flow',
+    ],
+  },
+  {
+    label: 'Trial Balance',
+    icon: '▤',
+    aliases: [
+      'trial balance',
+    ],
+  },
+  {
+    label: 'General Ledger',
+    icon: '▣',
+    aliases: [
+      'general ledger',
+      'ledger',
+    ],
+  },
+  {
+    label: 'A/R Ageing Report',
+    icon: '◫',
+    aliases: [
+      'receivable',
+      'ageing',
+      'aging',
+    ],
+  },
+] as const;
+
+function tenantSlugFromProfile(
+  profile: any,
+): string {
   return (
     profile?.tenant_assignments?.[0]?.tenant?.slug
     || profile?.tenant?.slug
@@ -38,83 +343,260 @@ function tenantSlugFromProfile(profile: any): string {
   );
 }
 
-function isoDate(daysAgo: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-
-  return date.toISOString().slice(0, 10);
+function normalise(
+  value: unknown,
+): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }
 
-function money(value: unknown): string {
+function toLocalIso(
+  date: Date,
+): string {
+  const offset = date.getTimezoneOffset();
+
+  return new Date(
+    date.getTime() - offset * 60_000,
+  )
+    .toISOString()
+    .slice(0, 10);
+}
+
+function resolveRange(
+  key: RangeKey,
+): {
+  from: string;
+  to: string;
+} {
+  const now = new Date();
+  const end = new Date(now);
+  let start = new Date(now);
+
+  if (key === 'this-month') {
+    start = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+    );
+  }
+
+  if (key === 'last-30-days') {
+    start.setDate(start.getDate() - 29);
+  }
+
+  if (key === 'previous-month') {
+    start = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1,
+    );
+
+    end.setFullYear(
+      now.getFullYear(),
+      now.getMonth(),
+      0,
+    );
+  }
+
+  if (key === 'this-year') {
+    start = new Date(
+      now.getFullYear(),
+      0,
+      1,
+    );
+  }
+
+  return {
+    from: toLocalIso(start),
+    to: toLocalIso(end),
+  };
+}
+
+function amount(
+  value: unknown,
+): NullableAmount {
   if (
     value === null
     || value === undefined
     || value === ''
   ) {
+    return null;
+  }
+
+  const result = Number(value);
+
+  return Number.isFinite(result)
+    ? result
+    : null;
+}
+
+function formatAmount(
+  value: NullableAmount,
+): string {
+  if (value === null) {
     return '—';
   }
 
-  const number = Number(value);
+  return new Intl.NumberFormat('en-GB', {
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
-  if (!Number.isFinite(number)) {
+function formatMoney(
+  value: NullableAmount,
+): string {
+  if (value === null) {
     return '—';
   }
 
-  return new Intl.NumberFormat('en-RW', {
+  return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'RWF',
     maximumFractionDigits: 0,
-  }).format(number);
+  }).format(value);
 }
 
-function numberValue(value: unknown): string {
-  const number = Number(value);
+function buildModel(
+  revenue:
+    | PharmaFinancePosRevenueShadowReport
+    | null,
+  _reconciliation:
+    | PharmaFinancePosShadowReconciliationReport
+    | null,
+  _health:
+    | PharmaFinanceReadinessHealthReport
+    | null,
+): FinanceOverviewModel {
+  const totalRevenue = amount(
+    revenue?.summary?.finance_shadow_revenue,
+  );
 
-  if (!Number.isFinite(number)) {
-    return '—';
-  }
+  return {
+    ...EMPTY_MODEL,
 
-  return new Intl.NumberFormat('en-GB').format(number);
+    totalRevenue,
+
+    profitAndLoss: {
+      ...EMPTY_MODEL.profitAndLoss,
+      totalRevenue,
+    },
+  };
 }
 
-function readable(value: unknown): string {
-  if (
-    value === null
-    || value === undefined
-    || String(value).trim() === ''
-  ) {
-    return 'Not available';
-  }
-
-  return String(value)
-    .replace(/[_-]+/g, ' ')
-    .replace(/\b\w/g, (character) =>
-      character.toUpperCase()
-    );
+function sourceLabel(
+  value: NullableAmount,
+): string {
+  return value === null
+    ? ''
+    : 'Source: Finance shadow';
 }
 
-function statusTone(value: unknown): string {
-  const status = String(value ?? '').toLowerCase();
+function EmptyChart({
+  kind,
+}: {
+  kind: 'bar' | 'line';
+}) {
+  return (
+    <div
+      className="finance-reference-v1__empty-chart"
+      data-chart-state="empty"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 720 250"
+        preserveAspectRatio="none"
+      >
+        {[40, 85, 130, 175, 220].map(
+          (position) => (
+            <line
+              key={`horizontal-${position}`}
+              x1="42"
+              x2="704"
+              y1={position}
+              y2={position}
+            />
+          ),
+        )}
 
-  if (
-    status.includes('pass')
-    || status.includes('ready')
-    || status.includes('reconciled')
-    || status.includes('healthy')
-  ) {
-    return 'positive';
-  }
+        {[42, 152, 262, 372, 482, 592, 704].map(
+          (position) => (
+            <line
+              key={`vertical-${position}`}
+              x1={position}
+              x2={position}
+              y1="28"
+              y2="220"
+            />
+          ),
+        )}
 
-  if (
-    status.includes('fail')
-    || status.includes('blocked')
-    || status.includes('critical')
-    || status.includes('unreconciled')
-  ) {
-    return 'negative';
-  }
+        {kind === 'line' && (
+          <path d="M42 185 L152 185 L262 185 L372 185 L482 185 L592 185 L704 185" />
+        )}
+      </svg>
 
-  return 'review';
+      <span>No data available</span>
+    </div>
+  );
+}
+
+function EmptyDonut() {
+  return (
+    <div
+      className="finance-reference-v1__empty-donut"
+      data-chart-state="empty"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 160 160"
+      >
+        <circle
+          cx="80"
+          cy="80"
+          r="54"
+        />
+      </svg>
+
+      <span>No data</span>
+    </div>
+  );
+}
+
+function EmptyTableRow({
+  columns,
+}: {
+  columns: number;
+}) {
+  return (
+    <tr>
+      <td
+        className="finance-reference-v1__empty-cell"
+        colSpan={columns}
+      >
+        No data available
+      </td>
+    </tr>
+  );
+}
+
+function MetricIcon({
+  symbol,
+  tone,
+}: {
+  symbol: string;
+  tone: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`finance-reference-v1__metric-icon finance-reference-v1__metric-icon--${tone}`}
+    >
+      {symbol}
+    </span>
+  );
 }
 
 export function FinanceOverviewRedesign({
@@ -123,596 +605,1046 @@ export function FinanceOverviewRedesign({
   financeModules = [],
   onOpenFinanceModule,
 }: FinanceOverviewRedesignProps) {
-  const tenantSlug = tenantSlugFromProfile(profile);
+  const tenantSlug =
+    tenantSlugFromProfile(profile);
 
-  const [from, setFrom] = useState(() => isoDate(30));
-  const [to, setTo] = useState(() => isoDate(0));
-  const [branchId, setBranchId] = useState('');
+  const [
+    selectedRange,
+    setSelectedRange,
+  ] = useState<RangeKey>('this-month');
 
-  const [revenue, setRevenue] =
-    useState<PharmaFinancePosRevenueShadowReport | null>(null);
+  const [
+    selectedBranch,
+    setSelectedBranch,
+  ] = useState('');
 
-  const [payments, setPayments] =
-    useState<PharmaFinancePosShadowReconciliationReport | null>(null);
+  const [
+    revenue,
+    setRevenue,
+  ] = useState<
+    PharmaFinancePosRevenueShadowReport | null
+  >(null);
 
-  const [health, setHealth] =
-    useState<PharmaFinanceReadinessHealthReport | null>(null);
+  const [
+    reconciliation,
+    setReconciliation,
+  ] = useState<
+    PharmaFinancePosShadowReconciliationReport | null
+  >(null);
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [
+    health,
+    setHealth,
+  ] = useState<
+    PharmaFinanceReadinessHealthReport | null
+  >(null);
 
-  const requestSequence = useRef(0);
-  const moduleNavigationPending = useRef(false);
+  const [
+    lastUpdated,
+    setLastUpdated,
+  ] = useState('');
 
-  const loadDashboard = useCallback(async () => {
-    const sequence = requestSequence.current + 1;
-    requestSequence.current = sequence;
+  const [
+    error,
+    setError,
+  ] = useState('');
 
-    if (!tenantSlug) {
-      setError(
-        'A tenant assignment is required before Finance data can be loaded.',
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
+
+  const requestSequence =
+    useRef(0);
+
+  const navigationPending =
+    useRef(false);
+
+  const range = useMemo(
+    () => resolveRange(selectedRange),
+    [selectedRange],
+  );
+
+  const branches = useMemo(() => {
+    const candidates = [
+      ...(
+        Array.isArray(profile?.branches)
+          ? profile.branches
+          : []
+      ),
+      ...(
+        Array.isArray(
+          profile?.branch_assignments,
+        )
+          ? profile.branch_assignments
+          : []
+      ),
+    ];
+
+    const result = new Map<
+      string,
+      string
+    >();
+
+    for (const entry of candidates) {
+      const branch =
+        entry?.branch ?? entry;
+
+      const id =
+        branch?.id
+        ?? branch?.branch_id;
+
+      if (
+        id === null
+        || id === undefined
+      ) {
+        continue;
+      }
+
+      const label =
+        branch?.name
+        ?? branch?.label
+        ?? `Branch ${id}`;
+
+      result.set(
+        String(id),
+        String(label),
       );
-      setIsLoading(false);
-      return;
     }
 
-    setIsLoading(true);
-    setError('');
+    return [
+      ...result.entries(),
+    ].map(([id, label]) => ({
+      id,
+      label,
+    }));
+  }, [profile]);
 
-    const filters = {
-      from,
-      to,
-      branch_id: branchId || undefined,
-    };
+  const findModule = useCallback(
+    (
+      aliases: readonly string[],
+    ):
+      | FinanceModuleLink
+      | undefined => {
+      const normalisedAliases =
+        aliases.map(normalise);
 
-    try {
-      const [
-        revenueResponse,
-        paymentResponse,
-        healthResponse,
-      ] = await Promise.all([
-        getPharmaFinancePosRevenueShadowReport(
-          token,
-          tenantSlug,
-          filters,
-        ),
-        getPharmaFinancePosShadowReconciliationReport(
-          token,
-          tenantSlug,
-          filters,
-        ),
-        getPharmaFinanceReadinessHealthReport(
-          token,
-          tenantSlug,
-          filters,
-        ),
-      ]);
+      return financeModules.find(
+        (module) => {
+          const searchable = normalise(
+            `${module.key} ${module.label}`,
+          );
 
-      if (requestSequence.current !== sequence) {
-        return;
-      }
-
-      setRevenue(revenueResponse.data);
-      setPayments(paymentResponse.data);
-      setHealth(healthResponse.data);
-    } catch (reason) {
-      if (requestSequence.current !== sequence) {
-        return;
-      }
-
-      setRevenue(null);
-      setPayments(null);
-      setHealth(null);
-
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : 'Finance data could not be loaded.',
+          return normalisedAliases.some(
+            (alias) =>
+              searchable.includes(alias),
+          );
+        },
       );
-    } finally {
-      if (requestSequence.current === sequence) {
+    },
+    [financeModules],
+  );
+
+  const openModule = useCallback(
+    (
+      aliases: readonly string[],
+    ) => {
+      if (
+        navigationPending.current
+        || !onOpenFinanceModule
+      ) {
+        return;
+      }
+
+      const module =
+        findModule(aliases);
+
+      if (!module) {
+        return;
+      }
+
+      navigationPending.current = true;
+
+      onOpenFinanceModule(
+        module.key,
+      );
+
+      window.requestAnimationFrame(
+        () => {
+          navigationPending.current = false;
+        },
+      );
+    },
+    [
+      findModule,
+      onOpenFinanceModule,
+    ],
+  );
+
+  const loadDashboard =
+    useCallback(async () => {
+      const sequence =
+        requestSequence.current + 1;
+
+      requestSequence.current =
+        sequence;
+
+      if (!tenantSlug) {
+        setRevenue(null);
+        setReconciliation(null);
+        setHealth(null);
+        setError(
+          'A tenant assignment is required before Finance information can be loaded.',
+        );
         setIsLoading(false);
+        return;
       }
-    }
-  }, [
-    branchId,
-    from,
-    tenantSlug,
-    to,
-    token,
-  ]);
+
+      setIsLoading(true);
+      setError('');
+
+      const filters = {
+        from: range.from,
+        to: range.to,
+        branch_id:
+          selectedBranch || undefined,
+      };
+
+      try {
+        const [
+          revenueResponse,
+          reconciliationResponse,
+          healthResponse,
+        ] = await Promise.all([
+          getPharmaFinancePosRevenueShadowReport(
+            token,
+            tenantSlug,
+            filters,
+          ),
+          getPharmaFinancePosShadowReconciliationReport(
+            token,
+            tenantSlug,
+            filters,
+          ),
+          getPharmaFinanceReadinessHealthReport(
+            token,
+            tenantSlug,
+            filters,
+          ),
+        ]);
+
+        if (
+          requestSequence.current
+          !== sequence
+        ) {
+          return;
+        }
+
+        setRevenue(
+          revenueResponse.data,
+        );
+
+        setReconciliation(
+          reconciliationResponse.data,
+        );
+
+        setHealth(
+          healthResponse.data,
+        );
+
+        setLastUpdated(
+          new Intl.DateTimeFormat(
+            'en-GB',
+            {
+              hour: '2-digit',
+              minute: '2-digit',
+            },
+          ).format(new Date()),
+        );
+      } catch (reason) {
+        if (
+          requestSequence.current
+          !== sequence
+        ) {
+          return;
+        }
+
+        setRevenue(null);
+        setReconciliation(null);
+        setHealth(null);
+
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : 'Finance information could not be loaded.',
+        );
+      } finally {
+        if (
+          requestSequence.current
+          === sequence
+        ) {
+          setIsLoading(false);
+        }
+      }
+    }, [
+      range.from,
+      range.to,
+      selectedBranch,
+      tenantSlug,
+      token,
+    ]);
 
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
 
-  const metrics = useMemo(
-    () => [
-      {
-        label: 'Operational Payments',
-        value: money(
-          revenue?.summary
-            ?.operational_completed_payment_total,
-        ),
-        note: 'Completed POS payments',
-        tone: 'blue',
-      },
-      {
-        label: 'Finance Shadow Payments',
-        value: money(
-          payments?.summary
-            ?.finance_shadow_payment_total,
-        ),
-        note: 'Finance shadow ledger',
-        tone: 'green',
-      },
-      {
-        label: 'Shadow Revenue',
-        value: money(
-          revenue?.summary?.finance_shadow_revenue,
-        ),
-        note: 'Recognised revenue shadow',
-        tone: 'green',
-      },
-      {
-        label: 'Shadow Tax',
-        value: money(
-          revenue?.summary?.finance_shadow_tax,
-        ),
-        note: 'Read-only tax shadow',
-        tone: 'amber',
-      },
-      {
-        label: 'Payment Variance',
-        value: money(
-          payments?.summary?.difference,
-        ),
-        note: payments?.summary?.is_reconciled
-          ? 'Reconciled'
-          : 'Requires review',
-        tone: payments?.summary?.is_reconciled
-          ? 'green'
-          : 'red',
-      },
-      {
-        label: 'Readiness Checks',
-        value: health
-          ? `${numberValue(
-              health.summary?.checks_passed,
-            )} / ${numberValue(
-              health.summary?.checks_total,
-            )}`
-          : '—',
-        note: readable(health?.overall_status),
-        tone:
-          statusTone(health?.overall_status) === 'positive'
-            ? 'green'
-            : 'amber',
-      },
-    ],
+  const model = useMemo(
+    () => buildModel(
+      revenue,
+      reconciliation,
+      health,
+    ),
     [
       health,
-      payments,
+      reconciliation,
       revenue,
     ],
   );
 
-  const healthChecks = useMemo(
-    () => Object.entries(health?.checks ?? {}),
-    [health],
-  );
+  const metrics = [
+    {
+      label: 'Total Revenue',
+      value: model.totalRevenue,
+      symbol: '▥',
+      tone: 'green',
+      source: sourceLabel(
+        model.totalRevenue,
+      ),
+    },
+    {
+      label: 'Gross Margin',
+      value: model.grossMargin,
+      symbol: '↗',
+      tone: 'purple',
+      source: '',
+    },
+    {
+      label: 'Total Expenses',
+      value: model.totalExpenses,
+      symbol: '↓',
+      tone: 'orange',
+      source: '',
+    },
+    {
+      label: 'Net Profit',
+      value: model.netProfit,
+      symbol: '▧',
+      tone: 'emerald',
+      source: '',
+    },
+    {
+      label: 'Cash in Hand',
+      value: model.cashInHand,
+      symbol: '▰',
+      tone: 'blue',
+      source: '',
+    },
+    {
+      label: 'Insurance Receivables',
+      value: model.insuranceReceivables,
+      symbol: '✦',
+      tone: 'amber',
+      source: '',
+    },
+    {
+      label: 'Accounts Payable',
+      value: model.accountsPayable,
+      symbol: '▤',
+      tone: 'red',
+      source: '',
+    },
+    {
+      label: 'Inventory Value',
+      value: model.inventoryValue,
+      symbol: '◇',
+      tone: 'royal',
+      source: '',
+    },
+  ];
 
-  const submitFilters = (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-    void loadDashboard();
-  };
-
-  const openFinanceModule = (key: string) => {
-    if (
-      moduleNavigationPending.current
-      || !onOpenFinanceModule
-    ) {
-      return;
-    }
-
-    moduleNavigationPending.current = true;
-    onOpenFinanceModule(key);
-
-    window.requestAnimationFrame(() => {
-      moduleNavigationPending.current = false;
-    });
-  };
+  const profitAndLossRows = [
+    {
+      label: 'Total Revenue',
+      value:
+        model.profitAndLoss.totalRevenue,
+    },
+    {
+      label: 'Cost of Goods Sold',
+      value:
+        model.profitAndLoss.costOfGoodsSold,
+    },
+    {
+      label: 'Gross Profit',
+      value:
+        model.profitAndLoss.grossProfit,
+      emphasis: 'positive',
+    },
+    {
+      label: 'Total Expenses',
+      value:
+        model.profitAndLoss.totalExpenses,
+    },
+    {
+      label: 'Net Profit',
+      value:
+        model.profitAndLoss.netProfit,
+      emphasis: 'positive',
+    },
+  ];
 
   return (
     <section
-      className="finance-live-v7c"
-      data-finance-redesign="live-v7c"
-      data-finance-source="three-production-reports"
+      className="finance-reference-v1"
+      data-finance-layout="approved-reference-v1"
+      data-finance-empty-policy="no-fabricated-values"
     >
-      <header className="finance-live-v7c__hero">
-        <div>
-          <span>Finance and control</span>
+      <header className="finance-reference-v1__header">
+        <div className="finance-reference-v1__title">
           <h1>Finance Overview</h1>
           <p>
-            Live payment, revenue-shadow, reconciliation and
-            readiness signals from authenticated production
-            Finance reports.
+            Real-time financial performance of your business
           </p>
         </div>
 
-        <aside
-          className={`finance-live-v7c__status finance-live-v7c__status--${
-            statusTone(health?.overall_status)
-          }`}
-        >
-          <strong>
-            {isLoading
-              ? 'Loading Finance data'
-              : readable(health?.overall_status)}
-          </strong>
-          <small>
-            Finance shadow · read-only reporting
-          </small>
-        </aside>
+        <div className="finance-reference-v1__controls">
+          <label>
+            <span>Date Range:</span>
+
+            <select
+              value={selectedRange}
+              onChange={(event) =>
+                setSelectedRange(
+                  event.target.value as RangeKey,
+                )
+              }
+            >
+              <option value="this-month">
+                This month
+              </option>
+              <option value="last-30-days">
+                Last 30 days
+              </option>
+              <option value="previous-month">
+                Previous month
+              </option>
+              <option value="this-year">
+                This year
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>Branch:</span>
+
+            <select
+              value={selectedBranch}
+              onChange={(event) =>
+                setSelectedBranch(
+                  event.target.value,
+                )
+              }
+            >
+              <option value="">
+                All Branches
+              </option>
+
+              {branches.map((branch) => (
+                <option
+                  key={branch.id}
+                  value={branch.id}
+                >
+                  {branch.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
 
-      <form
-        className="finance-live-v7c__filters"
-        onSubmit={submitFilters}
+      <nav
+        aria-label="Finance workspace navigation"
+        className="finance-reference-v1__tabs"
       >
-        <label>
-          <span>From</span>
-          <input
-            type="date"
-            value={from}
-            onChange={(event) =>
-              setFrom(event.target.value)
-            }
-          />
-        </label>
+        {NAVIGATION_ITEMS.map(
+          (item) => {
+            const isOverview =
+              item.label === 'Overview';
 
-        <label>
-          <span>To</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(event) =>
-              setTo(event.target.value)
-            }
-          />
-        </label>
+            const destination =
+              isOverview
+                ? undefined
+                : findModule(
+                    item.aliases,
+                  );
 
-        <label>
-          <span>Branch ID</span>
-          <input
-            inputMode="numeric"
-            placeholder="All branches"
-            value={branchId}
-            onChange={(event) =>
-              setBranchId(event.target.value)
-            }
-          />
-        </label>
+            return (
+              <button
+                aria-current={
+                  isOverview
+                    ? 'page'
+                    : undefined
+                }
+                className={
+                  isOverview
+                    ? 'active'
+                    : ''
+                }
+                disabled={
+                  !isOverview
+                  && !destination
+                }
+                key={item.label}
+                onClick={() => {
+                  if (!isOverview) {
+                    openModule(
+                      item.aliases,
+                    );
+                  }
+                }}
+                type="button"
+              >
+                {item.label}
+              </button>
+            );
+          },
+        )}
 
-        <button
-          type="submit"
-          disabled={isLoading}
-        >
-          {isLoading
-            ? 'Refreshing…'
-            : 'Refresh Finance'}
-        </button>
-      </form>
+        <span className="finance-reference-v1__updated">
+          <span aria-hidden="true">
+            ◷
+          </span>
+
+          {lastUpdated
+            ? `Last updated: ${lastUpdated}`
+            : 'Last updated: —'}
+        </span>
+      </nav>
 
       {error && (
         <div
-          className="finance-live-v7c__message finance-live-v7c__message--error"
+          className="finance-reference-v1__alert"
           role="alert"
         >
-          <strong>Finance data is unavailable</strong>
+          <strong>
+            Finance data is unavailable.
+          </strong>
+
           <span>{error}</span>
         </div>
       )}
 
-      <div className="finance-live-v7c__metrics">
+      <div className="finance-reference-v1__metrics">
         {metrics.map((metric) => (
           <article
-            className={`finance-live-v7c__metric finance-live-v7c__metric--${metric.tone}`}
+            className="finance-reference-v1__metric"
             key={metric.label}
           >
-            <span>{metric.label}</span>
-            <strong>
-              {isLoading ? 'Loading…' : metric.value}
-            </strong>
-            <small>{metric.note}</small>
+            <header>
+              <MetricIcon
+                symbol={metric.symbol}
+                tone={metric.tone}
+              />
+
+              <strong>
+                {metric.label}
+              </strong>
+            </header>
+
+            <small>RWF</small>
+
+            <div
+              aria-label={
+                metric.value === null
+                  ? `${metric.label}: no data`
+                  : undefined
+              }
+              className="finance-reference-v1__metric-value"
+            >
+              {isLoading
+                ? '—'
+                : formatAmount(
+                    metric.value,
+                  )}
+            </div>
+
+            <div className="finance-reference-v1__metric-context">
+              {metric.source || '\u00A0'}
+            </div>
           </article>
         ))}
       </div>
 
-      <div className="finance-live-v7c__workspace">
-        <article className="finance-live-v7c__panel">
+      <div className="finance-reference-v1__analytics">
+        <article className="finance-reference-v1__panel finance-reference-v1__panel--revenue">
           <header>
-            <div>
-              <span>Payment control</span>
-              <h2>POS and Finance Reconciliation</h2>
-            </div>
+            <h2>
+              Revenue vs Expenses Trend
+            </h2>
 
-            <strong
-              className={`finance-live-v7c__badge finance-live-v7c__badge--${
-                payments?.summary?.is_reconciled
-                  ? 'positive'
-                  : 'review'
-              }`}
+            <select
+              aria-label="Revenue trend period"
+              defaultValue="6-months"
             >
-              {payments
-                ? payments.summary.is_reconciled
-                  ? 'Reconciled'
-                  : 'Review required'
-                : 'Not available'}
-            </strong>
+              <option value="6-months">
+                6 Months
+              </option>
+            </select>
           </header>
 
-          <div className="finance-live-v7c__summary-list">
-            <div>
-              <span>POS completed payments</span>
-              <strong>
-                {money(
-                  payments?.summary
-                    ?.pos_completed_payments_total,
-                )}
-              </strong>
-            </div>
+          <div className="finance-reference-v1__legend">
+            <span>
+              <i className="green" />
+              Revenue
+            </span>
+            <span>
+              <i className="red" />
+              Expenses
+            </span>
+            <span>
+              <i className="blue" />
+              Net Profit
+            </span>
+          </div>
 
-            <div>
-              <span>Finance shadow payments</span>
-              <strong>
-                {money(
-                  payments?.summary
-                    ?.finance_shadow_payment_total,
-                )}
-              </strong>
-            </div>
+          <EmptyChart kind="bar" />
+        </article>
 
-            <div>
-              <span>Missing postings</span>
-              <strong>
-                {numberValue(
-                  payments?.summary
-                    ?.missing_finance_postings_count,
-                )}
-              </strong>
-            </div>
+        <article className="finance-reference-v1__panel finance-reference-v1__panel--cash-flow">
+          <header>
+            <h2>Cash Flow Overview</h2>
 
-            <div>
-              <span>Orphan shadow postings</span>
+            <select
+              aria-label="Cash-flow period"
+              defaultValue="6-months"
+            >
+              <option value="6-months">
+                6 Months
+              </option>
+            </select>
+          </header>
+
+          <div className="finance-reference-v1__legend">
+            <span>
+              <i className="green" />
+              Cash In
+            </span>
+            <span>
+              <i className="red" />
+              Cash Out
+            </span>
+            <span>
+              <i className="blue" />
+              Net Cash Flow
+            </span>
+          </div>
+
+          <EmptyChart kind="line" />
+        </article>
+
+        <article className="finance-reference-v1__panel finance-reference-v1__panel--profit-loss">
+          <header>
+            <h2>Profit &amp; Loss Summary</h2>
+
+            <select
+              aria-label="Profit-and-loss period"
+              defaultValue="this-month"
+            >
+              <option value="this-month">
+                This Month
+              </option>
+            </select>
+          </header>
+
+          <div className="finance-reference-v1__pnl">
+            {profitAndLossRows.map(
+              (row) => (
+                <div
+                  className={
+                    row.emphasis
+                      ? `finance-reference-v1__pnl-row finance-reference-v1__pnl-row--${row.emphasis}`
+                      : 'finance-reference-v1__pnl-row'
+                  }
+                  key={row.label}
+                >
+                  <span>{row.label}</span>
+
+                  <strong>
+                    {formatMoney(
+                      row.value,
+                    )}
+                  </strong>
+                </div>
+              ),
+            )}
+
+            <div className="finance-reference-v1__pnl-margin">
+              <span>Profit Margin</span>
+
               <strong>
-                {numberValue(
-                  payments?.summary
-                    ?.orphan_finance_shadow_postings_count,
-                )}
+                {model.profitAndLoss
+                  .profitMargin === null
+                  ? '—'
+                  : `${model.profitAndLoss.profitMargin.toFixed(1)}%`}
               </strong>
             </div>
           </div>
         </article>
 
-        <article className="finance-live-v7c__panel">
+        <article className="finance-reference-v1__panel finance-reference-v1__panel--expenses">
           <header>
-            <div>
-              <span>Release readiness</span>
-              <h2>Finance Health Checks</h2>
-            </div>
+            <h2>Expense Breakdown</h2>
 
-            <strong
-              className={`finance-live-v7c__badge finance-live-v7c__badge--${
-                statusTone(health?.overall_status)
-              }`}
+            <select
+              aria-label="Expense period"
+              defaultValue="this-month"
             >
-              {readable(health?.overall_status)}
-            </strong>
+              <option value="this-month">
+                This Month
+              </option>
+            </select>
           </header>
 
-          {healthChecks.length > 0 ? (
-            <div className="finance-live-v7c__health-list">
-              {healthChecks.map(([key, check]) => (
-                <div key={key}>
-                  <span>
-                    {check.label || readable(key)}
-                  </span>
-                  <strong
-                    className={`finance-live-v7c__badge finance-live-v7c__badge--${
-                      statusTone(check.status)
-                    }`}
-                  >
-                    {readable(check.status)}
-                  </strong>
+          <div className="finance-reference-v1__expense-chart">
+            <EmptyDonut />
+
+            <div className="finance-reference-v1__expense-legend">
+              {[
+                'Staff Expenses',
+                'Rent & Utilities',
+                'Transport',
+                'Administrative',
+                'Marketing',
+                'Others',
+              ].map((label) => (
+                <div key={label}>
+                  <span>{label}</span>
+                  <strong>—</strong>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="finance-live-v7c__empty">
-              No readiness checks are available for the
-              selected period.
-            </div>
-          )}
+          </div>
         </article>
       </div>
 
-      <article className="finance-live-v7c__panel">
-        <header>
-          <div>
-            <span>Payment channels</span>
-            <h2>Reconciliation by Payment Method</h2>
-          </div>
-        </header>
-
-        <div className="finance-live-v7c__table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Payment method</th>
-                <th>POS total</th>
-                <th>Finance shadow</th>
-                <th>Difference</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {(payments?.payment_methods ?? []).map(
-                (method) => (
-                  <tr key={method.payment_method}>
-                    <td>
-                      {readable(method.payment_method)}
-                    </td>
-                    <td>{money(method.pos_total)}</td>
-                    <td>
-                      {money(method.finance_shadow_total)}
-                    </td>
-                    <td>{money(method.difference)}</td>
-                  </tr>
-                ),
-              )}
-
-              {(payments?.payment_methods ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={4}>
-                    No payment-method reconciliation data is
-                    available for this period.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </article>
-
-      <article className="finance-live-v7c__panel">
-        <header>
-          <div>
-            <span>Revenue shadow</span>
-            <h2>Revenue and Tax Allocation</h2>
-          </div>
-        </header>
-
-        <div className="finance-live-v7c__table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Payment method</th>
-                <th>Operational revenue</th>
-                <th>Shadow revenue</th>
-                <th>Shadow tax</th>
-                <th>Revenue difference</th>
-                <th>Tax difference</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {(revenue?.payment_methods ?? []).map(
-                (method) => (
-                  <tr key={method.payment_method}>
-                    <td>
-                      {readable(method.payment_method)}
-                    </td>
-                    <td>
-                      {money(
-                        method.operational_allocated_revenue,
-                      )}
-                    </td>
-                    <td>
-                      {money(method.finance_shadow_revenue)}
-                    </td>
-                    <td>
-                      {money(method.finance_shadow_tax)}
-                    </td>
-                    <td>
-                      {money(method.revenue_difference)}
-                    </td>
-                    <td>
-                      {money(method.tax_difference)}
-                    </td>
-                  </tr>
-                ),
-              )}
-
-              {(revenue?.payment_methods ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={6}>
-                    No revenue-shadow allocation data is
-                    available for this period.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </article>
-
-      <div
-        className="finance-live-v7c__message"
-        role="note"
-      >
-        <strong>Tax Registry not activated</strong>
-        <span>
-          The current production backend does not expose the
-          Tax Registry reporting routes. No exemption, tax
-          treatment or registry decision is calculated here.
-        </span>
-      </div>
-
-      {financeModules.length > 0 && (
-        <section
-          className="finance-live-v7c__modules"
-          aria-labelledby="finance-live-modules-title"
-        >
+      <div className="finance-reference-v1__records">
+        <article className="finance-reference-v1__panel finance-reference-v1__panel--transactions">
           <header>
-            <div>
-              <span>Finance suite</span>
-              <h2 id="finance-live-modules-title">
-                Finance Modules
-              </h2>
-              <p>
-                Open a focused workflow without leaving the
-                authorised workspace structure.
-              </p>
-            </div>
-
-            <strong>
-              {financeModules.length} modules
-            </strong>
+            <h2>Recent Transactions</h2>
           </header>
 
-          <div className="finance-live-v7c__module-grid">
-            {financeModules.map((financeModule) => (
-              <article
-                className="finance-live-v7c__module-card"
-                key={financeModule.key}
-              >
-                <div>
-                  <span>Finance</span>
-                  <h3>{financeModule.label}</h3>
-                  <p>
-                    {financeModule.description?.trim()
-                      || 'Open this Finance workflow for focused review and action.'}
-                  </p>
-                </div>
+          <div className="finance-reference-v1__table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Account</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
 
-                <button
-                  type="button"
-                  disabled={!onOpenFinanceModule}
-                  onClick={() =>
-                    openFinanceModule(financeModule.key)
-                  }
-                >
-                  <span>Open module</span>
-                  <b aria-hidden="true">→</b>
-                </button>
-              </article>
-            ))}
+              <tbody>
+                {model.recentTransactions.map(
+                  (transaction) => (
+                    <tr key={transaction.id}>
+                      <td>{transaction.date}</td>
+                      <td>{transaction.type}</td>
+                      <td>
+                        {transaction.description}
+                      </td>
+                      <td>
+                        {transaction.account}
+                      </td>
+                      <td>
+                        {formatMoney(
+                          transaction.amount,
+                        )}
+                      </td>
+                      <td>
+                        {transaction.status}
+                      </td>
+                    </tr>
+                  ),
+                )}
+
+                {model.recentTransactions.length === 0 && (
+                  <EmptyTableRow columns={6} />
+                )}
+              </tbody>
+            </table>
           </div>
-        </section>
-      )}
+
+          <button
+            className="finance-reference-v1__text-link"
+            disabled={!findModule([
+              'transaction',
+              'general ledger',
+            ])}
+            onClick={() =>
+              openModule([
+                'transaction',
+                'general ledger',
+              ])
+            }
+            type="button"
+          >
+            View All Transactions
+            <span aria-hidden="true">→</span>
+          </button>
+        </article>
+
+        <article className="finance-reference-v1__panel finance-reference-v1__panel--receivables">
+          <header>
+            <h2>Top Receivables</h2>
+          </header>
+
+          <div className="finance-reference-v1__table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer/Payer</th>
+                  <th>Outstanding</th>
+                  <th>Ageing</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {model.topReceivables.map(
+                  (receivable) => (
+                    <tr key={receivable.id}>
+                      <td>
+                        {receivable.customer}
+                      </td>
+                      <td>
+                        {formatMoney(
+                          receivable.outstanding,
+                        )}
+                      </td>
+                      <td>
+                        {receivable.ageing}
+                      </td>
+                    </tr>
+                  ),
+                )}
+
+                {model.topReceivables.length === 0 && (
+                  <EmptyTableRow columns={3} />
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <button
+            className="finance-reference-v1__text-link"
+            disabled={!findModule([
+              'receivable',
+            ])}
+            onClick={() =>
+              openModule([
+                'receivable',
+              ])
+            }
+            type="button"
+          >
+            View All Receivables
+            <span aria-hidden="true">→</span>
+          </button>
+        </article>
+
+        <article className="finance-reference-v1__panel finance-reference-v1__panel--payables">
+          <header>
+            <h2>Upcoming Payables</h2>
+          </header>
+
+          <div className="finance-reference-v1__table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Due Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {model.upcomingPayables.map(
+                  (payable) => (
+                    <tr key={payable.id}>
+                      <td>
+                        {payable.supplier}
+                      </td>
+                      <td>
+                        {payable.dueDate}
+                      </td>
+                      <td>
+                        {formatMoney(
+                          payable.amount,
+                        )}
+                      </td>
+                      <td>
+                        {payable.status}
+                      </td>
+                    </tr>
+                  ),
+                )}
+
+                {model.upcomingPayables.length === 0 && (
+                  <EmptyTableRow columns={4} />
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <button
+            className="finance-reference-v1__text-link"
+            disabled={!findModule([
+              'payable',
+            ])}
+            onClick={() =>
+              openModule([
+                'payable',
+              ])
+            }
+            type="button"
+          >
+            View All Payables
+            <span aria-hidden="true">→</span>
+          </button>
+        </article>
+      </div>
+
+      <div className="finance-reference-v1__utilities">
+        <article className="finance-reference-v1__panel">
+          <header>
+            <h2>Quick Actions</h2>
+          </header>
+
+          <div className="finance-reference-v1__quick-actions">
+            {QUICK_ACTIONS.map(
+              (action) => {
+                const destination =
+                  findModule(
+                    action.aliases,
+                  );
+
+                return (
+                  <button
+                    disabled={!destination}
+                    key={action.label}
+                    onClick={() =>
+                      openModule(
+                        action.aliases,
+                      )
+                    }
+                    type="button"
+                  >
+                    <span aria-hidden="true">
+                      {action.icon}
+                    </span>
+
+                    <small>
+                      {action.label}
+                    </small>
+                  </button>
+                );
+              },
+            )}
+          </div>
+        </article>
+
+        <article className="finance-reference-v1__panel">
+          <header>
+            <h2>Bank Accounts</h2>
+
+            <select
+              aria-label="Bank-account period"
+              defaultValue="this-month"
+            >
+              <option value="this-month">
+                This Month
+              </option>
+            </select>
+          </header>
+
+          <div className="finance-reference-v1__bank-accounts">
+            {model.bankAccounts.map(
+              (account) => (
+                <div key={account.id}>
+                  <span>{account.label}</span>
+
+                  <strong>
+                    {formatMoney(
+                      account.balance,
+                    )}
+                  </strong>
+
+                  <small>Balance</small>
+                </div>
+              ),
+            )}
+          </div>
+        </article>
+
+        <article className="finance-reference-v1__panel">
+          <header>
+            <h2>Report Shortcuts</h2>
+          </header>
+
+          <div className="finance-reference-v1__report-shortcuts">
+            {REPORT_SHORTCUTS.map(
+              (report) => {
+                const destination =
+                  findModule(
+                    report.aliases,
+                  );
+
+                return (
+                  <button
+                    disabled={!destination}
+                    key={report.label}
+                    onClick={() =>
+                      openModule(
+                        report.aliases,
+                      )
+                    }
+                    type="button"
+                  >
+                    <span aria-hidden="true">
+                      {report.icon}
+                    </span>
+
+                    <small>
+                      {report.label}
+                    </small>
+                  </button>
+                );
+              },
+            )}
+          </div>
+        </article>
+      </div>
+
+      <div
+        aria-live="polite"
+        className="finance-reference-v1__loading-state"
+      >
+        {isLoading
+          ? 'Refreshing available Finance information…'
+          : ''}
+      </div>
     </section>
   );
 }
