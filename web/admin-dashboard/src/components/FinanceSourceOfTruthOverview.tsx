@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   getPharmaFinancePosRevenueShadowReport,
   getPharmaFinancePosShadowReconciliationReport,
   getPharmaFinanceReadinessHealthReport,
+  getPharmaTaxRegistryEditions,
+  getPharmaTaxRegistrySummary,
+  searchPharmaTaxRegistry,
 } from '../lib/api';
 
 type Props = {
@@ -17,6 +20,7 @@ type FinanceTab =
   | 'receivables'
   | 'payables'
   | 'banking'
+  | 'tax-registry'
   | 'reports';
 
 function tenantSlugFromProfile(profile: any): string {
@@ -175,6 +179,15 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
   const [revenue, setRevenue] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [registrySummary, setRegistrySummary] = useState<any>(null);
+  const [registryEditions, setRegistryEditions] = useState<any[]>([]);
+  const [registryCandidates, setRegistryCandidates] = useState<any[]>([]);
+  const [registryQuery, setRegistryQuery] = useState('');
+  const [registryLoading, setRegistryLoading] = useState(false);
+  const [registrySearchLoading, setRegistrySearchLoading] = useState(false);
+  const [registryError, setRegistryError] = useState('');
+  const [registrySearchNotice, setRegistrySearchNotice] = useState('');
   const [loadedAt, setLoadedAt] = useState('');
 
   const tenantSlug = tenantSlugFromProfile(profile);
@@ -211,8 +224,119 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
     }
   }
 
+
+  async function loadTaxRegistryOverview() {
+    if (!tenantSlug) {
+      setRegistrySummary(null);
+      setRegistryEditions([]);
+      setRegistryError(
+        'No tenant assignment is available for the tax registry review desk.',
+      );
+      return;
+    }
+
+    setRegistryLoading(true);
+    setRegistryError('');
+
+    try {
+      const [summaryResponse, editionsResponse] = await Promise.all([
+        getPharmaTaxRegistrySummary(
+          token,
+          tenantSlug,
+          { as_of: to },
+        ),
+        getPharmaTaxRegistryEditions(
+          token,
+          tenantSlug,
+          { limit: 12 },
+        ),
+      ]);
+
+      setRegistrySummary(summaryResponse.data);
+      setRegistryEditions(
+        Array.isArray(editionsResponse.data)
+          ? editionsResponse.data
+          : [],
+      );
+    } catch (exception) {
+      setRegistryError(
+        exception instanceof Error
+          ? exception.message
+          : 'Unable to load the RRA registry review desk.',
+      );
+    } finally {
+      setRegistryLoading(false);
+    }
+  }
+
+  async function handleRegistrySearch(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    const query = registryQuery.trim();
+
+    if (!query) {
+      setRegistryError(
+        'Enter an official, generic or registered medicine name.',
+      );
+      setRegistrySearchNotice('');
+      return;
+    }
+
+    if (!tenantSlug) {
+      setRegistryError(
+        'No tenant assignment is available for registry search.',
+      );
+      return;
+    }
+
+    setRegistrySearchLoading(true);
+    setRegistryError('');
+    setRegistrySearchNotice('');
+
+    try {
+      const response = await searchPharmaTaxRegistry(
+        token,
+        tenantSlug,
+        {
+          query,
+          as_of: to,
+          limit: 20,
+        },
+      );
+
+      const candidates = Array.isArray(
+        response.data?.candidates,
+      )
+        ? response.data.candidates
+        : [];
+
+      setRegistryCandidates(candidates);
+      setRegistrySearchNotice(
+        candidates.length === 0
+          ? 'No approved and effective registry candidate matched this search.'
+          : `${candidates.length} review candidate${candidates.length === 1 ? '' : 's'} found.`,
+      );
+    } catch (exception) {
+      setRegistryCandidates([]);
+      setRegistryError(
+        exception instanceof Error
+          ? exception.message
+          : 'Unable to search the RRA registry.',
+      );
+    } finally {
+      setRegistrySearchLoading(false);
+    }
+  }
+
   useEffect(() => {
     void loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    void loadTaxRegistryOverview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -271,6 +395,7 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
     ['receivables', 'Receivables'],
     ['payables', 'Payables'],
     ['banking', 'Banking'],
+    ['tax-registry', 'Tax Registry'],
     ['reports', 'Reports'],
   ];
 
@@ -360,6 +485,27 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
           <StatusBadge value={health?.dashboard_switch_status ?? 'not_ready'} />
         </div>
       </header>
+
+      <section
+        className="finance-inclusive-operating-strip"
+        aria-label="Finance control status"
+      >
+        <article>
+          <small>Operating mode</small>
+          <strong>Finance shadow</strong>
+          <span>No ledger or POS cutover</span>
+        </article>
+        <article>
+          <small>Tax registry</small>
+          <strong>Read-only evidence</strong>
+          <span>Approved and effective editions only</span>
+        </article>
+        <article>
+          <small>Decision authority</small>
+          <strong>Human review</strong>
+          <span>No category or search result grants exemption</span>
+        </article>
+      </section>
 
       <section className="finance-inclusive-toolbar">
         <label>
@@ -527,6 +673,275 @@ export function FinanceSourceOfTruthOverview({ token, profile }: Props) {
             </article>
           </section>
         </>
+      ) : activeTab === 'tax-registry' ? (
+        <section
+          className="finance-tax-registry"
+          aria-label="RRA tax registry review desk"
+        >
+          <article className="finance-inclusive-panel finance-tax-registry__intro">
+            <header>
+              <div>
+                <span className="finance-tax-registry__eyebrow">
+                  RRA evidence workspace
+                </span>
+                <h3>Tax Registry Review Desk</h3>
+                <small>
+                  Search approved and effective registry records without changing
+                  tax treatment, product assignments or POS calculations.
+                </small>
+              </div>
+              <span className="finance-tax-registry__mode">
+                Read-only
+              </span>
+            </header>
+
+            <div className="finance-tax-registry__policy">
+              <strong>Human review remains mandatory</strong>
+              <p>
+                A registry result is an evidence candidate only. It does not grant
+                VAT exemption, zero-rating or any other tax treatment.
+              </p>
+            </div>
+          </article>
+
+          <section className="finance-tax-registry__summary">
+            <article>
+              <small>Approved active editions</small>
+              <strong>
+                {numberValue(registrySummary?.approved_active_lists)}
+              </strong>
+              <span>Effective on {registrySummary?.as_of || to}</span>
+            </article>
+            <article>
+              <small>Active registry items</small>
+              <strong>
+                {numberValue(registrySummary?.active_items)}
+              </strong>
+              <span>Eligible for evidence search</span>
+            </article>
+            <article>
+              <small>Active aliases</small>
+              <strong>
+                {numberValue(registrySummary?.active_aliases)}
+              </strong>
+              <span>Alternative-name support</span>
+            </article>
+            <article>
+              <small>Automatic exemption</small>
+              <strong>No</strong>
+              <span>Review and approval required</span>
+            </article>
+          </section>
+
+          <article className="finance-inclusive-panel">
+            <header className="finance-tax-registry__section-header">
+              <div>
+                <h3>Search registry evidence</h3>
+                <small>
+                  Search an official, generic or registered medicine name.
+                </small>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadTaxRegistryOverview()}
+                disabled={registryLoading}
+              >
+                {registryLoading ? 'Refreshing…' : 'Refresh registry'}
+              </button>
+            </header>
+
+            <form
+              className="finance-tax-registry__search"
+              onSubmit={(event) => void handleRegistrySearch(event)}
+            >
+              <label>
+                <span>Medicine or registered name</span>
+                <input
+                  type="search"
+                  value={registryQuery}
+                  onChange={(event) => setRegistryQuery(event.target.value)}
+                  placeholder="Example: Paracetamol"
+                  maxLength={191}
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={registrySearchLoading}
+              >
+                {registrySearchLoading ? 'Searching…' : 'Search registry'}
+              </button>
+            </form>
+
+            {registryError && (
+              <div className="form-error">{registryError}</div>
+            )}
+
+            {registrySearchNotice && (
+              <div className="finance-tax-registry__notice">
+                {registrySearchNotice}
+              </div>
+            )}
+
+            <div
+              className="finance-tax-registry__table-scroll"
+              role="region"
+              aria-label="Registry evidence candidates"
+              tabIndex={0}
+            >
+              <table className="finance-inclusive-table">
+                <thead>
+                  <tr>
+                    <th>Official medicine</th>
+                    <th>Generic / alias</th>
+                    <th>Form and strength</th>
+                    <th>Registration / HS</th>
+                    <th>Registry edition</th>
+                    <th>Match evidence</th>
+                    <th>Decision status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {registryCandidates.map((candidate: any) => (
+                    <tr key={candidate.item?.uuid || candidate.item?.id}>
+                      <td>
+                        <strong>{candidate.item?.official_name || '—'}</strong>
+                        <small>
+                          {candidate.item?.manufacturer || 'Manufacturer not listed'}
+                        </small>
+                      </td>
+                      <td>
+                        <span>{candidate.item?.generic_name || '—'}</span>
+                        <small>
+                          {(candidate.item?.aliases || []).join(', ') || 'No active aliases'}
+                        </small>
+                      </td>
+                      <td>
+                        <span>{candidate.item?.dosage_form || '—'}</span>
+                        <small>{candidate.item?.strength || 'Strength not listed'}</small>
+                      </td>
+                      <td>
+                        <span>{candidate.item?.registration_number || '—'}</span>
+                        <small>HS {candidate.item?.hs_code || 'not listed'}</small>
+                      </td>
+                      <td>
+                        <span>{candidate.registry_edition?.code || '—'}</span>
+                        <small>
+                          {candidate.registry_edition?.version_label || 'Version not labelled'}
+                        </small>
+                      </td>
+                      <td>
+                        <strong>{numberValue(candidate.match_score)}%</strong>
+                        <small>
+                          {(candidate.match_reasons || [])
+                            .map((reason: string) => readable(reason))
+                            .join(', ') || 'Candidate evidence'}
+                        </small>
+                      </td>
+                      <td>
+                        <span className="finance-tax-registry__review-badge">
+                          Review required
+                        </span>
+                        <small>Automatic exemption: No</small>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {registryCandidates.length === 0 && (
+                    <tr>
+                      <td colSpan={7}>
+                        Search results will appear here. No tax treatment is
+                        changed from this workspace.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article className="finance-inclusive-panel">
+            <header className="finance-tax-registry__section-header">
+              <div>
+                <h3>Registry editions</h3>
+                <small>
+                  Published, draft and historical editions are visible for
+                  traceability; searches use approved and effective editions.
+                </small>
+              </div>
+              <StatusBadge
+                value={
+                  registrySummary?.approved_active_lists > 0
+                    ? 'active'
+                    : 'review'
+                }
+              />
+            </header>
+
+            <div
+              className="finance-tax-registry__table-scroll"
+              role="region"
+              aria-label="RRA registry editions"
+              tabIndex={0}
+            >
+              <table className="finance-inclusive-table">
+                <thead>
+                  <tr>
+                    <th>Edition</th>
+                    <th>Authority</th>
+                    <th>Published</th>
+                    <th>Effective period</th>
+                    <th>Records</th>
+                    <th>Import status</th>
+                    <th>Source integrity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {registryEditions.map((edition: any) => (
+                    <tr key={edition.uuid || edition.id}>
+                      <td>
+                        <strong>{edition.code || edition.title}</strong>
+                        <small>{edition.version_label || edition.title}</small>
+                      </td>
+                      <td>{edition.issuing_authority || 'Not stated'}</td>
+                      <td>{edition.publication_date || '—'}</td>
+                      <td>
+                        <span>{edition.effective_from || '—'}</span>
+                        <small>to {edition.effective_to || 'open-ended'}</small>
+                      </td>
+                      <td>
+                        {numberValue(
+                          edition.items_count
+                          ?? edition.record_count,
+                        )}
+                      </td>
+                      <td>
+                        <StatusBadge value={edition.import_status} />
+                      </td>
+                      <td>
+                        <span>
+                          {edition.source_sha256
+                            ? 'Hash recorded'
+                            : 'Hash not recorded'}
+                        </span>
+                        <small>{edition.source_format || 'Format not stated'}</small>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {registryEditions.length === 0 && (
+                    <tr>
+                      <td colSpan={7}>
+                        {registryLoading
+                          ? 'Loading registry editions…'
+                          : 'No registry editions are available.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
       ) : (
         <section className="finance-inclusive-panel finance-inclusive-detail">
           <h3>{tabs.find(([key]) => key === activeTab)?.[1]}</h3>

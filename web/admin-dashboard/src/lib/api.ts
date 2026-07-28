@@ -5165,3 +5165,167 @@ export async function getPharmaTrendAnalysis(
     `/v1/pharmaco/trend-analysis?${query.toString()}`,
   );
 }
+
+/* Finance read-only RRA registry client — Phase 4D4B */
+export type PharmaTaxRegistryPolicy = {
+  automatic_exemption_granted: boolean;
+  review_required: boolean;
+  approved_registry_match_required: boolean;
+  category_selection_grants_exemption: boolean;
+  fuzzy_match_grants_exemption: boolean;
+};
+
+export type PharmaTaxRegistrySummary = {
+  as_of: string;
+  approved_active_lists: number;
+  active_items: number;
+  active_aliases: number;
+  policy: PharmaTaxRegistryPolicy;
+};
+
+export type PharmaTaxRegistrySummaryResponse = {
+  data: PharmaTaxRegistrySummary;
+};
+
+export type PharmaTaxRegistryEdition = {
+  id: number;
+  uuid: string;
+  code: string;
+  title: string;
+  list_type: string;
+  issuing_authority: string | null;
+  version_label: string | null;
+  publication_date: string | null;
+  effective_from: string | null;
+  effective_to: string | null;
+  source_url: string | null;
+  source_sha256: string | null;
+  source_format: string | null;
+  import_status: string;
+  status: string;
+  record_count: number;
+  items_count: number;
+  approved_at: string | null;
+};
+
+export type PharmaTaxRegistryEditionsResponse = {
+  data: PharmaTaxRegistryEdition[];
+  policy: {
+    read_only: boolean;
+    approval_actions_available: boolean;
+  };
+};
+
+export type PharmaTaxRegistryCandidate = {
+  item: {
+    id: number;
+    uuid: string;
+    sequence_number: number;
+    official_name: string;
+    generic_name: string | null;
+    trade_name: string | null;
+    dosage_form: string | null;
+    strength: string | null;
+    pack_size: string | null;
+    registration_number: string | null;
+    hs_code: string | null;
+    manufacturer: string | null;
+    eligibility_scope: string | null;
+    aliases: string[];
+  };
+  registry_edition: {
+    id: number;
+    uuid: string;
+    code: string;
+    title: string;
+    version_label: string | null;
+    issuing_authority: string | null;
+    effective_from: string | null;
+    effective_to: string | null;
+    source_sha256: string | null;
+  } | null;
+  match_score: number;
+  match_reasons: string[];
+  registry_match_candidate: boolean;
+  automatic_exemption_granted: false;
+  review_required: true;
+};
+
+export type PharmaTaxRegistrySearchFilters = {
+  query?: string;
+  registration_number?: string;
+  hs_code?: string;
+  dosage_form?: string;
+  strength?: string;
+  as_of?: string;
+  limit?: number;
+};
+
+export type PharmaTaxRegistrySearchResponse = {
+  data: {
+    query: {
+      name: string | null;
+      registration_number: string | null;
+      hs_code: string | null;
+      dosage_form: string | null;
+      strength: string | null;
+      as_of: string;
+      limit: number;
+    };
+    candidate_count: number;
+    candidates: PharmaTaxRegistryCandidate[];
+    policy: PharmaTaxRegistryPolicy;
+  };
+};
+
+function financeTaxRegistryQuery(
+  filters?: Record<string, string | number | null | undefined>,
+): string {
+  const params = new URLSearchParams();
+
+  Object.entries(filters ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      params.set(key, String(value));
+    }
+  });
+
+  const query = params.toString();
+
+  return query ? `?${query}` : '';
+}
+
+export async function getPharmaTaxRegistrySummary(
+  token: string,
+  tenantSlug: string,
+  options?: { as_of?: string },
+): Promise<PharmaTaxRegistrySummaryResponse> {
+  return getJsonWithTenant<PharmaTaxRegistrySummaryResponse>(
+    token,
+    `/pharmaco/tax/registry/summary${financeTaxRegistryQuery(options)}`,
+    tenantSlug,
+  );
+}
+
+export async function getPharmaTaxRegistryEditions(
+  token: string,
+  tenantSlug: string,
+  options?: { limit?: number },
+): Promise<PharmaTaxRegistryEditionsResponse> {
+  return getJsonWithTenant<PharmaTaxRegistryEditionsResponse>(
+    token,
+    `/pharmaco/tax/registry/editions${financeTaxRegistryQuery(options)}`,
+    tenantSlug,
+  );
+}
+
+export async function searchPharmaTaxRegistry(
+  token: string,
+  tenantSlug: string,
+  filters: PharmaTaxRegistrySearchFilters,
+): Promise<PharmaTaxRegistrySearchResponse> {
+  return getJsonWithTenant<PharmaTaxRegistrySearchResponse>(
+    token,
+    `/pharmaco/tax/registry/search${financeTaxRegistryQuery(filters)}`,
+    tenantSlug,
+  );
+}
