@@ -12,12 +12,14 @@ class Product extends Model
         'uuid',
         'tenant_id',
         'product_category_id',
+        'business_category_id',
         'name',
         'generic_name',
         'brand_name',
         'sku',
         'barcode',
         'registration_number',
+        'hs_code',
         'dosage_form',
         'strength',
         'unit',
@@ -39,6 +41,8 @@ class Product extends Model
         'route_of_administration',
         'product_type',
         'regulatory_status',
+        'tax_classification_status',
+        'tax_classification_version',
         'requires_prescription',
         'is_controlled',
         'reorder_level',
@@ -59,6 +63,7 @@ class Product extends Model
         'reorder_level' => 'decimal:2',
         'minimum_stock_level' => 'decimal:2',
         'maximum_stock_level' => 'decimal:2',
+        'tax_classification_version' => 'integer',
         'metadata' => 'array',
     ];
 
@@ -75,6 +80,22 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'product_category_id');
+    }
+
+    public function businessCategory(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class, 'business_category_id');
+    }
+
+    public function taxAssignments(): HasMany
+    {
+        return $this->hasMany(ProductTaxAssignment::class);
+    }
+
+    public function activeTaxAssignment(): HasMany
+    {
+        return $this->hasMany(ProductTaxAssignment::class)
+            ->where('status', 'active');
     }
 
     public function stockBatches(): HasMany

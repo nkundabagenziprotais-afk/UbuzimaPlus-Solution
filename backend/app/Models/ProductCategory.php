@@ -43,4 +43,9 @@ class ProductCategory extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    public function businessTaxProducts(): HasMany
+    {
+        return $this->hasMany(Product::class, 'business_category_id');
+    }
 }
