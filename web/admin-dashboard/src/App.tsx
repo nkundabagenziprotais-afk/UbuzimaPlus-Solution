@@ -8430,6 +8430,18 @@ async function confirmTransaction() {
             <FinanceOverviewRedesign
               token={session!.token}
               profile={profile!}
+              financeModules={financeWorkspaceItems.filter(
+                (item) => item.key !== 'overview',
+              )}
+              onOpenFinanceModule={(key) => {
+                const destination = financeWorkspaceItems.find(
+                  (item) => item.key === key,
+                );
+
+                if (destination) {
+                  setActiveFinanceWorkspace(destination.key);
+                }
+              }}
             />
           )}
 

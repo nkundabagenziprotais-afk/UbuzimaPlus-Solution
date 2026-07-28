@@ -1,8 +1,17 @@
 import type { ComponentProps } from 'react';
 import type { FinanceSourceOfTruthOverview as LegacyFinanceSourceOfTruthOverview } from './FinanceSourceOfTruthOverview';
 
+type FinanceModuleLink = {
+  key: string;
+  label: string;
+  description?: string;
+};
+
 type FinanceOverviewRedesignProps =
-  ComponentProps<typeof LegacyFinanceSourceOfTruthOverview>;
+  ComponentProps<typeof LegacyFinanceSourceOfTruthOverview> & {
+    financeModules?: readonly FinanceModuleLink[];
+    onOpenFinanceModule?: (key: string) => void;
+  };
 
 const FINANCE_NAVIGATION = [
   'Overview',
@@ -127,10 +136,12 @@ function FinanceEmptyState({
   );
 }
 
-export function FinanceOverviewRedesign(
-  props: FinanceOverviewRedesignProps,
-) {
-  void props;
+export function FinanceOverviewRedesign({
+  financeModules = [],
+  onOpenFinanceModule,
+  ...legacyProps
+}: FinanceOverviewRedesignProps) {
+  void legacyProps;
 
   return (
     <section
@@ -602,6 +613,85 @@ export function FinanceOverviewRedesign(
           </div>
         </article>
       </div>
+
+      {financeModules.length > 0 && (
+        <section
+          className="finance-overview__module-launcher"
+          aria-labelledby="finance-module-launcher-title"
+          data-finance-module-launcher="active"
+        >
+          <div className="finance-overview__module-launcher-heading">
+            <div>
+              <span>Finance suite</span>
+              <h2 id="finance-module-launcher-title">
+                Finance Modules
+              </h2>
+              <p>
+                Open every configured Finance workspace without
+                leaving the Finance experience.
+              </p>
+            </div>
+
+            <strong>
+              {financeModules.length} modules
+            </strong>
+          </div>
+
+          <div className="finance-overview__module-grid">
+            {financeModules.map((financeModule) => {
+              const moduleCode = financeModule.label
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) =>
+                  part.slice(0, 1).toUpperCase()
+                )
+                .join('');
+
+              return (
+                <article
+                  className="finance-overview__module-card"
+                  data-finance-module-key={financeModule.key}
+                  key={financeModule.key}
+                >
+                  <div className="finance-overview__module-card-top">
+                    <span
+                      className="finance-overview__module-icon"
+                      aria-hidden="true"
+                    >
+                      {moduleCode || 'FM'}
+                    </span>
+
+                    <span className="finance-overview__module-status">
+                      Available
+                    </span>
+                  </div>
+
+                  <div className="finance-overview__module-copy">
+                    <h3>{financeModule.label}</h3>
+                    <p>
+                      {financeModule.description?.trim() ||
+                        'Open this Finance workspace for focused review and action.'}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onOpenFinanceModule?.(financeModule.key)
+                    }
+                    disabled={!onOpenFinanceModule}
+                    aria-label={`Open ${financeModule.label}`}
+                  >
+                    <span>Open module</span>
+                    <b aria-hidden="true">→</b>
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <footer className="finance-overview__compliance">
         <div>
