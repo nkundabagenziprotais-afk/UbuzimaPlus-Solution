@@ -1001,6 +1001,15 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
             'tenant.module:pharmaco.inventory',
         ]);
 
+    Route::get(
+        '/product-business-categories',
+        [ProductInventoryController::class, 'businessTaxCategories']
+    )->middleware([
+        'permission:pharmaco.product_master.view',
+        'tenant.module:pharmaco.inventory',
+    ]);
+
+
     Route::post('/product-categories', [ProductInventoryController::class, 'createProductCategory'])
         ->middleware([
             'permission:pharmaco.inventory.manage',

@@ -14,6 +14,7 @@ use App\Services\PharmaCo360\InventoryCostResolver;
 use App\Services\Access\ScopeResolver;
 use App\Services\Auth\UserAccessProfileService;
 use App\Services\Audit\AuditLogService;
+use App\Services\Tax\BusinessTaxCategoryService;
 use App\Services\PharmaCo360\ProductSellingUnitSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class ProductInventoryController extends Controller
     {
         $tenant = $request->attributes->get('tenant');
 
-        $products = Product::query()
+        $products = Product::query()->with(['category', 'businessCategory'])
             ->with('category')
             ->where('tenant_id', $tenant->id)
             ->when(
@@ -133,6 +134,40 @@ class ProductInventoryController extends Controller
             'categories' => $categories,
         ]);
     }
+
+
+    public function businessTaxCategories(
+        Request $request,
+        BusinessTaxCategoryService $businessTaxCategoryService
+    ): JsonResponse {
+        $tenant = $request->attributes->get('tenant');
+
+        $categories = $businessTaxCategoryService
+            ->activeForTenant($tenant)
+            ->map(
+                fn (ProductCategory $category): array => [
+                    'id' => (int) $category->id,
+                    'uuid' => $category->uuid,
+                    'name' => $category->name,
+                    'code' => $category->code,
+                    'category_type' => $category->category_type,
+                    'status' => $category->status,
+                    'description' => $category->description,
+                    'metadata' => $category->metadata ?? [],
+                ]
+            )
+            ->values();
+
+        return response()->json([
+            'tenant' => $this->tenantPayload($tenant),
+            'categories' => $categories,
+            'tax_policy' => [
+                'category_selection_grants_vat_exemption' => false,
+                'classification_requires_review' => true,
+            ],
+        ]);
+    }
+
 
     public function createProductCategory(
         Request $request,
@@ -1058,6 +1093,7 @@ class ProductInventoryController extends Controller
 
     public function createProduct(
         Request $request,
+        BusinessTaxCategoryService $businessTaxCategoryService,
         AuditLogService $auditLogService,
         ScopeResolver $scopeResolver
     ): JsonResponse {
@@ -1068,6 +1104,15 @@ class ProductInventoryController extends Controller
                 'nullable',
                 'integer',
                 Rule::exists('product_categories', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'business_category_id' => [
+                'nullable',
+                'integer',
+            ],
+            'hs_code' => [
+                'nullable',
+                'string',
+                'max:20',
             ],
             'name' => ['required', 'string', 'max:255'],
             'generic_name' => ['nullable', 'string', 'max:255'],
@@ -1105,6 +1150,26 @@ class ProductInventoryController extends Controller
             'metadata' => ['sometimes', 'array'],
         ]);
 
+        $businessCategory = $businessTaxCategoryService->resolveForTenant(
+            $tenant,
+            $validated['business_category_id'] ?? null
+        );
+
+        $validated['business_category_id'] =
+            $businessCategory?->id;
+
+        $validated['hs_code'] = isset($validated['hs_code'])
+            && trim($validated['hs_code']) !== ''
+                ? strtoupper(trim($validated['hs_code']))
+                : null;
+
+        $validated['tax_classification_status'] =
+            $businessCategory || $validated['hs_code'] !== null
+                ? 'review_required'
+                : 'unreviewed';
+
+        $validated['tax_classification_version'] = 0;
+
         $product = Product::query()->create([
             ...$validated,
             'uuid' => (string) Str::uuid(),
@@ -1138,6 +1203,9 @@ class ProductInventoryController extends Controller
                 'tenant_slug' => $tenant->slug,
                 'product_sku' => $product->sku,
                 'product_name' => $product->name,
+                'business_category_id' => $product->business_category_id,
+                'hs_code' => $product->hs_code,
+                'tax_classification_status' => $product->tax_classification_status,
             ],
             dataClassification: 'internal',
             auditableType: Product::class,
@@ -1146,12 +1214,13 @@ class ProductInventoryController extends Controller
 
         return response()->json([
             'message' => 'Product created successfully.',
-            'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
+            'product' => $this->serializeProduct($product->fresh(['category', 'businessCategory']), includeStockSummary: true),
         ], 201);
     }
 
     public function updateProduct(
         Request $request,
+        BusinessTaxCategoryService $businessTaxCategoryService,
         Product $product,
         AuditLogService $auditLogService,
         ScopeResolver $scopeResolver
@@ -1168,6 +1237,17 @@ class ProductInventoryController extends Controller
                 'nullable',
                 'integer',
                 Rule::exists('product_categories', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
+            ],
+            'business_category_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+            ],
+            'hs_code' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:20',
             ],
             'name' => ['sometimes', 'string', 'max:255'],
             'generic_name' => ['nullable', 'string', 'max:255'],
@@ -1205,6 +1285,58 @@ class ProductInventoryController extends Controller
             'metadata' => ['sometimes', 'array'],
         ]);
 
+        $classificationChanged = false;
+
+        if (array_key_exists(
+            'business_category_id',
+            $validated
+        )) {
+            $businessCategory = $businessTaxCategoryService->resolveForTenant(
+                $tenant,
+                $validated['business_category_id']
+            );
+
+            $resolvedCategoryId = $businessCategory?->id;
+
+            $classificationChanged =
+                $classificationChanged
+                || (int) ($product->business_category_id ?? 0)
+                    !== (int) ($resolvedCategoryId ?? 0);
+
+            $validated['business_category_id'] =
+                $resolvedCategoryId;
+        }
+
+        if (array_key_exists('hs_code', $validated)) {
+            $normalizedHsCode = isset($validated['hs_code'])
+                && trim($validated['hs_code']) !== ''
+                    ? strtoupper(trim(
+                        $validated['hs_code']
+                    ))
+                    : null;
+
+            $currentHsCode = $product->hs_code !== null
+                && trim((string) $product->hs_code) !== ''
+                    ? strtoupper(trim(
+                        (string) $product->hs_code
+                    ))
+                    : null;
+
+            $classificationChanged =
+                $classificationChanged
+                || $currentHsCode !== $normalizedHsCode;
+
+            $validated['hs_code'] = $normalizedHsCode;
+        }
+
+        if ($classificationChanged) {
+            $validated['tax_classification_status'] =
+                'review_required';
+
+            $validated['tax_classification_version'] =
+                ((int) $product->tax_classification_version) + 1;
+        }
+
         if (array_key_exists('metadata', $validated)) {
             $validated['metadata'] = array_merge($product->metadata ?? [], $validated['metadata']);
         }
@@ -1222,6 +1354,7 @@ class ProductInventoryController extends Controller
             metadata: [
                 'tenant_slug' => $tenant->slug,
                 'product_sku' => $product->sku,
+                'classification_changed' => $classificationChanged,
                 'before' => $before,
                 'after' => $product->only(array_keys($validated)),
             ],
@@ -1232,7 +1365,7 @@ class ProductInventoryController extends Controller
 
         return response()->json([
             'message' => 'Product updated successfully.',
-            'product' => $this->serializeProduct($product->fresh('category'), includeStockSummary: true),
+            'product' => $this->serializeProduct($product->fresh(['category', 'businessCategory']), includeStockSummary: true),
         ]);
     }
 
@@ -2339,7 +2472,39 @@ class ProductInventoryController extends Controller
 
     private function serializeProduct(Product $product, bool $includeStockSummary = false): array
     {
+        $product->loadMissing([
+            'category',
+            'businessCategory',
+        ]);
+
         $payload = [
+            'business_category_id' =>
+                $product->business_category_id !== null
+                    ? (int) $product->business_category_id
+                    : null,
+
+            'business_category' =>
+                $product->businessCategory
+                    ? [
+                        'id' => (int) $product->businessCategory->id,
+                        'uuid' => $product->businessCategory->uuid,
+                        'name' => $product->businessCategory->name,
+                        'code' => $product->businessCategory->code,
+                        'category_type' => $product->businessCategory->category_type,
+                        'status' => $product->businessCategory->status,
+                        'description' => $product->businessCategory->description,
+                    ]
+                    : null,
+
+            'hs_code' => $product->hs_code,
+            'tax_classification_status' =>
+                $product->tax_classification_status
+                    ?? 'unreviewed',
+            'tax_classification_version' =>
+                (int) (
+                    $product->tax_classification_version
+                    ?? 0
+                ),
             'id' => $product->id,
             'uuid' => $product->uuid,
             'name' => $product->name,
