@@ -389,7 +389,7 @@ export function FinanceOverviewRedesign(
         </article>
       </div>
 
-      <div className="finance-overview__operations-grid">
+      <div className="finance-overview__workspace-grid">
         <article className="finance-overview__panel">
           <header className="finance-overview__panel-header">
             <div>
@@ -500,9 +500,7 @@ export function FinanceOverviewRedesign(
             </table>
           </div>
         </article>
-      </div>
 
-      <div className="finance-overview__bottom-grid">
         <article className="finance-overview__panel">
           <header className="finance-overview__panel-header">
             <div>

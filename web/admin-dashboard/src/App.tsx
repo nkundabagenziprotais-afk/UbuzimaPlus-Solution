@@ -8404,31 +8404,25 @@ async function confirmTransaction() {
     ];
 
     return (
-      <section className="section-page dedicated-module-page">
-        <DedicatedModuleHeader
-          eyebrow="Finance and control"
-          title="Finance Workspace"
-          description="Move from finance overview to payables, receivables, collections, exceptions, and statements through focused pages."
-          dashboardLabel={
-            isAdminProfile
-              ? 'Main Dashboard'
-              : 'Finance Home'
-          }
-          onDashboard={() => {
-            if (isAdminProfile) {
-              navigateToSection('overview');
-              return;
+      <section className="section-page dedicated-module-page" data-finance-workspace-shell="clean">
+        {activeFinanceWorkspace !== 'overview' && (
+          <DedicatedModuleHeader
+            eyebrow="Finance and control"
+            title="Finance Workspace"
+            description="Move from finance overview to payables, receivables, collections, exceptions, and statements through focused pages."
+            dashboardLabel={
+              isAdminProfile
+                ? 'Main Dashboard'
+                : 'Finance Home'
             }
+            onDashboard={() => {
+              if (isAdminProfile) {
+                navigateToSection('overview');
+                return;
+              }
 
-            setActiveFinanceWorkspace('overview');
-          }}
-        />
-        {activeFinanceWorkspace === 'overview' && (
-          <ModuleLandingCards
-            moduleName="Finance"
-            items={financeWorkspaceItems.filter((item) => item.key !== 'overview')}
-            activeKey={activeFinanceWorkspace}
-            onOpen={setActiveFinanceWorkspace}
+              setActiveFinanceWorkspace('overview');
+            }}
           />
         )}
         <div className="module-section-stage">
