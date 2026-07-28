@@ -7,6 +7,7 @@ import {
   PharmaInventoryLocationsResponse,
   PharmaInventorySummaryResponse,
   PharmaProduct,
+  type PharmaProductCategory,
   PharmaProductsResponse,
   PharmaStockBatch,
   PharmaStockLocation,
@@ -23,6 +24,7 @@ import {
   deletePharmaProduct,
   getPharmaInventorySummary,
   getPharmaProducts,
+  getPharmaBusinessCategories,
   updatePharmaProduct,
   receivePharmaStock,
   updatePharmaStockBatch,
@@ -94,6 +96,10 @@ const emptyStockLocationForm: StockLocationFormState = {
 
 type ProductMasterFormState = {
   product_category_id: string;
+  business_category_id: string;
+  hs_code: string;
+  tax_classification_status: string;
+  tax_classification_version: number;
   drug_code: string;
   generic_description: string;
   designation: string;
@@ -110,6 +116,10 @@ type ProductMasterFormState = {
 
 const emptyProductMasterForm: ProductMasterFormState = {
   product_category_id: '',
+  business_category_id: '',
+  hs_code: '',
+  tax_classification_status: 'unreviewed',
+  tax_classification_version: 0,
   drug_code: '',
   generic_description: '',
   designation: '',
@@ -2257,9 +2267,46 @@ export function ProductInventoryPreview({
     });
   }
 
+  const [businessCategoryOptions, setBusinessCategoryOptions] =
+    useState<PharmaProductCategory[]>([]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!token || !tenantSlug) {
+      setBusinessCategoryOptions([]);
+
+      return () => {
+        active = false;
+      };
+    }
+
+    getPharmaBusinessCategories(token, tenantSlug)
+      .then((response) => {
+        if (active) {
+          setBusinessCategoryOptions(
+            inventoryArray(response.categories),
+          );
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setBusinessCategoryOptions([]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [tenantSlug, token]);
+
   function productToMasterForm(product: PharmaProduct): ProductMasterFormState {
     return {
       product_category_id: product.category ? String(product.category.id) : '',
+      business_category_id: product.business_category ? String(product.business_category.id) : '',
+      hs_code: product.hs_code ?? '',
+      tax_classification_status: product.tax_classification_status ?? 'unreviewed',
+      tax_classification_version: product.tax_classification_version ?? 0,
       drug_code: product.sku,
       generic_description: product.generic_name ?? '',
       designation: product.name,
@@ -2291,6 +2338,8 @@ export function ProductInventoryPreview({
   function productMasterPayload() {
     return {
       product_category_id: productMasterForm.product_category_id ? Number(productMasterForm.product_category_id) : null,
+      business_category_id: productMasterForm.business_category_id ? Number(productMasterForm.business_category_id) : null,
+      hs_code: productMasterForm.hs_code.trim() || null,
       name: productMasterForm.designation,
       generic_name: productMasterForm.generic_description || null,
       sku: productMasterForm.drug_code,
@@ -2804,7 +2853,7 @@ export function ProductInventoryPreview({
         </label>
 
         <label className="product-master-form-field--category">
-          Category
+          Therapeutic category
           <select
             value={productMasterForm.product_category_id}
             onChange={(event) => {
@@ -2825,6 +2874,70 @@ export function ProductInventoryPreview({
             ))}
           </select>
         </label>
+
+          <label className="product-master-form-field--category">
+            Business category
+            <select
+              value={productMasterForm.business_category_id}
+              onChange={(event) => setProductMasterForm({
+                ...productMasterForm,
+                business_category_id: event.target.value,
+              })}
+            >
+              <option value="">Select business category</option>
+              {businessCategoryOptions.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            <small>
+              Used for tax review. Selecting a category does not itself grant VAT exemption.
+            </small>
+          </label>
+
+          <label>
+            HS code
+            <input
+              value={productMasterForm.hs_code}
+              maxLength={20}
+              placeholder="Optional customs classification"
+              onChange={(event) => setProductMasterForm({
+                ...productMasterForm,
+                hs_code: event.target.value.toUpperCase(),
+              })}
+            />
+          </label>
+
+          <section
+            className="product-master-ai-assistant"
+            role="note"
+            aria-label="Product tax classification review"
+          >
+            <div>
+              <strong>Tax classification review</strong>
+              <span>
+                Business category and HS code support review. Exempt, zero-rated and standard-rate treatment remain separate approval decisions.
+              </span>
+            </div>
+
+            <div className="product-master-ai-suggestion-grid">
+              <div>
+                <strong>Status</strong>
+                <span>
+                  {productMasterForm.tax_classification_status
+                    .replace(/_/g, ' ')}
+                </span>
+              </div>
+
+              <div>
+                <strong>Version</strong>
+                <span>
+                  {productMasterForm.tax_classification_version}
+                </span>
+              </div>
+            </div>
+          </section>
 
         <label>
           Source

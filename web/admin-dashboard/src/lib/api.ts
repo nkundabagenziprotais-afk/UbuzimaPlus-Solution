@@ -708,6 +708,20 @@ export type PharmaProductCategory = {
   products_count?: number;
 };
 
+export type PharmaBusinessCategoriesResponse = {
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  categories: PharmaProductCategory[];
+  tax_policy: {
+    category_selection_grants_vat_exemption: false;
+    classification_requires_review: boolean;
+  };
+};
+
+
 export type PharmaProductStockSummary = {
   quantity_on_hand: number;
   quantity_reserved: number;
@@ -724,6 +738,11 @@ export type PharmaProduct = {
   sku: string;
   barcode: string | null;
   registration_number: string | null;
+  business_category_id: number | null;
+  business_category: PharmaProductCategory | null;
+  hs_code: string | null;
+  tax_classification_status: string;
+  tax_classification_version: number;
   dosage_form: string | null;
   strength: string | null;
   unit: string;
@@ -977,6 +996,17 @@ export async function getPharmaProductCategories(
   );
 }
 
+export async function getPharmaBusinessCategories(
+  token: string,
+  tenantSlug: string,
+): Promise<PharmaBusinessCategoriesResponse> {
+  return getJsonWithTenant<PharmaBusinessCategoriesResponse>(
+    token,
+    '/pharmaco/product-business-categories',
+    tenantSlug,
+  );
+}
+
 export async function getPharmaInventoryLocations(
   token: string,
   tenantSlug: string,
@@ -1199,6 +1229,8 @@ export async function getPharmaInventorySummary(
 
 export type CreatePharmaProductPayload = {
   product_category_id?: number | null;
+  business_category_id?: number | null;
+  hs_code?: string | null;
   name: string;
   generic_name?: string | null;
   brand_name?: string | null;
