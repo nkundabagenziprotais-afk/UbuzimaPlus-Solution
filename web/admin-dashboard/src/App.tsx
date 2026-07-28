@@ -84,7 +84,7 @@ import {
 } from './components/GeneralItemsManagementWorkspace';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
 import { ReportingDashboard } from './components/ReportingDashboard';
-import { FinanceSourceOfTruthOverview } from './components/FinanceSourceOfTruthOverview';
+import { FinanceOverviewRedesign } from './components/FinanceOverviewRedesign';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
 import { LoginSuccessOverlay } from './components/LoginSuccessOverlay';
@@ -8433,7 +8433,7 @@ async function confirmTransaction() {
         )}
         <div className="module-section-stage">
           {activeFinanceWorkspace === 'overview' && (
-            <FinanceSourceOfTruthOverview
+            <FinanceOverviewRedesign
               token={session!.token}
               profile={profile!}
             />
