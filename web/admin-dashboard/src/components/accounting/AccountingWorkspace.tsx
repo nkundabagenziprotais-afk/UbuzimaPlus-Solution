@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import './AccountingWorkspace.css';
+import { JournalApprovalWorkspace } from './JournalApprovalWorkspace';
 
 type TabKey =
   | 'overview'
@@ -257,8 +258,7 @@ export function AccountingWorkspace({
         <div className="acct-hero-actions">
           <button
             type="button"
-            disabled
-            title="Write workflow activates only after Accounting preview approval."
+            onClick={() => setTab('journal-register')}
           >
             New Journal Entry
           </button>
@@ -421,7 +421,39 @@ export function AccountingWorkspace({
         </div>
       )}
 
-      {!loading && tab !== 'overview' && (
+      {!loading && tab === 'journal-register' && (
+        <div className="acct-workflow-register">
+          <JournalApprovalWorkspace
+            token={token}
+            tenantSlug={tenantSlug}
+            profile={profile}
+            onChanged={() => void load()}
+          />
+
+          <article className="acct-card acct-card--register">
+            <div className="acct-card-heading">
+              <div>
+                <span className="acct-eyebrow">Posted ledger</span>
+                <h2>Journal Register</h2>
+              </div>
+              <button
+                className="acct-secondary"
+                type="button"
+                onClick={() => void load()}
+              >
+                Refresh
+              </button>
+            </div>
+
+            <DataTable
+              rows={rows}
+              columns={columns['journal-register']}
+            />
+          </article>
+        </div>
+      )}
+
+      {!loading && tab !== 'overview' && tab !== 'journal-register' && (
         <article className="acct-card acct-card--register">
           <div className="acct-card-heading">
             <div>

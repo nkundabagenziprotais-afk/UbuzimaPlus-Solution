@@ -311,3 +311,10 @@
     grid-column: 1 / -1;
   }
 }
+
+/* General Journal workflow integration */
+.acct-workflow-register {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
