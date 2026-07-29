@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AccountingWorkflowWorkspace } from './AccountingWorkflowWorkspace';
 import './AccountingWorkspace.css';
 
 type TabKey =
   | 'overview'
+  | 'general-journals'
+  | 'approval-centre'
   | 'journal-register'
   | 'general-ledger'
   | 'trial-balance'
@@ -23,6 +26,8 @@ type Props = {
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'overview', label: 'Overview' },
+  { key: 'general-journals', label: 'General Journals' },
+  { key: 'approval-centre', label: 'Approval Centre' },
   { key: 'journal-register', label: 'Journal Register' },
   { key: 'general-ledger', label: 'General Ledger' },
   { key: 'trial-balance', label: 'Trial Balance' },
@@ -35,6 +40,8 @@ const tabs: Array<{ key: TabKey; label: string }> = [
 
 const columns: Record<TabKey, Array<[string, string]>> = {
   overview: [],
+  'general-journals': [],
+  'approval-centre': [],
   'journal-register': [
     ['journal_number', 'Journal'],
     ['business_date', 'Business Date'],
@@ -119,7 +126,6 @@ function ReadinessRows(payload: unknown): Row[] {
     }));
 }
 
-
 function activeTenantSlug(profile: Row): string {
   const assignments = Array.isArray(profile.tenant_assignments)
     ? profile.tenant_assignments as Row[]
@@ -153,6 +159,14 @@ function activeTenantSlug(profile: Row): string {
     : '';
 }
 
+function hasPermission(profile: Row, permission: string): boolean {
+  const permissions = Array.isArray(profile.permissions)
+    ? profile.permissions.map((value) => String(value))
+    : [];
+
+  return permissions.includes('*') || permissions.includes(permission);
+}
+
 export function AccountingWorkspace({
   token,
   profile,
@@ -167,10 +181,21 @@ export function AccountingWorkspace({
     () => activeTenantSlug(profile),
     [profile],
   );
+  const canCreateJournal = useMemo(
+    () => hasPermission(profile, 'finance.journal.create'),
+    [profile],
+  );
+  const workflowTab = tab === 'general-journals' || tab === 'approval-centre';
 
   const load = useCallback(async () => {
     setLoading(true);
     setMessage('');
+
+    if (tab === 'general-journals' || tab === 'approval-centre') {
+      setPayload(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       if (!tenantSlug) {
@@ -250,15 +275,19 @@ export function AccountingWorkspace({
           <span className="acct-eyebrow">Accounting control centre</span>
           <h1>Accounting Overview</h1>
           <p>
-            Review the live ledger, Business Dates, mappings, reconciliation signals,
-            periods and journal activity without changing original Sales or payments.
+            Review the live ledger, prepare controlled General Journals, manage
+            maker-checker approvals, monitor Business Dates and preserve the original
+            Sales and payment records.
           </p>
         </div>
         <div className="acct-hero-actions">
           <button
             type="button"
-            disabled
-            title="Write workflow activates only after Accounting preview approval."
+            disabled={!canCreateJournal}
+            title={!canCreateJournal
+              ? 'finance.journal.create permission is required.'
+              : 'Open the controlled General Journal editor.'}
+            onClick={() => setTab('general-journals')}
           >
             New Journal Entry
           </button>
@@ -409,9 +438,9 @@ export function AccountingWorkspace({
           </article>
 
           <article className="acct-card acct-card--wide">
-            <CardTitle eyebrow="Quick actions" title="Review-ready workspaces" />
+            <CardTitle eyebrow="Quick actions" title="Accounting workspaces" />
             <div className="acct-quick-actions">
-              {tabs.filter((item) => !['overview'].includes(item.key)).map((item) => (
+              {tabs.filter((item) => item.key !== 'overview').map((item) => (
                 <button key={item.key} type="button" onClick={() => setTab(item.key)}>
                   {item.label}
                 </button>
@@ -421,7 +450,16 @@ export function AccountingWorkspace({
         </div>
       )}
 
-      {!loading && tab !== 'overview' && (
+      {!loading && workflowTab && (
+        <AccountingWorkflowWorkspace
+          mode={tab as 'general-journals' | 'approval-centre'}
+          token={token}
+          tenantSlug={tenantSlug}
+          profile={profile}
+        />
+      )}
+
+      {!loading && tab !== 'overview' && !workflowTab && (
         <article className="acct-card acct-card--register">
           <div className="acct-card-heading">
             <div>
