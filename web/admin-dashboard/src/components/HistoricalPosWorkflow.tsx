@@ -1,8 +1,3 @@
-/* HISTORICAL_POS_USE_PROFILE_ASSIGNED_BRANCHES_LONGTERM_V2 */
-/* HISTORICAL_POS_USE_PROFILE_ASSIGNED_BRANCHES_LONGTERM_V1 */
-/* HISTORICAL_POS_ADMIN_OWNER_BYPASS_NO_REASON_V2 */
-/* HISTORICAL_POS_NO_REASON_ADMIN_OWNER_BYPASS_FINAL_V1 */
-/* HISTORICAL_POS_REASON_REMOVED_V1 */
 import {
   useEffect,
   useMemo,
@@ -22,205 +17,6 @@ import {
   requestHistoricalPosApproval,
 } from "../lib/posSessionApi";
 import "./HistoricalPosWorkflow.css";
-
-function historicalPosAutoReasonGlobal() {
-  return 'Historical POS entry created through approved workflow.';
-}
-
-function historicalPosProfileAssignedBranches(): Array<Record<string, unknown>> {
-  const profile = historicalPosStoredAccessProfile();
-  const source = profile && typeof profile === 'object'
-    ? profile as Record<string, unknown>
-    : {};
-
-  const candidates: unknown[] = [
-    source.assigned_branches,
-    source.branches,
-    source.branch,
-    source.assigned_branch,
-    source.active_branch,
-    source.current_branch,
-    source.pharmacy_branch,
-  ];
-
-  if (source.branch_id || source.branch_name) {
-    candidates.push({
-      id: source.branch_id,
-      branch_id: source.branch_id,
-      name: source.branch_name ?? 'Assigned branch',
-      branch_name: source.branch_name,
-      is_active: true,
-      status: 'active',
-    });
-  }
-
-  const flat: Record<string, unknown>[] = [];
-
-  const pushCandidate = (candidate: unknown) => {
-    if (!candidate) return;
-
-    if (Array.isArray(candidate)) {
-      candidate.forEach(pushCandidate);
-      return;
-    }
-
-    if (typeof candidate !== 'object') return;
-
-    const branch = candidate as Record<string, unknown>;
-    const id = branch.id ?? branch.branch_id ?? branch.uuid ?? branch.code;
-    const name = branch.name ?? branch.branch_name ?? branch.title ?? branch.code ?? 'Assigned branch';
-
-    if (!id && !name) return;
-
-    flat.push({
-      ...branch,
-      id: id ?? name,
-      branch_id: branch.branch_id ?? id,
-      name,
-      branch_name: branch.branch_name ?? name,
-      is_active: branch.is_active ?? true,
-      status: branch.status ?? 'active',
-    });
-  };
-
-  candidates.forEach(pushCandidate);
-
-  const seen = new Set<string>();
-
-  return flat.filter((branch) => {
-    const id = String(branch.id ?? branch.branch_id ?? branch.uuid ?? branch.code ?? branch.name ?? '').trim();
-
-    if (!id || seen.has(id)) return false;
-
-    seen.add(id);
-
-    const status = String(branch.status ?? '').toLowerCase();
-    const active =
-      branch.is_active === undefined
-      || branch.is_active === true
-      || branch.is_active === 1
-      || branch.is_active === '1'
-      || branch.is_active === 'true';
-
-    return active && !['inactive', 'disabled', 'closed', 'archived'].includes(status);
-  });
-}
-
-
-function historicalPosStoredAccessProfile(): unknown {
-  try {
-    const candidates = [
-      localStorage.getItem('ubuzima:auth-session'),
-      localStorage.getItem('ubuzima:session'),
-      localStorage.getItem('ubuzima-admin-session'),
-      localStorage.getItem('auth_session'),
-      localStorage.getItem('session'),
-    ].filter(Boolean);
-
-    for (const candidate of candidates) {
-      const parsed = JSON.parse(candidate ?? '{}') as Record<string, unknown>;
-
-      if (parsed.profile) {
-        return parsed.profile;
-      }
-
-      if (parsed.user) {
-        return parsed.user;
-      }
-
-      if (parsed.data && typeof parsed.data === 'object') {
-        const data = parsed.data as Record<string, unknown>;
-
-        if (data.profile) {
-          return data.profile;
-        }
-
-        if (data.user) {
-          return data.user;
-        }
-      }
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function historicalPosProfileCanBypassApproval(profile: unknown): boolean {
-  const terms: string[] = [];
-  const source = profile && typeof profile === 'object'
-    ? profile as Record<string, unknown>
-    : {};
-
-  const pushValue = (value: unknown) => {
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      terms.push(String(value).toLowerCase());
-    }
-  };
-
-  [
-    source.role,
-    source.role_name,
-    source.role_code,
-    source.type,
-    source.user_type,
-    source.account_type,
-    source.email,
-    source.title,
-    source.designation,
-  ].forEach(pushValue);
-
-  ['is_admin', 'is_owner', 'owner', 'admin', 'is_super_admin'].forEach((flag) => {
-    if (source[flag] === true || source[flag] === 1 || source[flag] === '1' || source[flag] === 'true') {
-      terms.push(flag);
-    }
-  });
-
-  const pushRole = (role: unknown) => {
-    if (!role || typeof role !== 'object') {
-      return;
-    }
-
-    const item = role as Record<string, unknown>;
-
-    [
-      item.name,
-      item.code,
-      item.slug,
-      item.title,
-      item.label,
-    ].forEach(pushValue);
-  };
-
-  [source.role, source.primary_role, source.primaryRole, source.tenant_role, source.tenantRole].forEach(pushRole);
-
-  if (Array.isArray(source.roles)) {
-    source.roles.forEach(pushRole);
-  }
-
-  if (Array.isArray(source.permissions)) {
-    source.permissions.forEach(pushValue);
-  }
-
-  return terms.some((term) => {
-    const normalized = term.replace(/[_.-]+/g, ' ');
-
-    return (
-      normalized.includes('admin')
-      || normalized.includes('administrator')
-      || normalized.includes('owner')
-      || normalized.includes('super')
-      || normalized.includes('proprietor')
-      || normalized.includes('pharmaco pos historical approve')
-      || normalized.includes('pharmaco.pos.historical.approve')
-      || normalized.includes('pharmaco pos historical bypass')
-      || normalized.includes('pharmaco.pos.historical.bypass')
-    );
-  });
-}
-
-
 
 type HistoricalPosWorkflowProps = {
   token: string;
@@ -293,7 +89,7 @@ function normalizeHistoricalSession(
     sequence_number: session.sequence_number,
     business_date: session.business_date,
     session_mode: "historical",
-    historical_reason: historicalPosAutoReasonGlobal(),
+    historical_reason: session.historical_reason,
     historical_reference:
       session.historical_reference,
     historical_approval_id:
@@ -357,15 +153,12 @@ export function HistoricalPosWorkflow({
     [tenantSlug],
   );
 
-    const historicalPosCanBypassApproval = historicalPosProfileCanBypassApproval(historicalPosStoredAccessProfile());
-const [isExpanded, setIsExpanded] =
+  const [isExpanded, setIsExpanded] =
     useState(false);
 
   const [businessDate, setBusinessDate] =
     useState(dateBounds.maximum);
 
-  const [historicalReason, setHistoricalReason] =
-    useState("");
 
   const [
     historicalReference,
@@ -515,7 +308,7 @@ const [isExpanded, setIsExpanded] =
   async function checkAvailability() {
     if (!branchId) {
       setErrorMessage(
-        "Select your assigned branch to continue. If no branch appears, ask an administrator to confirm your branch assignment.",
+        "No active branch is available for historical POS.",
       );
       return;
     }
@@ -548,8 +341,8 @@ const [isExpanded, setIsExpanded] =
       setAvailability(response);
 
       setSuccessMessage(
-        (!historicalPosCanBypassApproval && response.approval_required)
-          ? "Live transactions already exist on this date.  is required."
+        response.approval_required
+          ? "Live transactions already exist on this date. Admin or Owner authorization is required."
           : "No conflicting live activity was found. You may open the historical session directly.",
       );
     } catch (error: unknown) {
@@ -568,11 +361,10 @@ const [isExpanded, setIsExpanded] =
   async function submitApprovalRequest() {
     if (!branchId) {
       setErrorMessage(
-        "Select your assigned branch to continue. If no branch appears, ask an administrator to confirm your branch assignment.",
+        "No active branch is available.",
       );
       return;
     }
-
 
     setIsRequesting(true);
     setErrorMessage("");
@@ -588,7 +380,7 @@ const [isExpanded, setIsExpanded] =
           {
             branch_id: branchId,
             business_date: businessDate,
-            request_reason: historicalPosAutoReasonGlobal(),
+            request_reason: historicalPosAutoReason(),
             historical_reference:
               historicalReference.trim()
               || undefined,
@@ -750,7 +542,7 @@ const [isExpanded, setIsExpanded] =
 
     if (!branchId) {
       setErrorMessage(
-        "Select your assigned branch to continue. If no branch appears, ask an administrator to confirm your branch assignment.",
+        "No active branch is available.",
       );
       return;
     }
@@ -761,7 +553,6 @@ const [isExpanded, setIsExpanded] =
       );
       return;
     }
-
 
     const numericOpeningFloat = Number(
       openingFloat,
@@ -778,21 +569,21 @@ const [isExpanded, setIsExpanded] =
     }
 
     if (
-      (!historicalPosCanBypassApproval && availability.approval_required)
+      availability.approval_required
       && !approval?.id
     ) {
       setErrorMessage(
-        "",
+        "Request historical authorization before opening this session.",
       );
       return;
     }
 
     if (
-      (!historicalPosCanBypassApproval && availability.approval_required)
+      availability.approval_required
       && !/^\d{6}$/.test(approvalCode)
     ) {
       setErrorMessage(
-        "",
+        "Enter the six-digit Admin or Owner authorization code.",
       );
       return;
     }
@@ -815,16 +606,16 @@ const [isExpanded, setIsExpanded] =
               numericOpeningFloat,
             opening_mode:
               selectedOpeningMode,
-            historical_reason: historicalPosAutoReasonGlobal(),
+            historical_reason: historicalPosAutoReason(),
             historical_reference:
               historicalReference.trim()
               || undefined,
             approval_id:
-              (!historicalPosCanBypassApproval && availability.approval_required)
+              availability.approval_required
                 ? approval?.id
                 : undefined,
             approval_code:
-              (!historicalPosCanBypassApproval && availability.approval_required)
+              availability.approval_required
                 ? approvalCode
                 : undefined,
           },
@@ -894,7 +685,9 @@ const [isExpanded, setIsExpanded] =
                 {currentSession.business_date}
               </strong>
 
-              
+              <small>
+
+              </small>
             </div>
           </div>
 
@@ -1028,23 +821,6 @@ const [isExpanded, setIsExpanded] =
                   />
                 </label>
 
-                <label className="historical-pos-form-grid__wide">
-                  <span>
-                    Reason for historical entry
-                  </span>
-
-                  <textarea
-                    rows={3}
-                    maxLength={1000}
-                    value={historicalReason}
-                    placeholder="Explain why these transactions were not recorded on the original business date."
-                    onChange={(event) =>
-                      setHistoricalReason(
-                        event.target.value,
-                      )
-                    }
-                  />
-                </label>
               </div>
 
               <div className="historical-pos-actions">
@@ -1083,14 +859,14 @@ const [isExpanded, setIsExpanded] =
                 <div
                   className={[
                     "historical-pos-conflict-card",
-                    (!historicalPosCanBypassApproval && availability.approval_required)
+                    availability.approval_required
                       ? "historical-pos-conflict-card--conflict"
                       : "historical-pos-conflict-card--clear",
                   ].join(" ")}
                 >
                   <div>
                     <span>
-                      {(!historicalPosCanBypassApproval && availability.approval_required)
+                      {availability.approval_required
                         ? "Authorization required"
                         : "No live conflict"}
                     </span>
@@ -1122,11 +898,11 @@ const [isExpanded, setIsExpanded] =
                 </div>
               ) : null}
 
-              {(!historicalPosCanBypassApproval && availability?.approval_required) ? (
+              {availability?.approval_required ? (
                 <section className="historical-pos-approval-card">
                   <div>
                     <span>
-                      
+                      Admin or Owner authorization
                     </span>
 
                     <h4>
@@ -1152,7 +928,7 @@ const [isExpanded, setIsExpanded] =
                         ? "Requesting..."
                         : approval
                           ? "Refresh request"
-                          : "Open historical POS session"}
+                          : "Request authorization"}
                     </button>
                   </div>
 
@@ -1186,7 +962,7 @@ const [isExpanded, setIsExpanded] =
 
                   <label>
                     <span>
-                      
+                      Six-digit authorization code
                     </span>
 
                     <input
@@ -1214,7 +990,7 @@ const [isExpanded, setIsExpanded] =
                   role="status"
                 >
                   <span>
-                    
+                    One-time authorization code
                   </span>
 
                   <strong>
@@ -1282,7 +1058,7 @@ const [isExpanded, setIsExpanded] =
                             </span>
 
                             <small>
-                              
+                              {item.request_reason}
                             </small>
 
                             <small>

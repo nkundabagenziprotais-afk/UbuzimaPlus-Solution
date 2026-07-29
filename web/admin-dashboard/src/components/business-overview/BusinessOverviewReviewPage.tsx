@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   emptyBusinessOverviewLiveData,
   type BusinessOverviewLiveData,
@@ -458,93 +458,6 @@ function businessDateDayLabel(value: string): string {
   return String(Number(day || 0) || value);
 }
 
-function businessOverviewTrendDateKey(value: unknown): string {
-  const raw = String(value ?? '').trim();
-
-  if (!raw) {
-    return '';
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    return raw;
-  }
-
-  const parsed = new Date(raw);
-
-  if (Number.isFinite(parsed.getTime())) {
-    return parsed.toISOString().slice(0, 10);
-  }
-
-  return raw.slice(0, 10);
-}
-
-function businessOverviewTrendNumber(value: unknown): number {
-  const parsed =
-    typeof value === 'number'
-      ? value
-      : Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
-
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function businessOverviewTrendValueForMetric(row: unknown, metric: string): number {
-  const source = row && typeof row === 'object' ? row as Record<string, unknown> : {};
-
-  if (metric === 'count') {
-    return businessOverviewTrendNumber(
-      source.count ??
-      source.transaction_count ??
-      source.transactions ??
-      source.sales_count ??
-      source.orders_count,
-    );
-  }
-
-  return businessOverviewTrendNumber(
-    source.value ??
-    source.amount ??
-    source.sales ??
-    source.gross_sales ??
-    source.gross_revenue ??
-    source.net_sales ??
-    source.total ??
-    source.total_amount ??
-    source.revenue,
-  );
-}
-
-function buildBusinessDateSalesTrendValues(
-  rows: unknown,
-  dateKeys: string[],
-  metric: string,
-): number[] {
-  const bucket = new Map<string, number>();
-  const sourceRows = Array.isArray(rows) ? rows : [];
-
-  sourceRows.forEach((row) => {
-    const source = row && typeof row === 'object' ? row as Record<string, unknown> : {};
-    const dateKey = businessOverviewTrendDateKey(
-      source.business_date ??
-      source.businessDate ??
-      source.date ??
-      source.day ??
-      source.period ??
-      source.label,
-    );
-
-    if (!dateKey) {
-      return;
-    }
-
-    bucket.set(
-      dateKey,
-      (bucket.get(dateKey) ?? 0) + businessOverviewTrendValueForMetric(row, metric),
-    );
-  });
-
-  return dateKeys.map((dateKey) => bucket.get(dateKey) ?? 0);
-}
-
 function selectedDateKeys(startDate: string, endDate: string): string[] {
   const start = parseLocalBusinessDate(startDate);
   const end = parseLocalBusinessDate(endDate);
@@ -616,13 +529,39 @@ function trendPointDate(point: unknown): string | null {
   ];
 
   for (const candidate of candidates) {
-    if (typeof candidate === 'string') {
-      const match = candidate.match(/\d{4}-\d{2}-\d{2}/);
-      if (match) return match[0];
+    if (typeof candidate !== 'string') {
+      continue;
+    }
 
-      if (/^\d{1,2}$/.test(candidate)) {
-        return candidate.padStart(2, '0');
-      }
+    const normalizedCandidate =
+      candidate.trim();
+
+    const fullDateMatch =
+      normalizedCandidate.match(
+        /\d{4}-\d{2}-\d{2}/,
+      );
+
+    if (fullDateMatch) {
+      return fullDateMatch[0];
+    }
+
+    if (
+      /^\d{2}-\d{2}$/.test(
+        normalizedCandidate,
+      )
+    ) {
+      return normalizedCandidate;
+    }
+
+    if (
+      /^\d{1,2}$/.test(
+        normalizedCandidate,
+      )
+    ) {
+      return normalizedCandidate.padStart(
+        2,
+        '0',
+      );
     }
   }
 
@@ -654,43 +593,92 @@ function buildDailyTrendSeries(
   metric: 'value' | 'count' = 'value',
   maxDays = 62,
 ): Array<{ label: string; value: number }> {
-  const valuesByDate = new Map<string, number>();
+  const selectedDates =
+    selectedDateKeys(
+      startDate,
+      endDate,
+    ).slice(
+      0,
+      Math.max(maxDays, 1),
+    );
+
+  const valuesByDate =
+    new Map<string, number>();
 
   points.forEach((point) => {
-    const date = trendPointDate(point);
-    if (!date) return;
+    const rawDate =
+      trendPointDate(point);
 
-    const record = point as unknown as Record<string, unknown>;
-    const value = metric === 'count'
-      ? parseAmount(
-          record.count ??
-          record.transaction_count ??
-          record.transactions ??
-          0,
-        )
-      : parseAmount(
-          record.value ??
-          record.sales_value ??
-          record.salesValue ??
-          record.gross_sales ??
-          record.grossSales ??
-          record.net_sales ??
-          record.netSales ??
-          record.sales ??
-          record.amount ??
-          record.total ??
-          0,
-        );
+    if (!rawDate) {
+      return;
+    }
 
-    valuesByDate.set(date, (valuesByDate.get(date) ?? 0) + value);
+    const normalizedDate =
+      /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+        ? rawDate
+        : /^\d{2}-\d{2}$/.test(rawDate)
+          ? selectedDates.find(
+              (date) =>
+                date.endsWith(
+                  `-${rawDate}`,
+                ),
+            )
+          : /^\d{1,2}$/.test(rawDate)
+            ? selectedDates.find(
+                (date) =>
+                  date.endsWith(
+                    `-${rawDate.padStart(2, '0')}`,
+                  ),
+              )
+            : undefined;
+
+    if (!normalizedDate) {
+      return;
+    }
+
+    const record =
+      point as unknown as Record<
+        string,
+        unknown
+      >;
+
+    const value =
+      metric === 'count'
+        ? parseAmount(
+            record.count ??
+            record.transaction_count ??
+            record.transactions ??
+            0,
+          )
+        : parseAmount(
+            record.value ??
+            record.sales_value ??
+            record.salesValue ??
+            record.gross_sales ??
+            record.grossSales ??
+            record.net_sales ??
+            record.netSales ??
+            record.sales ??
+            record.amount ??
+            record.total ??
+            0,
+          );
+
+    valuesByDate.set(
+      normalizedDate,
+      (
+        valuesByDate.get(
+          normalizedDate,
+        ) ?? 0
+      ) + value,
+    );
   });
 
-  return selectedDateKeys(startDate, endDate)
-    .slice(0, maxDays)
-    .map((date) => ({
-      label: businessDateDayLabel(date),
-      value: valuesByDate.get(date) ?? 0,
-    }));
+  return selectedDates.map((date) => ({
+    label: businessDateDayLabel(date),
+    value:
+      valuesByDate.get(date) ?? 0,
+  }));
 }
 
 function linePath(values: number[], width = 900, height = 140): string {
@@ -1006,6 +994,54 @@ function analyticsText(label: string, values: {
   }
 }
 
+function formatTwoDecimalCompact(
+  value: number,
+): string {
+  const safeValue =
+    Number.isFinite(value)
+      ? value
+      : 0;
+
+  const absoluteValue = Math.abs(safeValue);
+
+  const units: Array<{
+    threshold: number;
+    suffix: string;
+  }> = [
+    {
+      threshold: 1_000_000_000,
+      suffix: 'B',
+    },
+    {
+      threshold: 1_000_000,
+      suffix: 'M',
+    },
+    {
+      threshold: 1_000,
+      suffix: 'K',
+    },
+  ];
+
+  const unit = units.find(
+    ({ threshold }) =>
+      absoluteValue >= threshold,
+  );
+
+  if (unit) {
+    return `${(
+      safeValue / unit.threshold
+    ).toFixed(2)}${unit.suffix}`;
+  }
+
+  return safeValue.toLocaleString(
+    'en-GB',
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  );
+}
+
 function LineChart({
   values,
   label,
@@ -1013,6 +1049,9 @@ function LineChart({
   startDate,
   endDate,
   maxVisibleBars = 14,
+  chartHeightOverride,
+  valueFormatter = formatChartCompact,
+  valueFormat = 'standard-compact',
 }: {
   values: number[];
   label: string;
@@ -1020,29 +1059,112 @@ function LineChart({
   startDate?: string;
   endDate?: string;
   maxVisibleBars?: number;
+  chartHeightOverride?: number;
+  valueFormatter?: (
+    value: number,
+  ) => string;
+  valueFormat?: string;
 }) {
   const safeValues = values.length ? values : [0];
   const safeLabels = labels?.length ? labels : safeValues.map((_, index) => String(index + 1));
   const pointCount = Math.max(safeValues.length, 1);
   const maxValue = Math.max(...safeValues, 1);
 
-  const barWidth = 34;
-  const gap = 18;
-  const leftPadding = 34;
-  const rightPadding = 26;
-  const topPadding = 28;
-  const bottomPadding = 34;
-  const chartHeight = 170;
+  const isTwelveDayOperationalChart =
+    maxVisibleBars === 12;
 
-  const width = Math.max(
-    leftPadding + rightPadding + pointCount * (barWidth + gap),
-    leftPadding + rightPadding + maxVisibleBars * (barWidth + gap),
+  const isSalesTrendChart =
+    maxVisibleBars === 30;
+
+  const barWidth =
+    isTwelveDayOperationalChart
+      ? 30
+      : 46;
+
+  const gap =
+    isTwelveDayOperationalChart
+      ? 6
+      : isSalesTrendChart
+        ? 18
+        : 22;
+
+  const leftPadding =
+    isTwelveDayOperationalChart
+      ? 30
+      : 44;
+
+  const rightPadding =
+    isTwelveDayOperationalChart
+      ? 20
+      : 36;
+
+  const topPadding =
+    isTwelveDayOperationalChart
+      ? 54
+      : 50;
+
+  const bottomPadding =
+    isTwelveDayOperationalChart
+      ? 64
+      : 60;
+
+  const defaultChartHeight =
+    isTwelveDayOperationalChart
+      ? 300
+      : 280;
+
+  const chartHeight =
+    chartHeightOverride
+    ?? defaultChartHeight;
+
+  const visibleBarLimit = Math.max(
+    1,
+    maxVisibleBars,
   );
+
+  const viewportWidth =
+    leftPadding
+    + rightPadding
+    + visibleBarLimit
+      * (barWidth + gap);
+
+  const renderPointCount = Math.max(
+    pointCount,
+    visibleBarLimit,
+  );
+
+  const width =
+    leftPadding
+    + rightPadding
+    + renderPointCount
+      * (barWidth + gap);
 
   const height = chartHeight + topPadding + bottomPadding;
 
   return (
-    <div className="bo-pro-bar-chart-shell" role="img" aria-label={label}>
+    <div
+      className="bo-pro-bar-chart-shell"
+      role="img"
+      aria-label={label}
+      data-chart-readability="scrollable-bars"
+      data-point-count={pointCount}
+      data-render-slot-count={renderPointCount}
+      data-chart-geometry="date-independent"
+      data-sales-trend-gap={
+        isSalesTrendChart
+          ? 'compact-18'
+          : 'standard'
+      }
+      data-visible-bar-limit={visibleBarLimit}
+      data-value-format={valueFormat}
+      data-chart-size="business-overview-large-bars"
+      data-bar-width={barWidth}
+      data-chart-height={chartHeight}
+      tabIndex={0}
+      style={{
+        maxWidth: `${viewportWidth}px`,
+      }}
+    >
       <svg
         className="bo-pro-bar-chart"
         viewBox={`0 0 ${width} ${height}`}
@@ -1067,26 +1189,29 @@ function LineChart({
 
           return (
             <g key={`${axisLabel}-${index}`}>
+              <title>
+                {`${axisLabel}: ${safeValue > 0 ? valueFormatter(safeValue) : '0'}`}
+              </title>
               <rect
                 className="bo-pro-bar"
                 x={x}
                 y={y}
                 width={barWidth}
                 height={barHeight}
-                rx="7"
+                rx="10"
               />
               <text
                 className="bo-pro-data-label bo-pro-bar-data-label"
                 x={x + barWidth / 2}
-                y={Math.max(y - 7, 12)}
+                y={Math.max(y - 12, 24)}
                 textAnchor="middle"
               >
-                {safeValue > 0 ? formatChartCompact(safeValue) : ''}
+                {safeValue > 0 ? valueFormatter(safeValue) : ''}
               </text>
               <text
                 className="bo-pro-axis-label bo-pro-bar-axis-label"
                 x={x + barWidth / 2}
-                y={topPadding + chartHeight + 20}
+                y={topPadding + chartHeight + 34}
                 textAnchor="middle"
               >
                 {axisLabel}
@@ -1159,6 +1284,24 @@ export function BusinessOverviewReviewPage({
   const debugEnabled =
     typeof window !== 'undefined' &&
     window.location.search.includes('boDebug=1');
+
+  useEffect(() => {
+    function handleWorkspaceRefresh() {
+      setIsLoading(true);
+      setLoaderStatus('loading');
+      setLiveData((current) => ({
+        ...current,
+        error: null,
+      }));
+      setLoadSequence((value) => value + 1);
+    }
+
+    window.addEventListener('ubuzima:refresh', handleWorkspaceRefresh);
+
+    return () => {
+      window.removeEventListener('ubuzima:refresh', handleWorkspaceRefresh);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -1374,14 +1517,15 @@ export function BusinessOverviewReviewPage({
   const selectedGlobalDateKeys = selectedDateKeys(appliedDateRange.startDate, appliedDateRange.endDate);
   const selectedGlobalDateLabels = selectedGlobalDateKeys.map((date) => businessDateDayLabel(date));
 
-  // BUSINESS_OVERVIEW_FORCE_SALES_TREND_BUSINESS_DATE_BUCKETS_V2
-  // Values are bucketed by business_date, not relabeled from timestamp-created rows.
-  const salesTrendValues = buildBusinessDateSalesTrendValues(
+  const salesTrendSeries = buildDailyTrendSeries(
     displayLiveData.trend,
-    selectedGlobalDateKeys,
+    salesTrendRange.startDate,
+    salesTrendRange.endDate,
     trendMetric,
+    Math.max(salesTrendDateKeys.length, 1),
   );
-  const salesTrendLabels = selectedGlobalDateLabels;
+  const salesTrendValues = salesTrendSeries.map((point) => point.value);
+  const salesTrendLabels = salesTrendDateLabels;
 
   const insuranceTrendValues = outstanding > 0
     ? movementChartValues(
@@ -1430,6 +1574,430 @@ export function BusinessOverviewReviewPage({
   );
 
   const dashboardIsLoading = isLoading;
+
+  const businessOverviewGridRef =
+    useRef<HTMLElement | null>(null);
+
+  const paymentMixCardRef =
+    useRef<HTMLElement | null>(null);
+
+  const inventoryRiskCardRef =
+    useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const grid =
+      businessOverviewGridRef.current;
+
+    const paymentMixCard =
+      paymentMixCardRef.current;
+
+    const inventoryRiskCard =
+      inventoryRiskCardRef.current;
+
+    if (
+      !grid
+      || !paymentMixCard
+      || !inventoryRiskCard
+    ) {
+      return undefined;
+    }
+
+    let measurementFrame = 0;
+    let shortDelayTimer = 0;
+    let longDelayTimer = 0;
+    let disposed = false;
+    let lastGridWidth =
+      Math.round(
+        grid.getBoundingClientRect().width,
+      );
+
+    let lastPaymentHeight = '';
+    let lastRiskHeight = '';
+
+    const paymentPairCards =
+      Array.from(
+        grid.querySelectorAll<HTMLElement>(
+          '[data-height-pair="payment-profit"]',
+        ),
+      );
+
+    const riskPairCards =
+      Array.from(
+        grid.querySelectorAll<HTMLElement>(
+          '[data-height-pair="risk-insurance"]',
+        ),
+      );
+
+    if (
+      paymentPairCards.length !== 2
+      || riskPairCards.length !== 2
+    ) {
+      grid.setAttribute(
+        'data-paired-height-error',
+        'missing-pair-member',
+      );
+
+      return undefined;
+    }
+
+    grid.removeAttribute(
+      'data-paired-height-error',
+    );
+
+    grid.setAttribute(
+      'data-paired-height-controller',
+      'inline-authority-v19',
+    );
+
+    const clearPairHeight = (
+      cards: HTMLElement[],
+    ) => {
+      cards.forEach((card) => {
+        card.style.removeProperty(
+          'height',
+        );
+
+        card.style.removeProperty(
+          'min-height',
+        );
+
+        card.style.removeProperty(
+          'max-height',
+        );
+
+        card.style.removeProperty(
+          'block-size',
+        );
+
+        card.style.removeProperty(
+          'min-block-size',
+        );
+
+        card.style.removeProperty(
+          'max-block-size',
+        );
+
+        card.removeAttribute(
+          'data-paired-height-px',
+        );
+      });
+    };
+
+    const applyPairHeight = (
+      cards: HTMLElement[],
+      height: number,
+    ) => {
+      const heightValue =
+        `${height}px`;
+
+      cards.forEach((card) => {
+        card.style.setProperty(
+          'height',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'min-height',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'max-height',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'block-size',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'min-block-size',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'max-block-size',
+          heightValue,
+          'important',
+        );
+
+        card.style.setProperty(
+          'box-sizing',
+          'border-box',
+          'important',
+        );
+
+        card.style.setProperty(
+          'align-self',
+          'start',
+          'important',
+        );
+
+        card.setAttribute(
+          'data-paired-height-px',
+          String(height),
+        );
+      });
+    };
+
+    const syncViewportCardHeights = () => {
+      if (disposed) {
+        return;
+      }
+
+      window.cancelAnimationFrame(
+        measurementFrame,
+      );
+
+      measurementFrame =
+        window.requestAnimationFrame(() => {
+          if (disposed) {
+            return;
+          }
+
+          grid.removeAttribute(
+            'data-viewport-card-heights-ready',
+          );
+
+          grid.setAttribute(
+            'data-viewport-card-heights-measuring',
+            'true',
+          );
+
+          clearPairHeight(
+            paymentPairCards,
+          );
+
+          clearPairHeight(
+            riskPairCards,
+          );
+
+          grid.style.removeProperty(
+            '--ubuzima-bo-payment-pair-height',
+          );
+
+          grid.style.removeProperty(
+            '--ubuzima-bo-risk-pair-height',
+          );
+
+          const paymentHeight = Math.ceil(
+            Math.max(
+              paymentMixCard
+                .getBoundingClientRect()
+                .height,
+              paymentMixCard.scrollHeight,
+            ),
+          );
+
+          const riskHeight = Math.ceil(
+            Math.max(
+              inventoryRiskCard
+                .getBoundingClientRect()
+                .height,
+              inventoryRiskCard.scrollHeight,
+            ),
+          );
+
+          grid.removeAttribute(
+            'data-viewport-card-heights-measuring',
+          );
+
+          if (paymentHeight > 0) {
+            const nextPaymentHeight =
+              `${paymentHeight}px`;
+
+            lastPaymentHeight =
+              nextPaymentHeight;
+
+            grid.style.setProperty(
+              '--ubuzima-bo-payment-pair-height',
+              nextPaymentHeight,
+            );
+
+            applyPairHeight(
+              paymentPairCards,
+              paymentHeight,
+            );
+
+            grid.setAttribute(
+              'data-payment-pair-height-px',
+              String(paymentHeight),
+            );
+          }
+
+          if (riskHeight > 0) {
+            const nextRiskHeight =
+              `${riskHeight}px`;
+
+            lastRiskHeight =
+              nextRiskHeight;
+
+            grid.style.setProperty(
+              '--ubuzima-bo-risk-pair-height',
+              nextRiskHeight,
+            );
+
+            applyPairHeight(
+              riskPairCards,
+              riskHeight,
+            );
+
+            grid.setAttribute(
+              'data-risk-pair-height-px',
+              String(riskHeight),
+            );
+          }
+
+          if (
+            paymentHeight > 0
+            && riskHeight > 0
+          ) {
+            grid.setAttribute(
+              'data-viewport-card-heights-ready',
+              'true',
+            );
+
+            grid.setAttribute(
+              'data-height-pair-lock-ready',
+              'true',
+            );
+          }
+        });
+    };
+
+    const syncIfGridWidthChanged = () => {
+      if (disposed) {
+        return;
+      }
+
+      const currentWidth =
+        Math.round(
+          grid.getBoundingClientRect().width,
+        );
+
+      if (
+        currentWidth === lastGridWidth
+      ) {
+        return;
+      }
+
+      lastGridWidth =
+        currentWidth;
+
+      syncViewportCardHeights();
+    };
+
+    const gridResizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(
+            syncIfGridWidthChanged,
+          )
+        : null;
+
+    gridResizeObserver?.observe(grid);
+
+    window.addEventListener(
+      'resize',
+      syncIfGridWidthChanged,
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      syncIfGridWidthChanged,
+    );
+
+    syncViewportCardHeights();
+
+    shortDelayTimer =
+      window.setTimeout(
+        syncViewportCardHeights,
+        250,
+      );
+
+    longDelayTimer =
+      window.setTimeout(
+        syncViewportCardHeights,
+        1000,
+      );
+
+    document.fonts?.ready
+      .then(syncViewportCardHeights)
+      .catch(() => undefined);
+
+    return () => {
+      disposed = true;
+
+      window.cancelAnimationFrame(
+        measurementFrame,
+      );
+
+      window.clearTimeout(
+        shortDelayTimer,
+      );
+
+      window.clearTimeout(
+        longDelayTimer,
+      );
+
+      gridResizeObserver?.disconnect();
+
+      window.removeEventListener(
+        'resize',
+        syncIfGridWidthChanged,
+      );
+
+      window.removeEventListener(
+        'orientationchange',
+        syncIfGridWidthChanged,
+      );
+
+      grid.removeAttribute(
+        'data-viewport-card-heights-ready',
+      );
+
+      grid.removeAttribute(
+        'data-viewport-card-heights-measuring',
+      );
+
+      clearPairHeight(
+        paymentPairCards,
+      );
+
+      clearPairHeight(
+        riskPairCards,
+      );
+
+      grid.removeAttribute(
+        'data-paired-height-controller',
+      );
+
+      grid.removeAttribute(
+        'data-height-pair-lock-ready',
+      );
+
+      grid.removeAttribute(
+        'data-payment-pair-height-px',
+      );
+
+      grid.removeAttribute(
+        'data-risk-pair-height-px',
+      );
+
+      grid.style.removeProperty(
+        '--ubuzima-bo-payment-pair-height',
+      );
+
+      grid.style.removeProperty(
+        '--ubuzima-bo-risk-pair-height',
+      );
+    };
+  }, []);
 
   const refreshInventoryRiskOverview = () => {
     // Do not clear Business Overview cache here. The inventory valuation endpoint can fail
@@ -1565,7 +2133,12 @@ export function BusinessOverviewReviewPage({
         ))}
       </section>
 
-      <section className="bo-pro-grid">
+      <section
+        ref={businessOverviewGridRef}
+        data-card-height-trigger="viewport-only"
+        data-card-height-standard="paired-reference-cards"
+        className="bo-pro-grid"
+      >
         <article className={`bo-pro-card bo-pro-card--daily ${dashboardIsLoading ? 'is-loading' : ''}`}>
           <header>
             <div>
@@ -1576,13 +2149,17 @@ export function BusinessOverviewReviewPage({
 
           <div className="bo-pro-metric-list">
             <article><span>Gross Sales</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Gross Sales')}</strong></article>
+            <article><span>Gross Revenue</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Gross Revenue')}</strong></article>
             <article><span>Collections</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Collections')}</strong></article>
             <article><span>Transactions</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Transaction Count')}</strong></article>
             <article><span>Average Sale</span><strong>{isDailyLoading ? '…' : kpiValue(dailyMetricSource, 'Average Transaction Value')}</strong></article>
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--trend ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          data-sales-trend-date-mapping="full-business-date"
+          className={`bo-pro-card bo-pro-card--trend ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Sales Trend</h2>
@@ -1613,6 +2190,11 @@ export function BusinessOverviewReviewPage({
             startDate={salesTrendRange.startDate}
             endDate={salesTrendRange.endDate}
             maxVisibleBars={30}
+            valueFormat={
+              trendMetric === 'count'
+                ? 'daily-transaction-count'
+                : 'daily-sales-value'
+            }
           />
         </article>
 
@@ -1656,7 +2238,12 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          ref={paymentMixCardRef}
+          data-height-pair="payment-profit"
+          data-height-authority="payment-mix"
+          className={`bo-pro-card bo-pro-card--payment ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Payment Mix</h2>
@@ -1691,7 +2278,10 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--profit ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          data-height-pair="payment-profit"
+          className={`bo-pro-card bo-pro-card--profit ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Expenses & Profitability</h2>
@@ -1709,7 +2299,12 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--risk ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          ref={inventoryRiskCardRef}
+          data-height-pair="risk-insurance"
+          data-height-authority="inventory-risk"
+          className={`bo-pro-card bo-pro-card--risk ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <div className="bo-pro-risk-heading-row">
@@ -1763,7 +2358,10 @@ export function BusinessOverviewReviewPage({
           </div>
         </article>
 
-        <article className={`bo-pro-card bo-pro-card--insurance bo-pro-order-insurance ${dashboardIsLoading ? 'is-loading' : ''}`}>
+        <article
+          data-height-pair="risk-insurance"
+          className={`bo-pro-card bo-pro-card--insurance bo-pro-order-insurance ${dashboardIsLoading ? 'is-loading' : ''}`}
+        >
           <header>
             <div>
               <h2>Insurance & Receivables</h2>
@@ -1784,7 +2382,14 @@ export function BusinessOverviewReviewPage({
             </div>
           </header>
 
-          <LineChart values={insuranceTrendValues} label="Receivable Trend" labels={insuranceTrendDateLabels} startDate={insuranceTrendRange.startDate} endDate={insuranceTrendRange.endDate} maxVisibleBars={14} />
+          <LineChart
+            values={insuranceTrendValues}
+            label="Receivable Trend"
+            labels={insuranceTrendDateLabels}
+            startDate={insuranceTrendRange.startDate}
+            endDate={insuranceTrendRange.endDate}
+            maxVisibleBars={12}
+          />
 
           <div className="bo-pro-metric-list compact">
             <article><span>Insurance Sales</span><strong>{dataLabelValue(displayLiveData, ['Insurance Sales'], '—')}</strong></article>
@@ -1822,7 +2427,15 @@ export function BusinessOverviewReviewPage({
               <article><span>Net Change</span><strong>{formatMoney(0)} · {formatPercent(0)}</strong></article>
               <article><span>Near Expiry Count</span><strong>{dataLabelValue(displayLiveData, ['Near Expiry Count', 'Expiring Items'])}</strong></article>
             </div>
-            <LineChart values={nearExpiryTrendValues} label="Near Expiry Movement" labels={nearExpiryTrendDateLabels} startDate={nearExpiryTrendRange.startDate} endDate={nearExpiryTrendRange.endDate} maxVisibleBars={14} />
+            <LineChart
+              values={nearExpiryTrendValues}
+              label="Near Expiry Movement"
+              labels={nearExpiryTrendDateLabels}
+              startDate={nearExpiryTrendRange.startDate}
+              endDate={nearExpiryTrendRange.endDate}
+              maxVisibleBars={12}
+            chartHeightOverride={150}
+            />
           </div>
         </article>
 
@@ -1854,7 +2467,17 @@ export function BusinessOverviewReviewPage({
               <article><span>Total Quantity</span><strong>{dataLabelValue(displayLiveData, ['Total Quantity On Hand', 'Total Quantity'])}</strong></article>
               <article><span>Stock Batches</span><strong>{dataLabelValue(displayLiveData, ['Stock Batches Count', 'Stock Batches'])}</strong></article>
             </div>
-            <LineChart values={inventoryMovementTrendValues} label="Total Inventory Movement" labels={inventoryMovementTrendDateLabels} startDate={inventoryMovementTrendRange.startDate} endDate={inventoryMovementTrendRange.endDate} maxVisibleBars={14} />
+            <LineChart
+              values={inventoryMovementTrendValues}
+              label="Total Inventory Movement"
+              labels={inventoryMovementTrendDateLabels}
+              startDate={inventoryMovementTrendRange.startDate}
+              endDate={inventoryMovementTrendRange.endDate}
+              maxVisibleBars={12}
+              valueFormatter={formatTwoDecimalCompact}
+              valueFormat="two-decimal-compact"
+            chartHeightOverride={150}
+            />
           </div>
         </article>
 

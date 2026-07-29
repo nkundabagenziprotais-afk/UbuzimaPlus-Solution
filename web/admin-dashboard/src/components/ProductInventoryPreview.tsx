@@ -53,6 +53,7 @@ type ProductInventoryPreviewProps = {
   profile: AccessProfile;
   activeView?: InventoryView;
   onActiveViewChange?: (view: InventoryView) => void;
+  receiveFlowIntent?: number;
   showInternalNavigation?: boolean;
 };
 
@@ -937,6 +938,7 @@ export function ProductInventoryPreview({
   profile,
   activeView,
   onActiveViewChange,
+  receiveFlowIntent = 0,
   showInternalNavigation = true,
 }: ProductInventoryPreviewProps) {
 
@@ -1109,6 +1111,21 @@ export function ProductInventoryPreview({
 
   const activeInventoryView = activeView ?? internalInventoryView;
   const activeInventoryMeta = inventoryViews.find((view) => view.key === activeInventoryView) ?? inventoryViews[0];
+
+  useEffect(() => {
+    if (activeInventoryView !== 'product-inventory' || receiveFlowIntent <= 0) {
+      return;
+    }
+
+    setEditingInventoryBatch(null);
+    setInventoryReceiveSource('manual');
+    setInventoryCreateForm(emptyInventoryCreateForm);
+    setInventoryProductSearchTerm('');
+    setInventoryProductOptions([]);
+    setIsInventoryProductSearchOpen(false);
+    setIsInventoryReceiveFlowOpen(true);
+    setInventoryNotice('Manual stock receiving opened. Select the product, batch, quantity, expiry, cost, supplier and location.');
+  }, [activeInventoryView, receiveFlowIntent]);
 
   const tenantSlug =
     profile.tenant_assignments?.[0]?.tenant?.slug ||

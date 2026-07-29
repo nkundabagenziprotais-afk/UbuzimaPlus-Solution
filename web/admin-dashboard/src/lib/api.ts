@@ -171,8 +171,7 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     const message =
       data?.message ||
       data?.errors?.email?.[0] ||
-        data?.errors?.phone?.[0] ||
-      data?.errors?.email?.[0] ||
+      data?.errors?.phone?.[0] ||
       data?.errors?.pin?.[0] ||
       'Login failed. Please check your credentials and try again.';
 
@@ -948,15 +947,6 @@ export async function getPharmaProducts(
   if (options?.perPage) params.set('per_page', String(options.perPage));
   if (options?.status) params.set('status', options.status);
 
-  // POS_PRODUCT_SEARCH_LOAD_FULL_MASTER_V1
-  if (!params.has('per_page')) {
-    params.set('per_page', '5000');
-  }
-
-  if (!params.has('limit')) {
-    params.set('limit', '5000');
-  }
-
   const query = params.toString();
 
   return getJsonWithTenant<PharmaProductsResponse>(
@@ -996,6 +986,7 @@ export async function getPharmaInventoryBatches(
     search?: string;
     perPage?: number;
     sellableOnly?: boolean;
+    cacheBust?: string | number;
 
     offset?: number;},
 ): Promise<PharmaInventoryBatchesResponse> {
@@ -1012,6 +1003,9 @@ export async function getPharmaInventoryBatches(
     params.set('offset', String(options.offset));
   }
   if (options?.sellableOnly) params.set('sellable_only', '1');
+  if (options?.cacheBust !== undefined) {
+    params.set('_fresh', String(options.cacheBust));
+  }
 
   const query = params.toString();
 
@@ -1036,6 +1030,7 @@ export async function getAllPharmaInventoryBatches(
   options?: {
     search?: string;
     sellableOnly?: boolean;
+    cacheBust?: string | number;
   },
 ): Promise<PharmaInventoryBatchesResponse> {
   const perPage = 150;
@@ -1068,6 +1063,7 @@ export async function getAllPharmaInventoryBatches(
             options?.sellableOnly,
           perPage,
           offset,
+          cacheBust: options?.cacheBust,
         },
       );
 
@@ -1766,8 +1762,6 @@ export type PharmaSalesFilters = {
   sale_type?: string;
   branch_id?: number;
   pos_session_id?: number;
-  business_date_from?: string;
-  business_date_to?: string;
 };
 
 function buildPharmaQueryString(params: Record<string, string | number | null | undefined>): string {
@@ -1795,9 +1789,6 @@ export async function getPharmaSales(
     sale_type: filters.sale_type,
     branch_id: filters.branch_id,
     pos_session_id: filters.pos_session_id,
-    business_date_from: filters.business_date_from,
-    business_date_to: filters.business_date_to,
-    _: Date.now(),
   });
 
   return getJsonWithTenant<PharmaSalesResponse>(token, `/pharmaco/sales${query}`, tenantSlug);
@@ -3025,143 +3016,6 @@ export type PharmaReportDateFilters = {
   end_date?: string;
 };
 
-export type PharmaFinancePosShadowReconciliationFilters = {
-  from?: string;
-  to?: string;
-  branch_id?: number | string;
-  payment_method?: string;
-};
-
-export type PharmaFinancePaymentMethodBreakdown = {
-  payment_method: string;
-  pos_total: number;
-  finance_shadow_total: number;
-  difference: number;
-};
-
-export type PharmaFinancePosShadowReconciliationReport = {
-  filters: {
-    tenant_id: number;
-    from: string | null;
-    to: string | null;
-    branch_id: number | null;
-    payment_method: string | null;
-  };
-  summary: {
-    pos_completed_payments_total: number;
-    finance_shadow_payment_total: number;
-    difference: number;
-    missing_finance_postings_count: number;
-    orphan_finance_shadow_postings_count: number;
-    is_reconciled: boolean;
-  };
-  payment_methods: PharmaFinancePaymentMethodBreakdown[];
-  details: {
-    missing_payment_ids: Array<number | string>;
-    orphan_finance_source_ids: Array<number | string>;
-  };
-};
-
-export type PharmaFinancePosShadowReconciliationReportResponse = {
-  data: PharmaFinancePosShadowReconciliationReport;
-};
-
-export type PharmaFinanceRevenueShadowPaymentMethodBreakdown = {
-  payment_method: string;
-  operational_payment_total: number;
-  operational_allocated_revenue: number;
-  operational_allocated_tax: number;
-  finance_shadow_revenue: number;
-  finance_shadow_tax: number;
-  revenue_difference: number;
-  tax_difference: number;
-};
-
-export type PharmaFinancePosRevenueShadowReport = {
-  filters: {
-    tenant_id: number;
-    from: string | null;
-    to: string | null;
-    branch_id: number | null;
-    payment_method: string | null;
-  };
-  basis: {
-    mode: string;
-    label: string;
-    description: string;
-  };
-  summary: {
-    operational_completed_payment_total: number;
-    operational_allocated_revenue: number;
-    operational_allocated_tax: number;
-    finance_shadow_revenue: number;
-    finance_shadow_tax: number;
-    revenue_difference: number;
-    tax_difference: number;
-    is_reconciled: boolean;
-    dashboard_source_status: string;
-  };
-  payment_methods: PharmaFinanceRevenueShadowPaymentMethodBreakdown[];
-};
-
-export type PharmaFinancePosRevenueShadowReportResponse = {
-  data: PharmaFinancePosRevenueShadowReport;
-};
-
-export type PharmaFinanceReadinessHealthCheck = {
-  label: string;
-  status: string;
-  details: Record<string, unknown>;
-};
-
-export type PharmaFinanceReadinessHealthReport = {
-  mode: string;
-  overall_status: string;
-  dashboard_switch_status: string;
-  filters: {
-    tenant_id: number;
-    from: string | null;
-    to: string | null;
-    branch_id: number | null;
-  };
-  summary: {
-    blocking_failures: string[];
-    checks_passed: number;
-    checks_total: number;
-  };
-  checks: Record<string, PharmaFinanceReadinessHealthCheck>;
-};
-
-export type PharmaFinanceReadinessHealthReportResponse = {
-  data: PharmaFinanceReadinessHealthReport;
-};
-
-function financePosShadowReconciliationQuery(
-  filters?: PharmaFinancePosShadowReconciliationFilters,
-): string {
-  const params = new URLSearchParams();
-
-  if (filters?.from) {
-    params.set('from', filters.from);
-  }
-
-  if (filters?.to) {
-    params.set('to', filters.to);
-  }
-
-  if (filters?.branch_id) {
-    params.set('branch_id', String(filters.branch_id));
-  }
-
-  if (filters?.payment_method) {
-    params.set('payment_method', filters.payment_method);
-  }
-
-  const query = params.toString();
-
-  return query ? `?${query}` : '';
-}
-
 function reportDateQuery(filters?: PharmaReportDateFilters): string {
   const params = new URLSearchParams();
 
@@ -3209,42 +3063,6 @@ export async function getPharmaSalesSummaryReport(
   return getJsonWithTenant<PharmaSalesSummaryReportResponse>(
     token,
     `/pharmaco/reports/sales-summary${reportDateQuery(filters)}`,
-    tenantSlug,
-  );
-}
-
-export async function getPharmaFinancePosShadowReconciliationReport(
-  token: string,
-  tenantSlug: string,
-  filters?: PharmaFinancePosShadowReconciliationFilters,
-): Promise<PharmaFinancePosShadowReconciliationReportResponse> {
-  return getJsonWithTenant<PharmaFinancePosShadowReconciliationReportResponse>(
-    token,
-    `/pharmaco/finance/reports/pos-shadow-reconciliation${financePosShadowReconciliationQuery(filters)}`,
-    tenantSlug,
-  );
-}
-
-export async function getPharmaFinancePosRevenueShadowReport(
-  token: string,
-  tenantSlug: string,
-  filters?: PharmaFinancePosShadowReconciliationFilters,
-): Promise<PharmaFinancePosRevenueShadowReportResponse> {
-  return getJsonWithTenant<PharmaFinancePosRevenueShadowReportResponse>(
-    token,
-    `/pharmaco/finance/reports/pos-revenue-shadow${financePosShadowReconciliationQuery(filters)}`,
-    tenantSlug,
-  );
-}
-
-export async function getPharmaFinanceReadinessHealthReport(
-  token: string,
-  tenantSlug: string,
-  filters?: PharmaFinancePosShadowReconciliationFilters,
-): Promise<PharmaFinanceReadinessHealthReportResponse> {
-  return getJsonWithTenant<PharmaFinanceReadinessHealthReportResponse>(
-    token,
-    `/pharmaco/finance/reports/readiness-health${financePosShadowReconciliationQuery(filters)}`,
     tenantSlug,
   );
 }
@@ -4316,6 +4134,7 @@ export type TenantSecurityUser = {
     last_login_at: string | null;
     trusted_devices_count: number;
     active_sessions_count: number;
+    mobile_pin_configured?: boolean;
   };
   roles: Array<{
     id: number;
@@ -4357,6 +4176,7 @@ export async function createTenantSecurityUser(
     role_code: string;
     permissions?: string[];
     password?: string;
+    login_pin?: string;
     status?: string;
     two_factor_required?: boolean;
   },
@@ -4364,6 +4184,7 @@ export async function createTenantSecurityUser(
   return apiRequest<{
     message: string;
     temporary_password: string;
+    temporary_pin?: string | null;
     user: { id: number; name: string; email: string; phone?: string | null };
   }>(token, tenantSlug, '/access-check/security/users', {
     method: 'POST',
@@ -4386,12 +4207,14 @@ export async function updateTenantSecurityUser(
       | 'granular_permissions';
     role_code: string;
     permissions?: string[];
+    login_pin?: string;
     status?: string;
     two_factor_required?: boolean;
   },
 ) {
   return apiRequest<{
     message: string;
+    temporary_pin?: string | null;
   }>(token, tenantSlug, `/access-check/security/users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
@@ -5024,7 +4847,7 @@ export async function getPharmaLiveBusinessAnalytics(
   return ubuzimaHandoverRequest<PharmaLiveBusinessAnalyticsResponse>(
     token,
     tenantSlug,
-    `/pharmaco/business-analytics/live${params}${params ? '&' : '?'}_=${Date.now()}`,
+    `/pharmaco/business-analytics/live${params}`,
   );
 }
 

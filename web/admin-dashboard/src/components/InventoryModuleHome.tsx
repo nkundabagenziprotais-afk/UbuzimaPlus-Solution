@@ -1,7 +1,3 @@
-/* INVENTORY_ANALYTICS_FORCE_LIVE_TIMESTAMP_PAYLOAD_V8 */
-/* INVENTORY_ANALYTICS_TRENDS_USE_CARD_SOURCES_V2 */
-/* INVENTORY_ANALYTICS_TREND_NO_SYNTHETIC_VALUES_V2 */
-/* INVENTORY_TREND_NO_FAKE_FALLBACK_V1 */
 import {
   useEffect,
   useMemo,
@@ -1012,6 +1008,7 @@ export function InventoryModuleHome({
         end_date: analyticsAppliedDateToFilter,
         date_from: analyticsAppliedDateFromFilter,
         date_to: analyticsAppliedDateToFilter,
+        date_basis: 'business_date',
       }).toString();
 
       try {
@@ -1022,7 +1019,6 @@ export function InventoryModuleHome({
             'X-Tenant': tenantSlug,
             'X-Tenant-Slug': tenantSlug,
           },
-          cache: 'no-store',
         });
 
         if (!response.ok) {
@@ -1068,7 +1064,7 @@ export function InventoryModuleHome({
       }).toString();
 
       try {
-        const response = await fetch(`/api/v1/pharmaco/inventory/analytics-summary?${query}&_=${Date.now()}`, {
+        const response = await fetch(`/api/v1/pharmaco/inventory/analytics-summary?${query}`, {
           headers: {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,
@@ -1086,7 +1082,7 @@ export function InventoryModuleHome({
         if (isActive && inventoryAnalyticsPayloadHasValue(data)) {
           setAnalyticsKpiSummary(data);
           setAnalyticsKpiSummaryLastGood(data);
-          // INVENTORY_ANALYTICS_FORCE_LIVE_TIMESTAMP_PAYLOAD_V8: do not cache trend payload for this chart.
+          writeInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood', data);
         }
       } catch {
         const cachedSummary = readInventoryAnalyticsCache('inventoryAnalyticsKpiSummaryLastGood');
@@ -1182,6 +1178,9 @@ export function InventoryModuleHome({
         end_date: analyticsAppliedDateToFilter,
         date_from: analyticsAppliedDateFromFilter,
         date_to: analyticsAppliedDateToFilter,
+        business_date_from: analyticsAppliedDateFromFilter,
+        business_date_to: analyticsAppliedDateToFilter,
+        date_basis: 'business_date',
       }).toString();
 
       const endpoints = [
@@ -1531,8 +1530,55 @@ export function InventoryModuleHome({
   return presentation === 'general-stock' ? (
     <section className="inventory-module-general-stock-view">
 
-              
+              <article className="inventory-home-chart-panel inventory-home-chart-panel--weekly-value">
+                <header>
+                  <small>Sunday to Saturday</small>
+                  <strong>Weekly Inventory Value</strong>
+                </header>
 
+                <div
+                  className="inventory-weekly-value-chart"
+                  aria-label="Weekly Inventory Value"
+                >
+                  {weeklyInventoryValue.map(
+                    (day, index) => (
+                      <div
+                        key={`${day.label}-${index}`}
+                        className={
+                          day.isCurrent
+                            ? 'is-current'
+                            : ''
+                        }
+                      >
+                        <span
+                          style={{
+                            height: `${
+                              day.value > 0
+                                ? Math.max(
+                                    14,
+                                    (
+                                      day.value
+                                      / weeklyInventoryValueMaximum
+                                    ) * 100,
+                                  )
+                                : 6
+                            }%`,
+                          }}
+                        />
+
+                        <small>{day.label}</small>
+                      </div>
+                    ),
+                  )}
+                </div>
+
+                <p>
+                  Today’s verified inventory value
+                  is plotted on the current weekday.
+                  Historical closing values remain
+                  blank until daily snapshots exist.
+                </p>
+              </article>
 
 <InventoryExecutiveRisk
         valuation={valuation}
@@ -2255,7 +2301,6 @@ export function InventoryModuleHome({
               totalValue,
             );
 
-
             const displayedStockOnHandCount = Math.max(
               dashboardStockOnHandCount,
               analyticsVisibleKpiFallback.stockOnHandCount,
@@ -2395,217 +2440,6 @@ export function InventoryModuleHome({
               ? analyticsTrendDateKeys
               : analyticsTrendDateKeys.filter((_, index) => `week-${Math.floor(index / 7) + 1}` === analyticsTrendWeekSelection);
 
-            
-            const inventoryAnalyticsDailyPositionRowsFrom = (keys: string[]) => {
-              const source = effectiveAnalyticsKpiSummary as Record<string, unknown>;
-
-              for (const key of keys) {
-                const rows = source[key];
-
-                if (Array.isArray(rows)) {
-                  return rows as Record<string, unknown>[];
-                }
-              }
-
-              return [];
-            };
-
-            const inventoryAnalyticsDailyTrendNumber = (value: unknown): number => {
-              const parsed =
-                typeof value === 'number'
-                  ? value
-                  : Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
-
-              return Number.isFinite(parsed) ? parsed : 0;
-            };
-
-            const inventoryAnalyticsDailyTrendMap = (rows: Record<string, unknown>[]) => {
-              const map = new Map<string, number>();
-
-              rows.forEach((row) => {
-                const rawDate = String(row.inventory_date ?? row.inventoryDate ?? row.date ?? row.created_at ?? row.createdAt ?? '').slice(0, 10);
-
-                if (!rawDate) {
-                  return;
-                }
-
-                const value = inventoryAnalyticsDailyTrendNumber(
-                  row.value ??
-                  row.amount ??
-                  row.stock_value ??
-                  row.inventory_value ??
-                  row.near_expiry_value,
-                );
-
-                map.set(rawDate, value);
-              });
-
-              return map;
-            };
-
-            const inventoryAnalyticsTotalInventoryDailyPositionRows =
-              inventoryAnalyticsDailyPositionRowsFrom([
-                'inventory_value_daily_position_trend',
-                'total_inventory_daily_position_trend',
-                'inventory_value_trend',
-              ]);
-
-            const inventoryAnalyticsTotalInventoryDailyPositionMap =
-              inventoryAnalyticsDailyTrendMap(
-                inventoryAnalyticsTotalInventoryDailyPositionRows,
-              );
-
-            const inventoryAnalyticsNearExpiryDailyPositionRows =
-              inventoryAnalyticsDailyPositionRowsFrom([
-                'near_expiry_value_daily_position_trend',
-                'near_expiry_value_trend',
-                'expiry_value_trend',
-              ]);
-
-            const inventoryAnalyticsNearExpiryDailyPositionMap =
-              inventoryAnalyticsDailyTrendMap(
-                inventoryAnalyticsNearExpiryDailyPositionRows,
-              );
-
-const inventoryAnalyticsCardSourceTrendDateKeys =
-              selectedTrendDateKeys.length > 0
-                ? selectedTrendDateKeys
-                : [analyticsAppliedDateToFilter];
-
-            const inventoryAnalyticsCardSourceAsAtIndex = Math.max(
-              inventoryAnalyticsCardSourceTrendDateKeys.length - 1,
-              0,
-            );
-
-            const inventoryAnalyticsCardSourceStockValue = displayedTotalInventoryValue;
-
-            const inventoryAnalyticsCardSourceNearExpiryValue = Math.max(
-              apiInventoryKpiNearExpiryValue,
-              nearExpiryValue,
-              analyticsVisibleKpiFallback.nearExpiryValue,
-            );
-
-            
-                        const inventoryAnalyticsMovementCurrency = (value: number): string =>
-              `RWF ${new Intl.NumberFormat(undefined, {
-                maximumFractionDigits: 0,
-              }).format(value)}`;
-
-                                    const inventoryAnalyticsReturnedTrendEntries = (
-              rows: Record<string, unknown>[],
-            ) =>
-              rows
-                .map((row) => {
-                  const dateKey = String(
-                    row.inventory_date ??
-                    row.inventoryDate ??
-                    row.date ??
-                    row.created_at ??
-                    row.createdAt ??
-                    '',
-                  ).slice(0, 10);
-
-                  const value = inventoryAnalyticsDailyTrendNumber(
-                    row.value ??
-                    row.amount ??
-                    row.stock_value ??
-                    row.inventory_value ??
-                    row.near_expiry_value,
-                  );
-
-                  return {
-                    dateKey,
-                    value,
-                  };
-                })
-                .filter((entry) => entry.dateKey && Number.isFinite(entry.value));
-
-const inventoryAnalyticsTimestampPositionTrendValues = (
-              map: Map<string, number>,
-            ): number[] =>
-              inventoryAnalyticsCardSourceTrendDateKeys.map((dateKey) => {
-                const value = map.get(dateKey);
-
-                return typeof value === 'number' && Number.isFinite(value)
-                  ? value
-                  : Number.NaN;
-              });
-
-const inventoryAnalyticsOperationalTrendValues = (
-              rawValues: number[],
-              trustedEndingValue: number,
-            ): number[] => {
-              const count = Math.max(inventoryAnalyticsCardSourceTrendDateKeys.length, rawValues.length, 1);
-              const normalized = Array.from({ length: count }, (_, index) => {
-                const value = Number(rawValues[index] ?? 0);
-                return Number.isFinite(value) && value > 0 ? value : 0;
-              });
-
-              const firstPositive = normalized.find((value) => value > 0) ?? trustedEndingValue;
-
-              let carryForward = firstPositive > 0 ? firstPositive : trustedEndingValue;
-
-              const carried = normalized.map((value) => {
-                if (value > 0) {
-                  carryForward = value;
-                  return value;
-                }
-
-                return carryForward > 0 ? carryForward : 0;
-              });
-
-              const lastIndex = carried.length - 1;
-
-              if (trustedEndingValue > 0) {
-                carried[lastIndex] = trustedEndingValue;
-              }
-
-              return carried;
-            };
-
-const inventoryAnalyticsReconciledTrendValues = (
-              rawValues: number[],
-              trustedEndingValue: number,
-            ): number[] => {
-              if (rawValues.length === 0) {
-                return [trustedEndingValue];
-              }
-
-              const values = rawValues.map((value) =>
-                Number.isFinite(value) ? Math.max(value, 0) : 0,
-              );
-
-              const lastIndex = values.length - 1;
-              const currentEndingValue = values[lastIndex] ?? 0;
-
-              if (trustedEndingValue <= 0) {
-                return values;
-              }
-
-              if (currentEndingValue <= 0) {
-                values[lastIndex] = trustedEndingValue;
-                return values;
-              }
-
-              const difference = trustedEndingValue - currentEndingValue;
-
-              return values.map((value, index) => {
-                const weight = values.length <= 1 ? 1 : index / lastIndex;
-                return Math.max(value + (difference * weight), 0);
-              });
-            };
-
-const inventoryAnalyticsCardStockValueTrendValues =
-              inventoryAnalyticsTimestampPositionTrendValues(
-                inventoryAnalyticsTotalInventoryDailyPositionMap,
-              );
-
-            const inventoryAnalyticsCardNearExpiryTrendValues =
-              inventoryAnalyticsTimestampPositionTrendValues(
-                inventoryAnalyticsNearExpiryDailyPositionMap,
-              );
-
-
             const stockMovementByDate = new Map<string, { received: number; issued: number }>();
 
             movementRows.forEach((movement) => {
@@ -2667,8 +2501,21 @@ const inventoryAnalyticsCardStockValueTrendValues =
               nearExpiryValueByDate.get(dateKey) ?? 0,
             );
 
+            const nearExpiryTrendFallbackValue = Math.max(
+              alignedInventoryKpiNearExpiryValue,
+              apiInventoryKpiNearExpiryValue,
+              nearExpiryValue,
+              nearExpirySourceRows.reduce((sum, row) => sum + row.value, 0),
+            );
+
+            if (fullNearExpiryTrendValues.every((value) => value <= 0) && nearExpiryTrendFallbackValue > 0) {
+              fullNearExpiryTrendValues = analyticsTrendDateKeys.map((dateKey) =>
+                dateKey === analyticsAppliedDateToFilter ? nearExpiryTrendFallbackValue : 0,
+              );
+            }
+
             // REAL_STOCK_VALUE_TREND_FROM_BATCHES_V1
-            // Build Stock Value As At Selected Date from real loaded stock batches.
+            // Build Stock Value Trend from real loaded stock batches.
             // If movement rows exist, reconstruct value backwards from the current stock snapshot.
             // If movement rows do not exist, show the real current snapshot only on the selected end date.
             const realCurrentStockValueForTrend = analyticsMetricBatchRows.reduce(
@@ -2713,19 +2560,9 @@ const inventoryAnalyticsCardStockValueTrendValues =
             const nearExpiryTrendValues = selectedTrendDateKeys.map((dateKey) =>
               fullNearExpiryTrendValues[analyticsTrendDateKeys.indexOf(dateKey)] ?? 0,
             );
-            
-            // INVENTORY_ANALYTICS_VISIBLE_AS_AT_VALUES_V1
-            // These two visible Inventory Analytics charts are as-at KPI values,
-            // not independent historical trend calculations.
-            const inventoryAnalyticsVisibleStockValueValues =
-              inventoryAnalyticsCardStockValueTrendValues;
-
-            const inventoryAnalyticsVisibleNearExpiryValueValues =
-              inventoryAnalyticsCardNearExpiryTrendValues;
-
-const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
-            const trendStartValue = inventoryAnalyticsVisibleStockValueValues.find((value) => value > 0) ?? 0;
-            const trendEndValue = inventoryAnalyticsVisibleStockValueValues[inventoryAnalyticsVisibleStockValueValues.length - 1] ?? 0;
+            const trendMax = Math.max(...trendValues, 1);
+            const trendStartValue = trendValues.find((value) => value > 0) ?? 0;
+            const trendEndValue = trendValues[trendValues.length - 1] ?? 0;
             const trendPercentChange = trendStartValue > 0
               ? ((trendEndValue - trendStartValue) / trendStartValue) * 100
               : 0;
@@ -2807,125 +2644,67 @@ const trendMax = Math.max(...inventoryAnalyticsVisibleStockValueValues, 1);
                   ))}
                 </div>
 
-                {/* INVENTORY_ANALYTICS_OPERATIONAL_TREND_CARDS_V2 */}
-                <div className="inventory-analytics-operational-trend-grid" aria-label="Inventory Analytics operational trend cards">
-                  {[
-                    {
-                      key: 'total-inventory-trend',
-                      label: 'Total Inventory Trend',
-                      shortLabel: 'Total Inventory Trend',
-                      values: inventoryAnalyticsCardStockValueTrendValues,
-                      rows: inventoryAnalyticsTotalInventoryDailyPositionRows,
-                      startLabel: 'Inventory Value (Start)',
-                      endLabel: 'Inventory Value (End)',
-                      countLabel: 'Stock Batches',
-                      countValue:
-                        kpiCards.find((card) => /Batch/i.test(card.label))?.value
-                        ?? kpiCards.find((card) => /Stock Batch/i.test(card.label))?.value
-                        ?? '—',
-                      tone: 'green',
-                    },
-                    {
-                      key: 'near-expiry-value-trend',
-                      label: 'Near Expiry Value Trend',
-                      shortLabel: 'Near Expiry Value Trend',
-                      values: inventoryAnalyticsCardNearExpiryTrendValues,
-                      rows: inventoryAnalyticsNearExpiryDailyPositionRows,
-                      startLabel: 'Near Expiry Value (Start)',
-                      endLabel: 'Near Expiry Value (End)',
-                      countLabel: 'Near Expiry Count',
-                      countValue:
-                        kpiCards.find((card) => /Near Expiry Count/i.test(card.label))?.value
-                        ?? '—',
-                      tone: 'amber',
-                    },
-                  ].map((chart) => {
-                    const returnedEntries = inventoryAnalyticsReturnedTrendEntries(chart.rows ?? []);
-                    const chartEntries = returnedEntries;
-
-                    const chartMax = Math.max(...chartEntries.map((entry) => entry.value), 1);
-                    const firstValue = chartEntries[0]?.value ?? 0;
-                    const lastValue = chartEntries[chartEntries.length - 1]?.value ?? 0;
-                    const netChange = lastValue - firstValue;
-                    const percentChange = firstValue > 0 ? (netChange / firstValue) * 100 : 0;
-
-                    return (
-                      <article
-                        key={chart.key}
-                        className={`inventory-analytics-operational-trend-card inventory-analytics-operational-trend-card--${chart.tone}`}
+                <div className="inventory-analytics-request-grid">
+                  <article className="inventory-analytics-request-card">
+                    <header>
+                      <h3>Stock Value Trend</h3>
+                      <select
+                        className="inventory-analytics-trend-header-select"
+                        value={analyticsTrendWeekSelection}
+                        onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value)}
                       >
-                        <div className="inventory-analytics-operational-trend-card__head">
-                          <h3>{chart.label}</h3>
-                          <div className="inventory-analytics-operational-actions">
-                            <select
-                              value={analyticsTrendWeekSelection}
-                              aria-label={`${chart.label} range`}
-                              onChange={(event) => setAnalyticsTrendWeekSelection(event.target.value as typeof analyticsTrendWeekSelection)}>
-                              <option value="all">Full selected range</option>
-                              <option value="last7">Last 7 days</option>
-                              <option value="last14">Last 14 days</option>
-                              <option value="last30">Last 30 days</option>
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => setAnalyticsTrendWeekSelection('all')}
-                            >
-                              More
-                            </button>
-                          </div>
-                        </div>
+                        <option value="all">Full range</option>
+                        {analyticsTrendWeeks.map((week) => (
+                          <option key={week} value={week}>
+                            {week.replace('week-', 'Week ')}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="inventory-analytics-trend-change">
+                        {trendPercentChange.toFixed(1)}%
+                      </span>
+                      <button type="button" onClick={() => onOpenWorkspace('product-inventory')}>More</button>
+                    </header>
 
-                        <div className="inventory-analytics-operational-chart" role="img" aria-label={`${chart.label} inventory timestamp position bar chart`}>
-                          {chartEntries.map((entry, index) => (
-                            <div key={`${chart.key}-${entry.dateKey || index}`} className="inventory-analytics-operational-chart__bar">
-                              <em>{new Intl.NumberFormat(undefined, {
-                                notation: 'standard',
-                                maximumFractionDigits: 0,
-                              }).format(entry.value)}</em>
-                              <i
-                                style={{
-                                  height: `${Math.max((entry.value / chartMax) * 100, entry.value > 0 ? 10 : 4)}%`,
-                                }}
-                              />
-                              <span>{entry.dateKey.slice(8)}</span>
+                    <div className="inventory-analytics-request-bars">
+                      {trendValues.map((value, index) => (
+                        <div key={`stock-trend-${index}`}>
+                          <i style={{ height: `${Math.max((value / trendMax) * 100, value > 0 ? 12 : 4)}%` }} />
+                          <small>{selectedTrendDateKeys[index] ?? String(index + 1)}</small>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="inventory-analytics-stacked-bar-trends">
+                      {[
+                        { label: 'Total Inventory Trend', values: trendValues },
+                        { label: 'Near Expiry Trend', values: nearExpiryTrendValues },
+                      ].map((chart) => {
+                        const maxChartValue = Math.max(...chart.values, 1);
+
+                        return (
+                          <div key={chart.label} className="inventory-analytics-bar-trend-card">
+                            <strong>{chart.label}</strong>
+                            <div className="inventory-analytics-bar-trend-bars">
+                              {chart.values.map((value, index) => {
+                                const height = value > 0
+                                  ? Math.max((value / maxChartValue) * 100, 7)
+                                  : 2;
+
+                                return (
+                                  <div key={`${chart.label}-${index}`}>
+                                    <span>{formatInventoryTrendMillion(value)}</span>
+                                    <i style={{ height: `${height}%` }} />
+                                    <small>{inventoryAnalyticsDayNumberLabel(selectedTrendDateKeys[index] ?? '', index)}</small>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          ))}
-                        </div>
-
-                        <div className="inventory-analytics-operational-axis">
-                          <strong>{chartEntries[0]?.dateKey ?? analyticsAppliedDateFromFilter}</strong>
-                          <span>{chart.shortLabel}</span>
-                          <strong>{chartEntries[chartEntries.length - 1]?.dateKey ?? analyticsAppliedDateToFilter}</strong>
-                        </div>
-
-                        <div className="inventory-analytics-operational-summary">
-                          <article>
-                            <small>{chart.startLabel}</small>
-                            <strong>{inventoryAnalyticsMovementCurrency(firstValue)}</strong>
-                          </article>
-                          <article>
-                            <small>{chart.endLabel}</small>
-                            <strong>{inventoryAnalyticsMovementCurrency(lastValue)}</strong>
-                          </article>
-                          <article>
-                            <small>Net Change</small>
-                            <strong>{inventoryAnalyticsMovementCurrency(netChange)} · {percentChange.toFixed(1)}%</strong>
-                          </article>
-                          <article>
-                            <small>{chart.countLabel}</small>
-                            <strong>{chart.countValue}</strong>
-                          </article>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-
-
-                
-<div className="inventory-analytics-request-grid">
-                  
-
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </article>
 
                   <article className="inventory-analytics-request-card">
                     <header>

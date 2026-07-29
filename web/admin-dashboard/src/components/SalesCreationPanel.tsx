@@ -98,14 +98,6 @@ function blankPrescriptionForm(customerId = ''): PrescriptionForm {
   };
 }
 
-function normalizePosProductSearchText(value: unknown): string {
-  return String(value ?? '')
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '');
-}
-
 function blankSaleLine(productId = '', stockBatchId = '', unitPrice = ''): SaleLineForm {
   return {
     product_id: productId,
@@ -144,6 +136,55 @@ function money(value: number): string {
   }).format(value);
 }
 
+
+/* POS_PRODUCT_CARD_RESPONSIVE_LAYOUT_V1 */
+function posProductCardDate(value: unknown): string {
+  if (!value) {
+    return 'No batch';
+  }
+
+  const date = new Date(String(value));
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function posProductCardRemainingDays(value: unknown): string {
+  if (!value) {
+    return 'Not set';
+  }
+
+  const expiry = new Date(String(value));
+
+  if (Number.isNaN(expiry.getTime())) {
+    return 'Not set';
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+
+  const days = Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
+
+  if (days < 0) {
+    return `${Math.abs(days)} days expired`;
+  }
+
+  if (days === 0) {
+    return 'Expires today';
+  }
+
+  return `${days} days`;
+}
+
+
 export function SalesCreationPanel({
   token,
   tenantSlug,
@@ -157,7 +198,6 @@ export function SalesCreationPanel({
   onSaleCreated,
 }: Props) {
   const activeBranches = branches.filter((branch) => branch.status === 'active');
-
   const activeProducts = products.filter((product) => product.status === 'active');
 
   const [customerForm, setCustomerForm] = useState<CustomerForm>(blankCustomerForm());
@@ -263,6 +303,9 @@ export function SalesCreationPanel({
         return leftRisk - rightRisk || left.name.localeCompare(right.name);
       });
   }, [activeCategory, activeProducts, productSearch]);
+  const productBrowserLimit = productBrowserView === 'grid' ? 12 : 20;
+  const displayedProducts = visibleProducts.slice(0, productBrowserLimit);
+  const hiddenProductCount = Math.max(visibleProducts.length - displayedProducts.length, 0);
 
   function preferredPrice(product: PharmaProduct): string {
     const price = bestBatch(product.id)?.selling_price;
@@ -299,7 +342,7 @@ export function SalesCreationPanel({
     ) {
       setIsPrescriptionCaptureOpen(true);
       setCreationNotice(
-        'This medicine normally requires a prescription. Pharmacist may proceed after reviewing this warning.',
+        'This medicine requires a prescription. Capture or select the prescription before completing the sale.',
       );
     }
 
@@ -468,7 +511,8 @@ export function SalesCreationPanel({
     }
 
     if (prescriptionRequiredWithoutPrescription) {
-      setCreationError('');
+      setCreationError('A prescription is required for one or more selected products.');
+      return;
     }
 
     setIsSavingSale(true);
@@ -549,7 +593,7 @@ export function SalesCreationPanel({
           <div className="section-heading">
             <div>
               <h4>Product browser</h4>
-              <span>Search by medicine, SKU, barcode, brand, or category.</span>
+              <span>{visibleProducts.length.toLocaleString('en-RW')} products available</span>
             </div>
             <div className="view-toggle" aria-label="Product browser view">
               <button
@@ -593,7 +637,7 @@ export function SalesCreationPanel({
           </div>
 
           <div className={`pos-product-grid ${productBrowserView === 'list' ? 'pos-product-grid--list' : ''}`}>
-            {visibleProducts.slice(0, productBrowserView === 'grid' ? 10 : 16).map((product) => {
+            {displayedProducts.map((product) => {
               const batch = bestBatch(product.id);
               const price = preferredPrice(product);
 
@@ -605,7 +649,26 @@ export function SalesCreationPanel({
                   <strong>{product.name}</strong>
                   <small>{product.sku} · {product.category?.name ?? 'Uncategorised'}</small>
                   <em>
-                    {price ? money(Number(price)) : 'Set price in cart'} · stock {product.stock_summary?.available_quantity ?? 0}
+                    <span className="pos-product-card-info" data-pos-card-layout="responsive-v1">
+             <span className="pos-product-card-info-row pos-product-card-info-row--price">
+               <span className="pos-product-card-info-label">Price</span>
+               <strong>{price ? money(Number(price)) : 'Set price in cart'}</strong>
+             </span>
+             <span className="pos-product-card-info-row pos-product-card-info-row--stock">
+               <span className="pos-product-card-info-label pos-product-card-info-label--desktop">Stock Quantity</span>
+               <span className="pos-product-card-info-label pos-product-card-info-label--mobile">Available Quantity</span>
+               <strong>{product.stock_summary?.available_quantity ?? 0}</strong>
+             </span>
+             <span className="pos-product-card-info-row pos-product-card-info-row--expiry">
+               <span className="pos-product-card-info-label">Expiry Date</span>
+               <strong>{posProductCardDate(bestBatch(product.id)?.expiry_date)}</strong>
+             </span>
+             <span className="pos-product-card-info-row pos-product-card-info-row--days">
+               <span className="pos-product-card-info-label">Remaining Days</span>
+               <strong>{posProductCardRemainingDays(bestBatch(product.id)?.expiry_date)}</strong>
+             </span>
+             <span className="pos-product-mobile-add-indicator" aria-hidden="true">+</span>
+           </span>
                   </em>
                   <small>FEFO batch: {batch?.batch_number ?? 'No active batch'}</small>
                 </button>
@@ -613,7 +676,13 @@ export function SalesCreationPanel({
             })}
 
             {visibleProducts.length === 0 && (
-              <p className="muted">No matching products. Try product name, generic name, SKU, barcode, or confirm the product exists in Product Inventory with active stock.</p>
+              <p className="muted">No matching products. Try another product name, SKU, barcode, or category.</p>
+            )}
+
+            {hiddenProductCount > 0 && (
+              <p className="muted pos-product-count">
+                {hiddenProductCount.toLocaleString('en-RW')} more products match this filter.
+              </p>
             )}
           </div>
         </section>
@@ -952,7 +1021,7 @@ export function SalesCreationPanel({
             <h4>Prescription capture</h4>
             <p className="muted">
               {prescriptionRequiredWithoutPrescription
-                ? 'A selected medicine normally requires a prescription. Pharmacist can proceed after reviewing this warning.'
+                ? 'A selected medicine requires a prescription before the draft sale can be completed.'
                 : 'Attach a prescription now or capture it later through Prescription Management.'}
             </p>
           </div>
@@ -964,7 +1033,7 @@ export function SalesCreationPanel({
             }
           >
             {prescriptionRequiredWithoutPrescription
-              ? 'Proceed with pharmacist warning'
+              ? 'Capture required prescription'
               : 'Open prescription form'}
           </button>
         </section>

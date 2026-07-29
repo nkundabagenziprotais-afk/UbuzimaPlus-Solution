@@ -37,11 +37,18 @@ const dictionaries: Record<Exclude<RuntimeLanguage, 'en'>, Record<string, string
     Website: 'Site web',
     'Email Corporate': 'Email professionnel',
     Continue: 'Continuer',
+    'Continue with PIN': 'Continuer avec PIN',
+    'Checking access...': 'Verification...',
     'Email address': 'Adresse email',
+    Email: 'Email',
     Password: 'Mot de passe',
     'Phone number': 'Numero de telephone',
     '4-digit PIN': 'PIN a 4 chiffres',
+    '4 to 6 digit PIN': 'PIN de 4 a 6 chiffres',
+    'Staff PIN': 'PIN du personnel',
     'Phone PIN': 'PIN telephone',
+    'Staff Identity': 'Identite du personnel',
+    'Sign in': 'Connexion',
     'Back to website': 'Retour au site web',
     'Access your workspace': 'Acceder a votre espace de travail',
     'Tenant admin dashboard': 'Tableau de bord tenant',
@@ -95,11 +102,18 @@ const dictionaries: Record<Exclude<RuntimeLanguage, 'en'>, Record<string, string
     Website: 'Site',
     'Email Corporate': 'Email corporativo',
     Continue: 'Continuar',
+    'Continue with PIN': 'Continuar com PIN',
+    'Checking access...': 'Verificando...',
     'Email address': 'Endereco de email',
+    Email: 'Email',
     Password: 'Senha',
     'Phone number': 'Numero de telefone',
     '4-digit PIN': 'PIN de 4 digitos',
+    '4 to 6 digit PIN': 'PIN de 4 a 6 digitos',
+    'Staff PIN': 'PIN da equipa',
     'Phone PIN': 'PIN telefone',
+    'Staff Identity': 'Identidade da equipa',
+    'Sign in': 'Entrar',
     'Back to website': 'Voltar ao site',
     'Access your workspace': 'Aceder ao espaco de trabalho',
     'Tenant admin dashboard': 'Painel do tenant',
@@ -121,6 +135,47 @@ const dictionaries: Record<Exclude<RuntimeLanguage, 'en'>, Record<string, string
     'Manage products': 'Gerir produtos',
   },
 };
+
+const reverseTranslations = Object.values(dictionaries).reduce<Record<string, string>>((lookup, dictionary) => {
+  Object.entries(dictionary).forEach(([source, translated]) => {
+    lookup[translated] = source;
+  });
+
+  return lookup;
+}, {});
+
+function sourceTextFor(value: string): string {
+  const normalized = value.trim();
+
+  return reverseTranslations[normalized] ?? normalized;
+}
+
+function sourceValueFromRaw(value: string): string {
+  const leading = value.match(/^\s*/)?.[0] ?? '';
+  const trailing = value.match(/\s*$/)?.[0] ?? '';
+
+  return `${leading}${sourceTextFor(value)}${trailing}`;
+}
+
+function sourceValueForCurrentText(
+  currentValue: string,
+  storedOriginal: string | undefined,
+  language: RuntimeLanguage,
+): string {
+  if (!storedOriginal) {
+    return sourceValueFromRaw(currentValue);
+  }
+
+  const currentTrimmed = currentValue.trim();
+  const storedTrimmed = storedOriginal.trim();
+  const storedTranslated = translateText(storedTrimmed, language).trim();
+
+  if (currentTrimmed === storedTrimmed || currentTrimmed === storedTranslated) {
+    return storedOriginal;
+  }
+
+  return sourceValueFromRaw(currentValue);
+}
 
 function translateText(value: string, language: RuntimeLanguage): string {
   if (language === 'en') return value;
@@ -144,7 +199,8 @@ export function applyRuntimeLanguage(language: RuntimeLanguage, root: ParentNode
 
   let current = walker.nextNode() as Text | null;
   while (current) {
-    const original = textOriginals.get(current) ?? current.nodeValue ?? '';
+    const currentValue = current.nodeValue ?? '';
+    const original = sourceValueForCurrentText(currentValue, textOriginals.get(current), language);
     textOriginals.set(current, original);
     const leading = original.match(/^\s*/)?.[0] ?? '';
     const trailing = original.match(/\s*$/)?.[0] ?? '';
@@ -154,7 +210,7 @@ export function applyRuntimeLanguage(language: RuntimeLanguage, root: ParentNode
   }
 
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[placeholder], textarea[placeholder]').forEach((input) => {
-    const original = placeholderOriginals.get(input) ?? input.placeholder;
+    const original = sourceValueForCurrentText(input.placeholder, placeholderOriginals.get(input), language);
     placeholderOriginals.set(input, original);
     input.placeholder = translateText(original, language);
   });

@@ -227,6 +227,13 @@ function salesFromSummary(response: unknown, startDate: string, endDate: string)
   const sales = asRecord(record.sales);
 
   const grossSales = numberValue(sales.total_sales_amount);
+  const grossProfit = numberValue(
+    sales.gross_profit ??
+    sales.gross_revenue ??
+    sales.gross_margin ??
+    sales.margin_income ??
+    sales.profit_amount,
+  );
   const collections = numberValue(sales.payments_collected) || numberValue(sales.paid_amount);
   const outstandingBalance = numberValue(sales.balance_amount);
   const transactionCount = numberValue(sales.sale_count);
@@ -235,6 +242,7 @@ function salesFromSummary(response: unknown, startDate: string, endDate: string)
   return {
     periodLabel: startDate === endDate ? startDate : `${startDate} → ${endDate}`,
     grossSales,
+    grossProfit,
     netSales: grossSales,
     collections,
     outstandingBalance,
@@ -274,9 +282,13 @@ function salesFromRows(rows: SaleRow[], startDate: string, endDate: string) {
     total_amount,
   }));
 
-  const trend = [...trendGroups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([label, value]) => ({ label: label.slice(5), value }));
+  const trend: BusinessOverviewTrendPoint[] =
+    [...trendGroups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([label, value]) => ({
+        label,
+        value,
+      }));
 
   return {
     periodLabel: startDate === endDate ? startDate : `${startDate} → ${endDate}`,
@@ -289,6 +301,101 @@ function salesFromRows(rows: SaleRow[], startDate: string, endDate: string) {
     paymentMethods,
     trend,
   };
+}
+
+function businessDateKeysForSalesTrend(
+  startDate: string,
+  endDate: string,
+  maximumDays = 31,
+): string[] {
+  const start = new Date(
+    `${startDate}T00:00:00Z`,
+  );
+
+  const end = new Date(
+    `${endDate}T00:00:00Z`,
+  );
+
+  if (
+    Number.isNaN(start.getTime())
+    || Number.isNaN(end.getTime())
+    || start > end
+  ) {
+    return [];
+  }
+
+  const dates: string[] = [];
+  const cursor = new Date(start);
+
+  while (
+    cursor <= end
+    && dates.length < maximumDays
+  ) {
+    dates.push(
+      cursor.toISOString().slice(0, 10),
+    );
+
+    cursor.setUTCDate(
+      cursor.getUTCDate() + 1,
+    );
+  }
+
+  return dates;
+}
+
+async function salesValueTrendFromDailySummaries(
+  token: string,
+  tenantSlug: string,
+  startDate: string,
+  endDate: string,
+): Promise<BusinessOverviewTrendPoint[]> {
+  const dates = businessDateKeysForSalesTrend(
+    startDate,
+    endDate,
+  );
+
+  const results = await Promise.allSettled(
+    dates.map((date) =>
+      fetchTenantJson<unknown>(
+        token,
+        tenantSlug,
+        buildSalesSummaryEndpoint(
+          date,
+          date,
+        ),
+      )
+    ),
+  );
+
+  const trend: BusinessOverviewTrendPoint[] = [];
+
+  results.forEach((result, index) => {
+    if (result.status !== 'fulfilled') {
+      return;
+    }
+
+    const date = dates[index];
+
+    const dailySales = salesFromSummary(
+      result.value,
+      date,
+      date,
+    );
+
+    if (
+      dailySales.grossSales <= 0
+      && dailySales.transactionCount <= 0
+    ) {
+      return;
+    }
+
+    trend.push({
+      label: date,
+      value: dailySales.grossSales,
+    });
+  });
+
+  return trend;
 }
 
 function textValue(value: unknown): string {
@@ -593,26 +700,6 @@ function inventoryFromValuation(response: InventoryValuationResponse) {
   };
 }
 
-function businessOverviewBusinessDateKey(value: unknown): string {
-  const raw = String(value ?? '').trim();
-
-  if (!raw) {
-    return '';
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    return raw;
-  }
-
-  const parsed = new Date(raw);
-
-  if (Number.isFinite(parsed.getTime())) {
-    return parsed.toISOString().slice(0, 10);
-  }
-
-  return raw.slice(0, 10);
-}
-
 export async function loadBusinessOverviewDataAdapter({
   token,
   tenantSlug,
@@ -643,14 +730,75 @@ export async function loadBusinessOverviewDataAdapter({
     throw summaryResult.reason;
   }
 
-  let sales =
-    summaryResult.status === 'fulfilled'
-      ? salesFromSummary(summaryResult.value, startDate, endDate)
-      : salesFromRows([], startDate, endDate);
+  const registerSales =
+    registerResult.status === 'fulfilled'
+      ? salesFromRows(
+          registerRows,
+          startDate,
+          endDate,
+        )
+      : salesFromRows(
+          [],
+          startDate,
+          endDate,
+        );
 
-  if (sales.grossSales <= 0 && registerResult.status === 'fulfilled') {
-    sales = salesFromRows(registerRows, startDate, endDate);
+  const summarySales =
+    summaryResult.status === 'fulfilled'
+      ? salesFromSummary(
+          summaryResult.value,
+          startDate,
+          endDate,
+        )
+      : null;
+
+  let sales =
+    summarySales
+    ?? registerSales;
+
+  let dailySummaryTrend:
+    BusinessOverviewTrendPoint[] = [];
+
+  if (
+    registerSales.trend.length === 0
+    && sales.grossSales > 0
+  ) {
+    dailySummaryTrend =
+      await salesValueTrendFromDailySummaries(
+        token,
+        tenantSlug,
+        startDate,
+        endDate,
+      );
   }
+
+  if (
+    sales.grossSales <= 0
+    && registerResult.status === 'fulfilled'
+  ) {
+    sales = registerSales;
+  } else if (
+    registerSales.trend.length > 0
+  ) {
+    sales = {
+      ...sales,
+      trend: registerSales.trend,
+    };
+  } else if (
+    dailySummaryTrend.length > 0
+  ) {
+    sales = {
+      ...sales,
+      trend: dailySummaryTrend,
+    };
+  }
+
+  const salesTrendSource =
+    registerSales.trend.length > 0
+      ? 'Daily sales register by Business Date'
+      : dailySummaryTrend.length > 0
+        ? 'Daily sales summary by Business Date'
+        : 'No sales recorded for the selected Business Date range';
 
   const inventory =
     inventoryResult.status === 'fulfilled'
@@ -718,6 +866,7 @@ export async function loadBusinessOverviewDataAdapter({
     kpiHelpers: {
       'Gross Revenue': `Business Date ${sales.periodLabel}`,
       'Net Revenue': 'Business-date sales summary with register fallback',
+      'Sales Trend Source': salesTrendSource,
       Collections: 'Collected payments for selected Business Date range',
       'Outstanding Balance': 'Uncollected sales balance for selected period',
       'Inventory Value': `Inventory valuation as of ${endDate}`,
@@ -730,6 +879,7 @@ export async function loadBusinessOverviewDataAdapter({
     },
     revenueRows: [
       { label: 'Gross Sales', value: formatMoney(sales.grossSales) },
+      { label: 'Gross Revenue', value: formatMoney(grossRevenue) },
       { label: 'Discounts', value: formatMoney(0) },
       { label: 'Returns / Reversals', value: formatMoney(0) },
       { label: 'Net Sales', value: formatMoney(sales.netSales) },
@@ -754,31 +904,6 @@ export async function loadBusinessOverviewDataAdapter({
     ],
     paymentMix,
     topProducts: buildTopProductsFromRows(registerRows),
-    trend: sales.trend.length > 0
-      ? sales.trend
-      : (sales.grossSales > 0 || sales.transactionCount > 0)
-        ? [{
-            label: endDate,
-            value: sales.grossSales,
-          }]
-        : [],
+    trend: sales.trend,
   };
-}
-
-
-// BUSINESS_OVERVIEW_ADAPTER_BUSINESS_DATE_TREND_V1
-// Keep Sales Trend date labels aligned to Business Date, not timestamp display labels.
-export function normalizeBusinessOverviewTrendBusinessDatesForDisplay<T extends Record<string, unknown>>(rows: T[]): T[] {
-  return rows.map((row) => {
-    const businessDate = businessOverviewBusinessDateKey(
-      row.business_date ?? row.businessDate ?? row.date ?? row.created_at ?? row.createdAt,
-    );
-
-    return {
-      ...row,
-      business_date: businessDate,
-      date: businessDate,
-      label: businessDate ? businessDate.slice(5) : String(row.label ?? ''),
-    };
-  });
 }

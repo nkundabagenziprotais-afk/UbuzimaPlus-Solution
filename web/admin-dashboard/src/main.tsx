@@ -1,6 +1,4 @@
-import { installDashboardLastGoodFetchCache } from './lib/dashboardReporting';
-installDashboardLastGoodFetchCache();
-
+import "./launch/workspaceGlassDock";
 
 function installUbuzimaRealMobileAppHomeV1(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -239,7 +237,8 @@ function installUbuzimaRealMobileAppHomeV1(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-installUbuzimaRealMobileAppHomeV1();
+// Legacy DOM-injected mobile home remains disabled. The authenticated React
+// app owns the phone interface through UbuzimaMobileApp.
 
 
 
@@ -400,7 +399,7 @@ function installUbuzimaNativeMobileDrawerV2(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-installUbuzimaNativeMobileDrawerV2();
+// The authenticated React app now owns the phone app shell and drawer.
 
 
 
@@ -602,7 +601,7 @@ function installUbuzimaNativeMobileInterfaceV1(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-installUbuzimaNativeMobileInterfaceV1();
+// The legacy injected mobile interface remains inactive to avoid duplicate controls.
 
 
 
@@ -767,50 +766,45 @@ function installUbuzimaInstallAppPrompt(): void {
   }
 
   let deferredPrompt: UbuzimaBeforeInstallPromptEvent | null = null;
-  let button: HTMLButtonElement | null = null;
+  const notifyInstallChange = (isAvailable: boolean) => {
+    (window as Window & { __ubuzimaPwaInstallAvailable?: boolean }).__ubuzimaPwaInstallAvailable = isAvailable;
+    window.dispatchEvent(
+      new CustomEvent('ubuzima:pwa-install-change', {
+        detail: { isAvailable },
+      }),
+    );
+  };
 
-  function ensureButton(): HTMLButtonElement {
-    if (button) {
-      return button;
+  async function promptForInstall(): Promise<void> {
+    if (!deferredPrompt) {
+      notifyInstallChange(false);
+      return;
     }
 
-    button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'ubuzima-install-app-button';
-    button.textContent = 'Install app';
-    button.hidden = true;
-    document.body.appendChild(button);
-
-    button.addEventListener('click', async () => {
-      if (!deferredPrompt) {
-        return;
-      }
-
-      button!.hidden = true;
-      await deferredPrompt.prompt().catch(() => undefined);
-      await deferredPrompt.userChoice?.catch(() => undefined);
-      deferredPrompt = null;
-    });
-
-    return button;
+    await deferredPrompt.prompt().catch(() => undefined);
+    await deferredPrompt.userChoice?.catch(() => undefined);
+    deferredPrompt = null;
+    notifyInstallChange(false);
+    window.dispatchEvent(new CustomEvent('ubuzima:pwa-install-complete'));
   }
 
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredPrompt = event as UbuzimaBeforeInstallPromptEvent;
-    ensureButton().hidden = false;
+    notifyInstallChange(true);
+  });
+
+  window.addEventListener('ubuzima:pwa-install-request', () => {
+    void promptForInstall();
   });
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
-
-    if (button) {
-      button.hidden = true;
-    }
+    notifyInstallChange(false);
+    window.dispatchEvent(new CustomEvent('ubuzima:pwa-install-complete'));
   });
 }
 
-installUbuzimaMobileAppShellNavigation();
 installUbuzimaInstallAppPrompt();
 
 
@@ -907,7 +901,18 @@ function installDashboardAnalyticsConsistencyLayer(): void {
 
   function writeCache(metrics: Record<string, DashboardSharedMetric>): void {
     try {
-      window.localStorage.setItem(storageKey, JSON.stringify(metrics));
+      const nextPayload = JSON.stringify(metrics);
+
+      if (window.localStorage.getItem(storageKey) === nextPayload) {
+        return;
+      }
+
+      window.localStorage.setItem(storageKey, nextPayload);
+      window.dispatchEvent(
+        new CustomEvent('ubuzima:shared-metrics-change', {
+          detail: { updatedAt: Date.now() },
+        }),
+      );
     } catch {
       // Storage is an enhancement only.
     }
@@ -1032,6 +1037,11 @@ function installDashboardAnalyticsConsistencyLayer(): void {
   window.setTimeout(sync, 1500);
   window.setTimeout(sync, 3500);
   window.setInterval(sync, 5000);
+  window.addEventListener('ubuzima:refresh', () => {
+    window.setTimeout(sync, 350);
+    window.setTimeout(sync, 1600);
+    window.setTimeout(sync, 3600);
+  });
 
   const observer = new MutationObserver(sync);
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
@@ -1064,11 +1074,32 @@ function installUbuzimaMobileWebExperience(): void {
   window.addEventListener('resize', syncMobileAppMode, { passive: true });
   window.addEventListener('orientationchange', syncMobileAppMode, { passive: true });
 
-  if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+  const canUseServiceWorker =
+    'serviceWorker' in navigator &&
+    (window.isSecureContext ||
+      ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname));
+
+  if (canUseServiceWorker) {
+    let didReloadForServiceWorkerUpdate = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (didReloadForServiceWorkerUpdate) {
+        return;
+      }
+
+      didReloadForServiceWorkerUpdate = true;
+      window.location.reload();
+    });
+
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(() => {
-        // Service worker is an enhancement only.
-      });
+      navigator.serviceWorker
+        .register('/admin/sw.js', { scope: '/admin/' })
+        .then((registration) => {
+          void registration.update().catch(() => undefined);
+        })
+        .catch(() => {
+          // Service worker is an enhancement only.
+        });
     });
   }
 }
@@ -1090,6 +1121,20 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles.css';
 import App from './App';
+import "./launch/posWebRestore";
+import "./launch/mobilePwaScopeGuard";
+import "./launch/posInventorySwBridge";
+import "./launch/homeScrollUnlock";
+import "./launch/posProductCardReplaceFinal";
+
+if (
+  typeof window !== 'undefined'
+) {
+  document.documentElement.setAttribute(
+    'data-ubuzima-main-taskbar-removal',
+    'UBIZIMA_MAIN_ADMIN_TASKBAR_REMOVAL_V1',
+  );
+}
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
@@ -1097,97 +1142,16 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   </React.StrictMode>
 );
 
+if (typeof window !== 'undefined') {
+  (window as Window & { __UBUZIMA_APP_READY__?: boolean }).__UBUZIMA_APP_READY__ = true;
+  window.dispatchEvent(new Event('ubuzima:app-ready'));
 
-/* BUSINESS_OVERVIEW_FORCE_REFRESH_BUTTON_V1 */
-function installBusinessOverviewForceRefreshButton(): void {
-  if (typeof window === 'undefined') {
-    return;
+  if ('serviceWorker' in navigator) {
+    const readyMessage = { type: 'UBUZIMA_ADMIN_APP_READY' };
+
+    navigator.serviceWorker.controller?.postMessage(readyMessage);
+    navigator.serviceWorker.ready
+      .then((registration) => registration.active?.postMessage(readyMessage))
+      .catch(() => {});
   }
-
-  const dateKeyFrom = 'ubuzima:business-overview:date-from';
-  const dateKeyTo = 'ubuzima:business-overview:date-to';
-
-  function rememberBusinessOverviewDates(anchor: HTMLElement): void {
-    const section =
-      anchor.closest('section, article, main, div') ?? document.body;
-
-    const dateInputs = Array.from(
-      section.querySelectorAll<HTMLInputElement>('input[type="date"]'),
-    ).filter((input) => input.offsetParent !== null);
-
-    const from = dateInputs[0]?.value || '';
-    const to = dateInputs[1]?.value || '';
-
-    try {
-      if (from) window.localStorage.setItem(dateKeyFrom, from);
-      if (to) window.localStorage.setItem(dateKeyTo, to);
-      window.localStorage.setItem(
-        'ubuzima:business-overview:force-refresh-at',
-        String(Date.now()),
-      );
-    } catch {
-      // Ignore storage failures.
-    }
-  }
-
-  function enhance(): void {
-    const buttons = Array.from(
-      document.querySelectorAll<HTMLButtonElement>('button'),
-    );
-
-    const applyButton = buttons.find((button) =>
-      /apply\s+dates/i.test(button.textContent ?? ''),
-    );
-
-    if (!applyButton || applyButton.dataset.businessOverviewRefreshReady === 'true') {
-      return;
-    }
-
-    applyButton.dataset.businessOverviewRefreshReady = 'true';
-
-    const refreshButton = document.createElement('button');
-    refreshButton.type = 'button';
-    refreshButton.className = 'ubuzima-business-overview-force-refresh-button';
-    refreshButton.textContent = 'Force Refresh';
-
-    refreshButton.addEventListener('click', () => {
-      rememberBusinessOverviewDates(applyButton);
-
-      try {
-        Object.keys(window.localStorage)
-          .filter((key) => /business.*overview|overview.*analytics|business-analytics/i.test(key))
-          .forEach((key) => {
-            if (!/date-from|date-to/.test(key)) {
-              window.localStorage.removeItem(key);
-            }
-          });
-      } catch {
-        // Ignore storage cleanup failures.
-      }
-
-      window.dispatchEvent(
-        new CustomEvent('ubuzima:business-overview-force-refresh', {
-          detail: { at: Date.now() },
-        }),
-      );
-
-      applyButton.click();
-    });
-
-    applyButton.insertAdjacentElement('afterend', refreshButton);
-
-    applyButton.addEventListener('click', () => {
-      rememberBusinessOverviewDates(applyButton);
-    });
-  }
-
-  enhance();
-
-  const observer = new MutationObserver(() => enhance());
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
 }
-
-installBusinessOverviewForceRefreshButton();

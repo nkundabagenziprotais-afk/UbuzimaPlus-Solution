@@ -558,6 +558,14 @@ export async function loadBusinessOverviewLiveData(
       'net_revenue',
     ]) || Math.max(grossSales - discounts - returns, 0);
 
+    const grossRevenue = firstNumber(salesSummary, [
+      'gross_revenue',
+      'gross_profit',
+      'gross_margin',
+      'margin_income',
+      'profit_amount',
+    ]) || Math.max(netSales, 0);
+
     const collections = firstNumber(salesSummary, [
       'payments_collected',
       'paid_amount',
@@ -602,7 +610,8 @@ export async function loadBusinessOverviewLiveData(
       inventoryLoaded: false,
       error: null,
       kpis: {
-        'Gross Revenue': formatMoney(grossSales),
+        'Gross Sales': formatMoney(grossSales),
+        'Gross Revenue': formatMoney(grossRevenue),
         'Net Revenue': formatMoney(netSales),
         Collections: formatMoney(collections),
         'Outstanding Balance': formatMoney(outstandingBalance),
@@ -623,7 +632,8 @@ export async function loadBusinessOverviewLiveData(
         'Expiring Items': '—',
       },
       kpiHelpers: {
-        'Gross Revenue': 'Aggregated live sales summary report',
+        'Gross Sales': 'Aggregated live sales summary report',
+        'Gross Revenue': 'Gross revenue or margin signal from live sales summary',
         'Net Revenue': 'Sales summary total after available adjustments',
         Collections: 'Payments collected from sales summary report',
         'Outstanding Balance': 'Balance amount from sales summary report',
@@ -633,6 +643,7 @@ export async function loadBusinessOverviewLiveData(
       },
       revenueRows: [
         { label: 'Gross Sales', value: formatMoney(grossSales) },
+        { label: 'Gross Revenue', value: formatMoney(grossRevenue) },
         { label: 'Discounts', value: formatMoney(discounts) },
         { label: 'Returns / Reversals', value: formatMoney(returns) },
         { label: 'Net Sales', value: formatMoney(netSales) },

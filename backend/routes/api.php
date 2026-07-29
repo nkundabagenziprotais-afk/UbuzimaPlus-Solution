@@ -1538,3 +1538,5 @@ Route::middleware('auth:sanctum')
 */
 
 require __DIR__ . '/handover.php';
+
+require __DIR__ . '/accounting.php';

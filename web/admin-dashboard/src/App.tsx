@@ -1,4 +1,3 @@
-/* APP_RX_WARNING_ALLOW_POS_RECORDING_V1 */
 /* POS_SALES_ANALYTICS_VISIBLE_ENTRY_V1 */
 import {
   InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
@@ -24,7 +23,7 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   getBranchDepartments,
   getCorporateMailOverview,
   getPharmaBranches,
-  getPharmaInventoryBatches,
+  getAllPharmaInventoryBatches,
   getPharmacyProfile,
   login,
   logout,
@@ -83,8 +82,12 @@ import {
   GeneralItemsManagementWorkspace,
 } from './components/GeneralItemsManagementWorkspace';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
+import { FinanceOverviewRedesign } from './components/FinanceOverviewRedesign';
+import { ProfitLossWorkspace } from './components/ProfitLossWorkspace';
+import { CashFlowWorkspace } from './components/CashFlowWorkspace';
+import { FinanceSalesWorkspace } from './components/FinanceSalesWorkspace';
+import { AccountingWorkspace } from './components/accounting/AccountingWorkspace';
 import { ReportingDashboard } from './components/ReportingDashboard';
-import { FinanceSourceOfTruthOverview } from './components/FinanceSourceOfTruthOverview';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
 import { TwoFactorAdminPanel } from './components/TwoFactorAdminPanel';
 import { LoginSuccessOverlay } from './components/LoginSuccessOverlay';
@@ -107,6 +110,21 @@ import {
   InsuranceManagementWorkspace,
   type InsuranceWorkspaceKey,
 } from './components/InsuranceManagementWorkspace';
+import {
+  UbuzimaMobileApp,
+  type UbuzimaMobileDailyPosSummary,
+  type UbuzimaMobileDailyPosTransaction,
+  type UbuzimaMobileAppAction,
+  type UbuzimaMobileAppMenuGroup,
+  type UbuzimaMobileAppMetric,
+  type UbuzimaMobileAppNavItem,
+  type UbuzimaMobileAppScreen,
+  type UbuzimaMobileAppWorkbench,
+} from './components/UbuzimaMobileApp';
+import {
+  MobileNativeOperationalWorkflow,
+  type MobileNativeOperationalWorkflowKind,
+} from './components/MobileNativeOperationalWorkflow';
 
 type StoredSession = {
   token: string;
@@ -243,7 +261,10 @@ type FinanceWorkspaceKey =
   | 'credits-receivables'
   | 'receivable-register'
   | 'collection'
-  | 'financial-statements';
+  | 'financial-statements'
+  | 'cash-flow'
+  | 'sales'
+  | 'accounting';
 type AdhocReportWorkspaceKey =
   | 'overview'
   | 'operation-alerts'
@@ -252,6 +273,23 @@ type AdhocReportWorkspaceKey =
   | 'decision-note'
   | 'operation-checklist'
   | 'priority-follow-up';
+type NativeMobileSectionOptions = {
+  financeWorkspace?: FinanceWorkspaceKey;
+  inventoryView?: InventoryView;
+  openWorkflow?: boolean;
+  posWorkspace?: PosWorkspaceKey;
+  reportWorkspace?: AdhocReportWorkspaceKey;
+  screen?: UbuzimaMobileAppScreen;
+  supplierWorkspace?: SupplierWorkspaceKey;
+  workflowKey?: MobileNativeOperationalWorkflowKind;
+  workflowTitle?: string;
+};
+type MobileNativeWorkflowState = {
+  section: AdminSectionKey;
+  screen: UbuzimaMobileAppScreen;
+  title: string;
+  workflowKey?: MobileNativeOperationalWorkflowKind;
+} | null;
 const adminStateStorageKey = 'ubuzima.admin.state.v1';
 
 function storedAdminState(): Record<string, string> {
@@ -388,6 +426,15 @@ type HomeWidgetKey =
   | 'role-workspaces';
 type MenuContextKey = ErpWorkspaceKey | SolutionKey | AiWorkspaceKey | AdminPanelWorkspaceKey;
 type LoginMethod = 'email' | 'phone';
+type MobilePosStep = 'session' | 'products' | 'cart' | 'payment' | 'success';
+type UbuzimaPwaInstallChangeEvent = CustomEvent<{ isAvailable: boolean }>;
+type MobileBottomNavItem = {
+  key: string;
+  label: string;
+  icon: string;
+  section: AdminSectionKey;
+  posWorkspace?: PosWorkspaceKey;
+};
 
 type MenuItem = {
   key: AdminSectionKey;
@@ -607,7 +654,12 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'finance-credits-receivables', label: 'Customer Credits and Receivables', target: 'credits-receivables' },
     { key: 'finance-receivable-register', label: 'Receivable Register', target: 'receivable-register' },
     { key: 'finance-collection', label: 'Collection', target: 'collection' },
-    { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statements' },
+    { key: 'finance-statement', label: 'Profit & Loss', target: 'financial-statements' },
+
+    { key: 'finance-cash-flow', label: 'Cash Flow', target: 'cash-flow' },
+
+    { key: 'finance-sales', label: 'Sales', target: 'sales' },
+    { key: 'finance-accounting', label: 'Accounting', target: 'accounting' },
   ],
   reports: [
     { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
@@ -663,10 +715,138 @@ const storageKey = 'ubuzima_admin_session';
 const activeSectionStorageKey = 'ubuzima_admin_active_section';
 const trustedDeviceStorageKey = 'ubuzima_admin_trusted_device_token';
 const staffLanguageStorageKey = 'ubuzima_admin_language';
-const brandLogoSrc = '/assets/ubuzima-logo.png';
-const vitaPharmaLogoSrc = '/assets/vitapharma-logo.png';
+const adminAssetBaseUrl = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const brandLogoSrc = `${adminAssetBaseUrl}assets/ubuzima-logo.png`;
+const vitaPharmaLogoSrc = `${adminAssetBaseUrl}assets/vitapharma-logo.png`;
 const staffLoginLanguages = ['English', 'French', 'Portuguese'] as const;
 type StaffLoginLanguage = typeof staffLoginLanguages[number];
+
+function mobileAppScreenForSection(section: AdminSectionKey): UbuzimaMobileAppScreen {
+  if (section === 'overview') return 'business';
+  if (section === 'pos' || section === 'finance') return 'sales';
+  if (section === 'inventory') return 'inventory';
+  if (section === 'suppliers') return 'procurement';
+  if (section === 'general-stock-items') return 'general-stock';
+
+  return 'more';
+}
+
+type SharedBusinessMetric = {
+  valueText?: string;
+  valueNumber?: number;
+  updatedAt?: number;
+};
+
+const sharedBusinessOverviewMetricStorageKey = 'ubuzimaSharedDashboardAnalyticsMetricsV1';
+const mobileRecentPosDataStorageKey = 'ubuzimaMobileRecentPosDataV1';
+
+type MobileRecentPosDataCache = {
+  tenantSlug: string;
+  businessDate: string;
+  cachedAt: number;
+  analytics: PharmaLiveBusinessAnalyticsResponse | null;
+  transactions: PharmaRecentTransactionWithUser[];
+};
+
+function readSharedBusinessMetricRecord(labels: string[]): SharedBusinessMetric | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(sharedBusinessOverviewMetricStorageKey);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Record<string, SharedBusinessMetric>;
+    const normalizedEntries = Object.entries(parsed).map(([key, metric]) => [
+      key.toLowerCase(),
+      metric,
+    ] as const);
+
+    for (const label of labels) {
+      const normalizedLabel = label.toLowerCase();
+      const exact = parsed[label] ?? normalizedEntries.find(([key]) => key === normalizedLabel)?.[1];
+
+      if (exact?.valueText || typeof exact?.valueNumber === 'number') {
+        return exact;
+      }
+
+      const partial = normalizedEntries.find(([key]) =>
+        key.includes(normalizedLabel) || normalizedLabel.includes(key),
+      )?.[1];
+
+      if (partial?.valueText || typeof partial?.valueNumber === 'number') {
+        return partial;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function readMobileRecentPosDataCache(
+  tenantSlug?: string | null,
+): MobileRecentPosDataCache | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(mobileRecentPosDataStorageKey);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as MobileRecentPosDataCache;
+    const hasData =
+      Boolean(parsed.analytics) ||
+      (Array.isArray(parsed.transactions) && parsed.transactions.length > 0);
+
+    if (!hasData) return null;
+
+    if (tenantSlug && parsed.tenantSlug && parsed.tenantSlug !== tenantSlug) {
+      return null;
+    }
+
+    return {
+      ...parsed,
+      analytics: parsed.analytics ?? null,
+      transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeMobileRecentPosDataCache(
+  payload: Omit<MobileRecentPosDataCache, 'cachedAt'>,
+): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(
+      mobileRecentPosDataStorageKey,
+      JSON.stringify({
+        ...payload,
+        cachedAt: Date.now(),
+      }),
+    );
+  } catch {
+    // Recent-data cache is an enhancement only.
+  }
+}
+
+function buildNativeLiveMetricBars(values: Array<number | undefined>): number[] {
+  const liveValues = values.filter((value): value is number =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0,
+  );
+
+  if (liveValues.length < 2) return [];
+
+  const max = Math.max(...liveValues, 1);
+
+  return liveValues
+    .slice(0, 7)
+    .map((value) => Math.max(12, Math.min(100, Math.round((value / max) * 100))));
+}
 
 function staffLanguageCode(language: StaffLoginLanguage): RuntimeLanguage {
   if (language === 'French') return 'fr';
@@ -680,6 +860,23 @@ function readStoredStaffLanguage(): StaffLoginLanguage {
   return staffLoginLanguages.includes(stored as StaffLoginLanguage)
     ? (stored as StaffLoginLanguage)
     : 'English';
+}
+
+function readInitialStaffLoginOpen(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.toLowerCase();
+
+  return (
+    params.get('staff') === '1' ||
+    params.get('login') === 'staff' ||
+    params.get('source') === 'pwa' ||
+    hash.includes('staff-login') ||
+    hash.includes('login=staff')
+  );
 }
 
 
@@ -1587,9 +1784,22 @@ function profileRoleTokens(profile: AccessProfile | undefined): string[] {
     .filter(Boolean);
 }
 
+function profileHasActiveAdminScope(profile: AccessProfile | undefined): boolean {
+  return (profile?.admin_scopes ?? []).some((scope) => {
+    const status = normalizePermissionKey(scope.status);
+    const scopeType = normalizePermissionKey(scope.scope_type);
+
+    return (
+      (!status || ['active', 'approved', 'enabled'].includes(status)) &&
+      ['platform', 'solution', 'tenant', 'branch'].includes(scopeType)
+    );
+  });
+}
+
 function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
   if (!profile) return false;
   if (profile!.scope.is_platform) return true;
+  if (profileHasActiveAdminScope(profile)) return true;
 
   const adminRoles = new Set([
     'admin',
@@ -1601,12 +1811,28 @@ function profileHasAdminAuthority(profile: AccessProfile | undefined): boolean {
     'tenant_admin',
   ]);
 
-  return profileRoleTokens(profile).some((role) =>
+  const hasAdminRole = profileRoleTokens(profile).some((role) =>
     adminRoles.has(role)
     || Array.from(adminRoles).some((adminRole) =>
       role.endsWith(`_${adminRole}`)
       || role.includes(`_${adminRole}_`)
     )
+  );
+
+  if (hasAdminRole) {
+    return true;
+  }
+
+  const adminPermissionTokens = new Set([
+    'platform.admin',
+    'solution.admin',
+    'tenant.admin',
+    'roles.manage',
+    'tenant.roles.manage',
+  ]);
+
+  return Array.from(profilePermissionSet(profile)).some((permission) =>
+    adminPermissionTokens.has(permission),
   );
 }
 
@@ -2916,6 +3142,13 @@ const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; 
   { key: 'general-item-usage', label: 'General Item Issues and Usage', description: 'Record department usage and stock issues' },
 ];
 
+const accountingReadPermissions: string[] = [
+  'finance.dashboard.view',
+  'finance.journal.view',
+  'finance.reports.view',
+  'reports.finance.view',
+];
+
 const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; description: string }> = [
   { key: 'overview', label: 'Finance Overview', description: 'Cards, charts, and finance position' },
   { key: 'finance-flow', label: 'Finance Flow', description: 'Procurement invoices, approval, and payment' },
@@ -2923,7 +3156,12 @@ const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; de
   { key: 'credits-receivables', label: 'Customer Credits / Receivables', description: 'Credit setup and receivable creation' },
   { key: 'receivable-register', label: 'Receivable Register', description: '15-row register with bulk and export tools' },
   { key: 'collection', label: 'Collection', description: 'Payment collection and selected detail' },
-  { key: 'financial-statements', label: 'AI Financial Statements', description: 'Manual refresh statements and reconciliations' },
+  { key: 'financial-statements', label: 'Profit & Loss', description: 'Income, expenses, margins, trends, comparisons, and statement review' },
+
+  { key: 'cash-flow', label: 'Cash Flow', description: 'Cash inflows, outflows, balances, trends, comparisons, and activity review' },
+
+  { key: 'sales', label: 'Sales', description: 'Live Sales performance, revenue trends, returns, and Business Date payment balancing' },
+  { key: 'accounting', label: 'Accounting', description: 'Live ledger, journals, balances, mappings, Business Dates, periods, and control readiness' },
 ];
 
 const adhocReportWorkspaceItems: Array<{ key: AdhocReportWorkspaceKey; label: string; description: string }> = [
@@ -3897,8 +4135,12 @@ function App() {
   const [posInvoiceContact, setPosInvoiceContact] = useState('');
   const [posDiscountAmount, setPosDiscountAmount] = useState('0');
   const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
-  const [posLiveBusinessAnalytics, setPosLiveBusinessAnalytics] = useState<UbuzimaHandoverLiveAnalytics>(null);
-  const [posRecentTransactionsWithUsers, setPosRecentTransactionsWithUsers] = useState<PharmaRecentTransactionWithUser[]>([]);
+  const [posLiveBusinessAnalytics, setPosLiveBusinessAnalytics] = useState<UbuzimaHandoverLiveAnalytics>(() =>
+    readMobileRecentPosDataCache()?.analytics ?? null,
+  );
+  const [posRecentTransactionsWithUsers, setPosRecentTransactionsWithUsers] = useState<PharmaRecentTransactionWithUser[]>(() =>
+    readMobileRecentPosDataCache()?.transactions ?? [],
+  );
   const [posLiveBusinessAnalyticsNotice, setPosLiveBusinessAnalyticsNotice] = useState<string | null>(null);
   const [posCheckoutKey, setPosCheckoutKey] = useState(createPosCheckoutKey);
   const [posCloseMode, setPosCloseMode] = useState<'handover' | 'final-close'>('handover');
@@ -4045,6 +4287,24 @@ function App() {
     'tenant-admin': true,
     market: false,
   });
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [mobileAppScreen, setMobileAppScreen] = useState<UbuzimaMobileAppScreen>('business');
+  const [mobileNativeWorkflow, setMobileNativeWorkflow] = useState<MobileNativeWorkflowState>(null);
+  const [mobilePosStep, setMobilePosStep] = useState<MobilePosStep>('session');
+  const [mobileInventoryReceiveIntent, setMobileInventoryReceiveIntent] = useState(0);
+  const [isPwaInstallAvailable, setIsPwaInstallAvailable] = useState(false);
+  const [isPwaInstalling, setIsPwaInstalling] = useState(false);
+  const [isIosDevice, setIsIosDevice] = useState(false);
+  const [isLoginIosInstallGuideOpen, setIsLoginIosInstallGuideOpen] = useState(false);
+  const [isStaffLoginOpen, setIsStaffLoginOpen] = useState(readInitialStaffLoginOpen);
+  const [isStandalonePwa, setIsStandalonePwa] = useState(false);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === 'undefined' ? true : navigator.onLine,
+  );
+  const [isMobileSyncing, setIsMobileSyncing] = useState(false);
+  const [mobileSyncStatus, setMobileSyncStatus] = useState<'idle' | 'syncing' | 'synced'>('idle');
+  const [mobileSyncTick, setMobileSyncTick] = useState(0);
+  const [, setSharedMetricsRevision] = useState(0);
 
   const profile = session?.profile;
   const shouldShowTenantOperationsDashboard = Boolean(profile?.scope.is_tenant || profile?.scope.is_branch);
@@ -4091,6 +4351,24 @@ function App() {
     profile,
     visibleMenuGroups,
   ]);
+
+  useEffect(() => {
+    if (
+      mobileAppScreen !== 'business' ||
+      activeSection === 'overview' ||
+      !visibleSectionKeys.has('overview') ||
+      !window.matchMedia('(max-width: 860px)').matches
+    ) {
+      return;
+    }
+
+    navigateToSection('overview');
+  }, [
+    activeSection,
+    mobileAppScreen,
+    visibleSectionKeys,
+  ]);
+
   const principalMenuItems = useMemo(
     () => visibleMenuGroups.flatMap((group) => group.items.map((item) => ({ group, item }))),
     [visibleMenuGroups],
@@ -4166,6 +4444,176 @@ function App() {
     null;
 
   useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add('ubuzima-react-mobile-shell');
+
+    return () => {
+      root.classList.remove('ubuzima-react-mobile-shell');
+      root.classList.remove('ubuzima-react-mobile-drawer-open');
+    };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      'ubuzima-react-mobile-drawer-open',
+      isMobileDrawerOpen,
+    );
+
+    return () => {
+      document.documentElement.classList.remove(
+        'ubuzima-react-mobile-drawer-open',
+      );
+    };
+  }, [isMobileDrawerOpen]);
+
+  useEffect(() => {
+    const updateOnlineState = () => setIsOnline(navigator.onLine);
+
+    window.addEventListener('online', updateOnlineState);
+    window.addEventListener('offline', updateOnlineState);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineState);
+      window.removeEventListener('offline', updateOnlineState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleSharedMetricsChange = () => {
+      setSharedMetricsRevision((current) => current + 1);
+    };
+
+    window.addEventListener('ubuzima:shared-metrics-change', handleSharedMetricsChange);
+
+    return () => {
+      window.removeEventListener('ubuzima:shared-metrics-change', handleSharedMetricsChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!posSessionTenantSlug) {
+      return;
+    }
+
+    const cachedData = readMobileRecentPosDataCache(posSessionTenantSlug);
+
+    if (!cachedData) {
+      return;
+    }
+
+    setPosLiveBusinessAnalytics((current) => current ?? cachedData.analytics);
+    setPosRecentTransactionsWithUsers((current) =>
+      current.length > 0 ? current : cachedData.transactions,
+    );
+  }, [posSessionTenantSlug]);
+
+  useEffect(() => {
+    if (!session?.token || !posSessionTenantSlug || !visibleSectionKeys.has('pos')) {
+      return;
+    }
+
+    void refreshMobilePosLiveData();
+  }, [
+    mobileSyncTick,
+    posSession?.id,
+    posSessionTenantSlug,
+    session?.token,
+    visibleSectionKeys,
+  ]);
+
+  useEffect(() => {
+    const navigatorInfo = window.navigator as Navigator & {
+      platform?: string;
+    };
+    const isTouchMac = navigatorInfo.platform === 'MacIntel' && navigatorInfo.maxTouchPoints > 1;
+
+    setIsIosDevice(/iPad|iPhone|iPod/i.test(navigatorInfo.userAgent) || isTouchMac);
+  }, []);
+
+  useEffect(() => {
+    const standaloneQuery = window.matchMedia('(display-mode: standalone)');
+    const updateStandaloneState = () => {
+      setIsStandalonePwa(
+        standaloneQuery.matches ||
+          (window.navigator as Navigator & { standalone?: boolean })
+            .standalone === true,
+      );
+    };
+
+    const handleInstallChange = (event: Event) => {
+      setIsPwaInstallAvailable(
+        Boolean((event as UbuzimaPwaInstallChangeEvent).detail?.isAvailable),
+      );
+      setIsPwaInstalling(false);
+    };
+
+    const handleInstallComplete = () => {
+      setIsPwaInstallAvailable(false);
+      setIsPwaInstalling(false);
+      updateStandaloneState();
+    };
+
+    updateStandaloneState();
+    setIsPwaInstallAvailable(
+      Boolean((window as Window & { __ubuzimaPwaInstallAvailable?: boolean }).__ubuzimaPwaInstallAvailable),
+    );
+
+    standaloneQuery.addEventListener('change', updateStandaloneState);
+    window.addEventListener(
+      'ubuzima:pwa-install-change',
+      handleInstallChange,
+    );
+    window.addEventListener(
+      'ubuzima:pwa-install-complete',
+      handleInstallComplete,
+    );
+    window.addEventListener('appinstalled', handleInstallComplete);
+
+    return () => {
+      standaloneQuery.removeEventListener('change', updateStandaloneState);
+      window.removeEventListener(
+        'ubuzima:pwa-install-change',
+        handleInstallChange,
+      );
+      window.removeEventListener(
+        'ubuzima:pwa-install-complete',
+        handleInstallComplete,
+      );
+      window.removeEventListener('appinstalled', handleInstallComplete);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsMobileDrawerOpen(false);
+  }, [
+    activeSection,
+    activeInventoryView,
+    activeInsuranceWorkspace,
+    activePosWorkspace,
+    activeSupplierWorkspace,
+    activeFinanceWorkspace,
+    activeAdhocReportWorkspace,
+    activeAiWorkspace,
+    activeAdminPanelWorkspace,
+  ]);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia('(min-width: 861px)');
+    const closeDesktopDrawer = () => {
+      if (desktopQuery.matches) {
+        setIsMobileDrawerOpen(false);
+      }
+    };
+
+    closeDesktopDrawer();
+    desktopQuery.addEventListener('change', closeDesktopDrawer);
+
+    return () => {
+      desktopQuery.removeEventListener('change', closeDesktopDrawer);
+    };
+  }, []);
+
+  useEffect(() => {
     if (
       activeSection !== 'pos' ||
       !session?.token ||
@@ -4225,6 +4673,7 @@ function App() {
     };
   }, [
     activeSection,
+    mobileSyncTick,
     posSessionTenantSlug,
     session?.token,
   ]);
@@ -4798,6 +5247,314 @@ function App() {
     setActiveSection(previous);
   }
 
+  function navigateToMobileSection(
+    section: AdminSectionKey,
+    options: { posWorkspace?: PosWorkspaceKey } = {},
+  ) {
+    if (section === 'pos' && options.posWorkspace) {
+      setActivePosWorkspace(options.posWorkspace);
+    }
+
+    navigateToSection(section);
+    setIsMobileDrawerOpen(false);
+  }
+
+  function mobileWorkflowTitleForSection(
+    section: AdminSectionKey,
+    options: NativeMobileSectionOptions,
+  ): string {
+    if (options.workflowTitle) return options.workflowTitle;
+
+    if (section === 'overview') return 'Business Overview';
+
+    if (section === 'pos') {
+      const titles: Partial<Record<PosWorkspaceKey, string>> = {
+        overview: 'POS and Sales',
+        pos: 'POS Counter',
+        'sales-performance': 'Sales Register',
+        'payment-receipt': 'Payments',
+        'dispensing-review': 'Dispensing',
+        customers: 'Customers',
+        prescriptions: 'Prescriptions',
+      };
+
+      return titles[options.posWorkspace ?? 'overview'] ?? 'POS and Sales';
+    }
+
+    if (section === 'inventory') {
+      const titles: Partial<Record<InventoryView, string>> = {
+        overview: 'Inventory',
+        'low-stock': 'Low Stock',
+        'near-expiry': 'Expiry Control',
+        'product-master': 'Product Master',
+        batches: 'Batches',
+      };
+
+      return titles[options.inventoryView ?? 'overview'] ?? 'Inventory';
+    }
+
+    if (section === 'suppliers') {
+      const titles: Partial<Record<SupplierWorkspaceKey, string>> = {
+        overview: 'Procurement',
+        'supplier-list': 'Suppliers',
+        'create-purchase-order': 'Purchase Orders',
+        'outstanding-purchase-orders': 'Outstanding Orders',
+        'receive-purchase-order': 'Receiving',
+        'general-items-overview': 'General Stock',
+        'general-item-master': 'Item Master',
+        'general-item-stock': 'General Item Stock',
+        'general-item-usage': 'General Item Usage',
+      };
+
+      return titles[options.supplierWorkspace ?? 'overview'] ?? 'Procurement';
+    }
+
+    if (section === 'finance') {
+      const titles: Partial<Record<FinanceWorkspaceKey, string>> = {
+        overview: 'Finance',
+        'finance-flow': 'Finance Flow',
+        collection: 'Collections',
+        'receivable-register': 'Receivables',
+      };
+
+      return titles[options.financeWorkspace ?? 'overview'] ?? 'Finance';
+    }
+
+    if (section === 'general-stock-items') return 'General Stock';
+    if (section === 'corporate-email') return 'Corporate Email';
+
+    return activeLeftSubmenuLabel ?? currentSection.title;
+  }
+
+  function openNativeBusinessOverviewWorkflow() {
+    setMobileAppScreen('business');
+    setMobileNativeWorkflow({
+      section: 'overview',
+      screen: 'business',
+      title: 'Business Overview',
+    });
+    navigateToSection('overview');
+  }
+
+  function closeMobileNativeWorkflow() {
+    setMobileNativeWorkflow(null);
+    setMobileAppScreen(mobileAppScreenForSection(activeSection));
+  }
+
+  function openNativeMobileSection(
+    section: AdminSectionKey,
+    options: NativeMobileSectionOptions = {},
+  ) {
+    const nextScreen = options.screen ?? mobileAppScreenForSection(section);
+
+    if (section === 'inventory' && options.inventoryView) {
+      setActiveInventoryView(options.inventoryView);
+    }
+
+    if (section === 'suppliers' && options.supplierWorkspace) {
+      setActiveSupplierWorkspace(options.supplierWorkspace);
+    }
+
+    if (section === 'pos' && options.posWorkspace === 'pos') {
+      setMobilePosStep('session');
+    }
+
+    if (section === 'finance' && options.financeWorkspace) {
+      setActiveFinanceWorkspace(options.financeWorkspace);
+    }
+
+    if (section === 'reports' && options.reportWorkspace) {
+      setActiveAdhocReportWorkspace(options.reportWorkspace);
+    }
+
+    setMobileAppScreen(nextScreen);
+
+    if (options.openWorkflow) {
+      setMobileNativeWorkflow({
+        section,
+        screen: nextScreen,
+        title: mobileWorkflowTitleForSection(section, options),
+        workflowKey: options.workflowKey,
+      });
+    } else {
+      setMobileNativeWorkflow(null);
+    }
+
+    navigateToMobileSection(section, {
+      posWorkspace: options.posWorkspace,
+    });
+  }
+
+  function handleNativeMobileScreenChange(screen: UbuzimaMobileAppScreen) {
+    setMobileNativeWorkflow(null);
+    setMobileAppScreen(screen);
+
+    if (screen === 'business') {
+      if (visibleSectionKeys.has('overview')) {
+        navigateToSection('overview');
+      }
+      return;
+    }
+
+    if (screen === 'sales' && visibleSectionKeys.has('pos')) {
+      openNativeMobileSection('pos', {
+        posWorkspace: 'overview',
+        screen,
+      });
+      return;
+    }
+
+    if (screen === 'inventory' && visibleSectionKeys.has('inventory')) {
+      openNativeMobileSection('inventory', {
+        inventoryView: 'overview',
+        screen,
+      });
+      return;
+    }
+
+    if (screen === 'procurement' && visibleSectionKeys.has('suppliers')) {
+      openNativeMobileSection('suppliers', {
+        supplierWorkspace: 'overview',
+        screen,
+      });
+      return;
+    }
+
+    if (screen === 'general-stock') {
+      setMobileAppScreen('procurement');
+      if (visibleSectionKeys.has('suppliers')) {
+        openNativeMobileSection('suppliers', {
+          supplierWorkspace: 'overview',
+          screen: 'procurement',
+        });
+      }
+      return;
+    }
+
+    if (screen === 'sales' && visibleSectionKeys.has('finance')) {
+      openNativeMobileSection('finance', {
+        financeWorkspace: 'overview',
+        screen,
+      });
+    }
+  }
+
+  function requestPwaInstall() {
+    setIsPwaInstalling(true);
+    window.dispatchEvent(new CustomEvent('ubuzima:pwa-install-request'));
+
+    window.setTimeout(() => {
+      setIsPwaInstalling(false);
+    }, 1800);
+  }
+
+  function openStaffLogin() {
+    setIsStaffLoginOpen(true);
+    setError('');
+
+    if (typeof window !== 'undefined') {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('staff', '1');
+      nextUrl.hash = '';
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }
+
+  function openPublicWebsiteHome() {
+    setIsStaffLoginOpen(false);
+    setError('');
+    setTwoFactorFlow(null);
+    setTwoFactorCode('');
+
+    if (typeof window !== 'undefined') {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete('staff');
+      nextUrl.searchParams.delete('login');
+      nextUrl.hash = '';
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }
+
+  async function refreshMobilePosLiveData(businessDateOverride?: string | null): Promise<void> {
+    if (!session?.token || !posSessionTenantSlug) {
+      return;
+    }
+
+    const posSessionBusinessDate =
+      (posSession as { business_date?: string | null } | null)?.business_date
+      ?? null;
+
+    const effectiveBusinessDate =
+      businessDateOverride
+      ?? posSessionBusinessDate
+      ?? new Date().toISOString().slice(0, 10);
+
+    try {
+      const [analyticsResponse, transactionsResponse] = await Promise.all([
+        getPharmaLiveBusinessAnalytics(session.token, posSessionTenantSlug, effectiveBusinessDate),
+        getPharmaRecentTransactionsWithUsers(session.token, posSessionTenantSlug),
+      ]);
+
+      setPosLiveBusinessAnalytics(analyticsResponse);
+      setPosRecentTransactionsWithUsers(transactionsResponse.transactions);
+      writeMobileRecentPosDataCache({
+        tenantSlug: posSessionTenantSlug,
+        businessDate: effectiveBusinessDate,
+        analytics: analyticsResponse,
+        transactions: transactionsResponse.transactions,
+      });
+      setPosLiveBusinessAnalyticsNotice(null);
+    } catch (error) {
+      setPosLiveBusinessAnalyticsNotice(
+        error instanceof Error
+          ? error.message
+          : 'Unable to refresh live POS analytics.',
+      );
+    }
+  }
+
+  function refreshMobileWorkspace() {
+    if (isMobileSyncing) {
+      return;
+    }
+
+    setIsMobileSyncing(true);
+    setMobileSyncStatus('syncing');
+    setMobileSyncTick((current) => current + 1);
+    setPosSummaryRefreshKey((current) => current + 1);
+    setPosInventoryLoadedAt('');
+    setPosInventoryError('');
+    setPosLiveBusinessAnalyticsNotice(null);
+
+    window.dispatchEvent(
+      new CustomEvent('ubuzima:refresh', {
+        detail: {
+          source: 'mobile-app',
+          requestedAt: Date.now(),
+        },
+      }),
+    );
+
+    const syncStartedAt = Date.now();
+
+    void Promise.allSettled([
+      loadPharmaCore(),
+      refreshMobilePosLiveData(),
+    ]).finally(() => {
+      const minimumSyncDisplayMs = 850;
+      const remainingDelay = Math.max(0, minimumSyncDisplayMs - (Date.now() - syncStartedAt));
+
+      window.setTimeout(() => {
+        setIsMobileSyncing(false);
+        setMobileSyncStatus('synced');
+
+        window.setTimeout(() => {
+          setMobileSyncStatus('idle');
+        }, 1600);
+      }, remainingDelay);
+    });
+  }
+
   function toggleMenuGroup(group: MenuGroupKey) {
     setOpenMenuGroups((current) => ({
       ...current,
@@ -4829,7 +5586,7 @@ function App() {
         phone: loginMethod === 'phone' ? phone.trim() : undefined,
         password: loginMethod === 'email' ? password : undefined,
         pin: loginMethod === 'phone' ? pin : undefined,
-        device_name: 'Ubuzima+ Admin Dashboard',
+        device_name: isStandalonePwa ? 'Ubuzima+ Mobile App' : 'Ubuzima+ Admin Dashboard',
         trusted_device_token: localStorage.getItem(trustedDeviceStorageKey),
       });
 
@@ -5032,6 +5789,27 @@ function App() {
   }
 
 
+  const loginInstallStatusLabel = isStandalonePwa
+    ? 'Installed app'
+    : isPwaInstallAvailable
+      ? 'Ready to install'
+      : isIosDevice
+        ? 'iPhone ready'
+        : 'Secure web access';
+  const loginInstallStatusDetail = isStandalonePwa
+    ? 'Ubuzima+ is running in app mode'
+    : isPwaInstallAvailable
+      ? 'Install Ubuzima+ on this phone'
+      : isIosDevice
+        ? 'Add to Home Screen from Safari'
+        : 'Open on a phone for app installation';
+  const isLoginMobileViewport =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 860px)').matches;
+  const shouldShowLoginInstallPanel =
+    !isStandalonePwa &&
+    (isPwaInstallAvailable || isIosDevice || isLoginMobileViewport);
+
   if (isRestoringSession) {
     return (
       <main
@@ -5041,9 +5819,126 @@ function App() {
     );
   }
 
+  if (!profile && !isStaffLoginOpen) {
+    return (
+      <main className="ubuzima-public-site-shell" aria-label="Ubuzima+ public website">
+        <header className="ubuzima-public-site-header">
+          <a className="ubuzima-public-brand" href="/admin/" aria-label="Ubuzima+ home">
+            <img src={brandLogoSrc} alt="" />
+            <span>
+              <strong>Ubuzima+</strong>
+              <small>Digital health and pharmacy platform</small>
+            </span>
+          </a>
+
+          <nav className="ubuzima-public-actions" aria-label="Public website actions">
+            <a href={publicWebsiteUrl} target="_blank" rel="noreferrer">
+              Public domain
+            </a>
+            <button type="button" onClick={openStaffLogin}>
+              Staff Login
+            </button>
+          </nav>
+        </header>
+
+        <section className="ubuzima-public-hero">
+          <div className="ubuzima-public-hero-copy">
+            <p className="eyebrow">Ubuzima+ Platform</p>
+            <h1>Connected pharmacy care, sales, stock, and business insight.</h1>
+            <p>
+              Ubuzima+ brings customer-facing access and staff operations together for pharmacy teams, owners,
+              cashiers, procurement, finance, and administration.
+            </p>
+
+            <div className="ubuzima-public-hero-actions">
+              <button type="button" onClick={openStaffLogin}>
+                Staff Login
+              </button>
+              {shouldShowLoginInstallPanel && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={isPwaInstallAvailable ? requestPwaInstall : () => setIsLoginIosInstallGuideOpen(true)}
+                  disabled={isPwaInstalling}
+                >
+                  {isPwaInstalling ? 'Opening install' : 'Install App'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <aside className="ubuzima-public-status-card" aria-label="Platform readiness">
+            <span>{isOnline ? 'Online' : 'Offline shell'}</span>
+            <strong>{loginInstallStatusLabel}</strong>
+            <small>{loginInstallStatusDetail}</small>
+          </aside>
+        </section>
+
+        <section className="ubuzima-public-service-grid" aria-label="Ubuzima+ services">
+          <article>
+            <span>01</span>
+            <strong>Customers</strong>
+            <p>Digital access to pharmacy services, product discovery, and guided support.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <strong>Pharmacy teams</strong>
+            <p>POS, dispensing, inventory, procurement, finance, and reporting in one staff workspace.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <strong>Owners and admins</strong>
+            <p>Business overview, staff permissions, live sales, risk indicators, and governance controls.</p>
+          </article>
+        </section>
+
+        <section className="ubuzima-public-staff-strip" aria-label="Staff access">
+          <div>
+            <strong>Staff workspace</strong>
+            <span>Authorized users can continue to secure app login for POS, sales, inventory, procurement, and finance.</span>
+          </div>
+          <button type="button" onClick={openStaffLogin}>
+            Continue
+          </button>
+        </section>
+
+        {isLoginIosInstallGuideOpen && (
+          <div className="recovery-overlay login-ios-install-overlay" role="presentation">
+            <section
+              className="recovery-overlay-card login-ios-install-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="public-ios-install-title"
+            >
+              <p className="eyebrow">Device app readiness</p>
+              <h2 id="public-ios-install-title">Install Ubuzima+ on iPhone</h2>
+              <div className="login-ios-steps">
+                <article>
+                  <strong>1</strong>
+                  <span>Open this page in Safari.</span>
+                </article>
+                <article>
+                  <strong>2</strong>
+                  <span>Tap Share.</span>
+                </article>
+                <article>
+                  <strong>3</strong>
+                  <span>Select Add to Home Screen and confirm.</span>
+                </article>
+              </div>
+              <button type="button" onClick={() => setIsLoginIosInstallGuideOpen(false)}>
+                Got it
+              </button>
+            </section>
+          </div>
+        )}
+      </main>
+    );
+  }
+
   if (!profile) {
     return (
-      <main className="auth-shell auth-shell--identity">
+      <main className="auth-shell auth-shell--identity auth-shell--mobile-app-ready">
         <section className="auth-side auth-info-panel">
           <img className="auth-logo" src={brandLogoSrc} alt="Ubuzima+" />
           <p className="eyebrow">Ubuzima+ Platform</p>
@@ -5073,7 +5968,9 @@ function App() {
           <div className="auth-language-row">
             <span>Staff Identity</span>
             <div>
-              <a href={publicWebsiteUrl}>Back to website</a>
+              <button type="button" onClick={openPublicWebsiteHome}>
+                Back to website
+              </button>
               <button type="button" onClick={() => setStaffLoginLanguage(nextStaffLoginLanguage)}>
                 {staffLoginLanguage}
               </button>
@@ -5081,10 +5978,23 @@ function App() {
           </div>
 
           <div className="login-card">
+            <div className="login-app-brand">
+              <img src={brandLogoSrc} alt="" />
+              <span>
+                <strong>Ubuzima+</strong>
+                <small>Secure pharmacy app</small>
+              </span>
+            </div>
+
+            <div className="login-app-status" aria-label="Device app readiness">
+              <span>{loginInstallStatusLabel}</span>
+              <span>{isOnline ? 'Online' : 'Offline shell'}</span>
+            </div>
+
             <p className="eyebrow">Sign in</p>
             <h2>Access your workspace</h2>
             <p className="auth-copy">
-              Use your staff account. Access is tenant-aware and limited by your role, branch, package, and permissions.
+              Sign in to POS, inventory, procurement, finance, and live business overview with your approved staff access.
             </p>
 
             <div className="login-method-tabs" aria-label="Login method">
@@ -5164,7 +6074,7 @@ function App() {
                         inputMode="tel"
                         value={phone}
                         onChange={(event) => setPhone(event.target.value)}
-                        autoComplete="off"
+                        autoComplete="tel"
                         placeholder="+250..."
                         required
                       />
@@ -5178,7 +6088,9 @@ function App() {
                         value={pin}
                         onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 6))}
                         autoComplete="new-password"
-                        placeholder="Enter your PIN"
+                        placeholder="4 to 6 digit PIN"
+                        maxLength={6}
+                        pattern="[0-9]{4,6}"
                         required
                       />
                     </label>
@@ -5188,7 +6100,11 @@ function App() {
                 {error && <div className="form-error">{error}</div>}
 
                 <button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Checking access...' : 'Continue'}
+                  {isSubmitting
+                    ? 'Checking access...'
+                    : loginMethod === 'phone'
+                      ? 'Continue with PIN'
+                      : 'Continue'}
                 </button>
               </form>
             ) : (
@@ -5249,7 +6165,58 @@ function App() {
                 </div>
               </div>
             )}
+
+            {shouldShowLoginInstallPanel && (
+              <div className="login-install-panel">
+                <div>
+                  <span>Device app readiness</span>
+                  <strong>{loginInstallStatusLabel}</strong>
+                  <small>{loginInstallStatusDetail}</small>
+                </div>
+
+                {isPwaInstallAvailable ? (
+                  <button type="button" onClick={requestPwaInstall} disabled={isPwaInstalling}>
+                    {isPwaInstalling ? 'Opening install' : 'Install app'}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setIsLoginIosInstallGuideOpen(true)}>
+                    {isIosDevice ? 'iPhone install' : 'Install guide'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+
+          {isLoginIosInstallGuideOpen && (
+            <div className="recovery-overlay login-ios-install-overlay" role="presentation">
+              <section
+                className="recovery-overlay-card login-ios-install-card"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="login-ios-install-title"
+              >
+                <p className="eyebrow">Device app readiness</p>
+                <h2 id="login-ios-install-title">Install Ubuzima+ on iPhone</h2>
+                <div className="login-ios-steps">
+                  <article>
+                    <strong>1</strong>
+                    <span>Open this page in Safari.</span>
+                  </article>
+                  <article>
+                    <strong>2</strong>
+                    <span>Tap Share.</span>
+                  </article>
+                  <article>
+                    <strong>3</strong>
+                    <span>Select Add to Home Screen and confirm.</span>
+                  </article>
+                </div>
+                <button type="button" onClick={() => setIsLoginIosInstallGuideOpen(false)}>
+                  Got it
+                </button>
+              </section>
+            </div>
+          )}
         </section>
       </main>
     );
@@ -5734,6 +6701,7 @@ function App() {
               profile={profile!}
               activeView={activeInventoryView}
               onActiveViewChange={setActiveInventoryView}
+              receiveFlowIntent={mobileInventoryReceiveIntent}
               showInternalNavigation={false}
             />
           </InventoryWorkspaceFrame>
@@ -5768,6 +6736,25 @@ function App() {
 
     const todayDate = new Date().toISOString().slice(0, 10);
 
+    function normalizePosSearchText(value: unknown) {
+      const normalized = String(value ?? '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+
+      return normalized
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((term) =>
+          term.length > 4
+            ? term.replace(/e$/, '')
+            : term
+        )
+        .join(' ');
+    }
+
     function resolveBatchAvailableQuantity(batch: PharmaStockBatch) {
       const quantityOnHand = Number(batch.quantity_on_hand ?? 0);
       const quantityReserved = Number((batch as PharmaStockBatch & { quantity_reserved?: number | string }).quantity_reserved ?? 0);
@@ -5779,7 +6766,11 @@ function App() {
     const posProducts = posInventoryBatches
       .filter((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
-        const batchIsActive = !batch.status || batch.status === 'active';
+        const batchIsActive =
+          !batch.status
+          || ['active', 'available'].includes(
+            String(batch.status).toLowerCase(),
+          );
         const productIsActive = !batch.product || true;
         const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
 
@@ -5800,9 +6791,27 @@ function App() {
         const sku = batch.product?.sku || `BATCH-${batch.id}`;
         const locationName = batch.stock_location?.name || 'Current stock';
 
+        const searchText = normalizePosSearchText(
+          [
+            productName,
+            sku,
+            batch.batch_number,
+            locationName,
+            String(
+              batch.product?.metadata?.rhia_drug_code
+                ?? ''
+            ),
+            batch.product?.selling_unit,
+            batch.product?.base_unit,
+          ]
+            .filter(Boolean)
+            .join(' '),
+        );
+
         return {
           code: `${sku}-B${batch.id}`,
           name: productName,
+          searchText,
           strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
           quantity: 1,
           unitPrice: sellingPrice,
@@ -5846,26 +6855,27 @@ function App() {
       posPartnerCustomerContributionPercent(selectedInsurancePartner);
 
     const normalizedPosTerminalSearch = posTerminalSearch.trim().toLowerCase();
-    const posVisibleProducts = normalizedPosTerminalSearch
-      ? posProducts.filter((product) =>
-          [
-            product.name,
-            product.strength,
-            product.code,
-            product.batchNumber,
-            product.locationName,
-          ]
-            .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(normalizedPosTerminalSearch)),
-        )
-      : posProducts;
+    const normalizedPosSearch =
+      normalizePosSearchText(posTerminalSearch);
+
+    const posSearchTerms = normalizedPosSearch
+      .split(' ')
+      .filter(Boolean);
+
+    const posVisibleProducts =
+      posSearchTerms.length === 0
+        ? posProducts
+        : posProducts.filter((product) =>
+            posSearchTerms.every((term) =>
+              product.searchText.includes(term),
+            ),
+          );
 
     const posSearchHelperText = posInventoryBatches.length === 0
       ? ''
       : normalizedPosTerminalSearch
         ? `${posVisibleProducts.length} matching product${posVisibleProducts.length === 1 ? '' : 's'}`
         : `${posProducts.length} fast product tile${posProducts.length === 1 ? '' : 's'} ready`;
-
 
     async function loadPosInsurancePartners() {
       if (!session?.token) return;
@@ -5903,27 +6913,50 @@ function App() {
       }
     }
 
-    async function loadCurrentPosInventory() {
+    async function loadCurrentPosInventory(force = false) {
       if (!session?.token) return;
 
       void loadPosInsurancePartners();
+
+      if (force) {
+        window.__ubuzimaPosInventoryHydrator?.clearCache();
+      }
 
       setIsLoadingPosInventory(true);
       setPosInventoryError('');
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
+        const response = await getAllPharmaInventoryBatches(
+          session!.token,
+          posTenantSlug,
+          undefined,
+          {
+            sellableOnly: true,
+            cacheBust: force ? Date.now() : undefined,
+          },
+        );
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
         setPosInventoryLoadedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-        setPosCartItems([]);
-        setPosCounterItems([]);
-        setPosCounterCart({ items: [], lineCount: 0, totalQuantity: 0, subtotal: 0 });
-        setPosTransactionConfirmed(false);
+        if (!force) {
+          setPosCartItems([]);
+          setPosCounterItems([]);
+          setPosCounterCart({
+            items: [],
+            lineCount: 0,
+            totalQuantity: 0,
+            subtotal: 0,
+          });
+          setPosTransactionConfirmed(false);
+        }
 
-        setPosNotice('');
+        setPosNotice(
+          force
+            ? `${batches.length.toLocaleString('en-GB')} eligible stock batches loaded from live inventory.`
+            : '',
+        );
       } catch (err) {
         setPosInventoryError(err instanceof Error ? err.message : 'Unable to load current inventory for POS.');
       } finally {
@@ -6191,6 +7224,7 @@ function App() {
 
       commitPosCounterItems(nextItems);
       closePosQuantityPopup();
+      setMobilePosStep('cart');
 
       setPosNotice(
         `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}` +
@@ -6280,6 +7314,7 @@ function App() {
           String(response.session.expected_cash_amount),
         );
         setPosNotice(response.message);
+        setMobilePosStep('session');
       } catch (error: unknown) {
         setPosNotice(
           error instanceof Error
@@ -6392,6 +7427,7 @@ function App() {
         setPosDeclaredCashAmount('0');
         setPosTransactionConfirmed(false);
         setPosNotice(closeResponse.message);
+        setMobilePosStep('session');
       } catch (error: unknown) {
         setPosNotice(
           error instanceof Error
@@ -6486,6 +7522,12 @@ function App() {
 
           setPosLiveBusinessAnalytics(analyticsResponse);
           setPosRecentTransactionsWithUsers(transactionsResponse.transactions);
+          writeMobileRecentPosDataCache({
+            tenantSlug: posTenantSlug,
+            businessDate: effectiveBusinessDate,
+            analytics: analyticsResponse,
+            transactions: transactionsResponse.transactions,
+          });
           setPosLiveBusinessAnalyticsNotice(null);
         } catch (error) {
           setPosLiveBusinessAnalyticsNotice(
@@ -6667,6 +7709,7 @@ async function confirmTransaction() {
         setPosConfirmedSale(checkoutResponse.sale);
         setPosConfirmedPayment(checkoutResponse.payment);
         setPosTransactionConfirmed(true);
+        setMobilePosStep('success');
 
         setPosCartItems([]);
         setPosRenderedCartItems([]);
@@ -6987,6 +8030,27 @@ async function confirmTransaction() {
         0,
       );
       const posOperatingCart = buildPosCounterCartSnapshot(posLiveCartItems);
+      const isCurrentMobilePosSessionOpen = posSession?.status === 'open';
+      const mobilePosStepIndex =
+        mobilePosStep === 'session'
+          ? 1
+          : mobilePosStep === 'products'
+            ? 2
+            : mobilePosStep === 'cart'
+              ? 3
+              : mobilePosStep === 'payment'
+                ? 4
+                : 5;
+      const mobilePosStepTitle =
+        mobilePosStep === 'session'
+          ? 'Current POS session'
+          : mobilePosStep === 'products'
+            ? 'Products'
+            : mobilePosStep === 'cart'
+              ? 'Cart and setup'
+              : mobilePosStep === 'payment'
+                ? 'Payment summary'
+                : 'Transaction complete';
 
       const posSummaryDiscountAmount = Math.max(Number.parseFloat(posDiscountAmount || '0') || 0, 0);
       const posSummaryAppliedDiscount = Math.min(posSummaryDiscountAmount, posFinancialSubtotal);
@@ -7074,7 +8138,7 @@ async function confirmTransaction() {
 
       return (
         <section className="section-page pos-dedicated-counter-shell">
-          <section className="pos-counter-page pos-counter-page--dedicated pos-stable-page-v16">
+          <section className={`pos-counter-page pos-counter-page--dedicated pos-stable-page-v16 pos-mobile-step--${mobilePosStep}`}>
             <div className="pos-fixed-top-v16">
               {renderPosWorkspaceTopMenu('pos')}
 
@@ -7095,8 +8159,30 @@ async function confirmTransaction() {
             <div className="pos-terminal-main-scroll pos-scroll-body-v16">
               {posNotice && !posTransactionConfirmed && !/added:/i.test(posNotice) && <div className="form-success">{posNotice}</div>}
 
+              <section className="pos-mobile-sequence-header" aria-label="POS mobile checkout progress">
+                <div>
+                  <span>Step {mobilePosStepIndex} of 5</span>
+                  <strong>{mobilePosStepTitle}</strong>
+                  <small>
+                    {isCurrentMobilePosSessionOpen
+                      ? `${posSession?.session_number ?? 'Open session'} · RWF ${Number(posSession?.expected_cash_amount ?? 0).toLocaleString('en-RW')}`
+                      : 'Open a POS session before serving customers.'}
+                  </small>
+                </div>
+                <div className="pos-mobile-step-pills" aria-hidden="true">
+                  {['Session', 'Products', 'Cart', 'Pay', 'Done'].map((label, index) => (
+                    <span
+                      key={label}
+                      className={index + 1 === mobilePosStepIndex ? 'active' : ''}
+                    >
+                      {index + 1}
+                    </span>
+                  ))}
+                </div>
+              </section>
+
 <section className="pos-counter-workbench pos-four-section-workspace pos-operating-cockpit-v2" aria-label="POS four-section workspace">
-              <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue">
+              <section className="pos-product-stock-section pos-builder-product-panel pos-rx-queue" data-pos-mobile-panel="products">
                 <div className="section-heading">
                   <div>
                     <span>Step 1</span>
@@ -7118,7 +8204,7 @@ async function confirmTransaction() {
                 />
 
                 <div className="pos-inventory-load-panel">
-                  <button type="button" onClick={loadCurrentPosInventory} disabled={isLoadingPosInventory}>
+                  <button type="button" onClick={() => void loadCurrentPosInventory(true)} disabled={isLoadingPosInventory}>
                     {isLoadingPosInventory ? 'Loading stock…' : 'Refresh stock'}
                   </button>
                   <span>
@@ -7128,8 +8214,8 @@ async function confirmTransaction() {
 
                 {posInventoryError && <div className="form-error">{posInventoryError}</div>}
 
-                <div className="pos-drug-list pos-drug-list--ten">
-                  {posProducts.length === 0 ? (
+	                <div className="pos-drug-list pos-drug-list--ten">
+	                  {posProducts.length === 0 ? (
                     <div className="pos-inventory-empty-state">
                       <strong>Loading stock…</strong>
                     </div>
@@ -7191,20 +8277,41 @@ async function confirmTransaction() {
                             key={product.code}
                             type="button"
                             className={`pos-product-tile pos-product-tile-v16 product-expiry-${expiryStatusClass}`}
+                            title={`Expiry: ${expiryDateText} / ${expiryDaysText}`}
                             onClick={() => openPosQuantityPopup(product)}
                           >
-                            <strong>{product.name}</strong>
-                            <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
-                            <span className="pos-product-card-line">Available: {product.availableQuantity.toLocaleString('en-RW')}</span>
-                            <span className="pos-product-card-line">Exp: {expiryDateText}</span>
-                            <span className="pos-product-card-line">{expiryDaysText}</span>
+                            <strong className="pos-product-card-name">{product.name}</strong>
+                            <span className="pos-product-card-row">
+                              <span className="pos-product-card-metric pos-product-card-price">
+                                <span>Price</span>
+                                <em>RWF {product.unitPrice.toLocaleString('en-RW')}</em>
+                              </span>
+                              <span className="pos-product-card-metric pos-product-card-stock">
+                                <span>Stock Qty</span>
+                                <strong>{product.availableQuantity.toLocaleString('en-RW')}</strong>
+                              </span>
+                            </span>
                           </button>
                         );
                       })
-                    )
-                  )}
-                </div>
-              </section>
+	                    )
+	                  )}
+	                </div>
+
+                    <div className="pos-mobile-step-actions">
+                      <button type="button" onClick={() => setMobilePosStep('session')}>
+                        Session
+                      </button>
+                      <button
+                        type="button"
+                        className="primary"
+                        onClick={() => setMobilePosStep('cart')}
+                        disabled={posLiveCartItems.length === 0}
+                      >
+                        View cart
+                      </button>
+                    </div>
+	              </section>
 
               {posQuantityProduct && (() => {
                 const quantityPreviewSellingUnitPrice = Math.max(
@@ -7221,6 +8328,12 @@ async function confirmTransaction() {
                   sellingUnitPrice: quantityPreviewSellingUnitPrice,
                 });
 
+                const quantityPreviewTotalAmount =
+                  Math.max(
+                    0,
+                    Number(posSellingUnitQuantity || 0),
+                  ) * quantityPreviewSellingUnitPrice;
+
                 return (
                   <div
                     className="pos-quantity-dialog-backdrop"
@@ -7235,128 +8348,55 @@ async function confirmTransaction() {
                       className="pos-quantity-dialog"
                       role="dialog"
                       aria-modal="true"
-                      aria-labelledby="pos-quantity-dialog-title"
+                      aria-label="Quantity and price"
                     >
-                      <div className="pos-quantity-dialog__header">
-                        <div>
-                          <span>POS quantity configuration</span>
-                          <h3 id="pos-quantity-dialog-title">
-                            {posQuantityProduct.name}
-                          </h3>
-                          <small>
-                            Batch {posQuantityProduct.batchNumber} · Available{' '}
-                            {posQuantityProduct.availableQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </small>
-                        </div>
+                      <h3 className="pos-quantity-dialog__product-name">
+                        {posQuantityProduct.name}
+                      </h3>
 
-                        <button
-                          type="button"
-                          aria-label="Close quantity popup"
-                          onClick={closePosQuantityPopup}
-                        >
-                          ×
-                        </button>
-                      </div>
-
-                      <section className="pos-quantity-selling-unit-hero">
-                        <div>
-                          <span>Product Master selling unit</span>
-                          <strong>{posQuantityProduct.sellingUnit}</strong>
-                          <small>
-                            1 {posQuantityProduct.sellingUnit} ={' '}
-                            {posQuantityProduct.quantityPerSellingUnit.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </small>
-                        </div>
-
+                      <section className="pos-quantity-selling-unit-hero" aria-label="Quantity input">
                         <label>
                           <span>Quantity</span>
                           <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            autoFocus
-                            inputMode="numeric"
-                            value={posSellingUnitQuantity}
-                            onChange={(event) => {
-                              setPosSellingUnitQuantity(event.target.value);
-                              setPosOtherQuantity('0');
-                            }}
-                            aria-label={`Quantity in ${posQuantityProduct.sellingUnit}`}
-                          />
-                          <small>Enter the number of {posQuantityProduct.sellingUnit} selected from Product Master.</small>
+                                                      type="number"
+                                                      min="1"
+                                                      step="1"
+                                                      autoFocus
+                                                      inputMode="numeric"
+                                                      value={posSellingUnitQuantity}
+                                                      onChange={(event) => {
+                                                        setPosSellingUnitQuantity(event.target.value);
+                                                        setPosOtherQuantity('0');
+                                                      }}
+                                                      aria-label={`Quantity in ${posQuantityProduct.sellingUnit}`}
+                                                    />
                         </label>
                       </section>
 
-                      <section className="pos-quantity-readonly-grid" aria-label="Selected product information">
-                        <article>
-                          <span>Available stock</span>
-                          <strong>
-                            {posQuantityProduct.availableQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </strong>
-                        </article>
-                        <article>
-                          <span>Unit price</span>
-                          <strong>
-                            RWF {posQuantityProduct.unitPrice.toLocaleString('en-RW')} /{' '}
-                            {posQuantityProduct.sellingUnit}
-                          </strong>
-                        </article>
-                        <article>
-                          <span>Batch</span>
-                          <strong>{posQuantityProduct.batchNumber}</strong>
-                        </article>
-                        <article>
-                          <span>Expiry</span>
-                          <strong>{posQuantityProduct.expiryDate || 'Not recorded'}</strong>
-                        </article>
-                        <article>
-                          <span>Stock location</span>
-                          <strong>{posQuantityProduct.locationName}</strong>
-                        </article>
-                        <article>
-                          <span>Converted quantity</span>
-                          <strong>
-                            {quantityPreview.totalBaseQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.baseUnit}
-                          </strong>
-                        </article>
-                      </section>
-
-                      <section className="pos-quantity-price-override-card" aria-label="Selling amount override">
+                      <section className="pos-quantity-price-override-card" aria-label="Price input">
                         <label>
-                          <span>Selling amount</span>
+                          <span>Price</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={posSellingAmount}
-                            onChange={(event) => setPosSellingAmount(event.target.value)}
-                          />
-                          <small>
-                            Defaults to system price. Adjust only when the agreed customer price is different.
-                          </small>
+                                                      type="number"
+                                                      min="0"
+                                                      step="0.01"
+                                                      value={posSellingAmount}
+                                                      onChange={(event) => setPosSellingAmount(event.target.value)}
+                                                    />
                         </label>
                       </section>
 
-                      <section className="pos-quantity-total-strip">
-                        <div>
-                          <span>Quantity to add</span>
-                          <strong>
-                            {quantityPreview.sellingUnitQuantity.toLocaleString('en-RW')}{' '}
-                            {posQuantityProduct.sellingUnit}
-                          </strong>
-                        </div>
-                        <div>
-                          <span>Calculated total</span>
-                          <strong>
-                            RWF {quantityPreview.totalPrice.toLocaleString('en-RW', {
-                              maximumFractionDigits: 2,
-                            })}
-                          </strong>
-                        </div>
+                      <section
+                        className="pos-quantity-calculated-total-card"
+                        aria-label="Calculated total amount"
+                      >
+                        <span>Total Amount</span>
+                        <output
+                          aria-live="polite"
+                          aria-label="Quantity multiplied by price"
+                        >
+                          RWF {quantityPreviewTotalAmount.toLocaleString('en-RW')}
+                        </output>
                       </section>
 
                       <div className="pos-quantity-dialog__actions">
@@ -7384,8 +8424,9 @@ async function confirmTransaction() {
 
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
 
-                <HistoricalPosWorkflow
-                  token={session!.token}
+	                <div className="pos-mobile-session-addon" data-pos-mobile-panel="session">
+	                <HistoricalPosWorkflow
+	                  token={session!.token}
                   tenantSlug={posSessionTenantSlug}
                   branchId={posSessionBranchId}
                   permissions={
@@ -7415,18 +8456,20 @@ async function confirmTransaction() {
                     setPosTillZeroized(
                       nextSession.balance_cleared,
                     );
-                    setPosDeclaredCashAmount(
-                      String(
-                        nextSession.expected_cash_amount,
-                      ),
-                    );
-                    setPosNotice(message);
-                  }}
-                  onNotice={setPosNotice}
-                />
+	                    setPosDeclaredCashAmount(
+	                      String(
+	                        nextSession.expected_cash_amount,
+	                      ),
+	                    );
+	                    setPosNotice(message);
+	                    setMobilePosStep('session');
+	                  }}
+	                  onNotice={setPosNotice}
+	                />
+	                </div>
 
 
-                <section className="pos-shift-control-section pos-session-control-card">
+	                <section className="pos-shift-control-section pos-session-control-card" data-pos-mobile-panel="session">
                   <div className="section-heading">
                     <div>
                       <span>Section 2 · Teller session</span>
@@ -7579,10 +8622,10 @@ async function confirmTransaction() {
                         : 'Zeroize & Close'}
                   </button>
                 </article>
-              </section>
-                </section>
+	              </section>
+	                </section>
 
-{(() => {
+	{(() => {
                   const visibleCartRows = posLiveCartItems;
                   const visibleCartLineCount = visibleCartRows.length;
                   const visibleCartUnitCount = visibleCartRows.reduce(
@@ -7604,9 +8647,10 @@ async function confirmTransaction() {
 
                   return (
                     <section
-                      key={visibleCartSignature}
-                      className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card"
-                      data-pos-cart-build="atomic-visible-cart-v1"
+	                      key={visibleCartSignature}
+	                      className="pos-sale-cart-section pos-builder-cart-panel pos-cart-card"
+	                      data-pos-mobile-panel="cart"
+	                      data-pos-cart-build="atomic-visible-cart-v1"
                       data-pos-cart-signature={visibleCartSignature}
                       data-pos-cart-lines={visibleCartLineCount}
                       data-pos-cart-units={visibleCartUnitCount}
@@ -7691,7 +8735,7 @@ async function confirmTransaction() {
                   );
                 })()}
 
-                <section className="pos-transaction-setup-section pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column">
+	                <section className="pos-transaction-setup-section pos-builder-setup-panel pos-transaction-setup-card pos-transaction-setup-card--two-column" data-pos-mobile-panel="cart">
                   <div className="section-heading">
                     <div>
                       <span>Section 2 · Transaction Set-UP</span>
@@ -7813,16 +8857,11 @@ async function confirmTransaction() {
                   </div>
                 </section>
 
-                <div className="pos-summary-update-bridge">
-                  <button type="button" onClick={forceRefreshSaleSummary} disabled={posCartOperatingUnits === 0}>
-                    Update Summary
-                  </button>
-                </div>
-
                 <section
                   key={posPaymentSummarySignature}
-                  className="pos-payment-summary-section pos-confirmation-rail"
-                  data-pos-summary-build="atomic-payment-summary-v1"
+	                  className="pos-payment-summary-section pos-confirmation-rail"
+	                  data-pos-mobile-panel="payment"
+	                  data-pos-summary-build="atomic-payment-summary-v1"
                   data-pos-summary-signature={posPaymentSummarySignature}
                   data-pos-summary-lines={posFinancialLineCount}
                   data-pos-summary-units={posCartOperatingUnits}
@@ -7906,7 +8945,7 @@ async function confirmTransaction() {
                       </article>
                     </div>
                   </div>
-                  {!posTransactionConfirmed && posNotice ? (
+	                  {!posTransactionConfirmed && posNotice ? (
                     <div
                       className="notice pos-confirmation-notice"
                       role="status"
@@ -7914,11 +8953,12 @@ async function confirmTransaction() {
                     >
                       {posNotice}
                     </div>
-                  ) : null}
+	                  ) : null}
 
-                  <button
-                    type="button"
-                    onClick={() => void confirmTransaction()}
+
+	                  <button
+	                    type="button"
+	                    onClick={() => void confirmTransaction()}
                     disabled={isConfirmingPosTransaction}
                   >
                     {isConfirmingPosTransaction
@@ -7941,17 +8981,30 @@ async function confirmTransaction() {
 
                       <article className="pos-summary-field-card pos-summary-field-card--financial pos-transaction-print-card">
                         <span>Print Receipt</span>
-                        <button
-                          type="button"
-                          className="pos-print-receipt-button"
-                          onClick={() => printUbuzimaPosDocument()}
-                          disabled={!posConfirmedPayment?.receipt_number}
-                        >
-                          Print Receipt
-                        </button>
-                      </article>
-                    </div>
-                  ) : null}
+	                        <button
+	                          type="button"
+	                          className="pos-print-receipt-button"
+	                          onClick={() => printUbuzimaPosDocument()}
+	                          disabled={!posConfirmedPayment?.receipt_number}
+	                        >
+	                          Print Receipt
+	                        </button>
+	                      </article>
+
+                          <button
+                            type="button"
+                            className="primary pos-serve-next-customer-button"
+                            onClick={() => {
+                              setPosTransactionConfirmed(false);
+                              setPosNotice('');
+                              setMobilePosStep('products');
+                              setPosTerminalSearch('');
+                            }}
+                          >
+                            Serve next customer
+                          </button>
+	                    </div>
+	                  ) : null}
                 </section>
 
                 {posCustomerInvoice === 'yes' && posTransactionConfirmed && (
@@ -8395,7 +9448,23 @@ async function confirmTransaction() {
   }
 
   function renderFinanceWorkspace() {
-    const selected = financeWorkspaceItems.find((item) => item.key === activeFinanceWorkspace) ?? financeWorkspaceItems[0];
+    const canViewAccounting = hasAnyPermission(
+      profile ?? undefined,
+      accountingReadPermissions,
+    );
+
+    const visibleFinanceWorkspaceItems = financeWorkspaceItems.filter(
+      (item) => item.key !== 'accounting' || canViewAccounting,
+    );
+
+    const permittedFinanceWorkspace: FinanceWorkspaceKey =
+      activeFinanceWorkspace === 'accounting' && !canViewAccounting
+        ? 'overview'
+        : activeFinanceWorkspace;
+
+    const selected = visibleFinanceWorkspaceItems.find(
+      (item) => item.key === permittedFinanceWorkspace,
+    ) ?? visibleFinanceWorkspaceItems[0];
     const financeRows: Array<[string, string, string, string]> = [
       ['Customer receivable', 'Open balance and due date', 'Collection', 'RWF 42,000'],
       ['Supplier invoice', 'Approved payable', 'Payment due', 'RWF 180,000'],
@@ -8405,6 +9474,12 @@ async function confirmTransaction() {
 
     return (
       <section className="section-page dedicated-module-page">
+        {permittedFinanceWorkspace !== 'overview' && ![
+  'financial-statements',
+  'cash-flow',
+  'sales',
+  'accounting',
+].includes(permittedFinanceWorkspace) && (
         <DedicatedModuleHeader
           eyebrow="Finance and control"
           title="Finance Workspace"
@@ -8423,27 +9498,64 @@ async function confirmTransaction() {
             setActiveFinanceWorkspace('overview');
           }}
         />
-        {activeFinanceWorkspace === 'overview' && (
-          <ModuleLandingCards
-            moduleName="Finance"
-            items={financeWorkspaceItems.filter((item) => item.key !== 'overview')}
-            activeKey={activeFinanceWorkspace}
-            onOpen={setActiveFinanceWorkspace}
-          />
         )}
-        <div className="module-section-stage">
-          {activeFinanceWorkspace === 'overview' && (
-            <FinanceSourceOfTruthOverview
+        <div
+          className="module-section-stage"
+          data-finance-module-stage="active"
+          tabIndex={-1}
+        >
+          {permittedFinanceWorkspace === 'overview' && (
+            <FinanceOverviewRedesign
               token={session!.token}
               profile={profile!}
+              financeModules={visibleFinanceWorkspaceItems.filter(
+                (item) => item.key !== 'overview',
+              )}
+              onOpenFinanceModule={(key) => {
+                const destination = visibleFinanceWorkspaceItems.find(
+                  (item) => item.key === key,
+                );
+
+                if (
+                  !destination
+                  || destination.key === permittedFinanceWorkspace
+                ) {
+                  return;
+                }
+
+                setActiveFinanceWorkspace(destination.key);
+
+                window.requestAnimationFrame(() => {
+                  window.requestAnimationFrame(() => {
+                    const stage =
+                      document.querySelector<HTMLElement>(
+                        '[data-finance-module-stage="active"]',
+                      );
+
+                    if (!stage) {
+                      return;
+                    }
+
+                    stage.scrollIntoView({
+                      block: 'start',
+                      inline: 'nearest',
+                      behavior: 'auto',
+                    });
+
+                    stage.focus({
+                      preventScroll: true,
+                    });
+                  });
+                });
+              }}
             />
           )}
 
-          {activeFinanceWorkspace === 'finance-flow' && (
+          {permittedFinanceWorkspace === 'finance-flow' && (
             <PayablesWorkflow token={session!.token} profile={profile!} />
           )}
 
-          {activeFinanceWorkspace === 'exception-focus' && (
+          {permittedFinanceWorkspace === 'exception-focus' && (
             <>
               <FocusRegisterPreview
                 title="Exception Focus"
@@ -8454,11 +9566,11 @@ async function confirmTransaction() {
             </>
           )}
 
-          {activeFinanceWorkspace === 'credits-receivables' && (
+          {permittedFinanceWorkspace === 'credits-receivables' && (
             <ReceivablesWorkflow token={session!.token} profile={{ tenant: profile!.tenant_assignments?.[0]?.tenant }} />
           )}
 
-          {['receivable-register', 'collection'].includes(activeFinanceWorkspace) && (
+          {['receivable-register', 'collection'].includes(permittedFinanceWorkspace) && (
             <FocusRegisterPreview
               title={selected.label}
               description="Receivables and collections use a focused table with export, bulk edit, and selected-detail review."
@@ -8466,26 +9578,36 @@ async function confirmTransaction() {
             />
           )}
 
-          {activeFinanceWorkspace === 'financial-statements' && (
-            <article className="panel wide">
-              <div className="panel-heading-row">
-                <div>
-                  <h2>Financial Statement</h2>
-                  <p className="muted">
-                    AI-assisted Trial Balance, General Ledger, Cash Flow Statement, Income Statement, Balance Sheet, Bank, MoMo, and Cash Reconciliation.
-                  </p>
-                </div>
-                <button type="button">Manual refresh</button>
-              </div>
-              <div className="document-action-grid document-action-grid--tablelike">
-                {financialStatementItems.map(([title, text]) => (
-                  <article key={title}>
-                    <strong>{title}</strong>
-                    <span>{text}</span>
-                  </article>
-                ))}
-              </div>
-            </article>
+          {permittedFinanceWorkspace === 'financial-statements' && (
+            <ProfitLossWorkspace
+              onBack={() => setActiveFinanceWorkspace('overview')}
+              onMainDashboard={() => navigateToSection('overview')}
+            />
+          )}
+
+          {permittedFinanceWorkspace === 'cash-flow' && (
+            <CashFlowWorkspace
+              onBack={() => setActiveFinanceWorkspace('overview')}
+              onMainDashboard={() => navigateToSection('overview')}
+            />
+          )}
+
+          {permittedFinanceWorkspace === 'sales' && (
+            <FinanceSalesWorkspace
+              token={session!.token}
+              profile={profile!}
+              onBack={() => setActiveFinanceWorkspace('overview')}
+              onMainDashboard={() => navigateToSection('overview')}
+            />
+          )}
+
+          {permittedFinanceWorkspace === 'accounting' && (
+            <AccountingWorkspace
+              token={session!.token}
+              profile={profile!}
+              onBack={() => setActiveFinanceWorkspace('overview')}
+              onMainDashboard={() => navigateToSection('overview')}
+            />
           )}
         </div>
       </section>
@@ -9567,9 +10689,962 @@ return (
     }
   }
 
+  const mobileHomeSection = (
+    visibleSectionKeys.has('overview')
+      ? 'overview'
+      : Array.from(visibleSectionKeys)[0] ?? 'overview'
+  ) as AdminSectionKey;
+  const mobileActiveTitle = activeLeftSubmenuLabel ?? currentSection.title;
+  const mobileShellStatus = !isOnline
+    ? 'Offline'
+    : isStandalonePwa
+      ? 'Installed'
+      : 'Online';
+  const mobileSyncLabel =
+    mobileSyncStatus === 'syncing'
+      ? 'Syncing'
+      : mobileSyncStatus === 'synced'
+        ? 'Synced'
+        : 'Sync';
+  const mobileBottomNavCandidates: MobileBottomNavItem[] = [
+    {
+      key: 'home',
+      label: 'Home',
+      icon: 'HM',
+      section: mobileHomeSection,
+    },
+    {
+      key: 'pos',
+      label: 'POS',
+      icon: 'POS',
+      section: 'pos',
+      posWorkspace: 'pos',
+    },
+    {
+      key: 'inventory',
+      label: 'Stock',
+      icon: 'ST',
+      section: 'inventory',
+    },
+    {
+      key: 'reports',
+      label: 'Report',
+      icon: 'RP',
+      section: 'reports',
+    },
+  ];
+  const mobileBottomNavItems = mobileBottomNavCandidates.filter((item) =>
+    visibleSectionKeys.has(item.section),
+  );
+  const mobileQuickActionCandidates: MobileBottomNavItem[] = [
+    {
+      key: 'quick-pos',
+      label: 'POS Counter',
+      icon: 'POS',
+      section: 'pos',
+      posWorkspace: 'pos',
+    },
+    {
+      key: 'quick-inventory',
+      label: 'Inventory',
+      icon: 'ST',
+      section: 'inventory',
+    },
+    {
+      key: 'quick-suppliers',
+      label: 'Suppliers',
+      icon: 'PO',
+      section: 'suppliers',
+    },
+    {
+      key: 'quick-finance',
+      label: 'Finance',
+      icon: 'FN',
+      section: 'finance',
+    },
+  ];
+  const mobileQuickActions = mobileQuickActionCandidates.filter((item) =>
+    visibleSectionKeys.has(item.section),
+  );
+  const nativeMobileNavItems: UbuzimaMobileAppNavItem[] = [
+    ...(visibleSectionKeys.has('overview')
+      ? [
+          {
+            key: 'home',
+            label: 'Home',
+            icon: 'HM',
+            screen: 'business' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('pos')
+      ? [
+          {
+            key: 'pos-sales',
+            label: 'POS & Sales',
+            icon: 'POS',
+            screen: 'sales' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('inventory')
+      ? [
+          {
+            key: 'inventory',
+            label: 'Inventory',
+            icon: 'ST',
+            screen: 'inventory' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'procurement',
+            label: 'Procurement',
+            icon: 'PO',
+            screen: 'procurement' as UbuzimaMobileAppScreen,
+          },
+        ]
+      : []),
+    {
+      key: 'more',
+      label: 'More',
+      icon: 'MN',
+      screen: 'more',
+    },
+  ];
+  const nativeGrossSalesMetric = readSharedBusinessMetricRecord(['Gross Sales']);
+  const nativeGrossRevenueMetric = readSharedBusinessMetricRecord(['Gross Revenue', 'Gross Profit']);
+  const nativeNetRevenueMetric = readSharedBusinessMetricRecord(['Net Revenue']);
+  const nativeCollectionsMetric = readSharedBusinessMetricRecord(['Collections']);
+  const nativeOutstandingMetric = readSharedBusinessMetricRecord(['Outstanding Balance', 'Balance Amount']);
+  const nativeAverageSaleMetric = readSharedBusinessMetricRecord(['Average Transaction Value']);
+  const nativeInventoryValueMetric = readSharedBusinessMetricRecord([
+    'Total Inventory Value',
+    'Inventory Value',
+    'Stock Value',
+  ]);
+  const nativeNearExpiryValueMetric = readSharedBusinessMetricRecord([
+    'Near Expiry Value',
+    'Near Expiry Inventory Value',
+    'Near Expiry Stock Value',
+  ]);
+  const nativeAlertsMetric = readSharedBusinessMetricRecord([
+    'Low Stock Count',
+    'Low Stock Products',
+    'Near Expiry Count',
+  ]);
+  const nativeLiveMetricBars = buildNativeLiveMetricBars([
+    nativeGrossSalesMetric?.valueNumber,
+    nativeGrossRevenueMetric?.valueNumber,
+    nativeNetRevenueMetric?.valueNumber,
+    nativeCollectionsMetric?.valueNumber,
+    nativeOutstandingMetric?.valueNumber,
+    nativeAverageSaleMetric?.valueNumber,
+  ]);
+  const nativeMetrics: UbuzimaMobileAppMetric[] = [
+    {
+      key: 'gross-sales',
+      label: 'Gross sales',
+      value: nativeGrossSalesMetric?.valueText ?? 'RWF 0',
+      helper: 'Business Overview',
+      tone: 'olive',
+    },
+    {
+      key: 'gross-revenue',
+      label: 'Gross revenue',
+      value: nativeGrossRevenueMetric?.valueText ?? 'RWF 0',
+      helper: 'Profit signal',
+      tone: 'gold',
+    },
+    {
+      key: 'net-revenue',
+      label: 'Net revenue',
+      value: nativeNetRevenueMetric?.valueText ?? 'RWF 0',
+      helper: 'After discounts and returns',
+      tone: 'teal',
+    },
+    {
+      key: 'inventory-value',
+      label: 'Total inventory value',
+      value: nativeInventoryValueMetric?.valueText ?? 'RWF 0',
+      helper: 'Inventory position',
+      tone: 'gold',
+    },
+    {
+      key: 'near-expiry-value',
+      label: 'Near expiry value',
+      value: nativeNearExpiryValueMetric?.valueText ?? 'RWF 0',
+      helper: 'Expiry risk value',
+      tone: 'red',
+    },
+    {
+      key: 'alerts',
+      label: 'Alerts',
+      value:
+        nativeAlertsMetric?.valueText ??
+        (unreadMailCount > 0 ? unreadMailCount.toLocaleString('en-RW') : '0'),
+      helper: unreadMailCount > 0 ? 'Corporate email requires review' : 'Stock and operations',
+      tone: unreadMailCount > 0 ? 'red' : 'blue',
+    },
+  ];
+  const nativePrimaryActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('pos')
+      ? [
+          {
+            key: 'pos-sales',
+            label: 'POS & Sales',
+            detail: 'Counter, receipts, payments',
+            icon: 'POS',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                screen: 'sales',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('inventory')
+      ? [
+          {
+            key: 'inventory-overview',
+            label: 'Inventory',
+            detail: 'Products, batches, expiry',
+            icon: 'ST',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'overview',
+                screen: 'inventory',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'procurement',
+            label: 'Procurement',
+            detail: 'Suppliers, purchase orders',
+            icon: 'PO',
+            tone: 'blue' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                supplierWorkspace: 'overview',
+                screen: 'procurement',
+              }),
+          },
+        ]
+      : []),
+  ];
+  const nativeStockActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('inventory')
+      ? [
+          {
+            key: 'receive-stock-manually',
+            label: 'Receive Stock',
+            detail: 'Manual product inventory entry',
+            icon: 'RC',
+            tone: 'olive' as const,
+            onPress: () => {
+              setMobileInventoryReceiveIntent((current) => current + 1);
+              openNativeMobileSection('inventory', {
+                inventoryView: 'product-inventory',
+                openWorkflow: true,
+                screen: 'inventory',
+                workflowKey: 'receive-stock-manually',
+                workflowTitle: 'Receive Stock Manually',
+              });
+            },
+          },
+          {
+            key: 'stock-low',
+            label: 'Low Stock',
+            detail: 'Products needing reorder',
+            icon: 'LOW',
+            tone: 'red' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'low-stock',
+                openWorkflow: true,
+                screen: 'inventory',
+                workflowTitle: 'Low Stock',
+              }),
+          },
+          {
+            key: 'stock-expiry',
+            label: 'Expiry',
+            detail: 'Near-expiry batch control',
+            icon: 'EXP',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'near-expiry',
+                openWorkflow: true,
+                screen: 'inventory',
+                workflowTitle: 'Expiry Control',
+              }),
+          },
+          {
+            key: 'stock-master',
+            label: 'Product Master',
+            detail: 'Medicine catalog and pricing',
+            icon: 'PM',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'product-master',
+                openWorkflow: true,
+                screen: 'inventory',
+                workflowTitle: 'Product Master',
+              }),
+          },
+          {
+            key: 'stock-batches',
+            label: 'Batches',
+            detail: 'Batch and shelf quantities',
+            icon: 'BT',
+            tone: 'teal' as const,
+            onPress: () =>
+              openNativeMobileSection('inventory', {
+                inventoryView: 'batches',
+                openWorkflow: true,
+                screen: 'inventory',
+                workflowTitle: 'Batches',
+              }),
+          },
+        ]
+      : []),
+  ];
+  const nativeProcurementActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'supplier-list',
+            label: 'Suppliers',
+            detail: 'Approved supplier list',
+            icon: 'PO',
+            tone: 'blue' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                openWorkflow: true,
+                supplierWorkspace: 'supplier-list',
+                screen: 'procurement',
+                workflowTitle: 'Suppliers',
+              }),
+          },
+          {
+            key: 'purchase-orders',
+            label: 'Purchase Orders',
+            detail: 'Create and follow orders',
+            icon: 'PO',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                openWorkflow: true,
+                supplierWorkspace: 'create-purchase-order',
+                screen: 'procurement',
+                workflowKey: 'purchase-orders',
+                workflowTitle: 'Purchase Orders',
+              }),
+          },
+          {
+            key: 'receiving',
+            label: 'Receiving',
+            detail: 'Receive supplier stock',
+            icon: 'RC',
+            tone: 'teal' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                openWorkflow: true,
+                supplierWorkspace: 'receive-purchase-order',
+                screen: 'procurement',
+                workflowKey: 'receiving',
+                workflowTitle: 'Receiving',
+              }),
+          },
+          {
+            key: 'outstanding-orders',
+            label: 'Outstanding',
+            detail: 'Open purchase orders',
+            icon: 'OP',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                openWorkflow: true,
+                supplierWorkspace: 'outstanding-purchase-orders',
+                screen: 'procurement',
+                workflowTitle: 'Outstanding Orders',
+              }),
+          },
+        ]
+      : []),
+  ];
+  const nativeGeneralStockActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('general-stock-items')
+      ? [
+          {
+            key: 'general-stock-route',
+            label: 'General Stock',
+            detail: 'Open operational stock',
+            icon: 'GS',
+            tone: 'red' as const,
+            onPress: () =>
+              openNativeMobileSection('general-stock-items', {
+                openWorkflow: true,
+                screen: 'general-stock',
+                workflowTitle: 'General Stock',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('suppliers')
+      ? [
+          {
+            key: 'general-items-overview',
+            label: 'Overview',
+            detail: 'General item dashboard',
+            icon: 'OV',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                openWorkflow: true,
+                supplierWorkspace: 'general-items-overview',
+                screen: 'general-stock',
+                workflowTitle: 'General Stock',
+              }),
+          },
+          {
+            key: 'general-item-master',
+            label: 'Item Master',
+            detail: 'Operational item catalog',
+            icon: 'IM',
+            tone: 'blue' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                openWorkflow: true,
+                supplierWorkspace: 'general-item-master',
+                screen: 'general-stock',
+                workflowTitle: 'Item Master',
+              }),
+          },
+          {
+            key: 'general-item-stock',
+            label: 'Stock',
+            detail: 'Quantities and valuation',
+            icon: 'ST',
+            tone: 'teal' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                openWorkflow: true,
+                supplierWorkspace: 'general-item-stock',
+                screen: 'general-stock',
+                workflowTitle: 'General Item Stock',
+              }),
+          },
+          {
+            key: 'general-item-usage',
+            label: 'Usage',
+            detail: 'Issues and consumption',
+            icon: 'US',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('suppliers', {
+                openWorkflow: true,
+                supplierWorkspace: 'general-item-usage',
+                screen: 'general-stock',
+                workflowTitle: 'General Item Usage',
+              }),
+          },
+        ]
+      : []),
+  ];
+  const nativeSalesActions: UbuzimaMobileAppAction[] = [
+    ...(visibleSectionKeys.has('pos')
+      ? [
+          {
+            key: 'pos-counter',
+            label: 'POS Counter',
+            detail: 'Open sale and cart',
+            icon: 'POS',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                openWorkflow: true,
+                posWorkspace: 'pos',
+                screen: 'sales',
+                workflowTitle: 'POS Counter',
+              }),
+          },
+          {
+            key: 'sales-performance',
+            label: 'Sales Register',
+            detail: 'Cashier activity and receipts',
+            icon: 'REG',
+            tone: 'olive' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                openWorkflow: true,
+                posWorkspace: 'sales-performance',
+                screen: 'sales',
+                workflowTitle: 'Sales Register',
+              }),
+          },
+          {
+            key: 'payment-receipt',
+            label: 'Payments',
+            detail: 'Receipt and payment review',
+            icon: 'PAY',
+            tone: 'teal' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                openWorkflow: true,
+                posWorkspace: 'payment-receipt',
+                screen: 'sales',
+                workflowTitle: 'Payments',
+              }),
+          },
+          {
+            key: 'dispensing-review',
+            label: 'Dispensing',
+            detail: 'Pharmacist review queue',
+            icon: 'RX',
+            tone: 'gold' as const,
+            onPress: () =>
+              openNativeMobileSection('pos', {
+                openWorkflow: true,
+                posWorkspace: 'dispensing-review',
+                screen: 'sales',
+                workflowTitle: 'Dispensing',
+              }),
+          },
+        ]
+      : []),
+    ...(visibleSectionKeys.has('finance')
+      ? [
+          {
+            key: 'finance-flow',
+            label: 'Finance',
+            detail: 'Receivables and collection',
+            icon: 'FN',
+            tone: 'blue' as const,
+            onPress: () =>
+              openNativeMobileSection('finance', {
+                financeWorkspace: 'finance-flow',
+                openWorkflow: true,
+                screen: 'sales',
+                workflowTitle: 'Finance Flow',
+              }),
+          },
+        ]
+      : []),
+  ];
+
+  const nativeDailyPosBusinessDate =
+    normalizeUbuzimaTransactionDate(
+      posLiveBusinessAnalytics?.business_date
+        ?? (posSession as { business_date?: string | null } | null)?.business_date
+        ?? new Date().toISOString().slice(0, 10),
+    ) ?? new Date().toISOString().slice(0, 10);
+  const nativeDailyPosTimestamp = (transaction: PharmaRecentTransactionWithUser) => {
+    const rawTimestamp =
+      transaction.received_at
+      ?? transaction.sold_at
+      ?? transaction.created_at
+      ?? '';
+    const timestamp = new Date(rawTimestamp).getTime();
+
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
+  const nativeDailyPosRawTransactions = posRecentTransactionsWithUsers
+    .filter((transaction) => {
+      const transactionBusinessDate = normalizeUbuzimaTransactionDate(
+        transaction.business_date
+          ?? transaction.received_at
+          ?? transaction.sold_at
+          ?? transaction.created_at,
+      );
+
+      return transactionBusinessDate === nativeDailyPosBusinessDate;
+    })
+    .sort((left, right) => {
+      const rightTime = nativeDailyPosTimestamp(right);
+      const leftTime = nativeDailyPosTimestamp(left);
+
+      if (rightTime !== leftTime) {
+        return rightTime - leftTime;
+      }
+
+      return right.id - left.id;
+    });
+  const formatNativeDailyPosTime = (transaction: PharmaRecentTransactionWithUser) => {
+    const rawTimestamp =
+      transaction.received_at
+      ?? transaction.sold_at
+      ?? transaction.created_at
+      ?? '';
+    const date = new Date(rawTimestamp);
+
+    if (!Number.isFinite(date.getTime())) {
+      return 'Time pending';
+    }
+
+    return date.toLocaleTimeString('en-RW', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+  const nativeDailyPosTransactions: UbuzimaMobileDailyPosTransaction[] =
+    nativeDailyPosRawTransactions
+      .slice(0, 5)
+      .map((transaction) => ({
+        key: `${transaction.id}-${transaction.sale_number ?? 'sale'}`,
+        saleNumber: transaction.sale_number ?? `Sale #${transaction.id}`,
+        amount: formatUbuzimaMoney(transaction.total_amount),
+        method: (transaction.payment_method ?? 'Payment pending').replaceAll('_', ' '),
+        status: (transaction.payment_status ?? 'pending').replaceAll('_', ' '),
+        operator: formatUbuzimaOperatorName(transaction),
+        timeLabel: formatNativeDailyPosTime(transaction),
+        businessDate: nativeDailyPosBusinessDate,
+        receiptNumber: transaction.receipt_number ?? undefined,
+      }));
+  const nativeDailyPosFallbackSalesTotal = nativeDailyPosRawTransactions.reduce(
+    (sum, transaction) => sum + Number(transaction.total_amount ?? 0),
+    0,
+  );
+  const nativeDailyPosFallbackCollectionsTotal = nativeDailyPosRawTransactions.reduce(
+    (sum, transaction) => sum + Number(transaction.paid_amount ?? 0),
+    0,
+  );
+  const nativeDailyPosSummary: UbuzimaMobileDailyPosSummary = {
+    dateLabel: nativeDailyPosBusinessDate,
+    salesTotal: formatUbuzimaMoney(
+      posLiveBusinessAnalytics?.sales_total ?? nativeDailyPosFallbackSalesTotal,
+    ),
+    collectionsTotal: formatUbuzimaMoney(
+      posLiveBusinessAnalytics?.collections_total ?? nativeDailyPosFallbackCollectionsTotal,
+    ),
+    transactionCount: String(
+      posLiveBusinessAnalytics?.transaction_count ?? nativeDailyPosRawTransactions.length,
+    ),
+    status: posLiveBusinessAnalyticsNotice
+      ? 'Sync issue'
+      : isMobileSyncing
+        ? 'Syncing'
+        : posLiveBusinessAnalytics
+          ? 'Live'
+          : 'Ready',
+  };
+
+  const nativeRoleTokens = profileRoleTokens(profile);
+  const profileHasNativeRole = (...tokens: string[]) =>
+    nativeRoleTokens.some((role) =>
+      tokens.some((token) =>
+        role === token ||
+        role.endsWith(`_${token}`) ||
+        role.includes(`_${token}_`),
+      ),
+    );
+  const nativeRoleActionFallback =
+    nativePrimaryActions.length > 0
+      ? nativePrimaryActions
+      : [
+          {
+            key: 'fallback-menu',
+            label: 'Open Menu',
+            detail: 'View all modules available to your account',
+            icon: 'MN',
+            tone: 'blue' as const,
+            onPress: () => setMobileAppScreen('more'),
+          },
+        ];
+  const nativeMobileWorkbench: UbuzimaMobileAppWorkbench = (() => {
+    if (profileHasAdminAuthority(profile) || profileHasOwnerRole(profile)) {
+      return {
+        eyebrow: profileHasOwnerRole(profile) ? 'Owner workbench' : 'Admin workbench',
+        title: 'Business control desk',
+        summary: 'Start with the live dashboard, then move into sales, stock, procurement, and staff follow-up.',
+        status: 'Executive operating view',
+        actions: [
+          ...(visibleSectionKeys.has('overview')
+            ? [
+                {
+                  key: 'workbench-business-overview',
+                  label: 'Business Overview',
+                  detail: 'Live dashboard and management review',
+                  icon: 'HM',
+                  tone: 'olive' as const,
+                  onPress: openNativeBusinessOverviewWorkflow,
+                },
+              ]
+            : []),
+          ...nativeSalesActions.filter((action) => ['sales-performance', 'payment-receipt'].includes(action.key)),
+          ...nativeStockActions.filter((action) => ['stock-low', 'stock-expiry'].includes(action.key)),
+        ].slice(0, 4),
+      };
+    }
+
+    if (
+      profileHasNativeRole('cashier', 'sales_cashier', 'pos_cashier') ||
+      profileHasGranularPermission(profile, ['pharmaco.pos.use', 'pos.sales.view', 'pos.payments.view'])
+    ) {
+      return {
+        eyebrow: 'Cashier workbench',
+        title: 'Counter and payments',
+        summary: 'Open the POS counter, review receipts, capture payments, and keep the shift moving.',
+        status: 'Front desk flow',
+        actions: nativeSalesActions.filter((action) =>
+          ['pos-counter', 'payment-receipt', 'sales-performance'].includes(action.key),
+        ),
+      };
+    }
+
+    if (
+      profileHasNativeRole('pharmacist', 'dispensing', 'dispenser') ||
+      profileHasGranularPermission(profile, ['pharmaco.inventory.view', 'inventory.products.view'])
+    ) {
+      return {
+        eyebrow: 'Pharmacist workbench',
+        title: 'Dispensing and medicine safety',
+        summary: 'Review dispensing queues, product master, batches, low stock, and expiry risk.',
+        status: 'Clinical operations',
+        actions: [
+          ...nativeSalesActions.filter((action) => action.key === 'dispensing-review'),
+          ...nativeStockActions.filter((action) => ['stock-master', 'stock-batches', 'stock-expiry'].includes(action.key)),
+        ].slice(0, 4),
+      };
+    }
+
+    if (
+      profileHasNativeRole('finance', 'accountant', 'collector') ||
+      profileHasGranularPermission(profile, granularMenuPermissionMap.finance)
+    ) {
+      return {
+        eyebrow: 'Finance workbench',
+        title: 'Collections and reconciliation',
+        summary: 'Follow receivables, payments, cashier activity, and daily settlement signals.',
+        status: 'Finance desk',
+        actions: [
+          ...nativeSalesActions.filter((action) => ['finance-flow', 'payment-receipt', 'sales-performance'].includes(action.key)),
+          ...nativePrimaryActions.filter((action) => action.key === 'pos-sales'),
+        ].slice(0, 4),
+      };
+    }
+
+    if (
+      profileHasNativeRole('procurement', 'supplier', 'purchasing') ||
+      profileHasGranularPermission(profile, granularMenuPermissionMap.suppliers)
+    ) {
+      return {
+        eyebrow: 'Procurement workbench',
+        title: 'Orders and receiving',
+        summary: 'Move from supplier follow-up into purchase orders, receiving, and operational stock.',
+        status: 'Supply desk',
+        actions: [
+          ...nativeProcurementActions,
+        ].slice(0, 4),
+      };
+    }
+
+    if (
+      profileHasNativeRole('inventory', 'storekeeper', 'stock') ||
+      profileHasGranularPermission(profile, granularMenuPermissionMap.inventory)
+    ) {
+      return {
+        eyebrow: 'Inventory workbench',
+        title: 'Stock control',
+        summary: 'Check low stock, expiry, batches, product master, and shelf quantities.',
+        status: 'Stock desk',
+        actions: nativeStockActions.slice(0, 4),
+      };
+    }
+
+    return {
+      eyebrow: 'Staff workbench',
+      title: 'Your available tools',
+      summary: 'Open the modules your account can access and continue from your permitted workflows.',
+      status: 'Role based access',
+      actions: nativeRoleActionFallback.slice(0, 4),
+    };
+  })();
+
+  const nativeMobileMenuGroups: UbuzimaMobileAppMenuGroup[] =
+    visibleMenuGroups.map((group) => ({
+      key: group.key,
+      label: group.label,
+      items: group.items.map((item) => ({
+        key: `${group.key}-${item.key}-${item.context ?? 'root'}`,
+        label: item.label,
+        description: item.description,
+        icon: item.icon,
+        status: item.status,
+        onPress: () => {
+          const nextScreen = mobileAppScreenForSection(item.key);
+          handleMenuItemClick(item);
+          setMobileAppScreen(nextScreen);
+          setMobileNativeWorkflow({
+            section: item.key,
+            screen: nextScreen,
+            title: item.label,
+          });
+        },
+      })),
+    }));
+
   return (
-    <main className="dashboard-shell" style={leftMenuStyle}>
-      <aside className="sidebar">
+    <main
+      className={`dashboard-shell dashboard-shell--mobile-app-ready dashboard-shell--fresh-mobile-app ${
+        isMobileDrawerOpen ? 'dashboard-shell--mobile-drawer-open' : ''
+      } ${mobileNativeWorkflow ? 'dashboard-shell--native-workflow-open' : ''} ${
+        mobileNativeWorkflow?.section === 'pos' &&
+        activePosWorkspace === 'pos' &&
+        mobilePosStep === 'products'
+          ? 'dashboard-shell--native-pos-products'
+          : ''
+      }`}
+      style={leftMenuStyle}
+    >
+      <UbuzimaMobileApp
+        activeScreen={mobileAppScreen}
+        brandLogoSrc={brandLogoSrc}
+        currentWorkspace={mobileActiveTitle}
+        installAvailable={isPwaInstallAvailable}
+        isInstalling={isPwaInstalling}
+        isIosDevice={isIosDevice}
+        isOnline={isOnline}
+        isStandalone={isStandalonePwa}
+        isSyncing={isMobileSyncing}
+        dailyPosSummary={nativeDailyPosSummary}
+        dailyPosTransactions={nativeDailyPosTransactions}
+        menuGroups={nativeMobileMenuGroups}
+        metrics={nativeMetrics}
+        liveMetricBars={nativeLiveMetricBars}
+        navigationItems={nativeMobileNavItems}
+        primaryActions={nativePrimaryActions}
+        procurementActions={nativeProcurementActions}
+        generalStockActions={nativeGeneralStockActions}
+        profileAvatarUrl={profileAvatarUrl}
+        profileInitials={profileInitials}
+        profileInstitution={profileInstitution}
+        profileName={profileDisplayName}
+        salesActions={nativeSalesActions}
+        stockActions={nativeStockActions}
+        syncLabel={mobileSyncLabel}
+        unreadMailCount={unreadMailCount}
+        workbench={nativeMobileWorkbench}
+        onChangePassword={() => {
+          setChangePasswordError('');
+          setChangePasswordNotice('');
+          setChangePasswordForm({ current_password: '', password: '', password_confirmation: '' });
+          setIsChangePasswordOpen(true);
+        }}
+        onCorporateEmail={() =>
+          openNativeMobileSection('corporate-email', {
+            openWorkflow: true,
+            screen: 'more',
+            workflowTitle: 'Corporate Email',
+          })
+        }
+        onInstall={requestPwaInstall}
+        onOpenBusinessOverview={openNativeBusinessOverviewWorkflow}
+        onRefresh={refreshMobileWorkspace}
+        onScreenChange={handleNativeMobileScreenChange}
+        onSignOut={handleLogout}
+      />
+
+      {mobileNativeWorkflow && (
+        <header className="ubuzima-native-workflow-bar" aria-label="Mobile workflow controls">
+          <button
+            type="button"
+            className="ubuzima-native-workflow-bar__back"
+            onClick={closeMobileNativeWorkflow}
+          >
+            <span aria-hidden="true">&lt;</span>
+            Back
+          </button>
+
+          <div className="ubuzima-native-workflow-bar__title">
+            <span>{mobileNativeWorkflow.screen.replace('-', ' ')}</span>
+            <strong>{mobileNativeWorkflow.title}</strong>
+          </div>
+
+          <button
+            type="button"
+            className={`ubuzima-native-workflow-bar__sync ${isMobileSyncing ? 'is-syncing' : ''}`}
+            onClick={refreshMobileWorkspace}
+            disabled={isMobileSyncing}
+            aria-busy={isMobileSyncing}
+          >
+            {mobileSyncStatus === 'syncing' ? 'Syncing' : 'Sync'}
+          </button>
+        </header>
+      )}
+
+      <header className="ubuzima-mobile-topbar" aria-label="Ubuzima+ mobile app bar">
+        <button
+          type="button"
+          className="ubuzima-mobile-icon-button"
+          aria-label="Open navigation menu"
+          aria-expanded={isMobileDrawerOpen}
+          onClick={() => setIsMobileDrawerOpen((current) => !current)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+
+        <div className="ubuzima-mobile-brand">
+          <img src={brandLogoSrc} alt="" />
+          <div>
+            <strong>{mobileActiveTitle}</strong>
+            <small>{mobileShellStatus}</small>
+          </div>
+        </div>
+
+        {isPwaInstallAvailable && !isStandalonePwa ? (
+          <button
+            type="button"
+            className="ubuzima-mobile-install-button"
+            onClick={requestPwaInstall}
+            disabled={isPwaInstalling}
+          >
+            {isPwaInstalling ? 'Opening' : 'Install'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="ubuzima-mobile-icon-button ubuzima-mobile-refresh-button"
+            aria-label="Refresh current workspace"
+            onClick={refreshMobileWorkspace}
+            disabled={isMobileSyncing}
+          >
+            {mobileSyncStatus === 'syncing' ? '...' : 'Sync'}
+          </button>
+        )}
+      </header>
+
+      <button
+        type="button"
+        className="ubuzima-mobile-drawer-overlay"
+        aria-label="Close navigation menu"
+        hidden={!isMobileDrawerOpen}
+        onClick={() => setIsMobileDrawerOpen(false)}
+      />
+
+      <aside
+        className="sidebar"
+        data-admin-sidebar
+        onClickCapture={(event) => {
+          const target = event.target as HTMLElement | null;
+
+          if (target?.closest('button,a')) {
+            window.setTimeout(() => {
+              setIsMobileDrawerOpen(false);
+            }, 150);
+          }
+        }}
+      >
         <div className="sidebar-inner">
           <div className="sidebar-brand">
             <img className="sidebar-logo" src={brandLogoSrc} alt="Ubuzima+" />
@@ -9789,6 +11864,17 @@ return (
                   >
                     Change Password
                   </button>
+
+                  <button
+                    type="button"
+                    className="profile-popover-logout-button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      void handleLogout();
+                    }}
+                  >
+                    Log out
+                  </button>
                 </section>
               )}
             </div>
@@ -9810,8 +11896,50 @@ return (
           </button>
         )}
 
+        <section className="ubuzima-mobile-action-strip" aria-label="Mobile quick actions">
+          {!isOnline && (
+            <div className="ubuzima-mobile-offline-banner" role="status">
+              <strong>Offline mode</strong>
+              <span>Saved screens remain available while the network reconnects.</span>
+            </div>
+          )}
+
+          <div className="ubuzima-mobile-section-context">
+            <span>{currentSection.eyebrow}</span>
+            <strong>{mobileActiveTitle}</strong>
+          </div>
+
+          {mobileQuickActions.length > 0 && (
+            <div className="ubuzima-mobile-quick-grid">
+              {mobileQuickActions.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() =>
+                    navigateToMobileSection(item.section, {
+                      posWorkspace: item.posWorkspace,
+                    })
+                  }
+                >
+                  <span>{item.icon}</span>
+                  <strong>{item.label}</strong>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section className="dashboard-scroll-panel">
-          {renderActiveSection()}
+          {mobileNativeWorkflow?.workflowKey ? (
+            <MobileNativeOperationalWorkflow
+              kind={mobileNativeWorkflow.workflowKey}
+              token={session!.token}
+              profile={profile!}
+              onCompleted={refreshMobileWorkspace}
+            />
+          ) : (
+            renderActiveSection()
+          )}
         </section>
 
         {loginSuccess && (
@@ -9909,6 +12037,33 @@ return (
           </div>
         )}
       </section>
+
+      <nav className="ubuzima-mobile-bottom-nav" aria-label="Primary mobile navigation">
+        {mobileBottomNavItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={activeSection === item.section ? 'active' : ''}
+            onClick={() =>
+              navigateToMobileSection(item.section, {
+                posWorkspace: item.posWorkspace,
+              })
+            }
+          >
+            <span>{item.icon}</span>
+            <small>{item.label}</small>
+          </button>
+        ))}
+
+        <button
+          type="button"
+          className={isMobileDrawerOpen ? 'active' : ''}
+          onClick={() => setIsMobileDrawerOpen((current) => !current)}
+        >
+          <span>MN</span>
+          <small>Menu</small>
+        </button>
+      </nav>
     </main>
   );
 }
