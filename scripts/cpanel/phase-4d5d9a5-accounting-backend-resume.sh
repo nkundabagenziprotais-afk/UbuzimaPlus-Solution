@@ -94,11 +94,23 @@ if (substr_count($source, $oldHeadCheck) !== 1) {
 
 $source = str_replace($oldHeadCheck, $newHeadCheck, $source);
 
-$checkpointPattern = <<<'REGEX'
-~ACTUAL_UNTRACKED="\$PHASE_DIR/untracked-before\.txt";\nEXPECTED_UNTRACKED="\$PHASE_DIR/expected-before\.txt";\n\npri.*?abort "ten_file_checkpoint_changed";\n\}~s
-REGEX;
+$oldCheckpoint = <<<'BASH'
+ACTUAL_UNTRACKED="$PHASE_DIR/untracked-before.txt"
+EXPECTED_UNTRACKED="$PHASE_DIR/expected-before.txt"
 
-$checkpointReplacement = <<<'BASH'
+printf '%s\n' "${EXPECTED_EXISTING[@]}" | sort > "$EXPECTED_UNTRACKED"
+git -C "$WORKTREE" ls-files --others --exclude-standard | sort > "$ACTUAL_UNTRACKED"
+
+cmp -s "$EXPECTED_UNTRACKED" "$ACTUAL_UNTRACKED" || {
+    echo "--- expected checkpoint ---"
+    cat "$EXPECTED_UNTRACKED"
+    echo "--- actual checkpoint ---"
+    cat "$ACTUAL_UNTRACKED"
+    abort "ten_file_checkpoint_changed"
+}
+BASH;
+
+$newCheckpoint = <<<'BASH'
 ACTUAL_UNTRACKED="$PHASE_DIR/untracked-before.txt"
 EXPECTED_UNTRACKED="$PHASE_DIR/expected-before.txt"
 UNEXPECTED_UNTRACKED="$PHASE_DIR/unexpected-untracked-before.txt"
@@ -121,18 +133,12 @@ done
 echo "checkpoint_storage=TRACKED_OR_UNTRACKED_ACCEPTED"
 BASH;
 
-$source = preg_replace(
-    $checkpointPattern,
-    $checkpointReplacement,
-    $source,
-    1,
-    $checkpointCount,
-);
-
-if ($checkpointCount !== 1) {
+if (substr_count($source, $oldCheckpoint) !== 1) {
     fwrite(STDERR, "reason=checkpoint_patch_target_invalid\n");
     exit(4);
 }
+
+$source = str_replace($oldCheckpoint, $newCheckpoint, $source);
 
 $oldFinal = <<<'BASH'
 EXPECTED_CHANGED="$PHASE_DIR/expected-changed-files.txt"
