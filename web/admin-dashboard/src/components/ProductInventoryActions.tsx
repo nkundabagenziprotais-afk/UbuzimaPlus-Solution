@@ -5,6 +5,7 @@ import {
   CreatePharmaStockLocationPayload,
   PharmaInventoryLocationsResponse,
   PharmaProductCategoriesResponse,
+  PharmaSuppliersResponse,
   PharmaProduct,
   PharmaProductCategory,
   PharmaProductsResponse,
@@ -17,6 +18,7 @@ import {
   getPharmaInventoryLocations,
   getPharmaProductCategories,
   getPharmaProducts,
+  getPharmaSuppliers,
   receivePharmaStock,
   updatePharmaProduct,
   updatePharmaProductCategory,
@@ -54,7 +56,7 @@ type StockReceiveFormState = {
   expiry_date: string;
   unit_cost: string;
   selling_price: string;
-  supplier_name: string;
+  pharmaco_supplier_id: string;
   reference_number: string;
   reason: string;
 };
@@ -103,7 +105,7 @@ const emptyStockReceiveForm: StockReceiveFormState = {
   expiry_date: '',
   unit_cost: '',
   selling_price: '',
-  supplier_name: '',
+  pharmaco_supplier_id: '',
   reference_number: '',
   reason: '',
 };
@@ -139,6 +141,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   const [products, setProducts] = useState<PharmaProductsResponse | null>(null);
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
   const [categoriesResponse, setCategoriesResponse] = useState<PharmaProductCategoriesResponse | null>(null);
+  const [suppliers, setSuppliers] = useState<PharmaSuppliersResponse | null>(null);
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
   const [stockReceiveForm, setStockReceiveForm] = useState<StockReceiveFormState>(emptyStockReceiveForm);
   const [categoryForm, setCategoryForm] = useState<CategorySetupFormState>(emptyCategorySetupForm);
@@ -172,6 +175,14 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '');
 
+  const isPreviewRuntime =
+    typeof window !== 'undefined'
+    && window.location.pathname.startsWith('/admin-previews/');
+
+  const activeSuppliers = (suppliers?.suppliers ?? []).filter(
+    (supplier) => supplier.status === 'active',
+  );
+
   const categories = categoriesResponse?.categories ?? collectCategories(products?.products ?? []);
   const branchOptions = Array.from(
     new Map((locations?.locations ?? []).map((location) => [location.branch.id, location.branch])).values(),
@@ -188,17 +199,28 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     setMessage('');
 
     try {
-      const [productsResponse, locationsResponse, categoriesResult] = await Promise.all([
+      const [
+        productsResponse,
+        locationsResponse,
+        categoriesResult,
+        suppliersResult,
+      ] = await Promise.all([
         getPharmaProducts(token, tenantSlug),
         getPharmaInventoryLocations(token, tenantSlug),
         getPharmaProductCategories(token, tenantSlug),
+        getPharmaSuppliers(token, tenantSlug),
       ]);
 
       setProducts(productsResponse);
       setLocations(locationsResponse);
       setCategoriesResponse(categoriesResult);
+      setSuppliers(suppliersResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load inventory form data.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to load inventory form data.',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -207,15 +229,22 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   async function refreshProductsAndLocations() {
     if (!tenantSlug) return;
 
-    const [productsResponse, locationsResponse, categoriesResult] = await Promise.all([
+    const [
+      productsResponse,
+      locationsResponse,
+      categoriesResult,
+      suppliersResult,
+    ] = await Promise.all([
       getPharmaProducts(token, tenantSlug),
       getPharmaInventoryLocations(token, tenantSlug),
       getPharmaProductCategories(token, tenantSlug),
+      getPharmaSuppliers(token, tenantSlug),
     ]);
 
     setProducts(productsResponse);
     setLocations(locationsResponse);
     setCategoriesResponse(categoriesResult);
+    setSuppliers(suppliersResult);
   }
 
   async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
@@ -474,7 +503,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
         expiry_date: stockReceiveForm.expiry_date || null,
         unit_cost: toNullableNumber(stockReceiveForm.unit_cost),
         selling_price: toNullableNumber(stockReceiveForm.selling_price),
-        supplier_name: stockReceiveForm.supplier_name || null,
+        pharmaco_supplier_id: Number(stockReceiveForm.pharmaco_supplier_id),
         reference_number: stockReceiveForm.reference_number || null,
         reason: stockReceiveForm.reason || null,
       });
@@ -593,8 +622,8 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
       {error && <div className="form-error">{error}</div>}
       {message && <div className="form-success">{message}</div>}
 
-      {!products || !locations || !categoriesResponse ? (
-        <p className="muted">Load action data first to populate product categories, product list, branches, and stock locations.</p>
+      {!products || !locations || !categoriesResponse || !suppliers ? (
+        <p className="muted">Load action data first to populate product categories, product list, branches, stock locations, and suppliers.</p>
       ) : (
         <>
           <div className="inventory-task-switcher" role="tablist" aria-label="Inventory action">
@@ -1123,11 +1152,51 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
 
             <label>
               Supplier
-              <input
-                value={stockReceiveForm.supplier_name}
-                onChange={(event) => setStockReceiveForm({ ...stockReceiveForm, supplier_name: event.target.value })}
-                placeholder="Supplier name"
-              />
+              <select
+                value={
+                  stockReceiveForm.pharmaco_supplier_id
+                }
+                onChange={(event) =>
+                  setStockReceiveForm({
+                    ...stockReceiveForm,
+                    pharmaco_supplier_id:
+                      event.target.value,
+                  })
+                }
+                required
+                disabled={
+                  activeSuppliers.length === 0
+                }
+              >
+                <option value="">
+                  Select registered supplier
+                </option>
+
+                {activeSuppliers.map(
+                  (supplier) => (
+                    <option
+                      key={supplier.id}
+                      value={supplier.id}
+                    >
+                      {supplier.name}
+                      {' '}
+                      ({supplier.supplier_code})
+                    </option>
+                  ),
+                )}
+              </select>
+
+              <span className="form-hint">
+                Only active suppliers maintained
+                in Supplier List are available.
+              </span>
+
+              {activeSuppliers.length === 0 && (
+                <span className="form-error">
+                  No active supplier is available
+                  in Supplier List.
+                </span>
+              )}
             </label>
 
             <label>
@@ -1148,8 +1217,26 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               />
             </label>
 
-            <button type="submit" disabled={isReceivingStock}>
-              {isReceivingStock ? 'Receiving…' : 'Receive stock'}
+            {isPreviewRuntime && (
+              <p className="form-hint">
+                Preview mode: stock submission
+                is disabled.
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={
+                isReceivingStock
+                || isPreviewRuntime
+                || activeSuppliers.length === 0
+                || !stockReceiveForm
+                  .pharmaco_supplier_id
+              }
+            >
+              {isReceivingStock
+                ? 'Receiving…'
+                : 'Receive stock'}
             </button>
           </form>
           )}

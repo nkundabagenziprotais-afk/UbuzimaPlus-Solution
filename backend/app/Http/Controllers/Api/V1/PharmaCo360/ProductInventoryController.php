@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\PharmaCo360;
 use App\Http\Controllers\Controller;
 use App\Models\BulkOperationRun;
 use App\Models\PharmacoPurchaseOrderItem;
+use App\Models\PharmacoSupplier;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\StockBatch;
@@ -1854,6 +1855,7 @@ class ProductInventoryController extends Controller
                 Rule::exists('stock_locations', 'id')->where(fn ($query) => $query->where('tenant_id', $tenant->id)),
             ],
             'pharmaco_purchase_order_item_id' => ['nullable', 'integer'],
+            'pharmaco_supplier_id' => ['nullable', 'integer'],
             'batch_number' => ['required', 'string', 'max:120'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'expiry_date' => ['nullable', 'date'],
@@ -1912,6 +1914,59 @@ class ProductInventoryController extends Controller
 
         $receiveSource = $validated['receive_source']
             ?? (! empty($validated['reference_number'] ?? null) ? 'purchase-code' : 'manual');
+
+
+        /*
+         * Supplier List is the source of truth for
+         * manual inventory receipts.
+         */
+        if (
+            empty(
+                $validated[
+                    'pharmaco_purchase_order_item_id'
+                ]
+            )
+        ) {
+            $selectedSupplier =
+                PharmacoSupplier::query()
+                    ->where(
+                        'tenant_id',
+                        $tenant->id
+                    )
+                    ->where('status', 'active')
+                    ->find(
+                        (int) (
+                            $validated[
+                                'pharmaco_supplier_id'
+                            ]
+                            ?? 0
+                        )
+                    );
+
+            if (! $selectedSupplier) {
+                throw ValidationException::withMessages([
+                    'pharmaco_supplier_id' => [
+                        'Select an active supplier from Supplier List before receiving stock.',
+                    ],
+                ]);
+            }
+
+            /*
+             * Retain the registered supplier name as
+             * the receipt and batch snapshot.
+             */
+            $validated['supplier_name'] =
+                $selectedSupplier->name;
+        } else {
+            /*
+             * Purchase Order supplier remains
+             * authoritative for PO-linked receipt.
+             */
+            unset(
+                $validated['pharmaco_supplier_id'],
+                $validated['supplier_name']
+            );
+        }
 
         $product = Product::query()
             ->where('tenant_id', $tenant->id)

@@ -1271,6 +1271,7 @@ export type ReceivePharmaStockPayload = {
   product_id: number;
   stock_location_id: number;
   pharmaco_purchase_order_item_id?: number | null;
+  pharmaco_supplier_id?: number | null;
   batch_number: string;
   quantity: number;
   expiry_date?: string | null;

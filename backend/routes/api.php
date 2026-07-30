@@ -785,7 +785,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
     Route::get('/suppliers', [ProcurementController::class, 'suppliers'])
         ->middleware([
-            'permission:pharmaco.procurement.view',
+            'App\Http\Middleware\EnsureAnyPermission:pharmaco.procurement.view,pharmaco.product_inventory.receive',
             'tenant.module:pharmaco.suppliers',
         ]);
 
