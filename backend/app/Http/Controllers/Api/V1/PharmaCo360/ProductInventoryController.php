@@ -518,8 +518,13 @@ class ProductInventoryController extends Controller
             ->orderBy('expiry_date')
             ->orderBy('id');
 
-        $totalBatches = (clone $batches)->count();
-        $perPage = min(max((int) $request->query('per_page', 0), 0), 5000);
+        $perPage = min(
+            max(
+                (int) $request->query('per_page', 0),
+                0
+            ),
+            5000
+        );
 
         $offset = min(
             max(
@@ -529,31 +534,16 @@ class ProductInventoryController extends Controller
             1000000
         );
 
-
-        if ($offset > 0) {
-            $batches->offset($offset);
-        }
-
-        if ($perPage > 0) {
-            $batches->limit($perPage);
-        }
-
-        $batches = $batches
-            ->get()
-            ->map(fn (StockBatch $batch) => $this->serializeBatch($batch))
-            ->values();
-
         /*
-         * AQUILA_POS_SAFE_RUNTIME_BATCH_COMBINATION_V1
+         * AQUILA_POS_COMBINE_BEFORE_PAGINATION_V2
          *
-         * The approved Admin runtime requests this exact shape for
-         * the POS stock refresh. Other inventory and near-expiry
-         * responses remain batch-specific.
+         * POS must calculate availability from every eligible batch
+         * before applying the response limit. Otherwise a later FEFO
+         * batch can fall outside the first page and the cart receives
+         * only one batch's available quantity.
          */
         $combineForSafePosRuntime =
             $request->boolean('sellable_only')
-            && (int) $request->query('per_page', 0) === 1000
-            && (int) $request->query('offset', 0) === 0
             && ! $request->filled('search')
             && ! $request->filled('product_id')
             && ! $request->filled('status')
@@ -564,18 +554,51 @@ class ProductInventoryController extends Controller
             );
 
         if ($combineForSafePosRuntime) {
-            $batches = collect(
+            $combinedBatches = collect(
                 app(PosSellableBatchCombiner::class)
-                    ->combine($batches->all())
+                    ->combine(
+                        $batches
+                            ->get()
+                            ->map(
+                                fn (StockBatch $batch) =>
+                                    $this->serializeBatch($batch)
+                            )
+                            ->values()
+                            ->all()
+                    )
             );
 
-            /*
-             * The response is now one FEFO representative per
-             * product and branch. Database batches remain unchanged,
-             * while checkout allocates them transactionally.
-             */
-            $totalBatches = $batches->count();
-            $offset = 0;
+            $totalBatches = $combinedBatches->count();
+
+            if ($offset > 0) {
+                $combinedBatches =
+                    $combinedBatches->slice($offset);
+            }
+
+            if ($perPage > 0) {
+                $combinedBatches =
+                    $combinedBatches->take($perPage);
+            }
+
+            $batches = $combinedBatches->values();
+        } else {
+            $totalBatches = (clone $batches)->count();
+
+            if ($offset > 0) {
+                $batches->offset($offset);
+            }
+
+            if ($perPage > 0) {
+                $batches->limit($perPage);
+            }
+
+            $batches = $batches
+                ->get()
+                ->map(
+                    fn (StockBatch $batch) =>
+                        $this->serializeBatch($batch)
+                )
+                ->values();
         }
 
         return response()->json([
