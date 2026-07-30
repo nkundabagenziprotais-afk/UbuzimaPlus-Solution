@@ -1253,7 +1253,8 @@ class SalesDispensingController extends Controller
         Request $request,
         AuditLogService $auditLogService,
         ScopeResolver $scopeResolver,
-        \App\Services\PharmaCo360\AtomicPosCheckoutService $checkoutService
+        \App\Services\PharmaCo360\AtomicPosCheckoutService $checkoutService,
+        \App\Services\PharmaCo360\PosMultiBatchCheckoutAllocator $multiBatchAllocator
     ): JsonResponse {
         $tenant = $request->attributes->get('tenant');
 
@@ -1300,6 +1301,9 @@ class SalesDispensingController extends Controller
         ]);
 
         $idempotencyKey = $validated['idempotency_key'];
+
+        /* AQUILA_POS_MULTIBATCH_FEFO_V2 */
+        $allocatedCheckoutItems = [];
 
         $result = $checkoutService->execute(
             $idempotencyKey,
@@ -1355,8 +1359,22 @@ class SalesDispensingController extends Controller
                 $validated,
                 $idempotencyKey,
                 $auditLogService,
-                $scopeResolver
+                $scopeResolver,
+                $multiBatchAllocator,
+                &$allocatedCheckoutItems
             ): PharmacoSale {
+                /*
+                 * FEFO allocation occurs inside AtomicPosCheckoutService's
+                 * outer database transaction. Eligible batch rows remain
+                 * locked until confirmation and payment complete.
+                 */
+                $allocatedCheckoutItems =
+                    $multiBatchAllocator->expandAndLock(
+                        tenantId: (int) $tenant->id,
+                        branchId: (int) $validated['branch_id'],
+                        items: $validated['items']
+                    );
+
                 $createPayload = [
                     'branch_id' => $validated['branch_id'],
                     'pharmaco_customer_id' =>
@@ -1380,7 +1398,7 @@ class SalesDispensingController extends Controller
                             'tax_amount' =>
                                 $item['tax_amount'] ?? 0,
                         ],
-                        $validated['items']
+                        $allocatedCheckoutItems
                     ),
                 ];
 
@@ -1415,7 +1433,8 @@ class SalesDispensingController extends Controller
                 $request,
                 $validated,
                 $auditLogService,
-                $scopeResolver
+                $scopeResolver,
+                &$allocatedCheckoutItems
             ): PharmacoSale {
                 $sale->load([
                     'items' => fn ($query) =>
@@ -1423,7 +1442,7 @@ class SalesDispensingController extends Controller
                 ]);
 
                 $submittedItems = array_values(
-                    $validated['items']
+                    $allocatedCheckoutItems
                 );
 
                 if ($sale->items->count() !== count($submittedItems)) {
