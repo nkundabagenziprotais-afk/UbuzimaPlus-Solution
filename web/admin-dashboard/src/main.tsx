@@ -1191,3 +1191,47 @@ function installBusinessOverviewForceRefreshButton(): void {
 }
 
 installBusinessOverviewForceRefreshButton();
+
+/*
+ * Load the preserved UI foundation after the React shell begins mounting.
+ * Finance and Accounting remain owned by the current React application.
+ */
+const loadSafeFoundation = (): void => {
+  document.documentElement.setAttribute(
+    'data-ubuzima-safe-foundation-loader',
+    'scheduled',
+  );
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      void import('./launch/safeFoundationBootstrap')
+        .then(() => {
+          document.documentElement.setAttribute(
+            'data-ubuzima-safe-foundation-loader',
+            'loaded',
+          );
+        })
+        .catch((error: unknown) => {
+          console.error(
+            'Safe foundation bootstrap failed.',
+            error,
+          );
+
+          document.documentElement.setAttribute(
+            'data-ubuzima-safe-foundation-loader',
+            'failed',
+          );
+        });
+    });
+  });
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener(
+    'DOMContentLoaded',
+    loadSafeFoundation,
+    { once: true },
+  );
+} else {
+  loadSafeFoundation();
+}
