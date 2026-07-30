@@ -85,7 +85,15 @@ class SalesDispensingController extends Controller
         $tenant = $request->attributes->get('tenant');
 
         $sales = PharmacoSale::query()
-            ->with(['branch', 'customer', 'prescription', 'payments', 'items.product', 'items.stockBatch'])
+            ->with([
+                'branch',
+                'customer',
+                'prescription',
+                'payments',
+                'items.product.category',
+                'items.stockBatch',
+                'items.stockLocation',
+            ])
             ->withCount(['items', 'payments'])
             ->where('tenant_id', $tenant->id)
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
@@ -2300,7 +2308,17 @@ class SalesDispensingController extends Controller
                 ->values();
         }
 
-        if ($includeDetails) {
+        /*
+         * AQUILA_POS_SALES_LIST_ITEMS_V5
+         *
+         * Recent Sales and Sales Register require product lines
+         * without one database query per transaction.
+         */
+        if (
+            $includeDetails
+            || $sale->relationLoaded('items')
+            || $sale->relationLoaded('payments')
+        ) {
             $payload['items'] = $sale->items
                 ->map(fn (PharmacoSaleItem $item) => $this->serializeSaleItem($item))
                 ->values();
