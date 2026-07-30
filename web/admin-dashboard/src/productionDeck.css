@@ -1,0 +1,202 @@
+/*
+ * Production deck shell.
+ *
+ * The permission-filtered sidebar remains in the DOM as a navigation source,
+ * but it is not part of the visible interface. The React deck below is the
+ * primary navigation surface on desktop, tablet and mobile.
+ */
+
+.dashboard-shell--deck-primary {
+  display: block !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 100vh !important;
+  padding-bottom: calc(7.8rem + env(safe-area-inset-bottom)) !important;
+}
+
+.dashboard-shell--deck-primary > .sidebar,
+.dashboard-shell--deck-primary > .sidebar--dock-navigation-source {
+  display: none !important;
+}
+
+.dashboard-shell--deck-primary > .dashboard-main {
+  grid-column: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.ubuzima-production-deck {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 25000;
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  padding: 0.55rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 1.45rem;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.94),
+      rgba(241, 245, 249, 0.9)
+    );
+  box-shadow:
+    0 1.25rem 3.5rem rgba(15, 23, 42, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(22px) saturate(145%);
+  transform: translateX(-50%);
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.ubuzima-production-deck::-webkit-scrollbar {
+  display: none;
+}
+
+.ubuzima-production-deck__button {
+  position: relative;
+  flex: 0 0 4.75rem;
+  display: grid;
+  grid-template-rows: 2.25rem auto;
+  justify-items: center;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 4.75rem;
+  min-height: 4.45rem;
+  padding: 0.45rem 0.35rem 0.35rem;
+  border: 0;
+  border-radius: 1.05rem;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+
+.ubuzima-production-deck__button:hover,
+.ubuzima-production-deck__button:focus-visible {
+  background: rgba(255, 255, 255, 0.88);
+  color: #0f513f;
+  outline: none;
+  transform: translateY(-0.2rem);
+  box-shadow: 0 0.65rem 1.4rem rgba(15, 23, 42, 0.12);
+}
+
+.ubuzima-production-deck__button.active {
+  background: #ffffff;
+  color: #0f513f;
+  box-shadow:
+    0 0.6rem 1.3rem rgba(15, 23, 42, 0.14),
+    inset 0 0 0 1px rgba(15, 81, 63, 0.12);
+}
+
+.ubuzima-production-deck__button.active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.2rem;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: #0f766e;
+  transform: translateX(-50%);
+}
+
+.ubuzima-production-deck__icon-shell {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.8rem;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(226, 232, 240, 0.9)
+    );
+  box-shadow:
+    0 0.35rem 0.8rem rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.ubuzima-production-deck__icon-shell img {
+  display: block;
+  width: 1.55rem;
+  height: 1.55rem;
+  object-fit: contain;
+}
+
+.ubuzima-production-deck__label {
+  width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#ubuzimaSourceDock,
+#ubuzimaSourceDockTip,
+.ubuzima-source-dock,
+.ubuzima-mac-dock,
+[class*="ubuzima-workspace-dock"] {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .dashboard-shell--deck-primary {
+    padding-bottom: calc(6.7rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .dashboard-shell--deck-primary > .dashboard-main {
+    padding-right: max(0.85rem, env(safe-area-inset-right)) !important;
+    padding-left: max(0.85rem, env(safe-area-inset-left)) !important;
+  }
+
+  .ubuzima-production-deck {
+    right: 0.55rem;
+    bottom: calc(0.5rem + env(safe-area-inset-bottom));
+    left: 0.55rem;
+    width: auto;
+    max-width: none;
+    justify-content: flex-start;
+    padding: 0.4rem;
+    border-radius: 1.15rem;
+    transform: none;
+  }
+
+  .ubuzima-production-deck__button {
+    flex-basis: 4.15rem;
+    min-width: 4.15rem;
+    min-height: 4rem;
+  }
+
+  .ubuzima-production-deck__label {
+    font-size: 0.58rem;
+  }
+}
+
+@media print {
+  .ubuzima-production-deck {
+    display: none !important;
+  }
+
+  .dashboard-shell--deck-primary {
+    padding-bottom: 0 !important;
+  }
+}

@@ -102,6 +102,7 @@ import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
 import './styles.css';
+import './productionDeck.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
 import { BusinessOverviewReviewPage } from './components/business-overview/BusinessOverviewReviewPage';
 import {
@@ -401,6 +402,42 @@ type MenuItem = {
 };
 
 type MenuGroup = { key: MenuGroupKey; label: string; icon: string; items: MenuItem[] };
+const deckIconFileBySection: Partial<
+  Record<AdminSectionKey, string>
+> = {
+  overview: 'dashboard.svg',
+  erp: 'home.svg',
+  'solution-portfolio': 'module.svg',
+  'ai-center': 'ai.svg',
+  'admin-panel': 'admin.svg',
+  'admin-management': 'users.svg',
+  inventory: 'inventory.svg',
+  'general-stock-items': 'general-stock.svg',
+  insurance: 'insurance.svg',
+  pos: 'pos.svg',
+  suppliers: 'suppliers.svg',
+  finance: 'finance.svg',
+  reports: 'reports.svg',
+  'tenant-setup': 'tenant.svg',
+  security: 'admin.svg',
+  'corporate-email': 'email.svg',
+  'pharmacist-chat': 'email.svg',
+  notifications: 'module.svg',
+  'market-management': 'module.svg',
+  localization: 'module.svg',
+  'nearby-providers': 'pharmacy.svg',
+  'vitapharma-website': 'pharmacy.svg',
+  settings: 'settings.svg',
+};
+
+function deckIconForSection(
+  section: AdminSectionKey,
+): string {
+  return `./dock-icons/${
+    deckIconFileBySection[section]
+    ?? 'module.svg'
+  }`;
+}
 
 
 type DashboardCardKey =
@@ -9486,7 +9523,7 @@ return (
                 <p className="eyebrow">Home display controls</p>
                 <h2>Choose what stays visible on this Home page.</h2>
                 <p className="muted">
-                  Keep the Home page focused. Hide sections that are not needed today and continue working from the left menu.
+                  Keep the Home page focused. Hide sections that are not needed today and continue working from the workspace deck.
                 </p>
               </div>
               <div className="home-widget-toggle-grid">
@@ -9547,7 +9584,7 @@ return (
                   <div className="framework-heading">
                     <div>
                       <p className="eyebrow">System experience blueprint</p>
-                      <h2>Choose a module from the left menu and work in that section.</h2>
+                      <h2>Choose a module from the workspace deck and work in that section.</h2>
                       <p className="muted">
                         The dashboard is no longer one long page. AI, Inventory, POS, Suppliers, Finance,
                         Ad-hoc Report, Setup, Security, and Settings each have their own focused workspace.
@@ -9557,7 +9594,7 @@ return (
                     <div className="framework-scope-card design-system-card">
                       <span>Design infrastructure</span>
                       <strong>Section based</strong>
-                      <small>Independent sidebar, sticky header, persisted active section</small>
+                      <small>Persistent deck, sticky header, persisted active section</small>
                     </div>
                   </div>
 
@@ -9605,8 +9642,8 @@ return (
   }
 
   return (
-    <main className="dashboard-shell" style={leftMenuStyle}>
-      <aside className="sidebar">
+    <main className="dashboard-shell dashboard-shell--deck-primary" style={leftMenuStyle}>
+      <aside className="sidebar sidebar--dock-navigation-source" hidden aria-hidden="true">
         <div className="sidebar-inner">
           <div className="sidebar-brand">
             <img className="sidebar-logo" src={brandLogoSrc} alt="Ubuzima+" />
@@ -9719,6 +9756,96 @@ return (
           </button>
         </div>
       </aside>
+
+      <nav
+        className="ubuzima-production-deck"
+        aria-label="Primary workspace modules"
+      >
+        {isAdminProfile && (
+          <button
+            type="button"
+            className={`ubuzima-production-deck__button ${
+              activeSection === 'overview'
+                ? 'active'
+                : ''
+            }`}
+            onClick={() => navigateToSection('overview')}
+            aria-current={
+              activeSection === 'overview'
+                ? 'page'
+                : undefined
+            }
+            title="Dashboard"
+          >
+            <span
+              className="ubuzima-production-deck__icon-shell"
+              aria-hidden="true"
+            >
+              <img
+                src="./dock-icons/dashboard.svg"
+                alt=""
+              />
+            </span>
+            <span className="ubuzima-production-deck__label">
+              Dashboard
+            </span>
+          </button>
+        )}
+
+        {[...principalMenuItems]
+          .sort((left, right) => {
+            if (left.item.key === right.item.key) {
+              return 0;
+            }
+
+            if (left.item.key === 'pos') {
+              return -1;
+            }
+
+            if (right.item.key === 'pos') {
+              return 1;
+            }
+
+            return 0;
+          })
+          .map(({ group, item }) => {
+            const itemActive = isActiveMenuItem(item);
+
+            return (
+              <button
+                key={`deck-${group.key}-${item.key}`}
+                type="button"
+                className={`ubuzima-production-deck__button ${
+                  itemActive
+                    ? 'active'
+                    : ''
+                }`}
+                onClick={() =>
+                  navigateToSection(item.key)
+                }
+                aria-current={
+                  itemActive
+                    ? 'page'
+                    : undefined
+                }
+                title={item.label}
+              >
+                <span
+                  className="ubuzima-production-deck__icon-shell"
+                  aria-hidden="true"
+                >
+                  <img
+                    src={deckIconForSection(item.key)}
+                    alt=""
+                  />
+                </span>
+                <span className="ubuzima-production-deck__label">
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+      </nav>
 
       <section className="dashboard-main">
         <header className="dashboard-header dashboard-header--fixed dashboard-header--refined">
