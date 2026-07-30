@@ -1280,6 +1280,18 @@ class SalesDispensingController extends Controller
             'items.*.product_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
             'items.*.unit_price' => ['required', 'numeric', 'gte:0'],
+            'items.*.original_unit_price' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.used_unit_price' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.unit_price_difference' => ['nullable', 'numeric'],
+            'items.*.price_override_applied' => ['sometimes', 'boolean'],
+            'items.*.original_selling_unit_price' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.used_selling_unit_price' => ['nullable', 'numeric', 'gte:0'],
+            'items.*.selling_unit_price_difference' => ['nullable', 'numeric'],
+            'items.*.pricing_policy' => [
+                'nullable',
+                'string',
+                'in:highest_affected_batch_price',
+            ],
             'items.*.discount_amount' => ['nullable', 'numeric', 'gte:0'],
             'items.*.tax_amount' => ['nullable', 'numeric', 'gte:0'],
             'items.*.stock_batch_id' => ['required', 'integer'],
@@ -1520,6 +1532,25 @@ class SalesDispensingController extends Controller
                         'used_selling_unit_price' => $usedSellingUnitPrice,
                         'selling_unit_price_difference' =>
                             $sellingUnitPriceDifference,
+                        'pricing_policy' =>
+                            $submittedItem['pricing_policy']
+                            ?? 'highest_affected_batch_price',
+                        'pricing_affected_batch_ids' =>
+                            $submittedItem[
+                                'pricing_affected_batch_ids'
+                            ] ?? [],
+                        'pricing_affected_batch_prices' =>
+                            $submittedItem[
+                                'pricing_affected_batch_prices'
+                            ] ?? [],
+                        'authoritative_selling_unit_price' =>
+                            $submittedItem[
+                                'authoritative_selling_unit_price'
+                            ] ?? $usedSellingUnitPrice,
+                        'authoritative_unit_price' =>
+                            $submittedItem[
+                                'authoritative_unit_price'
+                            ] ?? $usedUnitPrice,
                     ];
 
                     $saleItem->save();

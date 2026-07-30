@@ -5,9 +5,12 @@ namespace App\Services\PharmaCo360;
 /**
  * Combines serialized sellable stock batches for the existing POS UI.
  *
+ * AQUILA_POS_HIGHEST_AFFECTED_PRICE_TIERS_V1
+ *
  * The earliest FEFO batch remains the representative batch ID sent
- * by the client. Checkout subsequently performs the authoritative,
- * transaction-locked allocation across the real underlying batches.
+ * by the client. Quantities remain combined by product and branch,
+ * while every underlying FEFO batch retains its own selling price
+ * inside POS pricing metadata.
  */
 final class PosSellableBatchCombiner
 {
@@ -54,34 +57,52 @@ final class PosSellableBatchCombiner
             $key = $productId . ':' . $branchId;
 
             if (! isset($combinedByProductAndBranch[$key])) {
-                $metadata = is_array($batch['metadata'] ?? null)
+                $metadata = is_array(
+                    $batch['metadata'] ?? null
+                )
                     ? $batch['metadata']
                     : [];
 
-                $metadata['pos_combined_batch_ids'] = [$batchId];
+                $metadata['pos_combined_batch_ids'] = [
+                    $batchId,
+                ];
+
                 $metadata['pos_combined_batch_count'] = 1;
+
                 $metadata['pos_combined_by'] =
                     'product_and_branch_fefo';
 
-                $batch['quantity_on_hand'] = $this->number(
-                    $batch['quantity_on_hand'] ?? 0
-                );
+                $metadata['pos_pricing_policy'] =
+                    'highest_affected_batch_price';
 
-                $batch['quantity_reserved'] = $this->number(
-                    $batch['quantity_reserved'] ?? 0
-                );
+                $metadata['pos_fefo_price_tiers'] = [
+                    $this->priceTier($batch),
+                ];
 
-                $batch['available_quantity'] = $this->number(
-                    $batch['available_quantity'] ?? 0
-                );
+                $batch['quantity_on_hand'] =
+                    $this->number(
+                        $batch['quantity_on_hand'] ?? 0
+                    );
 
-                $batch['amount'] = $this->number(
-                    $batch['amount'] ?? 0
-                );
+                $batch['quantity_reserved'] =
+                    $this->number(
+                        $batch['quantity_reserved'] ?? 0
+                    );
+
+                $batch['available_quantity'] =
+                    $this->number(
+                        $batch['available_quantity'] ?? 0
+                    );
+
+                $batch['amount'] =
+                    $this->number(
+                        $batch['amount'] ?? 0
+                    );
 
                 $batch['metadata'] = $metadata;
 
-                $combinedByProductAndBranch[$key] = $batch;
+                $combinedByProductAndBranch[$key] =
+                    $batch;
 
                 continue;
             }
@@ -98,18 +119,28 @@ final class PosSellableBatchCombiner
                 ] as $field
             ) {
                 $combined[$field] =
-                    $this->number($combined[$field] ?? 0)
-                    + $this->number($batch[$field] ?? 0);
+                    $this->number(
+                        $combined[$field] ?? 0
+                    )
+                    + $this->number(
+                        $batch[$field] ?? 0
+                    );
             }
 
-            $metadata = is_array($combined['metadata'] ?? null)
+            $metadata = is_array(
+                $combined['metadata'] ?? null
+            )
                 ? $combined['metadata']
                 : [];
 
             $batchIds = is_array(
-                $metadata['pos_combined_batch_ids'] ?? null
+                $metadata[
+                    'pos_combined_batch_ids'
+                ] ?? null
             )
-                ? $metadata['pos_combined_batch_ids']
+                ? $metadata[
+                    'pos_combined_batch_ids'
+                ]
                 : [];
 
             if (! in_array($batchId, $batchIds, true)) {
@@ -125,12 +156,64 @@ final class PosSellableBatchCombiner
             $metadata['pos_combined_by'] =
                 'product_and_branch_fefo';
 
+            $metadata['pos_pricing_policy'] =
+                'highest_affected_batch_price';
+
+            $priceTiers = is_array(
+                $metadata[
+                    'pos_fefo_price_tiers'
+                ] ?? null
+            )
+                ? $metadata[
+                    'pos_fefo_price_tiers'
+                ]
+                : [];
+
+            $priceTiers[] =
+                $this->priceTier($batch);
+
+            $metadata['pos_fefo_price_tiers'] =
+                array_values($priceTiers);
+
             $combined['metadata'] = $metadata;
 
-            $combinedByProductAndBranch[$key] = $combined;
+            $combinedByProductAndBranch[$key] =
+                $combined;
         }
 
-        return array_values($combinedByProductAndBranch);
+        return array_values(
+            $combinedByProductAndBranch
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $batch
+     * @return array<string, mixed>
+     */
+    private function priceTier(array $batch): array
+    {
+        return [
+            'batch_id' =>
+                (int) ($batch['id'] ?? 0),
+
+            'available_quantity' =>
+                $this->number(
+                    $batch[
+                        'available_quantity'
+                    ] ?? 0
+                ),
+
+            'selling_price' =>
+                $this->number(
+                    $batch['selling_price'] ?? 0
+                ),
+
+            'expiry_date' =>
+                $batch['expiry_date'] ?? null,
+
+            'received_at' =>
+                $batch['received_at'] ?? null,
+        ];
     }
 
     /**
@@ -177,7 +260,9 @@ final class PosSellableBatchCombiner
 
     private function dateKey(mixed $value): string
     {
-        $date = trim((string) ($value ?? ''));
+        $date = trim(
+            (string) ($value ?? '')
+        );
 
         return $date !== ''
             ? $date
