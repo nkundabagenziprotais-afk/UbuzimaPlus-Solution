@@ -21,6 +21,16 @@ ARCHIVE="$ARTIFACT_DIR/admin-runtime.tar.gz"
 
 LIVE_ADMIN="$PUBLIC_ROOT/admin"
 
+[[ "$PUBLIC_ROOT" = /* ]] || {
+    echo "reason=public_root_must_be_absolute:$PUBLIC_ROOT" >&2
+    exit 1
+}
+
+[[ -d "$PUBLIC_ROOT" ]] || {
+    echo "reason=public_root_missing:$PUBLIC_ROOT" >&2
+    exit 1
+}
+
 ID="$(date -u '+%Y%m%dT%H%M%SZ')"
 
 STAGE="$PUBLIC_ROOT/.approved-admin-stage-$ID"
