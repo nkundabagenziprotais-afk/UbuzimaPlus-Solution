@@ -15,6 +15,7 @@ use App\Services\Access\ScopeResolver;
 use App\Services\Auth\UserAccessProfileService;
 use App\Services\Audit\AuditLogService;
 use App\Services\PharmaCo360\ProductSellingUnitSuggestionService;
+use App\Services\PharmaCo360\PosSellableBatchCombiner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -541,6 +542,41 @@ class ProductInventoryController extends Controller
             ->get()
             ->map(fn (StockBatch $batch) => $this->serializeBatch($batch))
             ->values();
+
+        /*
+         * AQUILA_POS_SAFE_RUNTIME_BATCH_COMBINATION_V1
+         *
+         * The approved Admin runtime requests this exact shape for
+         * the POS stock refresh. Other inventory and near-expiry
+         * responses remain batch-specific.
+         */
+        $combineForSafePosRuntime =
+            $request->boolean('sellable_only')
+            && (int) $request->query('per_page', 0) === 1000
+            && (int) $request->query('offset', 0) === 0
+            && ! $request->filled('search')
+            && ! $request->filled('product_id')
+            && ! $request->filled('status')
+            && ! $request->filled('expiring_within_days')
+            && Str::endsWith(
+                $request->path(),
+                'pharmaco/inventory/batches'
+            );
+
+        if ($combineForSafePosRuntime) {
+            $batches = collect(
+                app(PosSellableBatchCombiner::class)
+                    ->combine($batches->all())
+            );
+
+            /*
+             * The response is now one FEFO representative per
+             * product and branch. Database batches remain unchanged,
+             * while checkout allocates them transactionally.
+             */
+            $totalBatches = $batches->count();
+            $offset = 0;
+        }
 
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
