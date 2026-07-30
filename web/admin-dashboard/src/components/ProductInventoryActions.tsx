@@ -131,6 +131,52 @@ function toNullableNumber(value: string): number | null {
   return Number(value);
 }
 
+function normalizeCurrencyInput(value: string): string {
+  const candidate = value
+    .replace(/,/g, '.')
+    .replace(/[^0-9.]/g, '');
+
+  const [wholePart = '', ...fractionParts] =
+    candidate.split('.');
+
+  const fractionPart = fractionParts
+    .join('')
+    .slice(0, 2);
+
+  if (!candidate.includes('.')) {
+    return wholePart;
+  }
+
+  return `${wholePart || '0'}.${fractionPart}`;
+}
+
+function toNullableCurrency(
+  value: string,
+  fieldLabel: string,
+): number | null {
+  const normalized = value
+    .trim()
+    .replace(/,/g, '.');
+
+  if (!normalized) return null;
+
+  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized)) {
+    throw new Error(
+      `${fieldLabel} must be a valid amount with up to two decimal places.`,
+    );
+  }
+
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(
+      `${fieldLabel} must be zero or greater.`,
+    );
+  }
+
+  return parsed;
+}
+
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-RW', {
     maximumFractionDigits: 2,
@@ -142,6 +188,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
   const [categoriesResponse, setCategoriesResponse] = useState<PharmaProductCategoriesResponse | null>(null);
   const [suppliers, setSuppliers] = useState<PharmaSuppliersResponse | null>(null);
+  const [supplierSearch, setSupplierSearch] = useState('');
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
   const [stockReceiveForm, setStockReceiveForm] = useState<StockReceiveFormState>(emptyStockReceiveForm);
   const [categoryForm, setCategoryForm] = useState<CategorySetupFormState>(emptyCategorySetupForm);
@@ -179,8 +226,38 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     typeof window !== 'undefined'
     && window.location.pathname.startsWith('/admin-previews/');
 
-  const activeSuppliers = (suppliers?.suppliers ?? []).filter(
-    (supplier) => supplier.status === 'active',
+  const activeSuppliers = [
+    ...(suppliers?.suppliers ?? []),
+  ]
+    .filter(
+      (supplier) => supplier.status === 'active',
+    )
+    .sort((first, second) =>
+      first.name.localeCompare(
+        second.name,
+        undefined,
+        { sensitivity: 'base' },
+      ),
+    );
+
+  const normalizedSupplierSearch =
+    supplierSearch.trim().toLocaleLowerCase();
+
+  const visibleSuppliers = activeSuppliers.filter(
+    (supplier) => {
+      if (!normalizedSupplierSearch) return true;
+
+      return [
+        supplier.name,
+        supplier.supplier_code,
+        supplier.legal_name ?? '',
+        supplier.phone ?? '',
+      ].some((value) =>
+        value
+          .toLocaleLowerCase()
+          .includes(normalizedSupplierSearch),
+      );
+    },
   );
 
   const categories = categoriesResponse?.categories ?? collectCategories(products?.products ?? []);
@@ -501,7 +578,10 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
         batch_number: stockReceiveForm.batch_number,
         quantity: Number(stockReceiveForm.quantity),
         expiry_date: stockReceiveForm.expiry_date || null,
-        unit_cost: toNullableNumber(stockReceiveForm.unit_cost),
+        unit_cost: toNullableCurrency(
+          stockReceiveForm.unit_cost,
+          'Unit cost',
+        ),
         selling_price: toNullableNumber(stockReceiveForm.selling_price),
         pharmaco_supplier_id: Number(stockReceiveForm.pharmaco_supplier_id),
         reference_number: stockReceiveForm.reference_number || null,
@@ -1130,12 +1210,30 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               <label>
                 Unit cost
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={stockReceiveForm.unit_cost}
-                  onChange={(event) => setStockReceiveForm({ ...stockReceiveForm, unit_cost: event.target.value })}
+                  onChange={(event) =>
+                    setStockReceiveForm({
+                      ...stockReceiveForm,
+                      unit_cost:
+                        normalizeCurrencyInput(
+                          event.target.value,
+                        ),
+                    })
+                  }
+                  placeholder="e.g. 1250.75"
+                  aria-describedby="unit-cost-hint"
                 />
+
+                <span
+                  className="form-hint"
+                  id="unit-cost-hint"
+                >
+                  Accepts decimals using a dot or
+                  comma, for example 1250.75 or
+                  1250,75.
+                </span>
               </label>
 
               <label>
@@ -1151,10 +1249,29 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
             </div>
 
             <label>
+              Find supplier
+              <input
+                type="search"
+                value={supplierSearch}
+                onChange={(event) =>
+                  setSupplierSearch(
+                    event.target.value,
+                  )
+                }
+                placeholder={
+                  'Search supplier name, code, '
+                  + 'legal name, or phone'
+                }
+                autoComplete="off"
+              />
+            </label>
+
+            <label>
               Supplier
               <select
                 value={
-                  stockReceiveForm.pharmaco_supplier_id
+                  stockReceiveForm
+                    .pharmaco_supplier_id
                 }
                 onChange={(event) =>
                   setStockReceiveForm({
@@ -1164,6 +1281,20 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                   })
                 }
                 required
+                size={Math.min(
+                  8,
+                  Math.max(
+                    4,
+                    visibleSuppliers.length + 1,
+                  ),
+                )}
+                style={{
+                  maxHeight: '16rem',
+                  overflowY: 'auto',
+                }}
+                aria-describedby={
+                  'supplier-list-summary'
+                }
                 disabled={
                   activeSuppliers.length === 0
                 }
@@ -1172,7 +1303,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                   Select registered supplier
                 </option>
 
-                {activeSuppliers.map(
+                {visibleSuppliers.map(
                   (supplier) => (
                     <option
                       key={supplier.id}
@@ -1184,11 +1315,29 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                     </option>
                   ),
                 )}
+
+                {visibleSuppliers.length === 0
+                  && activeSuppliers.length > 0
+                  && (
+                    <option disabled>
+                      No supplier matches the search
+                    </option>
+                  )}
               </select>
 
-              <span className="form-hint">
-                Only active suppliers maintained
-                in Supplier List are available.
+              <span
+                className="form-hint"
+                id="supplier-list-summary"
+              >
+                Loaded {activeSuppliers.length}
+                {' '}active supplier
+                {activeSuppliers.length === 1
+                  ? ''
+                  : 's'}
+                {' '}from Supplier List.
+                Showing {visibleSuppliers.length}.
+                Scroll through the list to select
+                any supplier.
               </span>
 
               {activeSuppliers.length === 0 && (
@@ -1198,7 +1347,6 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                 </span>
               )}
             </label>
-
             <label>
               Reference number
               <input

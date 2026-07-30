@@ -1843,6 +1843,19 @@ class ProductInventoryController extends Controller
     ): JsonResponse {
         $tenant = $request->attributes->get('tenant');
 
+        $submittedUnitCost =
+            $request->input('unit_cost');
+
+        if (is_string($submittedUnitCost)) {
+            $request->merge([
+                'unit_cost' => str_replace(
+                    ',',
+                    '.',
+                    trim($submittedUnitCost)
+                ),
+            ]);
+        }
+
         $validated = $request->validate([
             'product_id' => [
                 'required',
@@ -1860,7 +1873,12 @@ class ProductInventoryController extends Controller
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'expiry_date' => ['nullable', 'date'],
             'received_at' => ['nullable', 'date'],
-            'unit_cost' => ['nullable', 'numeric', 'min:0'],
+            'unit_cost' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'decimal:0,2',
+            ],
             'selling_price' => ['nullable', 'numeric', 'min:0'],
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'reference_number' => ['nullable', 'string', 'max:120'],
