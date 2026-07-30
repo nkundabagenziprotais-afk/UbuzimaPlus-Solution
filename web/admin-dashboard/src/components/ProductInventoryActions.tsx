@@ -5,7 +5,6 @@ import {
   CreatePharmaStockLocationPayload,
   PharmaInventoryLocationsResponse,
   PharmaProductCategoriesResponse,
-  PharmaSuppliersResponse,
   PharmaProduct,
   PharmaProductCategory,
   PharmaProductsResponse,
@@ -18,7 +17,6 @@ import {
   getPharmaInventoryLocations,
   getPharmaProductCategories,
   getPharmaProducts,
-  getPharmaSuppliers,
   receivePharmaStock,
   updatePharmaProduct,
   updatePharmaProductCategory,
@@ -56,7 +54,7 @@ type StockReceiveFormState = {
   expiry_date: string;
   unit_cost: string;
   selling_price: string;
-  pharmaco_supplier_id: string;
+  supplier_name: string;
   reference_number: string;
   reason: string;
 };
@@ -105,7 +103,7 @@ const emptyStockReceiveForm: StockReceiveFormState = {
   expiry_date: '',
   unit_cost: '',
   selling_price: '',
-  pharmaco_supplier_id: '',
+  supplier_name: '',
   reference_number: '',
   reason: '',
 };
@@ -131,52 +129,6 @@ function toNullableNumber(value: string): number | null {
   return Number(value);
 }
 
-function normalizeCurrencyInput(value: string): string {
-  const candidate = value
-    .replace(/,/g, '.')
-    .replace(/[^0-9.]/g, '');
-
-  const [wholePart = '', ...fractionParts] =
-    candidate.split('.');
-
-  const fractionPart = fractionParts
-    .join('')
-    .slice(0, 2);
-
-  if (!candidate.includes('.')) {
-    return wholePart;
-  }
-
-  return `${wholePart || '0'}.${fractionPart}`;
-}
-
-function toNullableCurrency(
-  value: string,
-  fieldLabel: string,
-): number | null {
-  const normalized = value
-    .trim()
-    .replace(/,/g, '.');
-
-  if (!normalized) return null;
-
-  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized)) {
-    throw new Error(
-      `${fieldLabel} must be a valid amount with up to two decimal places.`,
-    );
-  }
-
-  const parsed = Number(normalized);
-
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(
-      `${fieldLabel} must be zero or greater.`,
-    );
-  }
-
-  return parsed;
-}
-
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-RW', {
     maximumFractionDigits: 2,
@@ -187,8 +139,6 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   const [products, setProducts] = useState<PharmaProductsResponse | null>(null);
   const [locations, setLocations] = useState<PharmaInventoryLocationsResponse | null>(null);
   const [categoriesResponse, setCategoriesResponse] = useState<PharmaProductCategoriesResponse | null>(null);
-  const [suppliers, setSuppliers] = useState<PharmaSuppliersResponse | null>(null);
-  const [supplierSearch, setSupplierSearch] = useState('');
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
   const [stockReceiveForm, setStockReceiveForm] = useState<StockReceiveFormState>(emptyStockReceiveForm);
   const [categoryForm, setCategoryForm] = useState<CategorySetupFormState>(emptyCategorySetupForm);
@@ -222,55 +172,18 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     profile.tenant_assignments?.[0]?.tenant?.slug ||
     (profile.scope.is_tenant ? 'vitapharma' : '');
 
-  const isPreviewRuntime =
-    typeof window !== 'undefined'
-    && window.location.pathname.startsWith('/admin-previews/');
-
-  const activeSuppliers = [
-    ...(suppliers?.suppliers ?? []),
-  ]
-    .filter(
-      (supplier) => supplier.status === 'active',
-    )
-    .sort((first, second) =>
-      first.name.localeCompare(
-        second.name,
-        undefined,
-        { sensitivity: 'base' },
-      ),
-    );
-
-  const normalizedSupplierSearch =
-    supplierSearch.trim().toLocaleLowerCase();
-
-  const visibleSuppliers = activeSuppliers.filter(
-    (supplier) => {
-      if (!normalizedSupplierSearch) return true;
-
-      return [
-        supplier.name,
-        supplier.supplier_code,
-        supplier.legal_name ?? '',
-        supplier.phone ?? '',
-      ].some((value) =>
-        value
-          .toLocaleLowerCase()
-          .includes(normalizedSupplierSearch),
-      );
-    },
-  );
-
   const categories = categoriesResponse?.categories ?? collectCategories(products?.products ?? []);
 
   function resetReceivingSupplierState() {
-    setSupplierSearch('');
     setStockReceiveForm((current) => ({
       ...current,
-      pharmaco_supplier_id: '',
+      supplier_name: '',
     }));
   }
 
-  function handleInventoryTaskChange(nextTask: InventoryTask) {
+  function handleInventoryTaskChange(
+    nextTask: InventoryTask,
+  ) {
     setActiveTask(nextTask);
 
     if (nextTask === 'receive') {
@@ -292,28 +205,17 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     setMessage('');
 
     try {
-      const [
-        productsResponse,
-        locationsResponse,
-        categoriesResult,
-        suppliersResult,
-      ] = await Promise.all([
+      const [productsResponse, locationsResponse, categoriesResult] = await Promise.all([
         getPharmaProducts(token, tenantSlug),
         getPharmaInventoryLocations(token, tenantSlug),
         getPharmaProductCategories(token, tenantSlug),
-        getPharmaSuppliers(token, tenantSlug),
       ]);
 
       setProducts(productsResponse);
       setLocations(locationsResponse);
       setCategoriesResponse(categoriesResult);
-      setSuppliers(suppliersResult);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to load inventory form data.',
-      );
+      setError(err instanceof Error ? err.message : 'Unable to load inventory form data.');
     } finally {
       setIsLoading(false);
     }
@@ -322,22 +224,15 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   async function refreshProductsAndLocations() {
     if (!tenantSlug) return;
 
-    const [
-      productsResponse,
-      locationsResponse,
-      categoriesResult,
-      suppliersResult,
-    ] = await Promise.all([
+    const [productsResponse, locationsResponse, categoriesResult] = await Promise.all([
       getPharmaProducts(token, tenantSlug),
       getPharmaInventoryLocations(token, tenantSlug),
       getPharmaProductCategories(token, tenantSlug),
-      getPharmaSuppliers(token, tenantSlug),
     ]);
 
     setProducts(productsResponse);
     setLocations(locationsResponse);
     setCategoriesResponse(categoriesResult);
-    setSuppliers(suppliersResult);
   }
 
   async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
@@ -594,19 +489,16 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
         batch_number: stockReceiveForm.batch_number,
         quantity: Number(stockReceiveForm.quantity),
         expiry_date: stockReceiveForm.expiry_date || null,
-        unit_cost: toNullableCurrency(
-          stockReceiveForm.unit_cost,
-          'Unit cost',
-        ),
+        unit_cost: toNullableNumber(stockReceiveForm.unit_cost),
         selling_price: toNullableNumber(stockReceiveForm.selling_price),
-        pharmaco_supplier_id: Number(stockReceiveForm.pharmaco_supplier_id),
+        supplier_name: stockReceiveForm.supplier_name || null,
         reference_number: stockReceiveForm.reference_number || null,
         reason: stockReceiveForm.reason || null,
       });
 
       setMessage(`${response.message} Batch ${response.batch.batch_number} now has ${formatNumber(response.batch.quantity_on_hand)} units.`);
       setStockReceiveForm(emptyStockReceiveForm);
-      setSupplierSearch('');
+      resetReceivingSupplierState();
       await refreshProductsAndLocations();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to receive stock.');
@@ -719,8 +611,8 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
       {error && <div className="form-error">{error}</div>}
       {message && <div className="form-success">{message}</div>}
 
-      {!products || !locations || !categoriesResponse || !suppliers ? (
-        <p className="muted">Load action data first to populate product categories, product list, branches, stock locations, and suppliers.</p>
+      {!products || !locations || !categoriesResponse ? (
+        <p className="muted">Load action data first to populate product categories, product list, branches, and stock locations.</p>
       ) : (
         <>
           <div className="inventory-task-switcher" role="tablist" aria-label="Inventory action">
@@ -1165,10 +1057,10 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                 onChange={(event) => {
                   setStockReceiveForm({
                     ...stockReceiveForm,
-                    product_id: event.target.value,
-                    pharmaco_supplier_id: '',
+                    product_id:
+                      event.target.value,
+                    supplier_name: '',
                   });
-                  setSupplierSearch('');
                 }}
                 required
               >
@@ -1234,30 +1126,12 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               <label>
                 Unit cost
                 <input
-                  type="text"
-                  inputMode="decimal"
+                  type="number"
+                  min="0"
+                  step="0.01"
                   value={stockReceiveForm.unit_cost}
-                  onChange={(event) =>
-                    setStockReceiveForm({
-                      ...stockReceiveForm,
-                      unit_cost:
-                        normalizeCurrencyInput(
-                          event.target.value,
-                        ),
-                    })
-                  }
-                  placeholder="e.g. 1250.75"
-                  aria-describedby="unit-cost-hint"
+                  onChange={(event) => setStockReceiveForm({ ...stockReceiveForm, unit_cost: event.target.value })}
                 />
-
-                <span
-                  className="form-hint"
-                  id="unit-cost-hint"
-                >
-                  Accepts decimals using a dot or
-                  comma, for example 1250.75 or
-                  1250,75.
-                </span>
               </label>
 
               <label>
@@ -1273,104 +1147,14 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
             </div>
 
             <label>
-              Find supplier
+              Supplier
               <input
-                type="search"
-                value={supplierSearch}
-                onChange={(event) =>
-                  setSupplierSearch(
-                    event.target.value,
-                  )
-                }
-                placeholder={
-                  'Search supplier name, code, '
-                  + 'legal name, or phone'
-                }
-                autoComplete="new-password"
-                name="current_receipt_supplier_search"
-                spellCheck={false}
+                value={stockReceiveForm.supplier_name}
+                onChange={(event) => setStockReceiveForm({ ...stockReceiveForm, supplier_name: event.target.value })}
+                placeholder="Supplier name"
               />
             </label>
 
-            <label>
-              Supplier
-              <select
-                value={
-                  stockReceiveForm
-                    .pharmaco_supplier_id
-                }
-                onChange={(event) =>
-                  setStockReceiveForm({
-                    ...stockReceiveForm,
-                    pharmaco_supplier_id:
-                      event.target.value,
-                  })
-                }
-                required
-                size={Math.min(
-                  8,
-                  Math.max(
-                    4,
-                    visibleSuppliers.length + 1,
-                  ),
-                )}
-                style={{
-                  maxHeight: '16rem',
-                  overflowY: 'auto',
-                }}
-                aria-describedby={
-                  'supplier-list-summary'
-                }
-                disabled={
-                  activeSuppliers.length === 0
-                }
-              >
-                <option value="">
-                  Select registered supplier
-                </option>
-
-                {visibleSuppliers.map(
-                  (supplier) => (
-                    <option
-                      key={supplier.id}
-                      value={supplier.id}
-                    >
-                      {supplier.name}
-                    </option>
-                  ),
-                )}
-
-                {visibleSuppliers.length === 0
-                  && activeSuppliers.length > 0
-                  && (
-                    <option disabled>
-                      No supplier matches the search
-                    </option>
-                  )}
-              </select>
-
-              <span
-                className="form-hint"
-                id="supplier-list-summary"
-              >
-                Loaded {activeSuppliers.length}
-                {' '}active supplier
-                {activeSuppliers.length === 1
-                  ? ''
-                  : 's'}
-                {' '}from Supplier List.
-                Showing {visibleSuppliers.length}.
-                Scroll through the list to select
-                any supplier.
-              </span>
-
-              {activeSuppliers.length === 0 && (
-                <span className="form-error">
-                  No active supplier is available
-                  in Supplier List.
-                </span>
-              )}
-            </label>
             <label>
               Reference number
               <input
@@ -1389,26 +1173,8 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               />
             </label>
 
-            {isPreviewRuntime && (
-              <p className="form-hint">
-                Preview mode: stock submission
-                is disabled.
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={
-                isReceivingStock
-                || isPreviewRuntime
-                || activeSuppliers.length === 0
-                || !stockReceiveForm
-                  .pharmaco_supplier_id
-              }
-            >
-              {isReceivingStock
-                ? 'Receiving…'
-                : 'Receive stock'}
+            <button type="submit" disabled={isReceivingStock}>
+              {isReceivingStock ? 'Receiving…' : 'Receive stock'}
             </button>
           </form>
           )}
