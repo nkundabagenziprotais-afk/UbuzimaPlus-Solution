@@ -5,6 +5,42 @@ use App\Http\Controllers\Api\V1\PharmaCo360\AccountingJournalWorkflowController;
 use App\Http\Controllers\Api\V1\PharmaCo360\AccountingReadModelController;
 use Illuminate\Support\Facades\Route;
 
+/*
+ * Finance classes were added after the production Composer
+ * classmap was generated. Composer remains the primary loader;
+ * this route-scoped fallback resolves existing App classes only
+ * when Composer cannot discover them.
+ */
+if (!defined('UBUZIMA_ACCOUNTING_APP_AUTOLOADER_REGISTERED')) {
+    define('UBUZIMA_ACCOUNTING_APP_AUTOLOADER_REGISTERED', true);
+
+    spl_autoload_register(
+        static function (string $class): void {
+            $prefix = 'App\\';
+
+            if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
+                return;
+            }
+
+            $relativeClass = substr($class, strlen($prefix));
+
+            $path = app_path(
+                str_replace(
+                    '\\',
+                    DIRECTORY_SEPARATOR,
+                    $relativeClass,
+                ) . '.php',
+            );
+
+            if (is_file($path)) {
+                require_once $path;
+            }
+        },
+        true,
+        false,
+    );
+}
+
 require_once app_path('Http/Controllers/Api/V1/PharmaCo360/AccountingReadModelController.php');
 require_once app_path('Http/Controllers/Api/V1/PharmaCo360/AccountingJournalWorkflowController.php');
 require_once app_path('Http/Controllers/Api/V1/PharmaCo360/AccountingApprovalCentreController.php');
