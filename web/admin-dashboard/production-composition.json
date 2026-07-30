@@ -1,0 +1,11 @@
+{
+  "release": "pre-finance-foundation-with-isolated-finance",
+  "general_modules_source": "/home/inzoeqqx/deployment_backups/20260730T071212Z-accounting-resumed-final-live/live-admin-predeployment",
+  "general_modules_runtime": "web/admin-dashboard/dist",
+  "finance_runtime": "web/admin-dashboard/dist-finance",
+  "finance_entry": "/admin-finance/",
+  "general_entry": "/admin/",
+  "automatic_finance_redirect": true,
+  "database_changed": false,
+  "migration_executed": false
+}
