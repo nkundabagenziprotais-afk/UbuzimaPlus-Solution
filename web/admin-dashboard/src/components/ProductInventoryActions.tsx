@@ -261,6 +261,22 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
   );
 
   const categories = categoriesResponse?.categories ?? collectCategories(products?.products ?? []);
+
+  function resetReceivingSupplierState() {
+    setSupplierSearch('');
+    setStockReceiveForm((current) => ({
+      ...current,
+      pharmaco_supplier_id: '',
+    }));
+  }
+
+  function handleInventoryTaskChange(nextTask: InventoryTask) {
+    setActiveTask(nextTask);
+
+    if (nextTask === 'receive') {
+      resetReceivingSupplierState();
+    }
+  }
   const branchOptions = Array.from(
     new Map((locations?.locations ?? []).map((location) => [location.branch.id, location.branch])).values(),
   );
@@ -590,6 +606,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
 
       setMessage(`${response.message} Batch ${response.batch.batch_number} now has ${formatNumber(response.batch.quantity_on_hand)} units.`);
       setStockReceiveForm(emptyStockReceiveForm);
+      setSupplierSearch('');
       await refreshProductsAndLocations();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to receive stock.');
@@ -720,7 +737,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                 role="tab"
                 aria-selected={activeTask === key}
                 className={activeTask === key ? 'active' : ''}
-                onClick={() => setActiveTask(key as InventoryTask)}
+                onClick={() => handleInventoryTaskChange(key as InventoryTask)}
               >
                 {label}
               </button>
@@ -1145,7 +1162,14 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               Product
               <select
                 value={stockReceiveForm.product_id}
-                onChange={(event) => setStockReceiveForm({ ...stockReceiveForm, product_id: event.target.value })}
+                onChange={(event) => {
+                  setStockReceiveForm({
+                    ...stockReceiveForm,
+                    product_id: event.target.value,
+                    pharmaco_supplier_id: '',
+                  });
+                  setSupplierSearch('');
+                }}
                 required
               >
                 <option value="">Select product</option>
@@ -1262,7 +1286,9 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                   'Search supplier name, code, '
                   + 'legal name, or phone'
                 }
-                autoComplete="off"
+                autoComplete="new-password"
+                name="current_receipt_supplier_search"
+                spellCheck={false}
               />
             </label>
 
@@ -1310,8 +1336,6 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                       value={supplier.id}
                     >
                       {supplier.name}
-                      {' '}
-                      ({supplier.supplier_code})
                     </option>
                   ),
                 )}
