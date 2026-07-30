@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\V1\PharmaCo360\AccountingJournalWorkflowController;
 use App\Http\Controllers\Api\V1\PharmaCo360\AccountingReadModelController;
 use Illuminate\Support\Facades\Route;
 
+require_once app_path('Services/Accounting/AccountingRequestScope.php');
+
 require_once app_path('Http/Controllers/Api/V1/PharmaCo360/AccountingReadModelController.php');
 require_once app_path('Http/Controllers/Api/V1/PharmaCo360/AccountingJournalWorkflowController.php');
 require_once app_path('Http/Controllers/Api/V1/PharmaCo360/AccountingApprovalCentreController.php');
