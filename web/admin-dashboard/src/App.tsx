@@ -83,6 +83,7 @@ import {
   GeneralItemsManagementWorkspace,
 } from './components/GeneralItemsManagementWorkspace';
 import { PayablesWorkflow } from './components/PayablesWorkflow';
+import { AccountingWorkspace } from './components/accounting/AccountingWorkspace';
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { FinanceSourceOfTruthOverview } from './components/FinanceSourceOfTruthOverview';
 import { PharmacoOperationsCommandCenter } from './components/PharmacoOperationsCommandCenter';
@@ -243,7 +244,8 @@ type FinanceWorkspaceKey =
   | 'credits-receivables'
   | 'receivable-register'
   | 'collection'
-  | 'financial-statements';
+  | 'financial-statements'
+  | 'accounting';
 type AdhocReportWorkspaceKey =
   | 'overview'
   | 'operation-alerts'
@@ -608,6 +610,7 @@ const leftMenuSubmenus: Partial<Record<AdminSectionKey, LeftMenuSubmenu[]>> = {
     { key: 'finance-receivable-register', label: 'Receivable Register', target: 'receivable-register' },
     { key: 'finance-collection', label: 'Collection', target: 'collection' },
     { key: 'finance-statement', label: 'Financial Statement', target: 'financial-statements' },
+    { key: 'finance-accounting', label: 'Accounting', target: 'accounting' },
   ],
   reports: [
     { key: 'adhoc-overview', label: 'Ad-hoc Report Overview', target: 'overview' },
@@ -2916,6 +2919,13 @@ const supplierWorkspaceItems: Array<{ key: SupplierWorkspaceKey; label: string; 
   { key: 'general-item-usage', label: 'General Item Issues and Usage', description: 'Record department usage and stock issues' },
 ];
 
+const accountingReadPermissions: string[] = [
+  'finance.dashboard.view',
+  'finance.journal.view',
+  'finance.reports.view',
+  'reports.finance.view',
+];
+
 const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; description: string }> = [
   { key: 'overview', label: 'Finance Overview', description: 'Cards, charts, and finance position' },
   { key: 'finance-flow', label: 'Finance Flow', description: 'Procurement invoices, approval, and payment' },
@@ -2924,6 +2934,7 @@ const financeWorkspaceItems: Array<{ key: FinanceWorkspaceKey; label: string; de
   { key: 'receivable-register', label: 'Receivable Register', description: '15-row register with bulk and export tools' },
   { key: 'collection', label: 'Collection', description: 'Payment collection and selected detail' },
   { key: 'financial-statements', label: 'AI Financial Statements', description: 'Manual refresh statements and reconciliations' },
+  { key: 'accounting', label: 'Accounting', description: 'Live ledger, journals, balances, mappings, Business Dates, periods, and approval controls' },
 ];
 
 const adhocReportWorkspaceItems: Array<{ key: AdhocReportWorkspaceKey; label: string; description: string }> = [
@@ -8395,7 +8406,23 @@ async function confirmTransaction() {
   }
 
   function renderFinanceWorkspace() {
-    const selected = financeWorkspaceItems.find((item) => item.key === activeFinanceWorkspace) ?? financeWorkspaceItems[0];
+    const canViewAccounting = hasAnyPermission(
+      profile ?? undefined,
+      accountingReadPermissions,
+    );
+
+    const visibleFinanceWorkspaceItems = financeWorkspaceItems.filter(
+      (item) => item.key !== 'accounting' || canViewAccounting,
+    );
+
+    const permittedFinanceWorkspace: FinanceWorkspaceKey =
+      activeFinanceWorkspace === 'accounting' && !canViewAccounting
+        ? 'overview'
+        : activeFinanceWorkspace;
+
+    const selected = visibleFinanceWorkspaceItems.find(
+      (item) => item.key === permittedFinanceWorkspace,
+    ) ?? visibleFinanceWorkspaceItems[0];
     const financeRows: Array<[string, string, string, string]> = [
       ['Customer receivable', 'Open balance and due date', 'Collection', 'RWF 42,000'],
       ['Supplier invoice', 'Approved payable', 'Payment due', 'RWF 180,000'],
@@ -8405,45 +8432,47 @@ async function confirmTransaction() {
 
     return (
       <section className="section-page dedicated-module-page">
-        <DedicatedModuleHeader
-          eyebrow="Finance and control"
-          title="Finance Workspace"
-          description="Move from finance overview to payables, receivables, collections, exceptions, and statements through focused pages."
-          dashboardLabel={
-            isAdminProfile
-              ? 'Main Dashboard'
-              : 'Finance Home'
-          }
-          onDashboard={() => {
-            if (isAdminProfile) {
-              navigateToSection('overview');
-              return;
+        {permittedFinanceWorkspace !== 'accounting' && (
+          <DedicatedModuleHeader
+            eyebrow="Finance and control"
+            title="Finance Workspace"
+            description="Move from finance overview to payables, receivables, collections, exceptions, and statements through focused pages."
+            dashboardLabel={
+              isAdminProfile
+                ? 'Main Dashboard'
+                : 'Finance Home'
             }
+            onDashboard={() => {
+              if (isAdminProfile) {
+                navigateToSection('overview');
+                return;
+              }
 
-            setActiveFinanceWorkspace('overview');
-          }}
-        />
-        {activeFinanceWorkspace === 'overview' && (
+              setActiveFinanceWorkspace('overview');
+            }}
+          />
+        )}
+        {permittedFinanceWorkspace === 'overview' && (
           <ModuleLandingCards
             moduleName="Finance"
-            items={financeWorkspaceItems.filter((item) => item.key !== 'overview')}
-            activeKey={activeFinanceWorkspace}
+            items={visibleFinanceWorkspaceItems.filter((item) => item.key !== 'overview')}
+            activeKey={permittedFinanceWorkspace}
             onOpen={setActiveFinanceWorkspace}
           />
         )}
         <div className="module-section-stage">
-          {activeFinanceWorkspace === 'overview' && (
+          {permittedFinanceWorkspace === 'overview' && (
             <FinanceSourceOfTruthOverview
               token={session!.token}
               profile={profile!}
             />
           )}
 
-          {activeFinanceWorkspace === 'finance-flow' && (
+          {permittedFinanceWorkspace === 'finance-flow' && (
             <PayablesWorkflow token={session!.token} profile={profile!} />
           )}
 
-          {activeFinanceWorkspace === 'exception-focus' && (
+          {permittedFinanceWorkspace === 'exception-focus' && (
             <>
               <FocusRegisterPreview
                 title="Exception Focus"
@@ -8454,11 +8483,11 @@ async function confirmTransaction() {
             </>
           )}
 
-          {activeFinanceWorkspace === 'credits-receivables' && (
+          {permittedFinanceWorkspace === 'credits-receivables' && (
             <ReceivablesWorkflow token={session!.token} profile={{ tenant: profile!.tenant_assignments?.[0]?.tenant }} />
           )}
 
-          {['receivable-register', 'collection'].includes(activeFinanceWorkspace) && (
+          {['receivable-register', 'collection'].includes(permittedFinanceWorkspace) && (
             <FocusRegisterPreview
               title={selected.label}
               description="Receivables and collections use a focused table with export, bulk edit, and selected-detail review."
@@ -8466,7 +8495,7 @@ async function confirmTransaction() {
             />
           )}
 
-          {activeFinanceWorkspace === 'financial-statements' && (
+          {permittedFinanceWorkspace === 'financial-statements' && (
             <article className="panel wide">
               <div className="panel-heading-row">
                 <div>
@@ -8486,6 +8515,14 @@ async function confirmTransaction() {
                 ))}
               </div>
             </article>
+          )}
+          {permittedFinanceWorkspace === 'accounting' && (
+            <AccountingWorkspace
+              token={session!.token}
+              profile={profile!}
+              onBack={() => setActiveFinanceWorkspace('overview')}
+              onMainDashboard={() => navigateToSection('overview')}
+            />
           )}
         </div>
       </section>
