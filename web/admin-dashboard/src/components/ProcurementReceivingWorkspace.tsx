@@ -90,6 +90,56 @@ function numberFrom(
     : 0;
 }
 
+function normalizeDecimalInput(
+  value: string,
+): string {
+  const candidate = value
+    .replace(/,/g, '.')
+    .replace(/[^0-9.]/g, '');
+
+  const [wholePart = '', ...fractionParts] =
+    candidate.split('.');
+
+  const fractionPart = fractionParts
+    .join('')
+    .slice(0, 2);
+
+  if (!candidate.includes('.')) {
+    return wholePart;
+  }
+
+  return `${wholePart || '0'}.${fractionPart}`;
+}
+
+function decimalFrom(
+  value: string,
+  fieldLabel: string,
+): number {
+  const normalized = value
+    .trim()
+    .replace(/,/g, '.');
+
+  if (
+    !/^\d+(?:\.\d{1,2})?$/.test(
+      normalized,
+    )
+  ) {
+    throw new Error(
+      `${fieldLabel} must contain a valid amount with one or two decimal places.`,
+    );
+  }
+
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(
+      `${fieldLabel} must be zero or greater.`,
+    );
+  }
+
+  return parsed;
+}
+
 function dateLabel(
   value: string | null | undefined,
 ): string {
@@ -238,6 +288,11 @@ export function ProcurementReceivingWorkspace({
     () => tenantSlugFrom(profile),
     [profile],
   );
+
+  const isPreviewRuntime =
+    typeof window !== 'undefined'
+    && window.location.pathname
+      .startsWith('/admin-previews/');
 
   const permissions =
     profile.permissions ?? [];
@@ -693,8 +748,9 @@ export function ProcurementReceivingWorkspace({
               null,
             unit_cost:
               receiveForm.unit_cost
-                ? numberFrom(
+                ? decimalFrom(
                     receiveForm.unit_cost,
+                    'Unit cost',
                   )
                 : null,
             selling_price:
@@ -1488,9 +1544,8 @@ export function ProcurementReceivingWorkspace({
                 <label>
                   Unit cost
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={
                       receiveForm.unit_cost
                     }
@@ -1499,11 +1554,24 @@ export function ProcurementReceivingWorkspace({
                         (current) => ({
                           ...current,
                           unit_cost:
-                            event.target.value,
+                            normalizeDecimalInput(
+                              event.target.value,
+                            ),
                         }),
                       )
                     }
+                    placeholder="e.g. 1250.75"
+                    aria-describedby={
+                      'pharma-unit-cost-hint'
+                    }
                   />
+
+                  <span
+                    className="form-hint"
+                    id="pharma-unit-cost-hint"
+                  >
+                    Accepts 1250.75 or 1250,75.
+                  </span>
                 </label>
 
                 <label>
@@ -1543,6 +1611,7 @@ export function ProcurementReceivingWorkspace({
               className="primary"
               disabled={
                 isReceiving ||
+                isPreviewRuntime ||
                 !selectedPurchaseOrder
               }
             >
