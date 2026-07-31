@@ -34,6 +34,7 @@ public function current(
             ])
             ->where('tenant_id', $tenant->id)
             ->where('user_id', $request->user()->id)
+            ->whereNull('historical_approval_id')
             ->whereDate('business_date', $businessDate)
             ->orderByDesc('sequence_number')
             ->first();
@@ -101,6 +102,37 @@ public function open(
                 $businessDate,
                 $policy
             ) {
+                /*
+                 * Historical sessions may coexist with one live
+                 * session. A user must never have two unfinished
+                 * live sessions at the same time.
+                 */
+                $activeLiveSession = PharmacoPosSession::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->where(
+                        'user_id',
+                        $request->user()->id
+                    )
+                    ->whereNull('historical_approval_id')
+                    ->where(function ($query) {
+                        $query
+                            ->where('status', '!=', 'closed')
+                            ->orWhereNull('closed_at');
+                    })
+                    ->orderByDesc('opened_at')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($activeLiveSession) {
+                    throw ValidationException::withMessages([
+                        'business_date' => [
+                            'A live POS session is already open '
+                            . 'for this user. Close it before '
+                            . 'opening another live session.',
+                        ],
+                    ]);
+                }
+
                 $latestSession = PharmacoPosSession::query()
                     ->where('tenant_id', $tenant->id)
                     ->where(
@@ -171,10 +203,10 @@ public function open(
                                 ]
                                 ?? 'fresh-start',
                             'control_rule' =>
-                                'one_session_per_user_per_day',
+                                'one_open_live_session_per_user',
                             'previous_session_id' =>
                                 $latestSession?->id,
-                            'opened_after_admin_reset' =>
+                            'opened_after_prior_session' =>
                                 $latestSession !== null,
                         ],
                     ]);
@@ -209,8 +241,9 @@ public function open(
             ) {
                 throw ValidationException::withMessages([
                     'business_date' => [
-                        'A POS session already exists '
-                        . 'for this user and business day.',
+                        'A POS session opening request '
+                        . 'was completed concurrently. Refresh '
+                        . 'the current session before retrying.',
                     ],
                 ]);
             }
