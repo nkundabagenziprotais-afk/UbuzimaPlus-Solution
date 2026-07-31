@@ -426,6 +426,10 @@ class PharmacoMedicineDuplicateReceivingApiTest
         float $quantity
     ): array {
         return [
+            'pharmaco_supplier_id' =>
+                $this->ensureActiveSupplierIdForReceivingFixture(
+                    $context['tenant']
+                ),
             'product_id' =>
                 $context['product']->id,
             'stock_location_id' =>
@@ -453,4 +457,30 @@ class PharmacoMedicineDuplicateReceivingApiTest
             self::TENANT_SLUG
         );
     }
+    private function ensureActiveSupplierIdForReceivingFixture(
+        \App\Models\Tenant $tenant
+    ): int {
+        $supplier = \App\Models\PharmacoSupplier::query()
+            ->firstOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'supplier_code' =>
+                        'TEST-MEDICAL-SUPPLIER',
+                ],
+                [
+                    'uuid' => (string)
+                        \Illuminate\Support\Str::uuid(),
+                    'name' => 'Test Medical Supplier',
+                    'supplier_type' => 'distributor',
+                    'status' => 'active',
+                    'metadata' => [
+                        'creation_workflow' =>
+                            'stock_receiving_test_fixture',
+                    ],
+                ],
+            );
+
+        return (int) $supplier->id;
+    }
+
 }

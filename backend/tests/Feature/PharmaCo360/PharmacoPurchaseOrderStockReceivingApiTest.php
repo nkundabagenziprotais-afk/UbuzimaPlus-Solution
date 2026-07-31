@@ -281,6 +281,8 @@ class PharmacoPurchaseOrderStockReceivingApiTest extends TestCase
             ->postJson('/api/v1/pharmaco/inventory/receive', [
                 'product_id' => $product->id,
                 'stock_location_id' => $location->id,
+                'pharmaco_supplier_id' =>
+                    $this->ensureActiveSupplierIdForReceivingFixture($tenant),
                 'batch_number' => 'MANUAL-STILL-WORKS',
                 'quantity' => 2,
                 'unit_cost' => 700,
@@ -454,4 +456,30 @@ class PharmacoPurchaseOrderStockReceivingApiTest extends TestCase
             'status' => 'pending',
         ]);
     }
+    private function ensureActiveSupplierIdForReceivingFixture(
+        \App\Models\Tenant $tenant
+    ): int {
+        $supplier = \App\Models\PharmacoSupplier::query()
+            ->firstOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'supplier_code' =>
+                        'TEST-MEDICAL-SUPPLIER',
+                ],
+                [
+                    'uuid' => (string)
+                        \Illuminate\Support\Str::uuid(),
+                    'name' => 'Test Medical Supplier',
+                    'supplier_type' => 'distributor',
+                    'status' => 'active',
+                    'metadata' => [
+                        'creation_workflow' =>
+                            'stock_receiving_test_fixture',
+                    ],
+                ],
+            );
+
+        return (int) $supplier->id;
+    }
+
 }

@@ -275,6 +275,8 @@ class PharmacoProcurementPermissionSegregationApiTest extends TestCase
             ->postJson('/api/v1/pharmaco/inventory/receive', [
                 'product_id' => $product->id,
                 'stock_location_id' => $location->id,
+                'pharmaco_supplier_id' =>
+                    $this->ensureActiveSupplierIdForReceivingFixture($tenant),
                 'batch_number' => 'MANUAL-' . Str::upper(Str::random(8)),
                 'quantity' => 1,
                 'unit_cost' => 1000,
@@ -500,4 +502,30 @@ class PharmacoProcurementPermissionSegregationApiTest extends TestCase
 
         return [$purchaseOrder, $purchaseOrderItem];
     }
+    private function ensureActiveSupplierIdForReceivingFixture(
+        \App\Models\Tenant $tenant
+    ): int {
+        $supplier = \App\Models\PharmacoSupplier::query()
+            ->firstOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'supplier_code' =>
+                        'TEST-MEDICAL-SUPPLIER',
+                ],
+                [
+                    'uuid' => (string)
+                        \Illuminate\Support\Str::uuid(),
+                    'name' => 'Test Medical Supplier',
+                    'supplier_type' => 'distributor',
+                    'status' => 'active',
+                    'metadata' => [
+                        'creation_workflow' =>
+                            'stock_receiving_test_fixture',
+                    ],
+                ],
+            );
+
+        return (int) $supplier->id;
+    }
+
 }
