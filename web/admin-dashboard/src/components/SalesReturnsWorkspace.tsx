@@ -20,6 +20,10 @@ import {
 } from '../lib/api';
 
 import {
+  SaleReceiptReprintButton,
+} from './SaleReceiptReprintButton';
+
+import {
   type PaymentReconciliation,
   type SaleRefundMethod,
   type SaleReturn,
@@ -2995,11 +2999,17 @@ function SalesReturnsWorkspaceContent({
               </h3>
 
               {selectedSale && (
-                <p className="muted">
-                  {customerName(selectedSale)} ·{' '}
-                  {selectedSale.branch?.name ??
-                    'Main branch'}
-                </p>
+                <>
+                  <p className="muted">
+                    {customerName(selectedSale)} ·{' '}
+                    {selectedSale.branch?.name ??
+                      'Main branch'}
+                  </p>
+
+                  <SaleReceiptReprintButton
+                    sale={selectedSale}
+                  />
+                </>
               )}
             </div>
 
