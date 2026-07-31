@@ -59,6 +59,27 @@ function numberFrom(
     : 0;
 }
 
+function normalizeDecimalInput(
+  value: string,
+): string {
+  const candidate = value
+    .replace(/,/g, '.')
+    .replace(/[^0-9.]/g, '');
+
+  const [wholePart = '', ...fractionParts] =
+    candidate.split('.');
+
+  const fractionPart = fractionParts
+    .join('')
+    .slice(0, 2);
+
+  if (!candidate.includes('.')) {
+    return wholePart;
+  }
+
+  return `${wholePart || '0'}.${fractionPart}`;
+}
+
 function decimalFrom(
   value: string,
   fieldLabel: string,
@@ -179,6 +200,11 @@ export function GeneralItemPurchaseOrderReceivingWorkspace({
     () => tenantSlugFrom(profile),
     [profile],
   );
+
+  const isPreviewRuntime =
+    typeof window !== 'undefined'
+    && window.location.pathname
+      .startsWith('/admin-previews/');
 
   const permissions =
     profile.permissions ?? [];
@@ -930,20 +956,32 @@ export function GeneralItemPurchaseOrderReceivingWorkspace({
                   Unit cost
 
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={form.unit_cost}
                     onChange={(event) =>
                       setForm(
                         (current) => ({
                           ...current,
                           unit_cost:
-                            event.target.value,
+                            normalizeDecimalInput(
+                              event.target.value,
+                            ),
                         }),
                       )
                     }
+                    placeholder="e.g. 1250.75"
+                    aria-describedby={
+                      'general-unit-cost-hint'
+                    }
                   />
+
+                  <span
+                    className="form-hint"
+                    id="general-unit-cost-hint"
+                  >
+                    Accepts 1250.75 or 1250,75.
+                  </span>
                 </label>
 
                 <label>
@@ -1030,6 +1068,7 @@ export function GeneralItemPurchaseOrderReceivingWorkspace({
                   className="primary"
                   disabled={
                     isReceiving ||
+                    isPreviewRuntime ||
                     !selectedItem ||
                     availableLocations.length ===
                       0
