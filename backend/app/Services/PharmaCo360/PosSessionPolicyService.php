@@ -159,29 +159,6 @@ public function nextSequence(
             return 1;
         }
 
-        if (
-            $latestSession->status !== 'closed'
-            || $latestSession->closed_at === null
-        ) {
-            throw ValidationException::withMessages([
-                'business_date' => [
-                    'A POS session already exists for this user today. '
-                    . 'The existing session must clear its balance '
-                    . 'and close before any further action.',
-                ],
-            ]);
-        }
-
-        if ($latestSession->reset_authorized_at === null) {
-            throw ValidationException::withMessages([
-                'business_date' => [
-                    'Only one POS session is permitted per user and '
-                    . 'business day. An administrator must authorize '
-                    . 'a reset before another session can be opened.',
-                ],
-            ]);
-        }
-
         return max(
             1,
             (int) $latestSession->sequence_number + 1
