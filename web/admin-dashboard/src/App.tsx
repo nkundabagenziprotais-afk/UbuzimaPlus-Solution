@@ -232,6 +232,9 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
 } from './lib/api';
 import { printThermalElement } from './lib/thermalPrint';
 import {
+  SaleReceiptReprintButton,
+} from './components/SaleReceiptReprintButton';
+import {
   type PosSession,
   closePosSession,
   getCurrentPosSession,
@@ -7287,6 +7290,7 @@ async function confirmTransaction() {
       const priceImpact = posSalePriceImpactSummary(sale);
 
       return {
+      sale,
       dateTime: (sale as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at || sale.sold_at || sale.created_at
         ? new Date(
             sale.sold_at
@@ -8803,17 +8807,18 @@ async function confirmTransaction() {
                       <th>Used Price</th>
                       <th>Difference</th>
                       <th>Total</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {posRecentTransactionRows.length === 0 ? (
                       <tr>
-                        <td colSpan={11}>
+                        <td colSpan={12}>
                           No matching transactions are available. Confirm a sale or refresh the synchronized sales feed.
                         </td>
                       </tr>
                     ) : (
-                      posRecentTransactionRows.map(({ dateTime, businessDate, saleNumber, customer, products, method, status, originalPrice, usedPrice, priceDifference, amount }) => (
+                      posRecentTransactionRows.map(({ sale, dateTime, businessDate, saleNumber, customer, products, method, status, originalPrice, usedPrice, priceDifference, amount }) => (
                         <tr key={saleNumber}>
                           <td>{dateTime}</td>
                           <td>{businessDate}</td>
@@ -8826,6 +8831,12 @@ async function confirmTransaction() {
                           <td>{usedPrice}</td>
                           <td>{priceDifference}</td>
                           <td>{amount}</td>
+                          <td>
+                            <SaleReceiptReprintButton
+                              sale={sale}
+                              label="Reprint"
+                            />
+                          </td>
                         </tr>
                       ))
                     )}
