@@ -139,6 +139,7 @@ public function open(
                         'user_id',
                         $request->user()->id
                     )
+                    ->whereNull('historical_approval_id')
                     ->whereDate(
                         'business_date',
                         $businessDate
