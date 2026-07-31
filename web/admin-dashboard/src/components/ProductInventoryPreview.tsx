@@ -6039,12 +6039,8 @@ export function ProductInventoryPreview({
                         ...inventoryCreateForm,
                         unit_cost: normalizeInventoryUnitCostInput(event.target.value),
                       })}
-                      placeholder="e.g. 1250.75"
-                      aria-describedby="inventory-unit-cost-hint"
+                      placeholder="Supplier cost"
                     />
-                    <span className="inventory-field-helper" id="inventory-unit-cost-hint">
-                      Accepts decimals using a dot or comma, for example 1250.75 or 1250,75.
-                    </span>
                   </label>
 
                   <label>
@@ -6098,9 +6094,6 @@ export function ProductInventoryPreview({
                         </option>
                       ))}
                     </select>
-                    <p className="inventory-field-helper">
-                      Only active suppliers maintained in Supplier List are available.
-                    </p>
                     {procurementSupplierOptions.length === 0 && (
                       <p className="form-error">No active supplier is available in Supplier List.</p>
                     )}
