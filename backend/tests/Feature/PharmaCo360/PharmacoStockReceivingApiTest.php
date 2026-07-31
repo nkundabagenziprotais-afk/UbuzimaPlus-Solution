@@ -5,6 +5,7 @@ namespace Tests\Feature\PharmaCo360;
 use App\Models\Branch;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\PharmacoSupplier;
 use App\Models\Solution;
 use App\Models\StockBatch;
 use App\Models\StockLocation;
@@ -23,8 +24,12 @@ class PharmacoStockReceivingApiTest extends TestCase
         $this->seed();
 
         $tenant = Tenant::where('slug', 'vitapharma')->firstOrFail();
+        $this->ensureActiveSupplier($tenant);
         $product = Product::where('tenant_id', $tenant->id)->where('sku', 'GLUCOSE-STRIPS')->firstOrFail();
         $location = StockLocation::where('tenant_id', $tenant->id)->where('code', 'HQ-STORE')->firstOrFail();
+        $supplier = PharmacoSupplier::where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->firstOrFail();
         $token = $this->loginAs('admin@vitapharmaafrica.com');
 
         $this->withHeader('X-Tenant-Slug', 'vitapharma')
@@ -36,9 +41,9 @@ class PharmacoStockReceivingApiTest extends TestCase
                 'quantity' => 35,
                 'expiry_date' => now()->addYear()->toDateString(),
                 'received_at' => now()->toDateString(),
-                'unit_cost' => 320,
+                'unit_cost' => '320,75',
                 'selling_price' => 480,
-                'supplier_name' => 'Test Medical Supplier',
+                'pharmaco_supplier_id' => $supplier->id,
                 'reference_number' => 'RCV-GLU-001',
                 'reason' => 'Initial test receipt.',
             ])
@@ -56,6 +61,8 @@ class PharmacoStockReceivingApiTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame(35.0, (float) $batch->quantity_on_hand);
+        $this->assertSame(320.75, (float) $batch->unit_cost);
+        $this->assertSame($supplier->name, $batch->supplier_name);
 
         $this->assertDatabaseHas('stock_movements', [
             'tenant_id' => $tenant->id,
@@ -78,8 +85,12 @@ class PharmacoStockReceivingApiTest extends TestCase
         $this->seed();
 
         $tenant = Tenant::where('slug', 'vitapharma')->firstOrFail();
+        $this->ensureActiveSupplier($tenant);
         $batch = StockBatch::where('tenant_id', $tenant->id)->where('batch_number', 'AMOX-B001')->firstOrFail();
         $beforeQuantity = (float) $batch->quantity_on_hand;
+        $supplier = PharmacoSupplier::where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->firstOrFail();
         $token = $this->loginAs('admin@vitapharmaafrica.com');
 
         $this->withHeader('X-Tenant-Slug', 'vitapharma')
@@ -89,6 +100,7 @@ class PharmacoStockReceivingApiTest extends TestCase
                 'stock_location_id' => $batch->stock_location_id,
                 'batch_number' => $batch->batch_number,
                 'quantity' => 25,
+                'pharmaco_supplier_id' => $supplier->id,
                 'reference_number' => 'RCV-AMOX-002',
                 'reason' => 'Additional receipt for existing batch.',
             ])
@@ -168,6 +180,25 @@ class PharmacoStockReceivingApiTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonPath('required_header', 'X-Tenant-Slug');
+    }
+
+    private function ensureActiveSupplier(Tenant $tenant): void
+    {
+        PharmacoSupplier::query()->firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'supplier_code' => 'TEST-MEDICAL-SUPPLIER',
+            ],
+            [
+                'uuid' => (string) Str::uuid(),
+                'name' => 'Test Medical Supplier',
+                'supplier_type' => 'distributor',
+                'status' => 'active',
+                'metadata' => [
+                    'creation_workflow' => 'stock_receiving_test_fixture',
+                ],
+            ],
+        );
     }
 
     private function loginAs(string $email): string
