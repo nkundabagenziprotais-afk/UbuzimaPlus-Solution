@@ -50111,3 +50111,30 @@ html.ubuzima-standalone-webapp .admin-header {
   width: 20px;
   height: 20px;
 }
+
+
+/* POS_APPROVED_UI_COMPATIBILITY_V1
+ * Keep the approved POS page structure unchanged.
+ * New customer fields appear only inside checkout confirmation.
+ */
+.pos-batch-customer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 16px;
+}
+
+.pos-batch-customer-grid label {
+  min-width: 0;
+}
+
+.pos-batch-customer-grid input,
+.pos-batch-customer-grid select {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .pos-batch-customer-grid {
+    grid-template-columns: 1fr;
+  }
+}

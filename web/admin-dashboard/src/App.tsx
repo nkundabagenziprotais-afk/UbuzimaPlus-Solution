@@ -7789,6 +7789,63 @@ async function confirmTransaction() {
                       deducted by the system.
                     </p>
 
+                    <div
+                      className="pos-batch-customer-grid"
+                      data-pos-approved-ui-fields="true"
+                    >
+                      <label>
+                        <span>Customer name</span>
+                        <input
+                          value={posCustomerName}
+                          maxLength={191}
+                          onChange={(event) => {
+                            setPosCustomerName(
+                              event.target.value,
+                            );
+                            setPosTransactionConfirmed(false);
+                          }}
+                          placeholder="Optional customer name"
+                        />
+                      </label>
+
+                      <label>
+                        <span>Reference type</span>
+                        <select
+                          value={posCustomerReferenceType}
+                          onChange={(event) => {
+                            setPosCustomerReferenceType(
+                              event.target.value as 'phone' | 'tin',
+                            );
+                            setPosTransactionConfirmed(false);
+                          }}
+                        >
+                          <option value="phone">Phone</option>
+                          <option value="tin">TIN</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Customer Phone/TIN</span>
+                        <input
+                          value={posInvoiceContact}
+                          inputMode="numeric"
+                          maxLength={9}
+                          onChange={(event) => {
+                            setPosInvoiceContact(
+                              event.target.value
+                                .replace(/\D/g, '')
+                                .slice(0, 9),
+                            );
+                            setPosTransactionConfirmed(false);
+                          }}
+                          placeholder="9 digits"
+                        />
+                        <small>
+                          Enter exactly 9 digits when provided.
+                        </small>
+                      </label>
+                    </div>
+
                     <div className="table-scroll">
                       <table className="data-table">
                         <thead>
@@ -8352,51 +8409,15 @@ async function confirmTransaction() {
                     </label>
 
                     <label>
-                      <span>Customer name</span>
-                      <input
-                        value={posCustomerName}
-                        maxLength={191}
-                        onChange={(event) => {
-                          setPosCustomerName(event.target.value);
-                          setPosTransactionConfirmed(false);
-                        }}
-                        placeholder="Optional customer name"
-                      />
-                    </label>
-                    <label>
-                      <span>Reference type</span>
-                      <select
-                        value={posCustomerReferenceType}
-                        onChange={(event) => {
-                          setPosCustomerReferenceType(
-                            event.target.value as 'phone' | 'tin',
-                          );
-                          setPosTransactionConfirmed(false);
-                        }}
-                      >
-                        <option value="phone">Phone</option>
-                        <option value="tin">TIN</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Customer Phone/TIN</span>
+                      <span>Customer contact / lookup</span>
                       <input
                         value={posInvoiceContact}
-                        inputMode="numeric"
-                        maxLength={9}
                         onChange={(event) => {
-                          setPosInvoiceContact(
-                            event.target.value
-                              .replace(/\D/g, '')
-                              .slice(0, 9),
-                          );
+                          setPosInvoiceContact(event.target.value);
                           setPosTransactionConfirmed(false);
                         }}
-                        placeholder="9 digits"
+                        placeholder="Phone, WhatsApp, or email"
                       />
-                      <small>
-                        Enter exactly 9 digits when provided.
-                      </small>
                     </label>
                   </div>
                 </section>
