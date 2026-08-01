@@ -50082,3 +50082,32 @@ html.ubuzima-standalone-webapp .admin-header {
     overflow-x: auto;
   }
 }
+
+
+/* POS_RELIABILITY_BATCH_CONFIRMATION_V1 */
+.pos-batch-confirmation-dialog {
+  width: min(980px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+.pos-batch-confirmation-dialog .table-scroll {
+  max-height: 430px;
+  overflow: auto;
+}
+
+.pos-batch-confirmation-dialog table {
+  width: 100%;
+}
+
+.pos-batch-confirmation-dialog th,
+.pos-batch-confirmation-dialog td {
+  padding: 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.pos-batch-confirmation-dialog input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+}

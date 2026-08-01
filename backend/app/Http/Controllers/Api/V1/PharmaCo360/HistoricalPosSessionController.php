@@ -185,30 +185,12 @@ class HistoricalPosSessionController extends Controller
                         ->whereKey($request->user()->id)
                         ->lockForUpdate()
                         ->firstOrFail();
+                    /*
+                     * Historical POS is a parallel workspace.
+                     * An active Live POS session remains open
+                     * and can be resumed on the same day.
+                     */
 
-                    // HISTORICAL_POS_ONLY_BLOCK_LIVE_SESSION_V1
-                    // Historical POS must not be blocked by another historical session record.
-                    // Only an active live POS session should prevent opening historical POS.
-                    $activeSession = PharmacoPosSession::query()
-                        ->where('tenant_id', $tenant->id)
-                        ->where('user_id', $request->user()->id)
-                        ->whereNull('historical_approval_id')
-                        ->whereIn('status', [
-                            'open',
-                            'zeroized',
-                        ])
-                        ->orderByDesc('id')
-                        ->lockForUpdate()
-                        ->first();
-
-                    if ($activeSession) {
-                        throw ValidationException::withMessages([
-                            'session' => [
-                                'Close the currently active POS session '
-                                . 'before opening a historical session.',
-                            ],
-                        ]);
-                    }
 
                     $approval = null;
 

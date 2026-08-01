@@ -26,6 +26,7 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   getCorporateMailOverview,
   getPharmaBranches,
   getPharmaInventoryBatches,
+  getAllPharmaInventoryBatches,
   getPharmacyProfile,
   login,
   logout,
@@ -104,6 +105,7 @@ import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
 import {
   extractPosFefoPriceTiers,
+  allocatePosFefoBatches,
   highestAffectedSellingPrice,
   type PosFefoPriceTier,
 } from './lib/posAffectedBatchPricing';
@@ -3929,12 +3931,15 @@ function App() {
   const [activePosWorkspace, setActivePosWorkspace] = useState<PosWorkspaceKey>(() => (readAdminRouteSnapshot().pos || storedAdminValue('posWorkspace', 'overview')) as PosWorkspaceKey);
   const [isPosDayOpen, setIsPosDayOpen] = useState(false);
   const [posSession, setPosSession] = useState<PosSession | null>(null);
+  const [livePosSession, setLivePosSession] = useState<PosSession | null>(null);
   const [isLoadingPosSession, setIsLoadingPosSession] = useState(false);
   const [isSavingPosSession, setIsSavingPosSession] = useState(false);
   const [posDeclaredCashAmount, setPosDeclaredCashAmount] = useState('0');
   const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
   const [posStartingCashBalance, setPosStartingCashBalance] = useState('0');
   const [posCustomerType, setPosCustomerType] = useState<'walk-in' | 'existing-customer' | 'insurance-customer' | 'corporate-customer'>('walk-in');
+  const [posCustomerName, setPosCustomerName] = useState('');
+  const [posCustomerReferenceType, setPosCustomerReferenceType] = useState<'phone' | 'tin'>('phone');
   const [posPrescriptionStatus, setPosPrescriptionStatus] = useState<'not-required' | 'required' | 'captured' | 'manual-review'>('not-required');
   const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'momo' | 'card' | 'insurance' | 'credit'>('cash');
   const [posInsuranceProvider, setPosInsuranceProvider] = useState('');
@@ -3951,6 +3956,8 @@ function App() {
   const [posInvoiceContact, setPosInvoiceContact] = useState('');
   const [posDiscountAmount, setPosDiscountAmount] = useState('0');
   const [posTransactionConfirmed, setPosTransactionConfirmed] = useState(false);
+  const [posBatchConfirmationOpen, setPosBatchConfirmationOpen] = useState(false);
+  const [posConfirmedBatchKeys, setPosConfirmedBatchKeys] = useState<string[]>([]);
   const [posLiveBusinessAnalytics, setPosLiveBusinessAnalytics] = useState<UbuzimaHandoverLiveAnalytics>(null);
   const [posRecentTransactionsWithUsers, setPosRecentTransactionsWithUsers] = useState<PharmaRecentTransactionWithUser[]>([]);
   const [posLiveBusinessAnalyticsNotice, setPosLiveBusinessAnalyticsNotice] = useState<string | null>(null);
@@ -5840,7 +5847,12 @@ function App() {
       .filter((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
         const batchIsActive = !batch.status || batch.status === 'active';
-        const productIsActive = !batch.product || true;
+        const productStatus = String(
+          (batch.product as { status?: string } | null)?.status
+            ?? 'active',
+        ).toLowerCase();
+        const productIsActive =
+          productStatus === 'active';
         const expiryIsValid = !batch.expiry_date || batch.expiry_date >= todayDate;
 
         return availableQuantity > 0 && batchIsActive && productIsActive && expiryIsValid;
@@ -5865,7 +5877,13 @@ function App() {
         return {
           code: `${sku}-B${batch.id}`,
           name: productName,
-          strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
+          strength: `${batch.batch_number} · ${
+            batch.expiry_date === todayDate
+              ? `Expires today · ${batch.expiry_date}`
+              : batch.expiry_date
+                ? `Exp ${batch.expiry_date}`
+                : 'No expiry'
+          } · ${locationName}`,
           quantity: 1,
           unitPrice: sellingPrice,
           priceTiers,
@@ -5978,7 +5996,14 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
+        const response = await getAllPharmaInventoryBatches(
+          session!.token,
+          posTenantSlug,
+          undefined,
+          {
+            sellableOnly: true,
+          },
+        );
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
@@ -6452,6 +6477,7 @@ function App() {
         );
 
         setPosSession(response.session);
+        setLivePosSession(response.session);
         setIsPosDayOpen(response.session.status === 'open');
         setPosTillZeroized(response.session.balance_cleared);
         setPosDeclaredCashAmount(
@@ -6674,6 +6700,69 @@ function App() {
         }
       }
 
+
+    function buildPosBatchConfirmationRows() {
+      return readActivePosCounterItems()
+        .flatMap((item) =>
+          allocatePosFefoBatches(
+            item.priceTiers,
+            item.quantity,
+          ).map((allocation) => {
+            const sourceBatch =
+              posInventoryBatches.find(
+                (batch) =>
+                  Number(batch.id)
+                  === Number(allocation.batchId),
+              );
+
+            return {
+              key:
+                `${item.code}:${allocation.batchId}`,
+              productName: item.name,
+              batchId: allocation.batchId,
+              batchNumber:
+                sourceBatch?.batch_number
+                ?? (
+                  Number(allocation.batchId)
+                    === Number(item.batchId)
+                    ? item.batchNumber
+                    : `Batch ${allocation.batchId}`
+                ),
+              expiryDate:
+                allocation.expiryDate,
+              availableQuantity:
+                allocation.availableQuantity,
+              allocatedQuantity:
+                allocation.allocatedQuantity,
+              sellingPrice:
+                allocation.sellingPrice,
+              affected:
+                allocation.affected,
+            };
+          }),
+        );
+    }
+
+    function openPosBatchConfirmation() {
+      const rows =
+        buildPosBatchConfirmationRows();
+
+      if (
+        !rows.some(
+          (row) => row.affected,
+        )
+      ) {
+        setPosNotice(
+          'Add at least one product to cart before confirming payment.',
+        );
+        return;
+      }
+
+      setPosConfirmedBatchKeys([]);
+      setPosBatchConfirmationOpen(true);
+      setPosNotice('');
+    }
+
 async function confirmTransaction() {
       if (
         !session?.token
@@ -6740,6 +6829,38 @@ async function confirmTransaction() {
 
       const currentItems = readActivePosCounterItems();
 
+      const customerReference =
+        posInvoiceContact.trim();
+
+      if (
+        customerReference
+        && !/^\d{9}$/.test(customerReference)
+      ) {
+        setPosNotice(
+          'Customer Phone/TIN must contain exactly 9 digits.',
+        );
+        return;
+      }
+
+      const affectedBatchRows =
+        buildPosBatchConfirmationRows()
+          .filter((row) => row.affected);
+
+      if (
+        !affectedBatchRows.every(
+          (row) =>
+            posConfirmedBatchKeys.includes(
+              row.key,
+            ),
+        )
+      ) {
+        setPosBatchConfirmationOpen(true);
+        setPosNotice(
+          'Tick each affected FEFO batch before completing the sale.',
+        );
+        return;
+      }
+
       const unavailableItem = currentItems.find(
         (item) =>
           item.quantity > item.availableQuantity
@@ -6789,6 +6910,14 @@ async function confirmTransaction() {
                   0,
                 ),
               tax_amount: 0,
+              customer_name:
+                posCustomerName.trim() || null,
+              customer_reference_type:
+                customerReference
+                  ? posCustomerReferenceType
+                  : null,
+              customer_reference_number:
+                customerReference || null,
               notes: [
                 'Created from the Pharmacy POS Counter.',
                 `Customer type: ${posCustomerType}.`,
@@ -6827,6 +6956,13 @@ async function confirmTransaction() {
                 prescription_verified:
                   posPrescriptionStatus === 'captured',
               })),
+              batch_confirmation:
+                affectedBatchRows.map((row) => ({
+                  stock_batch_id:
+                    row.batchId,
+                  quantity:
+                    row.allocatedQuantity,
+                })),
               payment: {
                 payment_method: posPaymentMethod,
                 generate_receipt: true,
@@ -6847,6 +6983,10 @@ async function confirmTransaction() {
         setPosConfirmedSale(checkoutResponse.sale);
         setPosConfirmedPayment(checkoutResponse.payment);
         setPosTransactionConfirmed(true);
+        setPosBatchConfirmationOpen(false);
+        setPosConfirmedBatchKeys([]);
+        setPosCustomerName('');
+        setPosInvoiceContact('');
 
         setPosCartItems([]);
         setPosRenderedCartItems([]);
@@ -7153,6 +7293,20 @@ async function confirmTransaction() {
         ? Math.max(100 - posSummaryCustomerContributionPercent, 0)
         : 0;
       const posLiveCartItems = readActivePosCounterItems();
+      const posBatchConfirmationRows =
+        buildPosBatchConfirmationRows();
+      const posAffectedBatchRows =
+        posBatchConfirmationRows.filter(
+          (row) => row.affected,
+        );
+      const posAllAffectedBatchesConfirmed =
+        posAffectedBatchRows.length > 0
+        && posAffectedBatchRows.every(
+          (row) =>
+            posConfirmedBatchKeys.includes(
+              row.key,
+            ),
+        );
       const posVisibleCartItems = posLiveCartItems;
       const posCartDisplayItems = posLiveCartItems;
       const posFinancialLineCount = posLiveCartItems.length;
@@ -7611,7 +7765,154 @@ async function confirmTransaction() {
                 );
               })()}
 
+              {posBatchConfirmationOpen ? (
+                <div
+                  className="pos-quantity-dialog-backdrop"
+                  role="presentation"
+                >
+                  <section
+                    className="pos-quantity-dialog pos-batch-confirmation-dialog"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Confirm FEFO batches"
+                  >
+                    <div className="section-heading">
+                      <div>
+                        <span>Stock and price confirmation</span>
+                        <h3>Confirm batches to dispense</h3>
+                      </div>
+                    </div>
+
+                    <p className="muted">
+                      All available batches are shown. Tick every affected
+                      batch so the physical products picked match the stock
+                      deducted by the system.
+                    </p>
+
+                    <div className="table-scroll">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Pick</th>
+                            <th>Product</th>
+                            <th>Batch</th>
+                            <th>Expiry</th>
+                            <th>Available</th>
+                            <th>Deduct</th>
+                            <th>Price</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {posBatchConfirmationRows.map((row) => (
+                            <tr key={row.key}>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  disabled={!row.affected}
+                                  checked={
+                                    row.affected
+                                    && posConfirmedBatchKeys.includes(
+                                      row.key,
+                                    )
+                                  }
+                                  onChange={(event) =>
+                                    setPosConfirmedBatchKeys(
+                                      (current) =>
+                                        event.target.checked
+                                          ? Array.from(
+                                              new Set([
+                                                ...current,
+                                                row.key,
+                                              ]),
+                                            )
+                                          : current.filter(
+                                              (key) =>
+                                                key !== row.key,
+                                            ),
+                                    )
+                                  }
+                                />
+                              </td>
+                              <td>{row.productName}</td>
+                              <td>{row.batchNumber}</td>
+                              <td>
+                                {row.expiryDate === todayDate
+                                  ? 'Expires today'
+                                  : row.expiryDate ?? 'No expiry'}
+                              </td>
+                              <td>
+                                {row.availableQuantity.toLocaleString('en-RW')}
+                              </td>
+                              <td>
+                                {row.allocatedQuantity.toLocaleString('en-RW')}
+                              </td>
+                              <td>
+                                RWF {row.sellingPrice.toLocaleString('en-RW')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="pos-quantity-dialog__actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPosBatchConfirmationOpen(false);
+                          setPosConfirmedBatchKeys([]);
+                        }}
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        className="primary"
+                        disabled={
+                          !posAllAffectedBatchesConfirmed
+                          || isConfirmingPosTransaction
+                        }
+                        onClick={() => {
+                          setPosBatchConfirmationOpen(false);
+                          void confirmTransaction();
+                        }}
+                      >
+                        Confirm batches and complete sale
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              ) : null}
+
               <section className="pos-sale-transaction-section" aria-label="Cart, Transaction Set-UP, and payment summary">
+
+                {posSession?.session_mode === 'historical'
+                  && livePosSession
+                  && livePosSession.status !== 'closed' ? (
+                    <div className="notice">
+                      <strong>Live POS remains open.</strong>{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPosSession(livePosSession);
+                          setIsPosDayOpen(true);
+                          setPosTillZeroized(
+                            livePosSession.balance_cleared,
+                          );
+                          setPosDeclaredCashAmount(
+                            String(
+                              livePosSession.expected_cash_amount,
+                            ),
+                          );
+                          setPosNotice(
+                            'Live POS session resumed.',
+                          );
+                        }}
+                      >
+                        Return to Live POS
+                      </button>
+                    </div>
+                  ) : null}
 
                 <HistoricalPosWorkflow
                   token={session!.token}
@@ -7637,6 +7938,25 @@ async function confirmTransaction() {
                     nextSession,
                     message,
                   ) => {
+                    if (
+                      nextSession.session_mode
+                        === 'historical'
+                      && posSession
+                      && posSession.session_mode
+                        !== 'historical'
+                      && posSession.status
+                        !== 'closed'
+                    ) {
+                      setLivePosSession(posSession);
+                    }
+
+                    if (
+                      nextSession.session_mode
+                        !== 'historical'
+                    ) {
+                      setLivePosSession(nextSession);
+                    }
+
                     setPosSession(nextSession);
                     setIsPosDayOpen(
                       nextSession.status === 'open',
@@ -8032,12 +8352,51 @@ async function confirmTransaction() {
                     </label>
 
                     <label>
-                      <span>Customer contact / lookup</span>
+                      <span>Customer name</span>
+                      <input
+                        value={posCustomerName}
+                        maxLength={191}
+                        onChange={(event) => {
+                          setPosCustomerName(event.target.value);
+                          setPosTransactionConfirmed(false);
+                        }}
+                        placeholder="Optional customer name"
+                      />
+                    </label>
+                    <label>
+                      <span>Reference type</span>
+                      <select
+                        value={posCustomerReferenceType}
+                        onChange={(event) => {
+                          setPosCustomerReferenceType(
+                            event.target.value as 'phone' | 'tin',
+                          );
+                          setPosTransactionConfirmed(false);
+                        }}
+                      >
+                        <option value="phone">Phone</option>
+                        <option value="tin">TIN</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Customer Phone/TIN</span>
                       <input
                         value={posInvoiceContact}
-                        onChange={(event) => setPosInvoiceContact(event.target.value)}
-                        placeholder="Phone, WhatsApp, or email"
+                        inputMode="numeric"
+                        maxLength={9}
+                        onChange={(event) => {
+                          setPosInvoiceContact(
+                            event.target.value
+                              .replace(/\D/g, '')
+                              .slice(0, 9),
+                          );
+                          setPosTransactionConfirmed(false);
+                        }}
+                        placeholder="9 digits"
                       />
+                      <small>
+                        Enter exactly 9 digits when provided.
+                      </small>
                     </label>
                   </div>
                 </section>
@@ -8147,7 +8506,7 @@ async function confirmTransaction() {
 
                   <button
                     type="button"
-                    onClick={() => void confirmTransaction()}
+                    onClick={openPosBatchConfirmation}
                     disabled={isConfirmingPosTransaction}
                   >
                     {isConfirmingPosTransaction

@@ -932,12 +932,12 @@ const [isExpanded, setIsExpanded] =
             <div className="historical-pos-body">
               {activeNonHistoricalSession ? (
                 <div
-                  className="historical-pos-message historical-pos-message--warning"
-                  role="alert"
+                  className="historical-pos-message historical-pos-message--success"
+                  role="status"
                 >
-                  Close the active Live POS session
-                  before opening a historical
-                  session.
+                  Your Live POS session will remain open.
+                  You can return to it after historical
+                  work.
                 </div>
               ) : null}
 
@@ -1054,7 +1054,7 @@ const [isExpanded, setIsExpanded] =
                   disabled={
                     isChecking
                     || isOpening
-                    || activeNonHistoricalSession
+
                   }
                 >
                   {isChecking
@@ -1365,7 +1365,7 @@ const [isExpanded, setIsExpanded] =
                     !canOpen
                     || !availability
                     || isOpening
-                    || activeNonHistoricalSession
+
                   }
                 >
                   {isOpening
