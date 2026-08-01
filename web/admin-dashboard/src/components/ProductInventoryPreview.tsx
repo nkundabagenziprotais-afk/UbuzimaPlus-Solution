@@ -178,6 +178,22 @@ function normalizeInventoryUnitCostInput(value: string): string {
   return `${wholePart || '0'}.${fractionPart}`;
 }
 
+function formatInventoryUnitCostInput(value: string): string {
+  const normalized = value.trim().replace(/,/g, '.');
+
+  if (!normalized) return '';
+
+  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized)) {
+    return value;
+  }
+
+  const amount = Number(normalized);
+
+  return Number.isFinite(amount) && amount >= 0
+    ? amount.toFixed(2)
+    : value;
+}
+
 function optionalInventoryUnitCost(value: string): number | null {
   const normalized = value.trim().replace(/,/g, '.');
 
@@ -381,6 +397,23 @@ function formatRwf(value: number | null | undefined): string {
     currency: 'RWF',
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatInventoryUnitCostRwf(
+  value: number | null | undefined,
+): string {
+  if (value === null || value === undefined) {
+    return 'Price pending';
+  }
+
+  const amount = Number(value);
+
+  return new Intl.NumberFormat('en-RW', {
+    style: 'currency',
+    currency: 'RWF',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(amount) ? amount : 0);
 }
 
 function formatDate(value: string | null): string {
@@ -6039,6 +6072,10 @@ export function ProductInventoryPreview({
                         ...inventoryCreateForm,
                         unit_cost: normalizeInventoryUnitCostInput(event.target.value),
                       })}
+                      onBlur={() => setInventoryCreateForm((current) => ({
+                        ...current,
+                        unit_cost: formatInventoryUnitCostInput(current.unit_cost),
+                      }))}
                       placeholder="Supplier cost"
                     />
                   </label>
@@ -6090,7 +6127,7 @@ export function ProductInventoryPreview({
                       <option value="">Select registered supplier</option>
                       {procurementSupplierOptions.map((supplier) => (
                         <option key={supplier.id} value={supplier.id}>
-                          {supplier.name} ({supplier.supplier_code})
+                          {supplier.name} — Supplier ID: {supplier.id}
                         </option>
                       ))}
                     </select>
@@ -6462,7 +6499,7 @@ export function ProductInventoryPreview({
                             <span className="cell-muted">{batch.stock_location.code}</span>
                           </td>
                           <td className="cell-number">{formatNumber(batch.available_quantity)}</td>
-                          <td className="cell-number">{formatRwf(batch.unit_cost)}</td>
+                          <td className="cell-number">{formatInventoryUnitCostRwf(batch.unit_cost)}</td>
                           <td className="cell-number">{formatInventoryBatchMarginPercent(batch, defaultMargin)}</td>
                           <td className="cell-number">{formatRwf(computedSellingPrice)}</td>
                           <td className="cell-wrap">
