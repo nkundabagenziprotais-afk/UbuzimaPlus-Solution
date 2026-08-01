@@ -11,7 +11,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PlatformFoundationSeeder::class,
             AuthRbacSeeder::class,
-            PharmacistProcurementAccessSeeder::class,
             PharmacoCoreSeeder::class,
             PharmacoProductInventorySeeder::class,
             ProductMasterCorrectionSeeder::class,
