@@ -1748,6 +1748,11 @@ class ProductInventoryController extends Controller
             'ids.*' => ['integer'],
             'action' => ['required', Rule::in(['approve', 'activate', 'deactivate', 'discontinue', 'update', 'delete'])],
             'values' => ['sometimes', 'array'],
+            'reason' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
         ]);
 
         $products = Product::query()
@@ -1762,7 +1767,15 @@ class ProductInventoryController extends Controller
             try {
                 match ($validated['action']) {
                     'approve' => $product->forceFill(['regulatory_status' => 'approved', 'status' => 'active'])->save(),
-                    'activate' => $product->forceFill(['status' => 'active'])->save(),
+                    'activate' =>
+                        $this->activateProductIfSafe(
+                            $product,
+                            (string) (
+                                $validated['reason']
+                                ?? ''
+                            ),
+                            $request->user()?->id
+                        ),
                     'deactivate' => $product->forceFill(['status' => 'inactive'])->save(),
                     'discontinue' => $product->forceFill(['status' => 'discontinued'])->save(),
                     'update' => $this->applyBulkProductUpdate($product, $validated['values'] ?? []),
@@ -1801,6 +1814,8 @@ class ProductInventoryController extends Controller
             'failed_rows' => count($failed),
             'summary' => [
                 'action' => $validated['action'],
+                'reason' =>
+                    $validated['reason'] ?? null,
                 'failed' => $failed,
             ],
         ]);
@@ -1812,6 +1827,8 @@ class ProductInventoryController extends Controller
                 'tenant_slug' => $tenant->slug,
                 'bulk_operation_run_id' => $run->id,
                 'action' => $validated['action'],
+                'reason' =>
+                    $validated['reason'] ?? null,
                 'processed' => $processed,
                 'failed' => count($failed),
             ],
@@ -1834,6 +1851,66 @@ class ProductInventoryController extends Controller
         ]);
     }
 
+
+
+    private function activateProductIfSafe(
+        Product $product,
+        string $reason,
+        ?int $userId
+    ): void {
+        $reason = trim($reason);
+
+        if (mb_strlen($reason) < 5) {
+            throw ValidationException::withMessages([
+                'reason' => [
+                    'Enter a short activation reason.',
+                ],
+            ]);
+        }
+
+        if ($product->status === 'active') {
+            return;
+        }
+
+        if ($product->status !== 'inactive') {
+            throw ValidationException::withMessages([
+                'status' => [
+                    'Only an inactive product can be '
+                    . 'activated from this action.',
+                ],
+            ]);
+        }
+
+        if (
+            strtolower(
+                (string) $product->regulatory_status
+            ) !== 'approved'
+        ) {
+            throw ValidationException::withMessages([
+                'regulatory_status' => [
+                    'The product must be regulatory '
+                    . 'approved before activation.',
+                ],
+            ]);
+        }
+
+        $metadata = is_array($product->metadata)
+            ? $product->metadata
+            : [];
+
+        $product->forceFill([
+            'status' => 'active',
+            'metadata' => [
+                ...$metadata,
+                'last_manual_activation' => [
+                    'reason' => $reason,
+                    'activated_by' => $userId,
+                    'activated_at' =>
+                        now()->toISOString(),
+                ],
+            ],
+        ])->save();
+    }
 
     public function receiveStock(
         Request $request,

@@ -1000,6 +1000,21 @@ class SalesDispensingController extends Controller
             'discount_amount' => ['nullable', 'numeric', 'gte:0'],
             'tax_amount' => ['nullable', 'numeric', 'gte:0'],
             'notes' => ['nullable', 'string'],
+            'customer_name' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'customer_reference_type' => [
+                'nullable',
+                'required_with:customer_reference_number',
+                'in:phone,tin',
+            ],
+            'customer_reference_number' => [
+                'nullable',
+                'required_with:customer_reference_type',
+                'regex:/^\d{9}$/',
+            ],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
@@ -1190,6 +1205,23 @@ class SalesDispensingController extends Controller
                     'rx_prescription_warning_required' => $prescriptionWarningRequired,
                     'rx_prescription_warning_acknowledged' => $prescriptionWarningRequired,
                     'rx_prescription_warning_products' => $prescriptionWarningProducts,
+                    'customer_name' => filled(
+                        $validated['customer_name'] ?? null
+                    )
+                        ? trim(
+                            (string) $validated[
+                                'customer_name'
+                            ]
+                        )
+                        : null,
+                    'customer_reference_type' =>
+                        $validated[
+                            'customer_reference_type'
+                        ] ?? null,
+                    'customer_reference_number' =>
+                        $validated[
+                            'customer_reference_number'
+                        ] ?? null,
                     ...($historicalSession ? [
                         'entry_mode' => 'historical',
                         'business_date' => $historicalSession->business_date
@@ -1276,6 +1308,21 @@ class SalesDispensingController extends Controller
             'discount_amount' => ['nullable', 'numeric', 'gte:0'],
             'tax_amount' => ['nullable', 'numeric', 'gte:0'],
             'notes' => ['nullable', 'string'],
+            'customer_name' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'customer_reference_type' => [
+                'nullable',
+                'required_with:customer_reference_number',
+                'in:phone,tin',
+            ],
+            'customer_reference_number' => [
+                'nullable',
+                'required_with:customer_reference_type',
+                'regex:/^\d{9}$/',
+            ],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
@@ -1296,6 +1343,20 @@ class SalesDispensingController extends Controller
             'items.*.tax_amount' => ['nullable', 'numeric', 'gte:0'],
             'items.*.stock_batch_id' => ['required', 'integer'],
             'items.*.prescription_verified' => ['sometimes', 'boolean'],
+            'batch_confirmation' => [
+                'nullable',
+                'array',
+                'min:1',
+            ],
+            'batch_confirmation.*.stock_batch_id' => [
+                'required',
+                'integer',
+            ],
+            'batch_confirmation.*.quantity' => [
+                'required',
+                'numeric',
+                'gt:0',
+            ],
             'payment' => ['required', 'array'],
             'payment.payment_method' => [
                 'required',
@@ -1387,6 +1448,11 @@ class SalesDispensingController extends Controller
                         items: $validated['items']
                     );
 
+                $this->assertConfirmedBatchAllocation(
+                    $validated['batch_confirmation'] ?? [],
+                    $allocatedCheckoutItems
+                );
+
                 $createPayload = [
                     'branch_id' => $validated['branch_id'],
                     'pharmaco_customer_id' =>
@@ -1400,6 +1466,16 @@ class SalesDispensingController extends Controller
                     'tax_amount' =>
                         $validated['tax_amount'] ?? 0,
                     'notes' => $validated['notes'] ?? null,
+                    'customer_name' =>
+                        $validated['customer_name'] ?? null,
+                    'customer_reference_type' =>
+                        $validated[
+                            'customer_reference_type'
+                        ] ?? null,
+                    'customer_reference_number' =>
+                        $validated[
+                            'customer_reference_number'
+                        ] ?? null,
                     'items' => array_map(
                         static fn (array $item): array => [
                             'product_id' => $item['product_id'],
@@ -2302,6 +2378,61 @@ class SalesDispensingController extends Controller
         return $payload;
     }
 
+
+    /**
+     * Confirm that the batches acknowledged by the cashier are
+     * exactly the FEFO batches locked by checkout.
+     */
+    private function assertConfirmedBatchAllocation(
+        array $confirmed,
+        array $allocated
+    ): void {
+        if ($confirmed === []) {
+            return;
+        }
+
+        $normalize = static function (array $rows): array {
+            $quantities = [];
+
+            foreach ($rows as $row) {
+                $batchId = (int) (
+                    $row['stock_batch_id'] ?? 0
+                );
+
+                if ($batchId <= 0) {
+                    continue;
+                }
+
+                $quantities[$batchId] = round(
+                    (
+                        $quantities[$batchId]
+                        ?? 0
+                    ) + (float) (
+                        $row['quantity'] ?? 0
+                    ),
+                    3
+                );
+            }
+
+            ksort($quantities);
+
+            return $quantities;
+        };
+
+        if (
+            $normalize($confirmed)
+            !== $normalize($allocated)
+        ) {
+            throw ValidationException::withMessages([
+                'batch_confirmation' => [
+                    'Available batch quantities changed. '
+                    . 'Review the FEFO batch confirmation '
+                    . 'before completing the sale.',
+                ],
+            ]);
+        }
+    }
+
     private function shadowPostPaymentToFinance(PharmacoPayment $payment, PharmacoSale $sale): void
     {
         try {
@@ -2340,6 +2471,17 @@ class SalesDispensingController extends Controller
             'payment_status' => $sale->payment_status,
             'sold_at' => $sale->sold_at?->toISOString(),
             'notes' => $sale->notes,
+            'customer_name' =>
+                $sale->metadata['customer_name']
+                    ?? $sale->customer?->name,
+            'customer_reference_type' =>
+                $sale->metadata[
+                    'customer_reference_type'
+                ] ?? null,
+            'customer_reference_number' =>
+                $sale->metadata[
+                    'customer_reference_number'
+                ] ?? null,
             'branch' => $sale->branch ? [
                 'id' => $sale->branch->id,
                 'name' => $sale->branch->name,

@@ -27,6 +27,7 @@ import {
   receivePharmaStock,
   updatePharmaStockBatch,
   deletePharmaStockBatch,
+  bulkActionPharmaProducts,
 } from '../lib/api';
 
 const defaultApprovedInventoryMargin = 1.4;
@@ -3670,12 +3671,124 @@ export function ProductInventoryPreview({
     );
   }
 
+
+  async function activateSafeProduct(
+    product: PharmaProduct,
+  ) {
+    if (!tenantSlug) {
+      setError(
+        'No tenant assignment is available.',
+      );
+      return;
+    }
+
+    if (
+      product.status !== 'inactive'
+      || product.regulatory_status !== 'approved'
+    ) {
+      setError(
+        'Only an approved, inactive product can be activated.',
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Activate ${product.name} for operational use?`,
+      )
+    ) {
+      return;
+    }
+
+    const reason = window.prompt(
+      'Reason for activation:',
+      'Verified safe product required for POS sale.',
+    );
+
+    if (reason === null) {
+      return;
+    }
+
+    if (reason.trim().length < 5) {
+      setError(
+        'Enter a short activation reason.',
+      );
+      return;
+    }
+
+    setIsSavingProductMaster(true);
+    setError('');
+    setInventoryNotice('');
+
+    try {
+      const response =
+        await bulkActionPharmaProducts(
+          token,
+          tenantSlug,
+          {
+            ids: [product.id],
+            action: 'activate',
+            reason: reason.trim(),
+          },
+        );
+
+      if (
+        Number(
+          response.bulk_operation.failed_rows
+          ?? 0,
+        ) > 0
+      ) {
+        const summary =
+          response.bulk_operation.summary as {
+            failed?: Array<{
+              message?: string;
+            }>;
+          };
+
+        throw new Error(
+          summary.failed?.[0]?.message
+          ?? 'Product activation was blocked.',
+        );
+      }
+
+      setInventoryNotice(
+        `${product.name} activated. POS eligibility will refresh from current inventory.`,
+      );
+
+      setViewingProductMasterProduct(null);
+      setActiveProductMasterAction(null);
+
+      await loadInventoryPreview(
+        'product-master',
+        true,
+      );
+    } catch (error: unknown) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to activate the product.',
+      );
+    } finally {
+      setIsSavingProductMaster(false);
+    }
+  }
+
   function renderProductActions(product: PharmaProduct, nearestBatch?: PharmaStockBatch | null) {
     return (
       <div className="table-action-row product-master-action-button-row">
         <button type="button" onClick={() => openProductMasterViewFromProduct(product)}>View</button>
         <button type="button" onClick={() => openProductMasterEditFromProduct(product)}>Edit</button>
         <button type="button" onClick={() => openProductMasterReplicateFromProduct(product)}>Replicate</button>
+        {product.status === 'inactive' && product.regulatory_status === 'approved' ? (
+          <button
+            type="button"
+            className="primary"
+            disabled={isSavingProductMaster}
+            onClick={() => void activateSafeProduct(product)}
+          >
+            Activate
+          </button>
+        ) : null}
         <button type="button" className="danger" onClick={() => requestDeleteProductMaster(product)}>Delete</button>
       </div>
     );

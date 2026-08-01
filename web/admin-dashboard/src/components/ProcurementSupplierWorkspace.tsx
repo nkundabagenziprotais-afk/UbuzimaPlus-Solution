@@ -260,6 +260,12 @@ export function ProcurementSupplierWorkspace({
       'pharmaco.procurement.suppliers.manage',
     );
 
+  const canCreateSuppliers =
+    canManageSuppliers ||
+    permissions.includes(
+      'pharmaco.procurement.suppliers.create',
+    );
+
   async function loadSuppliers() {
     if (!tenantSlug) {
       setError(
@@ -304,13 +310,13 @@ export function ProcurementSupplierWorkspace({
   useEffect(() => {
     if (
       initialMode === 'create' &&
-      canManageSuppliers
+      canCreateSuppliers
     ) {
       setSelectedSupplier(null);
       setForm(blankSupplierForm());
       setFormMode('create');
     }
-  }, [initialMode, canManageSuppliers]);
+  }, [initialMode, canCreateSuppliers]);
 
   const filteredSuppliers = useMemo(() => {
     const query = normalizedText(searchTerm);
@@ -396,9 +402,19 @@ export function ProcurementSupplierWorkspace({
   }
 
   async function saveSupplier() {
-    if (!canManageSuppliers) {
+    const isCreateOperation =
+      formMode === 'create';
+
+    const canSaveSupplier =
+      isCreateOperation
+        ? canCreateSuppliers
+        : canManageSuppliers;
+
+    if (!canSaveSupplier) {
       setError(
-        'Supplier management permission is required.',
+        isCreateOperation
+          ? 'Supplier creation permission is required.'
+          : 'Supplier management permission is required.',
       );
       return;
     }
@@ -625,7 +641,7 @@ export function ProcurementSupplierWorkspace({
               : 'Refresh'}
           </button>
 
-          {canManageSuppliers && (
+          {canCreateSuppliers && (
             <button
               type="button"
               className="primary"

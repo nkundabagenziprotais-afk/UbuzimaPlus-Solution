@@ -1571,6 +1571,7 @@ export async function bulkActionPharmaProducts(
     ids: number[];
     action: 'approve' | 'activate' | 'deactivate' | 'discontinue' | 'update' | 'delete';
     values?: Record<string, unknown>;
+    reason?: string;
   },
 ): Promise<ProductBulkOperationResponse> {
   return sendJsonWithTenant<ProductBulkOperationResponse>(
@@ -2104,6 +2105,9 @@ export type CreatePharmaSalePayload = {
   discount_amount?: number;
   tax_amount?: number;
   notes?: string | null;
+  customer_name?: string | null;
+  customer_reference_type?: 'phone' | 'tin' | null;
+  customer_reference_number?: string | null;
   items: Array<{
     product_id: number;
     quantity: number;
@@ -2145,6 +2149,9 @@ export type CheckoutPharmaSalePayload = {
   discount_amount?: number;
   tax_amount?: number;
   notes?: string | null;
+  customer_name?: string | null;
+  customer_reference_type?: 'phone' | 'tin' | null;
+  customer_reference_number?: string | null;
   items: Array<{
     product_id: number;
     quantity: number;
@@ -2162,6 +2169,10 @@ export type CheckoutPharmaSalePayload = {
     tax_amount?: number;
     stock_batch_id: number;
     prescription_verified?: boolean;
+  }>;
+  batch_confirmation?: Array<{
+    stock_batch_id: number;
+    quantity: number;
   }>;
   payment: {
     payment_method:

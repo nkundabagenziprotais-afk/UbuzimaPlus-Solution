@@ -125,3 +125,45 @@ export function highestAffectedSellingPrice(
     ? highestPrice
     : safeNumber(fallbackSellingPrice);
 }
+
+
+export type PosFefoAllocation =
+  PosFefoPriceTier & {
+    allocatedQuantity: number;
+    affected: boolean;
+  };
+
+export function allocatePosFefoBatches(
+  tiers: PosFefoPriceTier[],
+  requestedBaseQuantity: number,
+): PosFefoAllocation[] {
+  let remaining = safeNumber(
+    requestedBaseQuantity,
+  );
+
+  return tiers.map((tier) => {
+    const availableQuantity = safeNumber(
+      tier.availableQuantity,
+    );
+
+    const allocatedQuantity =
+      remaining > 0
+        ? Math.min(
+            availableQuantity,
+            remaining,
+          )
+        : 0;
+
+    remaining = Math.max(
+      0,
+      remaining - allocatedQuantity,
+    );
+
+    return {
+      ...tier,
+      availableQuantity,
+      allocatedQuantity,
+      affected: allocatedQuantity > 0,
+    };
+  });
+}

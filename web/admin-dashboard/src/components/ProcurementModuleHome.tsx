@@ -67,7 +67,7 @@ function workspacePermission(
 ): string[] {
   const map: Record<string, string[]> = {
     'create-supplier': [
-      'pharmaco.procurement.suppliers.manage',
+      'pharmaco.procurement.suppliers.create',
     ],
     'supplier-list': [
       'pharmaco.procurement.view',
