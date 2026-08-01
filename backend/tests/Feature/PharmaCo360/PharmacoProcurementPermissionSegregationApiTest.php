@@ -112,7 +112,7 @@ class PharmacoProcurementPermissionSegregationApiTest extends TestCase
             );
     }
 
-    public function test_procurement_view_does_not_grant_supplier_management(): void
+    public function test_procurement_view_does_not_grant_supplier_creation(): void
     {
         $this->seed();
 
@@ -132,7 +132,7 @@ class PharmacoProcurementPermissionSegregationApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath(
                 'missing_permissions.0',
-                'pharmaco.procurement.suppliers.manage'
+                'pharmaco.procurement.suppliers.create'
             );
 
         $this->assertDatabaseMissing('pharmaco_suppliers', [
@@ -334,6 +334,7 @@ class PharmacoProcurementPermissionSegregationApiTest extends TestCase
             'pharmaco.product_master.view',
             'pharmaco.procurement.view',
             'pharmaco.procurement.suppliers.manage',
+            'pharmaco.procurement.suppliers.create',
             'pharmaco.procurement.purchase_order.create',
             'pharmaco.procurement.purchase_order.approve',
             'pharmaco.procurement.purchase_order.receive',

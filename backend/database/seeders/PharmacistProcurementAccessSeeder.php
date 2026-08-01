@@ -15,6 +15,7 @@ class PharmacistProcurementAccessSeeder extends Seeder
 
     private const PERMISSION_CODES = [
         'pharmaco.procurement.view',
+        'pharmaco.procurement.suppliers.create',
         'pharmaco.procurement.purchase_order.create',
         'pharmaco.procurement.purchase_order.receive',
     ];

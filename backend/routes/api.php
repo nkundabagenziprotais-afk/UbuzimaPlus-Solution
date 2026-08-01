@@ -747,7 +747,7 @@ Route::middleware('auth:sanctum')->prefix('v1/pharmaco')->group(function () {
 
     Route::post('/suppliers', [ProcurementController::class, 'createSupplier'])
         ->middleware([
-            'permission:pharmaco.procurement.suppliers.manage',
+            'permission:pharmaco.procurement.suppliers.create',
             'tenant.module:pharmaco.suppliers',
         ]);
 

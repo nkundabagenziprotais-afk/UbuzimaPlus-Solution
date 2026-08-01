@@ -8,6 +8,7 @@ receiving administrative, approval, invoicing, or payment authority.
 ## Granted permissions
 
 - `pharmaco.procurement.view`
+- `pharmaco.procurement.suppliers.create`
 - `pharmaco.procurement.purchase_order.create`
 - `pharmaco.procurement.purchase_order.receive`
 
@@ -16,6 +17,7 @@ the granular frontend permissions required to:
 
 - Open Procurement
 - View suppliers
+- Create suppliers
 - View purchase orders and outstanding orders
 - Create or submit purchase orders
 - View receiving history
@@ -23,7 +25,7 @@ the granular frontend permissions required to:
 
 ## Explicitly excluded permissions
 
-- Supplier creation or supplier-master management
+- Supplier update, deactivation, deletion, or supplier-master management
 - Purchase-order approval
 - Supplier invoice management or approval
 - Supplier payment viewing or recording

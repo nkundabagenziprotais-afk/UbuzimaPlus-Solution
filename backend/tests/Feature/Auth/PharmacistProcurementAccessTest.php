@@ -15,6 +15,7 @@ class PharmacistProcurementAccessTest extends TestCase
 
     private const REQUIRED_PERMISSIONS = [
         'pharmaco.procurement.view',
+        'pharmaco.procurement.suppliers.create',
         'pharmaco.procurement.purchase_order.create',
         'pharmaco.procurement.purchase_order.receive',
     ];
@@ -141,6 +142,53 @@ class PharmacistProcurementAccessTest extends TestCase
         );
     }
 
+    public function test_supplier_creation_is_separated_from_supplier_management(): void
+    {
+        $routeSource = file_get_contents(
+            base_path('routes/api.php'),
+        );
+
+        $workflowSource = file_get_contents(
+            base_path(
+                '../web/admin-dashboard/src/components/ProcurementWorkflow.tsx',
+            ),
+        );
+
+        $this->assertIsString($routeSource);
+        $this->assertIsString($workflowSource);
+
+        $this->assertMatchesRegularExpression(
+            "/Route::post\\('\\/suppliers'.*?" .
+            "pharmaco\\.procurement\\.suppliers\\.create.*?;/s",
+            $routeSource,
+        );
+
+        $this->assertMatchesRegularExpression(
+            "/Route::patch\\('\\/suppliers\\/\\{supplier\\}'.*?" .
+            "pharmaco\\.procurement\\.suppliers\\.manage.*?;/s",
+            $routeSource,
+        );
+
+        $this->assertStringContainsString(
+            'const canCreateSuppliers',
+            $workflowSource,
+        );
+
+        $this->assertStringContainsString(
+            "'pharmaco.procurement.suppliers.create'",
+            $workflowSource,
+        );
+
+        $this->assertStringContainsString(
+            'disabled={isSavingSupplier || !canCreateSuppliers}',
+            $workflowSource,
+        );
+
+        $this->assertStringContainsString(
+            'Supplier creation permission is required.',
+            $workflowSource,
+        );
+    }
     private function seedMinimalRbacFixture(): void
     {
         $now = now();
@@ -165,6 +213,8 @@ class PharmacistProcurementAccessTest extends TestCase
                 'Create Purchase Orders',
             'pharmaco.procurement.purchase_order.receive' =>
                 'Receive Purchase Orders',
+            'pharmaco.procurement.suppliers.create' =>
+                'Create Procurement Suppliers',
             'pharmaco.procurement.suppliers.manage' =>
                 'Manage Procurement Suppliers',
             'pharmaco.procurement.purchase_order.approve' =>
