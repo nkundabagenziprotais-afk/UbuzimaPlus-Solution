@@ -10,9 +10,53 @@ class PharmacoPosClockEvent extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['uuid', 'tenant_id', 'pos_session_id', 'user_id', 'event_type', 'amount', 'notes', 'metadata'];
-    protected $casts = ['amount' => 'decimal:2', 'metadata' => 'array'];
+    protected $fillable = [
+        'uuid',
+        'tenant_id',
+        'pos_session_id',
+        'user_id',
+        'event_type',
+        'amount',
+        'notes',
+        'metadata',
+    ];
 
-    public function session(): BelongsTo { return $this->belongsTo(PharmacoPosSession::class, 'pos_session_id'); }
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'metadata' => 'array',
+    ];
+
+    protected static function booted(): void
+    {
+        static::updating(
+            function (): void {
+                throw new \LogicException(
+                    'POS clock events are immutable.'
+                );
+            }
+        );
+
+        static::deleting(
+            function (): void {
+                throw new \LogicException(
+                    'POS clock events cannot be deleted.'
+                );
+            }
+        );
+    }
+
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(
+            PharmacoPosSession::class,
+            'pos_session_id'
+        );
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(
+            User::class
+        );
+    }
 }

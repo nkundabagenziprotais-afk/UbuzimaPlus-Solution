@@ -293,6 +293,8 @@ function normalizeHistoricalSession(
     sequence_number: session.sequence_number,
     business_date: session.business_date,
     session_mode: "historical",
+      terminal_identifier: "historical-session",
+      terminal_label: "Historical session",
     historical_reason: historicalPosAutoReasonGlobal(),
     historical_reference:
       session.historical_reference,

@@ -278,22 +278,21 @@ class PosSessionAdminController extends Controller
                     'metadata' => $metadata,
                 ];
 
-                if (
+
+                $locked->fill($updates)->save();
+
+                $authorizeNextSession =
                     (bool) (
                         $validated[
                             'authorize_next_session'
                         ] ?? false
-                    )
-                ) {
-                    $updates['reset_authorized_at'] = now();
-                    $updates['reset_authorized_by'] =
-                        $request->user()->id;
-                    $updates['reset_reason'] =
-                        'Force-close support authorization: '
-                        . $validated['reason'];
-                }
+                    );
 
-                $locked->fill($updates)->save();
+                if ($authorizeNextSession) {
+                    $policy->ensureCanAuthorizeReset(
+                        $locked
+                    );
+                }
 
                 PharmacoPosClockEvent::query()->create([
                     'uuid' => (string) Str::uuid(),
@@ -304,18 +303,50 @@ class PosSessionAdminController extends Controller
                     'amount' => $declaredCash,
                     'notes' => $validated['reason'],
                     'metadata' => [
-                        'expected_cash_amount' => $expectedCash,
-                        'declared_cash_amount' => $declaredCash,
-                        'variance_amount' => $variance,
-                        'previous_status' => $session->status,
+                        'expected_cash_amount' =>
+                            $expectedCash,
+                        'declared_cash_amount' =>
+                            $declaredCash,
+                        'variance_amount' =>
+                            $variance,
+                        'previous_status' =>
+                            $session->status,
                         'next_session_authorized' =>
-                            (bool) (
-                                $validated[
-                                    'authorize_next_session'
-                                ] ?? false
-                            ),
+                            $authorizeNextSession,
                     ],
                 ]);
+
+                if ($authorizeNextSession) {
+                    PharmacoPosClockEvent::query()
+                        ->create([
+                            'uuid' =>
+                                (string) Str::uuid(),
+                            'tenant_id' =>
+                                $tenant->id,
+                            'pos_session_id' =>
+                                $locked->id,
+                            'user_id' =>
+                                $request->user()->id,
+                            'event_type' =>
+                                'admin_reset',
+                            'amount' =>
+                                null,
+                            'notes' =>
+                                'Force-close support '
+                                . 'authorization: '
+                                . $validated['reason'],
+                            'metadata' => [
+                                'support_action' =>
+                                    'authorize_additional_daily_session',
+                                'authorization_source' =>
+                                    'admin_force_close',
+                                'force_close_event_recorded' =>
+                                    true,
+                                'session_number_preserved' =>
+                                    true,
+                            ],
+                        ]);
+                }
 
                 return $locked->fresh([
                     'branch:id,name,code',
@@ -409,13 +440,6 @@ class PosSessionAdminController extends Controller
 
                 $policy->ensureCanAuthorizeReset($locked);
 
-                $locked->fill([
-                    'reset_authorized_at' => now(),
-                    'reset_authorized_by' =>
-                        $request->user()->id,
-                    'reset_reason' =>
-                        $validated['reason'],
-                ])->save();
 
                 PharmacoPosClockEvent::query()->create([
                     'uuid' => (string) Str::uuid(),
@@ -480,6 +504,11 @@ class PosSessionAdminController extends Controller
     ): array {
         $expectedCash = $policy->expectedCash($session);
 
+        $resetAuthorization =
+            $policy->resetAuthorizationSnapshot(
+                $session
+            );
+
         $openedAt = $session->opened_at;
 
         $stuck =
@@ -539,24 +568,24 @@ class PosSessionAdminController extends Controller
             'balance_clearance_amount' =>
                 (float) $session->balance_clearance_amount,
             'reset_authorized' =>
-                $session->reset_authorized_at !== null,
-            'reset_reason' => $session->reset_reason,
+                $resetAuthorization !== null,
+            'reset_reason' =>
+                $resetAuthorization['reason']
+                    ?? null,
             'reset_authorized_at' =>
-                $session->reset_authorized_at?->toISOString(),
+                optional(
+                    $resetAuthorization[
+                        'authorized_at'
+                    ] ?? null
+                )->toISOString(),
             'reset_authorizer' =>
-                $session->relationLoaded(
-                    'resetAuthorizer',
-                )
-                && $session->resetAuthorizer
-                    ? [
-                        'id' =>
-                            $session->resetAuthorizer->id,
-                        'name' =>
-                            $session->resetAuthorizer->name,
-                        'email' =>
-                            $session->resetAuthorizer->email,
-                    ]
-                    : null,
+                $resetAuthorization[
+                    'authorizer'
+                ] ?? null,
+            'reset_authorization_source' =>
+                $resetAuthorization[
+                    'source'
+                ] ?? null,
             'opened_at' =>
                 $session->opened_at?->toISOString(),
             'zeroized_at' =>
@@ -573,7 +602,7 @@ class PosSessionAdminController extends Controller
             'can_reset_limit' =>
                 $session->status === 'closed'
                 && $session->closed_at !== null
-                && $session->reset_authorized_at === null,
+                && $resetAuthorization === null,
 
             'metadata' => $session->metadata ?? [],
             'events' =>

@@ -23,7 +23,7 @@ class AtomicPosCheckoutService
         Closure $recordPayment
     ): array {
         try {
-            return DB::transaction(function () use (
+            return $this->runTransactionWithBackoff(function () use (
                 $idempotencyKey,
                 $findExisting,
                 $createSale,
@@ -66,5 +66,81 @@ class AtomicPosCheckoutService
                 'idempotent' => true,
             ];
         }
+    }
+    /**
+     * Retry the complete atomic checkout for genuine database
+     * concurrency conflicts. Laravel may wrap the original database
+     * exception, so the complete Throwable chain is inspected.
+     */
+    private function runTransactionWithBackoff(
+        \Closure $callback
+    ): array {
+        $maximumAttempts = 8;
+        $attempt = 0;
+
+        while (true) {
+            $attempt++;
+
+            try {
+                return DB::transaction($callback);
+            } catch (\Throwable $exception) {
+                if (
+                    $attempt >= $maximumAttempts
+                    || ! $this->isRetryableConcurrencyFailure($exception)
+                ) {
+                    throw $exception;
+                }
+
+                $baseDelayMicroseconds = min(75000 * $attempt, 525000);
+                $jitterMicroseconds = random_int(1000, 25000);
+                usleep($baseDelayMicroseconds + $jitterMicroseconds);
+            }
+        }
+    }
+
+    private function isRetryableConcurrencyFailure(
+        \Throwable $exception
+    ): bool {
+        for ($current = $exception; $current !== null; $current = $current->getPrevious()) {
+            $message = strtolower($current->getMessage());
+            $code = strtoupper((string) $current->getCode());
+            $errorInfo = [];
+
+            if ($current instanceof \Illuminate\Database\QueryException) {
+                $errorInfo = is_array($current->errorInfo) ? $current->errorInfo : [];
+            } elseif (property_exists($current, 'errorInfo') && is_array($current->errorInfo)) {
+                $errorInfo = $current->errorInfo;
+            }
+
+            $sqlState = strtoupper((string) ($errorInfo[0] ?? $code));
+            $driverCode = (string) ($errorInfo[1] ?? '');
+
+            if (in_array($driverCode, ['5', '6', '1205', '1213'], true)) {
+                return true;
+            }
+
+            if (in_array($sqlState, ['40001', '40P01'], true)) {
+                return true;
+            }
+
+            foreach ([
+                'database is locked',
+                'database table is locked',
+                'database schema is locked',
+                'deadlock found',
+                'deadlock exception',
+                'lock wait timeout exceeded',
+                'serialization failure',
+                'could not serialize access',
+                'could not obtain lock',
+                'concurrent update',
+            ] as $fragment) {
+                if (str_contains($message, $fragment)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
