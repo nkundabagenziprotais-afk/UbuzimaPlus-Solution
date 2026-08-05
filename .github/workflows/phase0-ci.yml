@@ -72,7 +72,10 @@ jobs:
           php artisan migrate:fresh --seed
 
       - name: Run backend tests
-        run: php artisan test
+        run: |
+          export WPA_VENDOR_AUTOLOAD="$GITHUB_WORKSPACE/backend/vendor/autoload.php"
+          export WPA_PROCESS_PHP_BIN="$(command -v php)"
+          php artisan test
 
   public-website-build:
     name: Public Website Build
