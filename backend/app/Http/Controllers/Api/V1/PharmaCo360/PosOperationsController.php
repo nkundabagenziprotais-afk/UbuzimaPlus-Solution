@@ -24,7 +24,29 @@ public function current(
         PosSessionPolicyService $policy
     ): JsonResponse {
         $tenant = $request->attributes->get('tenant');
+
+        $validated = $request->validate([
+            'branch_id' => [
+                'required',
+                'integer',
+            ],
+            'terminal_identifier' => [
+                'required',
+                'string',
+                'min:8',
+                'max:100',
+                'regex:/^[A-Za-z0-9][A-Za-z0-9._:-]+$/',
+            ],
+        ]);
+
         $businessDate = $policy->businessDate();
+
+        $terminalIdentifier = strtolower(
+            trim(
+                (string)
+                $validated['terminal_identifier']
+            )
+        );
 
         $session = PharmacoPosSession::query()
             ->with([
@@ -32,22 +54,54 @@ public function current(
                 'events' => fn ($query) =>
                     $query->latest()->limit(20),
             ])
-            ->where('tenant_id', $tenant->id)
-            ->where('user_id', $request->user()->id)
-            ->whereDate('business_date', $businessDate)
-            ->orderByDesc('sequence_number')
+            ->where(
+                'tenant_id',
+                $tenant->id
+            )
+            ->where(
+                'branch_id',
+                $validated['branch_id']
+            )
+            ->where(
+                'user_id',
+                $request->user()->id
+            )
+            ->where(
+                'session_mode',
+                'live'
+            )
+            ->where(
+                'terminal_identifier',
+                $terminalIdentifier
+            )
+            ->whereIn(
+                'status',
+                [
+                    'open',
+                    'zeroized',
+                ]
+            )
+            ->latest('id')
             ->first();
 
         if ($session) {
             $session->expected_cash_amount =
-                $policy->expectedCash($session);
+                $policy->expectedCash(
+                    $session
+                );
         }
 
         return response()->json([
-            'business_date' => $businessDate,
-            'session' => $session
-                ? $this->serializeSession($session)
-                : null,
+            'business_date' =>
+                $businessDate,
+            'terminal_identifier' =>
+                $terminalIdentifier,
+            'session' =>
+                $session
+                    ? $this->serializeSession(
+                        $session
+                    )
+                    : null,
         ]);
     }
 
@@ -60,7 +114,22 @@ public function open(
         $tenant = $request->attributes->get('tenant');
 
         $validated = $request->validate([
-            'branch_id' => ['required', 'integer'],
+            'branch_id' => [
+                'required',
+                'integer',
+            ],
+            'terminal_identifier' => [
+                'required',
+                'string',
+                'min:8',
+                'max:100',
+                'regex:/^[A-Za-z0-9][A-Za-z0-9._:-]+$/',
+            ],
+            'terminal_label' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
             'opening_float_amount' => [
                 'required',
                 'numeric',
@@ -78,9 +147,17 @@ public function open(
         ]);
 
         $branch = Branch::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('status', 'active')
-            ->find($validated['branch_id']);
+            ->where(
+                'tenant_id',
+                $tenant->id
+            )
+            ->where(
+                'status',
+                'active'
+            )
+            ->find(
+                $validated['branch_id']
+            );
 
         if (! $branch) {
             throw ValidationException::withMessages([
@@ -92,6 +169,22 @@ public function open(
 
         $businessDate = $policy->businessDate();
 
+        $terminalIdentifier = strtolower(
+            trim(
+                (string)
+                $validated['terminal_identifier']
+            )
+        );
+
+        $terminalLabel = isset(
+            $validated['terminal_label']
+        )
+            ? trim(
+                (string)
+                $validated['terminal_label']
+            )
+            : null;
+
         try {
             $session = DB::transaction(function () use (
                 $tenant,
@@ -99,25 +192,58 @@ public function open(
                 $branch,
                 $validated,
                 $businessDate,
+                $terminalIdentifier,
+                $terminalLabel,
                 $policy
             ) {
-                $latestSession = PharmacoPosSession::query()
-                    ->where('tenant_id', $tenant->id)
-                    ->where(
-                        'user_id',
+                \App\Models\User::query()
+                    ->whereKey(
                         $request->user()->id
                     )
-                    ->whereDate(
-                        'business_date',
-                        $businessDate
-                    )
-                    ->orderByDesc('sequence_number')
                     ->lockForUpdate()
-                    ->first();
+                    ->firstOrFail();
 
-                $sequence = $policy->nextSequence(
-                    $latestSession
-                );
+                Branch::query()
+                    ->whereKey(
+                        $branch->id
+                    )
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $policy
+                    ->ensureNoActiveLiveTerminalSession(
+                        tenantId:
+                            (int) $tenant->id,
+                        branchId:
+                            (int) $branch->id,
+                        terminalIdentifier:
+                            $terminalIdentifier
+                    );
+
+                $latestSession =
+                    PharmacoPosSession::query()
+                        ->where(
+                            'tenant_id',
+                            $tenant->id
+                        )
+                        ->where(
+                            'user_id',
+                            $request->user()->id
+                        )
+                        ->whereDate(
+                            'business_date',
+                            $businessDate
+                        )
+                        ->orderByDesc(
+                            'sequence_number'
+                        )
+                        ->lockForUpdate()
+                        ->first();
+
+                $sequence =
+                    $policy->nextLiveSequence(
+                        $latestSession
+                    );
 
                 $dateCode = str_replace(
                     '-',
@@ -127,13 +253,22 @@ public function open(
 
                 $session =
                     PharmacoPosSession::query()->create([
-                        'uuid' => (string) Str::uuid(),
-                        'tenant_id' => $tenant->id,
-                        'branch_id' => $branch->id,
+                        'uuid' =>
+                            (string) Str::uuid(),
+                        'tenant_id' =>
+                            $tenant->id,
+                        'branch_id' =>
+                            $branch->id,
                         'user_id' =>
                             $request->user()->id,
                         'business_date' =>
                             $businessDate,
+                        'session_mode' =>
+                            'live',
+                        'terminal_identifier' =>
+                            $terminalIdentifier,
+                        'terminal_label' =>
+                            $terminalLabel,
                         'sequence_number' =>
                             $sequence,
                         'session_number' =>
@@ -143,7 +278,8 @@ public function open(
                             . $request->user()->id
                             . '-S'
                             . $sequence,
-                        'status' => 'open',
+                        'status' =>
+                            'open',
                         'opening_float_amount' =>
                             round(
                                 (float)
@@ -160,7 +296,8 @@ public function open(
                                 ],
                                 2
                             ),
-                        'opened_at' => now(),
+                        'opened_at' =>
+                            now(),
                         'metadata' => [
                             'notes' =>
                                 $validated['notes']
@@ -171,11 +308,12 @@ public function open(
                                 ]
                                 ?? 'fresh-start',
                             'control_rule' =>
-                                'one_session_per_user_per_day',
+                                'one_active_live_session_per_terminal',
                             'previous_session_id' =>
                                 $latestSession?->id,
-                            'opened_after_admin_reset' =>
-                                $latestSession !== null,
+                            'opened_after_closed_session' =>
+                                $latestSession?->status
+                                === 'closed',
                         ],
                     ]);
 
@@ -194,23 +332,34 @@ public function open(
                     'events',
                 ]);
             });
-        } catch (QueryException $exception) {
+        } catch (
+            \Illuminate\Database\QueryException
+            $exception
+        ) {
             $message = strtolower(
                 $exception->getMessage()
             );
 
             if (
-                str_contains($message, 'unique')
+                str_contains(
+                    $message,
+                    'unique'
+                )
                 || in_array(
-                    (string) $exception->getCode(),
-                    ['19', '23000'],
+                    (string)
+                    $exception->getCode(),
+                    [
+                        '19',
+                        '23000',
+                    ],
                     true
                 )
             ) {
                 throw ValidationException::withMessages([
-                    'business_date' => [
-                        'A POS session already exists '
-                        . 'for this user and business day.',
+                    'terminal_identifier' => [
+                        'The terminal session context '
+                        . 'changed concurrently. Refresh '
+                        . 'the current session and retry.',
                     ],
                 ]);
             }
@@ -223,28 +372,46 @@ public function open(
         );
 
         $auditLogService->record(
-            action: 'pharmaco.pos.session.opened',
-            scope: $scope,
+            action:
+                'pharmaco.pos.session.opened',
+            scope:
+                $scope,
             metadata: [
-                'tenant_slug' => $tenant->slug,
-                'session_id' => $session->id,
+                'tenant_slug' =>
+                    $tenant->slug,
+                'session_id' =>
+                    $session->id,
                 'session_number' =>
                     $session->session_number,
                 'sequence_number' =>
                     $session->sequence_number,
-                'branch_id' => $branch->id,
-                'business_date' => $businessDate,
+                'branch_id' =>
+                    $branch->id,
+                'business_date' =>
+                    $businessDate,
+                'session_mode' =>
+                    'live',
+                'terminal_identifier' =>
+                    $terminalIdentifier,
+                'terminal_label' =>
+                    $terminalLabel,
             ],
-            dataClassification: 'internal',
-            auditableType: PharmacoPosSession::class,
-            auditableId: $session->id
+            dataClassification:
+                'internal',
+            auditableType:
+                PharmacoPosSession::class,
+            auditableId:
+                $session->id
         );
 
         return response()->json([
             'message' =>
-                'POS till opened and clock-in recorded.',
+                'POS terminal session opened '
+                . 'and clock-in recorded.',
             'session' =>
-                $this->serializeSession($session),
+                $this->serializeSession(
+                    $session
+                ),
         ], 201);
     }
 
@@ -709,13 +876,6 @@ public function adminReset(
                 $lockedSession
             );
 
-            $lockedSession->fill([
-                'reset_authorized_at' => now(),
-                'reset_authorized_by' =>
-                    $request->user()->id,
-                'reset_reason' =>
-                    $validated['reason'],
-            ])->save();
 
             $this->recordClockEvent(
                 $tenant->id,
@@ -723,7 +883,15 @@ public function adminReset(
                 $request->user()->id,
                 'admin_reset',
                 0,
-                $validated['reason']
+                $validated['reason'],
+                [
+                    'support_action' =>
+                        'authorize_additional_daily_session',
+                    'authorization_source' =>
+                        'operational_admin_reset',
+                    'session_number_preserved' =>
+                        true,
+                ]
             );
 
             return $lockedSession->fresh([
@@ -855,7 +1023,8 @@ public function adminReset(
         int $userId,
         string $type,
         ?float $amount,
-        ?string $notes
+        ?string $notes,
+        array $metadata = []
     ): void {
         PharmacoPosClockEvent::query()->create([
             'uuid' => (string) Str::uuid(),
@@ -865,12 +1034,19 @@ public function adminReset(
             'event_type' => $type,
             'amount' => $amount,
             'notes' => $notes,
+            'metadata' => $metadata,
         ]);
     }
 
 private function serializeSession(
         PharmacoPosSession $session
     ): array {
+        $resetAuthorization = app(
+            PosSessionPolicyService::class
+        )->resetAuthorizationSnapshot(
+            $session
+        );
+
         $expectedCash =
             (float) $session->expected_cash_amount;
 
@@ -881,6 +1057,12 @@ private function serializeSession(
                 $session->session_number,
             'sequence_number' =>
                 (int) $session->sequence_number,
+            'session_mode' =>
+                $session->session_mode ?? 'live',
+            'terminal_identifier' =>
+                $session->terminal_identifier,
+            'terminal_label' =>
+                $session->terminal_label,
             'business_date' =>
                 optional(
                     $session->business_date
@@ -923,20 +1105,33 @@ private function serializeSession(
                 $session->status === 'zeroized'
                 && abs($expectedCash) <= 0.00001,
             'reset_authorized' =>
-                $session->reset_authorized_at
-                !== null,
+                $resetAuthorization !== null,
             'can_open_additional_session' =>
                 $session->status === 'closed'
-                && $session->reset_authorized_at
-                    !== null,
+                && (
+                    (
+                        $session->session_mode
+                        ?? 'live'
+                    ) === 'live'
+                    || $resetAuthorization !== null
+                ),
             'reset_reason' =>
-                $session->reset_reason,
+                $resetAuthorization['reason']
+                    ?? null,
             'reset_authorized_at' =>
                 optional(
-                    $session->reset_authorized_at
+                    $resetAuthorization[
+                        'authorized_at'
+                    ] ?? null
                 )->toIso8601String(),
             'reset_authorized_by' =>
-                $session->reset_authorized_by,
+                $resetAuthorization[
+                    'authorized_by'
+                ] ?? null,
+            'reset_authorization_source' =>
+                $resetAuthorization[
+                    'source'
+                ] ?? null,
             'opened_at' =>
                 optional(
                     $session->opened_at
