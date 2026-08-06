@@ -1,12 +1,12 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_SALES_DOCUMENTS_V5__) {
+  if (window.__UBUZIMA_SALES_DOCUMENTS_V6__) {
     return;
   }
 
   var VERSION =
-    '2026.08.sales-invoice-products-v5';
+    '2026.08.sales-invoice-products-v6';
 
   var SALES_SUFFIX =
     '/pharmaco/sales';
@@ -45,8 +45,264 @@
     receiptDirectRenders: 0,
     receiptDirectRenderFailures: 0,
     receiptPrintDocuments: 0,
-    receiptPrintFailures: 0
+    receiptPrintFailures: 0,
+    checkoutSuppressionActivations: 0,
+    blankCheckoutWindowsSuppressed: 0,
+    allowedNonblankWindows: 0,
+    suppressedPopupDocumentWrites: 0
   };
+
+  var originalWindowOpen =
+    typeof window.open === 'function'
+      ? window.open.bind(window)
+      : null;
+
+  var checkoutBlankWindowSuppressionUntil =
+    0;
+
+  function activateCheckoutBlankWindowSuppression() {
+    checkoutBlankWindowSuppressionUntil =
+      Date.now() + 30000;
+
+    state.checkoutSuppressionActivations += 1;
+  }
+
+  function checkoutBlankWindowSuppressionActive() {
+    return (
+      Date.now() <
+      checkoutBlankWindowSuppressionUntil
+    );
+  }
+
+  function blankWindowRequest(value) {
+    var text =
+      value === null ||
+      value === undefined
+        ? ''
+        : String(value).trim();
+
+    return (
+      text === '' ||
+      text === 'about:blank' ||
+      text === 'about:blank#blocked'
+    );
+  }
+
+  function suppressedPopupShim() {
+    var html = '';
+
+    var body = {
+      textContent: ''
+    };
+
+    var documentShim = {
+      body: body,
+
+      open: function () {
+        html = '';
+        body.textContent = '';
+      },
+
+      write: function (value) {
+        html += String(value || '');
+
+        body.textContent =
+          html
+            .replace(
+              /<style[\s\S]*?<\/style>/gi,
+              ' '
+            )
+            .replace(
+              /<script[\s\S]*?<\/script>/gi,
+              ' '
+            )
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        state.suppressedPopupDocumentWrites +=
+          1;
+      },
+
+      close: function () {},
+
+      querySelector: function () {
+        return null;
+      }
+    };
+
+    return {
+      closed: false,
+      document: documentShim,
+
+      focus: function () {},
+
+      blur: function () {},
+
+      print: function () {},
+
+      close: function () {
+        this.closed = true;
+      },
+
+      setTimeout: function (
+        callback,
+        delay
+      ) {
+        return window.setTimeout(
+          callback,
+          delay
+        );
+      },
+
+      requestAnimationFrame:
+        function (callback) {
+          return window
+            .requestAnimationFrame(
+              callback
+            );
+        },
+
+      location: {
+        href: 'about:blank'
+      },
+
+      __ubuzimaSuppressedBlankPopup:
+        true
+    };
+  }
+
+  window.open = function (
+    url,
+    target,
+    features
+  ) {
+    if (
+      checkoutBlankWindowSuppressionActive() &&
+      blankWindowRequest(url)
+    ) {
+      state.blankCheckoutWindowsSuppressed +=
+        1;
+
+      return suppressedPopupShim();
+    }
+
+    state.allowedNonblankWindows += 1;
+
+    if (!originalWindowOpen) {
+      return null;
+    }
+
+    return originalWindowOpen(
+      url,
+      target,
+      features
+    );
+  };
+
+  function triggerText(element) {
+    if (!element) {
+      return '';
+    }
+
+    return String(
+      element.textContent ||
+      element.value ||
+      element.getAttribute(
+        'aria-label'
+      ) ||
+      element.getAttribute(
+        'title'
+      ) ||
+      ''
+    )
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  function paymentConfirmationTrigger(element) {
+    if (
+      !element ||
+      typeof element.closest !==
+        'function'
+    ) {
+      return false;
+    }
+
+    var control =
+      element.closest(
+        'button,[role="button"],input[type="submit"],a'
+      );
+
+    if (!control) {
+      return false;
+    }
+
+    var controlText =
+      triggerText(control);
+
+    var actionMatch =
+      /confirm|complete|finish|checkout|finali[sz]e|process|pay|payment|sale/
+        .test(controlText);
+
+    if (!actionMatch) {
+      return false;
+    }
+
+    var scope =
+      control.closest(
+        '[role="dialog"],form,section,main'
+      );
+
+    var scopeText =
+      triggerText(
+        scope || document.body
+      );
+
+    return (
+      /payment|checkout|sale|cart|customer|cash|amount|balance|transaction/
+        .test(scopeText)
+    );
+  }
+
+  document.addEventListener(
+    'click',
+    function (event) {
+      var target =
+        event.target instanceof Element
+          ? event.target
+          : null;
+
+      if (
+        paymentConfirmationTrigger(target)
+      ) {
+        activateCheckoutBlankWindowSuppression();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'submit',
+    function (event) {
+      var form =
+        event.target instanceof Element
+          ? event.target
+          : null;
+
+      var formText =
+        triggerText(form);
+
+      if (
+        /payment|checkout|sale|cart|cash|amount|balance|transaction/
+          .test(formText)
+      ) {
+        activateCheckoutBlankWindowSuppression();
+      }
+    },
+    true
+  );
 
   function requestUrl(input) {
     var value =
@@ -2705,6 +2961,10 @@
         CHECKOUT_SUFFIX
       );
 
+    if (checkout) {
+      activateCheckoutBlankWindowSuppression();
+    }
+
     captureContext(
       input,
       init
@@ -2854,7 +3114,7 @@
     }
   );
 
-  window.__UBUZIMA_SALES_DOCUMENTS_V5__ = {
+  window.__UBUZIMA_SALES_DOCUMENTS_V6__ = {
     version: VERSION,
 
     diagnostics: function () {
@@ -2912,6 +3172,16 @@
           'direct-shadow-dom',
         receipt_print_mode:
           'verified-hidden-document',
+        checkout_blank_window_suppression:
+          'capture-and-fetch-v6',
+        checkout_suppression_activations:
+          state.checkoutSuppressionActivations,
+        blank_checkout_windows_suppressed:
+          state.blankCheckoutWindowsSuppressed,
+        allowed_nonblank_windows:
+          state.allowedNonblankWindows,
+        suppressed_popup_document_writes:
+          state.suppressedPopupDocumentWrites,
         inventory_interception:
           false,
         unrelated_request_interception:
@@ -2933,6 +3203,8 @@
       renderInvoice,
     receiptShareText:
       receiptShareText,
+    suppressBlankCheckoutWindows:
+      activateCheckoutBlankWindowSuppression,
 
     reprint: function (id) {
       return printSaleInvoice(
