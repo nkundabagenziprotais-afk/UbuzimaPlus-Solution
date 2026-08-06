@@ -1,12 +1,12 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_SALES_DOCUMENTS_V1__) {
+  if (window.__UBUZIMA_SALES_DOCUMENTS_V2__) {
     return;
   }
 
   var VERSION =
-    '2026.08.sales-invoice-products-v1';
+    '2026.08.sales-invoice-products-v2';
 
   var SALES_SUFFIX =
     '/pharmaco/sales';
@@ -30,21 +30,48 @@
     tablesPatched: 0,
     rowsPatched: 0,
     invoicePrints: 0,
-    blockedPopups: 0
+    blockedPopups: 0,
+    usedRequestPassthroughs: 0,
+    redundantPaymentSummariesRemoved: 0
   };
 
-  function requestFrom(input, init) {
-    if (input instanceof Request) {
-      return new Request(input, init);
+  function requestUrl(input) {
+    var value =
+      typeof input === 'string'
+        ? input
+        : (
+          input &&
+          typeof input.url === 'string'
+            ? input.url
+            : ''
+        );
+
+    if (!value) {
+      return null;
     }
 
-    return new Request(
-      new URL(
-        String(input),
+    try {
+      return new URL(
+        value,
         window.location.href
-      ).toString(),
-      init
-    );
+      );
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function requestMethod(input, init) {
+    return String(
+      (
+        init &&
+        init.method
+      ) ||
+      (
+        input &&
+        input.method
+      ) ||
+      'GET'
+    ).toUpperCase();
   }
 
   function pathEndsWith(
@@ -56,13 +83,44 @@
       .endsWith(suffix);
   }
 
-  function captureContext(request) {
-    state.requestHeaders =
-      new Headers(request.headers);
+  function captureContext(input, init) {
+    var headerSource =
+      (
+        init &&
+        init.headers
+      ) ||
+      (
+        input &&
+        input.headers
+      ) ||
+      null;
+
+    try {
+      state.requestHeaders =
+        headerSource
+          ? new Headers(headerSource)
+          : null;
+    } catch (error) {
+      state.requestHeaders = null;
+    }
 
     state.credentials =
-      request.credentials ||
+      (
+        init &&
+        init.credentials
+      ) ||
+      (
+        input &&
+        input.credentials
+      ) ||
       'same-origin';
+
+    if (
+      input instanceof Request &&
+      input.bodyUsed
+    ) {
+      state.usedRequestPassthroughs += 1;
+    }
   }
 
   function cloneJson(response) {
@@ -496,6 +554,7 @@
 
     function renderFrame() {
       patchTables();
+      removeRedundantPaymentSummaryText();
       mountDock();
 
       frame += 1;
@@ -1220,22 +1279,156 @@
     return null;
   }
 
+  function normalizeSummaryText(value) {
+    return String(value || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function redundantSummaryText(value) {
+    var text =
+      normalizeSummaryText(value);
+
+    if (
+      !text ||
+      text.length > 600
+    ) {
+      return false;
+    }
+
+    var lower =
+      text.toLowerCase();
+
+    return (
+      lower.indexOf(' added:') > 0 &&
+      /selling\s+amount\s*:/i.test(text) &&
+      /RWF\s*[\d,.]+/i.test(text)
+    );
+  }
+
+  function removeRedundantPaymentSummaryText() {
+    if (
+      typeof document === 'undefined' ||
+      typeof document.querySelectorAll !==
+        'function'
+    ) {
+      return 0;
+    }
+
+    var removed = 0;
+
+    var elements =
+      document.querySelectorAll(
+        'p,div,span,small,li'
+      );
+
+    Array.prototype.forEach.call(
+      elements,
+      function (element) {
+        if (!element) {
+          return;
+        }
+
+        var children =
+          element.children || [];
+
+        var fullText =
+          String(
+            element.textContent || ''
+          );
+
+        if (
+          children.length === 0 &&
+          redundantSummaryText(fullText)
+        ) {
+          if (
+            typeof element.remove ===
+            'function'
+          ) {
+            element.remove();
+          } else {
+            element.textContent = '';
+          }
+
+          removed += 1;
+          return;
+        }
+
+        var childNodes =
+          Array.prototype.slice.call(
+            element.childNodes || []
+          );
+
+        var ownTextNodes =
+          childNodes.filter(
+            function (node) {
+              return (
+                node &&
+                node.nodeType === 3
+              );
+            }
+          );
+
+        var ownText =
+          ownTextNodes.map(
+            function (node) {
+              return node.nodeValue || '';
+            }
+          ).join(' ');
+
+        if (
+          ownTextNodes.length &&
+          redundantSummaryText(ownText)
+        ) {
+          ownTextNodes.forEach(
+            function (node) {
+              node.nodeValue = '';
+            }
+          );
+
+          removed += 1;
+        }
+      }
+    );
+
+    state.redundantPaymentSummariesRemoved +=
+      removed;
+
+    return removed;
+  }
+
+  function schedulePaymentSummaryCleanup() {
+    var frame = 0;
+    var maximumFrames = 30;
+
+    function cleanFrame() {
+      removeRedundantPaymentSummaryText();
+
+      frame += 1;
+
+      if (frame < maximumFrames) {
+        window.requestAnimationFrame(
+          cleanFrame
+        );
+      }
+    }
+
+    window.requestAnimationFrame(
+      cleanFrame
+    );
+  }
+
   window.fetch = async function (
     input,
     init
   ) {
-    var roughUrl =
-      typeof input === 'string'
-        ? input
-        : (
-          input &&
-          typeof input.url === 'string'
-            ? input.url
-            : ''
-        );
+    var url =
+      requestUrl(input);
 
     if (
-      roughUrl.indexOf(
+      !url ||
+      url.href.indexOf(
         SALES_SUFFIX
       ) === -1
     ) {
@@ -1245,14 +1438,11 @@
       );
     }
 
-    var request =
-      requestFrom(input, init);
-
     var method =
-      request.method.toUpperCase();
-
-    var url =
-      new URL(request.url);
+      requestMethod(
+        input,
+        init
+      );
 
     var salesList =
       method === 'GET' &&
@@ -1268,11 +1458,22 @@
         CHECKOUT_SUFFIX
       );
 
-    if (!salesList && !checkout) {
-      return originalFetch(request);
-    }
+    captureContext(
+      input,
+      init
+    );
 
-    captureContext(request);
+    if (!salesList && !checkout) {
+      var directResponse =
+        await originalFetch(
+          input,
+          init
+        );
+
+      schedulePaymentSummaryCleanup();
+
+      return directResponse;
+    }
 
     var printWindow =
       checkout
@@ -1280,7 +1481,12 @@
         : null;
 
     var response =
-      await originalFetch(request);
+      await originalFetch(
+        input,
+        init
+      );
+
+    schedulePaymentSummaryCleanup();
 
     if (salesList) {
       cloneJson(response)
@@ -1331,6 +1537,8 @@
       if (!target) {
         return;
       }
+
+      schedulePaymentSummaryCleanup();
 
       var reprintButton =
         target.closest(
@@ -1404,7 +1612,7 @@
     }
   );
 
-  window.__UBUZIMA_SALES_DOCUMENTS_V1__ = {
+  window.__UBUZIMA_SALES_DOCUMENTS_V2__ = {
     version: VERSION,
 
     diagnostics: function () {
@@ -1424,6 +1632,10 @@
           state.invoicePrints,
         blocked_popups:
           state.blockedPopups,
+        used_request_passthroughs:
+          state.usedRequestPassthroughs,
+        redundant_payment_summaries_removed:
+          state.redundantPaymentSummariesRemoved,
         inventory_interception:
           false,
         unrelated_request_interception:
@@ -1437,6 +1649,8 @@
 
     openPanel: openPanel,
     exportCsv: exportCsv,
+    cleanupPaymentSummary:
+      removeRedundantPaymentSummaryText,
 
     reprint: function (id) {
       return printSaleInvoice(
