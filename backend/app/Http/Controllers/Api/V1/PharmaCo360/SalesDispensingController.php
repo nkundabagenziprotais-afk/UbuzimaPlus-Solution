@@ -1736,9 +1736,15 @@ class SalesDispensingController extends Controller
         Request $request,
         PharmacoSale $sale,
         AuditLogService $auditLogService,
-        ScopeResolver $scopeResolver
+        ScopeResolver $scopeResolver,
+        ?\App\Services\PharmaCo360\LegacyPosSaleMultiBatchPreparationService $legacyMultiBatchPreparation = null
     ): JsonResponse {
         $tenant = $request->attributes->get('tenant');
+
+        /* AQUILA_LEGACY_CONFIRM_MULTIBATCH_V11A */
+        $legacyMultiBatchPreparation ??= app(
+            \App\Services\PharmaCo360\LegacyPosSaleMultiBatchPreparationService::class
+        );
 
         if ((int) $sale->tenant_id !== (int) $tenant->id) {
             abort(404);
@@ -1755,7 +1761,13 @@ class SalesDispensingController extends Controller
             'items.*.prescription_verified' => ['sometimes', 'boolean'],
         ]);
 
-        $confirmedSale = DB::transaction(function () use ($request, $sale, $tenant, $validated) {
+        $confirmedSale = DB::transaction(function () use (
+            $request,
+            $sale,
+            $tenant,
+            $validated,
+            $legacyMultiBatchPreparation
+        ) {
             $lockedSale = PharmacoSale::query()
                 ->where('tenant_id', $tenant->id)
                 ->lockForUpdate()
@@ -1770,6 +1782,15 @@ class SalesDispensingController extends Controller
                 $lockedSale
             );
 
+            $lockedSale->load(['items.product']);
+
+            $validated['items'] =
+                $legacyMultiBatchPreparation->prepare(
+                    $lockedSale,
+                    $validated['items']
+                );
+
+            $lockedSale->unsetRelation('items');
             $lockedSale->load(['items.product']);
 
             $payloadByItemId = collect($validated['items'])->keyBy('sale_item_id');
