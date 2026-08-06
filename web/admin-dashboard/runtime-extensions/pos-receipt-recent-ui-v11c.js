@@ -2,10 +2,10 @@
   'use strict';
 
   var VERSION =
-    '2026.08.pos-receipt-recent-ui-v11b';
+    '2026.08.pos-receipt-recent-ui-v11c';
 
   if (
-    window.__UBUZIMA_POS_RECEIPT_RECENT_UI_V11B__
+    window.__UBUZIMA_POS_RECEIPT_RECENT_UI_V11C__
   ) {
     return;
   }
@@ -32,7 +32,11 @@
     verboseNoticesRemoved: 0,
     receiptLoads: 0,
     receiptFailures: 0,
-    receiptOpen: false
+    receiptOpen: false,
+
+    domRefreshScheduled: false,
+    lastRecentMount: null,
+    lastRecentHtml: ''
   };
 
   function clean(value) {
@@ -615,7 +619,7 @@
           ) +
           '</td>' +
 
-          '<td class="aquila-v11b-products">' +
+          '<td class="aquila-v11c-products">' +
           escapeHtml(
             productSummary(sale)
           ) +
@@ -641,7 +645,7 @@
 
           '<td>' +
           '<button type="button" ' +
-          'data-aquila-v11b-receipt="' +
+          'data-aquila-v11c-receipt="' +
           escapeHtml(id) +
           '">Receipt</button>' +
           '</td>' +
@@ -660,15 +664,15 @@
     }
 
     return (
-      '<div class="aquila-v11b-toolbar">' +
+      '<div class="aquila-v11c-toolbar">' +
       '<strong>Latest saved transactions</strong>' +
       '<button type="button" ' +
-      'data-aquila-v11b-refresh>' +
+      'data-aquila-v11c-refresh>' +
       'Refresh' +
       '</button>' +
       '</div>' +
 
-      '<div class="aquila-v11b-scroll">' +
+      '<div class="aquila-v11c-scroll">' +
       '<table>' +
 
       '<thead>' +
@@ -711,7 +715,7 @@
 
     var mount =
       root.querySelector(
-        '[data-aquila-v11b-recent]'
+        '[data-aquila-v11c-recent]'
       );
 
     if (!mount) {
@@ -719,7 +723,7 @@
         document.createElement('div');
 
       mount.setAttribute(
-        'data-aquila-v11b-recent',
+        'data-aquila-v11c-recent',
         'true'
       );
 
@@ -734,7 +738,7 @@
       if (
         existingTable &&
         !existingTable.closest(
-          '[data-aquila-v11b-recent]'
+          '[data-aquila-v11c-recent]'
         )
       ) {
         var existingText =
@@ -757,7 +761,7 @@
           )
         ) {
           existingTable.setAttribute(
-            'data-aquila-v11b-original-empty',
+            'data-aquila-v11c-original-empty',
             'true'
           );
 
@@ -767,10 +771,20 @@
       }
     }
 
-    mount.innerHTML =
+    var nextHtml =
       recentTableHtml(
         state.sales
       );
+
+    if (
+      state.lastRecentMount !== mount ||
+      state.lastRecentHtml !== nextHtml
+    ) {
+      mount.innerHTML = nextHtml;
+
+      state.lastRecentMount = mount;
+      state.lastRecentHtml = nextHtml;
+    }
 
     state.recentRowsRendered =
       state.sales.length;
@@ -847,7 +861,7 @@
   function modalElement() {
     var modal =
       document.querySelector(
-        '[data-aquila-v11b-modal]'
+        '[data-aquila-v11c-modal]'
       );
 
     if (modal) {
@@ -858,7 +872,7 @@
       document.createElement('div');
 
     modal.setAttribute(
-      'data-aquila-v11b-modal',
+      'data-aquila-v11c-modal',
       'true'
     );
 
@@ -963,25 +977,25 @@
       }).join('');
 
     return (
-      '<div class="aquila-v11b-backdrop" ' +
-      'data-aquila-v11b-close></div>' +
+      '<div class="aquila-v11c-backdrop" ' +
+      'data-aquila-v11c-close></div>' +
 
-      '<section class="aquila-v11b-card" ' +
+      '<section class="aquila-v11c-card" ' +
       'role="dialog" aria-modal="true">' +
 
-      '<div class="aquila-v11b-actions">' +
+      '<div class="aquila-v11c-actions">' +
       '<button type="button" ' +
-      'data-aquila-v11b-print>' +
+      'data-aquila-v11c-print>' +
       'Print' +
       '</button>' +
 
       '<button type="button" ' +
-      'data-aquila-v11b-close>' +
+      'data-aquila-v11c-close>' +
       'Close' +
       '</button>' +
       '</div>' +
 
-      '<article class="aquila-v11b-paper">' +
+      '<article class="aquila-v11c-paper">' +
 
       '<header>' +
       '<strong>' +
@@ -1007,7 +1021,7 @@
       '</small>' +
       '</header>' +
 
-      '<div class="aquila-v11b-meta">' +
+      '<div class="aquila-v11c-meta">' +
 
       '<div>' +
       '<span>Receipt</span>' +
@@ -1071,7 +1085,7 @@
       '</tbody>' +
       '</table>' +
 
-      '<div class="aquila-v11b-totals">' +
+      '<div class="aquila-v11c-totals">' +
 
       '<div>' +
       '<span>Subtotal</span>' +
@@ -1144,7 +1158,7 @@
 
       '</div>' +
 
-      '<div class="aquila-v11b-payments">' +
+      '<div class="aquila-v11c-payments">' +
       paymentRows +
       '</div>' +
 
@@ -1177,7 +1191,7 @@
         modal.hidden = false;
 
         document.body.classList.add(
-          'aquila-v11b-open'
+          'aquila-v11c-open'
         );
 
         state.receiptOpen = true;
@@ -1197,11 +1211,11 @@
     modal.innerHTML = '';
 
     document.body.classList.remove(
-      'aquila-v11b-open'
+      'aquila-v11c-open'
     );
 
     document.body.classList.remove(
-      'aquila-v11b-printing'
+      'aquila-v11c-printing'
     );
 
     state.receiptOpen = false;
@@ -1209,13 +1223,13 @@
 
   function printReceipt() {
     document.body.classList.add(
-      'aquila-v11b-printing'
+      'aquila-v11c-printing'
     );
 
     var cleanup =
       function () {
         document.body.classList.remove(
-          'aquila-v11b-printing'
+          'aquila-v11c-printing'
         );
 
         window.removeEventListener(
@@ -1240,13 +1254,13 @@
   function receiptIdFromContext(target) {
     var explicit =
       target.closest(
-        '[data-aquila-v11b-receipt]'
+        '[data-aquila-v11c-receipt]'
       );
 
     if (explicit) {
       return Number(
         explicit.getAttribute(
-          'data-aquila-v11b-receipt'
+          'data-aquila-v11c-receipt'
         )
       );
     }
@@ -1300,7 +1314,7 @@
 
       if (
         rawTarget.closest(
-          '[data-aquila-v11b-close]'
+          '[data-aquila-v11c-close]'
         )
       ) {
         event.preventDefault();
@@ -1319,7 +1333,7 @@
 
       if (
         target.hasAttribute(
-          'data-aquila-v11b-refresh'
+          'data-aquila-v11c-refresh'
         )
       ) {
         event.preventDefault();
@@ -1329,7 +1343,7 @@
 
       if (
         target.hasAttribute(
-          'data-aquila-v11b-print'
+          'data-aquila-v11c-print'
         )
       ) {
         event.preventDefault();
@@ -1342,7 +1356,7 @@
 
       var receiptAction =
         target.hasAttribute(
-          'data-aquila-v11b-receipt'
+          'data-aquila-v11c-receipt'
         ) ||
         label === 'receipt' ||
         label === 'print receipt' ||
@@ -1381,12 +1395,12 @@
     document.createElement('style');
 
   style.setAttribute(
-    'data-aquila-v11b-style',
+    'data-aquila-v11c-style',
     'true'
   );
 
   style.textContent = `
-    [data-aquila-v11b-recent] {
+    [data-aquila-v11c-recent] {
       margin-top: 14px;
       border: 1px solid #dbe6e0;
       border-radius: 12px;
@@ -1394,7 +1408,7 @@
       background: #fff;
     }
 
-    .aquila-v11b-toolbar {
+    .aquila-v11c-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -1404,36 +1418,36 @@
       border-bottom: 1px solid #e2ebe6;
     }
 
-    .aquila-v11b-scroll {
+    .aquila-v11c-scroll {
       width: 100%;
       overflow-x: auto;
     }
 
-    [data-aquila-v11b-recent] table {
+    [data-aquila-v11c-recent] table {
       width: 100%;
       min-width: 840px;
       border-collapse: collapse;
     }
 
-    [data-aquila-v11b-recent] th,
-    [data-aquila-v11b-recent] td {
+    [data-aquila-v11c-recent] th,
+    [data-aquila-v11c-recent] td {
       padding: 10px 12px;
       text-align: left;
       vertical-align: top;
       border-bottom: 1px solid #edf2ef;
     }
 
-    .aquila-v11b-products {
+    .aquila-v11c-products {
       min-width: 260px;
       white-space: normal;
       overflow-wrap: anywhere;
     }
 
-    [data-aquila-v11b-modal][hidden] {
+    [data-aquila-v11c-modal][hidden] {
       display: none !important;
     }
 
-    [data-aquila-v11b-modal] {
+    [data-aquila-v11c-modal] {
       position: fixed;
       inset: 0;
       z-index: 2147483000;
@@ -1442,13 +1456,13 @@
       padding: 20px;
     }
 
-    .aquila-v11b-backdrop {
+    .aquila-v11c-backdrop {
       position: absolute;
       inset: 0;
       background: rgba(15, 23, 42, .58);
     }
 
-    .aquila-v11b-card {
+    .aquila-v11c-card {
       position: relative;
       z-index: 1;
       width: min(420px, 100%);
@@ -1459,14 +1473,14 @@
       box-shadow: 0 24px 70px rgba(0, 0, 0, .25);
     }
 
-    .aquila-v11b-actions {
+    .aquila-v11c-actions {
       display: flex;
       justify-content: flex-end;
       gap: 8px;
       padding: 12px;
     }
 
-    .aquila-v11b-paper {
+    .aquila-v11c-paper {
       width: min(80mm, calc(100% - 24px));
       margin: 0 auto 12px;
       padding: 14px;
@@ -1475,88 +1489,88 @@
       font: 12px/1.4 Arial, sans-serif;
     }
 
-    .aquila-v11b-paper header {
+    .aquila-v11c-paper header {
       display: grid;
       gap: 3px;
       margin-bottom: 12px;
       text-align: center;
     }
 
-    .aquila-v11b-paper table {
+    .aquila-v11c-paper table {
       width: 100%;
       margin: 10px 0;
       border-collapse: collapse;
       table-layout: fixed;
     }
 
-    .aquila-v11b-paper th,
-    .aquila-v11b-paper td {
+    .aquila-v11c-paper th,
+    .aquila-v11c-paper td {
       padding: 5px 3px;
       border-bottom: 1px dashed #9ca3af;
       overflow-wrap: anywhere;
     }
 
-    .aquila-v11b-meta,
-    .aquila-v11b-totals,
-    .aquila-v11b-payments {
+    .aquila-v11c-meta,
+    .aquila-v11c-totals,
+    .aquila-v11c-payments {
       display: grid;
       gap: 5px;
     }
 
-    .aquila-v11b-meta > div,
-    .aquila-v11b-totals > div,
-    .aquila-v11b-payments > div {
+    .aquila-v11c-meta > div,
+    .aquila-v11c-totals > div,
+    .aquila-v11c-payments > div {
       display: flex;
       justify-content: space-between;
       gap: 12px;
     }
 
-    .aquila-v11b-totals .grand {
+    .aquila-v11c-totals .grand {
       margin-top: 4px;
       padding-top: 6px;
       border-top: 2px solid #111827;
       font-size: 14px;
     }
 
-    .aquila-v11b-paper footer {
+    .aquila-v11c-paper footer {
       margin-top: 14px;
       text-align: center;
       font-weight: 700;
     }
 
-    body.aquila-v11b-open {
+    body.aquila-v11c-open {
       overflow: hidden;
     }
 
     @media print {
-      body.aquila-v11b-printing * {
+      body.aquila-v11c-printing * {
         visibility: hidden !important;
       }
 
-      body.aquila-v11b-printing
-      [data-aquila-v11b-modal],
-      body.aquila-v11b-printing
-      [data-aquila-v11b-modal] * {
+      body.aquila-v11c-printing
+      [data-aquila-v11c-modal],
+      body.aquila-v11c-printing
+      [data-aquila-v11c-modal] * {
         visibility: visible !important;
       }
 
-      body.aquila-v11b-printing
-      [data-aquila-v11b-modal] {
+      body.aquila-v11c-printing
+      [data-aquila-v11c-modal] {
         position: absolute !important;
         inset: 0 auto auto 0 !important;
         display: block !important;
         padding: 0 !important;
       }
 
-      body.aquila-v11b-printing
-      .aquila-v11b-backdrop,
-      body.aquila-v11b-printing
-      .aquila-v11b-actions {
+      body.aquila-v11c-printing
+      .aquila-v11c-backdrop,
+      body.aquila-v11c-printing
+      .aquila-v11c-actions {
         display: none !important;
       }
 
-      body.aquila-v11b-printing
-      .aquila-v11b-card {
+      body.aquila-v11c-printing
+      .aquila-v11c-card {
         width: 80mm !important;
         max-height: none !important;
         overflow: visible !important;
@@ -1564,8 +1578,8 @@
         background: #fff !important;
       }
 
-      body.aquila-v11b-printing
-      .aquila-v11b-paper {
+      body.aquila-v11c-printing
+      .aquila-v11c-paper {
         width: 72mm !important;
         margin: 0 !important;
       }
@@ -1579,16 +1593,26 @@
 
   document.head.appendChild(style);
 
+  function scheduleDomRefresh() {
+    if (state.domRefreshScheduled) {
+      return;
+    }
+
+    state.domRefreshScheduled = true;
+
+    window.requestAnimationFrame(
+      function () {
+        state.domRefreshScheduled = false;
+
+        removeVerboseNotices();
+        renderRecentSales();
+      }
+    );
+  }
+
   var observer =
     new MutationObserver(
-      function () {
-        window.requestAnimationFrame(
-          function () {
-            removeVerboseNotices();
-            renderRecentSales();
-          }
-        );
-      }
+      scheduleDomRefresh
     );
 
   observer.observe(
@@ -1618,7 +1642,7 @@
   }
 
   window
-    .__UBUZIMA_POS_RECEIPT_RECENT_UI_V11B__ = {
+    .__UBUZIMA_POS_RECEIPT_RECENT_UI_V11C__ = {
       version: VERSION,
 
       refresh: refreshRecentSales,
