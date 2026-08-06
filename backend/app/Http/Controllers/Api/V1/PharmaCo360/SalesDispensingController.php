@@ -113,7 +113,19 @@ class SalesDispensingController extends Controller
 
         return response()->json([
             'tenant' => $this->tenantPayload($tenant),
-            'sales' => $sales->map(fn (PharmacoSale $sale) => $this->serializeSale($sale))->values(),
+            'sales' => $sales
+                ->map(function (PharmacoSale $sale): array {
+                    $serialized =
+                        $this->serializeSale($sale);
+
+                    $serialized['product_lines'] =
+                        app(
+                            \App\Services\PharmaCo360\SaleInvoicePayloadService::class
+                        )->productLines($sale);
+
+                    return $serialized;
+                })
+                ->values(),
         ]);
     }
 
@@ -421,6 +433,44 @@ class SalesDispensingController extends Controller
         ]);
     }
 
+
+
+
+    /**
+     * Return a printable invoice from persisted sale records.
+     */
+    public function invoice(
+        Request $request,
+        PharmacoSale $sale,
+        \App\Services\PharmaCo360\SaleInvoicePayloadService $invoiceService
+    ): JsonResponse {
+        $tenant = $this->tenant($request);
+
+        if ((int) $sale->tenant_id !== (int) $tenant->id) {
+            abort(404);
+        }
+
+        $sale->load([
+            'tenant',
+            'branch',
+            'customer',
+            'prescription',
+            'posSession',
+            'items.product.category',
+            'items.stockBatch',
+            'items.stockLocation',
+            'payments',
+        ]);
+
+        return response()->json([
+            'tenant' => $this->tenantPayload($tenant),
+
+            'invoice' => $invoiceService->build(
+                sale: $sale,
+                reprint: $request->boolean('reprint')
+            ),
+        ]);
+    }
 
 
     public function createCustomer(
