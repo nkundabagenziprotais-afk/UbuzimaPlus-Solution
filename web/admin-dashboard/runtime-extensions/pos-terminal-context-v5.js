@@ -1,15 +1,18 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_POS_TERMINAL_V4__) {
+  if (window.__UBUZIMA_POS_TERMINAL_V5__) {
     return;
   }
 
   var VERSION =
-    '2026.08.pos-terminal-context-v4';
+    '2026.08.pos-branch-refresh-context-v5';
 
   var STORAGE_KEY =
     'ubuzima.pos.terminal.identity.v1';
+
+  var BRANCH_STORAGE_KEY =
+    'ubuzima.pos.branch.context.v1';
 
   var OPEN_SUFFIX =
     '/pharmaco/pos/session/open';
@@ -31,12 +34,428 @@
     window.fetch.bind(window);
 
   var state = {
-    branchId: null,
+    branchId: loadStoredBranchId(),
     sessionId: null,
     openRequestsModified: 0,
     currentRequestsModified: 0,
     checkoutRequestsModified: 0
   };
+
+  function positiveBranchId(value) {
+    var parsed = Number(value);
+
+    return (
+      Number.isInteger(parsed) &&
+      parsed > 0
+    )
+      ? parsed
+      : null;
+  }
+
+  function loadStoredBranchId() {
+    try {
+      var stored =
+        window.localStorage.getItem(
+          BRANCH_STORAGE_KEY
+        );
+
+      if (!stored) {
+        return null;
+      }
+
+      var parsed =
+        JSON.parse(stored);
+
+      var branchId =
+        positiveBranchId(
+          parsed &&
+          parsed.branch_id
+        );
+
+      var updatedAt =
+        Number(
+          parsed &&
+          parsed.updated_at
+        );
+
+      if (!branchId) {
+        return null;
+      }
+
+      if (
+        updatedAt > 0 &&
+        Date.now() - updatedAt >
+          72 * 60 * 60 * 1000
+      ) {
+        window.localStorage.removeItem(
+          BRANCH_STORAGE_KEY
+        );
+
+        return null;
+      }
+
+      return branchId;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function persistBranchId(value) {
+    var branchId =
+      positiveBranchId(value);
+
+    if (!branchId) {
+      return null;
+    }
+
+    state.branchId =
+      branchId;
+
+    try {
+      window.localStorage.setItem(
+        BRANCH_STORAGE_KEY,
+        JSON.stringify({
+          branch_id: branchId,
+          updated_at: Date.now()
+        })
+      );
+    } catch (error) {
+      console.warn(
+        '[UbuzimaPlus] POS branch context could not be persisted.',
+        error
+      );
+    }
+
+    return branchId;
+  }
+
+  function branchFromContextObject(
+    value
+  ) {
+    if (
+      !value ||
+      typeof value !== 'object'
+    ) {
+      return null;
+    }
+
+    var candidates = [
+      value.assigned_branch_id,
+      value.current_branch_id,
+      value.scope &&
+        value.scope.branch_id,
+      value.branch &&
+        value.branch.id,
+      value.tenant_assignment &&
+        value.tenant_assignment.branch_id,
+      value.tenant_assignment &&
+        value.tenant_assignment.branch &&
+        value.tenant_assignment.branch.id
+    ];
+
+    if (
+      Array.isArray(
+        value.tenant_assignments
+      )
+    ) {
+      value.tenant_assignments.forEach(
+        function (assignment) {
+          candidates.push(
+            assignment &&
+              assignment.branch_id
+          );
+
+          candidates.push(
+            assignment &&
+              assignment.branch &&
+              assignment.branch.id
+          );
+        }
+      );
+    }
+
+    for (
+      var index = 0;
+      index < candidates.length;
+      index += 1
+    ) {
+      var branchId =
+        positiveBranchId(
+          candidates[index]
+        );
+
+      if (branchId) {
+        return branchId;
+      }
+    }
+
+    var nestedKeys = [
+      'auth',
+      'user',
+      'profile',
+      'data',
+      'context'
+    ];
+
+    for (
+      var nestedIndex = 0;
+      nestedIndex < nestedKeys.length;
+      nestedIndex += 1
+    ) {
+      var nested =
+        value[
+          nestedKeys[nestedIndex]
+        ];
+
+      var nestedBranch =
+        branchFromContextObject(
+          nested
+        );
+
+      if (nestedBranch) {
+        return nestedBranch;
+      }
+    }
+
+    return null;
+  }
+
+  function branchFromBrowserStorage() {
+    var stores = [
+      window.sessionStorage,
+      window.localStorage
+    ];
+
+    for (
+      var storeIndex = 0;
+      storeIndex < stores.length;
+      storeIndex += 1
+    ) {
+      var store =
+        stores[storeIndex];
+
+      if (
+        !store ||
+        typeof store.length !==
+          'number'
+      ) {
+        continue;
+      }
+
+      for (
+        var keyIndex = 0;
+        keyIndex < store.length;
+        keyIndex += 1
+      ) {
+        var key =
+          store.key(keyIndex);
+
+        if (
+          !key ||
+          !/(auth|user|tenant|profile|scope|session)/i.test(
+            key
+          )
+        ) {
+          continue;
+        }
+
+        try {
+          var value =
+            JSON.parse(
+              store.getItem(key)
+            );
+
+          var branchId =
+            branchFromContextObject(
+              value
+            );
+
+          if (branchId) {
+            return branchId;
+          }
+        } catch (error) {
+          continue;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function branchFromBranchesPayload(
+    payload
+  ) {
+    if (
+      payload &&
+      payload.scope
+    ) {
+      var scoped =
+        positiveBranchId(
+          payload.scope.branch_id
+        );
+
+      if (scoped) {
+        return scoped;
+      }
+    }
+
+    var branches =
+      Array.isArray(
+        payload &&
+        payload.branches
+      )
+        ? payload.branches
+        : (
+          payload &&
+          payload.data &&
+          Array.isArray(
+            payload.data.branches
+          )
+            ? payload.data.branches
+            : []
+        );
+
+    var active =
+      branches.filter(
+        function (branch) {
+          return (
+            branch &&
+            positiveBranchId(
+              branch.id
+            ) &&
+            (
+              branch.status ===
+                undefined ||
+              branch.status ===
+                null ||
+              branch.status ===
+                'active'
+            )
+          );
+        }
+      );
+
+    var preferred =
+      active.find(
+        function (branch) {
+          return (
+            branch.is_default ===
+              true ||
+            branch.is_primary ===
+              true ||
+            branch.default ===
+              true
+          );
+        }
+      );
+
+    if (preferred) {
+      return positiveBranchId(
+        preferred.id
+      );
+    }
+
+    if (active.length === 1) {
+      return positiveBranchId(
+        active[0].id
+      );
+    }
+
+    return null;
+  }
+
+  async function resolveBranchId(
+    request,
+    currentUrl
+  ) {
+    var queryBranch =
+      positiveBranchId(
+        currentUrl.searchParams.get(
+          'branch_id'
+        )
+      );
+
+    if (queryBranch) {
+      return persistBranchId(
+        queryBranch
+      );
+    }
+
+    if (state.branchId) {
+      return state.branchId;
+    }
+
+    var storedContextBranch =
+      branchFromBrowserStorage();
+
+    if (storedContextBranch) {
+      return persistBranchId(
+        storedContextBranch
+      );
+    }
+
+    try {
+      var branchesUrl =
+        new URL(
+          currentUrl.toString()
+        );
+
+      branchesUrl.pathname =
+        branchesUrl.pathname.replace(
+          /\/pharmaco\/pos\/session\/current$/,
+          '/pharmaco/branches'
+        );
+
+      branchesUrl.search = '';
+
+      var headers =
+        new Headers(
+          request.headers
+        );
+
+      headers.set(
+        'Accept',
+        'application/json'
+      );
+
+      var response =
+        await originalFetch(
+          new Request(
+            branchesUrl.toString(),
+            {
+              method: 'GET',
+              headers: headers,
+              credentials:
+                request.credentials,
+              cache: 'no-store'
+            }
+          )
+        );
+
+      if (response.ok) {
+        var payload =
+          await response.json();
+
+        var branchId =
+          branchFromBranchesPayload(
+            payload
+          );
+
+        if (branchId) {
+          return persistBranchId(
+            branchId
+          );
+        }
+      }
+    } catch (error) {
+      console.warn(
+        '[UbuzimaPlus] POS branch context could not be resolved automatically.',
+        error
+      );
+    }
+
+    return null;
+  }
 
   function validIdentifier(value) {
     return (
@@ -370,10 +789,9 @@
           session &&
           Number(session.branch_id) > 0
         ) {
-          state.branchId =
-            Number(
-              session.branch_id
-            );
+          persistBranchId(
+            session.branch_id
+          );
         }
       })
       .catch(function () {
@@ -401,27 +819,18 @@
         CURRENT_SUFFIX
       )
     ) {
-      var queryBranch =
-        Number(
-          url.searchParams.get(
-            'branch_id'
-          )
+      var resolvedBranchId =
+        await resolveBranchId(
+          request,
+          url
         );
 
-      if (queryBranch > 0) {
-        state.branchId =
-          queryBranch;
-      }
-
-      if (
-        state.branchId &&
-        !url.searchParams.has(
-          'branch_id'
-        )
-      ) {
+      if (resolvedBranchId) {
         url.searchParams.set(
           'branch_id',
-          String(state.branchId)
+          String(
+            resolvedBranchId
+          )
         );
       }
 
@@ -479,10 +888,9 @@
           openPayload.branch_id
         ) > 0
       ) {
-        state.branchId =
-          Number(
-            openPayload.branch_id
-          );
+        persistBranchId(
+          openPayload.branch_id
+        );
       }
 
       openPayload.terminal_identifier =
@@ -543,6 +951,16 @@
        * it carries the canonical checkout idempotency key
        * or already carries POS session fields.
        */
+      if (
+        Number(
+          checkoutPayload.branch_id
+        ) > 0
+      ) {
+        persistBranchId(
+          checkoutPayload.branch_id
+        );
+      }
+
       var canonicalCheckout =
         pathEndsWith(
           url.pathname,
@@ -634,7 +1052,7 @@
     );
   };
 
-  window.__UBUZIMA_POS_TERMINAL_V4__ = {
+  window.__UBUZIMA_POS_TERMINAL_V5__ = {
     version: VERSION,
     terminal: terminal,
 
@@ -645,6 +1063,10 @@
           terminal.identifier,
         terminal_label:
           terminal.label,
+        branch_storage_key:
+          BRANCH_STORAGE_KEY,
+        branch_context_persisted:
+          Boolean(state.branchId),
         branch_id:
           state.branchId,
         pos_session_id:
@@ -668,7 +1090,7 @@
   };
 
   console.info(
-    '[UbuzimaPlus] POS terminal context V4 loaded.',
+    '[UbuzimaPlus] POS branch refresh context V5 loaded.',
     VERSION
   );
 }());
