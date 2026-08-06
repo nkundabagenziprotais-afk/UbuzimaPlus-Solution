@@ -1,12 +1,12 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_SALES_DOCUMENTS_V8__) {
+  if (window.__UBUZIMA_SALES_DOCUMENTS_V9__) {
     return;
   }
 
   var VERSION =
-    '2026.08.sales-invoice-products-v8';
+    '2026.08.sales-invoice-products-v9';
 
   var SALES_SUFFIX =
     '/pharmaco/sales';
@@ -56,7 +56,10 @@
     manualReceiptSelections: 0,
     globalBlankWindowsSuppressed: 0,
     blankTargetNavigationsNeutralized: 0,
-    checkoutFocusRestorations: 0
+    checkoutFocusRestorations: 0,
+    duplicateAdminWindowsSuppressed: 0,
+    duplicateAdminTargetsPrevented: 0,
+    exactCurrentPageWindowsSuppressed: 0
   };
 
   var originalWindowOpen =
@@ -179,6 +182,96 @@
     };
   }
 
+  function normalizePathname(
+    pathname
+  ) {
+    var value =
+      String(pathname || '/')
+        .replace(/\/+$/, '');
+
+    return value || '/';
+  }
+
+  function resolveWindowUrl(value) {
+    try {
+      if (
+        value === null ||
+        value === undefined ||
+        String(value).trim() === ''
+      ) {
+        return null;
+      }
+
+      return new URL(
+        String(value),
+        window.location.href
+      );
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function duplicateAdminWindowRequest(
+    value,
+    target
+  ) {
+    var candidate =
+      resolveWindowUrl(value);
+
+    var current =
+      resolveWindowUrl(
+        window.location.href
+      );
+
+    if (
+      !candidate ||
+      !current
+    ) {
+      return false;
+    }
+
+    var targetName =
+      String(
+        target || '_blank'
+      ).toLowerCase();
+
+    if (
+      targetName !== '_blank'
+    ) {
+      return false;
+    }
+
+    var currentPath =
+      normalizePathname(
+        current.pathname
+      );
+
+    var candidatePath =
+      normalizePathname(
+        candidate.pathname
+      );
+
+    var sameAdminRoute =
+      candidate.origin ===
+        current.origin &&
+      candidatePath ===
+        currentPath &&
+      currentPath === '/admin';
+
+    if (!sameAdminRoute) {
+      return false;
+    }
+
+    var exactCurrentPage =
+      candidate.href ===
+        current.href;
+
+    return (
+      exactCurrentPage ||
+      checkoutBlankWindowSuppressionActive()
+    );
+  }
+
   window.open = function (
     url,
     target,
@@ -190,6 +283,34 @@
 
       state.globalBlankWindowsSuppressed +=
         1;
+
+      return suppressedPopupShim();
+    }
+
+    if (
+      duplicateAdminWindowRequest(
+        url,
+        target
+      )
+    ) {
+      state.duplicateAdminWindowsSuppressed +=
+        1;
+
+      try {
+        var candidate =
+          resolveWindowUrl(url);
+
+        if (
+          candidate &&
+          candidate.href ===
+            window.location.href
+        ) {
+          state.exactCurrentPageWindowsSuppressed +=
+            1;
+        }
+      } catch (error) {
+        // Suppression remains active.
+      }
 
       return suppressedPopupShim();
     }
@@ -260,12 +381,27 @@
         );
     }
 
-    if (
-      !blankNavigationRequest(
+    var blankDestination =
+      blankNavigationRequest(
         destination
-      )
+      );
+
+    var duplicateAdminDestination =
+      duplicateAdminWindowRequest(
+        destination,
+        target
+      );
+
+    if (
+      !blankDestination &&
+      !duplicateAdminDestination
     ) {
       return false;
+    }
+
+    if (duplicateAdminDestination) {
+      state.duplicateAdminTargetsPrevented +=
+        1;
     }
 
     element.setAttribute(
@@ -292,11 +428,18 @@
         typeof target.closest ===
           'function'
       ) {
-        neutralizeBlankTarget(
+        var duplicateTarget =
           target.closest(
             'a[target="_blank"],button[formtarget="_blank"]'
+          );
+
+        if (
+          neutralizeBlankTarget(
+            duplicateTarget
           )
-        );
+        ) {
+          event.preventDefault();
+        }
       }
     },
     true
@@ -310,7 +453,11 @@
           ? event.target
           : null;
 
-      neutralizeBlankTarget(form);
+      if (
+        neutralizeBlankTarget(form)
+      ) {
+        event.preventDefault();
+      }
     },
     true
   );
@@ -3330,7 +3477,7 @@
     }
   );
 
-  window.__UBUZIMA_SALES_DOCUMENTS_V8__ = {
+  window.__UBUZIMA_SALES_DOCUMENTS_V9__ = {
     version: VERSION,
 
     diagnostics: function () {
@@ -3416,6 +3563,14 @@
           state.blankTargetNavigationsNeutralized,
         checkout_focus_restorations:
           state.checkoutFocusRestorations,
+        duplicate_admin_window_policy:
+          'block-same-origin-admin-during-checkout',
+        duplicate_admin_windows_suppressed:
+          state.duplicateAdminWindowsSuppressed,
+        duplicate_admin_targets_prevented:
+          state.duplicateAdminTargetsPrevented,
+        exact_current_page_windows_suppressed:
+          state.exactCurrentPageWindowsSuppressed,
         inventory_interception:
           false,
         unrelated_request_interception:
