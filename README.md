@@ -1,26 +1,24 @@
-# Ubuzima+ Solution Platform
+# UbuzimaPlus Solution
 
-Ubuzima+ is a modular, multi-solution, multi-tenant digital health and business platform.
+Clean development baseline reconstructed from the validated live application.
 
-## First Solution
+## Active structure
 
-PharmaCo360 is the first solution under Ubuzima+.
+- `public_html/` — active public website and compiled admin UI
+- `backend/` — active Laravel application source
+- `web/` — current editable frontend source
+- `docs/LIVE_BASELINE.md` — baseline validation record
 
-## First Tenant
+## Development policy
 
-VitaPharma is the first tenant/customer using PharmaCo360.
+1. GitHub is the source of truth.
+2. Development uses review branches and pull requests.
+3. Production secrets, databases, uploads, logs and caches are never committed.
+4. Database migrations must preserve existing production data.
+5. UI changes require responsive preview review.
+6. cPanel is the production runtime, not the development source.
 
-## Branch Strategy
-
-- main: stable production-ready branch
-- development: integration branch
-- feature/platform-foundation: Phase 0 foundation work
-
-## Phase 0 Scope
-
-- Public website frame
-- Repository structure
-- Architecture documentation
-- Admin hierarchy foundation
-- AI Center foundation
-- Security principles
+Incomplete repository-only phases, historical deployment evidence, abandoned
+experiments, rollback builds and server backups were removed from the active
+working tree. They remain recoverable through Git history and the recovery
+bundle.

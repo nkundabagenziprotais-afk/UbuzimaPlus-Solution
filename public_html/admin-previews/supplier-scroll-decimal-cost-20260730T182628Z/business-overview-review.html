@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Overview Review · UbuzimaPlus</title>
+  <style>
+    :root {
+      --navy: #071f3a;
+      --blue: #2563eb;
+      --green: #059669;
+      --teal: #0f9f9a;
+      --purple: #7c3aed;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --border: #dbe7f3;
+      --muted: #64748b;
+      --bg: #f3f8fc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #eef7ff 0%, #f8fffb 100%);
+      color: #08213f;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      background: linear-gradient(180deg, #071f3a 0%, #08375a 100%);
+      color: white;
+      padding: 1.25rem;
+    }
+
+    .brand {
+      display: flex;
+      gap: .75rem;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--green), var(--teal));
+      font-weight: 900;
+    }
+
+    .brand strong { display: block; font-size: 1.05rem; }
+    .brand span { color: #b8d7ef; font-size: .82rem; }
+
+    nav {
+      display: grid;
+      gap: .45rem;
+    }
+
+    nav a {
+      color: #d9edf9;
+      text-decoration: none;
+      padding: .78rem .85rem;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: .9rem;
+    }
+
+    nav a.active {
+      color: white;
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.15);
+    }
+
+    main {
+      padding: 1.2rem;
+      overflow: hidden;
+    }
+
+    .hero,
+    .filters,
+    .module-card,
+    .kpi,
+    .panel,
+    .action {
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid var(--border);
+      box-shadow: 0 16px 36px rgba(7, 31, 58, 0.06);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1rem;
+      border-radius: 26px;
+      padding: 1.3rem;
+      background:
+        radial-gradient(circle at top left, rgba(5, 150, 105, 0.12), transparent 36%),
+        linear-gradient(135deg, #ffffff 0%, #f7fcff 100%);
+      margin-bottom: 1rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 .35rem;
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 900;
+      font-size: .72rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 2.8vw, 2.7rem);
+      letter-spacing: -.045em;
+      color: var(--navy);
+    }
+
+    h1 span {
+      display: inline-block;
+      margin-left: .5rem;
+      font-size: .95rem;
+      color: var(--green);
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      margin: .5rem 0 0;
+      color: #315172;
+      max-width: 780px;
+    }
+
+    .goal-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(145px, 1fr));
+      gap: .7rem;
+    }
+
+    .goal-cards article {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1rem;
+    }
+
+    small {
+      display: block;
+      color: #315172;
+      font-weight: 800;
+    }
+
+    strong.value {
+      display: block;
+      margin: .25rem 0;
+      color: var(--navy);
+      font-size: 1.4rem;
+    }
+
+    .positive { color: var(--green) !important; }
+    .warning { color: var(--amber) !important; }
+    .danger { color: var(--red) !important; }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+      gap: .75rem;
+      align-items: end;
+      padding: 1rem;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: grid;
+      gap: .35rem;
+      color: #315172;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    select {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: .72rem;
+      color: var(--navy);
+      background: white;
+    }
+
+    button,
+    .back-link {
+      border: 0;
+      border-radius: 12px;
+      padding: .75rem 1rem;
+      background: linear-gradient(135deg, var(--green), #047857);
+      color: white;
+      font-weight: 900;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(175px, 1fr));
+      gap: .75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .module-card {
+      display: flex;
+      gap: .8rem;
+      padding: 1rem;
+      border-radius: 18px;
+    }
+
+    .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .blue { background: var(--blue); }
+    .green { background: var(--green); }
+    .teal { background: var(--teal); }
+    .purple { background: var(--purple); }
+    .amber { background: var(--amber); }
+
+    .module-card h3,
+    .panel h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: .98rem;
+    }
+
+    .module-card p {
+      margin: .25rem 0 .5rem;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    .section-title {
+      margin: .5rem 0 .75rem;
+      color: var(--navy);
+      font-size: 1rem;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: .75rem;
+      margin-bottom: 1rem;
+    }
+
+    .kpi {
+      border-radius: 18px;
+      padding: 1rem;
+      min-height: 112px;
+    }
+
+    .kpi span {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: .85rem;
+    }
+
+    .panel {
+      grid-column: span 3;
+      border-radius: 20px;
+      padding: 1rem;
+      min-height: 240px;
+    }
+
+    .panel-wide { grid-column: span 4; }
+
+    .panel header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: .75rem;
+    }
+
+    .panel header span {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: .78rem;
+    }
+
+    dl {
+      margin: 0;
+      display: grid;
+      gap: .62rem;
+    }
+
+    dl div,
+    .list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid #edf3f8;
+      padding-bottom: .48rem;
+    }
+
+    dt,
+    .list span {
+      color: #315172;
+    }
+
+    dd,
+    .list strong {
+      margin: 0;
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .chart {
+      display: flex;
+      align-items: end;
+      gap: .55rem;
+      min-height: 185px;
+      padding: 1rem;
+      border-radius: 18px;
+      background:
+        repeating-linear-gradient(to top, #eef5fb 0, #eef5fb 1px, transparent 1px, transparent 42px),
+        linear-gradient(180deg, #ffffff, #f8fcff);
+    }
+
+    .chart span {
+      flex: 1;
+      min-width: 10px;
+      border-radius: 999px 999px 4px 4px;
+      background: linear-gradient(180deg, var(--green), var(--blue));
+    }
+
+    .list {
+      display: grid;
+      gap: .62rem;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .insight h4 {
+      margin: .75rem 0 .25rem;
+      color: var(--green);
+      font-size: .86rem;
+    }
+
+    .insight p {
+      margin: 0;
+      color: #315172;
+      font-size: .84rem;
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: .75rem;
+      margin-top: .75rem;
+    }
+
+    .action {
+      padding: 1rem;
+      border-radius: 18px;
+    }
+
+    .action p {
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: .78rem;
+      margin: 1rem 0 0;
+    }
+
+    @media (max-width: 1320px) {
+      .module-grid { grid-template-columns: repeat(3, minmax(175px, 1fr)); }
+      .kpi-grid, .actions { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
+      .panel, .panel-wide { grid-column: span 6; }
+    }
+
+    @media (max-width: 880px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { display: none; }
+      .hero, .filters, .goal-cards, .module-grid, .kpi-grid, .actions { grid-template-columns: 1fr; }
+      .panel, .panel-wide { grid-column: span 12; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand">
+        <div class="brand-mark">U+</div>
+        <div>
+          <strong>UbuzimaPlus</strong>
+          <span>Pharmacy Intelligence</span>
+        </div>
+      </div>
+
+      <nav>
+        <a class="active" href="#">Business Overview</a>
+        <a href="/admin/">Back to Admin Dashboard</a>
+        <a href="#">POS Analytics</a>
+        <a href="#">Inventory Analytics</a>
+        <a href="#">Expenses & Profitability</a>
+        <a href="#">Insurance & Receivables</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Admin / Test Preview</p>
+          <h1>Business Overview <span>Business Driving Engine</span></h1>
+          <p>360° view of revenue, cash, expenses, profitability, goals, and operational risks.</p>
+        </div>
+
+        <div class="goal-cards">
+          <article><small>Revenue Goal</small><strong class="value">50,000,000</strong><span class="positive">62.5% MTD Progress</span></article>
+          <article><small>Profit Goal</small><strong class="value">8,000,000</strong><span class="positive">60.4% MTD Progress</span></article>
+          <article><small>Expense Mode</small><strong class="value">Actual</strong><span class="warning">Preview estimate</span></article>
+        </div>
+      </header>
+
+      <section class="filters">
+        <label>Date Range<select><option>May 1 – May 23, 2025</option></select></label>
+        <label>Business Date Mode<select><option>Business Date</option><option>Transaction Timestamp</option></select></label>
+        <label>Branch<select><option>All Branches</option></select></label>
+        <label>Compare With<select><option>Apr 1 – Apr 23, 2025</option></select></label>
+        <button>Apply Filters</button>
+      </section>
+
+      <section class="module-grid">
+        <article class="module-card"><span class="icon blue">PO</span><div><h3>POS Analytics</h3><p>Sales, payments, sessions</p><small class="positive">Open Analytics →</small></div></article>
+        <article class="module-card"><span class="icon green">IN</span><div><h3>Inventory Analytics</h3><p>Stock, value, movement</p><small class="positive">Open Analytics →</small></div></article>
+        <article class="module-card"><span class="icon purple">SA</span><div><h3>Sales & Revenue</h3><p>Trends, top products, margins</p><small class="positive">Open Analytics →</small></div></article>
+        <article class="module-card"><span class="icon teal">CA</span><div><h3>Cash & Collections</h3><p>Cash flow, payments</p><small class="positive">Open Analytics →</small></div></article>
+        <article class="module-card"><span class="icon amber">EX</span><div><h3>Expenses & Profitability</h3><p>Expenses, profit, margins</p><small class="positive">Open Analytics →</small></div></article>
+      </section>
+
+      <h2 class="section-title">Key Performance Indicators</h2>
+      <section class="kpi-grid">
+        <article class="kpi"><small>Gross Revenue</small><strong class="value">31,250,000</strong><span class="positive">↑ 18.6% · MTD revenue</span></article>
+        <article class="kpi"><small>Net Revenue</small><strong class="value">28,420,000</strong><span class="positive">↑ 17.3% · After discounts</span></article>
+        <article class="kpi"><small>Collections</small><strong class="value">24,650,000</strong><span class="positive">↑ 16.8% · Cash collected</span></article>
+        <article class="kpi"><small>Outstanding Balance</small><strong class="value">7,320,000</strong><span class="danger">↑ 4.2% · Credit and receivables</span></article>
+        <article class="kpi"><small>Gross Profit</small><strong class="value">10,230,000</strong><span class="positive">↑ 19.4% · Estimated</span></article>
+        <article class="kpi"><small>Operating Expenses</small><strong class="value">5,400,000</strong><span class="warning">↑ 8.7% · Preview estimate</span></article>
+        <article class="kpi"><small>Break-even Daily Cash Required</small><strong class="value">234,783</strong><span>Based on current expenses</span></article>
+        <article class="kpi"><small>Daily Cash for Revenue Goal</small><strong class="value">2,083,333</strong><span>9 days remaining</span></article>
+        <article class="kpi"><small>Daily Cash for Profit Goal</small><strong class="value">352,222</strong><span>9 days remaining</span></article>
+        <article class="kpi"><small>Cash Variance</small><strong class="value">-185,000</strong><span class="danger">3 sessions</span></article>
+      </section>
+
+      <section class="panel-grid">
+        <article class="panel">
+          <header><h3>Daily Revenue Operation</h3><span>Today</span></header>
+          <dl>
+            <div><dt>Gross Sales</dt><dd>1,650,000</dd></div>
+            <div><dt>Discounts</dt><dd>-120,000</dd></div>
+            <div><dt>Returns / Reversals</dt><dd>-45,000</dd></div>
+            <div><dt>Net Sales</dt><dd>1,485,000</dd></div>
+            <div><dt>Collections</dt><dd>1,210,000</dd></div>
+            <div><dt>Credit Sales</dt><dd>210,000</dd></div>
+          </dl>
+        </article>
+
+        <article class="panel panel-wide">
+          <header><h3>Sales Trend</h3><span>Net Sales by Day</span></header>
+          <div class="chart">
+            <span style="height:38%"></span><span style="height:58%"></span><span style="height:44%"></span><span style="height:77%"></span>
+            <span style="height:49%"></span><span style="height:68%"></span><span style="height:53%"></span><span style="height:82%"></span>
+            <span style="height:61%"></span><span style="height:71%"></span><span style="height:46%"></span><span style="height:88%"></span>
+          </div>
+        </article>
+
+        <article class="panel">
+          <header><h3>Top Contributing Products</h3><span>By Revenue</span></header>
+          <ul class="list">
+            <li><span>Panadol Extra</span><strong>1,820,000</strong></li>
+            <li><span>Amoxicillin 500mg</span><strong>1,450,000</strong></li>
+            <li><span>Vitamin C 1000mg</span><strong>1,120,000</strong></li>
+            <li><span>Brufen 400mg</span><strong>980,000</strong></li>
+          </ul>
+        </article>
+
+        <article class="panel">
+          <header><h3>Expenses & Profitability</h3><span>MTD</span></header>
+          <dl>
+            <div><dt>Operating Expenses</dt><dd>5,400,000</dd></div>
+            <div><dt>Gross Profit</dt><dd>10,230,000</dd></div>
+            <div><dt>Estimated Net Profit</dt><dd>4,830,000</dd></div>
+            <div><dt>Gross Margin</dt><dd>36.0%</dd></div>
+          </dl>
+        </article>
+
+        <article class="panel">
+          <header><h3>Inventory Risk Overview</h3><span>Preview</span></header>
+          <dl>
+            <div><dt>Total Inventory Value</dt><dd>42,750,000</dd></div>
+            <div><dt>Low Stock Items</dt><dd class="warning">124</dd></div>
+            <div><dt>Expiring Items</dt><dd class="warning">68</dd></div>
+            <div><dt>Revenue Risk</dt><dd class="danger">12,450,000</dd></div>
+          </dl>
+        </article>
+
+        <article class="panel insight">
+          <header><h3>AI / Business Insight</h3><span>Review summary</span></header>
+          <h4>What changed?</h4>
+          <p>Net revenue is up 17.3% compared to the previous period.</p>
+          <h4>Why it matters</h4>
+          <p>Growth is driven by stronger product sales and higher collections.</p>
+          <h4>Risks detected</h4>
+          <p>Outstanding balance is increasing, while 12 high-value products are at stock risk.</p>
+          <h4>Recommended actions</h4>
+          <p>Focus on collections, replenish fast-moving items, and review operating expenses.</p>
+        </article>
+      </section>
+
+      <h2 class="section-title">Recommended Actions</h2>
+      <section class="actions">
+        <article class="action"><strong>Collect Outstanding</strong><p>7,320,000 outstanding balance requires follow-up.</p></article>
+        <article class="action"><strong>Replenish Stock</strong><p>12 high-revenue products are low or out of stock.</p></article>
+        <article class="action"><strong>Review Expenses</strong><p>Expenses are up 8.7% versus the previous period.</p></article>
+        <article class="action"><strong>Close Open Sessions</strong><p>3 open sessions have cash variance.</p></article>
+      </section>
+
+      <footer>
+        All amounts in UGX · Business Date: May 23, 2025 11:45 AM · Admin/Test Review · <a href="/admin/">Back to Admin</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

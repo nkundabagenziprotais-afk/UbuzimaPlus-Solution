@@ -1,0 +1,9 @@
+{
+  "release": "pre-finance-foundation-with-isolated-finance",
+  "commit": "fa6293feb6c1c8662a269c9ebc607b6ab6681d65",
+  "deployed_at": "2026-07-30T09:00:45Z",
+  "general_modules": "exact-pre-finance-runtime",
+  "finance_runtime": "automatic-internal-finance-runtime",
+  "automatic_finance_redirect": true,
+  "database_changed": false
+}
