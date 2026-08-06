@@ -6,64 +6,6 @@ import {
 const API_BASE_URL = normalizeApiBaseUrl(
   import.meta.env.VITE_API_BASE_URL,
 );
-const POS_TERMINAL_STORAGE_KEY =
-  'ubuzima.pos.terminal.identity.v1';
-
-export interface StablePosTerminalIdentity {
-  identifier: string;
-  label: string;
-}
-
-function createPosTerminalIdentifier(): string {
-  const secureUuid =
-    globalThis.crypto?.randomUUID?.();
-
-  if (secureUuid) {
-    return `web-${secureUuid.toLowerCase()}`;
-  }
-
-  return [
-    'web',
-    Date.now().toString(36),
-    Math.random().toString(36).slice(2),
-  ].join('-');
-}
-
-export function getStablePosTerminalIdentity():
-  StablePosTerminalIdentity {
-  let identifier = '';
-
-  try {
-    identifier =
-      globalThis.localStorage
-        ?.getItem(POS_TERMINAL_STORAGE_KEY)
-        ?.trim()
-      || '';
-
-    if (!identifier) {
-      identifier = createPosTerminalIdentifier();
-
-      globalThis.localStorage?.setItem(
-        POS_TERMINAL_STORAGE_KEY,
-        identifier,
-      );
-    }
-  } catch {
-    identifier = createPosTerminalIdentifier();
-  }
-
-  const platform =
-    globalThis.navigator?.platform?.trim()
-    || 'Web browser';
-
-  return {
-    identifier: identifier
-      .toLowerCase()
-      .slice(0, 100),
-    label: `Web POS · ${platform}`
-      .slice(0, 100),
-  };
-}
 
 export type PosSessionStatus =
   | "open"
@@ -96,8 +38,6 @@ export interface PosSession {
   uuid: string;
   session_number: string;
   sequence_number: number;
-  terminal_identifier: string | null;
-  terminal_label: string | null;
   business_date: string | null;
   session_mode?: "live" | "historical" | string;
   historical_reason?: string | null;
@@ -142,8 +82,6 @@ export interface PosSessionMutationResponse {
 
 export interface OpenPosSessionPayload {
   branch_id: number;
-  terminal_identifier: string;
-  terminal_label?: string;
   opening_float_amount: number;
   opening_mode?: "fresh-start" | "handover";
   notes?: string;
@@ -288,18 +226,10 @@ async function requestPosSession<T>(
 
 export function getCurrentPosSession(
   context: PosSessionRequestContext,
-  branchId: number,
-  terminalIdentifier: string,
 ): Promise<CurrentPosSessionResponse> {
-  const query = new URLSearchParams({
-    branch_id: String(branchId),
-    terminal_identifier:
-      terminalIdentifier.trim().toLowerCase(),
-  });
-
   return requestPosSession<CurrentPosSessionResponse>(
     context,
-    `/pharmaco/pos/session/current?${query.toString()}`,
+    "/pharmaco/pos/session/current",
     {
       method: "GET",
       cache: "no-store",

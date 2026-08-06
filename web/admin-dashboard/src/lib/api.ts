@@ -2135,8 +2135,6 @@ export async function createPharmaSale(
 export type CheckoutPharmaSalePayload = {
   idempotency_key: string;
   branch_id: number;
-  pos_session_id: number;
-  terminal_identifier: string;
   pharmaco_customer_id?: number | null;
   pharmaco_prescription_id?: number | null;
   sale_type?:

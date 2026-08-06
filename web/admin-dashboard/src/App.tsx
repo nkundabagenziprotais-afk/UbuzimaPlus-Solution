@@ -51,7 +51,6 @@ import {
   type PosSession,
   closePosSession,
   getCurrentPosSession,
-  getStablePosTerminalIdentity,
   openPosSession,
   zeroizePosSession,
 } from './lib/posSessionApi';
@@ -4226,24 +4225,11 @@ function App() {
     pharmaCore.branches?.branches?.[0]?.id ??
     null;
 
-  const posTerminalIdentity = useMemo(
-    () =>
-      posSessionTenantSlug && posSessionBranchId
-        ? getStablePosTerminalIdentity()
-        : null,
-    [
-      posSessionBranchId,
-      posSessionTenantSlug,
-    ],
-  );
-
   useEffect(() => {
     if (
       activeSection !== 'pos' ||
       !session?.token ||
-      !posSessionTenantSlug ||
-      !posSessionBranchId ||
-      !posTerminalIdentity
+      !posSessionTenantSlug
     ) {
       return;
     }
@@ -4252,14 +4238,10 @@ function App() {
 
     setIsLoadingPosSession(true);
 
-    void getCurrentPosSession(
-      {
-        token: session.token,
-        tenantSlug: posSessionTenantSlug,
-      },
-      posSessionBranchId,
-      posTerminalIdentity.identifier,
-    )
+    void getCurrentPosSession({
+      token: session.token,
+      tenantSlug: posSessionTenantSlug,
+    })
       .then((response) => {
         if (cancelled) {
           return;
@@ -4303,9 +4285,7 @@ function App() {
     };
   }, [
     activeSection,
-    posSessionBranchId,
     posSessionTenantSlug,
-    posTerminalIdentity?.identifier,
     session?.token,
   ]);
 
@@ -6440,13 +6420,8 @@ function App() {
         return;
       }
 
-      if (
-        !posSessionBranchId
-        || !posTerminalIdentity
-      ) {
-        setPosNotice(
-          'No active branch or stable POS terminal identity is available.',
-        );
+      if (!posSessionBranchId) {
+        setPosNotice('No active branch is available for this POS session.');
         return;
       }
 
@@ -6471,10 +6446,6 @@ function App() {
           },
           {
             branch_id: posSessionBranchId,
-            terminal_identifier:
-              posTerminalIdentity.identifier,
-            terminal_label:
-              posTerminalIdentity.label,
             opening_float_amount: openingFloatAmount,
             opening_mode: posOpeningMode,
           },
@@ -6714,29 +6685,15 @@ async function confirmTransaction() {
         return;
       }
 
-      if (
-        !posSessionBranchId
-        || !posTerminalIdentity
-      ) {
-        setPosNotice(
-          'The active branch or POS terminal identity is unavailable.',
-        );
-        return;
-      }
-
       let activeCheckoutSession = posSession;
 
       if (activeCheckoutSession?.status !== 'open') {
         try {
           const currentSessionResponse =
-            await getCurrentPosSession(
-              {
-                token: session.token,
-                tenantSlug: posSessionTenantSlug,
-              },
-              posSessionBranchId,
-              posTerminalIdentity.identifier,
-            );
+            await getCurrentPosSession({
+              token: session.token,
+              tenantSlug: posSessionTenantSlug,
+            });
 
           activeCheckoutSession =
             currentSessionResponse.session;
@@ -6825,10 +6782,6 @@ async function confirmTransaction() {
             {
               idempotency_key: posCheckoutKey,
               branch_id: branchId,
-              pos_session_id:
-                activeCheckoutSession.id,
-              terminal_identifier:
-                posTerminalIdentity.identifier,
               sale_type: saleType,
               discount_amount:
                 Math.max(
