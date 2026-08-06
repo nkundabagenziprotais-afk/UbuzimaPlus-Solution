@@ -2134,6 +2134,8 @@ export async function createPharmaSale(
 export type CheckoutPharmaSalePayload = {
   idempotency_key: string;
   branch_id: number;
+  pos_session_id: number;
+  terminal_identifier: string;
   pharmaco_customer_id?: number | null;
   pharmaco_prescription_id?: number | null;
   sale_type?:
@@ -4309,6 +4311,10 @@ export type TenantSecurityUser = {
   phone?: string | null;
   job_title?: string | null;
   status?: string | null;
+  branch?: {
+    id: number;
+    name: string;
+  } | null;
   security?: {
     two_factor_required: boolean;
     two_factor_enabled: boolean;
@@ -4351,6 +4357,7 @@ export async function createTenantSecurityUser(
     email: string;
     phone?: string;
     job_title?: string;
+    branch_id?: number;
     access_assignment_mode:
       | 'predefined_role'
       | 'granular_permissions';
@@ -4381,6 +4388,7 @@ export async function updateTenantSecurityUser(
     email?: string;
     phone?: string;
     job_title?: string;
+    branch_id?: number;
     access_assignment_mode:
       | 'predefined_role'
       | 'granular_permissions';
