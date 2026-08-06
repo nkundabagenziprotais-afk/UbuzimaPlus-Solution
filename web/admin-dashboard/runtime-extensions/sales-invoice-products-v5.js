@@ -1,12 +1,12 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_SALES_DOCUMENTS_V4__) {
+  if (window.__UBUZIMA_SALES_DOCUMENTS_V5__) {
     return;
   }
 
   var VERSION =
-    '2026.08.sales-invoice-products-v4';
+    '2026.08.sales-invoice-products-v5';
 
   var SALES_SUFFIX =
     '/pharmaco/sales';
@@ -41,7 +41,11 @@
     receiptWhatsAppActions: 0,
     receiptEmailActions: 0,
     cartTablesStabilized: 0,
-    cartRowsStabilized: 0
+    cartRowsStabilized: 0,
+    receiptDirectRenders: 0,
+    receiptDirectRenderFailures: 0,
+    receiptPrintDocuments: 0,
+    receiptPrintFailures: 0
   };
 
   function requestUrl(input) {
@@ -1372,6 +1376,342 @@
     return button;
   }
 
+  function receiptDocumentParts(invoice) {
+    var parser =
+      new DOMParser();
+
+    var parsed =
+      parser.parseFromString(
+        invoiceHtml(invoice),
+        'text/html'
+      );
+
+    var receipt =
+      parsed.querySelector(
+        '[data-ubuzima-receipt-ready="true"]'
+      );
+
+    var style =
+      parsed.querySelector('style');
+
+    var text =
+      receipt
+        ? String(
+            receipt.textContent || ''
+          )
+            .replace(/\s+/g, ' ')
+            .trim()
+        : '';
+
+    return {
+      receipt: receipt,
+      styleText:
+        style
+          ? style.textContent || ''
+          : '',
+      text: text
+    };
+  }
+
+  function renderReceiptDirectly(
+    invoice,
+    host
+  ) {
+    var parts =
+      receiptDocumentParts(invoice);
+
+    if (
+      !parts.receipt ||
+      parts.text.length < 40
+    ) {
+      state.receiptDirectRenderFailures +=
+        1;
+
+      return false;
+    }
+
+    var receiptMarkup =
+      parts.receipt.outerHTML;
+
+    if (
+      typeof host.attachShadow ===
+        'function'
+    ) {
+      var shadow =
+        host.attachShadow({
+          mode: 'open'
+        });
+
+      shadow.innerHTML = [
+        '<style>',
+        ':host{',
+        'display:block;',
+        'width:80mm;',
+        'max-width:100%;',
+        'margin:0 auto;',
+        'background:#fff;',
+        'color:#000;',
+        'font-family:"Courier New",Courier,monospace;',
+        '}',
+        parts.styleText,
+        '</style>',
+        receiptMarkup
+      ].join('');
+    } else {
+      host.innerHTML = [
+        '<style>',
+        '[data-ubuzima-receipt-preview="direct-v5"]{',
+        'font-family:"Courier New",Courier,monospace;',
+        'background:#fff;',
+        'color:#000;',
+        '}',
+        parts.styleText,
+        '</style>',
+        receiptMarkup
+      ].join('');
+    }
+
+    var visibleText =
+      host.shadowRoot
+        ? String(
+            host.shadowRoot.textContent ||
+            ''
+          )
+        : String(
+            host.textContent || ''
+          );
+
+    visibleText =
+      visibleText
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (
+      visibleText.length < 40 ||
+      (
+        invoice.invoice_number &&
+        visibleText.indexOf(
+          String(
+            invoice.invoice_number
+          )
+        ) === -1
+      )
+    ) {
+      state.receiptDirectRenderFailures +=
+        1;
+
+      return false;
+    }
+
+    state.receiptDirectRenders += 1;
+
+    return true;
+  }
+
+  function printReceiptDocument(invoice) {
+    var iframe =
+      document.createElement('iframe');
+
+    iframe.setAttribute(
+      'data-ubuzima-receipt-print-frame',
+      'v5'
+    );
+
+    iframe.setAttribute(
+      'aria-hidden',
+      'true'
+    );
+
+    iframe.style.cssText = [
+      'position:fixed',
+      'left:-10000px',
+      'top:0',
+      'width:80mm',
+      'height:1px',
+      'border:0',
+      'opacity:0',
+      'pointer-events:none'
+    ].join(';');
+
+    document.body.appendChild(iframe);
+
+    var frameWindow =
+      iframe.contentWindow;
+
+    var frameDocument =
+      iframe.contentDocument ||
+      (
+        frameWindow &&
+        frameWindow.document
+      );
+
+    if (
+      !frameWindow ||
+      !frameDocument
+    ) {
+      iframe.remove();
+
+      state.receiptPrintFailures += 1;
+      state.blankReceiptPreventions += 1;
+
+      toast(
+        'The receipt print document could not be created.'
+      );
+
+      return;
+    }
+
+    frameDocument.open();
+
+    frameDocument.write(
+      invoiceHtml(invoice)
+    );
+
+    frameDocument.close();
+
+    state.receiptPrintDocuments += 1;
+
+    var attempts = 0;
+    var maximumAttempts = 100;
+
+    function cleanupFrame() {
+      window.setTimeout(
+        function () {
+          if (iframe.parentNode) {
+            iframe.remove();
+          }
+        },
+        1500
+      );
+    }
+
+    function receiptIsReady() {
+      try {
+        var marker =
+          frameDocument.querySelector(
+            '[data-ubuzima-receipt-ready="true"]'
+          );
+
+        var text =
+          String(
+            frameDocument.body
+              ? frameDocument.body.textContent
+              : ''
+          )
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        return Boolean(
+          marker &&
+          text.length >= 40 &&
+          (
+            !invoice.invoice_number ||
+            text.indexOf(
+              String(
+                invoice.invoice_number
+              )
+            ) !== -1
+          )
+        );
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function printAfterPaint() {
+      var frame =
+        typeof frameWindow
+          .requestAnimationFrame ===
+          'function'
+          ? frameWindow
+              .requestAnimationFrame
+              .bind(frameWindow)
+          : window
+              .requestAnimationFrame
+              .bind(window);
+
+      frame(function () {
+        frame(function () {
+          if (!receiptIsReady()) {
+            state.receiptPrintFailures +=
+              1;
+
+            state.blankReceiptPreventions +=
+              1;
+
+            toast(
+              'Receipt content was not ready for printing.'
+            );
+
+            cleanupFrame();
+            return;
+          }
+
+          state.receiptReadyPrints += 1;
+          state.receiptPrintActions += 1;
+          state.invoicePrints += 1;
+
+          frameWindow.focus();
+          frameWindow.print();
+
+          cleanupFrame();
+        });
+      });
+    }
+
+    function afterFonts() {
+      try {
+        if (
+          frameDocument.fonts &&
+          frameDocument.fonts.ready &&
+          typeof frameDocument.fonts
+            .ready.then === 'function'
+        ) {
+          frameDocument.fonts.ready
+            .then(printAfterPaint)
+            .catch(printAfterPaint);
+
+          return;
+        }
+      } catch (error) {
+        // Continue with paint verification.
+      }
+
+      printAfterPaint();
+    }
+
+    function waitUntilReady() {
+      attempts += 1;
+      state.receiptRenderAttempts += 1;
+
+      if (receiptIsReady()) {
+        afterFonts();
+        return;
+      }
+
+      if (
+        attempts >= maximumAttempts
+      ) {
+        state.receiptPrintFailures += 1;
+        state.blankReceiptPreventions += 1;
+
+        toast(
+          'Receipt content did not finish loading for printing.'
+        );
+
+        cleanupFrame();
+        return;
+      }
+
+      window.setTimeout(
+        waitUntilReady,
+        40
+      );
+    }
+
+    waitUntilReady();
+  }
+
   function renderInvoice(invoice) {
     closeReceiptModal();
 
@@ -1379,18 +1719,18 @@
       document.createElement('div');
 
     overlay.id =
-      'ubuzima-receipt-modal-v4';
+      'ubuzima-receipt-modal-v5';
 
     overlay.setAttribute(
       'data-ubuzima-receipt-modal',
-      '80mm-v4'
+      '80mm-v5'
     );
 
     overlay.style.cssText = [
       'position:fixed',
       'inset:0',
       'z-index:2147483600',
-      'background:rgba(15,23,42,.62)',
+      'background:rgba(15,23,42,.64)',
       'display:flex',
       'align-items:center',
       'justify-content:center',
@@ -1417,14 +1757,14 @@
     );
 
     panel.style.cssText = [
-      'width:min(390px,calc(100vw - 20px))',
+      'width:min(380px,calc(100vw - 20px))',
       'max-height:calc(100vh - 20px)',
       'display:flex',
       'flex-direction:column',
       'overflow:hidden',
       'background:#f8fafc',
       'border-radius:18px',
-      'box-shadow:0 30px 90px rgba(15,23,42,.38)'
+      'box-shadow:0 30px 90px rgba(15,23,42,.4)'
     ].join(';');
 
     var header =
@@ -1479,33 +1819,32 @@
       'padding:12px',
       'overflow:auto',
       'background:#cbd5e1',
-      'min-height:260px',
+      'min-height:300px',
       'max-height:calc(100vh - 170px)'
     ].join(';');
 
-    var frame =
-      document.createElement(
-        'iframe'
-      );
+    var receiptHost =
+      document.createElement('div');
 
-    frame.title =
-      '80 mm receipt preview';
-
-    frame.setAttribute(
-      'data-ubuzima-receipt-frame',
-      'v4'
+    receiptHost.setAttribute(
+      'data-ubuzima-receipt-preview',
+      'direct-v5'
     );
 
-    frame.style.cssText = [
+    receiptHost.style.cssText = [
       'display:block',
       'width:80mm',
       'max-width:100%',
-      'height:min(64vh,650px)',
-      'min-height:360px',
-      'border:0',
+      'min-height:120px',
       'background:#ffffff',
-      'box-shadow:0 6px 20px rgba(15,23,42,.18)'
+      'box-shadow:0 7px 24px rgba(15,23,42,.2)'
     ].join(';');
+
+    var rendered =
+      renderReceiptDirectly(
+        invoice,
+        receiptHost
+      );
 
     var footer =
       document.createElement('footer');
@@ -1543,10 +1882,16 @@
         '#ffffff'
       );
 
-    printButton.disabled = true;
-    printButton.style.opacity = '.6';
+    printButton.disabled =
+      !rendered;
+
+    printButton.style.opacity =
+      rendered ? '1' : '.55';
+
     printButton.style.cursor =
-      'not-allowed';
+      rendered
+        ? 'pointer'
+        : 'not-allowed';
 
     footer.appendChild(printButton);
     footer.appendChild(
@@ -1554,7 +1899,31 @@
     );
     footer.appendChild(emailButton);
 
-    previewArea.appendChild(frame);
+    if (rendered) {
+      previewArea.appendChild(
+        receiptHost
+      );
+    } else {
+      var errorMessage =
+        document.createElement('div');
+
+      errorMessage.style.cssText = [
+        'width:100%',
+        'padding:22px',
+        'background:#fff',
+        'border-radius:10px',
+        'color:#991b1b',
+        'font-size:13px',
+        'text-align:center'
+      ].join(';');
+
+      errorMessage.textContent =
+        'The receipt content could not be displayed.';
+
+      previewArea.appendChild(
+        errorMessage
+      );
+    }
 
     panel.appendChild(header);
     panel.appendChild(previewArea);
@@ -1564,60 +1933,6 @@
     document.body.appendChild(overlay);
 
     state.receiptModalOpens += 1;
-
-    var receiptHtml =
-      invoiceHtml(invoice);
-
-    var frameReady = false;
-
-    frame.addEventListener(
-      'load',
-      function () {
-        state.receiptRenderAttempts += 1;
-
-        try {
-          var frameDocument =
-            frame.contentDocument ||
-            frame.contentWindow.document;
-
-          var text =
-            String(
-              frameDocument.body
-                ? frameDocument.body
-                    .textContent
-                : ''
-            )
-              .replace(/\s+/g, ' ')
-              .trim();
-
-          frameReady =
-            text.length > 40 &&
-            (
-              !invoice.invoice_number ||
-              text.indexOf(
-                String(
-                  invoice.invoice_number
-                )
-              ) !== -1
-            );
-        } catch (error) {
-          frameReady = false;
-        }
-
-        printButton.disabled =
-          !frameReady;
-
-        printButton.style.opacity =
-          frameReady ? '1' : '.6';
-
-        printButton.style.cursor =
-          frameReady
-            ? 'pointer'
-            : 'not-allowed';
-      }
-    );
-
-    frame.srcdoc = receiptHtml;
 
     overlay.addEventListener(
       'click',
@@ -1646,45 +1961,20 @@
             '[data-ubuzima-receipt-action="print"]'
           )
         ) {
-          if (!frameReady) {
+          if (!rendered) {
             state.blankReceiptPreventions +=
               1;
 
             toast(
-              'The receipt is still preparing. Please try Print again.'
+              'The receipt content is unavailable for printing.'
             );
 
             return;
           }
 
-          try {
-            var printWindow =
-              frame.contentWindow;
-
-            if (!printWindow) {
-              throw new Error(
-                'Receipt frame is unavailable.'
-              );
-            }
-
-            state.receiptReadyPrints +=
-              1;
-
-            state.receiptPrintActions +=
-              1;
-
-            state.invoicePrints += 1;
-
-            printWindow.focus();
-            printWindow.print();
-          } catch (error) {
-            state.blankReceiptPreventions +=
-              1;
-
-            toast(
-              'The receipt could not be printed. Please try again.'
-            );
-          }
+          printReceiptDocument(
+            invoice
+          );
 
           return;
         }
@@ -1697,14 +1987,11 @@
           state.receiptWhatsAppActions +=
             1;
 
-          var whatsappUrl =
+          window.open(
             'https://wa.me/?text=' +
             encodeURIComponent(
               receiptShareText(invoice)
-            );
-
-          window.open(
-            whatsappUrl,
+            ),
             '_blank',
             'noopener,noreferrer'
           );
@@ -1727,15 +2014,13 @@
               ''
             );
 
-          var mailUrl =
+          window.location.href =
             'mailto:?subject=' +
             encodeURIComponent(subject) +
             '&body=' +
             encodeURIComponent(
               receiptShareText(invoice)
             );
-
-          window.location.href = mailUrl;
         }
       }
     );
@@ -2569,7 +2854,7 @@
     }
   );
 
-  window.__UBUZIMA_SALES_DOCUMENTS_V4__ = {
+  window.__UBUZIMA_SALES_DOCUMENTS_V5__ = {
     version: VERSION,
 
     diagnostics: function () {
@@ -2615,6 +2900,18 @@
           state.cartTablesStabilized,
         cart_rows_stabilized:
           state.cartRowsStabilized,
+        receipt_direct_renders:
+          state.receiptDirectRenders,
+        receipt_direct_render_failures:
+          state.receiptDirectRenderFailures,
+        receipt_print_documents:
+          state.receiptPrintDocuments,
+        receipt_print_failures:
+          state.receiptPrintFailures,
+        receipt_preview_mode:
+          'direct-shadow-dom',
+        receipt_print_mode:
+          'verified-hidden-document',
         inventory_interception:
           false,
         unrelated_request_interception:
