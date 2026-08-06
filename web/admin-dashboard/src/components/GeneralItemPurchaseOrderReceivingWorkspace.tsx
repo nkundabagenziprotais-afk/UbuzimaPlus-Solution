@@ -59,35 +59,6 @@ function numberFrom(
     : 0;
 }
 
-function decimalFrom(
-  value: string,
-  fieldLabel: string,
-): number {
-  const normalized = value
-    .trim()
-    .replace(/,/g, '.');
-
-  if (
-    !/^\d+(?:\.\d{1,2})?$/.test(
-      normalized,
-    )
-  ) {
-    throw new Error(
-      `${fieldLabel} must contain a valid amount with one or two decimal places.`,
-    );
-  }
-
-  const parsed = Number(normalized);
-
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(
-      `${fieldLabel} must be zero or greater.`,
-    );
-  }
-
-  return parsed;
-}
-
 function remainingQuantity(
   item: PharmaPurchaseOrderItem,
 ): number {
@@ -462,9 +433,8 @@ export function GeneralItemPurchaseOrderReceivingWorkspace({
               quantity,
             unit_cost:
               form.unit_cost
-                ? decimalFrom(
+                ? numberFrom(
                     form.unit_cost,
-                    'Unit cost',
                   )
                 : null,
             reference_number:

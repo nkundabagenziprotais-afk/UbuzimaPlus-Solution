@@ -133,7 +133,6 @@ type InventoryCreateFormState = {
   unit_cost: string;
   margin_percent: string;
   selling_price: string;
-  pharmaco_supplier_id: string;
   supplier_name: string;
   reference_number: string;
 };
@@ -155,64 +154,9 @@ const emptyInventoryCreateForm: InventoryCreateFormState = {
   unit_cost: '',
   margin_percent: String(defaultApprovedInventoryMargin),
   selling_price: '',
-  pharmaco_supplier_id: '',
   supplier_name: '',
   reference_number: '',
 };
-
-function normalizeInventoryUnitCostInput(value: string): string {
-  const candidate = value
-    .replace(/,/g, '.')
-    .replace(/[^0-9.]/g, '');
-
-  const [wholePart = '', ...fractionParts] =
-    candidate.split('.');
-  const fractionPart = fractionParts
-    .join('')
-    .slice(0, 2);
-
-  if (!candidate.includes('.')) {
-    return wholePart;
-  }
-
-  return `${wholePart || '0'}.${fractionPart}`;
-}
-
-function formatInventoryUnitCostInput(value: string): string {
-  const normalized = value.trim().replace(/,/g, '.');
-
-  if (!normalized) return '';
-
-  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized)) {
-    return value;
-  }
-
-  const amount = Number(normalized);
-
-  return Number.isFinite(amount) && amount >= 0
-    ? amount.toFixed(2)
-    : value;
-}
-
-function optionalInventoryUnitCost(value: string): number | null {
-  const normalized = value.trim().replace(/,/g, '.');
-
-  if (!normalized) return null;
-
-  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) {
-    throw new Error(
-      'Unit cost must be a valid amount with up to two decimal places.',
-    );
-  }
-
-  const amount = Number(normalized);
-
-  if (!Number.isFinite(amount) || amount < 0) {
-    throw new Error('Unit cost must be zero or greater.');
-  }
-
-  return amount;
-}
 
 const defaultInventoryTableFontSizes: Record<InventoryView, InventoryTableFontSize> = {
   overview: 'normal',
@@ -397,23 +341,6 @@ function formatRwf(value: number | null | undefined): string {
     currency: 'RWF',
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function formatInventoryUnitCostRwf(
-  value: number | null | undefined,
-): string {
-  if (value === null || value === undefined) {
-    return 'Price pending';
-  }
-
-  const amount = Number(value);
-
-  return new Intl.NumberFormat('en-RW', {
-    style: 'currency',
-    currency: 'RWF',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(amount) ? amount : 0);
 }
 
 function formatDate(value: string | null): string {
@@ -1364,16 +1291,24 @@ export function ProductInventoryPreview({
     return Array.from(references).slice(0, 15);
   }, [allBatches]);
 
-  const procurementSupplierOptions = useMemo(
-    () => inventorySupplierRegister
-      .filter((supplier) => supplier.status === 'active')
-      .sort((left, right) => left.name.localeCompare(right.name)),
-    [inventorySupplierRegister],
-  );
+  const procurementSupplierNames = useMemo(() => {
+    const names = new Set<string>();
 
-  const selectedInventorySupplier = procurementSupplierOptions.find(
-    (supplier) => String(supplier.id) === inventoryCreateForm.pharmaco_supplier_id,
-  );
+    inventorySupplierRegister.forEach((supplier) => {
+      const record = supplier as unknown as Record<string, unknown>;
+      const name = String(record.name ?? record.supplier_name ?? record.display_name ?? '').trim();
+
+      if (name) names.add(name);
+    });
+
+    allBatches.forEach((batch) => {
+      const supplier = String(batch.supplier_name ?? '').trim();
+
+      if (supplier) names.add(supplier);
+    });
+
+    return Array.from(names).sort((left, right) => left.localeCompare(right));
+  }, [allBatches, inventorySupplierRegister]);
 
   useEffect(() => {
     if (!tenantSlug || !token) return;
@@ -1399,9 +1334,7 @@ export function ProductInventoryPreview({
     }));
   }, [inventoryCreateForm.stock_location_id, inventoryStockLocationOptions]);
 
-  const inventoryUnitCost = Number(
-    inventoryCreateForm.unit_cost.replace(/,/g, '.') || 0,
-  );
+  const inventoryUnitCost = Number(inventoryCreateForm.unit_cost || 0);
   const inventoryMarginPercent = Number(inventoryCreateForm.margin_percent || selectedInventoryDefaultMargin || 0);
   const inventoryCalculatedSellingPrice = inventoryUnitCost > 0
     ? Math.ceil(inventoryUnitCost * inventoryMarginPercent)
@@ -2187,11 +2120,6 @@ export function ProductInventoryPreview({
       return;
     }
 
-    if (!selectedInventorySupplier) {
-      setError('Select an active supplier from Supplier List before receiving stock.');
-      return;
-    }
-
     setIsCreatingInventory(true);
     setError('');
     setInventoryNotice('');
@@ -2211,10 +2139,10 @@ export function ProductInventoryPreview({
           batch_number: inventoryCreateForm.batch_number,
           quantity: Number(inventoryCreateForm.quantity || 0),
           expiry_date: inventoryCreateForm.expiry_date || null,
-          unit_cost: optionalInventoryUnitCost(inventoryCreateForm.unit_cost),
+          unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
           ...{ margin_percent: Number(inventoryCreateForm.margin_percent || defaultApprovedInventoryMargin) },
           selling_price: sellingPrice > 0 ? sellingPrice : null,
-          supplier_name: selectedInventorySupplier.name,
+          supplier_name: inventoryCreateForm.supplier_name || null,
           reference_number: inventoryCreateForm.reference_number || null,
         });
 
@@ -2227,10 +2155,10 @@ export function ProductInventoryPreview({
           batch_number: inventoryCreateForm.batch_number,
           quantity: Number(inventoryCreateForm.quantity || 0),
           expiry_date: inventoryCreateForm.expiry_date || null,
-          unit_cost: optionalInventoryUnitCost(inventoryCreateForm.unit_cost),
+          unit_cost: inventoryCreateForm.unit_cost ? Number(inventoryCreateForm.unit_cost) : null,
           ...{ margin_percent: Number(inventoryCreateForm.margin_percent || defaultApprovedInventoryMargin) },
           selling_price: sellingPrice > 0 ? sellingPrice : null,
-          pharmaco_supplier_id: selectedInventorySupplier.id,
+          supplier_name: inventoryCreateForm.supplier_name || null,
           reference_number: inventoryCreateForm.reference_number || null,
           receive_source: inventoryReceiveSource,
           reason: inventoryReceiveSource === 'purchase-code'
@@ -3714,11 +3642,6 @@ export function ProductInventoryPreview({
         return margin > 0 ? margin.toFixed(2) : '';
       })(),
       selling_price: batch.selling_price === null || batch.selling_price === undefined ? '' : String(batch.selling_price),
-      pharmaco_supplier_id: String(
-        inventorySupplierRegister.find(
-          (supplier) => supplier.status === 'active' && supplier.name === batch.supplier_name,
-        )?.id ?? '',
-      ),
       supplier_name: batch.supplier_name ?? '',
       reference_number: '',
     });
@@ -3771,11 +3694,6 @@ export function ProductInventoryPreview({
         return margin > 0 ? margin.toFixed(2) : '';
       })(),
       selling_price: batch.selling_price === null || batch.selling_price === undefined ? '' : String(batch.selling_price),
-      pharmaco_supplier_id: String(
-        inventorySupplierRegister.find(
-          (supplier) => supplier.status === 'active' && supplier.name === batch.supplier_name,
-        )?.id ?? '',
-      ),
       supplier_name: batch.supplier_name ?? '',
       reference_number: '',
     });
@@ -6065,17 +5983,10 @@ export function ProductInventoryPreview({
                   <label>
                     Unit cost
                     <input
-                      type="text"
-                      inputMode="decimal"
+                      type="number"
+                      min="0"
                       value={inventoryCreateForm.unit_cost}
-                      onChange={(event) => setInventoryCreateForm({
-                        ...inventoryCreateForm,
-                        unit_cost: normalizeInventoryUnitCostInput(event.target.value),
-                      })}
-                      onBlur={() => setInventoryCreateForm((current) => ({
-                        ...current,
-                        unit_cost: formatInventoryUnitCostInput(current.unit_cost),
-                      }))}
+                      onChange={(event) => setInventoryCreateForm({ ...inventoryCreateForm, unit_cost: event.target.value })}
                       placeholder="Supplier cost"
                     />
                   </label>
@@ -6109,30 +6020,21 @@ export function ProductInventoryPreview({
                     Supplier
                     <select
                       className="inventory-procurement-supplier-select"
-                      value={inventoryCreateForm.pharmaco_supplier_id}
+                      value={procurementSupplierNames.includes(inventoryCreateForm.supplier_name) ? inventoryCreateForm.supplier_name : ""}
                       onChange={(event) => {
-                        const supplier = procurementSupplierOptions.find(
-                          (option) => String(option.id) === event.target.value,
-                        );
-
                         setInventoryCreateForm({
                           ...inventoryCreateForm,
-                          pharmaco_supplier_id: event.target.value,
-                          supplier_name: supplier?.name ?? '',
+                          supplier_name: event.target.value,
                         });
                       }}
-                      required
-                      disabled={procurementSupplierOptions.length === 0}
                     >
-                      <option value="">Select registered supplier</option>
-                      {procurementSupplierOptions.map((supplier) => (
-                        <option key={supplier.id} value={supplier.id}>
-                          {supplier.name} — Supplier ID: {supplier.id}
-                        </option>
+                      <option value="">Select supplier</option>
+                      {procurementSupplierNames.map((supplier) => (
+                        <option key={supplier} value={supplier}>{supplier}</option>
                       ))}
                     </select>
-                    {procurementSupplierOptions.length === 0 && (
-                      <p className="form-error">No active supplier is available in Supplier List.</p>
+                    {procurementSupplierNames.length === 0 && (
+                      <p className="inventory-field-helper">No suppliers found. Create the supplier under Procurement Supplier Register first.</p>
                     )}
                   </label>
 
@@ -6183,7 +6085,6 @@ export function ProductInventoryPreview({
                         !inventoryCreateForm.product_id ||
                         !inventoryCreateForm.stock_location_id ||
                         !inventoryCreateForm.batch_number.trim() ||
-                        !inventoryCreateForm.pharmaco_supplier_id ||
                         Number(inventoryCreateForm.quantity || 0) <= 0 ||
                         (inventoryReceiveSource === 'purchase-code' && !(inventoryCreateForm.reference_number ?? '').trim())
                       }
@@ -6499,7 +6400,7 @@ export function ProductInventoryPreview({
                             <span className="cell-muted">{batch.stock_location.code}</span>
                           </td>
                           <td className="cell-number">{formatNumber(batch.available_quantity)}</td>
-                          <td className="cell-number">{formatInventoryUnitCostRwf(batch.unit_cost)}</td>
+                          <td className="cell-number">{formatRwf(batch.unit_cost)}</td>
                           <td className="cell-number">{formatInventoryBatchMarginPercent(batch, defaultMargin)}</td>
                           <td className="cell-number">{formatRwf(computedSellingPrice)}</td>
                           <td className="cell-wrap">

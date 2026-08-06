@@ -179,9 +179,6 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   const canManageSuppliers = permissions.includes(
     'pharmaco.procurement.suppliers.manage',
   );
-  const canCreateSuppliers =
-    canManageSuppliers ||
-    permissions.includes('pharmaco.procurement.suppliers.create');
   const canCreatePurchaseOrders = permissions.includes(
     'pharmaco.procurement.purchase_order.create',
   );
@@ -281,8 +278,8 @@ export function ProcurementWorkflow({ token, profile }: Props) {
   }
 
   async function createSupplier() {
-    if (!canCreateSuppliers) {
-      setError('Supplier creation permission is required.');
+    if (!canManageSuppliers) {
+      setError('Supplier management permission is required.');
       return;
     }
 
@@ -687,10 +684,10 @@ export function ProcurementWorkflow({ token, profile }: Props) {
           <button
             type="button"
             onClick={createSupplier}
-            disabled={isSavingSupplier || !canCreateSuppliers}
+            disabled={isSavingSupplier || !canManageSuppliers}
             title={
-              !canCreateSuppliers
-                ? 'Supplier creation permission is required'
+              !canManageSuppliers
+                ? 'Supplier management permission is required'
                 : undefined
             }
           >

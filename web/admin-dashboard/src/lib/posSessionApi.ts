@@ -43,8 +43,6 @@ export interface PosSession {
   historical_reason?: string | null;
   historical_reference?: string | null;
   historical_approval_id?: number | null;
-  terminal_identifier?: string | null;
-  terminal_label?: string | null;
   status: PosSessionStatus;
   branch: PosSessionBranch | null;
   opening_float_amount: number;
@@ -74,7 +72,6 @@ export interface PosSessionRequestContext {
 
 export interface CurrentPosSessionResponse {
   business_date: string;
-  terminal_identifier?: string | null;
   session: PosSession | null;
 }
 
@@ -85,8 +82,6 @@ export interface PosSessionMutationResponse {
 
 export interface OpenPosSessionPayload {
   branch_id: number;
-  terminal_identifier: string;
-  terminal_label?: string;
   opening_float_amount: number;
   opening_mode?: "fresh-start" | "handover";
   notes?: string;
@@ -116,120 +111,6 @@ export interface AdminResetPosSessionPayload {
 interface LaravelErrorPayload {
   message?: string;
   errors?: Record<string, string[]>;
-}
-
-export interface PosTerminalIdentity {
-  identifier: string;
-  label: string;
-}
-
-const POS_TERMINAL_STORAGE_KEY =
-  "ubuzima.pos.terminal.identity.v1";
-
-function validStoredTerminalIdentifier(
-  value: unknown,
-): value is string {
-  return (
-    typeof value === "string"
-    && value.length >= 8
-    && value.length <= 100
-    && /^[A-Za-z0-9][A-Za-z0-9._:-]+$/.test(value)
-  );
-}
-
-export function getOrCreatePosTerminalIdentity():
-  PosTerminalIdentity {
-  const platform =
-    typeof navigator !== "undefined"
-      ? navigator.platform || "Browser"
-      : "Browser";
-
-  const defaultLabel =
-    `Web POS · ${platform}`.slice(0, 100);
-
-  if (typeof window === "undefined") {
-    return {
-      identifier: "web-server-terminal",
-      label: defaultLabel,
-    };
-  }
-
-  try {
-    const stored = window.localStorage.getItem(
-      POS_TERMINAL_STORAGE_KEY,
-    );
-
-    if (stored) {
-      const parsed = JSON.parse(stored) as
-        Partial<PosTerminalIdentity>;
-
-      if (
-        validStoredTerminalIdentifier(parsed.identifier)
-      ) {
-        return {
-          identifier:
-            parsed.identifier.toLowerCase(),
-          label:
-            typeof parsed.label === "string"
-              && parsed.label.trim()
-              ? parsed.label.trim().slice(0, 100)
-              : defaultLabel,
-        };
-      }
-    }
-  } catch {
-    // A fresh identity is generated below.
-  }
-
-  const cryptoProvider =
-    typeof globalThis.crypto !== "undefined"
-      ? globalThis.crypto
-      : null;
-
-  const randomUuid =
-    cryptoProvider
-      ? (
-          cryptoProvider as unknown as {
-            randomUUID?: () => string;
-          }
-        ).randomUUID
-      : undefined;
-
-  const entropy =
-    typeof randomUuid === "function"
-      ? randomUuid.call(cryptoProvider)
-      : [
-          Date.now().toString(36),
-          Math.random().toString(36).slice(2),
-          Math.random().toString(36).slice(2),
-        ].join("-");
-
-  let identifier =
-    `web-${entropy}`
-      .toLowerCase()
-      .replace(/[^a-z0-9._:-]/g, "-")
-      .slice(0, 100);
-
-  if (identifier.length < 8) {
-    identifier =
-      `web-${identifier}-terminal`.slice(0, 100);
-  }
-
-  const identity = {
-    identifier,
-    label: defaultLabel,
-  };
-
-  try {
-    window.localStorage.setItem(
-      POS_TERMINAL_STORAGE_KEY,
-      JSON.stringify(identity),
-    );
-  } catch {
-    // The in-memory identity remains valid for this page.
-  }
-
-  return identity;
 }
 
 export class PosSessionApiError extends Error {
@@ -345,18 +226,10 @@ async function requestPosSession<T>(
 
 export function getCurrentPosSession(
   context: PosSessionRequestContext,
-  branchId: number,
-  terminalIdentifier: string,
 ): Promise<CurrentPosSessionResponse> {
-  const query = new URLSearchParams({
-    branch_id: String(branchId),
-    terminal_identifier:
-      terminalIdentifier.trim().toLowerCase(),
-  });
-
   return requestPosSession<CurrentPosSessionResponse>(
     context,
-    `/pharmaco/pos/session/current?${query.toString()}`,
+    "/pharmaco/pos/session/current",
     {
       method: "GET",
       cache: "no-store",

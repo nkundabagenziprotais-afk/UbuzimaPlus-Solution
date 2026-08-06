@@ -1271,7 +1271,6 @@ export type ReceivePharmaStockPayload = {
   product_id: number;
   stock_location_id: number;
   pharmaco_purchase_order_item_id?: number | null;
-  pharmaco_supplier_id?: number | null;
   batch_number: string;
   quantity: number;
   expiry_date?: string | null;
@@ -2135,8 +2134,6 @@ export async function createPharmaSale(
 export type CheckoutPharmaSalePayload = {
   idempotency_key: string;
   branch_id: number;
-  pos_session_id: number;
-  terminal_identifier: string;
   pharmaco_customer_id?: number | null;
   pharmaco_prescription_id?: number | null;
   sale_type?:
@@ -2151,15 +2148,6 @@ export type CheckoutPharmaSalePayload = {
     product_id: number;
     quantity: number;
     unit_price: number;
-    original_unit_price?: number;
-    used_unit_price?: number;
-    unit_price_difference?: number;
-    price_override_applied?: boolean;
-    original_selling_unit_price?: number;
-    used_selling_unit_price?: number;
-    selling_unit_price_difference?: number;
-    pricing_policy?:
-      | 'highest_affected_batch_price';
     discount_amount?: number;
     tax_amount?: number;
     stock_batch_id: number;
@@ -2192,14 +2180,87 @@ export async function checkoutPharmaSale(
   tenantSlug: string,
   payload: CheckoutPharmaSalePayload,
 ): Promise<CheckoutPharmaSaleResponse> {
-  return sendJsonWithTenant<CheckoutPharmaSaleResponse>(
+  const createdResponse = await createPharmaSale(
     token,
-    '/pharmaco/sales/checkout',
     tenantSlug,
-    'POST',
-    payload,
+    {
+      branch_id: payload.branch_id,
+      pharmaco_customer_id: payload.pharmaco_customer_id,
+      pharmaco_prescription_id: payload.pharmaco_prescription_id,
+      sale_type: payload.sale_type,
+      discount_amount: payload.discount_amount,
+      tax_amount: payload.tax_amount,
+      notes: payload.notes,
+      items: payload.items.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        discount_amount: item.discount_amount,
+        tax_amount: item.tax_amount,
+      })),
+    },
   );
+
+  const createdItems = createdResponse.sale.items ?? [];
+
+  if (createdItems.length !== payload.items.length) {
+    throw new Error(
+      'The POS sale was created, but the sale item count did not match the cart. Please review the sale before retrying payment.',
+    );
+  }
+
+  const confirmedResponse = await confirmPharmaSale(
+    token,
+    tenantSlug,
+    createdResponse.sale.id,
+    {
+      items: createdItems.map((saleItem, index) => ({
+        sale_item_id: saleItem.id,
+        stock_batch_id: payload.items[index]?.stock_batch_id,
+        prescription_verified:
+          payload.items[index]?.prescription_verified ?? false,
+      })),
+    },
+  );
+
+  const payableSale = confirmedResponse.sale;
+  const payableAmount = Number(
+    (payableSale as { total_amount?: number | string }).total_amount
+      ?? (createdResponse.sale as { total_amount?: number | string }).total_amount
+      ?? 0,
+  );
+
+  if (!Number.isFinite(payableAmount) || payableAmount <= 0) {
+    throw new Error(
+      'The POS sale was dispensed, but the payable amount could not be resolved. Please review the sale before recording payment.',
+    );
+  }
+
+  const paymentResponse = await recordPharmaPayment(
+    token,
+    tenantSlug,
+    payableSale.id,
+    {
+      amount: payableAmount,
+      payment_method: payload.payment.payment_method,
+      generate_receipt: true,
+      reference_number: payload.payment.reference_number,
+      received_at: payload.payment.received_at,
+      notes:
+        payload.payment.notes
+        ?? 'Customer receipt generated automatically at POS confirmation.',
+    },
+  );
+
+  return {
+    message: 'POS checkout completed successfully.',
+    sale: paymentResponse.sale,
+    payment: paymentResponse.payment,
+    idempotent: false,
+  };
 }
+
+
 
 export type PharmaSupplier = {
   id: number;
@@ -4248,10 +4309,6 @@ export type TenantSecurityUser = {
   phone?: string | null;
   job_title?: string | null;
   status?: string | null;
-  branch?: {
-    id: number;
-    name: string;
-  } | null;
   security?: {
     two_factor_required: boolean;
     two_factor_enabled: boolean;
@@ -4294,7 +4351,6 @@ export async function createTenantSecurityUser(
     email: string;
     phone?: string;
     job_title?: string;
-    branch_id?: number;
     access_assignment_mode:
       | 'predefined_role'
       | 'granular_permissions';
@@ -4325,7 +4381,6 @@ export async function updateTenantSecurityUser(
     email?: string;
     phone?: string;
     job_title?: string;
-    branch_id?: number;
     access_assignment_mode:
       | 'predefined_role'
       | 'granular_permissions';

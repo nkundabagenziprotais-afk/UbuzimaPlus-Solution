@@ -1,5 +1,4 @@
 /* APP_RX_WARNING_ALLOW_POS_RECORDING_V1 */
-/* AQUILA_POS_HIGHEST_AFFECTED_PRICE_APP_V3 */
 /* POS_SALES_ANALYTICS_VISIBLE_ENTRY_V1 */
 import {
   InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
@@ -51,7 +50,6 @@ import {
   type PosSession,
   closePosSession,
   getCurrentPosSession,
-  getOrCreatePosTerminalIdentity,
   openPosSession,
   zeroizePosSession,
 } from './lib/posSessionApi';
@@ -103,11 +101,6 @@ import { TenantPharmacyDashboard } from './components/TenantPharmacyDashboard';
 import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
-import {
-  extractPosFefoPriceTiers,
-  highestAffectedSellingPrice,
-  type PosFefoPriceTier,
-} from './lib/posAffectedBatchPricing';
 import './styles.css';
 import './productionDeck.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
@@ -3337,10 +3330,6 @@ type B2TenantSecurityUser = {
   job_title?: string | null;
   status?: string | null;
   two_factor_required?: boolean | null;
-  branch?: {
-    id: number;
-    name: string;
-  } | null;
   roles?: B2TenantSecurityRole[];
 };
 
@@ -3356,7 +3345,6 @@ type B2TenantUserForm = {
   email: string;
   phone: string;
   job_title: string;
-  branch_id: string;
   role_code: string;
   status: string;
   password: string;
@@ -3368,7 +3356,6 @@ const emptyB2TenantUserForm: B2TenantUserForm = {
   email: '',
   phone: '',
   job_title: '',
-  branch_id: '',
   role_code: '',
   status: 'active',
   password: '',
@@ -3435,12 +3422,6 @@ function TenantSecurityUserManagementPanel({
   const tenantSlug = extractB2TenantSlug(profile);
   const [users, setUsers] = useState<B2TenantSecurityUser[]>([]);
   const [roles, setRoles] = useState<B2TenantSecurityRoleTemplate[]>([]);
-  const [branches, setBranches] = useState<Array<{
-    id: number;
-    name: string;
-    code?: string | null;
-    status?: string | null;
-  }>>([]);
   const [form, setForm] = useState<B2TenantUserForm>(emptyB2TenantUserForm);
   const [editingUser, setEditingUser] = useState<B2TenantSecurityUser | null>(null);
   const [resetTarget, setResetTarget] = useState<B2TenantSecurityUser | null>(null);
@@ -3467,31 +3448,16 @@ function TenantSecurityUserManagementPanel({
     setError(null);
 
     try {
-      const [
-        roleResponse,
-        userResponse,
-        branchResponse,
-      ] = await Promise.all([
+      const [roleResponse, userResponse] = await Promise.all([
         getTenantSecurityRoleTemplates(token, tenantSlug),
         getTenantSecurityUsers(token, tenantSlug),
-        getPharmaBranches(token, tenantSlug),
       ]);
 
       const loadedRoles = Array.isArray(roleResponse.roles)
         ? roleResponse.roles as B2TenantSecurityRoleTemplate[]
         : [];
 
-      const loadedBranches =
-        Array.isArray(branchResponse.branches)
-          ? branchResponse.branches.filter(
-              (branch) =>
-                !branch.status
-                || branch.status === 'active',
-            )
-          : [];
-
       setRoles(loadedRoles);
-      setBranches(loadedBranches);
       setUsers(Array.isArray(userResponse.users) ? userResponse.users as B2TenantSecurityUser[] : []);
 
       setForm((current) => ({
@@ -3518,7 +3484,6 @@ function TenantSecurityUserManagementPanel({
     setForm({
       ...emptyB2TenantUserForm,
       role_code: roleOptions[0]?.code ?? 'tenant_admin',
-      branch_id: '',
       password: generateB2TemporaryPassword(),
     });
     setNotice('Create a handover-ready user with a clear role, active status, and controlled temporary password.');
@@ -3532,7 +3497,6 @@ function TenantSecurityUserManagementPanel({
       email: user.email ?? '',
       phone: user.phone ?? '',
       job_title: user.job_title ?? '',
-      branch_id: String(user.branch?.id ?? ''),
       role_code: getB2RoleCode(user) || roleOptions[0]?.code || 'tenant_admin',
       status: user.status ?? 'active',
       password: '',
@@ -3560,24 +3524,12 @@ function TenantSecurityUserManagementPanel({
         throw new Error('Role is required.');
       }
 
-      const branchId = Number(form.branch_id);
-
-      if (
-        !Number.isInteger(branchId)
-        || branchId <= 0
-      ) {
-        throw new Error(
-          'Select an active assigned branch.',
-        );
-      }
-
       const payload = {
         tenant_slug: tenantSlug,
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim() || undefined,
         job_title: form.job_title.trim() || undefined,
-        branch_id: branchId,
         access_assignment_mode: 'predefined_role' as const,
         role_code: form.role_code,
         status: form.status,
@@ -3733,7 +3685,7 @@ function TenantSecurityUserManagementPanel({
               <span>{editingUser ? 'Update user' : 'Create user'}</span>
               <h3>{editingUser ? editingUser.name : 'New staff account'}</h3>
               <p className="muted">
-                Identity, assigned branch, role, status, and security for a controlled staff handover.
+                Clean handover fields only: identity, role, status, and security.
               </p>
             </div>
           </div>
@@ -3770,40 +3722,6 @@ function TenantSecurityUserManagementPanel({
                     </option>
                   ))}
                 </select>
-              </label>
-              <label>
-                <span>Assigned branch</span>
-                <select
-                  value={form.branch_id}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      branch_id: event.target.value,
-                    }))
-                  }
-                  disabled={branches.length === 0}
-                  required
-                >
-                  <option value="">
-                    Select an active branch
-                  </option>
-                  {branches.map((branch) => (
-                    <option
-                      key={branch.id}
-                      value={String(branch.id)}
-                    >
-                      {branch.name}
-                      {branch.code
-                        ? ` (${branch.code})`
-                        : ''}
-                    </option>
-                  ))}
-                </select>
-                {branches.length === 0 ? (
-                  <small>
-                    No active branch is available for assignment.
-                  </small>
-                ) : null}
               </label>
               <label>
                 <span>Status</span>
@@ -3913,7 +3831,6 @@ function TenantSecurityUserManagementPanel({
               <tr>
                 <th>User</th>
                 <th>Role</th>
-                <th>Branch</th>
                 <th>Status</th>
                 <th>2FA</th>
                 <th>Actions</th>
@@ -3922,7 +3839,7 @@ function TenantSecurityUserManagementPanel({
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>No users loaded yet.</td>
+                  <td colSpan={5}>No users loaded yet.</td>
                 </tr>
               ) : users.map((user) => (
                 <tr key={user.id}>
@@ -3934,16 +3851,6 @@ function TenantSecurityUserManagementPanel({
                   <td>
                     <strong>{getB2RoleName(user)}</strong>
                     <small>{user.job_title || 'Job title pending'}</small>
-                  </td>
-                  <td>
-                    <strong>
-                      {user.branch?.name || 'Not assigned'}
-                    </strong>
-                    <small>
-                      {user.branch
-                        ? 'Assigned for operations'
-                        : 'POS access unavailable'}
-                    </small>
                   </td>
                   <td>
                     <span className={`ubuzima-user-status ubuzima-user-status--${String(user.status ?? 'pending').toLowerCase()}`}>
@@ -4070,9 +3977,6 @@ function App() {
     quantityPerSellingUnit: number;
     sellingUnitQuantity: number;
     otherQuantity: number;
-    priceTiers: PosFefoPriceTier[];
-    pricingPolicy:
-      'highest_affected_batch_price';
   }>>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
   const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
@@ -4127,9 +4031,6 @@ function App() {
     quantityPerSellingUnit: number;
     allowOtherQuantity: boolean;
     defaultQuantityMode: 'selling_unit' | 'other_quantity' | 'combined';
-    priceTiers: PosFefoPriceTier[];
-    pricingPolicy:
-      'highest_affected_batch_price';
   } | null>(null);
   const [posSellingUnitQuantity, setPosSellingUnitQuantity] = useState('1');
   const [posOtherQuantity, setPosOtherQuantity] = useState('0');
@@ -4299,11 +4200,6 @@ function App() {
   const posSessionTenantSlug =
     profile?.tenant_assignments?.[0]?.tenant?.slug || '';
 
-  const posTerminalIdentity = useMemo(
-    () => getOrCreatePosTerminalIdentity(),
-    [],
-  );
-
   const posSessionBranchId =
     profile?.scope.branch_id ??
     profile?.tenant_assignments?.find(
@@ -4314,14 +4210,14 @@ function App() {
     profile?.tenant_assignments?.find(
       (assignment) => assignment.branch,
     )?.branch?.id ??
+    pharmaCore.branches?.branches?.[0]?.id ??
     null;
 
   useEffect(() => {
     if (
       activeSection !== 'pos' ||
       !session?.token ||
-      !posSessionTenantSlug ||
-      !posSessionBranchId
+      !posSessionTenantSlug
     ) {
       return;
     }
@@ -4330,14 +4226,10 @@ function App() {
 
     setIsLoadingPosSession(true);
 
-    void getCurrentPosSession(
-      {
-        token: session.token,
-        tenantSlug: posSessionTenantSlug,
-      },
-      Number(posSessionBranchId),
-      posTerminalIdentity.identifier,
-    )
+    void getCurrentPosSession({
+      token: session.token,
+      tenantSlug: posSessionTenantSlug,
+    })
       .then((response) => {
         if (cancelled) {
           return;
@@ -4381,9 +4273,7 @@ function App() {
     };
   }, [
     activeSection,
-    posSessionBranchId,
     posSessionTenantSlug,
-    posTerminalIdentity.identifier,
     session?.token,
   ]);
 
@@ -5954,8 +5844,6 @@ function App() {
       .map((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
         const sellingPrice = Number(batch.selling_price ?? 0);
-        const priceTiers =
-          extractPosFefoPriceTiers(batch);
         const productName = batch.product?.name || 'Unnamed product';
         const sku = batch.product?.sku || `BATCH-${batch.id}`;
         const locationName = batch.stock_location?.name || 'Current stock';
@@ -5966,9 +5854,6 @@ function App() {
           strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
           quantity: 1,
           unitPrice: sellingPrice,
-          priceTiers,
-          pricingPolicy:
-          'highest_affected_batch_price' as const,
           status: `${availableQuantity.toLocaleString('en-RW')} available`,
           batchId: batch.id,
           productId: batch.product?.id || 0,
@@ -6244,257 +6129,144 @@ function App() {
 
       if (!product) return;
 
-      const systemSellingUnitPrice = Math.max(
+      const systemSellingUnitPrice = Math.max(0, Number(product.unitPrice || 0));
+      const usedSellingUnitPrice = Math.max(
         0,
-        Number(product.unitPrice || 0),
+        Number(posSellingAmount || systemSellingUnitPrice),
       );
 
       const quantityInput = {
-        sellingUnitQuantity:
-          Number(posSellingUnitQuantity || 0),
-        otherQuantity:
-          product.allowOtherQuantity
-            ? Number(posOtherQuantity || 0)
-            : 0,
-        quantityPerSellingUnit:
-          product.quantityPerSellingUnit,
+        sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
+        otherQuantity: product.allowOtherQuantity
+          ? Number(posOtherQuantity || 0)
+          : 0,
+        quantityPerSellingUnit: product.quantityPerSellingUnit,
       };
 
-      const preliminaryCalculation =
-        calculatePosQuantity({
-          ...quantityInput,
-          sellingUnitPrice:
-            systemSellingUnitPrice,
-        });
+      const calculation = calculatePosQuantity({
+        ...quantityInput,
+        sellingUnitPrice: usedSellingUnitPrice,
+      });
 
-      if (
-        preliminaryCalculation.totalBaseQuantity
-        <= 0
-      ) {
-        setPosNotice(
-          'Enter at least one selling unit or another permitted quantity.',
-        );
+      const systemCalculation = calculatePosQuantity({
+        ...quantityInput,
+        sellingUnitPrice: systemSellingUnitPrice,
+      });
+
+      if (calculation.totalBaseQuantity <= 0) {
+        setPosNotice('Enter at least one selling unit or another permitted quantity.');
         return;
       }
 
-      const currentItems =
-        readActivePosCounterItems();
-
+      const currentItems = readActivePosCounterItems();
       const existing = currentItems.find(
         (item) =>
-          item.code === product.code
-          && Number(item.batchId || 0)
-            === Number(product.batchId || 0),
+          item.code === product.code &&
+          Number(item.batchId || 0) === Number(product.batchId || 0),
       );
 
-      const existingQuantity =
-        Number(existing?.quantity || 0);
-
+      const existingQuantity = Number(existing?.quantity || 0);
       const requestedTotalQuantity =
-        existingQuantity
-        + preliminaryCalculation.totalBaseQuantity;
+        existingQuantity + calculation.totalBaseQuantity;
 
-      if (
-        requestedTotalQuantity
-        > product.availableQuantity
-      ) {
+      if (requestedTotalQuantity > product.availableQuantity) {
         setPosNotice(
           `${product.name} has ${product.availableQuantity.toLocaleString('en-RW')} ${product.baseUnit} available. Requested total is ${requestedTotalQuantity.toLocaleString('en-RW')}.`,
         );
         return;
       }
 
-      const usedSellingUnitPrice =
-        highestAffectedSellingPrice(
-          product.priceTiers,
-          requestedTotalQuantity,
-          systemSellingUnitPrice,
-        );
-
-      const calculation =
-        calculatePosQuantity({
-          ...quantityInput,
-          sellingUnitPrice:
-            usedSellingUnitPrice,
-        });
-
-      const systemCalculation =
-        calculatePosQuantity({
-          ...quantityInput,
-          sellingUnitPrice:
-            systemSellingUnitPrice,
-        });
-
       const priceAudit = {
-        unitPrice:
-          calculation.baseUnitPrice,
-        originalUnitPrice:
-          systemCalculation.baseUnitPrice,
-        usedUnitPrice:
-          calculation.baseUnitPrice,
+        unitPrice: calculation.baseUnitPrice,
+        originalUnitPrice: systemCalculation.baseUnitPrice,
+        usedUnitPrice: calculation.baseUnitPrice,
         unitPriceDifference:
-          calculation.baseUnitPrice
-          - systemCalculation.baseUnitPrice,
+          calculation.baseUnitPrice - systemCalculation.baseUnitPrice,
         priceOverrideApplied:
-          Math.abs(
-            calculation.baseUnitPrice
-            - systemCalculation.baseUnitPrice,
-          ) > 0.0001,
-        originalSellingUnitPrice:
-          systemSellingUnitPrice,
+          Math.abs(calculation.baseUnitPrice - systemCalculation.baseUnitPrice) > 0.0001,
+        originalSellingUnitPrice: systemSellingUnitPrice,
         usedSellingUnitPrice,
         sellingUnitPriceDifference:
-          usedSellingUnitPrice
-          - systemSellingUnitPrice,
-        priceTiers:
-          product.priceTiers,
-        pricingPolicy:
-          'highest_affected_batch_price' as const,
+          usedSellingUnitPrice - systemSellingUnitPrice,
       };
 
-      const nextItems = existing
-        ? currentItems.map(
-            (item) =>
-              item.code === product.code
-              && Number(item.batchId || 0)
-                === Number(product.batchId || 0)
-                ? {
-                    ...item,
-                    quantity:
-                      requestedTotalQuantity,
-                    ...priceAudit,
-                    availableQuantity:
-                      product.availableQuantity,
-                    sellingUnit:
-                      product.sellingUnit,
-                    baseUnit:
-                      product.baseUnit,
-                    quantityPerSellingUnit:
-                      product.quantityPerSellingUnit,
-                    sellingUnitQuantity:
-                      Number(
-                        item.sellingUnitQuantity
-                        || 0,
-                      )
-                      + calculation
-                        .sellingUnitQuantity,
-                    otherQuantity:
-                      Number(
-                        item.otherQuantity
-                        || 0,
-                      )
-                      + calculation.otherQuantity,
-                  }
-                : item,
-          )
-        : [
-            ...currentItems,
-            {
-              code: product.code,
-              name: product.name,
-              strength: product.strength,
-              quantity:
-                calculation.totalBaseQuantity,
-              ...priceAudit,
-              batchId: product.batchId,
-              productId: product.productId,
-              batchNumber:
-                product.batchNumber,
-              availableQuantity:
-                product.availableQuantity,
-              expiryDate:
-                product.expiryDate,
-              locationName:
-                product.locationName,
-              sellingUnit:
-                product.sellingUnit,
-              baseUnit:
-                product.baseUnit,
-              quantityPerSellingUnit:
-                product.quantityPerSellingUnit,
-              sellingUnitQuantity:
-                calculation.sellingUnitQuantity,
-              otherQuantity:
-                calculation.otherQuantity,
-            },
-          ];
+      let nextItems: typeof posCartItems;
+
+      if (existing) {
+        nextItems = currentItems.map((item) =>
+          item.code === product.code &&
+          Number(item.batchId || 0) === Number(product.batchId || 0)
+            ? {
+                ...item,
+                quantity: requestedTotalQuantity,
+                ...priceAudit,
+                availableQuantity: product.availableQuantity,
+                sellingUnit: product.sellingUnit,
+                baseUnit: product.baseUnit,
+                quantityPerSellingUnit: product.quantityPerSellingUnit,
+                sellingUnitQuantity:
+                  Number(item.sellingUnitQuantity || 0) +
+                  calculation.sellingUnitQuantity,
+                otherQuantity:
+                  Number(item.otherQuantity || 0) +
+                  calculation.otherQuantity,
+              }
+            : item,
+        );
+      } else {
+        nextItems = [
+          ...currentItems,
+          {
+            code: product.code,
+            name: product.name,
+            strength: product.strength,
+            quantity: calculation.totalBaseQuantity,
+            ...priceAudit,
+            batchId: product.batchId,
+            productId: product.productId,
+            batchNumber: product.batchNumber,
+            availableQuantity: product.availableQuantity,
+            expiryDate: product.expiryDate,
+            locationName: product.locationName,
+            sellingUnit: product.sellingUnit,
+            baseUnit: product.baseUnit,
+            quantityPerSellingUnit: product.quantityPerSellingUnit,
+            sellingUnitQuantity: calculation.sellingUnitQuantity,
+            otherQuantity: calculation.otherQuantity,
+          },
+        ];
+      }
 
       commitPosCounterItems(nextItems);
       closePosQuantityPopup();
 
       setPosNotice(
-        `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}`
-        + (
-          calculation.otherQuantity > 0
+        `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}` +
+          (calculation.otherQuantity > 0
             ? ` + ${calculation.otherQuantity.toLocaleString('en-RW')} ${product.baseUnit}`
-            : ''
-        )
-        + `. Selling amount: RWF ${usedSellingUnitPrice.toLocaleString('en-RW')}.`,
+            : '') +
+          `. Selling amount: RWF ${usedSellingUnitPrice.toLocaleString('en-RW')}.`,
       );
     }
 
-    function updateCartQuantity(
-      code: string,
-      quantity: number,
-    ) {
-      const nextItems =
-        readActivePosCounterItems().map(
-          (item) => {
-            if (item.code !== code) {
-              return item;
-            }
+    function updateCartQuantity(code: string, quantity: number) {
+      const nextItems = readActivePosCounterItems().map((item) => {
+        if (item.code !== code) return item;
 
-            const safeQuantity = Math.min(
-              Math.max(
-                1,
-                Number.isFinite(quantity)
-                  ? quantity
-                  : 1,
-              ),
-              item.availableQuantity,
-            );
-
-            if (safeQuantity !== quantity) {
-              setPosNotice(
-                `${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`,
-              );
-            }
-
-            const sellingUnitPrice =
-              highestAffectedSellingPrice(
-                item.priceTiers,
-                safeQuantity,
-                item.originalSellingUnitPrice,
-              );
-
-            const baseUnitPrice =
-              sellingUnitPrice
-              / Math.max(
-                item.quantityPerSellingUnit,
-                0.0001,
-              );
-
-            return {
-              ...item,
-              quantity: safeQuantity,
-              unitPrice: baseUnitPrice,
-              usedUnitPrice: baseUnitPrice,
-              unitPriceDifference:
-                baseUnitPrice
-                - item.originalUnitPrice,
-              priceOverrideApplied:
-                Math.abs(
-                  baseUnitPrice
-                  - item.originalUnitPrice,
-                ) > 0.0001,
-              usedSellingUnitPrice:
-                sellingUnitPrice,
-              sellingUnitPriceDifference:
-                sellingUnitPrice
-                - item.originalSellingUnitPrice,
-            };
-          },
+        const safeQuantity = Math.min(
+          Math.max(1, Number.isFinite(quantity) ? quantity : 1),
+          item.availableQuantity,
         );
+
+        if (safeQuantity !== quantity) {
+          setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
+        }
+
+        return {
+          ...item,
+          quantity: safeQuantity,
+        };
+      });
 
       commitPosCounterItems(nextItems);
     }
@@ -6544,10 +6316,6 @@ function App() {
           },
           {
             branch_id: posSessionBranchId,
-            terminal_identifier:
-              posTerminalIdentity.identifier,
-            terminal_label:
-              posTerminalIdentity.label,
             opening_float_amount: openingFloatAmount,
             opening_mode: posOpeningMode,
           },
@@ -6792,14 +6560,10 @@ async function confirmTransaction() {
       if (activeCheckoutSession?.status !== 'open') {
         try {
           const currentSessionResponse =
-            await getCurrentPosSession(
-              {
-                token: session.token,
-                tenantSlug: posSessionTenantSlug,
-              },
-              Number(posSessionBranchId),
-              posTerminalIdentity.identifier,
-            );
+            await getCurrentPosSession({
+              token: session.token,
+              tenantSlug: posSessionTenantSlug,
+            });
 
           activeCheckoutSession =
             currentSessionResponse.session;
@@ -6888,10 +6652,6 @@ async function confirmTransaction() {
             {
               idempotency_key: posCheckoutKey,
               branch_id: branchId,
-              pos_session_id:
-                activeCheckoutSession.id,
-              terminal_identifier:
-                posTerminalIdentity.identifier,
               sale_type: saleType,
               discount_amount:
                 Math.max(
@@ -6932,8 +6692,6 @@ async function confirmTransaction() {
                 discount_amount: 0,
                 tax_amount: 0,
                 stock_batch_id: item.batchId,
-                pricing_policy:
-                  item.pricingPolicy,
                 prescription_verified:
                   posPrescriptionStatus === 'captured',
               })),
@@ -7497,69 +7255,20 @@ async function confirmTransaction() {
               </section>
 
               {posQuantityProduct && (() => {
-                const previewQuantityInput = {
-                  sellingUnitQuantity:
-                    Number(
-                      posSellingUnitQuantity
-                      || 0,
-                    ),
-                  otherQuantity:
-                    posQuantityProduct
-                      .allowOtherQuantity
-                      ? Number(
-                          posOtherQuantity
-                          || 0,
-                        )
-                      : 0,
-                  quantityPerSellingUnit:
-                    posQuantityProduct
-                      .quantityPerSellingUnit,
-                };
+                const quantityPreviewSellingUnitPrice = Math.max(
+                  0,
+                  Number(posSellingAmount || posQuantityProduct.unitPrice || 0),
+                );
 
-                const preliminaryPreview =
-                  calculatePosQuantity({
-                    ...previewQuantityInput,
-                    sellingUnitPrice:
-                      posQuantityProduct
-                        .unitPrice,
-                  });
+                const quantityPreview = calculatePosQuantity({
+                  sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
+                  otherQuantity: posQuantityProduct.allowOtherQuantity
+                    ? Number(posOtherQuantity || 0)
+                    : 0,
+                  quantityPerSellingUnit: posQuantityProduct.quantityPerSellingUnit,
+                  sellingUnitPrice: quantityPreviewSellingUnitPrice,
+                });
 
-                const existingPreviewQuantity =
-                  Number(
-                    readActivePosCounterItems()
-                      .find(
-                        (item) =>
-                          item.code
-                            === posQuantityProduct
-                              .code
-                          && Number(
-                            item.batchId,
-                          )
-                            === Number(
-                              posQuantityProduct
-                                .batchId,
-                            ),
-                      )?.quantity
-                    ?? 0,
-                  );
-
-                const quantityPreviewSellingUnitPrice =
-                  highestAffectedSellingPrice(
-                    posQuantityProduct
-                      .priceTiers,
-                    existingPreviewQuantity
-                      + preliminaryPreview
-                        .totalBaseQuantity,
-                    posQuantityProduct
-                      .unitPrice,
-                  );
-
-                const quantityPreview =
-                  calculatePosQuantity({
-                    ...previewQuantityInput,
-                    sellingUnitPrice:
-                      quantityPreviewSellingUnitPrice,
-                  });
                 return (
                   <div
                     className="pos-quantity-dialog-backdrop"
@@ -7639,7 +7348,7 @@ async function confirmTransaction() {
                         <article>
                           <span>Unit price</span>
                           <strong>
-                            RWF {quantityPreviewSellingUnitPrice.toLocaleString('en-RW')} /{' '}
+                            RWF {posQuantityProduct.unitPrice.toLocaleString('en-RW')} /{' '}
                             {posQuantityProduct.sellingUnit}
                           </strong>
                         </article>
@@ -7671,11 +7380,11 @@ async function confirmTransaction() {
                             type="number"
                             min="0"
                             step="0.01"
-                            value={quantityPreviewSellingUnitPrice}
-                            readOnly
+                            value={posSellingAmount}
+                            onChange={(event) => setPosSellingAmount(event.target.value)}
                           />
                           <small>
-                            Automatically uses the highest selling price among the FEFO batches required for this quantity.
+                            Defaults to system price. Adjust only when the agreed customer price is different.
                           </small>
                         </label>
                       </section>
