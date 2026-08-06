@@ -90,6 +90,35 @@ function numberFrom(
     : 0;
 }
 
+function decimalFrom(
+  value: string,
+  fieldLabel: string,
+): number {
+  const normalized = value
+    .trim()
+    .replace(/,/g, '.');
+
+  if (
+    !/^\d+(?:\.\d{1,2})?$/.test(
+      normalized,
+    )
+  ) {
+    throw new Error(
+      `${fieldLabel} must contain a valid amount with one or two decimal places.`,
+    );
+  }
+
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(
+      `${fieldLabel} must be zero or greater.`,
+    );
+  }
+
+  return parsed;
+}
+
 function dateLabel(
   value: string | null | undefined,
 ): string {
@@ -693,8 +722,9 @@ export function ProcurementReceivingWorkspace({
               null,
             unit_cost:
               receiveForm.unit_cost
-                ? numberFrom(
+                ? decimalFrom(
                     receiveForm.unit_cost,
+                    'Unit cost',
                   )
                 : null,
             selling_price:

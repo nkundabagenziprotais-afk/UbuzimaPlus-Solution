@@ -173,6 +173,23 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
     (profile.scope.is_tenant ? 'vitapharma' : '');
 
   const categories = categoriesResponse?.categories ?? collectCategories(products?.products ?? []);
+
+  function resetReceivingSupplierState() {
+    setStockReceiveForm((current) => ({
+      ...current,
+      supplier_name: '',
+    }));
+  }
+
+  function handleInventoryTaskChange(
+    nextTask: InventoryTask,
+  ) {
+    setActiveTask(nextTask);
+
+    if (nextTask === 'receive') {
+      resetReceivingSupplierState();
+    }
+  }
   const branchOptions = Array.from(
     new Map((locations?.locations ?? []).map((location) => [location.branch.id, location.branch])).values(),
   );
@@ -481,6 +498,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
 
       setMessage(`${response.message} Batch ${response.batch.batch_number} now has ${formatNumber(response.batch.quantity_on_hand)} units.`);
       setStockReceiveForm(emptyStockReceiveForm);
+      resetReceivingSupplierState();
       await refreshProductsAndLocations();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to receive stock.');
@@ -611,7 +629,7 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
                 role="tab"
                 aria-selected={activeTask === key}
                 className={activeTask === key ? 'active' : ''}
-                onClick={() => setActiveTask(key as InventoryTask)}
+                onClick={() => handleInventoryTaskChange(key as InventoryTask)}
               >
                 {label}
               </button>
@@ -1036,7 +1054,14 @@ export function ProductInventoryActions({ token, profile }: ProductInventoryActi
               Product
               <select
                 value={stockReceiveForm.product_id}
-                onChange={(event) => setStockReceiveForm({ ...stockReceiveForm, product_id: event.target.value })}
+                onChange={(event) => {
+                  setStockReceiveForm({
+                    ...stockReceiveForm,
+                    product_id:
+                      event.target.value,
+                    supplier_name: '',
+                  });
+                }}
                 required
               >
                 <option value="">Select product</option>

@@ -1,4 +1,5 @@
 /* APP_RX_WARNING_ALLOW_POS_RECORDING_V1 */
+/* AQUILA_POS_HIGHEST_AFFECTED_PRICE_APP_V3 */
 /* POS_SALES_ANALYTICS_VISIBLE_ENTRY_V1 */
 import {
   InventoryWorkspaceFrame } from './components/InventoryWorkspaceFrame'; import { FormEvent,
@@ -101,6 +102,11 @@ import { TenantPharmacyDashboard } from './components/TenantPharmacyDashboard';
 import { applyInputKeyboardModes } from './lib/formUsability';
 import { RuntimeLanguage, applyRuntimeLanguage } from './lib/runtimeI18n';
 import { calculatePosQuantity } from './lib/posQuantity';
+import {
+  extractPosFefoPriceTiers,
+  highestAffectedSellingPrice,
+  type PosFefoPriceTier,
+} from './lib/posAffectedBatchPricing';
 import './styles.css';
 import './productionDeck.css';
 import ReceivablesWorkflow from './components/ReceivablesWorkflow';
@@ -3977,6 +3983,9 @@ function App() {
     quantityPerSellingUnit: number;
     sellingUnitQuantity: number;
     otherQuantity: number;
+    priceTiers: PosFefoPriceTier[];
+    pricingPolicy:
+      'highest_affected_batch_price';
   }>>([]);
   const [posRenderedCartItems, setPosRenderedCartItems] = useState<typeof posCartItems>([]);
   const [posRenderedCartMetrics, setPosRenderedCartMetrics] = useState({ lineCount: 0, totalQuantity: 0, subtotal: 0 });
@@ -4031,6 +4040,9 @@ function App() {
     quantityPerSellingUnit: number;
     allowOtherQuantity: boolean;
     defaultQuantityMode: 'selling_unit' | 'other_quantity' | 'combined';
+    priceTiers: PosFefoPriceTier[];
+    pricingPolicy:
+      'highest_affected_batch_price';
   } | null>(null);
   const [posSellingUnitQuantity, setPosSellingUnitQuantity] = useState('1');
   const [posOtherQuantity, setPosOtherQuantity] = useState('0');
@@ -5844,6 +5856,8 @@ function App() {
       .map((batch) => {
         const availableQuantity = resolveBatchAvailableQuantity(batch);
         const sellingPrice = Number(batch.selling_price ?? 0);
+        const priceTiers =
+          extractPosFefoPriceTiers(batch);
         const productName = batch.product?.name || 'Unnamed product';
         const sku = batch.product?.sku || `BATCH-${batch.id}`;
         const locationName = batch.stock_location?.name || 'Current stock';
@@ -5854,6 +5868,9 @@ function App() {
           strength: `${batch.batch_number} · ${batch.expiry_date ? `Exp ${batch.expiry_date}` : 'No expiry'} · ${locationName}`,
           quantity: 1,
           unitPrice: sellingPrice,
+          priceTiers,
+          pricingPolicy:
+          'highest_affected_batch_price' as const,
           status: `${availableQuantity.toLocaleString('en-RW')} available`,
           batchId: batch.id,
           productId: batch.product?.id || 0,
@@ -6129,144 +6146,257 @@ function App() {
 
       if (!product) return;
 
-      const systemSellingUnitPrice = Math.max(0, Number(product.unitPrice || 0));
-      const usedSellingUnitPrice = Math.max(
+      const systemSellingUnitPrice = Math.max(
         0,
-        Number(posSellingAmount || systemSellingUnitPrice),
+        Number(product.unitPrice || 0),
       );
 
       const quantityInput = {
-        sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
-        otherQuantity: product.allowOtherQuantity
-          ? Number(posOtherQuantity || 0)
-          : 0,
-        quantityPerSellingUnit: product.quantityPerSellingUnit,
+        sellingUnitQuantity:
+          Number(posSellingUnitQuantity || 0),
+        otherQuantity:
+          product.allowOtherQuantity
+            ? Number(posOtherQuantity || 0)
+            : 0,
+        quantityPerSellingUnit:
+          product.quantityPerSellingUnit,
       };
 
-      const calculation = calculatePosQuantity({
-        ...quantityInput,
-        sellingUnitPrice: usedSellingUnitPrice,
-      });
+      const preliminaryCalculation =
+        calculatePosQuantity({
+          ...quantityInput,
+          sellingUnitPrice:
+            systemSellingUnitPrice,
+        });
 
-      const systemCalculation = calculatePosQuantity({
-        ...quantityInput,
-        sellingUnitPrice: systemSellingUnitPrice,
-      });
-
-      if (calculation.totalBaseQuantity <= 0) {
-        setPosNotice('Enter at least one selling unit or another permitted quantity.');
+      if (
+        preliminaryCalculation.totalBaseQuantity
+        <= 0
+      ) {
+        setPosNotice(
+          'Enter at least one selling unit or another permitted quantity.',
+        );
         return;
       }
 
-      const currentItems = readActivePosCounterItems();
+      const currentItems =
+        readActivePosCounterItems();
+
       const existing = currentItems.find(
         (item) =>
-          item.code === product.code &&
-          Number(item.batchId || 0) === Number(product.batchId || 0),
+          item.code === product.code
+          && Number(item.batchId || 0)
+            === Number(product.batchId || 0),
       );
 
-      const existingQuantity = Number(existing?.quantity || 0);
-      const requestedTotalQuantity =
-        existingQuantity + calculation.totalBaseQuantity;
+      const existingQuantity =
+        Number(existing?.quantity || 0);
 
-      if (requestedTotalQuantity > product.availableQuantity) {
+      const requestedTotalQuantity =
+        existingQuantity
+        + preliminaryCalculation.totalBaseQuantity;
+
+      if (
+        requestedTotalQuantity
+        > product.availableQuantity
+      ) {
         setPosNotice(
           `${product.name} has ${product.availableQuantity.toLocaleString('en-RW')} ${product.baseUnit} available. Requested total is ${requestedTotalQuantity.toLocaleString('en-RW')}.`,
         );
         return;
       }
 
+      const usedSellingUnitPrice =
+        highestAffectedSellingPrice(
+          product.priceTiers,
+          requestedTotalQuantity,
+          systemSellingUnitPrice,
+        );
+
+      const calculation =
+        calculatePosQuantity({
+          ...quantityInput,
+          sellingUnitPrice:
+            usedSellingUnitPrice,
+        });
+
+      const systemCalculation =
+        calculatePosQuantity({
+          ...quantityInput,
+          sellingUnitPrice:
+            systemSellingUnitPrice,
+        });
+
       const priceAudit = {
-        unitPrice: calculation.baseUnitPrice,
-        originalUnitPrice: systemCalculation.baseUnitPrice,
-        usedUnitPrice: calculation.baseUnitPrice,
+        unitPrice:
+          calculation.baseUnitPrice,
+        originalUnitPrice:
+          systemCalculation.baseUnitPrice,
+        usedUnitPrice:
+          calculation.baseUnitPrice,
         unitPriceDifference:
-          calculation.baseUnitPrice - systemCalculation.baseUnitPrice,
+          calculation.baseUnitPrice
+          - systemCalculation.baseUnitPrice,
         priceOverrideApplied:
-          Math.abs(calculation.baseUnitPrice - systemCalculation.baseUnitPrice) > 0.0001,
-        originalSellingUnitPrice: systemSellingUnitPrice,
+          Math.abs(
+            calculation.baseUnitPrice
+            - systemCalculation.baseUnitPrice,
+          ) > 0.0001,
+        originalSellingUnitPrice:
+          systemSellingUnitPrice,
         usedSellingUnitPrice,
         sellingUnitPriceDifference:
-          usedSellingUnitPrice - systemSellingUnitPrice,
+          usedSellingUnitPrice
+          - systemSellingUnitPrice,
+        priceTiers:
+          product.priceTiers,
+        pricingPolicy:
+          'highest_affected_batch_price' as const,
       };
 
-      let nextItems: typeof posCartItems;
-
-      if (existing) {
-        nextItems = currentItems.map((item) =>
-          item.code === product.code &&
-          Number(item.batchId || 0) === Number(product.batchId || 0)
-            ? {
-                ...item,
-                quantity: requestedTotalQuantity,
-                ...priceAudit,
-                availableQuantity: product.availableQuantity,
-                sellingUnit: product.sellingUnit,
-                baseUnit: product.baseUnit,
-                quantityPerSellingUnit: product.quantityPerSellingUnit,
-                sellingUnitQuantity:
-                  Number(item.sellingUnitQuantity || 0) +
-                  calculation.sellingUnitQuantity,
-                otherQuantity:
-                  Number(item.otherQuantity || 0) +
-                  calculation.otherQuantity,
-              }
-            : item,
-        );
-      } else {
-        nextItems = [
-          ...currentItems,
-          {
-            code: product.code,
-            name: product.name,
-            strength: product.strength,
-            quantity: calculation.totalBaseQuantity,
-            ...priceAudit,
-            batchId: product.batchId,
-            productId: product.productId,
-            batchNumber: product.batchNumber,
-            availableQuantity: product.availableQuantity,
-            expiryDate: product.expiryDate,
-            locationName: product.locationName,
-            sellingUnit: product.sellingUnit,
-            baseUnit: product.baseUnit,
-            quantityPerSellingUnit: product.quantityPerSellingUnit,
-            sellingUnitQuantity: calculation.sellingUnitQuantity,
-            otherQuantity: calculation.otherQuantity,
-          },
-        ];
-      }
+      const nextItems = existing
+        ? currentItems.map(
+            (item) =>
+              item.code === product.code
+              && Number(item.batchId || 0)
+                === Number(product.batchId || 0)
+                ? {
+                    ...item,
+                    quantity:
+                      requestedTotalQuantity,
+                    ...priceAudit,
+                    availableQuantity:
+                      product.availableQuantity,
+                    sellingUnit:
+                      product.sellingUnit,
+                    baseUnit:
+                      product.baseUnit,
+                    quantityPerSellingUnit:
+                      product.quantityPerSellingUnit,
+                    sellingUnitQuantity:
+                      Number(
+                        item.sellingUnitQuantity
+                        || 0,
+                      )
+                      + calculation
+                        .sellingUnitQuantity,
+                    otherQuantity:
+                      Number(
+                        item.otherQuantity
+                        || 0,
+                      )
+                      + calculation.otherQuantity,
+                  }
+                : item,
+          )
+        : [
+            ...currentItems,
+            {
+              code: product.code,
+              name: product.name,
+              strength: product.strength,
+              quantity:
+                calculation.totalBaseQuantity,
+              ...priceAudit,
+              batchId: product.batchId,
+              productId: product.productId,
+              batchNumber:
+                product.batchNumber,
+              availableQuantity:
+                product.availableQuantity,
+              expiryDate:
+                product.expiryDate,
+              locationName:
+                product.locationName,
+              sellingUnit:
+                product.sellingUnit,
+              baseUnit:
+                product.baseUnit,
+              quantityPerSellingUnit:
+                product.quantityPerSellingUnit,
+              sellingUnitQuantity:
+                calculation.sellingUnitQuantity,
+              otherQuantity:
+                calculation.otherQuantity,
+            },
+          ];
 
       commitPosCounterItems(nextItems);
       closePosQuantityPopup();
 
       setPosNotice(
-        `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}` +
-          (calculation.otherQuantity > 0
+        `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}`
+        + (
+          calculation.otherQuantity > 0
             ? ` + ${calculation.otherQuantity.toLocaleString('en-RW')} ${product.baseUnit}`
-            : '') +
-          `. Selling amount: RWF ${usedSellingUnitPrice.toLocaleString('en-RW')}.`,
+            : ''
+        )
+        + `. Selling amount: RWF ${usedSellingUnitPrice.toLocaleString('en-RW')}.`,
       );
     }
 
-    function updateCartQuantity(code: string, quantity: number) {
-      const nextItems = readActivePosCounterItems().map((item) => {
-        if (item.code !== code) return item;
+    function updateCartQuantity(
+      code: string,
+      quantity: number,
+    ) {
+      const nextItems =
+        readActivePosCounterItems().map(
+          (item) => {
+            if (item.code !== code) {
+              return item;
+            }
 
-        const safeQuantity = Math.min(
-          Math.max(1, Number.isFinite(quantity) ? quantity : 1),
-          item.availableQuantity,
+            const safeQuantity = Math.min(
+              Math.max(
+                1,
+                Number.isFinite(quantity)
+                  ? quantity
+                  : 1,
+              ),
+              item.availableQuantity,
+            );
+
+            if (safeQuantity !== quantity) {
+              setPosNotice(
+                `${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`,
+              );
+            }
+
+            const sellingUnitPrice =
+              highestAffectedSellingPrice(
+                item.priceTiers,
+                safeQuantity,
+                item.originalSellingUnitPrice,
+              );
+
+            const baseUnitPrice =
+              sellingUnitPrice
+              / Math.max(
+                item.quantityPerSellingUnit,
+                0.0001,
+              );
+
+            return {
+              ...item,
+              quantity: safeQuantity,
+              unitPrice: baseUnitPrice,
+              usedUnitPrice: baseUnitPrice,
+              unitPriceDifference:
+                baseUnitPrice
+                - item.originalUnitPrice,
+              priceOverrideApplied:
+                Math.abs(
+                  baseUnitPrice
+                  - item.originalUnitPrice,
+                ) > 0.0001,
+              usedSellingUnitPrice:
+                sellingUnitPrice,
+              sellingUnitPriceDifference:
+                sellingUnitPrice
+                - item.originalSellingUnitPrice,
+            };
+          },
         );
-
-        if (safeQuantity !== quantity) {
-          setPosNotice(`${item.name} quantity adjusted to available inventory: ${item.availableQuantity}.`);
-        }
-
-        return {
-          ...item,
-          quantity: safeQuantity,
-        };
-      });
 
       commitPosCounterItems(nextItems);
     }
@@ -6692,6 +6822,8 @@ async function confirmTransaction() {
                 discount_amount: 0,
                 tax_amount: 0,
                 stock_batch_id: item.batchId,
+                pricing_policy:
+                  item.pricingPolicy,
                 prescription_verified:
                   posPrescriptionStatus === 'captured',
               })),
@@ -7255,20 +7387,69 @@ async function confirmTransaction() {
               </section>
 
               {posQuantityProduct && (() => {
-                const quantityPreviewSellingUnitPrice = Math.max(
-                  0,
-                  Number(posSellingAmount || posQuantityProduct.unitPrice || 0),
-                );
+                const previewQuantityInput = {
+                  sellingUnitQuantity:
+                    Number(
+                      posSellingUnitQuantity
+                      || 0,
+                    ),
+                  otherQuantity:
+                    posQuantityProduct
+                      .allowOtherQuantity
+                      ? Number(
+                          posOtherQuantity
+                          || 0,
+                        )
+                      : 0,
+                  quantityPerSellingUnit:
+                    posQuantityProduct
+                      .quantityPerSellingUnit,
+                };
 
-                const quantityPreview = calculatePosQuantity({
-                  sellingUnitQuantity: Number(posSellingUnitQuantity || 0),
-                  otherQuantity: posQuantityProduct.allowOtherQuantity
-                    ? Number(posOtherQuantity || 0)
-                    : 0,
-                  quantityPerSellingUnit: posQuantityProduct.quantityPerSellingUnit,
-                  sellingUnitPrice: quantityPreviewSellingUnitPrice,
-                });
+                const preliminaryPreview =
+                  calculatePosQuantity({
+                    ...previewQuantityInput,
+                    sellingUnitPrice:
+                      posQuantityProduct
+                        .unitPrice,
+                  });
 
+                const existingPreviewQuantity =
+                  Number(
+                    readActivePosCounterItems()
+                      .find(
+                        (item) =>
+                          item.code
+                            === posQuantityProduct
+                              .code
+                          && Number(
+                            item.batchId,
+                          )
+                            === Number(
+                              posQuantityProduct
+                                .batchId,
+                            ),
+                      )?.quantity
+                    ?? 0,
+                  );
+
+                const quantityPreviewSellingUnitPrice =
+                  highestAffectedSellingPrice(
+                    posQuantityProduct
+                      .priceTiers,
+                    existingPreviewQuantity
+                      + preliminaryPreview
+                        .totalBaseQuantity,
+                    posQuantityProduct
+                      .unitPrice,
+                  );
+
+                const quantityPreview =
+                  calculatePosQuantity({
+                    ...previewQuantityInput,
+                    sellingUnitPrice:
+                      quantityPreviewSellingUnitPrice,
+                  });
                 return (
                   <div
                     className="pos-quantity-dialog-backdrop"
@@ -7348,7 +7529,7 @@ async function confirmTransaction() {
                         <article>
                           <span>Unit price</span>
                           <strong>
-                            RWF {posQuantityProduct.unitPrice.toLocaleString('en-RW')} /{' '}
+                            RWF {quantityPreviewSellingUnitPrice.toLocaleString('en-RW')} /{' '}
                             {posQuantityProduct.sellingUnit}
                           </strong>
                         </article>
@@ -7380,11 +7561,11 @@ async function confirmTransaction() {
                             type="number"
                             min="0"
                             step="0.01"
-                            value={posSellingAmount}
-                            onChange={(event) => setPosSellingAmount(event.target.value)}
+                            value={quantityPreviewSellingUnitPrice}
+                            readOnly
                           />
                           <small>
-                            Defaults to system price. Adjust only when the agreed customer price is different.
+                            Automatically uses the highest selling price among the FEFO batches required for this quantity.
                           </small>
                         </label>
                       </section>
