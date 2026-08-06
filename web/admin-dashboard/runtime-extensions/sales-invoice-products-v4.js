@@ -1,12 +1,12 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_SALES_DOCUMENTS_V3__) {
+  if (window.__UBUZIMA_SALES_DOCUMENTS_V4__) {
     return;
   }
 
   var VERSION =
-    '2026.08.sales-invoice-products-v3';
+    '2026.08.sales-invoice-products-v4';
 
   var SALES_SUFFIX =
     '/pharmaco/sales';
@@ -35,7 +35,13 @@
     redundantPaymentSummariesRemoved: 0,
     receiptRenderAttempts: 0,
     receiptReadyPrints: 0,
-    blankReceiptPreventions: 0
+    blankReceiptPreventions: 0,
+    receiptModalOpens: 0,
+    receiptPrintActions: 0,
+    receiptWhatsAppActions: 0,
+    receiptEmailActions: 0,
+    cartTablesStabilized: 0,
+    cartRowsStabilized: 0
   };
 
   function requestUrl(input) {
@@ -558,6 +564,7 @@
     function renderFrame() {
       patchTables();
       removeRedundantPaymentSummaryText();
+      stabilizeCartProductColumns();
       mountDock();
 
       frame += 1;
@@ -1224,195 +1231,536 @@
     );
   }
 
-  function renderInvoice(
-    invoice,
-    printWindow
-  ) {
-    var target =
-      printWindow ||
-      preopenInvoiceWindow();
+  function receiptShareText(invoice) {
+    var totals =
+      invoice.totals || {};
 
-    if (!target) {
-      state.blockedPopups += 1;
+    var lines = [];
 
-      toast(
-        'Receipt pop-up was blocked. Allow pop-ups and select Reprint again.'
-      );
+    var tenantName =
+      invoice.tenant &&
+      invoice.tenant.name
+        ? invoice.tenant.name
+        : 'Sales receipt';
 
-      return;
+    var branchName =
+      invoice.branch &&
+      invoice.branch.name
+        ? invoice.branch.name
+        : '';
+
+    lines.push(tenantName);
+
+    if (branchName) {
+      lines.push(branchName);
     }
 
-    var expectedNumber =
+    lines.push(
+      'Receipt: ' +
       String(
         invoice.invoice_number || ''
+      )
+    );
+
+    if (invoice.issued_at) {
+      lines.push(
+        'Date: ' +
+        String(invoice.issued_at)
+      );
+    }
+
+    lines.push('');
+    lines.push('Items:');
+
+    var items =
+      Array.isArray(invoice.items)
+        ? invoice.items
+        : [];
+
+    items.forEach(
+      function (item) {
+        lines.push(
+          '- ' +
+          String(
+            item.product_name ||
+            'Unspecified product'
+          ) +
+          ' × ' +
+          quantity(item.quantity) +
+          ' = RWF ' +
+          formatMoney(
+            item.line_total
+          )
+        );
+      }
+    );
+
+    lines.push('');
+    lines.push(
+      'Total: RWF ' +
+      formatMoney(
+        totals.total_amount
+      )
+    );
+
+    lines.push(
+      'Paid: RWF ' +
+      formatMoney(
+        totals.paid_amount
+      )
+    );
+
+    lines.push(
+      'Balance: RWF ' +
+      formatMoney(
+        totals.balance_amount
+      )
+    );
+
+    lines.push('');
+    lines.push(
+      'Thank you for your purchase.'
+    );
+
+    return lines.join('\n');
+  }
+
+  function closeReceiptModal() {
+    var current =
+      document.getElementById(
+        'ubuzima-receipt-modal-v4'
       );
 
-    target.document.open();
-    target.document.write(
-      invoiceHtml(invoice)
+    if (current) {
+      current.remove();
+    }
+  }
+
+  function receiptActionButton(
+    label,
+    action,
+    background,
+    color
+  ) {
+    var button =
+      document.createElement(
+        'button'
+      );
+
+    button.type = 'button';
+    button.textContent = label;
+
+    button.setAttribute(
+      'data-ubuzima-receipt-action',
+      action
     );
-    target.document.close();
 
-    function receiptIsReady() {
-      try {
-        var marker =
-          target.document.querySelector(
-            '[data-ubuzima-receipt-ready="true"]'
-          );
+    button.style.cssText = [
+      'border:0',
+      'border-radius:9px',
+      'padding:10px 12px',
+      'min-height:42px',
+      'font:inherit',
+      'font-size:13px',
+      'font-weight:800',
+      'cursor:pointer',
+      'background:' + background,
+      'color:' + color,
+      'white-space:nowrap'
+    ].join(';');
 
-        var text =
-          String(
-            target.document.body
-              ? target.document.body.textContent
-              : ''
-          )
-            .replace(/\s+/g, ' ')
-            .trim();
+    return button;
+  }
 
-        return Boolean(
-          marker &&
-          text.length > 40 &&
-          (
-            !expectedNumber ||
-            text.indexOf(
-              expectedNumber
-            ) !== -1
-          )
-        );
-      } catch (error) {
-        return false;
-      }
-    }
+  function renderInvoice(invoice) {
+    closeReceiptModal();
 
-    function invokePrint() {
-      if (!receiptIsReady()) {
-        state.blankReceiptPreventions += 1;
+    var overlay =
+      document.createElement('div');
 
-        toast(
-          'The receipt was not ready for printing. Select Reprint again.'
-        );
+    overlay.id =
+      'ubuzima-receipt-modal-v4';
 
-        return;
-      }
+    overlay.setAttribute(
+      'data-ubuzima-receipt-modal',
+      '80mm-v4'
+    );
 
-      state.receiptReadyPrints += 1;
-      state.invoicePrints += 1;
+    overlay.style.cssText = [
+      'position:fixed',
+      'inset:0',
+      'z-index:2147483600',
+      'background:rgba(15,23,42,.62)',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'padding:10px',
+      'overflow:auto'
+    ].join(';');
 
-      target.focus();
-      target.print();
-    }
+    var panel =
+      document.createElement('section');
 
-    function afterPaint() {
-      var frame =
-        typeof target.requestAnimationFrame ===
-          'function'
-          ? target.requestAnimationFrame.bind(
-              target
+    panel.setAttribute(
+      'role',
+      'dialog'
+    );
+
+    panel.setAttribute(
+      'aria-modal',
+      'true'
+    );
+
+    panel.setAttribute(
+      'aria-label',
+      'Receipt preview'
+    );
+
+    panel.style.cssText = [
+      'width:min(390px,calc(100vw - 20px))',
+      'max-height:calc(100vh - 20px)',
+      'display:flex',
+      'flex-direction:column',
+      'overflow:hidden',
+      'background:#f8fafc',
+      'border-radius:18px',
+      'box-shadow:0 30px 90px rgba(15,23,42,.38)'
+    ].join(';');
+
+    var header =
+      document.createElement('header');
+
+    header.style.cssText = [
+      'display:flex',
+      'align-items:center',
+      'justify-content:space-between',
+      'gap:12px',
+      'padding:13px 14px',
+      'background:#ffffff',
+      'border-bottom:1px solid #e2e8f0'
+    ].join(';');
+
+    var heading =
+      document.createElement('div');
+
+    heading.innerHTML = [
+      '<strong style="display:block;font-size:15px;color:#0f172a">',
+      'Receipt preview',
+      '</strong>',
+      '<span style="display:block;margin-top:2px;font-size:11px;color:#64748b">',
+      '80 mm thermal receipt',
+      '</span>'
+    ].join('');
+
+    var closeTop =
+      receiptActionButton(
+        'Close',
+        'close',
+        '#e2e8f0',
+        '#0f172a'
+      );
+
+    closeTop.style.padding =
+      '7px 10px';
+
+    closeTop.style.minHeight =
+      '34px';
+
+    header.appendChild(heading);
+    header.appendChild(closeTop);
+
+    var previewArea =
+      document.createElement('div');
+
+    previewArea.style.cssText = [
+      'display:flex',
+      'justify-content:center',
+      'align-items:flex-start',
+      'padding:12px',
+      'overflow:auto',
+      'background:#cbd5e1',
+      'min-height:260px',
+      'max-height:calc(100vh - 170px)'
+    ].join(';');
+
+    var frame =
+      document.createElement(
+        'iframe'
+      );
+
+    frame.title =
+      '80 mm receipt preview';
+
+    frame.setAttribute(
+      'data-ubuzima-receipt-frame',
+      'v4'
+    );
+
+    frame.style.cssText = [
+      'display:block',
+      'width:80mm',
+      'max-width:100%',
+      'height:min(64vh,650px)',
+      'min-height:360px',
+      'border:0',
+      'background:#ffffff',
+      'box-shadow:0 6px 20px rgba(15,23,42,.18)'
+    ].join(';');
+
+    var footer =
+      document.createElement('footer');
+
+    footer.style.cssText = [
+      'display:grid',
+      'grid-template-columns:repeat(3,minmax(0,1fr))',
+      'gap:8px',
+      'padding:12px',
+      'background:#ffffff',
+      'border-top:1px solid #e2e8f0'
+    ].join(';');
+
+    var printButton =
+      receiptActionButton(
+        'Print',
+        'print',
+        '#0f766e',
+        '#ffffff'
+      );
+
+    var whatsappButton =
+      receiptActionButton(
+        'WhatsApp',
+        'whatsapp',
+        '#16a34a',
+        '#ffffff'
+      );
+
+    var emailButton =
+      receiptActionButton(
+        'Email',
+        'email',
+        '#2563eb',
+        '#ffffff'
+      );
+
+    printButton.disabled = true;
+    printButton.style.opacity = '.6';
+    printButton.style.cursor =
+      'not-allowed';
+
+    footer.appendChild(printButton);
+    footer.appendChild(
+      whatsappButton
+    );
+    footer.appendChild(emailButton);
+
+    previewArea.appendChild(frame);
+
+    panel.appendChild(header);
+    panel.appendChild(previewArea);
+    panel.appendChild(footer);
+
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+
+    state.receiptModalOpens += 1;
+
+    var receiptHtml =
+      invoiceHtml(invoice);
+
+    var frameReady = false;
+
+    frame.addEventListener(
+      'load',
+      function () {
+        state.receiptRenderAttempts += 1;
+
+        try {
+          var frameDocument =
+            frame.contentDocument ||
+            frame.contentWindow.document;
+
+          var text =
+            String(
+              frameDocument.body
+                ? frameDocument.body
+                    .textContent
+                : ''
             )
-          : window.requestAnimationFrame.bind(
-              window
+              .replace(/\s+/g, ' ')
+              .trim();
+
+          frameReady =
+            text.length > 40 &&
+            (
+              !invoice.invoice_number ||
+              text.indexOf(
+                String(
+                  invoice.invoice_number
+                )
+              ) !== -1
+            );
+        } catch (error) {
+          frameReady = false;
+        }
+
+        printButton.disabled =
+          !frameReady;
+
+        printButton.style.opacity =
+          frameReady ? '1' : '.6';
+
+        printButton.style.cursor =
+          frameReady
+            ? 'pointer'
+            : 'not-allowed';
+      }
+    );
+
+    frame.srcdoc = receiptHtml;
+
+    overlay.addEventListener(
+      'click',
+      function (event) {
+        var target =
+          event.target instanceof Element
+            ? event.target
+            : null;
+
+        if (!target) {
+          return;
+        }
+
+        if (
+          target === overlay ||
+          target.closest(
+            '[data-ubuzima-receipt-action="close"]'
+          )
+        ) {
+          closeReceiptModal();
+          return;
+        }
+
+        if (
+          target.closest(
+            '[data-ubuzima-receipt-action="print"]'
+          )
+        ) {
+          if (!frameReady) {
+            state.blankReceiptPreventions +=
+              1;
+
+            toast(
+              'The receipt is still preparing. Please try Print again.'
             );
 
-      frame(function () {
-        frame(function () {
-          invokePrint();
-        });
-      });
-    }
+            return;
+          }
 
-    function afterFonts() {
-      try {
-        if (
-          target.document.fonts &&
-          target.document.fonts.ready &&
-          typeof target.document.fonts
-            .ready.then === 'function'
-        ) {
-          target.document.fonts.ready
-            .then(afterPaint)
-            .catch(afterPaint);
+          try {
+            var printWindow =
+              frame.contentWindow;
+
+            if (!printWindow) {
+              throw new Error(
+                'Receipt frame is unavailable.'
+              );
+            }
+
+            state.receiptReadyPrints +=
+              1;
+
+            state.receiptPrintActions +=
+              1;
+
+            state.invoicePrints += 1;
+
+            printWindow.focus();
+            printWindow.print();
+          } catch (error) {
+            state.blankReceiptPreventions +=
+              1;
+
+            toast(
+              'The receipt could not be printed. Please try again.'
+            );
+          }
 
           return;
         }
-      } catch (error) {
-        // Continue with normal paint waiting.
+
+        if (
+          target.closest(
+            '[data-ubuzima-receipt-action="whatsapp"]'
+          )
+        ) {
+          state.receiptWhatsAppActions +=
+            1;
+
+          var whatsappUrl =
+            'https://wa.me/?text=' +
+            encodeURIComponent(
+              receiptShareText(invoice)
+            );
+
+          window.open(
+            whatsappUrl,
+            '_blank',
+            'noopener,noreferrer'
+          );
+
+          return;
+        }
+
+        if (
+          target.closest(
+            '[data-ubuzima-receipt-action="email"]'
+          )
+        ) {
+          state.receiptEmailActions +=
+            1;
+
+          var subject =
+            'Receipt ' +
+            String(
+              invoice.invoice_number ||
+              ''
+            );
+
+          var mailUrl =
+            'mailto:?subject=' +
+            encodeURIComponent(subject) +
+            '&body=' +
+            encodeURIComponent(
+              receiptShareText(invoice)
+            );
+
+          window.location.href = mailUrl;
+        }
       }
+    );
 
-      afterPaint();
-    }
+    document.addEventListener(
+      'keydown',
+      function closeOnEscape(event) {
+        if (
+          event.key !== 'Escape'
+        ) {
+          return;
+        }
 
-    function waitForReceipt(attempt) {
-      state.receiptRenderAttempts += 1;
-
-      if (receiptIsReady()) {
-        afterFonts();
-        return;
-      }
-
-      if (attempt >= 60) {
-        state.blankReceiptPreventions += 1;
-
-        toast(
-          'Receipt content did not finish rendering. Select Reprint again.'
+        document.removeEventListener(
+          'keydown',
+          closeOnEscape
         );
 
-        return;
+        closeReceiptModal();
       }
-
-      var defer =
-        typeof target.setTimeout ===
-          'function'
-          ? target.setTimeout.bind(target)
-          : window.setTimeout.bind(window);
-
-      defer(
-        function () {
-          waitForReceipt(
-            attempt + 1
-          );
-        },
-        50
-      );
-    }
-
-    waitForReceipt(0);
+    );
   }
 
   function preopenInvoiceWindow() {
-    var target =
-      window.open(
-        '',
-        '_blank',
-        'popup=yes,width=420,height=720'
-      );
-
-    if (target) {
-      target.document.open();
-
-      target.document.write(
-        [
-          '<!doctype html>',
-          '<html><head>',
-          '<meta charset="utf-8">',
-          '<title>Preparing receipt</title>',
-          '<style>',
-          'body{',
-          'font-family:Arial,sans-serif;',
-          'padding:24px;',
-          'color:#334155;',
-          'text-align:center;',
-          '}',
-          '</style>',
-          '</head><body>',
-          '<p>Preparing receipt…</p>',
-          '</body></html>'
-        ].join('')
-      );
-
-      target.document.close();
-    }
-
-    return target;
+    return null;
   }
 
   function invoiceUrl(id, reprint) {
@@ -1601,87 +1949,144 @@
   function removeRedundantPaymentSummaryText() {
     if (
       typeof document === 'undefined' ||
-      typeof document.querySelectorAll !==
-        'function'
+      !document.body
     ) {
       return 0;
     }
 
     var removed = 0;
 
-    var elements =
-      document.querySelectorAll(
-        'p,div,span,small,li'
+    function matchesSummary(value) {
+      var text =
+        String(value || '')
+          .replace(/\u00a0/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+      if (
+        !text ||
+        text.length > 700
+      ) {
+        return false;
+      }
+
+      return (
+        /\badded\s*:/i.test(text) &&
+        /selling\s+amount\s*:/i.test(text) &&
+        /RWF\s*[\d,.]+/i.test(text)
       );
+    }
 
-    Array.prototype.forEach.call(
-      elements,
-      function (element) {
-        if (!element) {
-          return;
-        }
+    if (
+      typeof document.createTreeWalker ===
+        'function' &&
+      typeof NodeFilter !== 'undefined'
+    ) {
+      var walker =
+        document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT
+        );
 
-        var children =
-          element.children || [];
+      var nodes = [];
+      var current;
 
-        var fullText =
-          String(
-            element.textContent || ''
-          );
+      while (
+        (
+          current =
+            walker.nextNode()
+        )
+      ) {
+        nodes.push(current);
+      }
 
-        if (
-          children.length === 0 &&
-          redundantSummaryText(fullText)
-        ) {
+      nodes.forEach(
+        function (node) {
           if (
-            typeof element.remove ===
-            'function'
+            !node ||
+            !matchesSummary(
+              node.nodeValue
+            )
           ) {
-            element.remove();
-          } else {
-            element.textContent = '';
+            return;
+          }
+
+          var parent =
+            node.parentElement;
+
+          node.nodeValue = '';
+
+          if (
+            parent &&
+            String(
+              parent.textContent || ''
+            ).trim() === '' &&
+            parent.childElementCount === 0 &&
+            typeof parent.remove ===
+              'function'
+          ) {
+            parent.remove();
           }
 
           removed += 1;
-          return;
         }
+      );
+    }
 
-        var childNodes =
-          Array.prototype.slice.call(
-            element.childNodes || []
-          );
+    if (
+      typeof document.querySelectorAll ===
+        'function'
+    ) {
+      var elements =
+        document.querySelectorAll(
+          'p,div,span,small,li,[role="status"],[aria-live]'
+        );
 
-        var ownTextNodes =
-          childNodes.filter(
-            function (node) {
-              return (
-                node &&
-                node.nodeType === 3
+      Array.prototype.forEach.call(
+        elements,
+        function (element) {
+          if (
+            !element ||
+            !matchesSummary(
+              element.textContent
+            )
+          ) {
+            return;
+          }
+
+          if (
+            element.childElementCount <= 3 &&
+            typeof element.remove ===
+              'function'
+          ) {
+            element.remove();
+          } else {
+            var childNodes =
+              Array.prototype.slice.call(
+                element.childNodes || []
               );
-            }
-          );
 
-        var ownText =
-          ownTextNodes.map(
-            function (node) {
-              return node.nodeValue || '';
-            }
-          ).join(' ');
+            childNodes.forEach(
+              function (node) {
+                if (
+                  node &&
+                  node.nodeType === 3
+                ) {
+                  node.nodeValue = '';
+                }
+              }
+            );
 
-        if (
-          ownTextNodes.length &&
-          redundantSummaryText(ownText)
-        ) {
-          ownTextNodes.forEach(
-            function (node) {
-              node.nodeValue = '';
+            if (element.style) {
+              element.style.display =
+                'none';
             }
-          );
+          }
 
           removed += 1;
         }
-      }
-    );
+      );
+    }
 
     state.redundantPaymentSummariesRemoved +=
       removed;
@@ -1689,12 +2094,270 @@
     return removed;
   }
 
-  function schedulePaymentSummaryCleanup() {
+  function headerText(cell) {
+    return String(
+      cell &&
+      cell.textContent
+        ? cell.textContent
+        : ''
+    )
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  function cartTableColumns(table) {
+    var headers =
+      Array.prototype.slice.call(
+        table.querySelectorAll(
+          'thead th'
+        )
+      );
+
+    if (!headers.length) {
+      return null;
+    }
+
+    var labels =
+      headers.map(headerText);
+
+    var productIndex =
+      labels.findIndex(
+        function (label) {
+          return (
+            label === 'product' ||
+            label === 'products' ||
+            label.indexOf('product') !== -1 ||
+            label.indexOf('medicine') !== -1 ||
+            label === 'item'
+          );
+        }
+      );
+
+    var quantityIndex =
+      labels.findIndex(
+        function (label) {
+          return (
+            label === 'qty' ||
+            label.indexOf('quantity') !== -1
+          );
+        }
+      );
+
+    var priceIndex =
+      labels.findIndex(
+        function (label) {
+          return (
+            label.indexOf('unit price') !== -1 ||
+            label === 'price'
+          );
+        }
+      );
+
+    var totalIndex =
+      labels.findIndex(
+        function (label) {
+          return (
+            label === 'total' ||
+            label.indexOf('amount') !== -1
+          );
+        }
+      );
+
+    var actionIndex =
+      labels.findIndex(
+        function (label) {
+          return (
+            label.indexOf('action') !== -1 ||
+            label === ''
+          );
+        }
+      );
+
+    if (
+      productIndex < 0 ||
+      quantityIndex < 0 ||
+      (
+        priceIndex < 0 &&
+        totalIndex < 0
+      )
+    ) {
+      return null;
+    }
+
+    return {
+      headers: headers,
+      product: productIndex,
+      quantity: quantityIndex,
+      price: priceIndex,
+      total: totalIndex,
+      action: actionIndex
+    };
+  }
+
+  function applyColumnWidth(
+    rows,
+    index,
+    width,
+    productColumn
+  ) {
+    if (index < 0) {
+      return;
+    }
+
+    rows.forEach(
+      function (row) {
+        var cell =
+          row.children &&
+          row.children[index]
+            ? row.children[index]
+            : null;
+
+        if (!cell || !cell.style) {
+          return;
+        }
+
+        cell.style.width = width;
+        cell.style.maxWidth = width;
+        cell.style.minWidth = '0';
+
+        if (productColumn) {
+          cell.style.whiteSpace =
+            'normal';
+
+          cell.style.overflowWrap =
+            'anywhere';
+
+          cell.style.wordBreak =
+            'break-word';
+
+          cell.style.overflow =
+            'hidden';
+
+          cell.style.textOverflow =
+            'ellipsis';
+        } else {
+          cell.style.whiteSpace =
+            'nowrap';
+
+          cell.style.overflow =
+            'hidden';
+
+          cell.style.textOverflow =
+            'ellipsis';
+        }
+      }
+    );
+  }
+
+  function stabilizeCartProductColumns() {
+    if (
+      typeof document === 'undefined' ||
+      typeof document.querySelectorAll !==
+        'function'
+    ) {
+      return 0;
+    }
+
+    var stabilized = 0;
+
+    var tables =
+      document.querySelectorAll(
+        'table'
+      );
+
+    Array.prototype.forEach.call(
+      tables,
+      function (table) {
+        if (
+          !table ||
+          !table.style
+        ) {
+          return;
+        }
+
+        var columns =
+          cartTableColumns(table);
+
+        if (!columns) {
+          return;
+        }
+
+        table.style.width = '100%';
+        table.style.maxWidth = '100%';
+        table.style.tableLayout =
+          'fixed';
+
+        table.setAttribute(
+          'data-ubuzima-cart-columns',
+          'stable-v4'
+        );
+
+        var rows =
+          Array.prototype.slice.call(
+            table.querySelectorAll(
+              'tr'
+            )
+          );
+
+        applyColumnWidth(
+          rows,
+          columns.product,
+          '36%',
+          true
+        );
+
+        applyColumnWidth(
+          rows,
+          columns.quantity,
+          '78px',
+          false
+        );
+
+        applyColumnWidth(
+          rows,
+          columns.price,
+          '104px',
+          false
+        );
+
+        applyColumnWidth(
+          rows,
+          columns.total,
+          '104px',
+          false
+        );
+
+        applyColumnWidth(
+          rows,
+          columns.action,
+          '62px',
+          false
+        );
+
+        state.cartRowsStabilized +=
+          Math.max(
+            0,
+            rows.length - 1
+          );
+
+        stabilized += 1;
+      }
+    );
+
+    state.cartTablesStabilized +=
+      stabilized;
+
+    return stabilized;
+  }
+
+  function scheduleInterfaceCleanup() {
     var frame = 0;
-    var maximumFrames = 30;
+    var maximumFrames = 120;
 
     function cleanFrame() {
       removeRedundantPaymentSummaryText();
+      stabilizeCartProductColumns();
 
       frame += 1;
 
@@ -1708,6 +2371,14 @@
     window.requestAnimationFrame(
       cleanFrame
     );
+  }
+
+  function schedulePaymentSummaryCleanup() {
+    scheduleInterfaceCleanup();
+  }
+
+  function scheduleCartColumnStability() {
+    scheduleInterfaceCleanup();
   }
 
   window.fetch = async function (
@@ -1766,10 +2437,7 @@
       return directResponse;
     }
 
-    var printWindow =
-      checkout
-        ? preopenInvoiceWindow()
-        : null;
+    var printWindow = null;
 
     var response =
       await originalFetch(
@@ -1830,6 +2498,7 @@
       }
 
       schedulePaymentSummaryCleanup();
+      scheduleCartColumnStability();
 
       var reprintButton =
         target.closest(
@@ -1839,9 +2508,6 @@
       if (reprintButton) {
         event.preventDefault();
 
-        var printWindow =
-          preopenInvoiceWindow();
-
         printSaleInvoice(
           Number(
             reprintButton.getAttribute(
@@ -1849,7 +2515,7 @@
             )
           ),
           true,
-          printWindow
+          null
         );
 
         return;
@@ -1903,7 +2569,7 @@
     }
   );
 
-  window.__UBUZIMA_SALES_DOCUMENTS_V3__ = {
+  window.__UBUZIMA_SALES_DOCUMENTS_V4__ = {
     version: VERSION,
 
     diagnostics: function () {
@@ -1937,6 +2603,18 @@
           '80mm',
         receipt_printable_width:
           '72mm',
+        receipt_modal_opens:
+          state.receiptModalOpens,
+        receipt_print_actions:
+          state.receiptPrintActions,
+        receipt_whatsapp_actions:
+          state.receiptWhatsAppActions,
+        receipt_email_actions:
+          state.receiptEmailActions,
+        cart_tables_stabilized:
+          state.cartTablesStabilized,
+        cart_rows_stabilized:
+          state.cartRowsStabilized,
         inventory_interception:
           false,
         unrelated_request_interception:
@@ -1952,15 +2630,23 @@
     exportCsv: exportCsv,
     cleanupPaymentSummary:
       removeRedundantPaymentSummaryText,
+    stabilizeCartColumns:
+      stabilizeCartProductColumns,
+    previewReceipt:
+      renderInvoice,
+    receiptShareText:
+      receiptShareText,
 
     reprint: function (id) {
       return printSaleInvoice(
         Number(id),
         true,
-        preopenInvoiceWindow()
+        null
       );
     }
   };
+
+  scheduleInterfaceCleanup();
 
   console.info(
     '[UbuzimaPlus] Sales invoice and product-line extension loaded.',
