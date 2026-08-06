@@ -839,4 +839,121 @@ class TenantUserManagementApiTest extends TestCase
         );
     }
 
+
+
+    public function test_create_rejects_branch_from_another_tenant(): void
+    {
+        $otherTenant = $this->tenant->replicate();
+
+        $otherTenant->forceFill([
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'name' => 'Other Branch Tenant',
+            'slug' =>
+                'other-branch-' .
+                \Illuminate\Support\Str::lower(
+                    \Illuminate\Support\Str::random(8)
+                ),
+            'status' => 'active',
+        ])->save();
+
+        $otherBranch = $this->branch->replicate();
+
+        $otherBranch->forceFill([
+            'tenant_id' => $otherTenant->id,
+            'name' => 'Other Tenant Branch',
+            'code' =>
+                'OTHER-' .
+                \Illuminate\Support\Str::upper(
+                    \Illuminate\Support\Str::random(6)
+                ),
+            'status' => 'active',
+        ])->save();
+
+        $email = 'cross-tenant-branch@example.test';
+
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->postJson(
+                '/api/v1/access-check/security/users',
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' =>
+                        'Cross Tenant Branch User',
+                    'email' => $email,
+                    'access_assignment_mode' =>
+                        'predefined_role',
+                    'role_code' => 'cashier',
+                    'branch_id' =>
+                        $otherBranch->id,
+                    'status' => 'active',
+                ],
+            );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'branch_id',
+            ]);
+
+        $this->assertDatabaseMissing(
+            'users',
+            ['email' => $email],
+        );
+    }
+
+    public function test_create_rejects_inactive_tenant_branch(): void
+    {
+        $inactiveBranch = $this->branch->replicate();
+
+        $inactiveBranch->forceFill([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Inactive Tenant Branch',
+            'code' =>
+                'INACTIVE-' .
+                \Illuminate\Support\Str::upper(
+                    \Illuminate\Support\Str::random(6)
+                ),
+            'status' => 'inactive',
+        ])->save();
+
+        $email = 'inactive-branch-user@example.test';
+
+        $response = $this
+            ->withHeader(
+                'X-Tenant-Slug',
+                $this->tenant->slug,
+            )
+            ->postJson(
+                '/api/v1/access-check/security/users',
+                [
+                    'tenant_slug' =>
+                        $this->tenant->slug,
+                    'name' =>
+                        'Inactive Branch User',
+                    'email' => $email,
+                    'access_assignment_mode' =>
+                        'predefined_role',
+                    'role_code' => 'cashier',
+                    'branch_id' =>
+                        $inactiveBranch->id,
+                    'status' => 'active',
+                ],
+            );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'branch_id',
+            ]);
+
+        $this->assertDatabaseMissing(
+            'users',
+            ['email' => $email],
+        );
+    }
+
 }

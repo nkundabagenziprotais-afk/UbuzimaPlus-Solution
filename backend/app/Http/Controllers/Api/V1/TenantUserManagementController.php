@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /* USER_BRANCH_ASSIGNMENT_ENDPOINT_V1 */
@@ -479,7 +480,20 @@ class TenantUserManagementController extends Controller
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'max:100'],
             'password' => ['nullable', 'string', 'min:8', 'max:100'],
-            'branch_id' => ['nullable', 'integer'],
+            'branch_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('branches', 'id')
+                    ->where(function ($query) use ($tenant): void {
+                        $query
+                            ->where('tenant_id', $tenant->id)
+                            ->where(function ($statusQuery): void {
+                                $statusQuery
+                                    ->where('status', 'active')
+                                    ->orWhereNull('status');
+                            });
+                    }),
+            ],
             'status' => ['nullable', 'string', 'in:active,invited,suspended,inactive'],
             'two_factor_required' =>
                 ['nullable', 'boolean'],        ]);
@@ -605,7 +619,20 @@ class TenantUserManagementController extends Controller
             'role_code' => ['required', 'string', 'max:80'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'max:100'],
-            'branch_id' => ['nullable', 'integer'],
+            'branch_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('branches', 'id')
+                    ->where(function ($query) use ($tenant): void {
+                        $query
+                            ->where('tenant_id', $tenant->id)
+                            ->where(function ($statusQuery): void {
+                                $statusQuery
+                                    ->where('status', 'active')
+                                    ->orWhereNull('status');
+                            });
+                    }),
+            ],
             'status' => ['nullable', 'string', 'in:active,invited,suspended,inactive'],
             'two_factor_required' =>
                 ['nullable', 'boolean'],        ]);
