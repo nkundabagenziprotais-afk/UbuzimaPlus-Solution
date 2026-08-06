@@ -186,30 +186,8 @@ class HistoricalPosSessionController extends Controller
                         ->lockForUpdate()
                         ->firstOrFail();
 
-                    // HISTORICAL_POS_ONLY_BLOCK_LIVE_SESSION_V1
-                    // Historical POS must not be blocked by another historical session record.
-                    // Only an active live POS session should prevent opening historical POS.
-                    $activeSession = PharmacoPosSession::query()
-                        ->where('tenant_id', $tenant->id)
-                        ->where('user_id', $request->user()->id)
-                        ->whereNull('historical_approval_id')
-                        ->whereIn('status', [
-                            'open',
-                            'zeroized',
-                        ])
-                        ->orderByDesc('id')
-                        ->lockForUpdate()
-                        ->first();
-
-                    if ($activeSession) {
-                        throw ValidationException::withMessages([
-                            'session' => [
-                                'Close the currently active POS session '
-                                . 'before opening a historical session.',
-                            ],
-                        ]);
-                    }
-
+                    // Live and historical POS are independent session modes.
+                    // An open live session must not block historical entry.
                     $approval = null;
 
                     /*
@@ -218,7 +196,10 @@ class HistoricalPosSessionController extends Controller
                      * bypass rights skipped this block, which allowed invalid codes
                      * and opened sessions without historical_approval_id.
                      */
-                    if ($summary['live_activity_exists']) {
+                    if (
+                        $summary['live_activity_exists']
+                        && ! $this->userCanBypassHistoricalPosApproval($request)
+                    ) {
                         $approval =
                             PharmacoHistoricalPosApproval::query()
                                 ->whereKey(
@@ -367,9 +348,10 @@ class HistoricalPosSessionController extends Controller
                                 'recorded_at' =>
                                     now()->toIso8601String(),
                                 'approval_required' =>
-                                    $summary[
-                                        'live_activity_exists'
-                                    ],
+                                    $summary['live_activity_exists']
+                                    && ! $this->userCanBypassHistoricalPosApproval(
+                                        $request
+                                    ),
                                 'live_activity_count' =>
                                     $summary[
                                         'live_activity_count'

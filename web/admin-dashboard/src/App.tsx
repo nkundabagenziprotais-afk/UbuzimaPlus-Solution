@@ -51,6 +51,7 @@ import {
   type PosSession,
   closePosSession,
   getCurrentPosSession,
+  getOrCreatePosTerminalIdentity,
   openPosSession,
   zeroizePosSession,
 } from './lib/posSessionApi';
@@ -4298,6 +4299,11 @@ function App() {
   const posSessionTenantSlug =
     profile?.tenant_assignments?.[0]?.tenant?.slug || '';
 
+  const posTerminalIdentity = useMemo(
+    () => getOrCreatePosTerminalIdentity(),
+    [],
+  );
+
   const posSessionBranchId =
     profile?.scope.branch_id ??
     profile?.tenant_assignments?.find(
@@ -4314,7 +4320,8 @@ function App() {
     if (
       activeSection !== 'pos' ||
       !session?.token ||
-      !posSessionTenantSlug
+      !posSessionTenantSlug ||
+      !posSessionBranchId
     ) {
       return;
     }
@@ -4323,10 +4330,14 @@ function App() {
 
     setIsLoadingPosSession(true);
 
-    void getCurrentPosSession({
-      token: session.token,
-      tenantSlug: posSessionTenantSlug,
-    })
+    void getCurrentPosSession(
+      {
+        token: session.token,
+        tenantSlug: posSessionTenantSlug,
+      },
+      Number(posSessionBranchId),
+      posTerminalIdentity.identifier,
+    )
       .then((response) => {
         if (cancelled) {
           return;
@@ -4370,7 +4381,9 @@ function App() {
     };
   }, [
     activeSection,
+    posSessionBranchId,
     posSessionTenantSlug,
+    posTerminalIdentity.identifier,
     session?.token,
   ]);
 
@@ -6531,6 +6544,10 @@ function App() {
           },
           {
             branch_id: posSessionBranchId,
+            terminal_identifier:
+              posTerminalIdentity.identifier,
+            terminal_label:
+              posTerminalIdentity.label,
             opening_float_amount: openingFloatAmount,
             opening_mode: posOpeningMode,
           },
@@ -6775,10 +6792,14 @@ async function confirmTransaction() {
       if (activeCheckoutSession?.status !== 'open') {
         try {
           const currentSessionResponse =
-            await getCurrentPosSession({
-              token: session.token,
-              tenantSlug: posSessionTenantSlug,
-            });
+            await getCurrentPosSession(
+              {
+                token: session.token,
+                tenantSlug: posSessionTenantSlug,
+              },
+              Number(posSessionBranchId),
+              posTerminalIdentity.identifier,
+            );
 
           activeCheckoutSession =
             currentSessionResponse.session;
@@ -6867,6 +6888,10 @@ async function confirmTransaction() {
             {
               idempotency_key: posCheckoutKey,
               branch_id: branchId,
+              pos_session_id:
+                activeCheckoutSession.id,
+              terminal_identifier:
+                posTerminalIdentity.identifier,
               sale_type: saleType,
               discount_amount:
                 Math.max(
