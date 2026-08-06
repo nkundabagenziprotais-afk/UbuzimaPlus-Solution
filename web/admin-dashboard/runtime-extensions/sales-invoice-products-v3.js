@@ -1,12 +1,12 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_SALES_DOCUMENTS_V2__) {
+  if (window.__UBUZIMA_SALES_DOCUMENTS_V3__) {
     return;
   }
 
   var VERSION =
-    '2026.08.sales-invoice-products-v2';
+    '2026.08.sales-invoice-products-v3';
 
   var SALES_SUFFIX =
     '/pharmaco/sales';
@@ -32,7 +32,10 @@
     invoicePrints: 0,
     blockedPopups: 0,
     usedRequestPassthroughs: 0,
-    redundantPaymentSummariesRemoved: 0
+    redundantPaymentSummariesRemoved: 0,
+    receiptRenderAttempts: 0,
+    receiptReadyPrints: 0,
+    blankReceiptPreventions: 0
   };
 
   function requestUrl(input) {
@@ -835,198 +838,346 @@
         ? invoice.payments
         : [];
 
+    var totals =
+      invoice.totals || {};
+
+    var tenantName =
+      invoice.tenant &&
+      invoice.tenant.name
+        ? invoice.tenant.name
+        : 'Sales receipt';
+
+    var branchName =
+      invoice.branch &&
+      invoice.branch.name
+        ? invoice.branch.name
+        : '';
+
+    var branchAddress =
+      invoice.branch &&
+      invoice.branch.address
+        ? invoice.branch.address
+        : '';
+
+    var branchPhone =
+      invoice.branch &&
+      invoice.branch.phone
+        ? invoice.branch.phone
+        : '';
+
+    var customerName =
+      invoice.customer &&
+      invoice.customer.name
+        ? invoice.customer.name
+        : 'Walk-in customer';
+
+    var cashierName =
+      invoice.cashier &&
+      invoice.cashier.name
+        ? invoice.cashier.name
+        : '';
+
     var itemRows =
       items.map(
         function (line) {
+          var name =
+            line.product_name ||
+            'Unspecified product';
+
           return [
-            '<tr>',
-            '<td>',
-            escapeHtml(
-              line.product_name ||
-              'Unspecified product'
-            ),
-            '</td>',
-            '<td class="number">',
+            '<div class="item">',
+            '<div class="item-name">',
+            escapeHtml(name),
+            '</div>',
+            '<div class="item-values">',
+            '<span>',
             escapeHtml(
               quantity(line.quantity)
             ),
-            '</td>',
-            '<td class="number">',
+            ' × ',
             escapeHtml(
               formatMoney(
                 line.unit_price
               )
             ),
-            '</td>',
-            '<td class="number">',
+            '</span>',
+            '<strong>',
             escapeHtml(
               formatMoney(
                 line.line_total
               )
             ),
-            '</td>',
-            '</tr>'
+            '</strong>',
+            '</div>',
+            '</div>'
           ].join('');
         }
       ).join('');
 
-    var paymentText =
+    var paymentRows =
       payments.map(
         function (payment) {
-          return (
-            String(
+          return [
+            '<div class="row">',
+            '<span>',
+            escapeHtml(
               payment.method ||
               'Payment'
-            ) +
-            ': ' +
-            formatMoney(
-              payment.amount
-            )
-          );
+            ),
+            '</span>',
+            '<strong>',
+            escapeHtml(
+              formatMoney(
+                payment.amount
+              )
+            ),
+            '</strong>',
+            '</div>'
+          ].join('');
         }
-      ).join(' · ');
-
-    var totals =
-      invoice.totals || {};
+      ).join('');
 
     return [
       '<!doctype html>',
-      '<html><head><meta charset="utf-8">',
+      '<html>',
+      '<head>',
+      '<meta charset="utf-8">',
+      '<meta name="viewport" content="width=device-width,initial-scale=1">',
       '<title>',
       escapeHtml(
-        invoice.document_label ||
-        'Sales invoice'
+        invoice.invoice_number ||
+        'Sales receipt'
       ),
       '</title>',
       '<style>',
-      'body{font-family:Arial,sans-serif;color:#111827;margin:28px;}',
-      '.header{display:flex;justify-content:space-between;gap:24px;',
-      'border-bottom:2px solid #0f766e;padding-bottom:16px;margin-bottom:18px;}',
-      'h1{font-size:22px;margin:0 0 6px;color:#0f766e;}',
-      '.muted{color:#64748b;font-size:12px;line-height:1.5;}',
-      'table{width:100%;border-collapse:collapse;margin-top:18px;font-size:12px;}',
-      'th,td{padding:9px;border-bottom:1px solid #e5e7eb;text-align:left;}',
-      'th{background:#f8fafc;}',
-      '.number{text-align:right;}',
-      '.totals{margin-left:auto;margin-top:18px;width:320px;font-size:13px;}',
-      '.totals div{display:flex;justify-content:space-between;padding:5px 0;}',
-      '.grand{font-size:16px;font-weight:700;border-top:2px solid #111827;',
-      'margin-top:5px;padding-top:9px!important;}',
-      '.reprint{display:inline-block;background:#fef3c7;color:#92400e;',
-      'padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;}',
-      '@media print{body{margin:8mm}}',
-      '</style></head><body>',
-      '<div class="header"><div>',
-      '<h1>',
-      escapeHtml(
-        invoice.tenant &&
-        invoice.tenant.name
-          ? invoice.tenant.name
-          : 'Sales invoice'
-      ),
-      '</h1>',
-      '<div class="muted">',
-      escapeHtml(
-        invoice.branch &&
-        invoice.branch.name
-          ? invoice.branch.name
-          : ''
-      ),
-      '<br>',
-      escapeHtml(
-        invoice.branch &&
-        invoice.branch.address
-          ? invoice.branch.address
-          : ''
-      ),
-      '</div></div><div style="text-align:right">',
-      invoice.is_reprint
-        ? '<span class="reprint">REPRINT</span>'
+      '@page{size:80mm auto;margin:0;}',
+      '*{box-sizing:border-box;}',
+      'html,body{',
+      'width:80mm;',
+      'min-width:80mm;',
+      'margin:0;',
+      'padding:0;',
+      'background:#fff;',
+      'color:#000;',
+      '}',
+      'body{',
+      'font-family:"Courier New",Courier,monospace;',
+      'font-size:11px;',
+      'line-height:1.35;',
+      '-webkit-print-color-adjust:exact;',
+      'print-color-adjust:exact;',
+      '}',
+      '.receipt{',
+      'width:72mm;',
+      'max-width:72mm;',
+      'margin:0 auto;',
+      'padding:4mm 0 6mm;',
+      'overflow:visible;',
+      '}',
+      '.center{text-align:center;}',
+      '.store{font-size:15px;font-weight:800;text-transform:uppercase;}',
+      '.branch{font-size:11px;margin-top:2px;}',
+      '.meta{font-size:10px;margin-top:2px;}',
+      '.separator{',
+      'border-top:1px dashed #000;',
+      'margin:8px 0;',
+      'height:0;',
+      '}',
+      '.row{',
+      'display:flex;',
+      'justify-content:space-between;',
+      'align-items:flex-start;',
+      'gap:8px;',
+      'padding:2px 0;',
+      '}',
+      '.row span{max-width:46mm;}',
+      '.row strong{text-align:right;white-space:nowrap;}',
+      '.item{padding:4px 0;}',
+      '.item-name{font-weight:700;overflow-wrap:anywhere;}',
+      '.item-values{',
+      'display:flex;',
+      'justify-content:space-between;',
+      'gap:8px;',
+      'padding-top:2px;',
+      '}',
+      '.item-values strong{white-space:nowrap;}',
+      '.total{font-size:14px;font-weight:900;}',
+      '.reprint{',
+      'display:inline-block;',
+      'border:1px solid #000;',
+      'padding:2px 6px;',
+      'margin-top:5px;',
+      'font-weight:800;',
+      '}',
+      '.footer{font-size:10px;margin-top:10px;}',
+      '@media screen{',
+      'body{margin:0 auto;}',
+      '.receipt{box-shadow:none;}',
+      '}',
+      '@media print{',
+      'html,body{',
+      'width:80mm!important;',
+      'min-width:80mm!important;',
+      'height:auto!important;',
+      'overflow:visible!important;',
+      '}',
+      '.receipt{',
+      'width:72mm!important;',
+      'max-width:72mm!important;',
+      'margin:0 auto!important;',
+      'padding:3mm 0 5mm!important;',
+      '}',
+      '}',
+      '</style>',
+      '</head>',
+      '<body>',
+      '<main class="receipt" data-ubuzima-receipt-ready="true">',
+      '<header class="center">',
+      '<div class="store">',
+      escapeHtml(tenantName),
+      '</div>',
+      branchName
+        ? '<div class="branch">' +
+          escapeHtml(branchName) +
+          '</div>'
         : '',
-      '<div style="font-weight:700;margin-top:7px">',
+      branchAddress
+        ? '<div class="meta">' +
+          escapeHtml(branchAddress) +
+          '</div>'
+        : '',
+      branchPhone
+        ? '<div class="meta">Tel: ' +
+          escapeHtml(branchPhone) +
+          '</div>'
+        : '',
+      invoice.is_reprint
+        ? '<div class="reprint">REPRINT</div>'
+        : '',
+      '</header>',
+      '<div class="separator"></div>',
+      '<div class="row">',
+      '<span>Receipt</span>',
+      '<strong>',
       escapeHtml(
         invoice.invoice_number ||
         ''
       ),
+      '</strong>',
       '</div>',
-      '<div class="muted">',
+      '<div class="row">',
+      '<span>Date</span>',
+      '<strong>',
       escapeHtml(
         invoice.issued_at ||
         ''
       ),
-      '</div></div></div>',
-      '<div class="muted">',
-      'Customer: ',
-      escapeHtml(
-        invoice.customer &&
-        invoice.customer.name
-          ? invoice.customer.name
-          : 'Walk-in customer'
-      ),
-      '<br>Cashier: ',
-      escapeHtml(
-        invoice.cashier &&
-        invoice.cashier.name
-          ? invoice.cashier.name
-          : ''
-      ),
+      '</strong>',
       '</div>',
-      '<table><thead><tr>',
-      '<th>Product</th>',
-      '<th class="number">Qty</th>',
-      '<th class="number">Unit price</th>',
-      '<th class="number">Amount</th>',
-      '</tr></thead><tbody>',
-      itemRows,
-      '</tbody></table>',
-      '<div class="totals">',
-      '<div><span>Subtotal</span><strong>',
+      '<div class="row">',
+      '<span>Customer</span>',
+      '<strong>',
+      escapeHtml(customerName),
+      '</strong>',
+      '</div>',
+      cashierName
+        ? [
+            '<div class="row">',
+            '<span>Cashier</span>',
+            '<strong>',
+            escapeHtml(cashierName),
+            '</strong>',
+            '</div>'
+          ].join('')
+        : '',
+      '<div class="separator"></div>',
+      '<div class="row">',
+      '<strong>ITEM</strong>',
+      '<strong>AMOUNT</strong>',
+      '</div>',
+      itemRows ||
+        '<div class="center">No product lines</div>',
+      '<div class="separator"></div>',
+      '<div class="row">',
+      '<span>Subtotal</span>',
+      '<strong>',
       escapeHtml(
         formatMoney(
           totals.subtotal_amount
         )
       ),
-      '</strong></div>',
-      '<div><span>Discount</span><strong>',
-      escapeHtml(
-        formatMoney(
-          totals.discount_amount
-        )
-      ),
-      '</strong></div>',
-      '<div><span>Tax</span><strong>',
-      escapeHtml(
-        formatMoney(
-          totals.tax_amount
-        )
-      ),
-      '</strong></div>',
-      '<div class="grand"><span>Total</span><strong>',
+      '</strong>',
+      '</div>',
+      numeric(totals.discount_amount) !== 0
+        ? [
+            '<div class="row">',
+            '<span>Discount</span>',
+            '<strong>-',
+            escapeHtml(
+              formatMoney(
+                totals.discount_amount
+              )
+            ),
+            '</strong>',
+            '</div>'
+          ].join('')
+        : '',
+      numeric(totals.tax_amount) !== 0
+        ? [
+            '<div class="row">',
+            '<span>Tax</span>',
+            '<strong>',
+            escapeHtml(
+              formatMoney(
+                totals.tax_amount
+              )
+            ),
+            '</strong>',
+            '</div>'
+          ].join('')
+        : '',
+      '<div class="row total">',
+      '<span>TOTAL RWF</span>',
+      '<strong>',
       escapeHtml(
         formatMoney(
           totals.total_amount
         )
       ),
-      '</strong></div>',
-      '<div><span>Paid</span><strong>',
+      '</strong>',
+      '</div>',
+      '<div class="row">',
+      '<span>Paid</span>',
+      '<strong>',
       escapeHtml(
         formatMoney(
           totals.paid_amount
         )
       ),
-      '</strong></div>',
-      '<div><span>Balance</span><strong>',
+      '</strong>',
+      '</div>',
+      '<div class="row">',
+      '<span>Balance</span>',
+      '<strong>',
       escapeHtml(
         formatMoney(
           totals.balance_amount
         )
       ),
-      '</strong></div>',
+      '</strong>',
       '</div>',
-      '<p class="muted" style="margin-top:22px">',
-      escapeHtml(paymentText),
-      '</p>',
-      '</body></html>'
+      paymentRows
+        ? '<div class="separator"></div>' +
+          paymentRows
+        : '',
+      '<div class="separator"></div>',
+      '<footer class="center footer">',
+      '<div>Thank you for your purchase.</div>',
+      '<div>Please keep this receipt.</div>',
+      '</footer>',
+      '</main>',
+      '</body>',
+      '</html>'
     ].join('');
   }
 
@@ -1079,17 +1230,22 @@
   ) {
     var target =
       printWindow ||
-      window.open('', '_blank');
+      preopenInvoiceWindow();
 
     if (!target) {
       state.blockedPopups += 1;
 
       toast(
-        'Invoice pop-up was blocked. Allow pop-ups and select Reprint again.'
+        'Receipt pop-up was blocked. Allow pop-ups and select Reprint again.'
       );
 
       return;
     }
+
+    var expectedNumber =
+      String(
+        invoice.invoice_number || ''
+      );
 
     target.document.open();
     target.document.write(
@@ -1097,27 +1253,162 @@
     );
     target.document.close();
 
-    state.invoicePrints += 1;
+    function receiptIsReady() {
+      try {
+        var marker =
+          target.document.querySelector(
+            '[data-ubuzima-receipt-ready="true"]'
+          );
 
-    target.focus();
+        var text =
+          String(
+            target.document.body
+              ? target.document.body.textContent
+              : ''
+          )
+            .replace(/\s+/g, ' ')
+            .trim();
 
-    window.setTimeout(
-      function () {
-        target.print();
-      },
-      250
-    );
+        return Boolean(
+          marker &&
+          text.length > 40 &&
+          (
+            !expectedNumber ||
+            text.indexOf(
+              expectedNumber
+            ) !== -1
+          )
+        );
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function invokePrint() {
+      if (!receiptIsReady()) {
+        state.blankReceiptPreventions += 1;
+
+        toast(
+          'The receipt was not ready for printing. Select Reprint again.'
+        );
+
+        return;
+      }
+
+      state.receiptReadyPrints += 1;
+      state.invoicePrints += 1;
+
+      target.focus();
+      target.print();
+    }
+
+    function afterPaint() {
+      var frame =
+        typeof target.requestAnimationFrame ===
+          'function'
+          ? target.requestAnimationFrame.bind(
+              target
+            )
+          : window.requestAnimationFrame.bind(
+              window
+            );
+
+      frame(function () {
+        frame(function () {
+          invokePrint();
+        });
+      });
+    }
+
+    function afterFonts() {
+      try {
+        if (
+          target.document.fonts &&
+          target.document.fonts.ready &&
+          typeof target.document.fonts
+            .ready.then === 'function'
+        ) {
+          target.document.fonts.ready
+            .then(afterPaint)
+            .catch(afterPaint);
+
+          return;
+        }
+      } catch (error) {
+        // Continue with normal paint waiting.
+      }
+
+      afterPaint();
+    }
+
+    function waitForReceipt(attempt) {
+      state.receiptRenderAttempts += 1;
+
+      if (receiptIsReady()) {
+        afterFonts();
+        return;
+      }
+
+      if (attempt >= 60) {
+        state.blankReceiptPreventions += 1;
+
+        toast(
+          'Receipt content did not finish rendering. Select Reprint again.'
+        );
+
+        return;
+      }
+
+      var defer =
+        typeof target.setTimeout ===
+          'function'
+          ? target.setTimeout.bind(target)
+          : window.setTimeout.bind(window);
+
+      defer(
+        function () {
+          waitForReceipt(
+            attempt + 1
+          );
+        },
+        50
+      );
+    }
+
+    waitForReceipt(0);
   }
 
   function preopenInvoiceWindow() {
     var target =
-      window.open('', '_blank');
+      window.open(
+        '',
+        '_blank',
+        'popup=yes,width=420,height=720'
+      );
 
     if (target) {
       target.document.open();
+
       target.document.write(
-        '<p style="font-family:Arial,sans-serif;padding:24px">Preparing invoice…</p>'
+        [
+          '<!doctype html>',
+          '<html><head>',
+          '<meta charset="utf-8">',
+          '<title>Preparing receipt</title>',
+          '<style>',
+          'body{',
+          'font-family:Arial,sans-serif;',
+          'padding:24px;',
+          'color:#334155;',
+          'text-align:center;',
+          '}',
+          '</style>',
+          '</head><body>',
+          '<p>Preparing receipt…</p>',
+          '</body></html>'
+        ].join('')
       );
+
       target.document.close();
     }
 
@@ -1612,7 +1903,7 @@
     }
   );
 
-  window.__UBUZIMA_SALES_DOCUMENTS_V2__ = {
+  window.__UBUZIMA_SALES_DOCUMENTS_V3__ = {
     version: VERSION,
 
     diagnostics: function () {
@@ -1636,6 +1927,16 @@
           state.usedRequestPassthroughs,
         redundant_payment_summaries_removed:
           state.redundantPaymentSummariesRemoved,
+        receipt_render_attempts:
+          state.receiptRenderAttempts,
+        receipt_ready_prints:
+          state.receiptReadyPrints,
+        blank_receipt_preventions:
+          state.blankReceiptPreventions,
+        receipt_paper_width:
+          '80mm',
+        receipt_printable_width:
+          '72mm',
         inventory_interception:
           false,
         unrelated_request_interception:
