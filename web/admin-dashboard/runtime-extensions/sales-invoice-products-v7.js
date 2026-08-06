@@ -1,12 +1,12 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_SALES_DOCUMENTS_V6__) {
+  if (window.__UBUZIMA_SALES_DOCUMENTS_V7__) {
     return;
   }
 
   var VERSION =
-    '2026.08.sales-invoice-products-v6';
+    '2026.08.sales-invoice-products-v7';
 
   var SALES_SUFFIX =
     '/pharmaco/sales';
@@ -49,7 +49,11 @@
     checkoutSuppressionActivations: 0,
     blankCheckoutWindowsSuppressed: 0,
     allowedNonblankWindows: 0,
-    suppressedPopupDocumentWrites: 0
+    suppressedPopupDocumentWrites: 0,
+    latestCheckoutSaleId: null,
+    checkoutSalesRetained: 0,
+    automaticReceiptOpens: 0,
+    manualReceiptSelections: 0
   };
 
   var originalWindowOpen =
@@ -266,6 +270,57 @@
     );
   }
 
+  function explicitPrintReceiptTrigger(
+    element
+  ) {
+    if (
+      !element ||
+      typeof element.closest !==
+        'function'
+    ) {
+      return false;
+    }
+
+    var control =
+      element.closest(
+        'button,[role="button"],a,input[type="button"],input[type="submit"]'
+      );
+
+    if (!control) {
+      return false;
+    }
+
+    if (
+      control.closest(
+        '[data-ubuzima-receipt-modal]'
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      control.hasAttribute(
+        'data-ubuzima-reprint-sale-id'
+      )
+    ) {
+      return false;
+    }
+
+    var text =
+      triggerText(control);
+
+    return (
+      /\bprint\s+(receipt|invoice)\b/i
+        .test(text) ||
+      /\b(receipt|invoice)\s+print\b/i
+        .test(text) ||
+      /\bview\s+(receipt|invoice)\b/i
+        .test(text) ||
+      /\bopen\s+(receipt|invoice)\b/i
+        .test(text)
+    );
+  }
+
   document.addEventListener(
     'click',
     function (event) {
@@ -278,6 +333,39 @@
         paymentConfirmationTrigger(target)
       ) {
         activateCheckoutBlankWindowSuppression();
+      }
+
+      if (
+        explicitPrintReceiptTrigger(
+          target
+        ) &&
+        state.latestCheckoutSaleId
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (
+          typeof event
+            .stopImmediatePropagation ===
+            'function'
+        ) {
+          event.stopImmediatePropagation();
+        }
+
+        state.manualReceiptSelections +=
+          1;
+
+        printSaleInvoice(
+          state.latestCheckoutSaleId,
+          false,
+          null
+        ).catch(
+          function () {
+            toast(
+              'The receipt could not be opened. Please try again.'
+            );
+          }
+        );
       }
     },
     true
@@ -3010,20 +3098,27 @@
       cloneJson(response)
         .then(function (payload) {
           if (!response.ok) {
-            if (printWindow) {
-              printWindow.close();
-            }
-
             return;
           }
 
           state.checkoutResponsesCaptured += 1;
 
-          return printSaleInvoice(
-            checkoutSaleId(payload),
-            false,
-            printWindow
-          );
+          var completedSaleId =
+            checkoutSaleId(payload);
+
+          if (
+            completedSaleId !== null &&
+            completedSaleId !== undefined &&
+            completedSaleId !== ''
+          ) {
+            state.latestCheckoutSaleId =
+              Number(completedSaleId);
+
+            state.checkoutSalesRetained +=
+              1;
+          }
+
+          scheduleInterfaceCleanup();
         });
     }
 
@@ -3114,7 +3209,7 @@
     }
   );
 
-  window.__UBUZIMA_SALES_DOCUMENTS_V6__ = {
+  window.__UBUZIMA_SALES_DOCUMENTS_V7__ = {
     version: VERSION,
 
     diagnostics: function () {
@@ -3182,6 +3277,16 @@
           state.allowedNonblankWindows,
         suppressed_popup_document_writes:
           state.suppressedPopupDocumentWrites,
+        latest_checkout_sale_id:
+          state.latestCheckoutSaleId,
+        checkout_sales_retained:
+          state.checkoutSalesRetained,
+        automatic_receipt_opens:
+          state.automaticReceiptOpens,
+        manual_receipt_selections:
+          state.manualReceiptSelections,
+        receipt_open_policy:
+          'manual-print-receipt-only',
         inventory_interception:
           false,
         unrelated_request_interception:
@@ -3205,6 +3310,25 @@
       receiptShareText,
     suppressBlankCheckoutWindows:
       activateCheckoutBlankWindowSuppression,
+    openLatestReceipt:
+      function () {
+        if (!state.latestCheckoutSaleId) {
+          toast(
+            'No completed transaction is available for receipt printing.'
+          );
+
+          return Promise.resolve(null);
+        }
+
+        state.manualReceiptSelections +=
+          1;
+
+        return printSaleInvoice(
+          state.latestCheckoutSaleId,
+          false,
+          null
+        );
+      },
 
     reprint: function (id) {
       return printSaleInvoice(
