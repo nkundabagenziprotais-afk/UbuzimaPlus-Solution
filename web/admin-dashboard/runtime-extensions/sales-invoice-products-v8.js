@@ -1,12 +1,12 @@
 (function () {
   'use strict';
 
-  if (window.__UBUZIMA_SALES_DOCUMENTS_V7__) {
+  if (window.__UBUZIMA_SALES_DOCUMENTS_V8__) {
     return;
   }
 
   var VERSION =
-    '2026.08.sales-invoice-products-v7';
+    '2026.08.sales-invoice-products-v8';
 
   var SALES_SUFFIX =
     '/pharmaco/sales';
@@ -53,7 +53,10 @@
     latestCheckoutSaleId: null,
     checkoutSalesRetained: 0,
     automaticReceiptOpens: 0,
-    manualReceiptSelections: 0
+    manualReceiptSelections: 0,
+    globalBlankWindowsSuppressed: 0,
+    blankTargetNavigationsNeutralized: 0,
+    checkoutFocusRestorations: 0
   };
 
   var originalWindowOpen =
@@ -181,11 +184,11 @@
     target,
     features
   ) {
-    if (
-      checkoutBlankWindowSuppressionActive() &&
-      blankWindowRequest(url)
-    ) {
+    if (blankWindowRequest(url)) {
       state.blankCheckoutWindowsSuppressed +=
+        1;
+
+      state.globalBlankWindowsSuppressed +=
         1;
 
       return suppressedPopupShim();
@@ -203,6 +206,114 @@
       features
     );
   };
+
+  function blankNavigationRequest(
+    value
+  ) {
+    var text =
+      value === null ||
+      value === undefined
+        ? ''
+        : String(value).trim();
+
+    return (
+      blankWindowRequest(text) ||
+      text === '#' ||
+      /^javascript:\s*(void\s*\(\s*0\s*\)|;?)$/i
+        .test(text)
+    );
+  }
+
+  function neutralizeBlankTarget(
+    element
+  ) {
+    if (
+      !element ||
+      typeof element.getAttribute !==
+        'function'
+    ) {
+      return false;
+    }
+
+    var target =
+      String(
+        element.getAttribute(
+          'target'
+        ) || ''
+      ).toLowerCase();
+
+    if (target !== '_blank') {
+      return false;
+    }
+
+    var destination =
+      element.getAttribute(
+        'href'
+      );
+
+    if (
+      destination === null
+    ) {
+      destination =
+        element.getAttribute(
+          'action'
+        );
+    }
+
+    if (
+      !blankNavigationRequest(
+        destination
+      )
+    ) {
+      return false;
+    }
+
+    element.setAttribute(
+      'target',
+      '_self'
+    );
+
+    state.blankTargetNavigationsNeutralized +=
+      1;
+
+    return true;
+  }
+
+  document.addEventListener(
+    'click',
+    function (event) {
+      var target =
+        event.target instanceof Element
+          ? event.target
+          : null;
+
+      if (
+        target &&
+        typeof target.closest ===
+          'function'
+      ) {
+        neutralizeBlankTarget(
+          target.closest(
+            'a[target="_blank"],button[formtarget="_blank"]'
+          )
+        );
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'submit',
+    function (event) {
+      var form =
+        event.target instanceof Element
+          ? event.target
+          : null;
+
+      neutralizeBlankTarget(form);
+    },
+    true
+  );
 
   function triggerText(element) {
     if (!element) {
@@ -3119,6 +3230,16 @@
           }
 
           scheduleInterfaceCleanup();
+
+          try {
+            window.focus();
+
+            state.checkoutFocusRestorations +=
+              1;
+          } catch (error) {
+            // Remaining on the POS page does not
+            // depend on browser focus support.
+          }
         });
     }
 
@@ -3209,7 +3330,7 @@
     }
   );
 
-  window.__UBUZIMA_SALES_DOCUMENTS_V7__ = {
+  window.__UBUZIMA_SALES_DOCUMENTS_V8__ = {
     version: VERSION,
 
     diagnostics: function () {
@@ -3287,6 +3408,14 @@
           state.manualReceiptSelections,
         receipt_open_policy:
           'manual-print-receipt-only',
+        blank_window_policy:
+          'globally-block-empty-and-about-blank',
+        global_blank_windows_suppressed:
+          state.globalBlankWindowsSuppressed,
+        blank_target_navigations_neutralized:
+          state.blankTargetNavigationsNeutralized,
+        checkout_focus_restorations:
+          state.checkoutFocusRestorations,
         inventory_interception:
           false,
         unrelated_request_interception:
