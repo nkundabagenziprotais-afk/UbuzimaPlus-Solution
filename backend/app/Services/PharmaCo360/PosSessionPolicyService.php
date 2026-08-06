@@ -8,6 +8,49 @@ use Illuminate\Validation\ValidationException;
 
 class PosSessionPolicyService
 {
+    public function ensureNoActiveLiveTerminalSession(
+        int $tenantId,
+        int $branchId,
+        string $terminalIdentifier
+    ): void {
+        $activeSession =
+            PharmacoPosSession::query()
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'branch_id',
+                    $branchId
+                )
+                ->where(
+                    'session_mode',
+                    'live'
+                )
+                ->where(
+                    'terminal_identifier',
+                    $terminalIdentifier
+                )
+                ->whereIn(
+                    'status',
+                    [
+                        'open',
+                        'zeroized',
+                    ]
+                )
+                ->first();
+
+        if ($activeSession) {
+            throw ValidationException::withMessages([
+                'terminal_identifier' => [
+                    'This POS terminal already has an '
+                    . 'active live session. Close it '
+                    . 'before opening another.',
+                ],
+            ]);
+        }
+    }
+
     public function ensureNoPriorDailySession(
         int $tenantId,
         ?int $branchId,
@@ -69,10 +112,14 @@ public function ensureCanClose(
 public function expectedCash(
         PharmacoPosSession $session
     ): float {
-        $paymentQuery = PharmacoPayment::query()
+        $cashPayments = PharmacoPayment::query()
             ->where(
                 'tenant_id',
                 $session->tenant_id
+            )
+            ->where(
+                'pos_session_id',
+                $session->id
             )
             ->where(
                 'received_by',
@@ -85,59 +132,41 @@ public function expectedCash(
             ->where(
                 'status',
                 'completed'
-            );
-
-        if ($session->session_mode === 'historical') {
-            $paymentQuery->where(
-                'pos_session_id',
-                $session->id
-            );
-        } else {
-            $endingTime = $session->closed_at
-                ?? $session->zeroized_at
-                ?? now();
-
-            $paymentQuery
-                ->where(
-                    'received_at',
-                    '>=',
-                    $session->opened_at
-                )
-                ->where(
-                    'received_at',
-                    '<=',
-                    $endingTime
-                )
-                ->whereHas(
-                    'sale',
-                    function ($query) use ($session) {
-                        $query
-                            ->where(
-                                'tenant_id',
-                                $session->tenant_id
-                            )
-                            ->where(
-                                'branch_id',
-                                $session->branch_id
-                            )
-                            ->whereNotIn(
-                                'status',
-                                [
-                                    'cancelled',
-                                    'voided',
-                                ]
-                            );
-                    }
-                );
-        }
-
-        $cashPayments = $paymentQuery->sum('amount');
+            )
+            ->whereHas(
+                'sale',
+                function ($query) use ($session) {
+                    $query
+                        ->where(
+                            'tenant_id',
+                            $session->tenant_id
+                        )
+                        ->where(
+                            'branch_id',
+                            $session->branch_id
+                        )
+                        ->where(
+                            'pos_session_id',
+                            $session->id
+                        )
+                        ->whereNotIn(
+                            'status',
+                            [
+                                'cancelled',
+                                'voided',
+                            ]
+                        );
+                }
+            )
+            ->sum('amount');
 
         return round(
-            (float) $session->opening_float_amount
+            (float)
+            $session->opening_float_amount
             + (float) $cashPayments
             - (float) $session->cash_drop_amount
-            - (float) $session->balance_clearance_amount,
+            - (float)
+            $session->balance_clearance_amount,
             2
         );
     }
@@ -150,6 +179,20 @@ public function businessDate(): string
         );
 
         return now($timezone)->toDateString();
+    }
+
+    public function nextLiveSequence(
+        ?PharmacoPosSession $latestSession
+    ): int {
+        if (! $latestSession) {
+            return 1;
+        }
+
+        return max(
+            1,
+            (int)
+            $latestSession->sequence_number + 1
+        );
     }
 
 public function nextSequence(
@@ -172,7 +215,9 @@ public function nextSequence(
             ]);
         }
 
-        if ($latestSession->reset_authorized_at === null) {
+        if (! $this->hasResetAuthorization(
+            $latestSession
+        )) {
             throw ValidationException::withMessages([
                 'business_date' => [
                     'Only one POS session is permitted per user and '
@@ -200,6 +245,145 @@ public function ensureCanClearBalance(
         }
     }
 
+    public function hasResetAuthorization(
+        PharmacoPosSession $session
+    ): bool {
+        /*
+         * Backward compatibility for production rows created before
+         * authorization moved to immutable POS clock events.
+         */
+        if ($session->reset_authorized_at !== null) {
+            return true;
+        }
+
+        if (
+            $session->relationLoaded('events')
+            && $session->events->contains(
+                fn ($event): bool =>
+                    $event->event_type
+                    === 'admin_reset'
+            )
+        ) {
+            return true;
+        }
+
+        return $session->events()
+            ->where(
+                'event_type',
+                'admin_reset'
+            )
+            ->exists();
+    }
+
+    public function resetAuthorizationSnapshot(
+        PharmacoPosSession $session
+    ): ?array {
+        $event = null;
+
+        if ($session->relationLoaded('events')) {
+            $event = $session->events
+                ->where(
+                    'event_type',
+                    'admin_reset'
+                )
+                ->sortByDesc('id')
+                ->first();
+        }
+
+        if (! $event) {
+            $event = $session->events()
+                ->where(
+                    'event_type',
+                    'admin_reset'
+                )
+                ->latest('id')
+                ->first();
+        }
+
+        if ($event) {
+            $authorizer =
+                \App\Models\User::query()
+                    ->select([
+                        'id',
+                        'name',
+                        'email',
+                    ])
+                    ->find(
+                        $event->user_id
+                    );
+
+            return [
+                'authorized' => true,
+                'reason' =>
+                    $event->notes,
+                'authorized_at' =>
+                    $event->created_at,
+                'authorized_by' =>
+                    $event->user_id,
+                'authorizer' =>
+                    $authorizer
+                        ? [
+                            'id' =>
+                                $authorizer->id,
+                            'name' =>
+                                $authorizer->name,
+                            'email' =>
+                                $authorizer->email,
+                        ]
+                        : null,
+                'source' =>
+                    'clock_event',
+                'event_id' =>
+                    $event->id,
+            ];
+        }
+
+        if ($session->reset_authorized_at === null) {
+            return null;
+        }
+
+        $authorizer =
+            $session->relationLoaded(
+                'resetAuthorizer'
+            )
+                ? $session->resetAuthorizer
+                : \App\Models\User::query()
+                    ->select([
+                        'id',
+                        'name',
+                        'email',
+                    ])
+                    ->find(
+                        $session
+                            ->reset_authorized_by
+                    );
+
+        return [
+            'authorized' => true,
+            'reason' =>
+                $session->reset_reason,
+            'authorized_at' =>
+                $session->reset_authorized_at,
+            'authorized_by' =>
+                $session->reset_authorized_by,
+            'authorizer' =>
+                $authorizer
+                    ? [
+                        'id' =>
+                            $authorizer->id,
+                        'name' =>
+                            $authorizer->name,
+                        'email' =>
+                            $authorizer->email,
+                    ]
+                    : null,
+            'source' =>
+                'legacy_columns',
+            'event_id' =>
+                null,
+        ];
+    }
+
 public function ensureCanAuthorizeReset(
         PharmacoPosSession $session
     ): void {
@@ -215,7 +399,9 @@ public function ensureCanAuthorizeReset(
             ]);
         }
 
-        if ($session->reset_authorized_at !== null) {
+        if ($this->hasResetAuthorization(
+            $session
+        )) {
             throw ValidationException::withMessages([
                 'session' => [
                     'A reset has already been authorized '

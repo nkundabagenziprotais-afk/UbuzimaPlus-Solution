@@ -18,6 +18,8 @@ class PharmacoPosSession extends Model
         'user_id',
         'business_date',
         'session_mode',
+        'terminal_identifier',
+        'terminal_label',
         'historical_reason',
         'historical_reference',
         'historical_approval_id',
@@ -54,6 +56,44 @@ class PharmacoPosSession extends Model
         'reset_authorized_at' => 'datetime',
         'metadata' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(
+            function (
+                self $session
+            ): void {
+                $wasClosed =
+                    $session->getOriginal(
+                        'status'
+                    ) === 'closed'
+                    || $session->getOriginal(
+                        'closed_at'
+                    ) !== null;
+
+                if ($wasClosed) {
+                    throw new \LogicException(
+                        'Closed POS sessions are immutable.'
+                    );
+                }
+            }
+        );
+
+        static::deleting(
+            function (
+                self $session
+            ): void {
+                if (
+                    $session->status === 'closed'
+                    || $session->closed_at !== null
+                ) {
+                    throw new \LogicException(
+                        'Closed POS sessions cannot be deleted.'
+                    );
+                }
+            }
+        );
+    }
 
     public function branch(): BelongsTo
     {
