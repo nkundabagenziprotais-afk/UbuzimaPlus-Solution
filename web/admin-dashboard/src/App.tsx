@@ -51,6 +51,7 @@ import {
   type PosSession,
   closePosSession,
   getCurrentPosSession,
+  getOrCreatePosTerminalIdentity,
   openPosSession,
   zeroizePosSession,
 } from './lib/posSessionApi';
@@ -3336,6 +3337,10 @@ type B2TenantSecurityUser = {
   job_title?: string | null;
   status?: string | null;
   two_factor_required?: boolean | null;
+  branch?: {
+    id: number;
+    name: string;
+  } | null;
   roles?: B2TenantSecurityRole[];
 };
 
@@ -3351,6 +3356,7 @@ type B2TenantUserForm = {
   email: string;
   phone: string;
   job_title: string;
+  branch_id: string;
   role_code: string;
   status: string;
   password: string;
@@ -3362,6 +3368,7 @@ const emptyB2TenantUserForm: B2TenantUserForm = {
   email: '',
   phone: '',
   job_title: '',
+  branch_id: '',
   role_code: '',
   status: 'active',
   password: '',
@@ -3428,6 +3435,12 @@ function TenantSecurityUserManagementPanel({
   const tenantSlug = extractB2TenantSlug(profile);
   const [users, setUsers] = useState<B2TenantSecurityUser[]>([]);
   const [roles, setRoles] = useState<B2TenantSecurityRoleTemplate[]>([]);
+  const [branches, setBranches] = useState<Array<{
+    id: number;
+    name: string;
+    code?: string | null;
+    status?: string | null;
+  }>>([]);
   const [form, setForm] = useState<B2TenantUserForm>(emptyB2TenantUserForm);
   const [editingUser, setEditingUser] = useState<B2TenantSecurityUser | null>(null);
   const [resetTarget, setResetTarget] = useState<B2TenantSecurityUser | null>(null);
@@ -3454,16 +3467,31 @@ function TenantSecurityUserManagementPanel({
     setError(null);
 
     try {
-      const [roleResponse, userResponse] = await Promise.all([
+      const [
+        roleResponse,
+        userResponse,
+        branchResponse,
+      ] = await Promise.all([
         getTenantSecurityRoleTemplates(token, tenantSlug),
         getTenantSecurityUsers(token, tenantSlug),
+        getPharmaBranches(token, tenantSlug),
       ]);
 
       const loadedRoles = Array.isArray(roleResponse.roles)
         ? roleResponse.roles as B2TenantSecurityRoleTemplate[]
         : [];
 
+      const loadedBranches =
+        Array.isArray(branchResponse.branches)
+          ? branchResponse.branches.filter(
+              (branch) =>
+                !branch.status
+                || branch.status === 'active',
+            )
+          : [];
+
       setRoles(loadedRoles);
+      setBranches(loadedBranches);
       setUsers(Array.isArray(userResponse.users) ? userResponse.users as B2TenantSecurityUser[] : []);
 
       setForm((current) => ({
@@ -3490,6 +3518,7 @@ function TenantSecurityUserManagementPanel({
     setForm({
       ...emptyB2TenantUserForm,
       role_code: roleOptions[0]?.code ?? 'tenant_admin',
+      branch_id: '',
       password: generateB2TemporaryPassword(),
     });
     setNotice('Create a handover-ready user with a clear role, active status, and controlled temporary password.');
@@ -3503,6 +3532,7 @@ function TenantSecurityUserManagementPanel({
       email: user.email ?? '',
       phone: user.phone ?? '',
       job_title: user.job_title ?? '',
+      branch_id: String(user.branch?.id ?? ''),
       role_code: getB2RoleCode(user) || roleOptions[0]?.code || 'tenant_admin',
       status: user.status ?? 'active',
       password: '',
@@ -3530,12 +3560,24 @@ function TenantSecurityUserManagementPanel({
         throw new Error('Role is required.');
       }
 
+      const branchId = Number(form.branch_id);
+
+      if (
+        !Number.isInteger(branchId)
+        || branchId <= 0
+      ) {
+        throw new Error(
+          'Select an active assigned branch.',
+        );
+      }
+
       const payload = {
         tenant_slug: tenantSlug,
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim() || undefined,
         job_title: form.job_title.trim() || undefined,
+        branch_id: branchId,
         access_assignment_mode: 'predefined_role' as const,
         role_code: form.role_code,
         status: form.status,
@@ -3691,7 +3733,7 @@ function TenantSecurityUserManagementPanel({
               <span>{editingUser ? 'Update user' : 'Create user'}</span>
               <h3>{editingUser ? editingUser.name : 'New staff account'}</h3>
               <p className="muted">
-                Clean handover fields only: identity, role, status, and security.
+                Identity, assigned branch, role, status, and security for a controlled staff handover.
               </p>
             </div>
           </div>
@@ -3728,6 +3770,40 @@ function TenantSecurityUserManagementPanel({
                     </option>
                   ))}
                 </select>
+              </label>
+              <label>
+                <span>Assigned branch</span>
+                <select
+                  value={form.branch_id}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      branch_id: event.target.value,
+                    }))
+                  }
+                  disabled={branches.length === 0}
+                  required
+                >
+                  <option value="">
+                    Select an active branch
+                  </option>
+                  {branches.map((branch) => (
+                    <option
+                      key={branch.id}
+                      value={String(branch.id)}
+                    >
+                      {branch.name}
+                      {branch.code
+                        ? ` (${branch.code})`
+                        : ''}
+                    </option>
+                  ))}
+                </select>
+                {branches.length === 0 ? (
+                  <small>
+                    No active branch is available for assignment.
+                  </small>
+                ) : null}
               </label>
               <label>
                 <span>Status</span>
@@ -3837,6 +3913,7 @@ function TenantSecurityUserManagementPanel({
               <tr>
                 <th>User</th>
                 <th>Role</th>
+                <th>Branch</th>
                 <th>Status</th>
                 <th>2FA</th>
                 <th>Actions</th>
@@ -3845,7 +3922,7 @@ function TenantSecurityUserManagementPanel({
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>No users loaded yet.</td>
+                  <td colSpan={6}>No users loaded yet.</td>
                 </tr>
               ) : users.map((user) => (
                 <tr key={user.id}>
@@ -3857,6 +3934,16 @@ function TenantSecurityUserManagementPanel({
                   <td>
                     <strong>{getB2RoleName(user)}</strong>
                     <small>{user.job_title || 'Job title pending'}</small>
+                  </td>
+                  <td>
+                    <strong>
+                      {user.branch?.name || 'Not assigned'}
+                    </strong>
+                    <small>
+                      {user.branch
+                        ? 'Assigned for operations'
+                        : 'POS access unavailable'}
+                    </small>
                   </td>
                   <td>
                     <span className={`ubuzima-user-status ubuzima-user-status--${String(user.status ?? 'pending').toLowerCase()}`}>
@@ -4212,6 +4299,11 @@ function App() {
   const posSessionTenantSlug =
     profile?.tenant_assignments?.[0]?.tenant?.slug || '';
 
+  const posTerminalIdentity = useMemo(
+    () => getOrCreatePosTerminalIdentity(),
+    [],
+  );
+
   const posSessionBranchId =
     profile?.scope.branch_id ??
     profile?.tenant_assignments?.find(
@@ -4222,14 +4314,14 @@ function App() {
     profile?.tenant_assignments?.find(
       (assignment) => assignment.branch,
     )?.branch?.id ??
-    pharmaCore.branches?.branches?.[0]?.id ??
     null;
 
   useEffect(() => {
     if (
       activeSection !== 'pos' ||
       !session?.token ||
-      !posSessionTenantSlug
+      !posSessionTenantSlug ||
+      !posSessionBranchId
     ) {
       return;
     }
@@ -4238,10 +4330,14 @@ function App() {
 
     setIsLoadingPosSession(true);
 
-    void getCurrentPosSession({
-      token: session.token,
-      tenantSlug: posSessionTenantSlug,
-    })
+    void getCurrentPosSession(
+      {
+        token: session.token,
+        tenantSlug: posSessionTenantSlug,
+      },
+      Number(posSessionBranchId),
+      posTerminalIdentity.identifier,
+    )
       .then((response) => {
         if (cancelled) {
           return;
@@ -4285,7 +4381,9 @@ function App() {
     };
   }, [
     activeSection,
+    posSessionBranchId,
     posSessionTenantSlug,
+    posTerminalIdentity.identifier,
     session?.token,
   ]);
 
@@ -6446,6 +6544,10 @@ function App() {
           },
           {
             branch_id: posSessionBranchId,
+            terminal_identifier:
+              posTerminalIdentity.identifier,
+            terminal_label:
+              posTerminalIdentity.label,
             opening_float_amount: openingFloatAmount,
             opening_mode: posOpeningMode,
           },
@@ -6690,10 +6792,14 @@ async function confirmTransaction() {
       if (activeCheckoutSession?.status !== 'open') {
         try {
           const currentSessionResponse =
-            await getCurrentPosSession({
-              token: session.token,
-              tenantSlug: posSessionTenantSlug,
-            });
+            await getCurrentPosSession(
+              {
+                token: session.token,
+                tenantSlug: posSessionTenantSlug,
+              },
+              Number(posSessionBranchId),
+              posTerminalIdentity.identifier,
+            );
 
           activeCheckoutSession =
             currentSessionResponse.session;
@@ -6782,6 +6888,10 @@ async function confirmTransaction() {
             {
               idempotency_key: posCheckoutKey,
               branch_id: branchId,
+              pos_session_id:
+                activeCheckoutSession.id,
+              terminal_identifier:
+                posTerminalIdentity.identifier,
               sale_type: saleType,
               discount_amount:
                 Math.max(
