@@ -6511,15 +6511,7 @@ function App() {
       commitPosCounterItems(nextItems);
       closePosQuantityPopup();
 
-      setPosNotice(
-        `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}`
-        + (
-          calculation.otherQuantity > 0
-            ? ` + ${calculation.otherQuantity.toLocaleString('en-RW')} ${product.baseUnit}`
-            : ''
-        )
-        + `. Selling amount: RWF ${usedSellingUnitPrice.toLocaleString('en-RW')}.`,
-      );
+      setPosNotice("");
     }
 
     function updateCartQuantity(
