@@ -1,0 +1,37 @@
+/*
+ * Ubuzima+ POS Catalogue Visibility — Layer 1A
+ *
+ * Purpose:
+ * Preserve the approved POS layout and card styling while ensuring
+ * that all eligible catalogue rows remain reachable inside the
+ * existing finite-height product panel.
+ *
+ * Root cause:
+ * The approved stylesheet gives the catalogue a finite height and,
+ * in the final desktop cascade, overflow: visible while the parent
+ * product panel remains overflow: hidden. Products outside the
+ * visible box are therefore clipped.
+ *
+ * This extension changes scrolling only.
+ * It does not alter:
+ * - catalogue data
+ * - eligibility
+ * - search
+ * - FEFO
+ * - cards
+ * - columns
+ * - card height
+ * - colors
+ * - spacing
+ * - checkout
+ */
+
+:root {
+    --ubuzima-pos-catalogue-scroll-layer1: 1;
+}
+
+.pos-product-stock-section > .pos-drug-list.pos-drug-list--ten,
+.pos-builder-product-panel > .pos-drug-list.pos-drug-list--ten {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
