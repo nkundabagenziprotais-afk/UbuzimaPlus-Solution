@@ -1,0 +1,39 @@
+/*
+|--------------------------------------------------------------------------
+| UBUZIMA POS APPROVED FEATURE SUPPORT V14
+|--------------------------------------------------------------------------
+| These selectors apply only to elements introduced by the POS receipt /
+| products package. No approved existing UI selector is overridden.
+*/
+
+.pos-thermal-receipt-source {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 80mm;
+  max-width: 80mm;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: #ffffff;
+  color: #111111;
+}
+
+.pos-thermal-receipt-source small {
+  display: block;
+}
+
+.pos-sale-products-cell {
+  min-width: 250px;
+  max-width: 380px;
+  white-space: normal !important;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  color: #334155;
+}
+
+@media (max-width: 767px) {
+  .pos-sale-products-cell {
+    min-width: 210px;
+  }
+}

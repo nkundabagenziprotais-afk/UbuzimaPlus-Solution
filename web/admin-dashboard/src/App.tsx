@@ -6,6 +6,187 @@ import {
   useMemo,
   useState } from 'react';   type PosBatchProduct = PharmaStockBatch['product'] & {   selling_unit?: string | null;   base_unit?: string | null;   unit?: string | null;   quantity_per_selling_unit?: number | string | null;   allow_other_quantity?: boolean | null;   default_pos_quantity_mode?: string | null; };  type UbuzimaHandoverLiveAnalytics = PharmaLiveBusinessAnalyticsResponse | null;
 
+
+/* AQUILA_POS_PRODUCT_SUMMARY_V5 */
+function buildPosReceiptLines(
+  sale: {
+    items?: Array<{
+      product?: {
+        id?: number;
+        name?: string | null;
+      } | null;
+      product_name_snapshot?: string | null;
+      quantity?: number | string | null;
+      unit_price?: number | string | null;
+      line_total?: number | string | null;
+    }>;
+  },
+): Array<{
+  key: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}> {
+  const grouped = new Map<
+    string,
+    {
+      key: string;
+      name: string;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }
+  >();
+
+  (
+    Array.isArray(sale.items)
+      ? sale.items
+      : []
+  ).forEach((item) => {
+    const name = String(
+      item.product_name_snapshot
+      ?? item.product?.name
+      ?? 'Unnamed product',
+    ).trim();
+
+    const quantity =
+      Number(item.quantity ?? 0);
+
+    const unitPrice =
+      Number(item.unit_price ?? 0);
+
+    const lineTotal =
+      Number(
+        item.line_total
+        ?? quantity * unitPrice,
+      );
+
+    const key = [
+      String(item.product?.id ?? name),
+      String(unitPrice),
+    ].join(':');
+
+    const existing = grouped.get(key);
+
+    if (existing) {
+      existing.quantity +=
+        Number.isFinite(quantity)
+          ? quantity
+          : 0;
+
+      existing.total +=
+        Number.isFinite(lineTotal)
+          ? lineTotal
+          : 0;
+
+      return;
+    }
+
+    grouped.set(
+      key,
+      {
+        key,
+        name,
+        quantity:
+          Number.isFinite(quantity)
+            ? quantity
+            : 0,
+        unitPrice:
+          Number.isFinite(unitPrice)
+            ? unitPrice
+            : 0,
+        total:
+          Number.isFinite(lineTotal)
+            ? lineTotal
+            : 0,
+      },
+    );
+  });
+
+  return Array.from(
+    grouped.values(),
+  );
+}
+
+function formatPosSaleProducts(
+  sale: {
+    items?: Array<{
+      product?: {
+        id?: number;
+        name?: string | null;
+      } | null;
+      product_name_snapshot?: string | null;
+      quantity?: number | string | null;
+      unit_price?: number | string | null;
+      line_total?: number | string | null;
+    }>;
+  },
+): string {
+  const summaries =
+    buildPosReceiptLines(sale).map(
+      (line) =>
+        `${line.name} × ${line.quantity.toLocaleString(
+          'en-RW',
+          {
+            maximumFractionDigits: 4,
+          },
+        )}`,
+    );
+
+  if (summaries.length === 0) {
+    return 'Product details unavailable';
+  }
+
+  const visible =
+    summaries.slice(0, 3);
+
+  const remaining =
+    summaries.length - visible.length;
+
+  if (remaining > 0) {
+    visible.push(
+      `+${remaining} more`,
+    );
+  }
+
+  return visible.join(', ');
+}
+
+function readPosReceiptCustomer(
+  sale: unknown,
+): string {
+  if (
+    !sale
+    || typeof sale !== 'object'
+  ) {
+    return 'Walk-in customer';
+  }
+
+  const customer =
+    (sale as Record<string, unknown>)
+      .customer;
+
+  if (
+    !customer
+    || typeof customer !== 'object'
+  ) {
+    return 'Walk-in customer';
+  }
+
+  const record =
+    customer as Record<string, unknown>;
+
+  const name =
+    record.full_name
+    ?? record.name;
+
+  return typeof name === 'string'
+    && name.trim()
+      ? name.trim()
+      : 'Walk-in customer';
+}
+
 function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser | null | undefined): string {   const name = transaction?.operator_name?.trim();    if (name) {     return name;   }    const email = transaction?.operator_email?.trim();    if (email) {     return email;   }    return 'Recorded user'; }  function normalizeUbuzimaTransactionDate(value: string | null | undefined): string | null {   if (!value) {     return null;   }    const dateOnlyMatch = value.match(/^\d{4}-\d{2}-\d{2}/);    return dateOnlyMatch ? dateOnlyMatch[0] : value; }  function formatUbuzimaMoney(value: number | string | null | undefined): string {   const amount = Number(value ?? 0);    return `RWF ${(Number.isFinite(amount) ? amount : 0).toLocaleString('en-RW')}`; }  function printUbuzimaPosDocument(): void {   const nativePrint = window.print.bind(window);    document.body.classList.add('ubuzima-pos-print-mode');    window.setTimeout(() => {     nativePrint();      window.setTimeout(() => {       document.body.classList.remove('ubuzima-pos-print-mode');     },
   250);   },
   50); }  function configuredPosTaxMode(): 'inclusive' | 'exclusive' {   return 'inclusive'; }  type PosInventoryAutoLoaderProps = {   shouldLoad: boolean;   onLoad: () => void | Promise<void>; };  function PosInventoryAutoLoader({ shouldLoad,
@@ -25,6 +206,7 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   getCorporateMailOverview,
   getPharmaBranches,
   getPharmaInventoryBatches,
+  getAllPharmaInventoryBatches,
   getPharmacyProfile,
   login,
   logout,
@@ -45,7 +227,12 @@ function formatUbuzimaOperatorName(transaction: PharmaRecentTransactionWithUser 
   createTenantSecurityUser,
   updateTenantSecurityUser,
   adminResetTenantSecurityUserPassword,
+  getPharmaSale,
 } from './lib/api';
+import { printThermalElement } from './lib/thermalPrint';
+import {
+  SaleReceiptReprintButton,
+} from './components/SaleReceiptReprintButton';
 import {
   type PosSession,
   closePosSession,
@@ -5961,7 +6148,7 @@ function App() {
       setPosNotice('');
 
       try {
-        const response = await getPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { perPage: 1000, sellableOnly: true });
+        const response = await getAllPharmaInventoryBatches(session!.token, posTenantSlug, undefined, { sellableOnly: true });
         const batches = response.batches || [];
 
         setPosInventoryBatches(batches);
@@ -6240,13 +6427,7 @@ function App() {
       commitPosCounterItems(nextItems);
       closePosQuantityPopup();
 
-      setPosNotice(
-        `${product.name} added: ${calculation.sellingUnitQuantity.toLocaleString('en-RW')} ${product.sellingUnit} × ${product.quantityPerSellingUnit.toLocaleString('en-RW')} ${product.baseUnit}` +
-          (calculation.otherQuantity > 0
-            ? ` + ${calculation.otherQuantity.toLocaleString('en-RW')} ${product.baseUnit}`
-            : '') +
-          `. Selling amount: RWF ${usedSellingUnitPrice.toLocaleString('en-RW')}.`,
-      );
+      setPosNotice("");
     }
 
     function updateCartQuantity(code: string, quantity: number) {
@@ -6499,7 +6680,42 @@ function App() {
           },
         );
 
-        setPosRecentSales(orderedSales);
+        /*
+         * AQUILA_POS_RECENT_DETAIL_HYDRATION_V5
+         *
+         * Once the optimized backend list is promoted, these
+         * detail requests are skipped because items are present.
+         */
+        const salesWithProductDetails =
+          await Promise.all(
+            orderedSales.map(
+              async (sale) => {
+                if (
+                  Array.isArray(sale.items)
+                  && sale.items.length > 0
+                ) {
+                  return sale;
+                }
+
+                try {
+                  const detail =
+                    await getPharmaSale(
+                      session.token,
+                      posTenantSlug,
+                      sale.id,
+                    );
+
+                  return detail.sale;
+                } catch {
+                  return sale;
+                }
+              },
+            ),
+          );
+
+        setPosRecentSales(
+          salesWithProductDetails,
+        );
       } catch (error: unknown) {
         setPosNotice(
           error instanceof Error
@@ -6712,7 +6928,22 @@ async function confirmTransaction() {
             },
           );
 
-        setPosConfirmedSale(checkoutResponse.sale);
+        let receiptSale = checkoutResponse.sale;
+
+        try {
+          const receiptSaleResponse =
+            await getPharmaSale(
+              session.token,
+              posTenantSlug,
+              checkoutResponse.sale.id,
+            );
+
+          receiptSale = receiptSaleResponse.sale;
+        } catch {
+          /* Checkout response remains the safe fallback. */
+        }
+
+        setPosConfirmedSale(receiptSale);
         setPosConfirmedPayment(checkoutResponse.payment);
         setPosTransactionConfirmed(true);
 
@@ -6921,6 +7152,7 @@ async function confirmTransaction() {
       const priceImpact = posSalePriceImpactSummary(sale);
 
       return {
+      sale,
       dateTime: (sale as { payments?: Array<{ received_at?: string | null }> }).payments?.[0]?.received_at || sale.sold_at || sale.created_at
         ? new Date(
             sale.sold_at
@@ -6935,6 +7167,7 @@ async function confirmTransaction() {
             ?? null,
         ) ?? '—',
       saleNumber: sale.sale_number,
+      products: formatPosSaleProducts(sale),
       customer:
         sale.customer?.full_name
         ?? 'Walk-in customer',
@@ -7987,12 +8220,199 @@ async function confirmTransaction() {
                         <strong>Transaction Successful</strong>
                       </article>
 
-                      <article className="pos-summary-field-card pos-summary-field-card--financial pos-transaction-print-card">
+                                      {/* AQUILA_POS_RECEIPT_SOURCE_V5 */}
+                {posTransactionConfirmed
+                  && posConfirmedSale
+                  && posConfirmedPayment?.receipt_number
+                  && (
+                    <section
+                      id="pos-receipt-print-area"
+                      className="pos-thermal-receipt-source"
+                      aria-hidden="true"
+                    >
+                      <header className="pos-thermal-receipt__header">
+                        <strong>Customer receipt</strong>
+                        <span>Ubuzima+</span>
+                        <small>Original completed-sale record</small>
+                      </header>
+
+                      <div className="pos-thermal-receipt__meta">
+                        <div>
+                          <span>Receipt</span>
+                          <strong>{posConfirmedPayment.receipt_number}</strong>
+                        </div>
+                        <div>
+                          <span>Sale</span>
+                          <strong>{posConfirmedSale.sale_number}</strong>
+                        </div>
+                        <div>
+                          <span>Date</span>
+                          <strong>
+                            {posConfirmedPayment.received_at
+                              ? new Date(
+                                  posConfirmedPayment.received_at,
+                                ).toLocaleString('en-RW')
+                              : posConfirmedSale.business_date
+                                ?? 'Current business day'}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Business date</span>
+                          <strong>
+                            {posConfirmedSale.business_date
+                              ?? 'Current business day'}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Customer</span>
+                          <strong>
+                            {readPosReceiptCustomer(posConfirmedSale)}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Payment</span>
+                          <strong>
+                            {String(
+                              posConfirmedPayment.payment_method,
+                            ).replaceAll('_', ' ')}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            <th>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {buildPosReceiptLines(
+                            posConfirmedSale,
+                          ).map((line) => (
+                            <tr
+                              key={line.key}
+                              data-pos-receipt-line="true"
+                            >
+                              <td>
+                                {line.name}
+                                <small>
+                                  RWF{' '}
+                                  {line.unitPrice.toLocaleString('en-RW')}
+                                </small>
+                              </td>
+                              <td>
+                                {line.quantity.toLocaleString(
+                                  'en-RW',
+                                  {
+                                    maximumFractionDigits: 4,
+                                  },
+                                )}
+                              </td>
+                              <td>
+                                RWF{' '}
+                                {line.total.toLocaleString('en-RW')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      <div className="pos-thermal-receipt__totals">
+                        <div className="pos-thermal-receipt__total-row">
+                          <span>Subtotal</span>
+                          <strong>
+                            RWF{' '}
+                            {Number(
+                              posConfirmedSale.subtotal_amount
+                              ?? 0,
+                            ).toLocaleString('en-RW')}
+                          </strong>
+                        </div>
+                        <div className="pos-thermal-receipt__total-row">
+                          <span>Discount</span>
+                          <strong>
+                            RWF{' '}
+                            {Number(
+                              posConfirmedSale.discount_amount
+                              ?? 0,
+                            ).toLocaleString('en-RW')}
+                          </strong>
+                        </div>
+                        <div className="pos-thermal-receipt__total-row">
+                          <span>Tax</span>
+                          <strong>
+                            RWF{' '}
+                            {Number(
+                              posConfirmedSale.tax_amount
+                              ?? 0,
+                            ).toLocaleString('en-RW')}
+                          </strong>
+                        </div>
+                        <div className="pos-thermal-receipt__total-row pos-thermal-receipt__total-row--grand">
+                          <span>Total</span>
+                          <strong>
+                            RWF{' '}
+                            {Number(
+                              posConfirmedSale.total_amount
+                              ?? 0,
+                            ).toLocaleString('en-RW')}
+                          </strong>
+                        </div>
+                        <div className="pos-thermal-receipt__total-row">
+                          <span>Paid</span>
+                          <strong>
+                            RWF{' '}
+                            {Number(
+                              posConfirmedSale.paid_amount
+                              ?? 0,
+                            ).toLocaleString('en-RW')}
+                          </strong>
+                        </div>
+                        <div className="pos-thermal-receipt__total-row">
+                          <span>Balance</span>
+                          <strong>
+                            RWF{' '}
+                            {Number(
+                              posConfirmedSale.balance_amount
+                              ?? 0,
+                            ).toLocaleString('en-RW')}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <footer className="pos-thermal-receipt__footer">
+                        <strong>Thank you for your business</strong>
+                        <small>
+                          Keep this receipt for returns and enquiries.
+                        </small>
+                      </footer>
+                    </section>
+                  )}
+
+<article className="pos-summary-field-card pos-summary-field-card--financial pos-transaction-print-card">
                         <span>Print Receipt</span>
                         <button
                           type="button"
                           className="pos-print-receipt-button"
-                          onClick={() => printUbuzimaPosDocument()}
+                          onClick={() => {
+                              void printThermalElement(
+                                'pos-receipt-print-area',
+                                {
+                                  documentTitle:
+                                    posConfirmedPayment?.receipt_number
+                                    ?? 'Customer receipt',
+                                  paperWidthMm: 80,
+                                },
+                              ).catch((error) => {
+                                setPosNotice(
+                                  error instanceof Error
+                                    ? error.message
+                                    : 'The customer receipt could not be printed.',
+                                );
+                              });
+                            }}
                           disabled={!posConfirmedPayment?.receipt_number}
                         >
                           Print Receipt
@@ -8193,34 +8613,43 @@ async function confirmTransaction() {
                       <th>Business Date</th>
                       <th>Sale No.</th>
                       <th>Customer</th>
+                      <th>Products</th>
                       <th>Method</th>
                       <th>Status</th>
                       <th>Original Price</th>
                       <th>Used Price</th>
                       <th>Difference</th>
                       <th>Total</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {posRecentTransactionRows.length === 0 ? (
                       <tr>
-                        <td colSpan={10}>
+                        <td colSpan={12}>
                           No matching transactions are available. Confirm a sale or refresh the synchronized sales feed.
                         </td>
                       </tr>
                     ) : (
-                      posRecentTransactionRows.map(({ dateTime, businessDate, saleNumber, customer, method, status, originalPrice, usedPrice, priceDifference, amount }) => (
+                      posRecentTransactionRows.map(({ sale, dateTime, businessDate, saleNumber, customer, products, method, status, originalPrice, usedPrice, priceDifference, amount }) => (
                         <tr key={saleNumber}>
                           <td>{dateTime}</td>
                           <td>{businessDate}</td>
                           <td>{saleNumber}</td>
                           <td>{customer}</td>
+                          <td className="pos-sale-products-cell">{products}</td>
                           <td>{method}</td>
                           <td>{status}</td>
                           <td>{originalPrice}</td>
                           <td>{usedPrice}</td>
                           <td>{priceDifference}</td>
                           <td>{amount}</td>
+                          <td>
+                            <SaleReceiptReprintButton
+                              sale={sale}
+                              label="Reprint"
+                            />
+                          </td>
                         </tr>
                       ))
                     )}

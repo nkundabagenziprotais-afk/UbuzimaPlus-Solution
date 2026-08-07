@@ -20,6 +20,10 @@ import {
 } from '../lib/api';
 
 import {
+  SaleReceiptReprintButton,
+} from './SaleReceiptReprintButton';
+
+import {
   type PaymentReconciliation,
   type SaleRefundMethod,
   type SaleReturn,
@@ -283,6 +287,76 @@ function paymentLabel(
     : method;
 }
 
+
+
+type SalesRegisterProductLine = {
+  product_name?: string | null;
+  product_name_snapshot?: string | null;
+  sku?: string | null;
+  quantity?: number | string | null;
+};
+
+type SalesRegisterSaleWithProducts = PharmaSale & {
+  product_lines?: SalesRegisterProductLine[];
+};
+
+function salesRegisterProductSummary(
+  sale: PharmaSale,
+): string {
+  const persistedLines =
+    (
+      sale as SalesRegisterSaleWithProducts
+    ).product_lines ?? [];
+
+  const lines: SalesRegisterProductLine[] =
+    persistedLines.length > 0
+      ? persistedLines
+      : (sale.items ?? []).map(
+          (item) => ({
+            product_name:
+              item.product_name_snapshot
+              || item.product?.name
+              || 'Product',
+            product_name_snapshot:
+              item.product_name_snapshot,
+            sku:
+              item.sku_snapshot
+              || item.product?.sku
+              || null,
+            quantity: item.quantity,
+          }),
+        );
+
+  if (lines.length === 0) {
+    return 'No saved product lines';
+  }
+
+  return lines
+    .map((line) => {
+      const name =
+        line.product_name
+        || line.product_name_snapshot
+        || 'Product';
+
+      const parsedQuantity =
+        Number(line.quantity ?? 0);
+
+      const quantity =
+        Number.isFinite(parsedQuantity)
+          ? parsedQuantity.toLocaleString(
+              'en-RW',
+              {
+                maximumFractionDigits: 3,
+              },
+            )
+          : String(
+              line.quantity ?? '0',
+            );
+
+      return `${name} × ${quantity}`;
+    })
+    .join(' · ');
+}
 
 function managedSalesRecord(
   value: unknown,
@@ -959,7 +1033,7 @@ function SalesReturnsWorkspaceContent({
       'Sale Type',
       'Payment Status',
       'Sale Status',
-      'Items',
+      'Products',
       'Total',
       'Paid',
       'Balance',
@@ -989,10 +1063,7 @@ function SalesReturnsWorkspaceContent({
           managedSalesLabel(
             record.status,
           ),
-          managedSalesNumber(
-            record.items_count ??
-            sale.items?.length,
-          ),
+          salesRegisterProductSummary(sale),
           managedSalesNumber(
             record.total_amount,
           ),
@@ -1947,7 +2018,7 @@ function SalesReturnsWorkspaceContent({
                     <th>Sale Type</th>
                     <th>Payment</th>
                     <th>Status</th>
-                    <th>Items</th>
+                    <th>Products</th>
                     <th>Total</th>
                     <th>Balance</th>
                     <th>Actions</th>
@@ -2026,11 +2097,18 @@ function SalesReturnsWorkspaceContent({
                               </span>
                             </td>
 
-                            <td>
-                              {sale.items?.length ??
-                                managedSalesNumber(
-                                  record.items_count,
-                                )}
+                                                        <td
+                              style={{
+                                minWidth: '260px',
+                                maxWidth: '380px',
+                                whiteSpace: 'normal',
+                                overflowWrap: 'anywhere',
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {salesRegisterProductSummary(
+                                sale,
+                              )}
                             </td>
 
                             <td>
@@ -2995,11 +3073,17 @@ function SalesReturnsWorkspaceContent({
               </h3>
 
               {selectedSale && (
-                <p className="muted">
-                  {customerName(selectedSale)} ·{' '}
-                  {selectedSale.branch?.name ??
-                    'Main branch'}
-                </p>
+                <>
+                  <p className="muted">
+                    {customerName(selectedSale)} ·{' '}
+                    {selectedSale.branch?.name ??
+                      'Main branch'}
+                  </p>
+
+                  <SaleReceiptReprintButton
+                    sale={selectedSale}
+                  />
+                </>
               )}
             </div>
 
