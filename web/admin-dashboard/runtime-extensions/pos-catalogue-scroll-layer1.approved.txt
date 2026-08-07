@@ -1,0 +1,38 @@
+UBUZIMA+ APPROVED TEST RUNTIME LAYER
+layer=pos-catalogue-scroll-layer1a
+uat_status=PASS
+approved_date=2026-08-07
+
+business_purpose=Ensure all eligible POS catalogue rows remain reachable without altering the approved product-card UI.
+
+source_extension=web/admin-dashboard/runtime-extensions/pos-catalogue-scroll-layer1.css
+source_css_sha=133e877b1cb5425c89e0956c9d6fbc19739c379c6a211be8f31c479454478c9e
+
+runtime_css=/admin/assets/pos-catalogue-scroll-layer1-91c3464889.css
+runtime_css_sha=133e877b1cb5425c89e0956c9d6fbc19739c379c6a211be8f31c479454478c9e
+
+runtime_integration=Load this stylesheet after /admin/assets/index-Bw2iNh5W.css in admin/index.html.
+
+locked_main_js=/admin/assets/index-Du9B3n-5-inventory-active-supplier-20260801T085413Z-supplier-create-8a0c037.js
+locked_main_js_sha=337fde56c466b3d8b856f03b7f387eb8b7bd37d5673b99117143cd8f7fd91a59
+
+locked_base_css=/admin/assets/index-Bw2iNh5W.css
+locked_base_css_sha=faa5c4ec933de92656d4d43d7efdfc3265f539f8c051ccc129b533617dfaa70b
+
+approved_test_runtime_hash=1a1ce6f8726b4a4424b293c391eca5c89332b677b35bd3b7e9d72f0eecd5d249
+production_runtime_hash=d993944252b38d005bf828c16d4f36c5ec95794777775e2ce3e776639d38e35b
+test_backend_commit=cbde8f57acdd4b5d38d5f6e8912972c92e3b5f9a
+
+users_security_branch_action_v3=LOCKED
+pos_terminal_context_v5=LOCKED
+
+frontend_rebuild_allowed=NO
+replace_locked_main_js=NO
+replace_locked_base_css=NO
+production_deployment=REQUIRES_EXPLICIT_APPROVAL
+
+uat_catalogue_scroll=PASS
+uat_moods_banana=PASS
+uat_fercefol=PASS
+uat_deep_catalogue_scroll=PASS
+uat_branch_terminal_context=PASS
