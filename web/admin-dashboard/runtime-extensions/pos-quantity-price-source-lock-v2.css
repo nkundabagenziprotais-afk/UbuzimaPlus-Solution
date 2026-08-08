@@ -1,0 +1,143 @@
+/*
+ * UBUZIMA+ V4.0-R2
+ * Quantity / Price central lock.
+ *
+ * Layout only:
+ * - no JavaScript
+ * - no event interception
+ * - no submit interception
+ * - no checkout interception
+ * - no DOM relocation
+ */
+
+html body .pos-quantity-dialog-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+
+  display: grid !important;
+  place-items: center !important;
+  align-items: center !important;
+  justify-items: center !important;
+
+  padding: 20px !important;
+  margin: 0 !important;
+
+  overflow: auto !important;
+  box-sizing: border-box !important;
+}
+
+html body .pos-quantity-dialog {
+  position: relative !important;
+
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+
+  transform: none !important;
+
+  width: min(680px, calc(100vw - 40px)) !important;
+  max-width: min(680px, calc(100vw - 40px)) !important;
+  max-height: min(680px, calc(100dvh - 40px)) !important;
+
+  margin: 0 !important;
+
+  display: grid !important;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr) !important;
+
+  align-items: start !important;
+  gap: 16px !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+
+  box-sizing: border-box !important;
+}
+
+html body .pos-quantity-dialog__header,
+html body .pos-quantity-readonly-grid,
+html body .pos-quantity-conversion-preview,
+html body .pos-quantity-total-strip,
+html body .pos-quantity-dialog__actions {
+  grid-column: 1 / -1 !important;
+}
+
+html body .pos-quantity-selling-unit-hero {
+  grid-column: 1 !important;
+  grid-row: auto !important;
+
+  min-width: 0 !important;
+  width: 100% !important;
+
+  grid-template-columns:
+    minmax(0, 1fr) !important;
+
+  align-content: start !important;
+
+  box-sizing: border-box !important;
+}
+
+html body .pos-quantity-price-override-card {
+  grid-column: 2 !important;
+  grid-row: auto !important;
+
+  min-width: 0 !important;
+  width: 100% !important;
+
+  align-self: stretch !important;
+
+  box-sizing: border-box !important;
+}
+
+html body .pos-quantity-selling-unit-hero input,
+html body .pos-quantity-price-override-card input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  html body .pos-quantity-dialog-backdrop {
+    place-items: center !important;
+    align-items: center !important;
+    justify-items: center !important;
+
+    padding: 10px !important;
+  }
+
+  html body .pos-quantity-dialog {
+    width:
+      min(
+        430px,
+        calc(100vw - 20px)
+      ) !important;
+
+    max-width:
+      min(
+        430px,
+        calc(100vw - 20px)
+      ) !important;
+
+    max-height:
+      calc(100dvh - 20px) !important;
+
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+
+    gap: 12px !important;
+  }
+
+  html body .pos-quantity-selling-unit-hero,
+  html body .pos-quantity-price-override-card,
+  html body .pos-quantity-dialog__header,
+  html body .pos-quantity-readonly-grid,
+  html body .pos-quantity-conversion-preview,
+  html body .pos-quantity-total-strip,
+  html body .pos-quantity-dialog__actions {
+    grid-column: 1 / -1 !important;
+  }
+}

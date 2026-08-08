@@ -1,3 +1,4 @@
+// AQUILA_SALES_RECORDING_INTEGRITY_V1_REV9_API
 import {
   runDuplicateProtectedReceipt,
 } from './duplicateReceiptFlow';
@@ -1703,12 +1704,21 @@ export type PharmaSale = {
     code: string;
   } | null;
   customer: PharmaCustomer | null;
+  transaction_customer_name?: string | null;
+  transaction_customer_phone_tin?: string | null;
   prescription: PharmaPrescription | null;
   items_count: number | null;
   payments_count: number | null;
   created_at: string | null;
   items?: PharmaSaleItem[];
   payments?: PharmaPayment[];
+
+  transaction_insurance_name?: string | null;
+  sales_register?: {
+    customer_name?: string | null;
+    phone_tin?: string | null;
+    insurance_name?: string | null;
+  } | null;
 };
 
 export type PharmaCustomersResponse = {
@@ -2137,6 +2147,9 @@ export type CheckoutPharmaSalePayload = {
   branch_id: number;
   pos_session_id: number;
   terminal_identifier: string;
+  customer_name?: string | null;
+  customer_phone_tin?: string | null;
+  insurance_partner_name?: string | null;
   pharmaco_customer_id?: number | null;
   pharmaco_prescription_id?: number | null;
   sale_type?:

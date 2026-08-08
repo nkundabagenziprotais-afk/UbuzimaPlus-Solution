@@ -354,6 +354,37 @@ function managedSalesDate(
 function managedSalesCustomer(
   sale: PharmaSale,
 ): string {
+  /*
+   * AQUILA_V4_0_R2_PERSISTED_CUSTOMER_AUTHORITY
+   * Persisted transaction Customer Name is authoritative.
+   */
+  const persistedTransactionCustomerName =
+    String(
+      sale.sales_register?.customer_name
+      ?? sale.transaction_customer_name
+      ?? '',
+    ).trim();
+
+  if (persistedTransactionCustomerName) {
+    return persistedTransactionCustomerName;
+  }
+
+
+  const saleRecord =
+    managedSalesRecord(
+      sale,
+    );
+
+  const transactionCustomerName =
+    managedSalesText(
+      saleRecord.transaction_customer_name,
+      '',
+    );
+
+  if (transactionCustomerName) {
+    return transactionCustomerName;
+  }
+
   const record = managedSalesRecord(
     sale.customer,
   );
@@ -402,6 +433,87 @@ function managedSalesLabel(
         character.toUpperCase(),
     );
 }
+
+/*
+ * AQUILA_SALES_REGISTER_PRODUCTS_V1_REV9
+ */
+function managedSalesCustomerReference(
+  sale: PharmaSale,
+): string {
+  const record =
+    managedSalesRecord(
+      sale,
+    );
+
+  return managedSalesText(
+    record.transaction_customer_phone_tin,
+    '—',
+  );
+}
+
+function managedSalesProducts(
+  sale: PharmaSale,
+): string {
+  const items = Array.isArray(
+    sale.items,
+  )
+    ? sale.items
+    : [];
+
+  const labels = items
+    .filter((item) => {
+      const record =
+        managedSalesRecord(
+          item,
+        );
+
+      return managedSalesText(
+        record.status,
+        '',
+      ).toLowerCase() !== 'voided';
+    })
+    .map((item) => {
+      const record =
+        managedSalesRecord(
+          item,
+        );
+
+      const product =
+        managedSalesRecord(
+          record.product,
+        );
+
+      const name =
+        managedSalesText(
+          record.product_name_snapshot,
+          '',
+        )
+        || managedSalesText(
+          product.name,
+          '',
+        )
+        || 'Product';
+
+      const quantity =
+        managedSalesNumber(
+          record.quantity,
+        );
+
+      return `${name} × ${
+        quantity.toLocaleString(
+          'en-RW',
+          {
+            maximumFractionDigits: 3,
+          },
+        )
+      }`;
+    });
+
+  return labels.length > 0
+    ? labels.join(', ')
+    : 'Products not loaded';
+}
+
 
 function SalesReturnsWorkspaceContent({
   token,
@@ -559,7 +671,14 @@ function SalesReturnsWorkspaceContent({
     try {
       const [salesResponse, returnsResponse] =
         await Promise.all([
-          getPharmaSales(token, tenantSlug),
+          getPharmaSales(
+            token,
+            tenantSlug,
+            {
+              status: 'dispensed',
+              payment_status: 'paid',
+            },
+          ),
           canManageRefunds
             ? getSaleReturns(context)
             : Promise.resolve({
@@ -861,6 +980,12 @@ function SalesReturnsWorkspaceContent({
         [
           record.sale_number,
           managedSalesCustomer(sale),
+          managedSalesCustomerReference(
+            sale,
+          ),
+          managedSalesProducts(
+            sale,
+          ),
           record.sale_type,
           record.status,
           record.payment_status,
@@ -955,7 +1080,9 @@ function SalesReturnsWorkspaceContent({
       'SN',
       'Date',
       'Sale Number',
-      'Customer',
+      'Customer Name',
+      'Phone/TIN',
+      'Products',
       'Sale Type',
       'Payment Status',
       'Sale Status',
@@ -980,6 +1107,12 @@ function SalesReturnsWorkspaceContent({
             record.sale_number,
           ),
           managedSalesCustomer(sale),
+          managedSalesCustomerReference(
+            sale,
+          ),
+          managedSalesProducts(
+            sale,
+          ),
           managedSalesLabel(
             record.sale_type,
           ),
@@ -1943,7 +2076,9 @@ function SalesReturnsWorkspaceContent({
                     <th>Transaction Timestamp</th>
                     <th>Business Date</th>
                     <th>Sale Number</th>
-                    <th>Customer</th>
+                    <th>Customer Name</th>
+                    <th>Phone/TIN</th>
+                    <th>Products</th>
                     <th>Sale Type</th>
                     <th>Payment</th>
                     <th>Status</th>
@@ -1957,7 +2092,7 @@ function SalesReturnsWorkspaceContent({
                 <tbody>
                   {managedVisibleSales.length === 0 ? (
                     <tr>
-                      <td colSpan={12}>
+                      <td colSpan={14}>
                         No sales match the selected
                         filters.
                       </td>
@@ -1996,6 +2131,26 @@ function SalesReturnsWorkspaceContent({
 
                             <td>
                               {managedSalesCustomer(
+                                sale,
+                              )}
+                            </td>
+
+                            <td>
+                              {managedSalesCustomerReference(
+                                sale,
+                              )}
+                            </td>
+
+                            <td
+                              style={{
+                                minWidth: '240px',
+                                maxWidth: '360px',
+                                whiteSpace: 'normal',
+                                overflowWrap: 'anywhere',
+                                lineHeight: 1.45,
+                              }}
+                            >
+                              {managedSalesProducts(
                                 sale,
                               )}
                             </td>
