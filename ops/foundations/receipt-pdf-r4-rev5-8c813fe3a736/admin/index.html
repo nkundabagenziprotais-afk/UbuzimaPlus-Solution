@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#4B5320" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Ubuzima+" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="/admin/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/admin/assets/ubuzima-pwa-icon.svg" />
+    <link rel="apple-touch-icon" href="/admin/assets/vitapharma-logo.png" />
+    <title>Ubuzima+ Admin Dashboard</title>
+    <style>
+      .ubuzima-boot-fallback {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #f4f8f6;
+        color: #10211b;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .ubuzima-boot-fallback__card {
+        width: min(360px, 100%);
+        display: grid;
+        gap: 10px;
+        border: 1px solid rgba(75, 83, 32, 0.16);
+        border-radius: 8px;
+        padding: 18px;
+        background: #ffffff;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.1);
+      }
+
+      .ubuzima-boot-fallback strong,
+      .ubuzima-boot-fallback span {
+        display: block;
+      }
+
+      .ubuzima-boot-fallback strong {
+        font-size: 1.05rem;
+      }
+
+      .ubuzima-boot-fallback span {
+        color: #5f7169;
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
+
+      .ubuzima-boot-fallback__actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .ubuzima-boot-fallback button {
+        min-height: 42px;
+        border: 1px solid rgba(75, 83, 32, 0.18);
+        border-radius: 8px;
+        background: #ffffff;
+        color: #243016;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      .ubuzima-boot-fallback button.primary {
+        border-color: #4b5320;
+        background: #4b5320;
+        color: #ffffff;
+      }
+    </style>
+    <script>
+      (function () {
+        var recoveryShown = false;
+
+        function rootNode() {
+          return document.getElementById('root');
+        }
+
+        function appIsReady() {
+          return window.__UBUZIMA_APP_READY__ === true;
+        }
+
+        function openSafeMode(reason, delay) {
+          window.setTimeout(function () {
+            if (!appIsReady()) {
+              console.warn('Startup fallback suppressed for stable main admin release.', reason || 'app-startup');
+            }
+          }, delay || 1200);
+        }
+
+        function showRecovery(reason) {
+          var root = rootNode();
+
+          if (!root || appIsReady() || recoveryShown) {
+            return;
+          }
+
+          recoveryShown = true;
+          root.innerHTML =
+            '<div class="ubuzima-boot-fallback" role="alert" aria-live="assertive">' +
+              '<div class="ubuzima-boot-fallback__card">' +
+                '<strong>Refresh Ubuzima+</strong>' +
+                '<span>' + reason + '</span>' +
+                '<div class="ubuzima-boot-fallback__actions">' +
+                  '<button type="button" onclick="window.location.reload()">Reload</button>' +
+                  '<button class="primary" type="button" onclick="window.ubuzimaClearPwaCache()">Fix app</button>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        }
+
+        window.ubuzimaClearPwaCache = async function () {
+          try {
+            if ('serviceWorker' in navigator) {
+              var registrations = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(
+                registrations
+                  .filter(function (registration) {
+                    return registration.scope.indexOf('/admin/') !== -1;
+                  })
+                  .map(function (registration) {
+                    return registration.unregister();
+                  })
+              );
+            }
+
+            if ('caches' in window) {
+              var keys = await caches.keys();
+              await Promise.all(
+                keys
+                  .filter(function (key) {
+                    return key.indexOf('ubuzima-admin-shell') === 0;
+                  })
+                  .map(function (key) {
+                    return caches.delete(key);
+                  })
+              );
+            }
+          } catch (error) {
+            console.warn('Unable to clear Ubuzima+ app cache', error);
+          }
+
+          window.location.replace('/admin/?fresh=' + Date.now());
+        };
+
+        window.addEventListener('ubuzima:app-ready', function () {
+          window.__UBUZIMA_APP_READY__ = true;
+        });
+
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target;
+            var assetUrl = target && (target.src || target.href);
+
+            if (assetUrl && assetUrl.indexOf('/admin/assets/') !== -1) {
+              showRecovery('The installed app could not load its latest files. Use Fix app to clear only the Ubuzima+ app cache and reopen.');
+              openSafeMode('asset-load-failed', 1600);
+            }
+          },
+          true
+        );
+
+        window.addEventListener('ubuzima:pwa-asset-failed', function () {
+          showRecovery('The installed app cache is stale. Use Fix app to refresh the Ubuzima+ app without changing the rest of the system.');
+          openSafeMode('stale-app-cache', 1600);
+        });
+
+        window.setTimeout(function () {
+          var root = rootNode();
+
+          if (root && !appIsReady()) {
+            showRecovery('The app is taking longer than expected to open. Use Fix app to refresh only the installed Ubuzima+ app cache.');
+            openSafeMode('startup-timeout', 2600);
+          }
+        }, 9000);
+      })();
+    </script>
+
+
+
+
+
+
+
+
+
+  <script src="/admin/runtime-extensions/users-security-branch-action-v3.js?v=20260806T190344Z" data-ubuzima-users-security-extension="branch-assignment-v3"></script>
+<script src="/admin/runtime-extensions/pos-terminal-context-v5.js?v=20260806T192317Z" data-ubuzima-pos-terminal-extension="v5"></script>
+<script type="module" crossorigin src="/admin/assets/index-Du9B3n-5-inventory-active-supplier-20260801T085413Z-supplier-create-8a0c037-receipt2a-v6-05eaab350042-entry-v6-4-b74a2afb2a74-popup-v6-5-3ddaa15c3f0d-integrated-v6-6-b8b70fd37906-enabled-v6-7-3a485fcb76de.js"></script>
+  <link rel="modulepreload" crossorigin href="/admin/assets/react-vendor-DjB5-EPc.js">
+  <link rel="stylesheet" crossorigin href="/admin/assets/index-Bw2iNh5W.css">
+  <link rel="stylesheet" href="/admin/assets/pos-catalogue-scroll-layer1-91c3464889.css" data-ubuzima-layer="pos-catalogue-scroll-layer1">
+</head>
+  <body>
+    <div id="root">
+      <div class="ubuzima-boot-fallback" role="status" aria-live="polite">
+        <div class="ubuzima-boot-fallback__card">
+          <strong>Opening Ubuzima+</strong>
+          <span>If this screen does not continue, refresh once to load the latest app version.</span>
+        </div>
+      </div>
+    </div>
+    <script defer src="/admin/production-runtime/finance-bridge.js?v=20260730T110820Z"></script>
+<script src="/admin/assets/receipt-cart-payment-v2-6a501be43ac7.js"></script>
+<script src="/admin/assets/receipt-action-adapter-v5-b5c342bd540c.js"></script>
+<script src="/admin/assets/receipt-content-layer2a4-391ea34d65c3.js" data-ubuzima-receipt-content="layer2a1"></script>
+<script src="/admin/assets/receipt-pdf-delivery-v1-r4-rev5-8c813fe3a736.js"></script>
+</body>
+</html>
