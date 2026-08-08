@@ -225,20 +225,8 @@ final class SaleInvoicePayloadService
         $receiptCustomerName =
             $resolvedCustomerName;
 
-        if ($insuranceName !== '') {
-            $receiptCustomerName =
-                trim(
-                    (string) (
-                        $resolvedCustomerName
-                        ?? ''
-                    )
-                ) !== ''
-                    ? $resolvedCustomerName
-                        . ' | Insurance Name: '
-                        . $insuranceName
-                    : 'Insurance Name: '
-                        . $insuranceName;
-        }
+        /* AQUILA_V37R3_RECEIPT_IDENTITY_SEPARATION */
+        /* Insurance remains a distinct immutable receipt field. */
 
 
         /*
