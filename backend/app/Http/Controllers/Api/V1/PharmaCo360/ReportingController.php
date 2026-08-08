@@ -319,13 +319,28 @@ class ReportingController extends Controller
         Carbon $endDate,
         bool $includePaymentMethods = false
     ): array {
+        /*
+         * AQUILA_REPORTABLE_PAID_SALES_ONLY_V1_REV9
+         *
+         * Operational sales reporting recognizes completed,
+         * dispensed and fully paid sales only.
+         *
+         * Finance journal state remains a downstream concern.
+         */
         $salesQuery = PharmacoSale::query()
             ->where('tenant_id', $tenantId)
+            ->where('status', 'dispensed')
+            ->where('payment_status', 'paid')
             ->whereBetween('created_at', [$startDate, $endDate]);
 
         $paymentQuery = PharmacoPayment::query()
             ->where('tenant_id', $tenantId)
-            ->whereBetween('created_at', [$startDate, $endDate]);
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn(
+                'pharmaco_sale_id',
+                (clone $salesQuery)->select('id')
+            );
 
         $totalSales = (clone $salesQuery)->sum('total_amount');
         $paidAmount = (clone $salesQuery)->sum('paid_amount');

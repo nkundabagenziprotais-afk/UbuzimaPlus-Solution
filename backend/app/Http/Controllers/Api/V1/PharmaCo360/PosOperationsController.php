@@ -951,8 +951,17 @@ public function adminReset(
         }
 
         $sales = PharmacoSale::query()
-            ->with(['branch', 'customer', 'prescription', 'payments'])
+            ->with([
+                'branch',
+                'customer',
+                'prescription',
+                'payments',
+                'items.product.category',
+            ])
             ->where('tenant_id', $tenant->id)
+            /* AQUILA_RECENT_POS_RECORDING_INTEGRITY_V1_REV9 */
+            ->where('status', 'dispensed')
+            ->where('payment_status', 'paid')
             ->when(
                 $request->query('branch_id'),
                 fn ($query, $branchId) => $query->where('branch_id', $branchId)
@@ -983,19 +992,105 @@ public function adminReset(
             'transactions' => $sales->map(function (PharmacoSale $sale) {
                 $latestPayment = $sale->payments->sortByDesc('received_at')->first();
 
+                $metadata = is_array($sale->metadata)
+                    ? $sale->metadata
+                    : [];
+
+                $walkInCustomer = is_array(
+                    $metadata['walk_in_customer'] ?? null
+                )
+                    ? $metadata['walk_in_customer']
+                    : [];
+
+                $registeredCustomer = $sale->customer
+                    ? trim(
+                        ($sale->customer->first_name ?? '')
+                        . ' '
+                        . ($sale->customer->last_name ?? '')
+                    )
+                    : '';
+
+                $transactionCustomer = trim(
+                    (string) (
+                        $walkInCustomer['name'] ?? ''
+                    )
+                );
+
+                $transactionCustomerPhoneTin = trim(
+                    (string) (
+                        $walkInCustomer['phone_tin'] ?? ''
+                    )
+                );
+
+                $displayCustomer =
+                    $transactionCustomer !== ''
+                        ? $transactionCustomer
+                        : (
+                            $registeredCustomer !== ''
+                                ? $registeredCustomer
+                                : 'Walk-in'
+                        );
+
+                $products = $sale->items
+                    ->reject(
+                        fn ($item) =>
+                            $item->status === 'voided'
+                    )
+                    ->map(fn ($item) => [
+                        'name' =>
+                            $item->product_name_snapshot
+                            ?: (
+                                $item->product?->name
+                                ?? 'Product'
+                            ),
+                        'quantity' =>
+                            (float) $item->quantity,
+                        'line_total' =>
+                            (float) $item->line_total,
+                        'label' => trim(
+                            (
+                                $item->product_name_snapshot
+                                ?: (
+                                    $item->product?->name
+                                    ?? 'Product'
+                                )
+                            )
+                            . ' × '
+                            . rtrim(
+                                rtrim(
+                                    number_format(
+                                        (float) $item->quantity,
+                                        3,
+                                        '.',
+                                        ''
+                                    ),
+                                    '0'
+                                ),
+                                '.'
+                            )
+                        ),
+                    ])
+                    ->values();
+
+
                 return [
                     'id' => $sale->id,
                     'sale_number' => $sale->sale_number,
-                    'customer' => trim(
-                        ($sale->customer->first_name ?? 'Walk-in')
-                        . ' '
-                        . ($sale->customer->last_name ?? '')
-                    ),
+                    'customer' => $displayCustomer,
+                    'customer_phone_tin' =>
+                        $transactionCustomerPhoneTin !== ''
+                            ? $transactionCustomerPhoneTin
+                            : null,
                     'branch' => $sale->branch->name ?? null,
                     'status' => $sale->status,
                     'payment_status' => $sale->payment_status,
                     'payment_method' => $latestPayment?->payment_method,
                     'receipt_number' => $latestPayment?->receipt_number,
+                    'products' => $products,
+                    'product_summary' =>
+                        $products
+                            ->pluck('label')
+                            ->implode(', '),
                     'total_amount' => (float) $sale->total_amount,
                     'paid_amount' => (float) $sale->paid_amount,
                     'created_at' => optional($sale->created_at)->toIso8601String(),

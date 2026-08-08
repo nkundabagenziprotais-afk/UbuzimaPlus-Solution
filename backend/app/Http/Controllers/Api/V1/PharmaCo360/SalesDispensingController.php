@@ -996,6 +996,8 @@ class SalesDispensingController extends Controller
             'branch_id' => ['required', 'integer'],
             'pharmaco_customer_id' => ['nullable', 'integer'],
             'pharmaco_prescription_id' => ['nullable', 'integer'],
+            'customer_name' => ['nullable', 'string', 'max:191'],
+            'customer_phone_tin' => ['nullable', 'string', 'regex:/^[0-9]{9}$/'],
             'sale_type' => ['nullable', 'string', 'in:cash_sale,prescription_sale,insurance_sale,credit_sale'],
             'discount_amount' => ['nullable', 'numeric', 'gte:0'],
             'tax_amount' => ['nullable', 'numeric', 'gte:0'],
@@ -1194,6 +1196,12 @@ class SalesDispensingController extends Controller
                     'rx_prescription_warning_required' => $prescriptionWarningRequired,
                     'rx_prescription_warning_acknowledged' => $prescriptionWarningRequired,
                     'rx_prescription_warning_products' => $prescriptionWarningProducts,
+                    'walk_in_customer' => [
+                        'name' => trim((string) ($validated['customer_name'] ?? '')) ?: null,
+                        'phone_tin' => trim((string) ($validated['customer_phone_tin'] ?? '')) ?: null,
+                        'capture_source' => 'pos_transaction_setup',
+                    ],
+                    'sales_recording_integrity' => 'AQUILA_SALES_RECORDING_INTEGRITY_V1_REV9',
                     ...$this->sessionMetadataFields(
                         $posSession
                     ),
@@ -1277,6 +1285,8 @@ class SalesDispensingController extends Controller
             ],
             'pharmaco_customer_id' => ['nullable', 'integer'],
             'pharmaco_prescription_id' => ['nullable', 'integer'],
+            'customer_name' => ['nullable', 'string', 'max:191'],
+            'customer_phone_tin' => ['nullable', 'string', 'regex:/^[0-9]{9}$/'],
             'sale_type' => [
                 'nullable',
                 'string',
@@ -1455,6 +1465,10 @@ class SalesDispensingController extends Controller
                         $validated['pharmaco_customer_id'] ?? null,
                     'pharmaco_prescription_id' =>
                         $validated['pharmaco_prescription_id'] ?? null,
+                    'customer_name' =>
+                        $validated['customer_name'] ?? null,
+                    'customer_phone_tin' =>
+                        $validated['customer_phone_tin'] ?? null,
                     'sale_type' =>
                         $validated['sale_type'] ?? 'cash_sale',
                     'discount_amount' =>
@@ -2654,6 +2668,8 @@ class SalesDispensingController extends Controller
                 'code' => $sale->branch->code,
             ] : null,
             'customer' => $sale->customer ? $this->serializeCustomer($sale->customer) : null,
+            'transaction_customer_name' => data_get($sale->metadata ?? [], 'walk_in_customer.name'),
+            'transaction_customer_phone_tin' => data_get($sale->metadata ?? [], 'walk_in_customer.phone_tin'),
             'prescription' => $sale->prescription ? $this->serializePrescription($sale->prescription) : null,
             'items_count' => $sale->items_count ?? ($sale->relationLoaded('items') ? $sale->items->count() : null),
             'payments_count' => $sale->payments_count ?? ($sale->relationLoaded('payments') ? $sale->payments->count() : null),

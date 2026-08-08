@@ -495,7 +495,18 @@ export function PosSalesOverview({
     const selectedDateTo = posBusinessDateToFilter ? safeDate(posBusinessDateToFilter) : null;
 
     const validSales = sales.filter((sale) => {
-      if (['draft', 'cancelled', 'voided'].includes(String(sale.status ?? '').toLowerCase())) {
+      /*
+       * AQUILA_POS_ANALYTICS_PAID_ONLY_V1_REV9
+       * Operational analytics use completed paid sales only.
+       */
+      if (
+        String(
+          sale.status ?? '',
+        ).toLowerCase() !== 'dispensed'
+        || String(
+          sale.payment_status ?? '',
+        ).toLowerCase() !== 'paid'
+      ) {
         return false;
       }
 

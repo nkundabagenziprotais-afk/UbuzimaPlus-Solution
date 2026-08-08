@@ -3936,6 +3936,17 @@ function App() {
   const [posOpeningMode, setPosOpeningMode] = useState<'fresh-start' | 'handover'>('fresh-start');
   const [posStartingCashBalance, setPosStartingCashBalance] = useState('0');
   const [posCustomerType, setPosCustomerType] = useState<'walk-in' | 'existing-customer' | 'insurance-customer' | 'corporate-customer'>('walk-in');
+
+  /* AQUILA_POS_SALES_RECORDING_INTEGRITY_V1_REV9 */
+  const [
+    posCustomerName,
+    setPosCustomerName,
+  ] = useState('');
+
+  const [
+    posCustomerPhoneTin,
+    setPosCustomerPhoneTin,
+  ] = useState('');
   const [posPrescriptionStatus, setPosPrescriptionStatus] = useState<'not-required' | 'required' | 'captured' | 'manual-review'>('not-required');
   const [posPaymentMethod, setPosPaymentMethod] = useState<'cash' | 'momo' | 'card' | 'insurance' | 'credit'>('cash');
   const [posInsuranceProvider, setPosInsuranceProvider] = useState('');
@@ -6630,7 +6641,6 @@ function App() {
           posTenantSlug,
           {
             branch_id: branchId,
-          pos_session_id: posSession?.id ?? undefined,
           },
         );
 
@@ -6804,6 +6814,24 @@ async function confirmTransaction() {
         return;
       }
 
+      const transactionCustomerName =
+        posCustomerName.trim();
+
+      const transactionCustomerPhoneTin =
+        posCustomerPhoneTin.trim();
+
+      if (
+        transactionCustomerPhoneTin
+        && !/^[0-9]{9}$/.test(
+          transactionCustomerPhoneTin,
+        )
+      ) {
+        setPosNotice(
+          'Customer Phone/TIN must contain exactly 9 digits.',
+        );
+        return;
+      }
+
       setIsConfirmingPosTransaction(true);
       setPosTransactionConfirmed(false);
       setPosConfirmedSale(null);
@@ -6829,6 +6857,14 @@ async function confirmTransaction() {
                 activeCheckoutSession.id,
               terminal_identifier:
                 posTerminalIdentity.identifier,
+
+              customer_name:
+                transactionCustomerName
+                || null,
+
+              customer_phone_tin:
+                transactionCustomerPhoneTin
+                || null,
               sale_type: saleType,
               discount_amount:
                 Math.max(
@@ -6913,6 +6949,8 @@ async function confirmTransaction() {
         setPosSellingUnitQuantity('1');
         setPosOtherQuantity('0');
         setPosSellingAmount('');
+        setPosCustomerName('');
+        setPosCustomerPhoneTin('');
 
         await refreshPosHandoverInsights(
           (activeCheckoutSession as { business_date?: string | null } | null)?.business_date ?? null,
@@ -7037,18 +7075,71 @@ async function confirmTransaction() {
     };
   }
 
+  function posSaleProductsSummary(
+    sale: PharmaSale,
+  ): string {
+    const items = Array.isArray(
+      sale.items,
+    )
+      ? sale.items
+      : [];
+
+    const labels = items
+      .filter(
+        (item) =>
+          String(
+            item.status ?? '',
+          ).toLowerCase() !== 'voided',
+      )
+      .map((item) => {
+        const name =
+          String(
+            item.product_name_snapshot
+            ?? item.product?.name
+            ?? 'Product',
+          ).trim();
+
+        const quantity =
+          Number(
+            item.quantity ?? 0,
+          );
+
+        const quantityLabel =
+          Number.isFinite(
+            quantity,
+          )
+            ? quantity.toLocaleString(
+                'en-RW',
+                {
+                  maximumFractionDigits: 3,
+                },
+              )
+            : '1';
+
+        return `${name} × ${quantityLabel}`;
+      });
+
+    return labels.length > 0
+      ? labels.join(', ')
+      : 'Products not loaded';
+  }
+
   const posRecentTransactionRows = posRecentSales
     .filter((sale) => {
       if (
-        posRecentFilter === 'paid'
-        && sale.payment_status !== 'paid'
+        String(
+          sale.status ?? '',
+        ).toLowerCase() !== 'dispensed'
+        || String(
+          sale.payment_status ?? '',
+        ).toLowerCase() !== 'paid'
       ) {
         return false;
       }
 
       if (
-        posRecentFilter === 'pending'
-        && sale.payment_status === 'paid'
+        posRecentFilter === 'paid'
+        && sale.payment_status !== 'paid'
       ) {
         return false;
       }
@@ -7062,7 +7153,12 @@ async function confirmTransaction() {
 
       return [
         sale.sale_number,
+        sale.transaction_customer_name,
+        sale.transaction_customer_phone_tin,
         sale.customer?.full_name,
+        posSaleProductsSummary(
+          sale,
+        ),
         sale.sale_type,
         sale.payment_status,
         sale.status,
@@ -7114,9 +7210,21 @@ async function confirmTransaction() {
             ?? null,
         ) ?? '—',
       saleNumber: sale.sale_number,
+
       customer:
-        sale.customer?.full_name
+        sale.transaction_customer_name
+        ?? sale.customer?.full_name
         ?? 'Walk-in customer',
+
+      customerReference:
+        sale.transaction_customer_phone_tin
+        ?? '—',
+
+      products:
+        posSaleProductsSummary(
+          sale,
+        ),
+
       method: ((sale as { payments?: Array<{ payment_method?: string | null }> }).payments?.[0]?.payment_method ?? sale.sale_type).replaceAll('_', ' '),
       status: sale.payment_status.replaceAll('_', ' '),
       amount:
@@ -8079,12 +8187,64 @@ async function confirmTransaction() {
                     </label>
 
                     <label>
-                      <span>Customer contact / lookup</span>
+                      <span>Customer Name</span>
+
                       <input
-                        value={posInvoiceContact}
-                        onChange={(event) => setPosInvoiceContact(event.target.value)}
-                        placeholder="Phone, WhatsApp, or email"
+                        type="text"
+                        maxLength={191}
+                        value={posCustomerName}
+                        onChange={(event) => {
+                          setPosCustomerName(
+                            event.target.value,
+                          );
+
+                          setPosTransactionConfirmed(
+                            false,
+                          );
+                        }}
+                        placeholder="Optional for walk-in customer"
+                        autoComplete="name"
                       />
+                    </label>
+
+                    <label>
+                      <span>Customer Phone/TIN</span>
+
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{9}"
+                        maxLength={9}
+                        value={posCustomerPhoneTin}
+                        onChange={(event) => {
+                          const digits =
+                            event.target.value
+                              .replace(
+                                /\D/g,
+                                '',
+                              )
+                              .slice(
+                                0,
+                                9,
+                              );
+
+                          setPosCustomerPhoneTin(
+                            digits,
+                          );
+
+                          setPosTransactionConfirmed(
+                            false,
+                          );
+                        }}
+                        placeholder="9 digits"
+                        aria-describedby="pos-customer-phone-tin-help"
+                      />
+
+                      <small
+                        id="pos-customer-phone-tin-help"
+                      >
+                        Optional. If entered, exactly 9 digits are required.
+                      </small>
                     </label>
                   </div>
                 </section>
@@ -8372,7 +8532,7 @@ async function confirmTransaction() {
                 >
                   <input
                     aria-label="Search recent transactions"
-                    placeholder="Search sale, customer, type or status…"
+                    placeholder="Search sale, customer, Phone/TIN, product, method or status…"
                     value={posRecentSearch}
                     onChange={(event) =>
                       setPosRecentSearch(event.target.value)
@@ -8392,11 +8552,11 @@ async function confirmTransaction() {
                     }
                   >
                     <option value="all">
-                      All recent transactions
+                      Completed POS sales
                     </option>
-                    <option value="paid">Paid</option>
-                    <option value="pending">
-                      Pending or partially paid
+
+                    <option value="paid">
+                      Paid
                     </option>
                   </select>
 
@@ -8421,6 +8581,8 @@ async function confirmTransaction() {
                       <th>Business Date</th>
                       <th>Sale No.</th>
                       <th>Customer</th>
+                      <th>Phone/TIN</th>
+                      <th>Products</th>
                       <th>Method</th>
                       <th>Status</th>
                       <th>Original Price</th>
@@ -8432,17 +8594,31 @@ async function confirmTransaction() {
                   <tbody>
                     {posRecentTransactionRows.length === 0 ? (
                       <tr>
-                        <td colSpan={10}>
+                        <td colSpan={12}>
                           No matching transactions are available. Confirm a sale or refresh the synchronized sales feed.
                         </td>
                       </tr>
                     ) : (
-                      posRecentTransactionRows.map(({ dateTime, businessDate, saleNumber, customer, method, status, originalPrice, usedPrice, priceDifference, amount }) => (
+                      posRecentTransactionRows.map(({ dateTime, businessDate, saleNumber, customer, customerReference, products, method, status, originalPrice, usedPrice, priceDifference, amount }) => (
                         <tr key={saleNumber}>
                           <td>{dateTime}</td>
                           <td>{businessDate}</td>
                           <td>{saleNumber}</td>
                           <td>{customer}</td>
+                          <td>{customerReference}</td>
+
+                          <td
+                            style={{
+                              minWidth: '240px',
+                              maxWidth: '360px',
+                              whiteSpace: 'normal',
+                              overflowWrap: 'anywhere',
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            {products}
+                          </td>
+
                           <td>{method}</td>
                           <td>{status}</td>
                           <td>{originalPrice}</td>
