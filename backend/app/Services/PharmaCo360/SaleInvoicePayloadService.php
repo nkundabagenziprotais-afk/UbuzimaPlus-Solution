@@ -203,6 +203,45 @@ final class SaleInvoicePayloadService
                 : $registeredCustomerTin;
 
         /*
+         * AQUILA_V361R3_RECEIPT_CONTEXT
+         *
+         * Transaction Set-UP Phone/TIN is authoritative
+         * for this immutable sale receipt.
+         */
+        $resolvedCustomerPhone =
+            $transactionCustomerPhoneTin !== ''
+                ? $transactionCustomerPhoneTin
+                : $registeredCustomerPhone;
+
+        $insuranceName =
+            trim(
+                (string) data_get(
+                    $sale->metadata ?? [],
+                    'insurance.partner_name',
+                    ''
+                )
+            );
+
+        $receiptCustomerName =
+            $resolvedCustomerName;
+
+        if ($insuranceName !== '') {
+            $receiptCustomerName =
+                trim(
+                    (string) (
+                        $resolvedCustomerName
+                        ?? ''
+                    )
+                ) !== ''
+                    ? $resolvedCustomerName
+                        . ' | Insurance Name: '
+                        . $insuranceName
+                    : 'Insurance Name: '
+                        . $insuranceName;
+        }
+
+
+        /*
          * AQUILA_RECEIPT_TRANSACTION_CUSTOMER_V1_END
          */
 
@@ -403,6 +442,7 @@ final class SaleInvoicePayloadService
                 $customer
                 || $resolvedCustomerName !== null
                 || $resolvedCustomerTin !== null
+                || $insuranceName !== ''
             )
                 ? [
                     'id' => $customer
@@ -412,10 +452,10 @@ final class SaleInvoicePayloadService
                         : null,
 
                     'name' =>
-                        $resolvedCustomerName,
+                        $receiptCustomerName,
 
                     'phone' =>
-                        $registeredCustomerPhone,
+                        $resolvedCustomerPhone,
 
                     /*
                      * Receipt Layer 2A / R4 Rev5 reads
@@ -431,6 +471,14 @@ final class SaleInvoicePayloadService
                         $registeredCustomerNumber,
                 ]
                 : null,
+
+            'insurance' =>
+                $insuranceName !== ''
+                    ? [
+                        'name' =>
+                            $insuranceName,
+                    ]
+                    : null,
 
             'cashier' => [
                 'user_id' => $this->integer(
