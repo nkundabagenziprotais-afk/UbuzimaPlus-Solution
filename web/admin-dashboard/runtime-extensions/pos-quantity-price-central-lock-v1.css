@@ -1,0 +1,165 @@
+/*
+ * AQUILA POS QUANTITY/PRICE CENTRAL LOCK V1
+ *
+ * This is the final positioning authority for the existing
+ * confirmation popup. It does not own checkout or posting.
+ */
+
+html body .pos-quantity-dialog-backdrop,
+html body .ubuzima-pos-confirmation-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10100 !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  margin: 0 !important;
+  padding: 20px !important;
+
+  overflow: auto !important;
+  box-sizing: border-box !important;
+}
+
+html body .pos-quantity-dialog,
+html body .ubuzima-pos-confirmation-dialog {
+  position: fixed !important;
+
+  left: 50% !important;
+  top: 50% !important;
+
+  right: auto !important;
+  bottom: auto !important;
+
+  transform:
+    translate(-50%, -50%) !important;
+
+  z-index: 10101 !important;
+
+  width:
+    min(
+      620px,
+      calc(100vw - 40px)
+    ) !important;
+
+  max-width:
+    min(
+      620px,
+      calc(100vw - 40px)
+    ) !important;
+
+  max-height:
+    min(
+      560px,
+      calc(100dvh - 40px)
+    ) !important;
+
+  margin: 0 !important;
+  padding: 18px !important;
+
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr) !important;
+
+  gap: 12px !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+
+  box-sizing: border-box !important;
+}
+
+html body .pos-quantity-dialog__header,
+html body .pos-quantity-readonly-grid,
+html body .pos-quantity-total-strip,
+html body .pos-quantity-dialog footer,
+html body .ubuzima-pos-confirmation-dialog > header,
+html body .ubuzima-pos-confirmation-dialog > footer,
+html body .ubuzima-pos-confirmation-dialog [class*="actions"],
+html body .ubuzima-pos-confirmation-grid {
+  grid-column:
+    1 / -1 !important;
+}
+
+html body .ubuzima-pos-confirmation-grid {
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr) !important;
+
+  gap: 12px !important;
+
+  width: 100% !important;
+}
+
+html body .pos-quantity-input-panel,
+html body .pos-quantity-selling-unit-hero,
+html body .ubuzima-pos-confirmation-grid-item--quantity {
+  grid-column: 1 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+html body .pos-quantity-price-override-card,
+html body .ubuzima-pos-confirmation-grid-item--price {
+  grid-column: 2 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+html body .pos-quantity-dialog input,
+html body .pos-quantity-dialog select,
+html body .ubuzima-pos-confirmation-dialog input,
+html body .ubuzima-pos-confirmation-dialog select {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  html body .pos-quantity-dialog,
+  html body .ubuzima-pos-confirmation-dialog {
+    left: 50% !important;
+    top: 50% !important;
+
+    transform:
+      translate(-50%, -50%) !important;
+
+    width:
+      min(
+        430px,
+        calc(100vw - 24px)
+      ) !important;
+
+    max-width:
+      min(
+        430px,
+        calc(100vw - 24px)
+      ) !important;
+
+    max-height:
+      calc(100dvh - 24px) !important;
+
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+
+    padding: 14px !important;
+  }
+
+  html body .ubuzima-pos-confirmation-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  html body .pos-quantity-input-panel,
+  html body .pos-quantity-selling-unit-hero,
+  html body .pos-quantity-price-override-card,
+  html body .ubuzima-pos-confirmation-grid-item--quantity,
+  html body .ubuzima-pos-confirmation-grid-item--price {
+    grid-column: 1 !important;
+  }
+}

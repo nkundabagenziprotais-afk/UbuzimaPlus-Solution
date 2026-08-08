@@ -426,6 +426,13 @@ final class SaleInvoicePayloadService
              * Transaction Set-UP values are transaction-specific
              * and therefore take precedence on this receipt.
              */
+            /* AQUILA_V39R1_PERSISTED_SALES_AUTHORITY */
+            'sales_register' => [
+                'customer_name' => $resolvedCustomerName,
+                'phone_tin' => $resolvedCustomerTin,
+                'insurance_name' => $insuranceName !== '' ? $insuranceName : null,
+            ],
+
             'customer' => (
                 $customer
                 || $resolvedCustomerName !== null

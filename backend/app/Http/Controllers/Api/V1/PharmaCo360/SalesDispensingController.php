@@ -2454,6 +2454,12 @@ class SalesDispensingController extends Controller
             'customer' => $sale->customer ? $this->serializeCustomer($sale->customer) : null,
             'transaction_customer_name' => data_get($sale->metadata ?? [], 'walk_in_customer.name'),
             'transaction_customer_phone_tin' => data_get($sale->metadata ?? [], 'walk_in_customer.phone_tin'),
+            'transaction_insurance_name' => data_get($sale->metadata ?? [], 'insurance.partner_name'),
+            'sales_register' => [
+                'customer_name' => data_get($sale->metadata ?? [], 'walk_in_customer.name'),
+                'phone_tin' => data_get($sale->metadata ?? [], 'walk_in_customer.phone_tin'),
+                'insurance_name' => data_get($sale->metadata ?? [], 'insurance.partner_name'),
+            ],
             'prescription' => $sale->prescription ? $this->serializePrescription($sale->prescription) : null,
             'items_count' => $sale->items_count ?? ($sale->relationLoaded('items') ? $sale->items->count() : null),
             'payments_count' => $sale->payments_count ?? ($sale->relationLoaded('payments') ? $sale->payments->count() : null),
