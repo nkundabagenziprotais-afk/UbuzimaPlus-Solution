@@ -1,0 +1,145 @@
+/*
+ * Ubuzima+ Quantity Visibility V4
+ * Existing Popup V3 remains the sole positioning authority.
+ */
+
+body
+.pos-quantity-dialog
+.pos-quantity-selling-unit-hero
+> div {
+  display: none !important;
+}
+
+body
+.pos-quantity-dialog
+.pos-quantity-selling-unit-hero
+> label {
+  display: grid !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+
+  grid-template-columns:
+    minmax(0, 1fr) !important;
+
+  justify-items: center !important;
+  align-items: center !important;
+  align-content: center !important;
+
+  gap: 9px !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  color: #475569 !important;
+
+  text-align: center !important;
+
+  box-sizing: border-box !important;
+}
+
+body
+.pos-quantity-dialog
+.pos-quantity-selling-unit-hero
+> label
+> span {
+  display: block !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  width: 100% !important;
+
+  color: #334155 !important;
+
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+
+  letter-spacing: 0.03em !important;
+
+  text-align: center !important;
+}
+
+body
+.pos-quantity-dialog
+.pos-quantity-selling-unit-hero
+> label
+> input {
+  display: block !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  pointer-events: auto !important;
+  user-select: auto !important;
+
+  width: min(210px, 100%) !important;
+  max-width: 210px !important;
+  min-width: 0 !important;
+
+  height: 46px !important;
+  min-height: 46px !important;
+
+  margin: 0 auto !important;
+  padding: 8px 11px !important;
+
+  box-sizing: border-box !important;
+
+  border:
+    1px solid
+    rgba(15, 118, 110, 0.22) !important;
+
+  border-radius: 12px !important;
+
+  background: #ffffff !important;
+  color: #10211b !important;
+
+  -webkit-text-fill-color: #10211b !important;
+
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+
+  text-align: center !important;
+
+  cursor: text !important;
+}
+
+body
+.pos-quantity-dialog
+.pos-quantity-selling-unit-hero
+> label
+> input:focus {
+  outline:
+    3px solid
+    rgba(15, 118, 110, 0.12) !important;
+
+  border-color: #0f766e !important;
+}
+
+body
+.pos-quantity-dialog
+.pos-quantity-selling-unit-hero
+> label
+> small {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  body
+  .pos-quantity-dialog
+  .pos-quantity-selling-unit-hero
+  > label
+  > input {
+    width: min(240px, 100%) !important;
+    max-width: 240px !important;
+
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+}
