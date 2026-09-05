@@ -97,3 +97,5 @@ Route::middleware([
             Route::post('/approvals/{approvalUuid}/reject', [AccountingApprovalCentreController::class, 'reject']);
         });
     });
+
+require __DIR__ . '/expenses.php';
