@@ -8,7 +8,7 @@
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "window-controls-overlay", "minimal-ui", "browser"],
   "orientation": "portrait",
-  "background_color": "#edf3f1",
+  "background_color": "#eef3f0",
   "theme_color": "#4B5320",
   "categories": ["business", "medical", "productivity"],
   "icons": [
