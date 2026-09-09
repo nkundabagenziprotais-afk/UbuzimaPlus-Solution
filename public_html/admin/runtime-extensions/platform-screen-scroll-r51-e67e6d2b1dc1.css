@@ -1,0 +1,41 @@
+/*
+ * AQUILA_PLATFORM_SCREEN_SCROLL_R51
+ *
+ * Desktop:
+ * - .dashboard-main owns vertical page scrolling.
+ * - Pointer can remain anywhere over the main screen.
+ * - Sidebar remains its own independent scroll surface.
+ */
+
+@media (min-width: 861px) {
+    html[data-aquila-screen-scroll-r51="1"]
+    .dashboard-main[data-aquila-screen-scroll-surface-r51="1"] {
+        box-sizing: border-box !important;
+
+        min-height: 0 !important;
+
+        height:
+            var(
+                --aquila-r51-main-height,
+                calc(100dvh - 100px)
+            )
+            !important;
+
+        max-height:
+            var(
+                --aquila-r51-main-height,
+                calc(100dvh - 100px)
+            )
+            !important;
+
+        overflow-y: auto !important;
+        overflow-x: hidden;
+
+        overscroll-behavior-y: auto;
+
+        -webkit-overflow-scrolling: touch;
+
+        scroll-behavior: auto;
+        scroll-padding-bottom: 96px;
+    }
+}

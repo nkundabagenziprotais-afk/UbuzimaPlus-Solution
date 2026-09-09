@@ -1,419 +1,157 @@
-const CACHE_NAME = 'ubuzima-admin-shell-v22';
-const FAILOVER_CACHE_NAME = 'ubuzima-admin-failover-v1';
-const SAFE_LANDING_PATH = '/admin/pwa-safe.html';
-const SHELL_ASSETS = [
-  '/admin/',
-  '/admin/index.html',
-  SAFE_LANDING_PATH,
-  '/admin/manifest.webmanifest',
-  '/admin/assets/ubuzima-pwa-icon.svg',
-  '/admin/assets/ubuzima-pwa-maskable.svg',
-  '/admin/assets/ubuzima-logo.png',
-  '/admin/assets/vitapharma-logo.png'
+"use strict";
+
+/* Ubuzima+ Admin PWA cache — professional, versioned.
+   Rules:
+   - Never cache HTML navigations, API, or this SW file (always network).
+   - Hashed / ?v= fingerprint assets: cache-first (immutable per URL).
+   - Icons, fonts, images, manifests: stale-while-revalidate.
+   - Other /admin static GET: network-first with cache fallback.
+   Bump CACHE_VER when cache policy changes so old buckets are dropped. */
+
+var CACHE_VER = "r231";
+var CACHE_IMMUTABLE = "ubuzima-admin-immutable-" + CACHE_VER;
+var CACHE_RUNTIME = "ubuzima-admin-runtime-" + CACHE_VER;
+var CACHE_PREFIX = "ubuzima-admin-";
+
+var PRECACHE = [
+  "/admin/assets/ubuzima-mobile-icon-192.png",
+  "/admin/assets/ubuzima-mobile-icon-512.png",
+  "/admin/assets/ubuzima-mobile-maskable-512.png",
+  "/admin/manifest-mobile.webmanifest"
 ];
-const STATIC_SEED_ASSETS = SHELL_ASSETS.filter((assetPath) => !assetPath.endsWith('/') && !assetPath.endsWith('.html'));
 
-function isHtmlResponse(response) {
-  return (response.headers.get('content-type') || '').includes('text/html');
-}
+var HASH_IN_PATH = /(?:^|\/)[^/?]*[a-f0-9]{12}\.(?:js|css|mjs|woff2?|ttf|otf|png|jpe?g|webp|svg|gif)(?:\?|$)/i;
+var FINGERPRINT_QUERY = /[?&]v=(?:[a-f0-9]{8,}|r?\d[\w.-]*)(?:&|$)/i;
 
-function isCacheableAssetResponse(response) {
-  return response.ok && !isHtmlResponse(response);
-}
-
-function isAdminShellHtml(html) {
-  return html.includes('ubuzima-boot-fallback') && (
-    html.includes('/admin/assets/') ||
-    html.includes('/src/main.tsx')
-  );
-}
-
-function isSafeLandingHtml(html) {
-  return html.includes('ubuzima-safe-landing') && html.includes('openStableApp');
-}
-
-function extractAdminAssetPaths(html) {
-  const matches = html.match(/\/admin\/assets\/[^"'<>\\s]+/g) || [];
-  return Array.from(new Set(matches));
-}
-
-async function cacheResponse(cache, request, response) {
-  if (isCacheableAssetResponse(response)) {
-    await cache.put(request, response.clone());
-  }
-}
-
-async function cacheDiscoveredShellAssets(cache, html) {
-  const assetPaths = extractAdminAssetPaths(html);
-
-  await Promise.allSettled(
-    assetPaths.map(async (assetPath) => {
-      const response = await fetch(assetPath, { cache: 'reload' });
-      await cacheResponse(cache, assetPath, response);
+self.addEventListener("install", function (event) {
+  event.waitUntil(
+    caches.open(CACHE_RUNTIME).then(function (cache) {
+      return cache.addAll(PRECACHE).catch(function () { return undefined; });
+    }).then(function () {
+      return self.skipWaiting();
     })
   );
-}
+});
 
-async function cacheSeedAssets(cache) {
-  await Promise.allSettled(
-    STATIC_SEED_ASSETS.map(async (assetPath) => {
-      const response = await fetch(assetPath, { cache: 'reload' });
-      await cacheResponse(cache, assetPath, response);
+self.addEventListener("activate", function (event) {
+  event.waitUntil(
+    caches.keys().then(function (names) {
+      return Promise.all(names.map(function (name) {
+        if (name.indexOf(CACHE_PREFIX) !== 0) { return undefined; }
+        if (name === CACHE_IMMUTABLE || name === CACHE_RUNTIME) { return undefined; }
+        return caches.delete(name);
+      }));
+    }).then(function () {
+      return self.clients.claim();
     })
   );
+});
 
-  await cacheSafeLanding(cache).catch(() => {});
+function isApi(url) {
+  return url.pathname.indexOf("/api/") === 0;
 }
 
-async function cachedAdminShell(cache) {
-  const cached = await cache.match('/admin/index.html');
-
-  if (!cached || !cached.ok || !isHtmlResponse(cached)) {
-    return undefined;
-  }
-
-  const html = await cached.clone().text();
-
-  if (isAdminShellHtml(html)) {
-    return cached;
-  }
-
-  await cache.delete('/admin/index.html');
-  await cache.delete('/admin/');
-
-  return undefined;
+function isHtml(request, url) {
+  if (request.mode === "navigate") { return true; }
+  if (request.destination === "document") { return true; }
+  if (/\/admin\/?$/.test(url.pathname) || /\/admin\/index\.html$/.test(url.pathname)) { return true; }
+  if (/\/admin\/pwa-safe\.html$/.test(url.pathname)) { return true; }
+  return false;
 }
 
-async function cacheSafeLanding(cache) {
-  const response = await fetch(SAFE_LANDING_PATH, { cache: 'reload' });
-
-  if (response.ok && isHtmlResponse(response)) {
-    const html = await response.clone().text();
-
-    if (isSafeLandingHtml(html)) {
-      await cache.put(SAFE_LANDING_PATH, response.clone());
-    }
-  }
+function isSw(url) {
+  return url.pathname === "/admin/sw.js";
 }
 
-async function cachedSafeLanding(cache) {
-  const cached = await cache.match(SAFE_LANDING_PATH);
-
-  if (!cached || !cached.ok || !isHtmlResponse(cached)) {
-    return undefined;
-  }
-
-  const html = await cached.clone().text();
-
-  return isSafeLandingHtml(html) ? cached : undefined;
+function isImmutable(url) {
+  if (url.pathname.indexOf("/admin/") !== 0) { return false; }
+  if (isApi(url) || isSw(url)) { return false; }
+  return HASH_IN_PATH.test(url.pathname) || HASH_IN_PATH.test(url.href) || FINGERPRINT_QUERY.test(url.search);
 }
 
-async function safeLandingResponse(reason) {
-  const cache = await caches.open(CACHE_NAME);
-  const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
-  const cached = await cachedSafeLanding(cache) || await cachedSafeLanding(failoverCache);
-
-  return cached || shellRecoveryResponse(reason);
+function isShellAsset(url) {
+  if (url.pathname.indexOf("/admin/") !== 0) { return false; }
+  if (/\.(?:png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf)$/i.test(url.pathname)) { return true; }
+  if (/\.webmanifest$/i.test(url.pathname)) { return true; }
+  if (url.pathname.indexOf("/admin/assets/") === 0) { return true; }
+  return false;
 }
 
-async function promoteFailoverSnapshot() {
-  const cache = await caches.open(CACHE_NAME);
-  const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
-  const shell = await cachedAdminShell(cache);
-
-  if (!shell) {
-    return;
-  }
-
-  const html = await shell.clone().text();
-  await failoverCache.put('/admin/index.html', shell.clone());
-  await failoverCache.put('/admin/', shell.clone());
-  await cacheDiscoveredShellAssets(failoverCache, html);
-  await cacheSafeLanding(failoverCache).catch(() => {});
+function isAdminStatic(url) {
+  if (url.pathname.indexOf("/admin/") !== 0) { return false; }
+  if (isApi(url) || isSw(url)) { return false; }
+  return /\.(?:js|css|mjs|map|json|webmanifest|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf)$/i.test(url.pathname);
 }
 
-async function refreshShellCache() {
-  const cache = await caches.open(CACHE_NAME);
-  const response = await fetch('/admin/index.html', { cache: 'reload' });
-
-  if (response.ok && isHtmlResponse(response)) {
-    const html = await response.clone().text();
-
-    if (isAdminShellHtml(html)) {
-      await cache.put('/admin/index.html', response.clone());
-      await cache.put('/admin/', response.clone());
-      await cacheDiscoveredShellAssets(cache, html);
-      return response;
-    }
-  }
-
-  const cached = await cachedAdminShell(cache);
-
-  return cached || await safeLandingResponse('Ubuzima+ could not confirm a valid admin app shell from the server.');
+function cachePut(cacheName, request, response) {
+  if (!response || !response.ok || response.type === "opaque") { return response; }
+  var copy = response.clone();
+  caches.open(cacheName).then(function (cache) {
+    cache.put(request, copy);
+  }).catch(function () {});
+  return response;
 }
 
-function assetRecoveryResponse(url) {
-  if (url.pathname.endsWith('.js')) {
-    return new Response(
-      [
-        'window.__UBUZIMA_PWA_ASSET_FAILED__ = true;',
-        'window.dispatchEvent(new CustomEvent("ubuzima:pwa-asset-failed", { detail: { asset: ' + JSON.stringify(url.pathname) + ' } }));',
-        'var root = document.getElementById("root");',
-        'if (root && window.__UBUZIMA_APP_READY__ !== true) {',
-        '  root.innerHTML = ' + JSON.stringify('<div class="ubuzima-boot-fallback" role="alert" aria-live="assertive"><div class="ubuzima-boot-fallback__card"><strong>Refresh Ubuzima+</strong><span>The installed app cache is stale. Use Fix app to clear only the Ubuzima+ app cache and reopen.</span><div class="ubuzima-boot-fallback__actions"><button type="button" onclick="window.location.reload()">Reload</button><button class="primary" type="button" onclick="window.ubuzimaClearPwaCache && window.ubuzimaClearPwaCache()">Fix app</button></div></div></div>') + ';',
-        '}',
-        'window.setTimeout(function () {',
-        '  if (window.__UBUZIMA_APP_READY__ !== true) {',
-        '    window.location.replace("/admin/pwa-safe.html?reason=asset-load-failed");',
-        '  }',
-        '}, 1600);'
-      ].join('\n'),
-      {
-        status: 200,
-        headers: {
-          'Cache-Control': 'no-store',
-          'Content-Type': 'application/javascript; charset=utf-8'
-        }
-      }
-    );
-  }
-
-  if (url.pathname.endsWith('.css')) {
-    return new Response(
-      '/* Ubuzima+ skipped a stale stylesheet response. */',
-      {
-        status: 200,
-        headers: {
-          'Cache-Control': 'no-store',
-          'Content-Type': 'text/css; charset=utf-8'
-        }
-      }
-    );
-  }
-
-  return new Response('Asset unavailable', {
-    status: 404,
-    headers: { 'Cache-Control': 'no-store' }
+function cacheFirst(cacheName, request) {
+  return caches.open(cacheName).then(function (cache) {
+    return cache.match(request).then(function (cached) {
+      if (cached) { return cached; }
+      return fetch(request).then(function (response) {
+        return cachePut(cacheName, request, response);
+      });
+    });
   });
 }
 
-function shellRecoveryResponse(reason) {
-  const html = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#4b5320" />
-    <title>Refresh Ubuzima+</title>
-    <style>
-      :root { color-scheme: light; }
-      body {
-        min-height: 100dvh;
-        margin: 0;
-        display: grid;
-        place-items: center;
-        background: #f4f7f3;
-        color: #14241d;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }
-      .card {
-        width: min(320px, calc(100vw - 40px));
-        padding: 22px;
-        border: 1px solid rgba(75, 83, 32, 0.18);
-        border-radius: 14px;
-        background: #fff;
-        box-shadow: 0 18px 46px rgba(20, 36, 29, 0.12);
-      }
-      strong { display: block; font-size: 1.05rem; }
-      p { margin: 8px 0 16px; color: #637369; font-size: 0.88rem; line-height: 1.45; }
-      button {
-        width: 100%;
-        min-height: 44px;
-        border: 0;
-        border-radius: 8px;
-        background: #4b5320;
-        color: white;
-        font: inherit;
-        font-size: 0.86rem;
-        font-weight: 900;
-      }
-    </style>
-  </head>
-  <body>
-    <main class="card" role="alert" aria-live="assertive">
-      <strong>Refresh Ubuzima+</strong>
-      <p>${reason} This recovery clears only the installed admin app cache, then reopens the app.</p>
-      <button type="button" onclick="fixApp()">Fix app</button>
-    </main>
-    <script>
-      async function fixApp() {
-        try {
-          if ('serviceWorker' in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(registrations.filter((registration) => registration.scope.indexOf('/admin/') !== -1).map((registration) => registration.unregister()));
-          }
-          if ('caches' in window) {
-            const keys = await caches.keys();
-            await Promise.all(keys.filter((key) => key.indexOf('ubuzima-admin-shell') === 0).map((key) => caches.delete(key)));
-          }
-        } catch (error) {
-          console.warn('Unable to clear Ubuzima+ app cache', error);
-        }
-        window.location.replace('/admin/?fresh=' + Date.now());
-      }
-    </script>
-  </body>
-</html>`;
-
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'Cache-Control': 'no-store',
-      'Content-Type': 'text/html; charset=utf-8'
-    }
+function staleWhileRevalidate(cacheName, request) {
+  return caches.open(cacheName).then(function (cache) {
+    return cache.match(request).then(function (cached) {
+      var network = fetch(request).then(function (response) {
+        return cachePut(cacheName, request, response);
+      }).catch(function () {
+        return cached;
+      });
+      return cached || network;
+    });
   });
 }
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cacheSeedAssets(cache))
-      .then(() => refreshShellCache())
-      .then(() => self.skipWaiting())
-      .catch(() => self.skipWaiting())
-  );
+function networkFirst(cacheName, request) {
+  return fetch(request).then(function (response) {
+    return cachePut(cacheName, request, response);
+  }).catch(function () {
+    return caches.open(cacheName).then(function (cache) {
+      return cache.match(request).then(function (cached) {
+        if (cached) { return cached; }
+        return Response.error();
+      });
+    });
+  });
+}
+
+self.addEventListener("fetch", function (event) {
+  var request = event.request;
+  var url;
+  if (request.method !== "GET") { return; }
+  try { url = new URL(request.url); } catch (_e) { return; }
+  if (url.origin !== self.location.origin) { return; }
+  if (isHtml(request, url) || isApi(url) || isSw(url)) { return; }
+  if (!isAdminStatic(url) && !isShellAsset(url)) { return; }
+
+  if (isImmutable(url)) {
+    event.respondWith(cacheFirst(CACHE_IMMUTABLE, request));
+    return;
+  }
+  if (isShellAsset(url)) {
+    event.respondWith(staleWhileRevalidate(CACHE_RUNTIME, request));
+    return;
+  }
+  event.respondWith(networkFirst(CACHE_RUNTIME, request));
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME && key.startsWith('ubuzima-admin-shell-'))
-          .map((key) => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'UBUZIMA_ADMIN_APP_READY') {
-    event.waitUntil(promoteFailoverSnapshot());
+self.addEventListener("message", function (event) {
+  var data = event.data || {};
+  if (data === "SKIP_WAITING" || data.type === "SKIP_WAITING") {
+    self.skipWaiting();
   }
 });
-
-self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
-
-  if (request.method !== 'GET' || url.origin !== self.location.origin) {
-    return;
-  }
-
-  if (url.pathname.startsWith('/api/')) {
-    return;
-  }
-
-  if (url.pathname === SAFE_LANDING_PATH) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        return fetch(request, { cache: 'reload' }).then(async (response) => {
-          if (response.ok && isHtmlResponse(response)) {
-            const html = await response.clone().text();
-
-            if (isSafeLandingHtml(html)) {
-              await cache.put(SAFE_LANDING_PATH, response.clone());
-              const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
-              await failoverCache.put(SAFE_LANDING_PATH, response.clone());
-              return response;
-            }
-          }
-
-          return await cachedSafeLanding(cache) || await safeLandingResponse('Ubuzima+ could not load the safe app base.');
-        }).catch(async () => await cachedSafeLanding(cache) || await safeLandingResponse('Ubuzima+ opened the cached safe app base.'));
-      })
-    );
-    return;
-  }
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
-        const useStableShell = url.searchParams.get('stable') === '1';
-        const cachedShell = useStableShell
-          ? await cachedAdminShell(failoverCache)
-          : await cachedAdminShell(cache);
-        const refresh = refreshShellCache().catch(() => undefined);
-
-        if (cachedShell) {
-          return cachedShell;
-        }
-
-        return refresh.then((response) => response || safeLandingResponse('Ubuzima+ could not open the admin app shell.'));
-      })
-    );
-    return;
-  }
-
-  if (
-    url.pathname.startsWith('/admin/assets/') ||
-    url.pathname.endsWith('.webmanifest')
-  ) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match(request);
-
-        if (cached && isCacheableAssetResponse(cached)) {
-          return cached;
-        }
-
-        if (cached) {
-          await cache.delete(request);
-        }
-
-        const failoverCache = await caches.open(FAILOVER_CACHE_NAME);
-        const failoverAsset = await failoverCache.match(request);
-
-        if (failoverAsset && isCacheableAssetResponse(failoverAsset)) {
-          return failoverAsset;
-        }
-
-        return fetch(request, { cache: 'reload' }).then((response) => {
-          if (isCacheableAssetResponse(response)) {
-            cache.put(request, response.clone()).catch(() => {});
-            return response;
-          }
-
-          return assetRecoveryResponse(url);
-        }).catch(() => assetRecoveryResponse(url));
-      })
-    );
-    return;
-  }
-
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        const copy = response.clone();
-
-        caches.open(CACHE_NAME).then((cache) => {
-          if (response.ok && !isHtmlResponse(response)) {
-            cache.put(request, copy);
-          }
-        }).catch(() => {});
-
-        return response;
-      })
-      .catch(() => caches.match(request).then((cached) => cached || safeLandingResponse('Ubuzima+ could not reach this admin file.')))
-  );
-});
-
-// UBIZIMA_MAIN_ADMIN_TASKBAR_REMOVAL_SW_BUMP_V1 20260726T120052Z
-// UBIZIMA_GLASS_WORKSPACE_DOCK_SW_BUMP_V3 20260726T124002Z
-// UBIZIMA_WORKSPACE_DOCK_V4C_SW_BUMP 20260726T131524Z
-
-// UBIZIMA_WORKSPACE_DOCK_V5_SW_BUMP 20260726T134142Z
-// UBIZIMA_WORKSPACE_DOCK_V6D_SW_BUMP 20260726T143107Z
-// UBIZIMA_WORKSPACE_DOCK_V7_SW_BUMP 20260726T145615Z
-// UBIZIMA_WORKSPACE_DOCK_V7C_SW_BUMP 20260726T152102Z

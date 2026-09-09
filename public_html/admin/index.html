@@ -1,7 +1,1031 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+<style id="aquila-top-menu-deck-final-paint-r41-style">
+html[data-aquila-top-deck-finalizing-r41="1"]
+nav.ubuzima-workspace-dock-v5[
+    data-ubuzima-workspace-dock-v5="UBIZIMA_CONTINUOUS_MAC_WORKSPACE_DOCK_V7"
+] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+</style>
+<script data-aquila-top-menu-deck-final-paint="r41">
+(() => {
+    "use strict";
+
+    const RELEASE =
+        "AQUILA_TOP_MENU_DECK_FINAL_PAINT_R41";
+
+    const ROOT_ATTR =
+        "data-aquila-top-deck-finalizing-r41";
+
+    const BUILD =
+        "UBIZIMA_CONTINUOUS_MAC_WORKSPACE_DOCK_V7";
+
+    const DECK_SELECTOR =
+        'nav.ubuzima-workspace-dock-v5' +
+        '[data-ubuzima-workspace-dock-v5="' +
+        BUILD +
+        '"]';
+
+    const LANE_ID =
+        "aquila-menu-deck-header-lane-r9";
+
+    const OWNER_RELEASE =
+        "AQUILA-MENU-DECK-V7-FLOW-BOUNDARY-R9";
+
+    const REQUIRED_STABLE_FRAMES = 3;
+
+    const TOP_TOLERANCE_PX = 2.5;
+    const CENTER_TOLERANCE_PX = 3.0;
+
+    let frame = 0;
+    let failSafe = 0;
+    let stableFrames = 0;
+
+    let lastState = null;
+
+    if (
+        window.__AQUILA_TOP_MENU_DECK_FINAL_PAINT_R41__
+        ?.release === RELEASE
+    ) {
+        return;
+    }
+
+    function deck() {
+        return document.querySelector(
+            DECK_SELECTOR
+        );
+    }
+
+    function lane() {
+        return document.getElementById(
+            LANE_ID
+        );
+    }
+
+    function owner() {
+        return window.__AQUILA_DECK_R9__;
+    }
+
+    function visible(element) {
+        if (!(element instanceof Element)) {
+            return false;
+        }
+
+        const style =
+            getComputedStyle(element);
+
+        const rect =
+            element.getBoundingClientRect();
+
+        return (
+            style.display !== "none"
+            &&
+            style.visibility !== "hidden"
+            &&
+            rect.width > 0
+            &&
+            rect.height > 0
+        );
+    }
+
+    function expectedTop() {
+        return (
+            window.innerWidth <= 767
+                ? 6
+                : 10
+        );
+    }
+
+    function mobileHiddenIsValid(element) {
+        return (
+            window.innerWidth <= 767
+            &&
+            element instanceof Element
+            &&
+            !visible(element)
+        );
+    }
+
+    function ownerReady(element) {
+        const api =
+            owner();
+
+        const headerLane =
+            lane();
+
+        return Boolean(
+            element
+            &&
+            api
+            &&
+            api.release === OWNER_RELEASE
+            &&
+            typeof api.apply === "function"
+            &&
+            typeof api.diagnose === "function"
+            &&
+            element.hasAttribute(
+                "data-aquila-deck-r9"
+            )
+            &&
+            headerLane
+            &&
+            headerLane.hasAttribute(
+                "data-aquila-deck-lane"
+            )
+        );
+    }
+
+    function diagnosticState() {
+        const api =
+            owner();
+
+        if (
+            !api
+            ||
+            typeof api.diagnose !== "function"
+        ) {
+            return null;
+        }
+
+        try {
+            return api.diagnose();
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function geometryState() {
+        const element =
+            deck();
+
+        if (!element) {
+            return {
+                ready: false,
+                reason: "deck-not-mounted",
+            };
+        }
+
+        if (
+            mobileHiddenIsValid(
+                element
+            )
+        ) {
+            return {
+                ready: true,
+                mobileHidden: true,
+                reason:
+                    "desktop-v7-deck-intentionally-hidden-on-mobile",
+            };
+        }
+
+        if (!visible(element)) {
+            return {
+                ready: false,
+                reason: "deck-not-visible",
+            };
+        }
+
+        if (!ownerReady(element)) {
+            return {
+                ready: false,
+                reason:
+                    "r9-owner-or-header-lane-not-ready",
+            };
+        }
+
+        const rect =
+            element.getBoundingClientRect();
+
+        const targetTop =
+            expectedTop();
+
+        const actualCenter =
+            rect.left
+            +
+            (
+                rect.width / 2
+            );
+
+        const viewportCenter =
+            window.innerWidth / 2;
+
+        const topDelta =
+            Math.abs(
+                rect.top
+                -
+                targetTop
+            );
+
+        const centerDelta =
+            Math.abs(
+                actualCenter
+                -
+                viewportCenter
+            );
+
+        const diag =
+            diagnosticState();
+
+        const diagnosticTopValid =
+            !diag
+            ||
+            !Number.isFinite(
+                Number(
+                    diag.deckTop
+                )
+            )
+            ||
+            Math.abs(
+                Number(
+                    diag.deckTop
+                )
+                -
+                targetTop
+            ) <= TOP_TOLERANCE_PX;
+
+        const diagnosticVisibleValid =
+            !diag
+            ||
+            diag.deckVisible !== false;
+
+        const ready =
+            topDelta <= TOP_TOLERANCE_PX
+            &&
+            centerDelta <= CENTER_TOLERANCE_PX
+            &&
+            diagnosticTopValid
+            &&
+            diagnosticVisibleValid;
+
+        return {
+            ready,
+            reason:
+                ready
+                    ? "final-r9-geometry"
+                    : "geometry-not-final",
+
+            targetTop,
+            deckTop:
+                rect.top,
+
+            deckBottom:
+                rect.bottom,
+
+            deckLeft:
+                rect.left,
+
+            deckWidth:
+                rect.width,
+
+            actualCenter,
+            viewportCenter,
+            topDelta,
+            centerDelta,
+
+            ownerAttribute:
+                element.getAttribute(
+                    "data-aquila-deck-r9"
+                ),
+
+            lanePresent:
+                Boolean(
+                    lane()
+                ),
+
+            laneOwned:
+                Boolean(
+                    lane()
+                    ?.hasAttribute(
+                        "data-aquila-deck-lane"
+                    )
+                ),
+
+            diagnostic:
+                diag,
+        };
+    }
+
+    function release(reason) {
+        document.documentElement
+            .removeAttribute(
+                ROOT_ATTR
+            );
+
+        stableFrames = 0;
+
+        if (frame) {
+            cancelAnimationFrame(
+                frame
+            );
+
+            frame = 0;
+        }
+
+        if (failSafe) {
+            clearTimeout(
+                failSafe
+            );
+
+            failSafe = 0;
+        }
+
+        lastState = {
+            ...(
+                geometryState()
+            ),
+            released:
+                true,
+
+            releaseReason:
+                reason,
+        };
+    }
+
+    function watch() {
+        const state =
+            geometryState();
+
+        lastState =
+            state;
+
+        if (state.ready) {
+            stableFrames += 1;
+        } else {
+            stableFrames = 0;
+        }
+
+        if (
+            stableFrames
+            >=
+            REQUIRED_STABLE_FRAMES
+        ) {
+            release(
+                "stable-final-r9-geometry"
+            );
+
+            return;
+        }
+
+        frame =
+            requestAnimationFrame(
+                watch
+            );
+    }
+
+    function engage(reason) {
+        document.documentElement
+            .setAttribute(
+                ROOT_ATTR,
+                "1"
+            );
+
+        stableFrames = 0;
+
+        lastState = {
+            reason,
+            pending: true,
+        };
+
+        if (frame) {
+            cancelAnimationFrame(
+                frame
+            );
+        }
+
+        frame =
+            requestAnimationFrame(
+                watch
+            );
+
+        if (failSafe) {
+            clearTimeout(
+                failSafe
+            );
+        }
+
+        /*
+         * Fail-safe only.
+         * Never leave the navigation permanently invisible
+         * if the existing R9 owner itself fails.
+         */
+        failSafe =
+            setTimeout(
+                () => {
+                    release(
+                        "failsafe-timeout"
+                    );
+                },
+                6000
+            );
+    }
+
+    function navigationControl(
+        event
+    ) {
+        const target =
+            event.target
+            instanceof Element
+                ? event.target.closest(
+                    'button,a,[role="button"],[role="tab"]'
+                )
+                : null;
+
+        if (!target) {
+            return false;
+        }
+
+        if (
+            target.closest(
+                DECK_SELECTOR
+            )
+        ) {
+            /*
+             * AQUILA R45
+             *
+             * A click inside the Top Menu Deck must never pre-hide
+             * the Deck itself.
+             *
+             * R41 previously returned true here, which caused the
+             * capture-phase click handler to call engage() before
+             * navigation completed. That set the R41 finalizing
+             * attribute and temporarily reduced the Deck to opacity 0.
+             *
+             * Genuine route changes remain covered by hashchange,
+             * popstate and pageshow. The R9 Deck owner remains the
+             * only geometry authority.
+             */
+            return false;
+        }
+
+        if (
+            target.closest(
+                '[data-principal-menu] > button[data-section]'
+            )
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /*
+     * Hide BEFORE React/native navigation can remount or
+     * temporarily reposition the Deck.
+     */
+    document.addEventListener(
+        "click",
+        event => {
+            if (
+                navigationControl(
+                    event
+                )
+            ) {
+                engage(
+                    "navigation-click"
+                );
+            }
+        },
+        true
+    );
+
+    window.addEventListener(
+        "hashchange",
+        () => {
+            /*
+             * AQUILA R46 — ROUTE STABILITY
+             *
+             * The V7 Top Menu Deck is already mounted and owned by R9.
+             * A route hash change must therefore NOT make an already
+             * stable navigation surface transparent.
+             *
+             * R9 remains responsible for geometry and active-state
+             * reconciliation after route changes.
+             */
+            lastState = {
+                reason:
+                    "hashchange-observed-no-deck-hide",
+
+                pending:
+                    document.documentElement
+                        .hasAttribute(
+                            ROOT_ATTR
+                        ),
+            };
+        },
+        {
+            passive: true,
+        }
+    );
+
+    window.addEventListener(
+        "popstate",
+        () => {
+            /*
+             * AQUILA R46 — HISTORY STABILITY
+             *
+             * Browser Back/Forward must not temporarily hide an
+             * already-mounted Top Menu Deck.
+             */
+            lastState = {
+                reason:
+                    "popstate-observed-no-deck-hide",
+
+                pending:
+                    document.documentElement
+                        .hasAttribute(
+                            ROOT_ATTR
+                        ),
+            };
+        },
+        {
+            passive: true,
+        }
+    );
+
+    window.addEventListener(
+        "pageshow",
+        () => {
+            engage(
+                "pageshow"
+            );
+        },
+        {
+            passive: true,
+        }
+    );
+
+    window.addEventListener(
+        "resize",
+        () => {
+            engage(
+                "resize"
+            );
+        },
+        {
+            passive: true,
+        }
+    );
+
+    window.addEventListener(
+        "orientationchange",
+        () => {
+            engage(
+                "orientationchange"
+            );
+        },
+        {
+            passive: true,
+        }
+    );
+
+    /*
+     * First paint protection:
+     * this script is inserted immediately after <head>.
+     */
+    document.documentElement
+        .setAttribute(
+            ROOT_ATTR,
+            "1"
+        );
+
+    if (
+        document.readyState
+        ===
+        "loading"
+    ) {
+        document.addEventListener(
+            "DOMContentLoaded",
+            () => {
+                engage(
+                    "dom-ready"
+                );
+            },
+            {
+                once: true,
+            }
+        );
+    } else {
+        engage(
+            "script-ready"
+        );
+    }
+
+    window.__AQUILA_TOP_MENU_DECK_FINAL_PAINT_R41__ =
+        Object.freeze({
+            release:
+                RELEASE,
+
+            status() {
+                return {
+                    pending:
+                        document.documentElement
+                            .hasAttribute(
+                                ROOT_ATTR
+                            ),
+
+                    stableFrames,
+                    requiredStableFrames:
+                        REQUIRED_STABLE_FRAMES,
+
+                    ...geometryState(),
+
+                    lastState,
+                };
+            },
+        });
+})();
+
+</script>
+<style id="aquila-finance-overview-final-state-r40-style">
+html[data-aquila-finance-overview-finalizing="1"] .finance-reference-v1 {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+</style>
+
+<script data-aquila-finance-overview-final-state="r40">
+(() => {
+    "use strict";
+
+    const RELEASE =
+        "AQUILA_FINANCE_OVERVIEW_FINAL_STATE_R40";
+
+    const ATTR =
+        "data-aquila-finance-overview-finalizing";
+
+    if (
+        window.__AQUILA_FINANCE_OVERVIEW_FINAL_STATE_R40__
+        ?.release === RELEASE
+    ) {
+        return;
+    }
+
+    let frame = 0;
+    let failSafe = 0;
+
+    function params() {
+        try {
+            return new URLSearchParams(
+                String(
+                    location.hash || ""
+                ).replace(
+                    /^#/,
+                    ""
+                )
+            );
+        } catch (_) {
+            return new URLSearchParams();
+        }
+    }
+
+    function overviewRoute() {
+        const p = params();
+
+        return (
+            p.get("section") === "finance"
+            &&
+            (
+                !p.get("finance")
+                ||
+                p.get("finance") === "overview"
+            )
+        );
+    }
+
+    function root() {
+        return document.querySelector(
+            ".finance-reference-v1"
+        );
+    }
+
+    function dataBound(node) {
+        return Boolean(
+            node
+            &&
+            node.getAttribute(
+                "data-aquila-finance-overview-r2-5"
+            ) === "bound"
+        );
+    }
+
+    function visuallyPolished(node) {
+        return Boolean(
+            node
+            &&
+            node.getAttribute(
+                "data-aquila-finance-visual-polish-r2-6"
+            ) === "active"
+        );
+    }
+
+    function lifecycleDone() {
+        const api =
+            window.__AQUILA_FINANCE_OVERVIEW_R29__;
+
+        if (
+            !api
+            ||
+            typeof api.diagnose !== "function"
+        ) {
+            return false;
+        }
+
+        try {
+            const state =
+                api.diagnose();
+
+            return (
+                Number(
+                    state?.runs || 0
+                ) > 0
+            );
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function finalReady() {
+        const node = root();
+
+        return (
+            overviewRoute()
+            &&
+            dataBound(node)
+            &&
+            visuallyPolished(node)
+            &&
+            lifecycleDone()
+        );
+    }
+
+    function release() {
+        document.documentElement
+            .removeAttribute(
+                ATTR
+            );
+
+        if (frame) {
+            cancelAnimationFrame(
+                frame
+            );
+
+            frame = 0;
+        }
+
+        if (failSafe) {
+            clearTimeout(
+                failSafe
+            );
+
+            failSafe = 0;
+        }
+    }
+
+    function watch() {
+        if (!overviewRoute()) {
+            release();
+            return;
+        }
+
+        if (finalReady()) {
+            release();
+            return;
+        }
+
+        frame =
+            requestAnimationFrame(
+                watch
+            );
+    }
+
+    function engage() {
+        if (!overviewRoute()) {
+            release();
+            return;
+        }
+
+        document.documentElement
+            .setAttribute(
+                ATTR,
+                "1"
+            );
+
+        if (frame) {
+            cancelAnimationFrame(
+                frame
+            );
+        }
+
+        frame =
+            requestAnimationFrame(
+                watch
+            );
+
+        if (failSafe) {
+            clearTimeout(
+                failSafe
+            );
+        }
+
+        /*
+         * Fail-safe only.
+         * It prevents a permanent invisible page if an existing
+         * Finance owner fails independently.
+         */
+        failSafe =
+            setTimeout(
+                release,
+                8000
+            );
+    }
+
+    function label(value) {
+        return String(
+            value || ""
+        )
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim()
+            .toLowerCase();
+    }
+
+    /*
+     * Capture before React handles an Overview navigation click,
+     * so the old/raw state cannot paint between route ownership
+     * and the final Finance Overview state.
+     */
+    document.addEventListener(
+        "click",
+        event => {
+            const target =
+                event.target instanceof Element
+                    ? event.target.closest(
+                        'button,a,[role="button"],[role="tab"]'
+                    )
+                    : null;
+
+            if (!target) {
+                return;
+            }
+
+            const text =
+                label(
+                    target.textContent
+                );
+
+            const overviewControl =
+                (
+                    text === "overview"
+                    ||
+                    text === "finance overview"
+                )
+                &&
+                Boolean(
+                    target.closest(
+                        'nav[aria-label="Finance workspace navigation"],'
+                        +
+                        'nav[aria-label="Finance workspace sections"]'
+                    )
+                );
+
+            const financePrincipal =
+                target.matches(
+                    '[data-principal-menu="finance"] > button[data-section="finance"]'
+                )
+                ||
+                Boolean(
+                    target.closest(
+                        '[data-principal-menu="finance"] > button[data-section="finance"]'
+                    )
+                );
+
+            if (
+                overviewControl
+                ||
+                financePrincipal
+            ) {
+                document.documentElement
+                    .setAttribute(
+                        ATTR,
+                        "1"
+                    );
+            }
+        },
+        true
+    );
+
+    window.addEventListener(
+        "hashchange",
+        () => {
+            if (overviewRoute()) {
+                engage();
+            } else {
+                release();
+            }
+        },
+        {
+            passive: true,
+        }
+    );
+
+    window.addEventListener(
+        "popstate",
+        () => {
+            if (overviewRoute()) {
+                engage();
+            } else {
+                release();
+            }
+        },
+        {
+            passive: true,
+        }
+    );
+
+    window.addEventListener(
+        "pageshow",
+        () => {
+            if (overviewRoute()) {
+                engage();
+            } else {
+                release();
+            }
+        },
+        {
+            passive: true,
+        }
+    );
+
+    /*
+     * This script is deliberately placed at first HEAD paint.
+     */
+    if (overviewRoute()) {
+        document.documentElement
+            .setAttribute(
+                ATTR,
+                "1"
+            );
+
+        if (
+            document.readyState === "loading"
+        ) {
+            document.addEventListener(
+                "DOMContentLoaded",
+                engage,
+                {
+                    once: true,
+                }
+            );
+        } else {
+            engage();
+        }
+    }
+
+    window.__AQUILA_FINANCE_OVERVIEW_FINAL_STATE_R40__ =
+        Object.freeze({
+            release:
+                RELEASE,
+
+            status() {
+                const node = root();
+
+                return {
+                    route:
+                        overviewRoute(),
+
+                    pending:
+                        document.documentElement
+                            .hasAttribute(
+                                ATTR
+                            ),
+
+                    rootPresent:
+                        Boolean(node),
+
+                    dataBound:
+                        dataBound(node),
+
+                    visuallyPolished:
+                        visuallyPolished(node),
+
+                    lifecycleDone:
+                        lifecycleDone(),
+
+                    finalReady:
+                        finalReady(),
+                };
+            },
+        });
+})();
+</script>
+<meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#4B5320" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -9,10 +1033,116 @@
     <meta name="apple-mobile-web-app-title" content="Ubuzima+" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="format-detection" content="telephone=no" />
-    <link rel="manifest" href="/admin/manifest.webmanifest" />
+    <link rel="manifest" href="/admin/manifest.webmanifest?v=94686df82874" />
     <link rel="icon" type="image/svg+xml" href="/admin/assets/ubuzima-pwa-icon.svg" />
     <link rel="apple-touch-icon" href="/admin/assets/vitapharma-logo.png" />
     <title>Ubuzima+ Admin Dashboard</title>
+    <!-- AQUILA_R108_POS_LOAD_UX -->
+    <link rel="modulepreload" href="/admin/assets/admin-main-runtime-a026bbdf5432.js?v=a026bbdf5432" />
+    <link rel="preload" as="script" href="/admin/runtime-extensions/pharmacy-pos-vnext-r5-10-1-r90-post-confirm-session-6995eb0053e4.js?v=6995eb0053e4" />
+    <link rel="preload" as="script" href="/admin/runtime-extensions/sales-recording-integrity-v3-8-r4-canonical-identity-r107-sales-create-6e8f0dae7bc3.js?v=6e8f0dae7bc3" />
+    <style>
+      .ubuzima-boot-fallback__card::after {
+        content: "";
+        display: block;
+        height: 3px;
+        margin-top: 8px;
+        background: #4b5320;
+        width: 36%;
+        animation: aquila-r108-boot 1.05s ease-in-out infinite alternate;
+      }
+      @keyframes aquila-r108-boot {
+        from { width: 18%; opacity: 0.4; }
+        to { width: 94%; opacity: 1; }
+      }
+      html.aquila-r108-pos-active .ubuzima-workspace-dock-v5 {
+        pointer-events: none;
+      }
+      html.aquila-r108-pos-active .ubuzima-workspace-dock-v5 a,
+      html.aquila-r108-pos-active .ubuzima-workspace-dock-v5 button,
+      html.aquila-r108-pos-active .ubuzima-workspace-dock-v5 [role="button"],
+      html.aquila-r108-pos-active .ubuzima-workspace-dock-v5 input,
+      html.aquila-r108-pos-active .ubuzima-workspace-dock-v5 select {
+        pointer-events: auto;
+      }
+      html.aquila-r108-pos-active .pos-drug-list--ten button,
+      html.aquila-r108-pos-active .pos-transaction-setup-section button,
+      html.aquila-r108-pos-active .pos-print-receipt-button,
+      html.aquila-r108-pos-active button[class*="pos-"] {
+        touch-action: manipulation;
+      }
+    </style>
+    <script>
+      (function () {
+        if (window.__AQUILA_R108_POS_LOAD_UX__) return;
+        window.__AQUILA_R108_POS_LOAD_UX__ = true;
+        function apply() {
+          var h = String(location.hash || "");
+          var onPos = h.indexOf("section=pos") !== -1;
+          document.documentElement.classList.toggle("aquila-r108-pos-active", onPos);
+        }
+        apply();
+        window.addEventListener("hashchange", apply);
+      })();
+    </script>
+    <!-- AQUILA_R109_SINGLE_MENU_DECK -->
+    <style>
+      @media (min-width: 768px) {
+        .ubuzima-native-tabbar,
+        .ubuzima-mobile-bottom-nav {
+          display: none !important;
+        }
+        nav.ubuzima-workspace-dock-v5[data-aquila-r109-hidden="1"] {
+          display: none !important;
+        }
+      }
+    </style>
+    <script>
+      (function () {
+        if (window.__AQUILA_R109_SINGLE_MENU_DECK__) return;
+        window.__AQUILA_R109_SINGLE_MENU_DECK__ = true;
+        var PREFERRED = "UBIZIMA_CONTINUOUS_MAC_WORKSPACE_DOCK_V7";
+        function isDesktop() {
+          return !window.matchMedia || window.matchMedia("(min-width: 768px)").matches;
+        }
+        function hide(el) {
+          if (!el) return;
+          el.setAttribute("data-aquila-r109-hidden", "1");
+          el.setAttribute("aria-hidden", "true");
+        }
+        function keep(el) {
+          if (!el) return;
+          el.removeAttribute("data-aquila-r109-hidden");
+          el.removeAttribute("aria-hidden");
+        }
+        function apply() {
+          if (!isDesktop()) return;
+          var docks = document.querySelectorAll("nav.ubuzima-workspace-dock-v5");
+          if (docks.length < 2) return;
+          var preferred = [];
+          var i;
+          for (i = 0; i < docks.length; i++) {
+            if (docks[i].getAttribute("data-ubuzima-workspace-dock-v5") === PREFERRED) {
+              preferred.push(docks[i]);
+            } else {
+              hide(docks[i]);
+            }
+          }
+          var keepList = preferred.length ? preferred : [docks[docks.length - 1]];
+          for (i = 0; i < keepList.length - 1; i++) hide(keepList[i]);
+          keep(keepList[keepList.length - 1]);
+        }
+        apply();
+        if (document.documentElement) {
+          new MutationObserver(apply).observe(document.documentElement, {
+            childList: true,
+            subtree: true
+          });
+        }
+        document.addEventListener("DOMContentLoaded", apply);
+        window.addEventListener("load", apply);
+      })();
+    </script>
     <style>
       .ubuzima-boot-fallback {
         min-height: 100dvh;
@@ -135,7 +1265,7 @@
               await Promise.all(
                 keys
                   .filter(function (key) {
-                    return key.indexOf('ubuzima-admin-shell') === 0;
+                    return key.indexOf('ubuzima-admin-') === 0;
                   })
                   .map(function (key) {
                     return caches.delete(key);
@@ -191,9 +1321,1122 @@
 
 
 
-  <script type="module" crossorigin src="/admin/assets/index-Du9B3n-5-inventory-active-supplier-20260801T085413Z-supplier-create-8a0c037.js"></script>
+  
+<script src="/admin/runtime-extensions/pos-terminal-context-v5.js?v=20260806T192317Z" data-ubuzima-pos-terminal-extension="v5"></script>
+<script src="/admin/runtime-extensions/sales-checkout-persistence-bridge-v3-0d21f0ab0a29.js?v=20260809T080120Z" data-ubuzima-sales-checkout-persistence-bridge="v3"></script>
+<script src="/admin/runtime-extensions/sales-register-reprint-persisted-v1-6649ee01fc2e.js?v=20260809T065552Z" data-ubuzima-sales-register-reprint-persisted="v1"></script>
+<script data-ubuzima-analytics-paid-only="v2" src="/admin/runtime-extensions/analytics-completed-paid-only-v2-a0b675833c72.js"></script>
+<script defer data-ubuzima-pos-session-handover="r5-7-8m-r1" src="/admin/runtime-extensions/pos-session-expected-handover-r85b-responsive-e27f801fde89.js?v=e27f801fde89"></script>
+<script defer src="/admin/runtime-extensions/finance-commercial-request-guard-r30-62ecbf3d7890.js"></script>
+<link rel="stylesheet" href="/admin/runtime-extensions/finance-overview-first-paint-r1-9c26391915c5.css?v=20260819T211649" data-aquila-finance-overview-first-paint="r1">
+<script src="/admin/runtime-extensions/admin-finance-route-state-r3-482a98b45ea8.js?v=20260819T214505" data-aquila-admin-finance-route="r3-native-resume"></script>
+<script type="module" crossorigin fetchpriority="high" src="/admin/assets/admin-main-runtime-a026bbdf5432.js?v=a026bbdf5432"></script>
   <link rel="modulepreload" crossorigin href="/admin/assets/react-vendor-DjB5-EPc.js">
   <link rel="stylesheet" crossorigin href="/admin/assets/index-Bw2iNh5W.css">
+  <link rel="stylesheet" href="/admin/assets/pos-catalogue-scroll-layer1-91c3464889.css" data-ubuzima-layer="pos-catalogue-scroll-layer1">
+
+<style data-ubuzima-deterministic-recent-sales="v3-8-r1">
+html:not(.ubuzima-v38r1-recent-stable)
+.pos-recent-transactions-bottom table {
+  visibility: hidden !important;
+}
+
+html.ubuzima-v38r1-recent-stable
+.pos-recent-transactions-bottom table {
+  visibility: visible !important;
+}
+
+.pos-recent-transactions-bottom table {
+  transition: none !important;
+}
+</style>
+<meta name="ubuzima-release" content="sales-commercial-determinism-v3-8-r1">
+
+<style data-ubuzima-recent-sales-inert="v3-8-r1">
+.pos-recent-transactions-bottom tbody tr,
+.pos-recent-transactions-bottom tbody td {
+  cursor: default !important;
+}
+
+.pos-recent-transactions-bottom tbody tr:focus,
+.pos-recent-transactions-bottom tbody td:focus {
+  outline: none !important;
+}
+</style>
+
+<!-- UBUZIMA_V4_0_R2_REAL_SOURCE_START -->
+<!-- UBUZIMA_V4_0_R2_REAL_SOURCE_END -->
+
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-quantity-price-popup-v3-3e8b6510f3cf.css?v=20260808T233456Z" data-ubuzima-pos-popup-lock="v3">
+
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-quantity-visible-v4-825b9159d5cd.css?v=20260809T062254Z" data-ubuzima-pos-quantity-visible="v4">
+  <link rel="stylesheet" data-aquila-pos-sales-ui="r579c-r2" href="/admin/runtime-extensions/pos-sales-overview-ui-final-close-dd5c04833ad2.css?v=20260809T171100Z?v=20260809T165640Z">
+
+  
+    
+    
+    
+    
+
+
+    <style data-ubz-static-glass-deck-v1-css="1">
+/* ==============================================================
+   UBUZIMA+ STATIC GLASS DECK V1
+
+   Contract:
+   The Deck is physically inert under pointer hover.
+
+   Hover may reveal a name/tooltip or change non-geometric paint,
+   but cannot change any Deck or icon geometry.
+   ============================================================== */
+
+
+/* --------------------------------------------------------------
+   ONE STABLE DECK CONTAINER
+
+   No translateX centering.
+   Browser centers the fixed-width rail using left/right + margin.
+   -------------------------------------------------------------- */
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"] {
+  position:
+    fixed
+    !important;
+
+  top:
+    10px
+    !important;
+
+  left:
+    0
+    !important;
+
+  right:
+    0
+    !important;
+
+  bottom:
+    auto
+    !important;
+
+  width:
+    min(1120px, calc(100vw - 24px))
+    !important;
+
+  min-width:
+    0
+    !important;
+
+  max-width:
+    min(1120px, calc(100vw - 24px))
+    !important;
+
+  height:
+    66px
+    !important;
+
+  min-height:
+    66px
+    !important;
+
+  max-height:
+    66px
+    !important;
+
+  margin:
+    0 auto
+    !important;
+
+  padding:
+    7px 12px
+    !important;
+
+  box-sizing:
+    border-box
+    !important;
+
+  display:
+    flex
+    !important;
+
+  align-items:
+    center
+    !important;
+
+  justify-content:
+    center
+    !important;
+
+  align-content:
+    center
+    !important;
+
+  gap:
+    6px
+    !important;
+
+  transform:
+    none
+    !important;
+
+  translate:
+    none
+    !important;
+
+  scale:
+    1
+    !important;
+
+  animation:
+    none
+    !important;
+
+  transition:
+    none
+    !important;
+
+  will-change:
+    auto
+    !important;
+
+  contain:
+    layout style
+    !important;
+
+  overflow-x:
+    auto
+    !important;
+
+  overflow-y:
+    visible
+    !important;
+
+  scrollbar-width:
+    none;
+
+  z-index:
+    1000
+    !important;
+}
+
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+::-webkit-scrollbar {
+  display:
+    none;
+}
+
+
+/* --------------------------------------------------------------
+   NON-OWNER DECKS
+
+   Only exact known Deck candidate elements are marked by the
+   Static Glass Deck runtime.
+   -------------------------------------------------------------- */
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-non-owner="1"] {
+  display:
+    none
+    !important;
+}
+
+
+/* --------------------------------------------------------------
+   FIXED MENU ITEM GEOMETRY
+
+   A tooltip/name appearing cannot change button dimensions.
+   -------------------------------------------------------------- */
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+:is(
+  button,
+  a,
+  [role="button"],
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task
+) {
+  flex:
+    0 0 48px
+    !important;
+
+  width:
+    48px
+    !important;
+
+  min-width:
+    48px
+    !important;
+
+  max-width:
+    48px
+    !important;
+
+  height:
+    48px
+    !important;
+
+  min-height:
+    48px
+    !important;
+
+  max-height:
+    48px
+    !important;
+
+  margin:
+    0
+    !important;
+
+  box-sizing:
+    border-box
+    !important;
+
+  transform:
+    none
+    !important;
+
+  translate:
+    none
+    !important;
+
+  scale:
+    1
+    !important;
+
+  animation:
+    none
+    !important;
+
+  will-change:
+    auto
+    !important;
+
+  /*
+   * Do not globally disable transition.
+   *
+   * Existing tooltip/background paint transitions may remain,
+   * but geometry is physically locked above.
+   */
+}
+
+
+/* --------------------------------------------------------------
+   EVERY INTERACTION STATE HAS IDENTICAL GEOMETRY
+   -------------------------------------------------------------- */
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+:is(
+  button,
+  a,
+  [role="button"],
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task
+):is(
+  :hover,
+  :focus,
+  :focus-visible,
+  :active
+) {
+  flex-basis:
+    48px
+    !important;
+
+  width:
+    48px
+    !important;
+
+  min-width:
+    48px
+    !important;
+
+  max-width:
+    48px
+    !important;
+
+  height:
+    48px
+    !important;
+
+  min-height:
+    48px
+    !important;
+
+  max-height:
+    48px
+    !important;
+
+  margin:
+    0
+    !important;
+
+  transform:
+    none
+    !important;
+
+  translate:
+    none
+    !important;
+
+  scale:
+    1
+    !important;
+
+  animation:
+    none
+    !important;
+
+  will-change:
+    auto
+    !important;
+}
+
+
+/* --------------------------------------------------------------
+   PREVIOUS NEIGHBOUR CANNOT MAGNIFY
+   -------------------------------------------------------------- */
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+.ubuzima-source-dock__app:has(
+  + .ubuzima-source-dock__app:hover
+),
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+.ubuzima-source-dock__task:has(
+  + .ubuzima-source-dock__task:hover
+) {
+  transform:
+    none
+    !important;
+
+  translate:
+    none
+    !important;
+
+  scale:
+    1
+    !important;
+
+  animation:
+    none
+    !important;
+}
+
+
+/* --------------------------------------------------------------
+   NEXT NEIGHBOUR CANNOT MAGNIFY
+   -------------------------------------------------------------- */
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+.ubuzima-source-dock__app:hover
++ .ubuzima-source-dock__app,
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+.ubuzima-source-dock__task:hover
++ .ubuzima-source-dock__task {
+  transform:
+    none
+    !important;
+
+  translate:
+    none
+    !important;
+
+  scale:
+    1
+    !important;
+
+  animation:
+    none
+    !important;
+}
+
+
+/* --------------------------------------------------------------
+   ICON ARTWORK IS ABSOLUTELY STATIC
+   -------------------------------------------------------------- */
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+:is(
+  .ubuzima-source-dock__glass-icon,
+  [data-icon]
+) {
+  transform:
+    none
+    !important;
+
+  translate:
+    none
+    !important;
+
+  scale:
+    1
+    !important;
+
+  animation:
+    none
+    !important;
+
+  will-change:
+    auto
+    !important;
+}
+
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+:is(
+  button,
+  a,
+  [role="button"],
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task
+)
+:is(
+  img,
+  svg
+) {
+  width:
+    32px
+    !important;
+
+  height:
+    32px
+    !important;
+
+  max-width:
+    32px
+    !important;
+
+  max-height:
+    32px
+    !important;
+
+  transform:
+    none
+    !important;
+
+  translate:
+    none
+    !important;
+
+  scale:
+    1
+    !important;
+
+  animation:
+    none
+    !important;
+
+  will-change:
+    auto
+    !important;
+}
+
+
+/* --------------------------------------------------------------
+   NAME / TOOLTIP LAYER
+
+   Common label/title descendants may appear but cannot participate
+   in the button's flex geometry.
+   -------------------------------------------------------------- */
+
+html[data-ubz-static-glass-deck-v1="1"]
+body
+[data-ubz-static-glass-deck-v1-owner="1"]
+:is(
+  button,
+  a,
+  [role="button"],
+  .ubuzima-source-dock__app,
+  .ubuzima-source-dock__task
+)
+:is(
+  [role="tooltip"],
+  .tooltip,
+  .dock-tooltip,
+  .deck-tooltip,
+  .ubuzima-source-dock__tooltip,
+  .ubuzima-source-dock__label
+) {
+  position:
+    absolute
+    !important;
+
+  pointer-events:
+    none
+    !important;
+
+  white-space:
+    nowrap
+    !important;
+}
+
+
+/* --------------------------------------------------------------
+   TABLET
+   -------------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+
+  html[data-ubz-static-glass-deck-v1="1"]
+  body
+  [data-ubz-static-glass-deck-v1-owner="1"] {
+    width:
+      calc(100vw - 16px)
+      !important;
+
+    max-width:
+      calc(100vw - 16px)
+      !important;
+
+    padding-inline:
+      8px
+      !important;
+
+    gap:
+      4px
+      !important;
+  }
+
+}
+
+
+/* --------------------------------------------------------------
+   MOBILE
+
+   Still fixed geometry; horizontal scrolling handles menu count.
+   -------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+
+  html[data-ubz-static-glass-deck-v1="1"]
+  body
+  [data-ubz-static-glass-deck-v1-owner="1"] {
+    top:
+      6px
+      !important;
+
+    width:
+      calc(100vw - 8px)
+      !important;
+
+    max-width:
+      calc(100vw - 8px)
+      !important;
+
+    height:
+      60px
+      !important;
+
+    min-height:
+      60px
+      !important;
+
+    max-height:
+      60px
+      !important;
+
+    padding:
+      6px
+      !important;
+
+    justify-content:
+      flex-start
+      !important;
+  }
+
+
+  html[data-ubz-static-glass-deck-v1="1"]
+  body
+  [data-ubz-static-glass-deck-v1-owner="1"]
+  :is(
+    button,
+    a,
+    [role="button"],
+    .ubuzima-source-dock__app,
+    .ubuzima-source-dock__task
+  ) {
+    flex-basis:
+      44px
+      !important;
+
+    width:
+      44px
+      !important;
+
+    min-width:
+      44px
+      !important;
+
+    max-width:
+      44px
+      !important;
+
+    height:
+      44px
+      !important;
+
+    min-height:
+      44px
+      !important;
+
+    max-height:
+      44px
+      !important;
+  }
+
+
+  html[data-ubz-static-glass-deck-v1="1"]
+  body
+  [data-ubz-static-glass-deck-v1-owner="1"]
+  :is(
+    button,
+    a,
+    [role="button"],
+    .ubuzima-source-dock__app,
+    .ubuzima-source-dock__task
+  )
+  :is(
+    img,
+    svg
+  ) {
+    width:
+      30px
+      !important;
+
+    height:
+      30px
+      !important;
+
+    max-width:
+      30px
+      !important;
+
+    max-height:
+      30px
+      !important;
+  }
+
+}
+    </style>
+
+
+
+
+
+
+<link rel="stylesheet" href="/admin/runtime-extensions/pharmacy-pos-vnext-first-landing-p3-6-r1-568f91ef7a32.css" data-aquila-pharmacy-pos-vnext-css="1">
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-live-session-caption-r5-11-3-p3-5-6ce7eadf6678.css?approved_pos_counter_restore=20260812T082324Z" data-ubz-approved-pos-counter-p35="1">
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-counter-typography-unified-r1-9fb65bee5b30.css" data-ubuzima-pos-typography="unified-r1">
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-counter-typography-r176-product-name-d37e20388ba4.css">
+
+<style id="aquila-live-owner-closure-r1" data-ubuzima-live-owner="browser-proven-v7">
+/* AQUILA_LIVE_OWNER_CLOSURE_R1 */
+/*
+ * AQUILA LIVE OWNER CLOSURE R1
+ *
+ * Browser-proven Deck:
+ *
+ * <nav
+ *   class="ubuzima-workspace-dock-v5 has-recent-tasks"
+ *   data-ubuzima-workspace-dock-v5=
+ *     "UBIZIMA_CONTINUOUS_MAC_WORKSPACE_DOCK_V7"
+ * >
+ *
+ * Browser-proven pre-fix computed state:
+ *   position: fixed
+ *   top: 894px
+ *   bottom: 12px
+ *   left: 618px
+ *   width: 1202px
+ *
+ * IMPORTANT:
+ * We DO NOT change width.
+ * The approved V7 Deck composition remains intact.
+ */
+
+/* ==============================================================
+   EXACT LIVE V7 DECK POSITION OWNER
+   ============================================================== */
+
+html
+body
+nav.ubuzima-workspace-dock-v5.has-recent-tasks[
+    data-ubuzima-workspace-dock-v5
+] {
+    position: fixed !important;
+
+    top: 10px !important;
+    bottom: auto !important;
+
+    left: 50% !important;
+    right: auto !important;
+
+    transform: translateX(-50%) !important;
+
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+
+    z-index: 2147483000 !important;
+}
+
+/*
+ * Also target the same browser-proven V7 owner without depending
+ * on the recent-task state.
+ */
+html
+body
+nav.ubuzima-workspace-dock-v5[
+    data-ubuzima-workspace-dock-v5="UBIZIMA_CONTINUOUS_MAC_WORKSPACE_DOCK_V7"
+] {
+    position: fixed !important;
+
+    top: 10px !important;
+    bottom: auto !important;
+
+    left: 50% !important;
+    right: auto !important;
+
+    transform: translateX(-50%) !important;
+
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+
+    z-index: 2147483000 !important;
+}
+
+@media (max-width: 767px) {
+
+    html
+    body
+    nav.ubuzima-workspace-dock-v5[
+        data-ubuzima-workspace-dock-v5
+    ] {
+        top: 6px !important;
+        bottom: auto !important;
+    }
+}
+
+/* ==============================================================
+   EXACT CART ACTION OWNER
+   ============================================================== */
+
+/*
+ * Keep the Action cell itself on one text line.
+ */
+html
+body
+.pos-counter-page--dedicated
+.pos-sale-cart-section
+.pos-cart-table
+tbody
+tr
+td:nth-child(4) {
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+}
+
+/*
+ * Exact native button:
+ *   <button class="pos-cart-remove-button">Remove</button>
+ *
+ * Keep existing width/layout.
+ * Only make the label deterministic and centered.
+ */
+html
+body
+.pos-counter-page--dedicated
+.pos-sale-cart-section
+.pos-cart-table
+tbody
+tr
+td:nth-child(4)
+button.pos-cart-remove-button {
+    white-space: nowrap !important;
+    text-wrap: nowrap !important;
+
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+
+    font-size: .60rem !important;
+    line-height: 1.15 !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+</style>
+    <link rel="stylesheet" data-aquila-pos-remove-geometry-r2="1" href="/admin/runtime-extensions/pos-cart-remove-geometry-r2-343089a6145f.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-context-navigation-removal-r1-72ec08c784dd.css" data-aquila-pos-context-navigation-removal-r1="1">
+<link rel="stylesheet" href="runtime-extensions/finance-direct-data-labels-r22-e99df1810283.css">
+<link rel="stylesheet" href="runtime-extensions/pos-payment-summary-deterministic-grid-r1-041575e548cc.css">
+<link rel="stylesheet" href="runtime-extensions/finance-r21-recent-transactions-description-nowrap-bb0076ec758d.css">
+<link rel="stylesheet" href="runtime-extensions/finance-balance-sheet-r22-6406b29aacb4.css">
+<link rel="stylesheet" href="runtime-extensions/finance-r29-pnl-data-labels-61dc181c1c8c.css">
+<!-- BEGIN AQUILA_IF1_B2_CSS -->
+<link rel="stylesheet" href="/admin/runtime-extensions/inventory-finance-control-center-if2-b1-r3.css?v=20260819T134112">
+<!-- END AQUILA_IF1_B2_CSS -->
+
+<link rel="stylesheet" data-ubz-source-topdeck-r511-css="1" href="runtime-extensions/ubuzima-source-top-deck-r5-11-1-8958614803b3.css?mdr71=f9f3a8ffb3f7">
+<link rel="stylesheet" data-ubz-r5112-r1-css="1" href="runtime-extensions/actual-rendered-top-deck-r5-11-2-r2-da3bb4286de2.css?mdr71=b42b14f015f9">
+<link rel="stylesheet" data-ubz-r5113-css="1" href="runtime-extensions/deck-header-section-r5-11-3-7be40cc6bff6.css?mdr71=5205c99894c6">
+<link rel="stylesheet" href="/admin/runtime-extensions/workspace-dock-name-rail-v1-r1-bf513efa25dc.css?v=20260819T233532" data-aquila-dock-name-rail="v1-r1-css-only">
+<link rel="stylesheet" href="/admin/runtime-extensions/workspace-navigation-v3-r3-be458a77f608.css?v=20260819T234348" data-aquila-dock-hierarchy="v1-css">
+<link rel="stylesheet" href="/admin/runtime-extensions/submenu-activation-b1-r1-c52fcbf446f0.css?v=20260820T085129" data-aquila-submenu-activation="b1-r1-css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-r7-platform-final-6c84bf3b98ee.css" data-aquila-hrm="r6-simple-mighty-css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-b2-workforce-r4-289a9e604cd1.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-b5-self-service-r3-8bdd8fe8bc8e.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-b6-recruitment-onboarding-r2-b40c3d8e429f.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-dock-safe-zone-r1-b81d992de8e8.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-b7-performance-learning-r1-f26db858ee9d.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-b8-relations-offboarding-r1-c69c42cf1c04.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-b9-analytics-reporting-r1-31bc3b32a213.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/hrm-b10-pharmacy-workforce-r1-21ccfe67a984.css">
+<link rel="stylesheet" href="runtime-extensions/hrm-payroll-control-center-complete-r1-694a7e74ac9d.css" data-aquila-payroll-control-center="r1">
+<link rel="stylesheet" href="/admin/runtime-extensions/payroll-r1-browser-shell-r4-1-a9afd508d5e0.css?pr81=71ec3b241abc" data-aquila-payroll-browser-shell="r3">
+<link rel="stylesheet" href="/admin/runtime-extensions/payroll-professional-ui-r5-2-50058ea2ecaf.css?r111=556607a3ed2a" data-aquila-payroll-ui-r5="css">
+<link rel="stylesheet" href="/admin/runtime-extensions/finance-close-books-f2-r3-1-d3a86aaf5f04.css?v=20260824T075701Z">
+<link rel="stylesheet" data-aquila-finance-f3-r4="css" href="/admin/runtime-extensions/finance-chart-of-accounts-f3-r4-4ca5b1a4ad67.css?v=4ca5b1a4ad67">
+<link rel="stylesheet" data-aquila-finance-f3-r4-3-r4="css" href="/admin/runtime-extensions/finance-coa-f3-r4-3-r4-native-b0757169dacd.css?v=b0757169dacd">
+<link rel="stylesheet" data-aquila-finance-f3-r4-4-r2="css" href="/admin/runtime-extensions/finance-coa-f3-r4-4-r2-deck-clearance-4a06b5d738d2.css?v=4a06b5d738d2">
+<link rel="stylesheet" href="/admin/runtime-extensions/finance-ap-f4-r5-r2-r1-e3a3e7dfe4c9.css" data-aquila-release="AQUILA_FINANCE_F4_R5_R2_R1_ASSETS">
+<link rel="stylesheet" href="/admin/runtime-extensions/finance-payables-professional-ab7e868f28af.css">
+
+
+
+
+
+<link rel="stylesheet" href="/admin/runtime-extensions/accounting-control-centre-r8-4-browser-truth-896838b565f3.css?v=896838b565f3" data-aquila-role="accounting-canonical-css">
+<link rel="stylesheet" href="/admin/runtime-extensions/finance-fixed-assets-f11d-b-popup-r1-2-3fbb8efeb472.css?v=3fbb8efeb472">
+
+
+
+
+<script data-aquila-pos-route-native-entry-boot="r2">
+(function(){try{var h=decodeURIComponent(location.hash||'').toLowerCase();var p=/(?:^|[&#])section=pos(?:&|$)/.test(h)&&/(?:^|[&#])pos=(?:pos|counter|terminal)(?:&|$)/.test(h);var s=sessionStorage.getItem('aquila.pos.native-entry.r2.reload')||'';if(p&&s.indexOf('reload:')===0){document.documentElement.setAttribute('data-aquila-pos-native-entry','pending');}}catch(_){}})();
+</script>
+
+
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-route-native-entry-r2-r170-stay-ready-7a9eb3873ace.css?v=20260825T145059Z">
+
+
+
+<link rel="stylesheet" href="/admin/runtime-extensions/menu-deck-exact-boundary-r6-4c3080213662.css?r111=c1ab5310f6b8">
+
+<link rel="stylesheet" href="/admin/runtime-extensions/finance-landed-cost-f12c-r1-1-869268ad8d3d.css?f12c=869268ad8d3d" data-aquila-finance-f12c-landed-cost="1">
+    <link rel="stylesheet" href="/admin/runtime-extensions/finance-landed-cost-f12c-r1-7-shell-3ffaa98506c0.css?r17=3ffaa98506c0" data-aquila-finance-f12c-r1-7-shell="css">
+    <link rel="stylesheet" href="/admin/runtime-extensions/finance-landed-cost-f12c-r1-8-inline-79f06d3a9870.css?r181=79f06d3a9870" data-aquila-finance-f12c-r1-8-inline="css">
+
+<link rel="stylesheet" href="runtime-extensions/finance-balance-sheet-canonical-ui-45016c65da10.css?v=9763c228bbe9" data-aquila-owner="balance-canonical-ui">
+    <link rel="stylesheet" href="/admin/runtime-extensions/platform-ui-conflict-closure-r1-2cee15d96928.css?v=2cee15d96928" data-aquila-platform-conflict-closure="r1" data-aquila-role="presentation-support-only">
+    <link rel="stylesheet" href="/admin/runtime-extensions/platform-ui-visual-harmonization-r1-bed996dc8b83.css?v=bed996dc8b83" data-aquila-platform-visual-harmonization="r1" data-aquila-role="presentation-support-only">
+    <link rel="stylesheet" href="/admin/runtime-extensions/accounting-submodule-recovery-r2-52cd4e7731f6.css?v=52cd4e7731f6" data-aquila-accounting-submodule-recovery="r2">
+
+<link rel="stylesheet" href="runtime-extensions/finance-banking-canonical-ui-r1-4-visibility-43e7d56a3faa.css?v=qb2213">
+  <link rel="stylesheet" href="runtime-extensions/finance-cash-flow-qb2-3c2-r1-8d12487e8fa0.css">
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-counter-typography-r177-last-794aa1c85f5d.css?v=r177">
+<!-- AQUILA_R178_CACHE_NAV_CONSOLE -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r178-cache-nav.css?v=r178">
+<script src="/admin/runtime-extensions/admin-shell-r178-cache-nav.js?v=ec67d701ab00"></script>
+<!-- AQUILA_R180_POS_TYPE_SCALE -->
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-counter-typography-r180-scale.css?v=r180">
+<!-- AQUILA_R181_POS_TYPE_MATCH_NAME -->
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-counter-typography-r181-match-name.css?v=r181">
+<!-- AQUILA_R182_POS_TITLE_AMOUNT_MATCH -->
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-counter-typography-r182-title-amount.css?v=r182">
+<!-- AQUILA_R183_POS_FIELD_CAPTION_960 -->
+<link rel="stylesheet" href="/admin/runtime-extensions/pos-counter-typography-r183-field-caption.css?v=r183">
+<!-- AQUILA_R184_TZ_MOBILE_DECK -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r184-tz-mobile.css?v=r184">
+<script src="/admin/runtime-extensions/admin-shell-r184-tz-mobile.js?v=r184"></script>
+<!-- AQUILA_R185_ADMIN_SETTINGS_MOBILE -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r185-settings-mobile.css?v=r185">
+<script src="/admin/runtime-extensions/admin-shell-r185-settings-mobile.js?v=r185"></script>
+<!-- AQUILA_R187_MOBILE_PWA -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r187-mobile-pwa.css?v=95b7e7780921">
+<script src="/admin/runtime-extensions/admin-shell-r187-mobile-pwa.js?v=r187"></script>
+<!-- AQUILA_R188_MOBILE_APP_SHELL -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r188-mobile-app.css?v=211222600a6a">
+<script src="/admin/runtime-extensions/admin-shell-r188-mobile-app.js?v=r188"></script>
+<!-- AQUILA_R189_HOME_360 -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r189-home-360.css?v=18c99ad7f2da">
+<script src="/admin/runtime-extensions/admin-shell-r189-home-360.js?v=990ce7bc4514"></script>
+<!-- AQUILA_R190_HOME_POLISH -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r190-home-polish.css?v=r190">
+<script src="/admin/runtime-extensions/admin-shell-r190-home-polish.js?v=r190"></script>
+<!-- AQUILA_R191_TREND_LEFT -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r191-trend-left.css?v=r191">
+<script src="/admin/runtime-extensions/admin-shell-r191-trend-left.js?v=r191"></script>
+<!-- AQUILA_R192_HOME_LINE_POS -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r192-home-pos.css?v=a2495bbbcb06">
+<script src="/admin/runtime-extensions/admin-shell-r192-home-pos.js?v=b5bbd1057c2e"></script>
+<!-- AQUILA_R193_UNBLANK -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r193-unblank.css?v=r193">
+<!-- AQUILA_R194_POS_OVERLAY -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r194-pos-overlay.css?v=r194">
+<script src="/admin/runtime-extensions/admin-shell-r194-pos-overlay.js?v=r194"></script>
+<!-- AQUILA_R195_POS_CARDS -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r195-pos-cards.css?v=r195">
+<script src="/admin/runtime-extensions/admin-shell-r195-pos-cards.js?v=r195"></script>
+<!-- AQUILA_R196_POS_NATIVE -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r196-pos-native.css?v=9848a5adac3b">
+<script src="/admin/runtime-extensions/admin-shell-r196-pos-native.js?v=7f980ac07fad"></script>
+<!-- AQUILA_R197_POS_VISIBLE -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r197-pos-visible.css?v=4d9fdad8d1bb">
+<script src="/admin/runtime-extensions/admin-shell-r197-pos-visible.js?v=r197"></script>
+<!-- AQUILA_R198_POS_STABLE -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r198-pos-stable.css?v=7e1b81b52447">
+<!-- AQUILA_R199_POS_DESK -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r199-pos-desk.css?v=ce93cc3819ca">
+<!-- AQUILA_COMMERCIAL_READY_R1: module chrome, website CMS. Login CSS loads after r215. -->
+<script src="/admin/runtime-extensions/admin-desk-canonical-r1.js?v=831a9b1b725c" data-aquila-desk-canonical="r1"></script>
+<script src="/admin/runtime-extensions/admin-pos-sellable-catalogue-r1.js?v=20260904T1348Z" data-aquila-pos-sellable-catalogue="r1"></script>
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-sales-register-desk-r1.css?v=20260904T1448Z" data-aquila-sales-register-desk="r1">
+<script src="/admin/runtime-extensions/admin-sales-register-desk-r1.js?v=20260904T1448Z" data-aquila-sales-register-desk="r1"></script>
+<!-- AQUILA_R215_HOME_OPS_MODULES: keep after commercial chrome; identity login CSS follows so Irembo surface wins -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-shell-r215-modules.css?v=5ce49aef9a33">
+<script src="/admin/runtime-extensions/admin-shell-r67-expense-core-e2805499351d.js?v=e2805499351d"></script>
+<script data-aquila-expense-mobile-loader-r69>
+(() => {
+  "use strict";
+
+  const source = "/admin/runtime-extensions/admin-shell-r67-expense-mobile-companion-ee32c3085a9a.js?v=ee32c3085a9a";
+
+  const media =
+    window.matchMedia
+      ? window.matchMedia("(max-width: 900px)")
+      : null;
+
+  let loaded = false;
+
+  function loadMobileExpense() {
+    if (loaded || !media || !media.matches) {
+      return;
+    }
+
+    if (
+      window.__AQUILA_EXPENSE_MOBILE_REPAIR_R64__
+    ) {
+      loaded = true;
+      return;
+    }
+
+    loaded = true;
+
+    const script =
+      document.createElement("script");
+
+    script.src = source;
+    script.async = true;
+    script.setAttribute(
+      "data-aquila-expense-mobile-companion-r69",
+      "1"
+    );
+
+    (
+      document.head
+      ||
+      document.documentElement
+    ).appendChild(script);
+  }
+
+  function afterApplicationLoad() {
+    loadMobileExpense();
+  }
+
+  if (document.readyState === "complete") {
+    loadMobileExpense();
+  } else {
+    window.addEventListener(
+      "load",
+      afterApplicationLoad,
+      { once: true }
+    );
+  }
+
+  if (
+    media
+    &&
+    typeof media.addEventListener === "function"
+  ) {
+    media.addEventListener(
+      "change",
+      event => {
+        if (
+          event.matches
+          &&
+          document.readyState === "complete"
+        ) {
+          loadMobileExpense();
+        }
+      }
+    );
+  }
+
+  window.__AQUILA_EXPENSE_MOBILE_LOADER_R69__ =
+    Object.freeze({
+      release:
+        "2026.09.expense-mobile-loader-r69",
+
+      diagnose() {
+        return {
+          mobile:
+            Boolean(
+              media
+              &&
+              media.matches
+            ),
+
+          documentComplete:
+            document.readyState === "complete",
+
+          companionRequested:
+            loaded,
+
+          companionReady:
+            Boolean(
+              window
+                .__AQUILA_EXPENSE_MOBILE_REPAIR_R64__
+            )
+        };
+      }
+    });
+})();
+</script>
+<!-- AQUILA_IDENTITY_LOGIN_R1: after r215 so white Irembo identity beats green mobile-app-ready login -->
+<link rel="stylesheet" href="/admin/runtime-extensions/admin-identity-login-r1.css?v=27caa72eb94f" data-aquila-identity-login="r1">
+<script src="/admin/runtime-extensions/admin-identity-login-r1.js?v=88467967b63b" data-aquila-identity-login="r1"></script>
+
+<!-- AQUILA_PRIVACY_FLOATING_ENTRYPOINT_LOCK_R22 -->
+<link rel="stylesheet" href="/admin/runtime-extensions/privacy-entrypoint-hidden-r22-62b9234814fe.css?v=62b9234814fe">
+
+<!-- AQUILA_PLATFORM_UX_R1_CSS -->
+<link rel="stylesheet" href="/admin/runtime-extensions/platform-ux-r1-95d89c2d7701.css">
 </head>
   <body>
     <div id="root">
@@ -204,6 +2447,1221 @@
         </div>
       </div>
     </div>
-    <script defer src="/admin/production-runtime/finance-bridge.js?v=20260730T110820Z"></script>
+    
+<script src="/admin/assets/receipt-cart-payment-v2-6a501be43ac7.js"></script>
+<script src="/admin/assets/receipt-action-adapter-v5-b5c342bd540c.js"></script>
+<script src="/admin/assets/receipt-content-layer2a9-r91r3-persisted-original-0006b3eac50b.js?v=0006b3eac50b" data-ubuzima-receipt-content="layer2a1"></script>
+<script src="/admin/assets/receipt-pdf-delivery-v1-r4-rev7b-preview-parity-d26256f5a024.js"></script>
+
+<!-- UBUZIMA_SALES_RECORDING_INTEGRITY_V2_START -->
+<script src="/admin/runtime-extensions/sales-recording-integrity-v2-r8-1r2-canonical-stable-28cd54d04993.js?v=28cd54d04993" data-ubuzima-sales-recording-integrity-extension="v2"></script>
+<!-- UBUZIMA_SALES_RECORDING_INTEGRITY_V3_2_START -->
+<script src="/admin/runtime-extensions/sales-recording-integrity-v3-2-amendments-ddbe202f7790.js" data-ubuzima-sales-recording-integrity-amendments="v3-2"></script>
+<!-- UBUZIMA_SALES_RECORDING_INTEGRITY_V3_2_END -->
+<!-- UBUZIMA_SALES_RECORDING_INTEGRITY_V2_END -->
+
+<!-- UBUZIMA_SALES_COMMERCIAL_DETERMINISM_V3_8_R1_START -->
+<script defer src="/admin/runtime-extensions/sales-recording-integrity-v3-8-r4-canonical-identity-r107-sales-create-6e8f0dae7bc3.js?v=6e8f0dae7bc3" data-ubuzima-sales-commercial-determinism="v3-8-r1"></script>
+<!-- UBUZIMA_SALES_COMMERCIAL_DETERMINISM_V3_8_R1_END -->
+
+<script defer src="/admin/runtime-extensions/sales-register-persisted-authority-v1-4c9eaddd6c88.js?v=20260808T231931Z" data-ubuzima-sales-register-persisted-authority="v1"></script>
+  <script data-ubuzima-product-inventory-status="r5.7.8b" src="/admin/runtime-extensions/product-inventory-product-status-v6-layout-345f75bc45f6.js"></script>
+  <script data-ubuzima-product-master-inventory-parity="r5.7.8k" src="/admin/runtime-extensions/product-master-inventory-parity-v3-r578k-r2-495cb66294a5.js"></script>
+  <script data-ubuzima-deleted-inventory="r5.7.8l-r1" src="/admin/runtime-extensions/deleted-inventory-recycle-bin-v4-r578m-r1-f366f47dc405.js"></script>
+  <script defer data-aquila-pos-sales-ui="r579c-r2" src="/admin/runtime-extensions/pos-sales-overview-ui-r177-paid-window-6adfe0a3828e.js?v=20260809T165640Z"></script>
+
+<script defer data-aquila-pos-sales-polish="r579c-r5-r1" src="/admin/runtime-extensions/pos-sales-overview-polish-final-close-97151f1dee5d.js?v=20260809T180331Z"></script>
+
+  <script src="/admin/runtime-extensions/pos-native-session-sales-adapter-r2-2-e02979fafc6d.js" data-aquila-pos-session-sales-adapter-r2="1"></script>
+<script src="/admin/runtime-extensions/pharmacy-pos-vnext-r5-10-1-r90-post-confirm-session-6995eb0053e4.js?v=6995eb0053e4" data-aquila-pharmacy-pos-vnext-js="1"></script>
+
+    <script data-ubz-navigation-stability-n3ar2="1" data-ubz-navigation-stability-sha="9106c50dfc1653abb173b9197315d29849a0c8a07e1603b813d78ba4505de8a8">
+/*
+ * UBUZIMA+ N3A-R2
+ *
+ * Canonical module navigation stability controller.
+ *
+ * Finance is a native workspace of the Admin SPA.
+ *
+ * The retired /admin-finance/ path is never used as an internal
+ * navigation destination.
+ *
+ * Existing React and Deck navigation ownership remains intact.
+ */
+
+(function installUbuzimaNavigationStabilityN3AR2() {
+  'use strict';
+
+  var root = document.documentElement;
+
+  if (root.dataset.ubzNavigationStabilityN3ar2 === '1') {
+    return;
+  }
+
+  root.dataset.ubzNavigationStabilityN3ar2 = '1';
+
+  if ('scrollRestoration' in window.history) {
+    window.history.scrollRestoration = 'manual';
+  }
+
+  var scheduled = false;
+
+  function primaryScrollOwner() {
+    return (
+      document.querySelector('.dashboard-scroll-panel')
+      || document.querySelector('.module-page-scroll-content')
+      || null
+    );
+  }
+
+  function resetPrimaryScroll() {
+    var owner = primaryScrollOwner();
+
+    if (owner) {
+      owner.scrollTop = 0;
+      owner.scrollLeft = 0;
+      return;
+    }
+
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'auto'
+    });
+  }
+
+  function scheduleScrollReset() {
+    if (scheduled) {
+      return;
+    }
+
+    scheduled = true;
+
+    window.requestAnimationFrame(function () {
+      scheduled = false;
+      resetPrimaryScroll();
+    });
+  }
+
+  function canonicalFinanceHash() {
+    var state = new URLSearchParams(
+      window.location.hash.replace(/^#/, '')
+    );
+
+    state.set('section', 'finance');
+    state.set('finance', 'overview');
+    state.set('scrollY', '0');
+
+    return '#' + state.toString();
+  }
+
+  function isLegacyFinanceAnchor(anchor) {
+    if (!(anchor instanceof HTMLAnchorElement)) {
+      return false;
+    }
+
+    if (!anchor.href) {
+      return false;
+    }
+
+    try {
+      var url = new URL(
+        anchor.href,
+        window.location.href
+      );
+
+      var path = url.pathname.replace(
+        /\/+$/,
+        ''
+      );
+
+      return path === '/admin-finance';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  document.addEventListener(
+    'click',
+    function (event) {
+      var target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      var anchor = target.closest('a[href]');
+
+      /*
+       * Only the obsolete Finance URL is intercepted.
+       *
+       * Normal Deck / React navigation is not replaced.
+       */
+      if (
+        anchor
+        && isLegacyFinanceAnchor(anchor)
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        window.location.hash =
+          canonicalFinanceHash();
+
+        scheduleScrollReset();
+
+        return;
+      }
+
+      var deck = target.closest(
+        '[data-ubuzima-workspace-dock],'
+        + '#ubz-global-deck-header-r5113'
+      );
+
+      if (!deck) {
+        return;
+      }
+
+      var control = target.closest(
+        'button,a,[role="button"]'
+      );
+
+      if (
+        !control
+        || !deck.contains(control)
+      ) {
+        return;
+      }
+
+      /*
+       * Existing Deck handler performs the navigation.
+       *
+       * N3A-R2 performs only one bounded post-navigation scroll
+       * normalization.
+       */
+      scheduleScrollReset();
+    },
+    true
+  );
+
+  window.addEventListener(
+    'hashchange',
+    scheduleScrollReset,
+    { passive: true }
+  );
+
+  window.addEventListener(
+    'popstate',
+    scheduleScrollReset,
+    { passive: true }
+  );
+
+  window.addEventListener(
+    'pageshow',
+    function (event) {
+      if (event.persisted) {
+        scheduleScrollReset();
+      }
+    },
+    { passive: true }
+  );
+})();
+    </script>
+
+    <script data-ubz-static-glass-deck-v1-js="1">
+/*
+ * UBUZIMA+ STATIC GLASS DECK V1
+ *
+ * ONE bounded presentation bootstrap.
+ *
+ * Navigation ownership remains with the existing React/native
+ * buttons.
+ *
+ * This runtime contains NO mouse, pointer or hover listener.
+ *
+ * There is therefore no code path through which pointer hover can
+ * trigger Deck geometry work.
+ */
+
+(function installStaticGlassDeckV1() {
+  'use strict';
+
+
+  var root =
+    document.documentElement;
+
+
+  if (
+    root.dataset.ubzStaticGlassDeckV1Runtime
+    === '1'
+  ) {
+    return;
+  }
+
+
+  root.dataset.ubzStaticGlassDeckV1Runtime =
+    '1';
+
+
+  var MAX_FRAMES =
+    180;
+
+
+  var generation =
+    0;
+
+
+  var candidateSelectors = [
+    '[data-ubuzima-workspace-dock]',
+    '.ubuzima-glass-workspace-dock',
+    '#ubuzimaSourceDock',
+    '.ubuzima-source-dock',
+    '.ubuzima-mac-dock'
+  ];
+
+
+  function uniqueCandidates() {
+
+    var result =
+      [];
+
+
+    var seen =
+      new Set();
+
+
+    candidateSelectors.forEach(
+      function (selector) {
+
+        document
+          .querySelectorAll(
+            selector
+          )
+          .forEach(
+            function (node) {
+
+              if (
+                !(node instanceof HTMLElement)
+                ||
+                seen.has(node)
+              ) {
+                return;
+              }
+
+
+              seen.add(node);
+
+              result.push(node);
+
+            }
+          );
+
+      }
+    );
+
+
+    return result;
+
+  }
+
+
+  function controlCount(
+    node
+  ) {
+
+    return node.querySelectorAll(
+      'button,a,[role="button"]'
+    ).length;
+
+  }
+
+
+  function isVisibleCandidate(
+    node
+  ) {
+
+    var style =
+      window.getComputedStyle(
+        node
+      );
+
+
+    if (
+      style.display
+      === 'none'
+      ||
+      style.visibility
+      === 'hidden'
+    ) {
+      return false;
+    }
+
+
+    var rect =
+      node.getBoundingClientRect();
+
+
+    return (
+      rect.width
+      >= 180
+      &&
+      rect.height
+      >= 30
+      &&
+      controlCount(node)
+      >= 5
+    );
+
+  }
+
+
+  function candidateScore(
+    node
+  ) {
+
+    var score =
+      0;
+
+
+    if (
+      node.matches(
+        '[data-ubuzima-workspace-dock]'
+      )
+    ) {
+      score +=
+        1000;
+    }
+
+
+    if (
+      node.classList.contains(
+        'ubuzima-glass-workspace-dock'
+      )
+    ) {
+      score +=
+        800;
+    }
+
+
+    if (
+      node.id
+      === 'ubuzimaSourceDock'
+    ) {
+      score +=
+        400;
+    }
+
+
+    if (
+      node.classList.contains(
+        'ubuzima-source-dock'
+      )
+    ) {
+      score +=
+        300;
+    }
+
+
+    score +=
+      Math.min(
+        controlCount(node),
+        30
+      )
+      * 20;
+
+
+    var rect =
+      node.getBoundingClientRect();
+
+
+    if (
+      rect.top
+      < window.innerHeight * 0.5
+    ) {
+      score +=
+        40;
+    }
+
+
+    return score;
+
+  }
+
+
+  function chooseDeck() {
+
+    var candidates =
+      uniqueCandidates();
+
+
+    /*
+     * Remove our previous non-owner labels before measuring.
+     * No style/class change listener exists, so this is only done
+     * as part of bounded route/bootstrap work.
+     */
+    candidates.forEach(
+      function (node) {
+
+        node.removeAttribute(
+          'data-ubz-static-glass-deck-v1-non-owner'
+        );
+
+      }
+    );
+
+
+    var visible =
+      candidates.filter(
+        isVisibleCandidate
+      );
+
+
+    if (
+      visible.length
+      === 0
+    ) {
+      return null;
+    }
+
+
+    visible.sort(
+      function (a, b) {
+
+        return (
+          candidateScore(b)
+          -
+          candidateScore(a)
+        );
+
+      }
+    );
+
+
+    return visible[0];
+
+  }
+
+
+  function clearOwners(
+    selected
+  ) {
+
+    uniqueCandidates()
+      .forEach(
+        function (node) {
+
+          if (
+            node
+            === selected
+          ) {
+
+            node.removeAttribute(
+              'data-ubz-static-glass-deck-v1-non-owner'
+            );
+
+
+            return;
+
+          }
+
+
+          node.removeAttribute(
+            'data-ubz-static-glass-deck-v1-owner'
+          );
+
+
+          node.removeAttribute(
+            'data-ubz-r5111-top-owner'
+          );
+
+
+          node.removeAttribute(
+            'data-ubz-r5112-r1-deck-owner'
+          );
+
+
+          node.setAttribute(
+            'data-ubz-static-glass-deck-v1-non-owner',
+            '1'
+          );
+
+        }
+      );
+
+  }
+
+
+  function applyStaticOwner(
+    deck
+  ) {
+
+    clearOwners(
+      deck
+    );
+
+
+    deck.setAttribute(
+      'data-ubz-static-glass-deck-v1-owner',
+      '1'
+    );
+
+
+    /*
+     * Preserve the approved visual-shell compatibility selectors
+     * required by existing CSS/POS safe offset layers.
+     *
+     * Unlike the retired controllers, these attributes are written
+     * once and are not continuously policed.
+     */
+    deck.setAttribute(
+      'data-ubz-r5111-top-owner',
+      '1'
+    );
+
+
+    deck.setAttribute(
+      'data-ubz-r5112-r1-deck-owner',
+      '1'
+    );
+
+
+    root.setAttribute(
+      'data-ubz-r5112-r1-active',
+      '1'
+    );
+
+
+    root.setAttribute(
+      'data-ubz-r5112-r1-deck-detected',
+      'yes'
+    );
+
+
+    root.setAttribute(
+      'data-ubz-r5112-r1-button-count',
+      String(
+        controlCount(
+          deck
+        )
+      )
+    );
+
+
+    root.setAttribute(
+      'data-ubz-r5113-header-active',
+      '1'
+    );
+
+
+    root.setAttribute(
+      'data-ubz-static-glass-deck-v1',
+      '1'
+    );
+
+
+    root.setAttribute(
+      'data-ubz-static-glass-deck-v1-status',
+      'ready'
+    );
+
+  }
+
+
+  function beginBoundedDiscovery() {
+
+    generation +=
+      1;
+
+
+    var myGeneration =
+      generation;
+
+
+    var frame =
+      0;
+
+
+    function attempt() {
+
+      if (
+        myGeneration
+        !== generation
+      ) {
+        return;
+      }
+
+
+      frame +=
+        1;
+
+
+      var deck =
+        chooseDeck();
+
+
+      if (deck) {
+
+        applyStaticOwner(
+          deck
+        );
+
+
+        return;
+
+      }
+
+
+      if (
+        frame
+        >= MAX_FRAMES
+      ) {
+
+        root.setAttribute(
+          'data-ubz-static-glass-deck-v1-status',
+          'deck-not-found'
+        );
+
+
+        return;
+
+      }
+
+
+      window.requestAnimationFrame(
+        attempt
+      );
+
+    }
+
+
+    window.requestAnimationFrame(
+      attempt
+    );
+
+  }
+
+
+  function boot() {
+
+    beginBoundedDiscovery();
+
+  }
+
+
+  if (
+    document.readyState
+    === 'loading'
+  ) {
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      boot,
+      {
+        once:
+          true
+      }
+    );
+
+  } else {
+
+    boot();
+
+  }
+
+
+  /*
+   * React navigation can replace route-owned DOM.
+   *
+   * Re-run only a bounded owner discovery after genuine navigation.
+   * There is no DOM observer and no continuous polling.
+   */
+  window.addEventListener(
+    'hashchange',
+    beginBoundedDiscovery,
+    {
+      passive:
+        true
+    }
+  );
+
+
+  window.addEventListener(
+    'popstate',
+    beginBoundedDiscovery,
+    {
+      passive:
+        true
+    }
+  );
+
+
+  window.addEventListener(
+    'pageshow',
+    function (event) {
+
+      if (
+        event.persisted
+      ) {
+
+        beginBoundedDiscovery();
+
+      }
+
+    },
+    {
+      passive:
+        true
+    }
+  );
+
+})();
+    </script>
+
+
+
+  <script defer data-aquila-finance-existing-ui-live-data="r1" src="/admin/runtime-extensions/finance-console-hygiene-r34-sales-r1k2-nav-r3-overview-mgmt-r1-714f0cb4f429.js?v=714f0cb4f429"></script>
+<script defer src="/admin/runtime-extensions/finance-overview-lifecycle-closeout-r29-82f74e093ea2.js"></script>
+
+
+
+<script defer src="/admin/runtime-extensions/finance-canonical-return-b1-r2-1819aece78b8.js?v=20260819T141904"></script>
+<script defer src="/admin/runtime-extensions/finance-receivables-r66-expenses-dashboard-first-r3-r29-pwa-dc4103aead2b.js?v=dc4103aead2b"></script>
+<script src="runtime-extensions/finance-expenses-r17-modal-workspaces-r28-confirmed-close-1e7089a84728.js?v=1e7089a84728"></script>
+<script src="runtime-extensions/finance-expenses-r18-quick-add-expense-2a68653324c5.js"></script>
+
+<!-- AQUILA_FINANCE_EXPENSES_R21_NEW_EXPENSE -->
+
+<script src="/admin/runtime-extensions/finance-expenses-r25-rejected-item-edit-339d9f47474f.js?v=339d9f47474f"></script>
+<script defer src="/admin/runtime-extensions/finance-expenses-r25-rejected-edit-bridge-132c14256ed7.js?v=132c14256ed7"></script>
+<script defer src="/admin/runtime-extensions/finance-expenses-r25c-rejected-item-auth-e082fd4d5cc3.js?v=e082fd4d5cc3"></script>
+
+<script defer src="/admin/runtime-extensions/finance-expenses-r20-canonical-line-item-20260905_071321.js?v=prod-20260905_072006"></script>
+<script data-aquila-finance-conditional-r75>
+(() => {
+  "use strict";
+
+  const RELEASE =
+    "2026.09.finance-conditional-r75";
+
+  const statementSources = ["runtime-extensions/finance-monthly-reporting-r35-qb3-1-r5-cashflow-table-r38-balance-route-3c77533797c1.js?v=3c77533797c1","/admin/runtime-extensions/finance-balance-canonical-conditional-loader-r32-2-e02be8c98333.js","runtime-extensions/finance-balance-sheet-r35-nav-f84e93894c6f.js?v=1ff7e5e9b26f"];
+
+  const closeBooksSource = "/admin/runtime-extensions/finance-close-books-f2-r3-2-support-only-43447a9f19f2.js?v=43447a9f19f2";
+
+  const state = {
+    statementsRequested: false,
+    closeBooksRequested: false,
+    statementsLoaded: 0,
+    closeBooksLoaded: false,
+    errors: []
+  };
+
+  function paramsFrom(value) {
+    try {
+      return new URLSearchParams(
+        String(value || "")
+          .replace(/^[?#]/, "")
+      );
+    } catch (_) {
+      return new URLSearchParams();
+    }
+  }
+
+  function routeParams() {
+    const hash =
+      String(
+        window.location.hash || ""
+      )
+        .replace(/^#/, "")
+        .trim();
+
+    if (
+      hash
+      &&
+      hash !== "/"
+    ) {
+      return paramsFrom(hash);
+    }
+
+    return paramsFrom(
+      window.location.search || ""
+    );
+  }
+
+  function financialStatementsRoute() {
+    const params =
+      routeParams();
+
+    return (
+      params.get("section") ===
+        "finance"
+      &&
+      params.get("finance") ===
+        "financial-statements"
+    );
+  }
+
+  function accountingHashRoute() {
+    const params =
+      paramsFrom(
+        window.location.hash || ""
+      );
+
+    return (
+      params.get("section") ===
+        "finance"
+      &&
+      params.get("finance") ===
+        "accounting"
+    );
+  }
+
+  function visible(node) {
+    if (
+      !node
+      ||
+      !(node instanceof Element)
+    ) {
+      return false;
+    }
+
+    const rect =
+      node.getBoundingClientRect();
+
+    return Boolean(
+      rect.width > 0
+      &&
+      rect.height > 0
+    );
+  }
+
+  function accountingHeadingFallback() {
+    if (
+      document.readyState ===
+        "loading"
+    ) {
+      return false;
+    }
+
+    return Array
+      .from(
+        document.querySelectorAll(
+          "h1,h2,h3"
+        )
+      )
+      .filter(visible)
+      .some(node => {
+        const value =
+          String(
+            node.textContent || ""
+          )
+            .trim()
+            .toLowerCase();
+
+        return (
+          value === "accounting"
+          ||
+          value.includes(
+            "accounting workspace"
+          )
+        );
+      });
+  }
+
+  function accountingContext() {
+    return (
+      accountingHashRoute()
+      ||
+      accountingHeadingFallback()
+    );
+  }
+
+  function appendOrderedScripts(
+    sources,
+    group
+  ) {
+    for (const source of sources) {
+      const script =
+        document.createElement(
+          "script"
+        );
+
+      script.src = source;
+
+      /*
+       * Dynamic classic scripts default async.
+       * async=false preserves insertion and
+       * execution order without parser blocking.
+       */
+      script.async = false;
+
+      script.setAttribute(
+        "data-aquila-r75-group",
+        group
+      );
+
+      script.addEventListener(
+        "load",
+        () => {
+          if (
+            group ===
+              "financial-statements"
+          ) {
+            state.statementsLoaded += 1;
+          } else {
+            state.closeBooksLoaded =
+              true;
+          }
+        },
+        {
+          once: true
+        }
+      );
+
+      script.addEventListener(
+        "error",
+        () => {
+          state.errors.push(
+            source
+          );
+        },
+        {
+          once: true
+        }
+      );
+
+      (
+        document.head
+        ||
+        document.documentElement
+      ).appendChild(script);
+    }
+  }
+
+  function loadStatements() {
+    if (
+      state.statementsRequested
+    ) {
+      return;
+    }
+
+    state.statementsRequested = true;
+
+    appendOrderedScripts(
+      statementSources,
+      "financial-statements"
+    );
+  }
+
+  function loadCloseBooks() {
+    if (
+      state.closeBooksRequested
+    ) {
+      return;
+    }
+
+    state.closeBooksRequested = true;
+
+    appendOrderedScripts(
+      [closeBooksSource],
+      "close-books"
+    );
+  }
+
+  function engage() {
+    if (
+      financialStatementsRoute()
+    ) {
+      loadStatements();
+    }
+
+    if (
+      accountingContext()
+    ) {
+      loadCloseBooks();
+    }
+  }
+
+  window.addEventListener(
+    "hashchange",
+    engage
+  );
+
+  window.addEventListener(
+    "popstate",
+    engage
+  );
+
+  window.addEventListener(
+    "pageshow",
+    engage
+  );
+
+  window.addEventListener(
+    "focus",
+    engage
+  );
+
+  document.addEventListener(
+    "ubuzima:app-ready",
+    engage
+  );
+
+  /*
+   * Let the existing navigation owner update
+   * route state before evaluating the target.
+   */
+  document.addEventListener(
+    "click",
+    () => {
+      queueMicrotask(
+        engage
+      );
+    },
+    false
+  );
+
+  if (
+    document.readyState ===
+      "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      engage,
+      {
+        once: true
+      }
+    );
+  }
+
+  /*
+   * Preserve direct route/deep-link startup.
+   */
+  engage();
+
+  window.__AQUILA_FINANCE_CONDITIONAL_R75__ =
+    Object.freeze({
+      release:
+        RELEASE,
+
+      engage,
+
+      diagnose() {
+        return {
+          financialStatementsRoute:
+            financialStatementsRoute(),
+
+          accountingContext:
+            accountingContext(),
+
+          statementsRequested:
+            state.statementsRequested,
+
+          statementsLoaded:
+            state.statementsLoaded,
+
+          statementExpected:
+            statementSources.length,
+
+          closeBooksRequested:
+            state.closeBooksRequested,
+
+          closeBooksLoaded:
+            state.closeBooksLoaded,
+
+          errors:
+            state.errors.slice()
+        };
+      }
+    });
+})();
+</script>
+<!-- BEGIN AQUILA_IF1_B2_JS -->
+<script defer src="/admin/runtime-extensions/inventory-finance-control-center-if2-b1-r5-valuation-depth-v2-36efaf5df596.js?v=17704086584b"></script>
+<!-- END AQUILA_IF1_B2_JS -->
+
+<script src="/admin/runtime-extensions/hrm-workspace-full-fit-r1-1-event-driven-d59eff5f12fe.js?v=20260821T071037Z"></script>
+<script src="/admin/runtime-extensions/workspace-navigation-v3-direct-pages-r10-r96r2-counter-settle-48b0ed0242ba.js?v=48b0ed0242ba"></script>
+<script defer src="/admin/runtime-extensions/submenu-activation-b1-r4-r4-render-generation-56354e283dd6.js?v=20260820T085129" data-aquila-submenu-activation="b1-r1-js"></script>
+<script defer src="/admin/runtime-extensions/hrm-r8-b10-home-seamless-r1-1-f354a688a98a.js" data-aquila-hrm="r6-simple-mighty-js"></script>
+<script defer src="/admin/runtime-extensions/hrm-b2-workforce-r10-b10-seamless-r1-1-583b8b8de622.js"></script>
+<script defer src="/admin/runtime-extensions/hrm-b5-self-service-r3-27d0e3069169.js"></script>
+<script defer src="/admin/runtime-extensions/hrm-b6-conditional-loader-r16-e8f035843b64.js" data-aquila-hrm-b6-loader="r16"></script>
+<script defer src="/admin/runtime-extensions/hrm-b7-conditional-loader-r13-5a80db3fb43e.js" data-aquila-hrm-b7-loader="r13"></script>
+<script defer src="/admin/runtime-extensions/hrm-b8-conditional-loader-r10-6baaf12c5854.js" data-aquila-hrm-b8-loader="r10"></script>
+<script defer src="/admin/runtime-extensions/hrm-b9-conditional-loader-r22-0aadf232ec44.js" data-aquila-hrm-b9-loader="r22"></script>
+<script defer src="/admin/runtime-extensions/hrm-b10-conditional-loader-r19-2a4149ad36f2.js" data-aquila-hrm-b10-loader="r19"></script>
+<script defer src="runtime-extensions/hrm-payroll-control-center-r1-loading-r4-1-db0ab4adc731.js?pr81=355b57473695" data-aquila-payroll-control-center="r1"></script>
+<script defer src="/admin/runtime-extensions/payroll-professional-ui-r5-lifecycle-r5-1-2-78946e57334e.js?r10=3c9b799e3f37" data-aquila-payroll-ui-r5="js"></script>
+
+<script data-aquila-finance-f3-r4="js" src="/admin/runtime-extensions/finance-chart-of-accounts-f3-r4-4-r1-auth-a6bff2bf808f.js?v=a6bff2bf808f"></script>
+<script data-aquila-finance-coa-route-loader-r44="js" defer src="/admin/runtime-extensions/finance-coa-conditional-loader-r44-dd7796dc0485.js?v=dd7796dc0485"></script>
+<script defer src="/admin/runtime-extensions/finance-ap-f4-r5-r2-r1-f28e7b50fdab.js" data-aquila-release="AQUILA_FINANCE_F4_R5_R2_R1_ASSETS"></script>
+
+<script src="/admin/runtime-extensions/finance-payables-professional-r42-final-handoff-r5-cfb81d6e264b.js?v=6f7840c71985"></script>
+<script src="/admin/runtime-extensions/finance-supplier-payables-native-action-6ad62328c512.js?v=20260825T124349Z"></script>
+<script src="/admin/runtime-extensions/finance-current-ui-consistency-r8-3-f3-hide-only-3505020c94fb.js?v=3505020c94fb"></script>
+
+
+
+<script defer data-aquila-accounting-conditional-loader="r55" src="/admin/runtime-extensions/accounting-conditional-loader-r55-54ca88a6fcba.js?v=54ca88a6fcba"></script>
+<script src="/admin/runtime-extensions/finance-landed-cost-f12c-r1-1-1d108f554d0d.js?f12c=1d108f554d0d"></script>
+
+
+
+
+
+
+
+<script src="/admin/runtime-extensions/pos-route-native-entry-r2-r170-stay-ready-6bc0e876f776.js?v=20260825T145059Z"></script>
+
+
+
+<script src="/admin/runtime-extensions/menu-deck-exact-boundary-r6-9c95b9a730c0.js?deck_r9=20260825T215833Z"></script>
+    <script src="/admin/runtime-extensions/finance-landed-cost-f12c-r1-7-shell-3a5142f8f9ab.js?r17=3a5142f8f9ab" data-aquila-finance-f12c-r1-7-shell="js"></script>
+    <script src="/admin/runtime-extensions/finance-landed-cost-f12c-r1-8-4-7-no-synthetic-create-a9ad0360c1ea.js?r1847=a9ad0360c1ea" data-aquila-finance-f12c-r1-8-inline="js"></script>
+    
+    
+    
+    <script src="/admin/runtime-extensions/accounting-final-three-activation-r3-fa2db885fc8b.js?v=fa2db885fc8b" data-aquila-accounting-final-three="r3"></script>
+
+<script defer src="runtime-extensions/finance-banking-canonical-ui-r1-7-canonical-host-8f436eacc28b.js?v=qb2213"></script>
+  <script src="/admin/runtime-extensions/mobile-business-control-deck-r8a-no-services-quick-access-d584c3a57a7c.js?v=05fe4442c2e4"></script>
+  <script defer src="/admin/runtime-extensions/finance-planning-performance-p1b-r6-4ee6628a8264.js?v=4ee6628a8264"></script>
+
+<!-- AQUILA_R142_INV_UI -->
+<script src="/admin/runtime-extensions/inventory-ui-r142-fefo-dock-load.js?v=r142b"></script>
+
+<!-- AQUILA_RECEIPT_SNAPSHOT_R101R1 -->
+
+
+<!-- AQUILA_PWA_POS_INVENTORY_BIOMETRIC_R1 -->
+<link
+  rel="stylesheet"
+  href="/admin/runtime-extensions/pwa-pos-inventory-biometric-r1-1bfbf0eabd24.css?v=1bfbf0eabd24"
+  data-aquila-pwa-r1="css"
+/>
+<script
+  defer
+  src="/admin/runtime-extensions/pwa-pos-inventory-biometric-r1-cc39a8986c1d.js?v=cc39a8986c1d"
+  data-aquila-pwa-r1="js"
+></script>
+
+<!-- AQUILA_PWA_POS_INVENTORY_BIOMETRIC_R3 -->
+<link
+  rel="stylesheet"
+  href="/admin/runtime-extensions/pwa-inventory-privacy-r3-d363acf35b68.css?v=d363acf35b68"
+  data-aquila-pwa-r3="css"
+/>
+<script
+  defer
+  src="/admin/runtime-extensions/pwa-inventory-privacy-r3-ccfe4a63d8be.js?v=ccfe4a63d8be"
+  data-aquila-pwa-r3="js"
+></script>
+
+
+<!-- AQUILA_PLATFORM_UX_R1_JS -->
+<script defer src="/admin/runtime-extensions/platform-ux-r1-02a874671d80.js"></script>
+
+<link rel="stylesheet" data-aquila-screen-scroll="r51" href="/admin/runtime-extensions/platform-screen-scroll-r51-e67e6d2b1dc1.css?v=e67e6d2b1dc1">
+<script defer data-aquila-screen-scroll="r51" src="/admin/runtime-extensions/platform-screen-scroll-r51-7214eb3062b7.js?v=7214eb3062b7"></script>
 </body>
 </html>
