@@ -1,0 +1,26 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.ubuzimaplus.admin.pwa'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.ubuzimaplus.admin.pwa'
+        minSdk 24
+        targetSdk 34
+        versionCode 2026091102
+        versionName '2026.09.11-pwa2'
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+}
