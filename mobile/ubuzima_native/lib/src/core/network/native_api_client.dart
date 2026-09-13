@@ -50,6 +50,45 @@ class NativeApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> put(
+    String path, {
+    Map<String, dynamic>? body,
+    String? bearerToken,
+  }) {
+    return _request(
+      method: 'PUT',
+      path: path,
+      body: body,
+      bearerToken: bearerToken,
+    );
+  }
+
+  Future<Map<String, dynamic>> patch(
+    String path, {
+    Map<String, dynamic>? body,
+    String? bearerToken,
+  }) {
+    return _request(
+      method: 'PATCH',
+      path: path,
+      body: body,
+      bearerToken: bearerToken,
+    );
+  }
+
+  Future<Map<String, dynamic>> delete(
+    String path, {
+    Map<String, dynamic>? body,
+    String? bearerToken,
+  }) {
+    return _request(
+      method: 'DELETE',
+      path: path,
+      body: body,
+      bearerToken: bearerToken,
+    );
+  }
+
   Future<Map<String, dynamic>> _request({
     required String method,
     required String path,
@@ -73,7 +112,7 @@ class NativeApiClient {
 
       request.headers.set(
         'X-Ubuzima-Client',
-        'native-flutter-r1',
+        'ubuzima-plus-native',
       );
 
       if (bearerToken != null && bearerToken.trim().isNotEmpty) {
