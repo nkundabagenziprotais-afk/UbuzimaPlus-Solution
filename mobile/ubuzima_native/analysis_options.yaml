@@ -1,0 +1,11 @@
+analyzer:
+  exclude:
+    - build/**
+    - .dart_tool/**
+    - android/**
+    - ios/**
+
+  errors:
+    dead_code: warning
+    unused_import: warning
+    unused_local_variable: warning
