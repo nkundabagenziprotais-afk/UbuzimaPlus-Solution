@@ -127,6 +127,25 @@ jobs:
 
           if grep -Eq '^lib/(armeabi-v7a|x86|x86_64)/' /tmp/apk-list.txt
           then
+            echo "UNEXPECTED_ANDROID_ABI_PATHS_BEGIN"
+            grep -E '^lib/(armeabi-v7a|x86|x86_64)/' /tmp/apk-list.txt | sort
+            echo "UNEXPECTED_ANDROID_ABI_PATHS_END"
+
+            echo "NATIVE_ABI_DIRECTORIES_BEGIN"
+            awk -F/ '/^lib\/[^/]+\/[^/]+\.so$/ {print $2}' /tmp/apk-list.txt | sort -u
+            echo "NATIVE_ABI_DIRECTORIES_END"
+
+            echo "FLUTTER_CORE_LIBRARIES_BEGIN"
+            grep -E '^lib/[^/]+/(libflutter|libapp)\.so$' /tmp/apk-list.txt | sort || true
+            echo "FLUTTER_CORE_LIBRARIES_END"
+
+            echo "AAPT_NATIVE_CODE_BEGIN"
+            "$AAPT" dump badging "$APK" | grep '^native-code:' || true
+            echo "AAPT_NATIVE_CODE_END"
+
+            echo "ABI_DIAGNOSTIC_APK_BYTES=$(stat -c '%s' "$APK")"
+            echo "ABI_DIAGNOSTIC_APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')"
+
             echo "FAIL=UNEXPECTED_ANDROID_ABI"
             exit 1
           fi
