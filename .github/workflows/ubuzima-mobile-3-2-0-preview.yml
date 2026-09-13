@@ -1,0 +1,193 @@
+name: Ubuzima+ Android 3.2.0 Preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - release/ubuzima-mobile-3.2.0
+    paths:
+      - "mobile/ubuzima_native/**"
+      - ".github/workflows/ubuzima-mobile-3-2-0-preview.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ubuzima-mobile-3-2-0-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-preview:
+    name: Android 3.2.0 Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    defaults:
+      run:
+        working-directory: mobile/ubuzima_native
+
+    steps:
+      - name: Checkout Ubuzima+ 3.2.0
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Flutter 3.47.4
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.4"
+          channel: stable
+          cache: true
+
+      - name: Flutter environment
+        run: |
+          set -Eeuo pipefail
+          flutter --version
+          dart --version
+          java -version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Format verification
+        run: dart format --output=none --set-exit-if-changed lib/src/app/ubuzima_app.dart lib/src/core/theme/ubuzima_brand.dart lib/src/shared/presentation/ubuzima_brand_logo.dart lib/src/features/auth/presentation/auth_gate.dart lib/src/features/auth/presentation/native_login_screen.dart lib/src/features/home/presentation/native_home_screen.dart
+
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+      - name: Native domain tests
+        run: flutter test --no-pub --concurrency=1
+
+      - name: Enforce native source contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if grep -RniE 'webview_flutter|flutter_inappwebview' lib pubspec.yaml pubspec.lock
+          then
+            echo "FAIL=WEBVIEW_PACKAGE_FOUND"
+            exit 1
+          fi
+
+          if grep -RniE '\b(WebViewWidget|WebViewController|InAppWebView|InAppWebViewController|WKWebView|AndroidWebView)\b' lib
+          then
+            echo "FAIL=WEBVIEW_CLASS_FOUND"
+            exit 1
+          fi
+
+          if grep -RniE 'ubuzima-plus-mobile-3-1-0|admin-preview-cursor|ubuzima_shell=pwa|ubuzima_native=capacitor' lib pubspec.yaml
+          then
+            echo "FAIL=LEGACY_WEB_RUNTIME_FOUND"
+            exit 1
+          fi
+
+          echo "NATIVE_SOURCE_CONTRACT=PASS"
+
+      - name: Build optimized Android ARM64 release
+        run: |
+          set -Eeuo pipefail
+
+          flutter build apk \
+            --release \
+            --target-platform android-arm64 \
+            --obfuscate \
+            --split-debug-info=build/symbols \
+            --no-pub
+
+      - name: Verify optimized APK
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          BASELINE_BYTES=85126485
+          MAX_BYTES=45000000
+
+          test -s "$APK"
+
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name 'aapt' -perm -111 -print | sort -V | tail -n 1)"
+          test -n "$AAPT"
+          test -x "$AAPT"
+
+          "$AAPT" dump badging "$APK" > /tmp/badging.txt
+
+          grep -F "package: name='com.ubuzimaplus.preview'" /tmp/badging.txt
+          grep -F "application-label:'Ubuzima+ Preview'" /tmp/badging.txt
+          grep -F "versionCode='32001'" /tmp/badging.txt
+          grep -F "versionName='3.2.0-rc.1'" /tmp/badging.txt
+
+          unzip -Z1 "$APK" > /tmp/apk-list.txt
+
+          grep -Fx 'lib/arm64-v8a/libflutter.so' /tmp/apk-list.txt
+          grep -Fx 'lib/arm64-v8a/libapp.so' /tmp/apk-list.txt
+
+          if grep -Eq '^lib/(armeabi-v7a|x86|x86_64)/' /tmp/apk-list.txt
+          then
+            echo "FAIL=UNEXPECTED_ANDROID_ABI"
+            exit 1
+          fi
+
+          rm -rf /tmp/ubuzima-plus-apk
+          mkdir -p /tmp/ubuzima-plus-apk
+          unzip -qq "$APK" -d /tmp/ubuzima-plus-apk
+
+          : > /tmp/dex-strings.txt
+          find /tmp/ubuzima-plus-apk -maxdepth 1 -type f -name 'classes*.dex' -print |
+          while IFS= read -r dex
+          do
+            strings "$dex" >> /tmp/dex-strings.txt
+          done
+
+          if grep -Eiq 'webview_flutter|flutter_inappwebview|io/flutter/plugins/webviewflutter|com/pichillilorenzo/flutter_inappwebview' /tmp/dex-strings.txt
+          then
+            echo "FAIL=WEBVIEW_PLUGIN_FOUND_IN_APK"
+            exit 1
+          fi
+
+          strings /tmp/ubuzima-plus-apk/lib/arm64-v8a/libapp.so > /tmp/libapp-strings.txt
+
+          grep -F 'https://ubuzimaplus.com' /tmp/libapp-strings.txt
+
+          if grep -Eiq 'ubuzima-plus-mobile-3-1-0|admin-preview-cursor|ubuzima_shell=pwa|ubuzima_native=capacitor' /tmp/libapp-strings.txt
+          then
+            echo "FAIL=LEGACY_WEB_RUNTIME_FOUND_IN_COMPILED_APP"
+            exit 1
+          fi
+
+          BYTES="$(stat -c '%s' "$APK")"
+
+          echo "ANDROID_PREVIEW_BYTES=$BYTES"
+          awk -v b="$BYTES" 'BEGIN {printf "ANDROID_PREVIEW_MB=%.2f\n",b/1024/1024}'
+          awk -v old="$BASELINE_BYTES" -v new="$BYTES" 'BEGIN {printf "SIZE_REDUCTION_PERCENT=%.2f\n",((old-new)/old)*100}'
+
+          if [ "$BYTES" -gt "$MAX_BYTES" ]
+          then
+            echo "FAIL=APK_EXCEEDS_45MB_SIZE_GATE"
+            exit 1
+          fi
+
+          echo "COMPILED_WEBVIEW_PLUGIN_HITS=0"
+          echo "DIRECT_NATIVE_API_CLIENT=YES"
+          echo "ANDROID_RELEASE_SIZE_GATE=PASS"
+
+      - name: Create release checksum
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd build/app/outputs/flutter-apk
+          sha256sum app-release.apk > ubuzima-plus-android-3.2.0-rc1-arm64-release.sha256
+          cat ubuzima-plus-android-3.2.0-rc1-arm64-release.sha256
+
+      - name: Upload Ubuzima+ Android Preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuzima-plus-android-3.2.0-rc1-arm64-release
+          path: |
+            mobile/ubuzima_native/build/app/outputs/flutter-apk/app-release.apk
+            mobile/ubuzima_native/build/app/outputs/flutter-apk/ubuzima-plus-android-3.2.0-rc1-arm64-release.sha256
+          if-no-files-found: error
+          retention-days: 7
