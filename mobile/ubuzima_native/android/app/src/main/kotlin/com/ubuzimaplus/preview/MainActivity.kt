@@ -1,4 +1,4 @@
-package com.ubuzimaplus.nativeuat
+package com.ubuzimaplus.preview
 
 import io.flutter.embedding.android.FlutterActivity
 

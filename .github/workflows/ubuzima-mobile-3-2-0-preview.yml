@@ -161,6 +161,14 @@ jobs:
             strings "$dex" >> /tmp/dex-strings.txt
           done
 
+          if ! grep -Fq 'com/ubuzimaplus/preview/MainActivity' /tmp/dex-strings.txt
+          then
+            echo "FAIL=ANDROID_LAUNCH_ACTIVITY_MISSING"
+            exit 1
+          fi
+
+          echo "ANDROID_LAUNCH_ACTIVITY=PASS"
+
           if grep -Eiq 'webview_flutter|flutter_inappwebview|io/flutter/plugins/webviewflutter|com/pichillilorenzo/flutter_inappwebview' /tmp/dex-strings.txt
           then
             echo "FAIL=WEBVIEW_PLUGIN_FOUND_IN_APK"
