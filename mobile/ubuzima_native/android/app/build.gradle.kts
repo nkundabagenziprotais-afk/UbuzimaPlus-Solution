@@ -20,6 +20,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Flutter 3.35+ adds ARM32, ARM64 and x86_64 release ABI filters by default.
+        // Ubuzima+ Preview 3.2.0 is intentionally distributed as an ARM64 APK.
+        ndk {
+            abiFilters.clear()
+            abiFilters.addAll(listOf("arm64-v8a"))
+        }
     }
 
     buildTypes {
