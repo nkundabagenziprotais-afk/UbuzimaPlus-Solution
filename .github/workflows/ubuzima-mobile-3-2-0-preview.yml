@@ -117,8 +117,8 @@ jobs:
 
           grep -F "package: name='com.ubuzimaplus.preview'" /tmp/badging.txt
           grep -F "application-label:'Ubuzima+ Preview'" /tmp/badging.txt
-          grep -F "versionCode='32001'" /tmp/badging.txt
-          grep -F "versionName='3.2.0-rc.1'" /tmp/badging.txt
+          grep -F "versionCode='32002'" /tmp/badging.txt
+          grep -F "versionName='3.2.0-rc.2'" /tmp/badging.txt
 
           unzip -Z1 "$APK" > /tmp/apk-list.txt
 
