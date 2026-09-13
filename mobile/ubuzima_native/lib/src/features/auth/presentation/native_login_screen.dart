@@ -270,7 +270,7 @@ class _BrandHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: colors.secondary.withOpacity(0.10),
+            color: colors.secondary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(

@@ -88,7 +88,7 @@ abstract final class UbuzimaBrand {
         height: 72,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: green.withOpacity(0.14),
+        indicatorColor: green.withValues(alpha: 0.14),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(color: green),
       textTheme: const TextTheme(
