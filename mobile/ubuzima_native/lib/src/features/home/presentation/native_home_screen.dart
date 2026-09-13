@@ -143,10 +143,10 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
         Text(
           '360 BUSINESS VIEW',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: UbuzimaBrand.greenDark,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.05,
-          ),
+                color: UbuzimaBrand.greenDark,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.05,
+              ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -199,13 +199,15 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
         _NativeStatusCard(
           icon: Icons.health_and_safety_outlined,
           title: 'Secure access',
-          description: 'Your Ubuzima+ session is protected on this device and connected securely to your workspace.',
+          description:
+              'Your Ubuzima+ session is protected on this device and connected securely to your workspace.',
         ),
         const SizedBox(height: 12),
         _NativeStatusCard(
           icon: Icons.phone_android_rounded,
           title: 'Built for mobile',
-          description: 'A focused experience designed for quick everyday business actions.',
+          description:
+              'A focused experience designed for quick everyday business actions.',
         ),
         const SizedBox(height: 24),
         Text('Your workspace', style: Theme.of(context).textTheme.titleMedium),
@@ -313,7 +315,9 @@ class _NativeStatusCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
                       ?.copyWith(fontSize: 14),
                 ),
                 const SizedBox(height: 4),

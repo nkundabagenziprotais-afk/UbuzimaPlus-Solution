@@ -106,7 +106,9 @@ class _NativeLoginScreenState extends State<NativeLoginScreen> {
                     const SizedBox(height: 30),
                     Text(
                       'Welcome back',
-                      style: Theme.of(context).textTheme.headlineSmall
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 6),
@@ -274,9 +276,9 @@ class _BrandHeader extends StatelessWidget {
           child: Text(
             "Secure health business workspace",
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colors.secondary,
-              fontWeight: FontWeight.w800,
-            ),
+                  color: colors.secondary,
+                  fontWeight: FontWeight.w800,
+                ),
           ),
         ),
       ],

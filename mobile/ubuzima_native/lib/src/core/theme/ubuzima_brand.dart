@@ -15,19 +15,18 @@ abstract final class UbuzimaBrand {
   static const textSecondary = Color(0xFF60756E);
 
   static ThemeData theme() {
-    final scheme =
-        ColorScheme.fromSeed(
-          seedColor: blue,
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: blue,
-          onPrimary: Colors.white,
-          secondary: green,
-          onSecondary: Colors.white,
-          surface: Colors.white,
-          onSurface: textPrimary,
-          outline: border,
-        );
+    final scheme = ColorScheme.fromSeed(
+      seedColor: blue,
+      brightness: Brightness.light,
+    ).copyWith(
+      primary: blue,
+      onPrimary: Colors.white,
+      secondary: green,
+      onSecondary: Colors.white,
+      surface: Colors.white,
+      onSurface: textPrimary,
+      outline: border,
+    );
 
     return ThemeData(
       useMaterial3: true,
