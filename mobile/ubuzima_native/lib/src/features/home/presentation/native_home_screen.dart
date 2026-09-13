@@ -302,10 +302,13 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       return;
     }
 
-    final poNumber = _text(purchaseOrder, <String>[
-      'po_number',
-      'number',
-    ], fallback: 'this purchase order');
+    final poNumber = _text(
+        purchaseOrder,
+        <String>[
+          'po_number',
+          'number',
+        ],
+        fallback: 'this purchase order');
 
     final confirmed = await _confirm(
       'Approve purchase order?',
@@ -359,10 +362,13 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       return;
     }
 
-    final poNumber = _text(purchaseOrder, <String>[
-      'po_number',
-      'number',
-    ], fallback: 'this purchase order');
+    final poNumber = _text(
+        purchaseOrder,
+        <String>[
+          'po_number',
+          'number',
+        ],
+        fallback: 'this purchase order');
 
     final confirmed = await _confirm(
       'Cancel purchase order?',
@@ -622,10 +628,10 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
           Text(
             '360 BUSINESS VIEW',
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: UbuzimaBrand.greenDark,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.05,
-            ),
+                  color: UbuzimaBrand.greenDark,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.05,
+                ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -753,18 +759,25 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
             _emptyCard(context, 'No sales were returned for this tenant.')
           else
             ...sales.take(40).map((sale) {
-              final customer = _nestedText(sale, 'customer', <String>[
-                'name',
-                'full_name',
-              ], fallback: 'Walk-in customer');
+              final customer = _nestedText(
+                  sale,
+                  'customer',
+                  <String>[
+                    'name',
+                    'full_name',
+                  ],
+                  fallback: 'Walk-in customer');
 
               return _businessCard(
                 context,
-                title: _text(sale, <String>[
-                  'sale_number',
-                  'invoice_number',
-                  'reference',
-                ], fallback: 'Sale #${sale['id'] ?? '—'}'),
+                title: _text(
+                    sale,
+                    <String>[
+                      'sale_number',
+                      'invoice_number',
+                      'reference',
+                    ],
+                    fallback: 'Sale #${sale['id'] ?? '—'}'),
                 subtitle: customer,
                 leading: Icons.receipt_long_outlined,
                 trailing: _money(
@@ -774,9 +787,12 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
                 ),
                 badges: <String>[
                   _text(sale, <String>['status'], fallback: 'unknown'),
-                  _text(sale, <String>[
-                    'payment_status',
-                  ], fallback: 'payment n/a'),
+                  _text(
+                      sale,
+                      <String>[
+                        'payment_status',
+                      ],
+                      fallback: 'payment n/a'),
                 ],
               );
             }),
@@ -862,13 +878,17 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
               return _businessCard(
                 context,
                 title: _text(product, <String>['name', 'product_name']),
-                subtitle: _text(product, <String>[
-                  'sku',
-                  'barcode',
-                ], fallback: 'No SKU'),
+                subtitle: _text(
+                    product,
+                    <String>[
+                      'sku',
+                      'barcode',
+                    ],
+                    fallback: 'No SKU'),
                 leading: Icons.medication_liquid_outlined,
-                trailing:
-                    '${_text(product, <String>['total_quantity_on_hand'], fallback: '0')} on hand',
+                trailing: '${_text(product, <String>[
+                      'total_quantity_on_hand'
+                    ], fallback: '0')} on hand',
                 badges: <String>[
                   _text(product, <String>['status'], fallback: 'active'),
                   _text(product, <String>['product_type'], fallback: 'product'),
@@ -929,14 +949,21 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
           else
             ...purchaseOrders.take(40).map((purchaseOrder) {
               final id = purchaseOrder['id'];
-              final status = _text(purchaseOrder, <String>[
-                'status',
-              ], fallback: 'unknown');
+              final status = _text(
+                  purchaseOrder,
+                  <String>[
+                    'status',
+                  ],
+                  fallback: 'unknown');
 
-              final supplier = _nestedText(purchaseOrder, 'supplier', <String>[
-                'name',
-                'legal_name',
-              ], fallback: 'Supplier not available');
+              final supplier = _nestedText(
+                  purchaseOrder,
+                  'supplier',
+                  <String>[
+                    'name',
+                    'legal_name',
+                  ],
+                  fallback: 'Supplier not available');
 
               final canApprove = status == 'draft';
               final canCancel = status != 'received' && status != 'cancelled';
@@ -965,10 +992,13 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _text(purchaseOrder, <String>[
-                                  'po_number',
-                                  'number',
-                                ], fallback: 'Purchase order #${id ?? '—'}'),
+                                _text(
+                                    purchaseOrder,
+                                    <String>[
+                                      'po_number',
+                                      'number',
+                                    ],
+                                    fallback: 'Purchase order #${id ?? '—'}'),
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 3),
@@ -981,7 +1011,9 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
                         ),
                         Text(
                           _money(purchaseOrder['total_amount']),
-                          style: Theme.of(context).textTheme.titleSmall
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                       ],
@@ -1027,20 +1059,29 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
               return _businessCard(
                 context,
                 title: _text(supplier, <String>['name', 'legal_name']),
-                subtitle: _text(supplier, <String>[
-                  'phone',
-                  'email',
-                  'supplier_code',
-                ], fallback: 'No contact details'),
+                subtitle: _text(
+                    supplier,
+                    <String>[
+                      'phone',
+                      'email',
+                      'supplier_code',
+                    ],
+                    fallback: 'No contact details'),
                 leading: Icons.local_shipping_outlined,
-                trailing: _text(supplier, <String>[
-                  'supplier_code',
-                ], fallback: ''),
+                trailing: _text(
+                    supplier,
+                    <String>[
+                      'supplier_code',
+                    ],
+                    fallback: ''),
                 badges: <String>[
                   _text(supplier, <String>['status'], fallback: 'unknown'),
-                  _text(supplier, <String>[
-                    'supplier_type',
-                  ], fallback: 'supplier'),
+                  _text(
+                      supplier,
+                      <String>[
+                        'supplier_type',
+                      ],
+                      fallback: 'supplier'),
                 ],
               );
             }),
