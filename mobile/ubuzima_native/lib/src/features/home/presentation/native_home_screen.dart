@@ -23,7 +23,7 @@ class NativeHomeScreen extends StatefulWidget {
 }
 
 class _NativeHomeScreenState extends State<NativeHomeScreen> {
-  final BusinessApiRepository _business = BusinessApiRepository();
+  late final BusinessApiRepository _business;
 
   final Map<String, Map<String, dynamic>> _payloads =
       <String, Map<String, dynamic>>{};
@@ -36,6 +36,10 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    _business = BusinessApiRepository(
+      readTenantSlug: _tenantSlug,
+    );
 
     if (!widget.offline) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -56,6 +60,104 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     }
 
     return 'Team member';
+  }
+
+  String? _tenantSlug() {
+    String? clean(dynamic value) {
+      final text = value?.toString().trim();
+
+      if (text == null || text.isEmpty) {
+        return null;
+      }
+
+      return text;
+    }
+
+    final direct = clean(widget.profile['tenant_slug']) ??
+        clean(widget.profile['tenantSlug']);
+
+    if (direct != null) {
+      return direct;
+    }
+
+    final currentTenant = widget.profile['current_tenant'];
+
+    if (currentTenant is Map) {
+      final slug = clean(currentTenant['slug']);
+
+      if (slug != null) {
+        return slug;
+      }
+    }
+
+    final scope = widget.profile['scope'];
+
+    if (scope is Map) {
+      final scopeSlug =
+          clean(scope['tenant_slug']) ?? clean(scope['tenantSlug']);
+
+      if (scopeSlug != null) {
+        return scopeSlug;
+      }
+
+      final scopeTenant = scope['tenant'];
+
+      if (scopeTenant is Map) {
+        final slug = clean(scopeTenant['slug']);
+
+        if (slug != null) {
+          return slug;
+        }
+      }
+    }
+
+    final tenant = widget.profile['tenant'];
+
+    if (tenant is Map) {
+      final slug = clean(tenant['slug']);
+
+      if (slug != null) {
+        return slug;
+      }
+    }
+
+    final assignments = widget.profile['tenant_assignments'];
+
+    if (assignments is List) {
+      final candidates = <String>{};
+
+      for (final assignment in assignments) {
+        if (assignment is! Map) {
+          continue;
+        }
+
+        final assignmentTenant = assignment['tenant'];
+
+        if (assignmentTenant is! Map) {
+          continue;
+        }
+
+        final slug = clean(assignmentTenant['slug']);
+
+        if (slug == null) {
+          continue;
+        }
+
+        final status = clean(assignment['status'])?.toLowerCase();
+
+        if (status == 'active') {
+          return slug;
+        }
+
+        candidates.add(slug);
+      }
+
+      if (candidates.length == 1) {
+        return candidates.single;
+      }
+    }
+
+    return null;
   }
 
   String? _tenantName() {

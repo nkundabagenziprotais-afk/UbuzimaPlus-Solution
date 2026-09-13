@@ -3,17 +3,21 @@ import '../../../core/network/native_api_client.dart';
 import '../../../core/security/secure_session_store.dart';
 
 typedef AccessTokenReader = Future<String?> Function();
+typedef TenantSlugReader = String? Function();
 
 class BusinessApiRepository {
   BusinessApiRepository({
     NativeApiClient? api,
     AccessTokenReader? readAccessToken,
+    TenantSlugReader? readTenantSlug,
   })  : _api = api ?? NativeApiClient(),
         _readAccessToken =
-            readAccessToken ?? SecureSessionStore().readAccessToken;
+            readAccessToken ?? SecureSessionStore().readAccessToken,
+        _readTenantSlug = readTenantSlug ?? (() => null);
 
   final NativeApiClient _api;
   final AccessTokenReader _readAccessToken;
+  final TenantSlugReader _readTenantSlug;
 
   Future<String> _token() async {
     final token = await _readAccessToken();
@@ -28,12 +32,27 @@ class BusinessApiRepository {
     return token.trim();
   }
 
+  String _tenantSlug() {
+    final slug = _readTenantSlug()?.trim();
+
+    if (slug == null || slug.isEmpty) {
+      throw ApiException(
+        statusCode: 400,
+        message:
+            'Your active tenant context is unavailable. Sign in again and retry.',
+      );
+    }
+
+    return slug;
+  }
+
   Future<Map<String, dynamic>> _get(
     String endpoint,
   ) async {
     return _api.get(
       endpoint,
       bearerToken: await _token(),
+      tenantSlug: _tenantSlug(),
     );
   }
 
@@ -45,6 +64,7 @@ class BusinessApiRepository {
       endpoint,
       body: body,
       bearerToken: await _token(),
+      tenantSlug: _tenantSlug(),
     );
   }
 
@@ -56,6 +76,7 @@ class BusinessApiRepository {
       endpoint,
       body: body,
       bearerToken: await _token(),
+      tenantSlug: _tenantSlug(),
     );
   }
 

@@ -29,11 +29,13 @@ class NativeApiClient {
   Future<Map<String, dynamic>> get(
     String path, {
     String? bearerToken,
+    String? tenantSlug,
   }) {
     return _request(
       method: 'GET',
       path: path,
       bearerToken: bearerToken,
+      tenantSlug: tenantSlug,
     );
   }
 
@@ -41,12 +43,14 @@ class NativeApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? bearerToken,
+    String? tenantSlug,
   }) {
     return _request(
       method: 'POST',
       path: path,
       body: body,
       bearerToken: bearerToken,
+      tenantSlug: tenantSlug,
     );
   }
 
@@ -54,12 +58,14 @@ class NativeApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? bearerToken,
+    String? tenantSlug,
   }) {
     return _request(
       method: 'PUT',
       path: path,
       body: body,
       bearerToken: bearerToken,
+      tenantSlug: tenantSlug,
     );
   }
 
@@ -67,12 +73,14 @@ class NativeApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? bearerToken,
+    String? tenantSlug,
   }) {
     return _request(
       method: 'PATCH',
       path: path,
       body: body,
       bearerToken: bearerToken,
+      tenantSlug: tenantSlug,
     );
   }
 
@@ -80,12 +88,14 @@ class NativeApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? bearerToken,
+    String? tenantSlug,
   }) {
     return _request(
       method: 'DELETE',
       path: path,
       body: body,
       bearerToken: bearerToken,
+      tenantSlug: tenantSlug,
     );
   }
 
@@ -94,6 +104,7 @@ class NativeApiClient {
     required String path,
     Map<String, dynamic>? body,
     String? bearerToken,
+    String? tenantSlug,
   }) async {
     final client = HttpClient()..connectionTimeout = timeout;
 
@@ -119,6 +130,13 @@ class NativeApiClient {
         request.headers.set(
           HttpHeaders.authorizationHeader,
           'Bearer ${bearerToken.trim()}',
+        );
+      }
+
+      if (tenantSlug != null && tenantSlug.trim().isNotEmpty) {
+        request.headers.set(
+          'X-Tenant-Slug',
+          tenantSlug.trim(),
         );
       }
 

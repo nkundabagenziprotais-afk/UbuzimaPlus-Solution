@@ -6,6 +6,7 @@ class FakeNativeApiClient extends NativeApiClient {
   String? method;
   String? path;
   String? token;
+  String? tenantSlug;
   Map<String, dynamic>? body;
 
   void capture(
@@ -24,7 +25,9 @@ class FakeNativeApiClient extends NativeApiClient {
   Future<Map<String, dynamic>> get(
     String path, {
     String? bearerToken,
+    String? tenantSlug,
   }) async {
+    this.tenantSlug = tenantSlug;
     capture(
       'GET',
       path,
@@ -40,7 +43,9 @@ class FakeNativeApiClient extends NativeApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? bearerToken,
+    String? tenantSlug,
   }) async {
+    this.tenantSlug = tenantSlug;
     capture(
       'POST',
       path,
@@ -56,7 +61,9 @@ class FakeNativeApiClient extends NativeApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? bearerToken,
+    String? tenantSlug,
   }) async {
+    this.tenantSlug = tenantSlug;
     capture(
       'PATCH',
       path,
@@ -78,6 +85,7 @@ void main() {
     repository = BusinessApiRepository(
       api: api,
       readAccessToken: () async => 'secure-real-session-token',
+      readTenantSlug: () => 'vitapharma',
     );
   });
 
@@ -94,6 +102,10 @@ void main() {
       expect(
         api.token,
         'secure-real-session-token',
+      );
+      expect(
+        api.tenantSlug,
+        'vitapharma',
       );
     },
   );
