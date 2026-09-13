@@ -176,10 +176,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     });
   }
 
-  List<Map<String, dynamic>> _rows(
-    String module,
-    String key,
-  ) {
+  List<Map<String, dynamic>> _rows(String module, String key) {
     final raw = _payloads[module]?[key];
 
     if (raw is! List) {
@@ -189,17 +186,13 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     return raw
         .whereType<Map>()
         .map(
-          (row) => row.map(
-            (key, dynamic value) => MapEntry(key.toString(), value),
-          ),
+          (row) =>
+              row.map((key, dynamic value) => MapEntry(key.toString(), value)),
         )
         .toList();
   }
 
-  Map<String, dynamic> _map(
-    String module,
-    String key,
-  ) {
+  Map<String, dynamic> _map(String module, String key) {
     final raw = _payloads[module]?[key];
 
     if (raw is Map<String, dynamic>) {
@@ -207,9 +200,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     }
 
     if (raw is Map) {
-      return raw.map(
-        (key, dynamic value) => MapEntry(key.toString(), value),
-      );
+      return raw.map((key, dynamic value) => MapEntry(key.toString(), value));
     }
 
     return const <String, dynamic>{};
@@ -244,11 +235,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
         (key, dynamic value) => MapEntry(key.toString(), value),
       );
 
-      return _text(
-        normalized,
-        childKeys,
-        fallback: fallback,
-      );
+      return _text(normalized, childKeys, fallback: fallback);
     }
 
     return fallback;
@@ -276,10 +263,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     return 'RWF ${amount.toStringAsFixed(0)}';
   }
 
-  String _count(
-    String module,
-    String key,
-  ) {
+  String _count(String module, String key) {
     if (!_payloads.containsKey(module)) {
       return '—';
     }
@@ -287,11 +271,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     return _rows(module, key).length.toString();
   }
 
-  Future<bool> _confirm(
-    String title,
-    String message,
-    String action,
-  ) async {
+  Future<bool> _confirm(String title, String message, String action) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -315,20 +295,17 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     return confirmed ?? false;
   }
 
-  Future<void> _approvePurchaseOrder(
-    Map<String, dynamic> purchaseOrder,
-  ) async {
+  Future<void> _approvePurchaseOrder(Map<String, dynamic> purchaseOrder) async {
     final id = purchaseOrder['id'];
 
     if (id == null) {
       return;
     }
 
-    final poNumber = _text(
-      purchaseOrder,
-      <String>['po_number', 'number'],
-      fallback: 'this purchase order',
-    );
+    final poNumber = _text(purchaseOrder, <String>[
+      'po_number',
+      'number',
+    ], fallback: 'this purchase order');
 
     final confirmed = await _confirm(
       'Approve purchase order?',
@@ -363,9 +340,8 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       await _refreshLiveData();
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) {
@@ -376,20 +352,17 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     }
   }
 
-  Future<void> _cancelPurchaseOrder(
-    Map<String, dynamic> purchaseOrder,
-  ) async {
+  Future<void> _cancelPurchaseOrder(Map<String, dynamic> purchaseOrder) async {
     final id = purchaseOrder['id'];
 
     if (id == null) {
       return;
     }
 
-    final poNumber = _text(
-      purchaseOrder,
-      <String>['po_number', 'number'],
-      fallback: 'this purchase order',
-    );
+    final poNumber = _text(purchaseOrder, <String>[
+      'po_number',
+      'number',
+    ], fallback: 'this purchase order');
 
     final confirmed = await _confirm(
       'Cancel purchase order?',
@@ -424,9 +397,8 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       await _refreshLiveData();
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) {
@@ -478,13 +450,8 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            if (_loading)
-              const LinearProgressIndicator(
-                minHeight: 2,
-              ),
-            Expanded(
-              child: _selectedBody(context),
-            ),
+            if (_loading) const LinearProgressIndicator(minHeight: 2),
+            Expanded(child: _selectedBody(context)),
           ],
         ),
       ),
@@ -536,9 +503,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E6),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFF3D89A),
-        ),
+        border: Border.all(color: const Color(0xFFF3D89A)),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -568,9 +533,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF5F3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFFC8BF),
-        ),
+        border: Border.all(color: const Color(0xFFFFC8BF)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,23 +551,13 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     );
   }
 
-  Widget _sectionHeader(
-    BuildContext context,
-    String title,
-    String subtitle,
-  ) {
+  Widget _sectionHeader(BuildContext context, String title, String subtitle) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text(title, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
       ],
     );
   }
@@ -620,17 +573,12 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: UbuzimaBrand.border,
-        ),
+        border: Border.all(color: UbuzimaBrand.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: UbuzimaBrand.greenDark,
-          ),
+          Icon(icon, color: UbuzimaBrand.greenDark),
           const Spacer(),
           Text(
             value,
@@ -674,10 +622,10 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
           Text(
             '360 BUSINESS VIEW',
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: UbuzimaBrand.greenDark,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.05,
-                ),
+              color: UbuzimaBrand.greenDark,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.05,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -686,10 +634,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
           ),
           if (tenant != null) ...[
             const SizedBox(height: 5),
-            Text(
-              tenant,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
+            Text(tenant, style: Theme.of(context).textTheme.titleSmall),
           ],
           if (branch != null) ...[
             const SizedBox(height: 4),
@@ -710,10 +655,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
               ],
             ),
           ],
-          if (widget.offline) ...[
-            const SizedBox(height: 16),
-            _offlineNotice(),
-          ],
+          if (widget.offline) ...[const SizedBox(height: 16), _offlineNotice()],
           const SizedBox(height: 22),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -760,10 +702,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
                   _metricCard(
                     context,
                     label: 'Purchase orders',
-                    value: _count(
-                      'purchase_orders',
-                      'purchase_orders',
-                    ),
+                    value: _count('purchase_orders', 'purchase_orders'),
                     icon: Icons.assignment_outlined,
                   ),
                 ],
@@ -780,10 +719,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
               !widget.offline &&
               _payloads.isEmpty &&
               _errors.isEmpty)
-            _emptyCard(
-              context,
-              'No live data has been returned yet.',
-            ),
+            _emptyCard(context, 'No live data has been returned yet.'),
         ],
       ),
     );
@@ -814,53 +750,36 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
               ),
             )
           else if (sales.isEmpty && !_errors.containsKey('sales'))
-            _emptyCard(
-              context,
-              'No sales were returned for this tenant.',
-            )
+            _emptyCard(context, 'No sales were returned for this tenant.')
           else
-            ...sales.take(40).map(
-              (sale) {
-                final customer = _nestedText(
-                  sale,
-                  'customer',
-                  <String>['name', 'full_name'],
-                  fallback: 'Walk-in customer',
-                );
+            ...sales.take(40).map((sale) {
+              final customer = _nestedText(sale, 'customer', <String>[
+                'name',
+                'full_name',
+              ], fallback: 'Walk-in customer');
 
-                return _businessCard(
-                  context,
-                  title: _text(
-                    sale,
-                    <String>[
-                      'sale_number',
-                      'invoice_number',
-                      'reference',
-                    ],
-                    fallback: 'Sale #${sale['id'] ?? '—'}',
-                  ),
-                  subtitle: customer,
-                  leading: Icons.receipt_long_outlined,
-                  trailing: _money(
-                    sale['total_amount'] ??
-                        sale['grand_total'] ??
-                        sale['net_amount'],
-                  ),
-                  badges: <String>[
-                    _text(
-                      sale,
-                      <String>['status'],
-                      fallback: 'unknown',
-                    ),
-                    _text(
-                      sale,
-                      <String>['payment_status'],
-                      fallback: 'payment n/a',
-                    ),
-                  ],
-                );
-              },
-            ),
+              return _businessCard(
+                context,
+                title: _text(sale, <String>[
+                  'sale_number',
+                  'invoice_number',
+                  'reference',
+                ], fallback: 'Sale #${sale['id'] ?? '—'}'),
+                subtitle: customer,
+                leading: Icons.receipt_long_outlined,
+                trailing: _money(
+                  sale['total_amount'] ??
+                      sale['grand_total'] ??
+                      sale['net_amount'],
+                ),
+                badges: <String>[
+                  _text(sale, <String>['status'], fallback: 'unknown'),
+                  _text(sale, <String>[
+                    'payment_status',
+                  ], fallback: 'payment n/a'),
+                ],
+              );
+            }),
         ],
       ),
     );
@@ -934,48 +853,28 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
             ],
           ),
           const SizedBox(height: 18),
-          Text(
-            'Products',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Products', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 10),
           if (products.isEmpty && !_errors.containsKey('products'))
-            _emptyCard(
-              context,
-              'No active products were returned.',
-            )
+            _emptyCard(context, 'No active products were returned.')
           else
-            ...products.take(60).map(
-              (product) {
-                return _businessCard(
-                  context,
-                  title: _text(
-                    product,
-                    <String>['name', 'product_name'],
-                  ),
-                  subtitle: _text(
-                    product,
-                    <String>['sku', 'barcode'],
-                    fallback: 'No SKU',
-                  ),
-                  leading: Icons.medication_liquid_outlined,
-                  trailing:
-                      '${_text(product, <String>['total_quantity_on_hand'], fallback: '0')} on hand',
-                  badges: <String>[
-                    _text(
-                      product,
-                      <String>['status'],
-                      fallback: 'active',
-                    ),
-                    _text(
-                      product,
-                      <String>['product_type'],
-                      fallback: 'product',
-                    ),
-                  ],
-                );
-              },
-            ),
+            ...products.take(60).map((product) {
+              return _businessCard(
+                context,
+                title: _text(product, <String>['name', 'product_name']),
+                subtitle: _text(product, <String>[
+                  'sku',
+                  'barcode',
+                ], fallback: 'No SKU'),
+                leading: Icons.medication_liquid_outlined,
+                trailing:
+                    '${_text(product, <String>['total_quantity_on_hand'], fallback: '0')} on hand',
+                badges: <String>[
+                  _text(product, <String>['status'], fallback: 'active'),
+                  _text(product, <String>['product_type'], fallback: 'product'),
+                ],
+              );
+            }),
         ],
       ),
     );
@@ -983,10 +882,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
 
   Widget _procurement(BuildContext context) {
     final suppliers = _rows('suppliers', 'suppliers');
-    final purchaseOrders = _rows(
-      'purchase_orders',
-      'purchase_orders',
-    );
+    final purchaseOrders = _rows('purchase_orders', 'purchase_orders');
 
     return RefreshIndicator(
       onRefresh: _refreshLiveData,
@@ -1016,10 +912,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
                 child: _metricCard(
                   context,
                   label: 'Purchase orders',
-                  value: _count(
-                    'purchase_orders',
-                    'purchase_orders',
-                  ),
+                  value: _count('purchase_orders', 'purchase_orders'),
                   icon: Icons.assignment_outlined,
                 ),
               ),
@@ -1031,183 +924,126 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 10),
-          if (purchaseOrders.isEmpty &&
-              !_errors.containsKey('purchase_orders'))
-            _emptyCard(
-              context,
-              'No purchase orders were returned.',
-            )
+          if (purchaseOrders.isEmpty && !_errors.containsKey('purchase_orders'))
+            _emptyCard(context, 'No purchase orders were returned.')
           else
-            ...purchaseOrders.take(40).map(
-              (purchaseOrder) {
-                final id = purchaseOrder['id'];
-                final status = _text(
-                  purchaseOrder,
-                  <String>['status'],
-                  fallback: 'unknown',
-                );
+            ...purchaseOrders.take(40).map((purchaseOrder) {
+              final id = purchaseOrder['id'];
+              final status = _text(purchaseOrder, <String>[
+                'status',
+              ], fallback: 'unknown');
 
-                final supplier = _nestedText(
-                  purchaseOrder,
-                  'supplier',
-                  <String>['name', 'legal_name'],
-                  fallback: 'Supplier not available',
-                );
+              final supplier = _nestedText(purchaseOrder, 'supplier', <String>[
+                'name',
+                'legal_name',
+              ], fallback: 'Supplier not available');
 
-                final canApprove = status == 'draft';
-                final canCancel =
-                    status != 'received' && status != 'cancelled';
+              final canApprove = status == 'draft';
+              final canCancel = status != 'received' && status != 'cancelled';
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: UbuzimaBrand.border,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.assignment_outlined,
-                            color: UbuzimaBrand.greenDark,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _text(
-                                    purchaseOrder,
-                                    <String>[
-                                      'po_number',
-                                      'number',
-                                    ],
-                                    fallback:
-                                        'Purchase order #${id ?? '—'}',
-                                  ),
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  supplier,
-                                  style:
-                                      Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            _money(
-                              purchaseOrder['total_amount'],
-                            ),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      _badge(status),
-                      if (canApprove || canCancel) ...[
-                        const Divider(height: 24),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (canApprove)
-                              FilledButton.icon(
-                                onPressed:
-                                    _actionBusy == 'approve-$id'
-                                        ? null
-                                        : () => _approvePurchaseOrder(
-                                              purchaseOrder,
-                                            ),
-                                icon: const Icon(
-                                  Icons.check_circle_outline,
-                                ),
-                                label: const Text('Approve'),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: UbuzimaBrand.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.assignment_outlined,
+                          color: UbuzimaBrand.greenDark,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _text(purchaseOrder, <String>[
+                                  'po_number',
+                                  'number',
+                                ], fallback: 'Purchase order #${id ?? '—'}'),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
-                            if (canCancel)
-                              OutlinedButton.icon(
-                                onPressed:
-                                    _actionBusy == 'cancel-$id'
-                                        ? null
-                                        : () => _cancelPurchaseOrder(
-                                              purchaseOrder,
-                                            ),
-                                icon: const Icon(Icons.cancel_outlined),
-                                label: const Text('Cancel'),
+                              const SizedBox(height: 3),
+                              Text(
+                                supplier,
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
-                          ],
+                            ],
+                          ),
+                        ),
+                        Text(
+                          _money(purchaseOrder['total_amount']),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 10),
+                    _badge(status),
+                    if (canApprove || canCancel) ...[
+                      const Divider(height: 24),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (canApprove)
+                            FilledButton.icon(
+                              onPressed: _actionBusy == 'approve-$id'
+                                  ? null
+                                  : () => _approvePurchaseOrder(purchaseOrder),
+                              icon: const Icon(Icons.check_circle_outline),
+                              label: const Text('Approve'),
+                            ),
+                          if (canCancel)
+                            OutlinedButton.icon(
+                              onPressed: _actionBusy == 'cancel-$id'
+                                  ? null
+                                  : () => _cancelPurchaseOrder(purchaseOrder),
+                              icon: const Icon(Icons.cancel_outlined),
+                              label: const Text('Cancel'),
+                            ),
+                        ],
+                      ),
                     ],
-                  ),
-                );
-              },
-            ),
+                  ],
+                ),
+              );
+            }),
           const SizedBox(height: 18),
-          Text(
-            'Suppliers',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Suppliers', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 10),
           if (suppliers.isEmpty && !_errors.containsKey('suppliers'))
-            _emptyCard(
-              context,
-              'No suppliers were returned.',
-            )
+            _emptyCard(context, 'No suppliers were returned.')
           else
-            ...suppliers.take(40).map(
-              (supplier) {
-                return _businessCard(
-                  context,
-                  title: _text(
-                    supplier,
-                    <String>['name', 'legal_name'],
-                  ),
-                  subtitle: _text(
-                    supplier,
-                    <String>[
-                      'phone',
-                      'email',
-                      'supplier_code',
-                    ],
-                    fallback: 'No contact details',
-                  ),
-                  leading: Icons.local_shipping_outlined,
-                  trailing: _text(
-                    supplier,
-                    <String>['supplier_code'],
-                    fallback: '',
-                  ),
-                  badges: <String>[
-                    _text(
-                      supplier,
-                      <String>['status'],
-                      fallback: 'unknown',
-                    ),
-                    _text(
-                      supplier,
-                      <String>['supplier_type'],
-                      fallback: 'supplier',
-                    ),
-                  ],
-                );
-              },
-            ),
+            ...suppliers.take(40).map((supplier) {
+              return _businessCard(
+                context,
+                title: _text(supplier, <String>['name', 'legal_name']),
+                subtitle: _text(supplier, <String>[
+                  'phone',
+                  'email',
+                  'supplier_code',
+                ], fallback: 'No contact details'),
+                leading: Icons.local_shipping_outlined,
+                trailing: _text(supplier, <String>[
+                  'supplier_code',
+                ], fallback: ''),
+                badges: <String>[
+                  _text(supplier, <String>['status'], fallback: 'unknown'),
+                  _text(supplier, <String>[
+                    'supplier_type',
+                  ], fallback: 'supplier'),
+                ],
+              );
+            }),
         ],
       ),
     );
@@ -1232,9 +1068,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
           subtitle: tenant ?? 'Tenant not available',
           leading: Icons.person_outline_rounded,
           trailing: branch ?? '',
-          badges: <String>[
-            widget.offline ? 'offline session' : 'live session',
-          ],
+          badges: <String>[widget.offline ? 'offline session' : 'live session'],
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
@@ -1252,31 +1086,20 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
     );
   }
 
-  Widget _emptyCard(
-    BuildContext context,
-    String message,
-  ) {
+  Widget _emptyCard(BuildContext context, String message) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: UbuzimaBrand.border,
-        ),
+        border: Border.all(color: UbuzimaBrand.border),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.inbox_outlined,
-            color: UbuzimaBrand.textSecondary,
-          ),
+          const Icon(Icons.inbox_outlined, color: UbuzimaBrand.textSecondary),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(message, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -1297,9 +1120,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: UbuzimaBrand.border,
-        ),
+        border: Border.all(color: UbuzimaBrand.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1311,11 +1132,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
               color: UbuzimaBrand.surfaceSoft,
               borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(
-              leading,
-              color: UbuzimaBrand.greenDark,
-              size: 22,
-            ),
+            child: Icon(leading, color: UbuzimaBrand.greenDark, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1341,9 +1158,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
                     spacing: 6,
                     runSpacing: 6,
                     children: badges
-                        .where(
-                          (badge) => badge.trim().isNotEmpty,
-                        )
+                        .where((badge) => badge.trim().isNotEmpty)
                         .map(_badge)
                         .toList(),
                   ),
@@ -1370,10 +1185,7 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
 
   Widget _badge(String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: UbuzimaBrand.surfaceSoft,
         borderRadius: BorderRadius.circular(999),
