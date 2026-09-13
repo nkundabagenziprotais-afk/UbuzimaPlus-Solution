@@ -33,14 +33,6 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
   bool _loading = false;
   String? _actionBusy;
 
-  static const _labels = <String>[
-    'Home',
-    'POS & Sales',
-    'Inventory',
-    'Procurement',
-    'More',
-  ];
-
   @override
   void initState() {
     super.initState();
