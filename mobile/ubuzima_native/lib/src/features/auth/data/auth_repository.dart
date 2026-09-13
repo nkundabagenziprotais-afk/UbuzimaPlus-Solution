@@ -6,8 +6,8 @@ class AuthRepository {
   AuthRepository({
     required NativeApiClient api,
     required SecureSessionStore store,
-  }) : _api = api,
-       _store = store;
+  })  : _api = api,
+        _store = store;
 
   final NativeApiClient _api;
   final SecureSessionStore _store;
@@ -18,25 +18,31 @@ class AuthRepository {
     required String email,
     required String password,
   }) {
-    return _login(<String, dynamic>{
-      'login_method': 'email',
-      'email': email.trim(),
-      'password': password,
-    });
+    return _login(
+      <String, dynamic>{
+        'login_method': 'email',
+        'email': email.trim(),
+        'password': password,
+      },
+    );
   }
 
   Future<AuthOutcome> loginWithPhone({
     required String phone,
     required String pin,
   }) {
-    return _login(<String, dynamic>{
-      'login_method': 'phone',
-      'phone': phone.trim(),
-      'pin': pin,
-    });
+    return _login(
+      <String, dynamic>{
+        'login_method': 'phone',
+        'phone': phone.trim(),
+        'pin': pin,
+      },
+    );
   }
 
-  Future<AuthOutcome> _login(Map<String, dynamic> credentials) async {
+  Future<AuthOutcome> _login(
+    Map<String, dynamic> credentials,
+  ) async {
     final trustedDeviceToken = await _store.readTrustedDeviceToken();
 
     final payload = <String, dynamic>{
@@ -46,11 +52,18 @@ class AuthRepository {
         'trusted_device_token': trustedDeviceToken,
     };
 
-    final response = await _api.post('/api/v1/auth/login', body: payload);
+    final response = await _api.post(
+      '/api/v1/auth/login',
+      body: payload,
+    );
 
-    final outcome = AuthOutcome.fromLogin(response);
+    final outcome = AuthOutcome.fromLogin(
+      response,
+    );
 
-    await _persistIfAuthenticated(outcome);
+    await _persistIfAuthenticated(
+      outcome,
+    );
 
     return outcome;
   }
@@ -70,21 +83,31 @@ class AuthRepository {
       },
     );
 
-    final outcome = AuthOutcome.fromTwoFactor(response);
+    final outcome = AuthOutcome.fromTwoFactor(
+      response,
+    );
 
-    await _persistIfAuthenticated(outcome);
+    await _persistIfAuthenticated(
+      outcome,
+    );
 
     if (outcome.trustedDeviceToken != null) {
-      await _store.saveTrustedDeviceToken(outcome.trustedDeviceToken!);
+      await _store.saveTrustedDeviceToken(
+        outcome.trustedDeviceToken!,
+      );
     }
 
     return outcome;
   }
 
-  Future<String> requestPasswordReset(String email) async {
+  Future<String> requestPasswordReset(
+    String email,
+  ) async {
     final response = await _api.post(
       '/api/v1/auth/password-reset-request',
-      body: <String, dynamic>{'email': email.trim()},
+      body: <String, dynamic>{
+        'email': email.trim(),
+      },
     );
 
     return response['message']?.toString().trim() ??
@@ -99,7 +122,10 @@ class AuthRepository {
     }
 
     try {
-      final response = await _api.get('/api/v1/auth/me', bearerToken: token);
+      final response = await _api.get(
+        '/api/v1/auth/me',
+        bearerToken: token,
+      );
 
       final profile = _profileFromMe(response);
 
@@ -114,7 +140,10 @@ class AuthRepository {
         profile: profile,
       );
 
-      return SessionBootstrap(profile: profile, offline: false);
+      return SessionBootstrap(
+        profile: profile,
+        offline: false,
+      );
     } on ApiException catch (error) {
       if (error.statusCode == 401) {
         await _store.clearSession();
@@ -126,7 +155,10 @@ class AuthRepository {
         final cached = await _store.readCachedProfile();
 
         if (cached != null) {
-          return SessionBootstrap(profile: cached, offline: true);
+          return SessionBootstrap(
+            profile: cached,
+            offline: true,
+          );
         }
       }
 
@@ -139,7 +171,10 @@ class AuthRepository {
 
     try {
       if (token != null && token.trim().isNotEmpty) {
-        await _api.post('/api/v1/auth/logout', bearerToken: token);
+        await _api.post(
+          '/api/v1/auth/logout',
+          bearerToken: token,
+        );
       }
     } finally {
       /*
@@ -153,10 +188,14 @@ class AuthRepository {
   }
 
   Future<void> forgetTrustedDevice() async {
-    await _store.clearSession(clearTrustedDevice: true);
+    await _store.clearSession(
+      clearTrustedDevice: true,
+    );
   }
 
-  Future<void> _persistIfAuthenticated(AuthOutcome outcome) async {
+  Future<void> _persistIfAuthenticated(
+    AuthOutcome outcome,
+  ) async {
     if (outcome.kind != AuthOutcomeKind.authenticated) {
       return;
     }
@@ -166,13 +205,20 @@ class AuthRepository {
     final profile = outcome.profile;
 
     if (token == null || profile == null) {
-      throw const FormatException('Authenticated response is incomplete.');
+      throw const FormatException(
+        'Authenticated response is incomplete.',
+      );
     }
 
-    await _store.saveAuthenticatedSession(accessToken: token, profile: profile);
+    await _store.saveAuthenticatedSession(
+      accessToken: token,
+      profile: profile,
+    );
   }
 
-  Map<String, dynamic>? _profileFromMe(Map<String, dynamic> response) {
+  Map<String, dynamic>? _profileFromMe(
+    Map<String, dynamic> response,
+  ) {
     final profile = response['profile'];
 
     if (profile is Map<String, dynamic>) {
@@ -181,7 +227,10 @@ class AuthRepository {
 
     if (profile is Map) {
       return profile.map(
-        (key, dynamic value) => MapEntry(key.toString(), value),
+        (key, dynamic value) => MapEntry(
+          key.toString(),
+          value,
+        ),
       );
     }
 

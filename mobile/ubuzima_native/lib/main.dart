@@ -5,5 +5,7 @@ import 'src/app/ubuzima_app.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(const UbuzimaApp());
+  runApp(
+    const UbuzimaApp(),
+  );
 }

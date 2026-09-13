@@ -18,14 +18,23 @@ class ApiException implements Exception {
 }
 
 class NativeApiClient {
-  NativeApiClient({Uri? baseUri, this.timeout = const Duration(seconds: 15)})
-    : baseUri = baseUri ?? Uri.parse('https://ubuzimaplus.com');
+  NativeApiClient({
+    Uri? baseUri,
+    this.timeout = const Duration(seconds: 15),
+  }) : baseUri = baseUri ?? Uri.parse('https://ubuzimaplus.com');
 
   final Uri baseUri;
   final Duration timeout;
 
-  Future<Map<String, dynamic>> get(String path, {String? bearerToken}) {
-    return _request(method: 'GET', path: path, bearerToken: bearerToken);
+  Future<Map<String, dynamic>> get(
+    String path, {
+    String? bearerToken,
+  }) {
+    return _request(
+      method: 'GET',
+      path: path,
+      bearerToken: bearerToken,
+    );
   }
 
   Future<Map<String, dynamic>> post(
@@ -51,12 +60,21 @@ class NativeApiClient {
 
     try {
       final request = await client
-          .openUrl(method, baseUri.resolve(path))
+          .openUrl(
+            method,
+            baseUri.resolve(path),
+          )
           .timeout(timeout);
 
-      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+      request.headers.set(
+        HttpHeaders.acceptHeader,
+        'application/json',
+      );
 
-      request.headers.set('X-Ubuzima-Client', 'native-flutter-r1');
+      request.headers.set(
+        'X-Ubuzima-Client',
+        'native-flutter-r1',
+      );
 
       if (bearerToken != null && bearerToken.trim().isNotEmpty) {
         request.headers.set(
@@ -66,9 +84,16 @@ class NativeApiClient {
       }
 
       if (body != null) {
-        request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+        request.headers.set(
+          HttpHeaders.contentTypeHeader,
+          'application/json',
+        );
 
-        request.add(utf8.encode(jsonEncode(body)));
+        request.add(
+          utf8.encode(
+            jsonEncode(body),
+          ),
+        );
       }
 
       final response = await request.close().timeout(timeout);
@@ -83,13 +108,17 @@ class NativeApiClient {
         try {
           decoded = jsonDecode(raw);
         } catch (_) {
-          decoded = <String, dynamic>{'message': 'Unexpected server response.'};
+          decoded = <String, dynamic>{
+            'message': 'Unexpected server response.',
+          };
         }
       }
 
       final payload = decoded is Map<String, dynamic>
           ? decoded
-          : <String, dynamic>{'data': decoded};
+          : <String, dynamic>{
+              'data': decoded,
+            };
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return payload;
@@ -109,14 +138,17 @@ class NativeApiClient {
     } on SocketException {
       throw ApiException(
         statusCode: 0,
-        message: 'Ubuzima+ could not reach the server. Check your internet connection.',
+        message:
+            'Ubuzima+ could not reach the server. Check your internet connection.',
       );
     } finally {
       client.close(force: true);
     }
   }
 
-  String _messageFrom(Map<String, dynamic> body) {
+  String _messageFrom(
+    Map<String, dynamic> body,
+  ) {
     final message = body['message'];
 
     if (message is String && message.trim().isNotEmpty) {

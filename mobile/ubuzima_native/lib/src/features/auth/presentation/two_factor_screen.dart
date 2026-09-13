@@ -39,7 +39,9 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
-            content: Text('Enter your authenticator or recovery code.'),
+            content: Text(
+              'Enter your authenticator or recovery code.',
+            ),
           ),
         );
 
@@ -52,15 +54,25 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
     );
   }
 
-  Future<void> _copySecret(String secret) async {
-    await Clipboard.setData(ClipboardData(text: secret));
+  Future<void> _copySecret(
+    String secret,
+  ) async {
+    await Clipboard.setData(
+      ClipboardData(
+        text: secret,
+      ),
+    );
 
     if (!mounted) {
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Authenticator setup key copied.')),
+      const SnackBar(
+        content: Text(
+          'Authenticator setup key copied.',
+        ),
+      ),
     );
   }
 
@@ -74,16 +86,22 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: busy ? null : widget.controller.cancelTwoFactor,
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(
+            Icons.arrow_back,
+          ),
         ),
-        title: const Text('Account verification'),
+        title: const Text(
+          'Account verification',
+        ),
       ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(22),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
+              constraints: const BoxConstraints(
+                maxWidth: 430,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -92,23 +110,30 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                     size: 48,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(
+                    height: 18,
+                  ),
                   Text(
                     widget.flow.kind == AuthOutcomeKind.twoFactorSetup
                         ? 'Set up two-factor authentication'
                         : 'Verify your identity',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(
+                    height: 10,
+                  ),
                   Text(
                     widget.flow.message ??
                         'Enter your authenticator code to continue.',
                     textAlign: TextAlign.center,
                   ),
                   if (setup?.manualSecret != null) ...[
-                    const SizedBox(height: 22),
+                    const SizedBox(
+                      height: 22,
+                    ),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -122,9 +147,13 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                         children: [
                           const Text(
                             'Authenticator setup key',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(
+                            height: 8,
+                          ),
                           SelectableText(
                             setup!.manualSecret!,
                             style: const TextStyle(
@@ -132,28 +161,42 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(
+                            height: 8,
+                          ),
                           OutlinedButton.icon(
-                            onPressed: () => _copySecret(setup.manualSecret!),
-                            icon: const Icon(Icons.copy),
-                            label: const Text('Copy setup key'),
+                            onPressed: () => _copySecret(
+                              setup.manualSecret!,
+                            ),
+                            icon: const Icon(
+                              Icons.copy,
+                            ),
+                            label: const Text(
+                              'Copy setup key',
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                  const SizedBox(height: 22),
+                  const SizedBox(
+                    height: 22,
+                  ),
                   TextField(
                     controller: _code,
                     enabled: !busy,
                     autofocus: true,
                     textInputAction: TextInputAction.done,
-                    autofillHints: const [AutofillHints.oneTimeCode],
+                    autofillHints: const [
+                      AutofillHints.oneTimeCode,
+                    ],
                     onSubmitted: (_) => _verify(),
                     decoration: const InputDecoration(
                       labelText: 'Authenticator or recovery code',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.password_outlined),
+                      prefixIcon: Icon(
+                        Icons.password_outlined,
+                      ),
                     ),
                   ),
                   if (widget.flow.trustDeviceAvailable)
@@ -163,17 +206,23 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                       onChanged: busy
                           ? null
                           : (value) {
-                              setState(() {
-                                _trustDevice = value ?? false;
-                              });
+                              setState(
+                                () {
+                                  _trustDevice = value ?? false;
+                                },
+                              );
                             },
-                      title: const Text('Trust this device'),
+                      title: const Text(
+                        'Trust this device',
+                      ),
                       subtitle: const Text(
                         'Skip repeated verification on this approved device where permitted.',
                       ),
                     ),
                   if (widget.controller.errorMessage != null) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(
+                      height: 10,
+                    ),
                     Text(
                       widget.controller.errorMessage!,
                       style: TextStyle(
@@ -181,18 +230,26 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 18),
+                  const SizedBox(
+                    height: 18,
+                  ),
                   FilledButton(
                     onPressed: busy ? null : _verify,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                      ),
                       child: busy
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
                             )
-                          : const Text('Verify and continue'),
+                          : const Text(
+                              'Verify and continue',
+                            ),
                     ),
                   ),
                 ],
