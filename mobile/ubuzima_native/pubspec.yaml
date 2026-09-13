@@ -1,7 +1,7 @@
 name: ubuzima_native
-description: Ubuzima+ native Android and iOS application.
+description: Ubuzima+ mobile application.
 publish_to: none
-version: 1.0.1+2
+version: 3.2.0-rc.1+32001
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
