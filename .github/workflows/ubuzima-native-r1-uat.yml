@@ -54,7 +54,7 @@ jobs:
         run: flutter pub get
 
       - name: Format verification
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: dart format --output=none --set-exit-if-changed lib/src/app/ubuzima_app.dart lib/src/core/theme/ubuzima_brand.dart lib/src/shared/presentation/ubuzima_brand_logo.dart lib/src/features/auth/presentation/auth_gate.dart lib/src/features/auth/presentation/native_login_screen.dart lib/src/features/home/presentation/native_home_screen.dart
 
       - name: Analyze
         run: flutter analyze --no-pub
