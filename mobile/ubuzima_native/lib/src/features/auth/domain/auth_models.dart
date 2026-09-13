@@ -1,13 +1,6 @@
-enum LoginMethod {
-  email,
-  phone,
-}
+enum LoginMethod { email, phone }
 
-enum AuthOutcomeKind {
-  authenticated,
-  twoFactorChallenge,
-  twoFactorSetup,
-}
+enum AuthOutcomeKind { authenticated, twoFactorChallenge, twoFactorSetup }
 
 class AuthOutcome {
   const AuthOutcome({
@@ -46,16 +39,10 @@ class AuthOutcome {
 
   final String? trustedDeviceToken;
 
-  factory AuthOutcome.fromLogin(
-    Map<String, dynamic> data,
-  ) {
-    final token = _stringValue(
-      data['access_token'],
-    );
+  factory AuthOutcome.fromLogin(Map<String, dynamic> data) {
+    final token = _stringValue(data['access_token']);
 
-    final profile = _mapValue(
-      data['profile'],
-    );
+    final profile = _mapValue(data['profile']);
 
     if (token != null && profile != null) {
       return AuthOutcome(
@@ -66,13 +53,9 @@ class AuthOutcome {
       );
     }
 
-    final status = _stringValue(
-      data['status'],
-    );
+    final status = _stringValue(data['status']);
 
-    final challenge = _stringValue(
-      data['challenge_token'],
-    );
+    final challenge = _stringValue(data['challenge_token']);
 
     if (status == 'two_factor_setup_required') {
       return AuthOutcome(
@@ -80,9 +63,7 @@ class AuthOutcome {
         challengeToken: challenge,
         expiresAt: _stringValue(data['expires_at']),
         message: _stringValue(data['message']),
-        setup: TwoFactorSetup.fromDynamic(
-          data['setup'],
-        ),
+        setup: TwoFactorSetup.fromDynamic(data['setup']),
       );
     }
 
@@ -92,9 +73,7 @@ class AuthOutcome {
         challengeToken: challenge,
         expiresAt: _stringValue(data['expires_at']),
         message: _stringValue(data['message']),
-        deliveryMethods: _stringList(
-          data['delivery_methods'],
-        ),
+        deliveryMethods: _stringList(data['delivery_methods']),
         trustDeviceAvailable: data['trust_device_available'] == true,
       );
     }
@@ -104,16 +83,10 @@ class AuthOutcome {
     );
   }
 
-  factory AuthOutcome.fromTwoFactor(
-    Map<String, dynamic> data,
-  ) {
-    final token = _stringValue(
-      data['access_token'],
-    );
+  factory AuthOutcome.fromTwoFactor(Map<String, dynamic> data) {
+    final token = _stringValue(data['access_token']);
 
-    final profile = _mapValue(
-      data['profile'],
-    );
+    final profile = _mapValue(data['profile']);
 
     if (token == null || profile == null) {
       throw const FormatException(
@@ -126,9 +99,7 @@ class AuthOutcome {
     final trusted = data['trusted_device'];
 
     if (trusted is Map) {
-      trustedDeviceToken = _stringValue(
-        trusted['trusted_device_token'],
-      );
+      trustedDeviceToken = _stringValue(trusted['trusted_device_token']);
     }
 
     return AuthOutcome(
@@ -136,9 +107,7 @@ class AuthOutcome {
       accessToken: token,
       profile: profile,
       message: _stringValue(data['message']),
-      recoveryCodes: _stringList(
-        data['recovery_codes'],
-      ),
+      recoveryCodes: _stringList(data['recovery_codes']),
       trustedDeviceToken: trustedDeviceToken,
     );
   }
@@ -159,47 +128,30 @@ class TwoFactorSetup {
   final String? manualSecret;
   final String? otpAuthUri;
 
-  static TwoFactorSetup? fromDynamic(
-    dynamic value,
-  ) {
+  static TwoFactorSetup? fromDynamic(dynamic value) {
     if (value is! Map) {
       return null;
     }
 
     return TwoFactorSetup(
-      type: _stringValue(
-        value['type'],
-      ),
-      issuer: _stringValue(
-        value['issuer'],
-      ),
-      account: _stringValue(
-        value['account'],
-      ),
-      manualSecret: _stringValue(
-        value['manual_secret'],
-      ),
-      otpAuthUri: _stringValue(
-        value['otpauth_uri'],
-      ),
+      type: _stringValue(value['type']),
+      issuer: _stringValue(value['issuer']),
+      account: _stringValue(value['account']),
+      manualSecret: _stringValue(value['manual_secret']),
+      otpAuthUri: _stringValue(value['otpauth_uri']),
     );
   }
 }
 
 class SessionBootstrap {
-  const SessionBootstrap({
-    required this.profile,
-    required this.offline,
-  });
+  const SessionBootstrap({required this.profile, required this.offline});
 
   final Map<String, dynamic> profile;
 
   final bool offline;
 }
 
-String? _stringValue(
-  dynamic value,
-) {
+String? _stringValue(dynamic value) {
   if (value == null) {
     return null;
   }
@@ -209,40 +161,25 @@ String? _stringValue(
   return result.isEmpty ? null : result;
 }
 
-Map<String, dynamic>? _mapValue(
-  dynamic value,
-) {
+Map<String, dynamic>? _mapValue(dynamic value) {
   if (value is Map<String, dynamic>) {
     return value;
   }
 
   if (value is Map) {
-    return value.map(
-      (key, dynamic entry) => MapEntry(
-        key.toString(),
-        entry,
-      ),
-    );
+    return value.map((key, dynamic entry) => MapEntry(key.toString(), entry));
   }
 
   return null;
 }
 
-List<String> _stringList(
-  dynamic value,
-) {
+List<String> _stringList(dynamic value) {
   if (value is! List) {
     return const <String>[];
   }
 
   return value
-      .map(
-        (item) => item.toString().trim(),
-      )
-      .where(
-        (item) => item.isNotEmpty,
-      )
-      .toList(
-        growable: false,
-      );
+      .map((item) => item.toString().trim())
+      .where((item) => item.isNotEmpty)
+      .toList(growable: false);
 }

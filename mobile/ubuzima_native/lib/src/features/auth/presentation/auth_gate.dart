@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/presentation/ubuzima_brand_logo.dart';
+
 import '../../../core/network/native_api_client.dart';
 import '../../../core/security/secure_session_store.dart';
 import '../../home/presentation/native_home_screen.dart';
@@ -9,9 +11,7 @@ import 'native_login_screen.dart';
 import 'two_factor_screen.dart';
 
 class AuthGate extends StatefulWidget {
-  const AuthGate({
-    super.key,
-  });
+  const AuthGate({super.key});
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -31,9 +31,7 @@ class _AuthGateState extends State<AuthGate> {
       ),
     );
 
-    _controller.addListener(
-      _refresh,
-    );
+    _controller.addListener(_refresh);
 
     _controller.bootstrap();
   }
@@ -60,23 +58,16 @@ class _AuthGateState extends State<AuthGate> {
         return const _NativeStartup();
 
       case NativeAuthStage.signedOut:
-        return NativeLoginScreen(
-          controller: _controller,
-        );
+        return NativeLoginScreen(controller: _controller);
 
       case NativeAuthStage.twoFactor:
         final flow = _controller.pendingTwoFactor;
 
         if (flow == null) {
-          return NativeLoginScreen(
-            controller: _controller,
-          );
+          return NativeLoginScreen(controller: _controller);
         }
 
-        return TwoFactorScreen(
-          controller: _controller,
-          flow: flow,
-        );
+        return TwoFactorScreen(controller: _controller, flow: flow);
 
       case NativeAuthStage.signedIn:
         return NativeHomeScreen(
@@ -93,9 +84,7 @@ class _AuthGateState extends State<AuthGate> {
           );
         }
 
-        return NativeLoginScreen(
-          controller: _controller,
-        );
+        return NativeLoginScreen(controller: _controller);
     }
   }
 }
@@ -105,28 +94,30 @@ class _NativeStartup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: SafeArea(
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Ubuzima+',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const UbuzimaBrandLogo(width: 238),
+                const SizedBox(height: 30),
+                const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2.6),
                 ),
-              ),
-              SizedBox(height: 18),
-              SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.4,
+                const SizedBox(height: 18),
+                Text(
+                  "Preparing your secure workspace",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

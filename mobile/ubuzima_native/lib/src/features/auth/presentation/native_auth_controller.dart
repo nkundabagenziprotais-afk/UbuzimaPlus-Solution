@@ -13,9 +13,8 @@ enum NativeAuthStage {
 }
 
 class NativeAuthController extends ChangeNotifier {
-  NativeAuthController({
-    required AuthRepository repository,
-  }) : _repository = repository;
+  NativeAuthController({required AuthRepository repository})
+    : _repository = repository;
 
   final AuthRepository _repository;
 
@@ -66,28 +65,15 @@ class NativeAuthController extends ChangeNotifier {
     required String password,
   }) async {
     await _runLogin(
-      () => _repository.loginWithEmail(
-        email: email,
-        password: password,
-      ),
+      () => _repository.loginWithEmail(email: email, password: password),
     );
   }
 
-  Future<void> loginPhone({
-    required String phone,
-    required String pin,
-  }) async {
-    await _runLogin(
-      () => _repository.loginWithPhone(
-        phone: phone,
-        pin: pin,
-      ),
-    );
+  Future<void> loginPhone({required String phone, required String pin}) async {
+    await _runLogin(() => _repository.loginWithPhone(phone: phone, pin: pin));
   }
 
-  Future<void> _runLogin(
-    Future<AuthOutcome> Function() action,
-  ) async {
+  Future<void> _runLogin(Future<AuthOutcome> Function() action) async {
     stage = NativeAuthStage.submitting;
 
     errorMessage = null;
@@ -170,9 +156,7 @@ class NativeAuthController extends ChangeNotifier {
     }
   }
 
-  Future<String> requestPasswordReset(
-    String email,
-  ) {
+  Future<String> requestPasswordReset(String email) {
     return _repository.requestPasswordReset(email);
   }
 
@@ -202,9 +186,7 @@ class NativeAuthController extends ChangeNotifier {
     }
   }
 
-  String _friendlyError(
-    Object error,
-  ) {
+  String _friendlyError(Object error) {
     if (error is ApiException) {
       return error.message;
     }
