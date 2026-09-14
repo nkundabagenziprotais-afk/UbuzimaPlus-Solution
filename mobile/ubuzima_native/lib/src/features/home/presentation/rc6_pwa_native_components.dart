@@ -1665,6 +1665,17 @@ class _Rc6InventoryViewState extends State<Rc6InventoryView> {
       return;
     }
 
+    if (!_can(
+      widget.profile,
+      'pharmaco.product_inventory.receive',
+    )) {
+      setState(() {
+        _error = 'You do not have permission to receive inventory.';
+        _notice = null;
+      });
+      return;
+    }
+
     final productId = int.tryParse(_productId ?? '');
 
     final locationId = int.tryParse(_locationId ?? '');
@@ -1787,6 +1798,11 @@ class _Rc6InventoryViewState extends State<Rc6InventoryView> {
           'expiry_watch',
         ],
       ),
+    );
+
+    final canReceiveInventory = _can(
+      widget.profile,
+      'pharmaco.product_inventory.receive',
     );
 
     return _Page(
@@ -2023,184 +2039,185 @@ class _Rc6InventoryViewState extends State<Rc6InventoryView> {
                       .toList(),
                 ),
         ),
-        _Section(
-          title: 'Receiving Stock',
-          child: Column(
-            children: <Widget>[
-              DropdownButtonFormField<String>(
-                initialValue: products.any(
-                  (row) => _id(row)?.toString() == _productId,
-                )
-                    ? _productId
-                    : null,
-                decoration: const InputDecoration(
-                  labelText: 'Product',
-                  border: OutlineInputBorder(),
-                ),
-                items: products
-                    .where(
-                      (row) => _id(row) != null,
-                    )
-                    .map(
-                      (row) => DropdownMenuItem<String>(
-                        value: _id(row)!.toString(),
-                        child: Text(
-                          _value(
-                            row,
-                            const <String>[
-                              'name',
-                              'product_name',
-                            ],
-                            fallback: 'Product',
+        if (canReceiveInventory)
+          _Section(
+            title: 'Receiving Stock',
+            child: Column(
+              children: <Widget>[
+                DropdownButtonFormField<String>(
+                  initialValue: products.any(
+                    (row) => _id(row)?.toString() == _productId,
+                  )
+                      ? _productId
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Product',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: products
+                      .where(
+                        (row) => _id(row) != null,
+                      )
+                      .map(
+                        (row) => DropdownMenuItem<String>(
+                          value: _id(row)!.toString(),
+                          child: Text(
+                            _value(
+                              row,
+                              const <String>[
+                                'name',
+                                'product_name',
+                              ],
+                              fallback: 'Product',
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _busy
-                    ? null
-                    : (value) {
-                        setState(() {
-                          _productId = value;
-                        });
-                      },
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: locations.any(
-                  (row) => _id(row)?.toString() == _locationId,
-                )
-                    ? _locationId
-                    : null,
-                decoration: const InputDecoration(
-                  labelText: 'Stock location',
-                  border: OutlineInputBorder(),
+                      )
+                      .toList(),
+                  onChanged: _busy
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _productId = value;
+                          });
+                        },
                 ),
-                items: locations
-                    .where(
-                      (row) => _id(row) != null,
-                    )
-                    .map(
-                      (row) => DropdownMenuItem<String>(
-                        value: _id(row)!.toString(),
-                        child: Text(
-                          _value(
-                            row,
-                            const <String>[
-                              'name',
-                              'location_name',
-                            ],
-                            fallback: 'Location',
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: locations.any(
+                    (row) => _id(row)?.toString() == _locationId,
+                  )
+                      ? _locationId
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Stock location',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: locations
+                      .where(
+                        (row) => _id(row) != null,
+                      )
+                      .map(
+                        (row) => DropdownMenuItem<String>(
+                          value: _id(row)!.toString(),
+                          child: Text(
+                            _value(
+                              row,
+                              const <String>[
+                                'name',
+                                'location_name',
+                              ],
+                              fallback: 'Location',
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _busy
-                    ? null
-                    : (value) {
-                        setState(() {
-                          _locationId = value;
-                        });
-                      },
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _batch,
-                decoration: const InputDecoration(
-                  labelText: 'Batch number',
-                  border: OutlineInputBorder(),
+                      )
+                      .toList(),
+                  onChanged: _busy
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _locationId = value;
+                          });
+                        },
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _quantity,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Quantity received',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _expiry,
-                keyboardType: TextInputType.datetime,
-                decoration: const InputDecoration(
-                  labelText: 'Expiry date (YYYY-MM-DD)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _unitCost,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Unit cost',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _sellingPrice,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Selling price',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierName,
-                decoration: const InputDecoration(
-                  labelText: 'Supplier name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _reference,
-                decoration: const InputDecoration(
-                  labelText: 'Reference number',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _reason,
-                decoration: const InputDecoration(
-                  labelText: 'Reason / receiving note',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (_error != null) _ErrorBox(_error!),
-              if (_notice != null)
-                Text(
-                  _notice!,
-                  style: const TextStyle(
-                    color: _green,
-                    fontWeight: FontWeight.w800,
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _batch,
+                  decoration: const InputDecoration(
+                    labelText: 'Batch number',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: widget.offline || _busy ? null : _receive,
-                  child: Text(
-                    _busy ? 'Receiving…' : 'Receive stock',
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _quantity,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity received',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _expiry,
+                  keyboardType: TextInputType.datetime,
+                  decoration: const InputDecoration(
+                    labelText: 'Expiry date (YYYY-MM-DD)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _unitCost,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Unit cost',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _sellingPrice,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Selling price',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierName,
+                  decoration: const InputDecoration(
+                    labelText: 'Supplier name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _reference,
+                  decoration: const InputDecoration(
+                    labelText: 'Reference number',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _reason,
+                  decoration: const InputDecoration(
+                    labelText: 'Reason / receiving note',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (_error != null) _ErrorBox(_error!),
+                if (_notice != null)
+                  Text(
+                    _notice!,
+                    style: const TextStyle(
+                      color: _green,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: widget.offline || _busy ? null : _receive,
+                    child: Text(
+                      _busy ? 'Receiving…' : 'Receive stock',
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -2419,6 +2436,23 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
       return;
     }
 
+    final canCreateSupplier = _can(
+          widget.profile,
+          'pharmaco.procurement.suppliers.manage',
+        ) &&
+        _can(
+          widget.profile,
+          'pharmaco.procurement.suppliers.create',
+        );
+
+    if (!canCreateSupplier) {
+      setState(() {
+        _error = 'You do not have permission to create suppliers.';
+        _notice = null;
+      });
+      return;
+    }
+
     if (_supplierName.text.trim().isEmpty) {
       setState(() {
         _error = 'Supplier name is required.';
@@ -2465,6 +2499,17 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
 
   Future<void> _createPo() async {
     if (widget.offline || _busy) {
+      return;
+    }
+
+    if (!_can(
+      widget.profile,
+      'pharmaco.procurement.purchase_order.create',
+    )) {
+      setState(() {
+        _error = 'You do not have permission to create Purchase Orders.';
+        _notice = null;
+      });
       return;
     }
 
@@ -2550,6 +2595,22 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
       return;
     }
 
+    final canReceivePurchaseOrder = _can(
+          widget.profile,
+          'pharmaco.product_inventory.receive',
+        ) &&
+        _can(
+          widget.profile,
+          'pharmaco.procurement.purchase_order.receive',
+        );
+
+    if (!canReceivePurchaseOrder) {
+      setState(() {
+        _error = 'You do not have permission to receive Purchase Orders.';
+      });
+      return;
+    }
+
     setState(() {
       _detailBusy = true;
       _error = null;
@@ -2561,6 +2622,34 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
       );
 
       if (!mounted) return;
+
+      final directPo = _map(
+        detail['purchase_order'],
+      );
+
+      final purchaseOrder = directPo.isNotEmpty ? directPo : _map(detail);
+
+      final status = _value(
+        purchaseOrder,
+        const <String>['status'],
+        fallback: '',
+      ).toLowerCase();
+
+      final purchaseType = _value(
+        purchaseOrder,
+        const <String>['purchase_type'],
+        fallback: '',
+      ).toLowerCase();
+
+      if (!<String>{
+            'approved',
+            'partially_received',
+          }.contains(status) ||
+          purchaseType != 'core_products') {
+        throw StateError(
+          'Only approved or partially received Core Products Purchase Orders can be received.',
+        );
+      }
 
       setState(() {
         _receivePoDetail = detail;
@@ -2587,21 +2676,61 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
       return const <Map<String, dynamic>>[];
     }
 
-    final direct = _rows(_receivePoDetail!['items']);
+    final direct = _rows(
+      _receivePoDetail!['items'],
+    );
 
-    if (direct.isNotEmpty) {
-      return direct;
-    }
-
-    final po = _map(
+    final purchaseOrder = _map(
       _receivePoDetail!['purchase_order'],
     );
 
-    return _rows(po['items']);
+    final items = direct.isNotEmpty
+        ? direct
+        : _rows(
+            purchaseOrder['items'],
+          );
+
+    return items.where(
+      (row) {
+        final product = row['product'];
+
+        final hasProduct = (product is Map && product['id'] != null) ||
+            row['product_id'] != null;
+
+        final ordered = _number(
+              row['quantity_ordered'],
+            ) ??
+            0;
+
+        final received = _number(
+              row['quantity_received'],
+            ) ??
+            0;
+
+        return hasProduct && ordered > 0 && received < ordered;
+      },
+    ).toList();
   }
 
   Future<void> _receivePo() async {
     if (widget.offline || _busy) {
+      return;
+    }
+
+    final canReceivePurchaseOrder = _can(
+          widget.profile,
+          'pharmaco.product_inventory.receive',
+        ) &&
+        _can(
+          widget.profile,
+          'pharmaco.procurement.purchase_order.receive',
+        );
+
+    if (!canReceivePurchaseOrder) {
+      setState(() {
+        _error = 'You do not have permission to receive Purchase Orders.';
+        _notice = null;
+      });
       return;
     }
 
@@ -2615,11 +2744,36 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
       _receiveQuantity.text.trim(),
     );
 
+    Map<String, dynamic>? selectedItem;
+
+    if (itemId != null) {
+      for (final row in _poItems()) {
+        if (_id(row)?.toString() == itemId.toString()) {
+          selectedItem = row;
+          break;
+        }
+      }
+    }
+
+    final ordered = _number(
+          selectedItem?['quantity_ordered'],
+        ) ??
+        0;
+
+    final alreadyReceived = _number(
+          selectedItem?['quantity_received'],
+        ) ??
+        0;
+
+    final remaining = ordered - alreadyReceived;
+
     if (itemId == null ||
         productId == null ||
         locationId == null ||
         quantity == null ||
         quantity <= 0 ||
+        selectedItem == null ||
+        remaining <= 0 ||
         _receiveBatch.text.trim().isEmpty) {
       setState(() {
         _error =
@@ -2627,6 +2781,15 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
         _notice = null;
       });
 
+      return;
+    }
+
+    if (quantity > remaining) {
+      setState(() {
+        _error =
+            'Received quantity cannot exceed the remaining quantity of $remaining.';
+        _notice = null;
+      });
       return;
     }
 
@@ -2727,6 +2890,53 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
         )
         .length;
 
+    final canManageSuppliers = _can(
+      widget.profile,
+      'pharmaco.procurement.suppliers.manage',
+    );
+
+    final canCreateSupplier = canManageSuppliers &&
+        _can(
+          widget.profile,
+          'pharmaco.procurement.suppliers.create',
+        );
+
+    final canCreatePurchaseOrder = _can(
+      widget.profile,
+      'pharmaco.procurement.purchase_order.create',
+    );
+
+    final canReceivePurchaseOrder = _can(
+          widget.profile,
+          'pharmaco.product_inventory.receive',
+        ) &&
+        _can(
+          widget.profile,
+          'pharmaco.procurement.purchase_order.receive',
+        );
+
+    final eligibleReceivePurchaseOrders = purchaseOrders.where(
+      (row) {
+        final status = _value(
+          row,
+          const <String>['status'],
+          fallback: '',
+        ).toLowerCase();
+
+        final purchaseType = _value(
+          row,
+          const <String>['purchase_type'],
+          fallback: '',
+        ).toLowerCase();
+
+        return purchaseType == 'core_products' &&
+            <String>{
+              'approved',
+              'partially_received',
+            }.contains(status);
+      },
+    ).toList();
+
     return _Page(
       title: 'Procurement',
       subtitle: 'Supplier, ordering, approval and receiving operations.',
@@ -2735,24 +2945,32 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
       offline: widget.offline,
       onRefresh: widget.onRefresh,
       children: <Widget>[
-        const _Section(
+        _Section(
           title: 'Procurement Operations',
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
-              _Chip('Create Supplier'),
-              _Chip('Supplier List'),
-              _Chip(
-                'Create Purchase Order',
-              ),
-              _Chip(
+              if (canCreateSupplier)
+                const _Chip(
+                  'Create Supplier',
+                ),
+              if (canManageSuppliers)
+                const _Chip(
+                  'Supplier List',
+                ),
+              if (canCreatePurchaseOrder)
+                const _Chip(
+                  'Create Purchase Order',
+                ),
+              const _Chip(
                 'Outstanding Purchase Orders',
               ),
-              _Chip(
-                'Receive Purchase Order',
-              ),
-              _Chip(
+              if (canReceivePurchaseOrder)
+                const _Chip(
+                  'Receive Purchase Order',
+                ),
+              const _Chip(
                 'Received Purchase Orders',
               ),
             ],
@@ -2833,595 +3051,599 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
               ),
             ),
           ),
-        _Section(
-          title: 'Create Supplier',
-          child: Column(
-            children: <Widget>[
-              TextField(
-                controller: _supplierName,
-                decoration: const InputDecoration(
-                  labelText: 'Supplier name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierLegalName,
-                decoration: const InputDecoration(
-                  labelText: 'Legal name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierCode,
-                decoration: const InputDecoration(
-                  labelText: 'Supplier code',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierType,
-                decoration: const InputDecoration(
-                  labelText: 'Supplier type',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierContact,
-                decoration: const InputDecoration(
-                  labelText: 'Contact person',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierPhone,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierEmail,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierTax,
-                decoration: const InputDecoration(
-                  labelText: 'Tax identification number',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierLicense,
-                decoration: const InputDecoration(
-                  labelText: 'License number',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Address',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierTerms,
-                decoration: const InputDecoration(
-                  labelText: 'Payment terms',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _supplierNotes,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _supplierStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
-                ),
-                items: const <DropdownMenuItem<String>>[
-                  DropdownMenuItem(
-                    value: 'active',
-                    child: Text('Active'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'inactive',
-                    child: Text('Inactive'),
-                  ),
-                ],
-                onChanged: _busy
-                    ? null
-                    : (value) {
-                        if (value != null) {
-                          setState(() {
-                            _supplierStatus = value;
-                          });
-                        }
-                      },
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: widget.offline || _busy ? null : _createSupplier,
-                  child: const Text(
-                    'Create Supplier',
+        if (canCreateSupplier)
+          _Section(
+            title: 'Create Supplier',
+            child: Column(
+              children: <Widget>[
+                TextField(
+                  controller: _supplierName,
+                  decoration: const InputDecoration(
+                    labelText: 'Supplier name',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        _Section(
-          title: 'Create Purchase Order',
-          subtitle: 'Core Products Purchase',
-          child: Column(
-            children: <Widget>[
-              TextField(
-                controller: _poBranch,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Branch ID',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: suppliers.any(
-                  (row) => _id(row)?.toString() == _poSupplierId,
-                )
-                    ? _poSupplierId
-                    : null,
-                decoration: const InputDecoration(
-                  labelText: 'Supplier',
-                  border: OutlineInputBorder(),
-                ),
-                items: suppliers
-                    .where(
-                      (row) => _id(row) != null,
-                    )
-                    .map(
-                      (row) => DropdownMenuItem<String>(
-                        value: _id(row)!.toString(),
-                        child: Text(
-                          _value(
-                            row,
-                            const <String>[
-                              'name',
-                              'legal_name',
-                            ],
-                            fallback: 'Supplier',
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _busy
-                    ? null
-                    : (value) {
-                        setState(() {
-                          _poSupplierId = value;
-                        });
-                      },
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: products.any(
-                  (row) => _id(row)?.toString() == _poProductId,
-                )
-                    ? _poProductId
-                    : null,
-                decoration: const InputDecoration(
-                  labelText: 'Core product',
-                  border: OutlineInputBorder(),
-                ),
-                items: products
-                    .where(
-                      (row) => _id(row) != null,
-                    )
-                    .map(
-                      (row) => DropdownMenuItem<String>(
-                        value: _id(row)!.toString(),
-                        child: Text(
-                          _value(
-                            row,
-                            const <String>[
-                              'name',
-                              'product_name',
-                            ],
-                            fallback: 'Product',
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _busy
-                    ? null
-                    : (value) {
-                        setState(() {
-                          _poProductId = value;
-                        });
-                      },
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poQuantity,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Quantity ordered',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poUnitCost,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Unit cost',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poOrderDate,
-                keyboardType: TextInputType.datetime,
-                decoration: const InputDecoration(
-                  labelText: 'Order date (YYYY-MM-DD)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poExpectedDate,
-                keyboardType: TextInputType.datetime,
-                decoration: const InputDecoration(
-                  labelText: 'Expected delivery date',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poDiscount,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Discount amount',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poTax,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Tax amount',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poShipping,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Shipping amount',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poLineNotes,
-                decoration: const InputDecoration(
-                  labelText: 'Line notes',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _poNotes,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Purchase Order notes',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: widget.offline || _busy ? null : _createPo,
-                  child: const Text(
-                    'Create Purchase Order',
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierLegalName,
+                  decoration: const InputDecoration(
+                    labelText: 'Legal name',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        _Section(
-          title: 'Receive Purchase Order',
-          child: Column(
-            children: <Widget>[
-              DropdownButtonFormField<String>(
-                initialValue: purchaseOrders.any(
-                  (row) => _id(row)?.toString() == _receivePoId,
-                )
-                    ? _receivePoId
-                    : null,
-                decoration: const InputDecoration(
-                  labelText: 'Purchase Order',
-                  border: OutlineInputBorder(),
-                ),
-                items: purchaseOrders
-                    .where(
-                      (row) => _id(row) != null,
-                    )
-                    .map(
-                      (row) => DropdownMenuItem<String>(
-                        value: _id(row)!.toString(),
-                        child: Text(
-                          _value(
-                            row,
-                            const <String>[
-                              'po_number',
-                              'purchase_order_number',
-                            ],
-                            fallback: 'Purchase Order',
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _detailBusy
-                    ? null
-                    : (value) {
-                        setState(() {
-                          _receivePoId = value;
-                          _receivePoDetail = null;
-                          _receiveItemId = null;
-                          _receiveProductId = null;
-                        });
-                      },
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed:
-                      _receivePoId == null || _detailBusy ? null : _loadPo,
-                  child: Text(
-                    _detailBusy ? 'Loading…' : 'Load Purchase Order items',
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierCode,
+                  decoration: const InputDecoration(
+                    labelText: 'Supplier code',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Builder(
-                builder: (context) {
-                  final items = _poItems();
-
-                  return DropdownButtonFormField<String>(
-                    initialValue: items.any(
-                      (row) => _id(row)?.toString() == _receiveItemId,
-                    )
-                        ? _receiveItemId
-                        : null,
-                    decoration: const InputDecoration(
-                      labelText: 'Purchase Order item',
-                      border: OutlineInputBorder(),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierType,
+                  decoration: const InputDecoration(
+                    labelText: 'Supplier type',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierContact,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact person',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierPhone,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierEmail,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierTax,
+                  decoration: const InputDecoration(
+                    labelText: 'Tax identification number',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierLicense,
+                  decoration: const InputDecoration(
+                    labelText: 'License number',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Address',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierTerms,
+                  decoration: const InputDecoration(
+                    labelText: 'Payment terms',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _supplierNotes,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _supplierStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Status',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const <DropdownMenuItem<String>>[
+                    DropdownMenuItem(
+                      value: 'active',
+                      child: Text('Active'),
                     ),
-                    items: items
-                        .where(
-                          (row) => _id(row) != null,
-                        )
-                        .map(
-                          (row) => DropdownMenuItem<String>(
-                            value: _id(row)!.toString(),
-                            child: Text(
-                              _value(
-                                row,
-                                const <String>[
-                                  'product_name_snapshot',
-                                  'product_name',
-                                ],
-                                fallback: 'PO item',
-                              ),
+                    DropdownMenuItem(
+                      value: 'inactive',
+                      child: Text('Inactive'),
+                    ),
+                  ],
+                  onChanged: _busy
+                      ? null
+                      : (value) {
+                          if (value != null) {
+                            setState(() {
+                              _supplierStatus = value;
+                            });
+                          }
+                        },
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: widget.offline || _busy ? null : _createSupplier,
+                    child: const Text(
+                      'Create Supplier',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (canCreatePurchaseOrder)
+          _Section(
+            title: 'Create Purchase Order',
+            subtitle: 'Core Products Purchase',
+            child: Column(
+              children: <Widget>[
+                TextField(
+                  controller: _poBranch,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Branch ID',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: suppliers.any(
+                    (row) => _id(row)?.toString() == _poSupplierId,
+                  )
+                      ? _poSupplierId
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Supplier',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: suppliers
+                      .where(
+                        (row) => _id(row) != null,
+                      )
+                      .map(
+                        (row) => DropdownMenuItem<String>(
+                          value: _id(row)!.toString(),
+                          child: Text(
+                            _value(
+                              row,
+                              const <String>[
+                                'name',
+                                'legal_name',
+                              ],
+                              fallback: 'Supplier',
                             ),
                           ),
-                        )
-                        .toList(),
-                    onChanged: _busy
-                        ? null
-                        : (value) {
-                            setState(() {
-                              _receiveItemId = value;
-
-                              for (final row in items) {
-                                if (_id(row)?.toString() != value) {
-                                  continue;
-                                }
-
-                                final product = row['product'];
-
-                                if (product is Map && product['id'] != null) {
-                                  _receiveProductId = product['id'].toString();
-                                } else if (row['product_id'] != null) {
-                                  _receiveProductId =
-                                      row['product_id'].toString();
-                                }
-
-                                if (row['unit_cost'] != null) {
-                                  _receiveUnitCost.text =
-                                      row['unit_cost'].toString();
-                                }
-
-                                final ordered = _number(
-                                  row['quantity_ordered'],
-                                );
-
-                                final received = _number(
-                                  row['quantity_received'],
-                                );
-
-                                if (ordered != null) {
-                                  final remaining = ordered - (received ?? 0);
-
-                                  _receiveQuantity.text =
-                                      (remaining < 0 ? 0 : remaining)
-                                          .toString();
-                                }
-
-                                break;
-                              }
-                            });
-                          },
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                key: ValueKey<String>(
-                  'product-${_receiveProductId ?? ''}',
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _busy
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _poSupplierId = value;
+                          });
+                        },
                 ),
-                initialValue: _receiveProductId ?? '',
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Product ID',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: locations.any(
-                  (row) => _id(row)?.toString() == _receiveLocationId,
-                )
-                    ? _receiveLocationId
-                    : null,
-                decoration: const InputDecoration(
-                  labelText: 'Stock location',
-                  border: OutlineInputBorder(),
-                ),
-                items: locations
-                    .where(
-                      (row) => _id(row) != null,
-                    )
-                    .map(
-                      (row) => DropdownMenuItem<String>(
-                        value: _id(row)!.toString(),
-                        child: Text(
-                          _value(
-                            row,
-                            const <String>[
-                              'name',
-                              'location_name',
-                            ],
-                            fallback: 'Location',
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: products.any(
+                    (row) => _id(row)?.toString() == _poProductId,
+                  )
+                      ? _poProductId
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Core product',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: products
+                      .where(
+                        (row) => _id(row) != null,
+                      )
+                      .map(
+                        (row) => DropdownMenuItem<String>(
+                          value: _id(row)!.toString(),
+                          child: Text(
+                            _value(
+                              row,
+                              const <String>[
+                                'name',
+                                'product_name',
+                              ],
+                              fallback: 'Product',
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _busy
-                    ? null
-                    : (value) {
-                        setState(() {
-                          _receiveLocationId = value;
-                        });
-                      },
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _receiveBatch,
-                decoration: const InputDecoration(
-                  labelText: 'Batch number',
-                  border: OutlineInputBorder(),
+                      )
+                      .toList(),
+                  onChanged: _busy
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _poProductId = value;
+                          });
+                        },
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _receiveQuantity,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Quantity received',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _receiveExpiry,
-                keyboardType: TextInputType.datetime,
-                decoration: const InputDecoration(
-                  labelText: 'Expiry date',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _receiveUnitCost,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Unit cost',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _receiveSellingPrice,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Selling price',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: widget.offline || _busy ? null : _receivePo,
-                  child: const Text(
-                    'Receive Purchase Order',
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poQuantity,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity ordered',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poUnitCost,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Unit cost',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poOrderDate,
+                  keyboardType: TextInputType.datetime,
+                  decoration: const InputDecoration(
+                    labelText: 'Order date (YYYY-MM-DD)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poExpectedDate,
+                  keyboardType: TextInputType.datetime,
+                  decoration: const InputDecoration(
+                    labelText: 'Expected delivery date',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poDiscount,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Discount amount',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poTax,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Tax amount',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poShipping,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Shipping amount',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poLineNotes,
+                  decoration: const InputDecoration(
+                    labelText: 'Line notes',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _poNotes,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Purchase Order notes',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: widget.offline || _busy ? null : _createPo,
+                    child: const Text(
+                      'Create Purchase Order',
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        if (canReceivePurchaseOrder)
+          _Section(
+            title: 'Receive Purchase Order',
+            child: Column(
+              children: <Widget>[
+                DropdownButtonFormField<String>(
+                  initialValue: eligibleReceivePurchaseOrders.any(
+                    (row) => _id(row)?.toString() == _receivePoId,
+                  )
+                      ? _receivePoId
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Purchase Order',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: eligibleReceivePurchaseOrders
+                      .where(
+                        (row) => _id(row) != null,
+                      )
+                      .map(
+                        (row) => DropdownMenuItem<String>(
+                          value: _id(row)!.toString(),
+                          child: Text(
+                            _value(
+                              row,
+                              const <String>[
+                                'po_number',
+                                'purchase_order_number',
+                              ],
+                              fallback: 'Purchase Order',
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _detailBusy
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _receivePoId = value;
+                            _receivePoDetail = null;
+                            _receiveItemId = null;
+                            _receiveProductId = null;
+                          });
+                        },
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed:
+                        _receivePoId == null || _detailBusy ? null : _loadPo,
+                    child: Text(
+                      _detailBusy ? 'Loading…' : 'Load Purchase Order items',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Builder(
+                  builder: (context) {
+                    final items = _poItems();
+
+                    return DropdownButtonFormField<String>(
+                      initialValue: items.any(
+                        (row) => _id(row)?.toString() == _receiveItemId,
+                      )
+                          ? _receiveItemId
+                          : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Purchase Order item',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: items
+                          .where(
+                            (row) => _id(row) != null,
+                          )
+                          .map(
+                            (row) => DropdownMenuItem<String>(
+                              value: _id(row)!.toString(),
+                              child: Text(
+                                _value(
+                                  row,
+                                  const <String>[
+                                    'product_name_snapshot',
+                                    'product_name',
+                                  ],
+                                  fallback: 'PO item',
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: _busy
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _receiveItemId = value;
+
+                                for (final row in items) {
+                                  if (_id(row)?.toString() != value) {
+                                    continue;
+                                  }
+
+                                  final product = row['product'];
+
+                                  if (product is Map && product['id'] != null) {
+                                    _receiveProductId =
+                                        product['id'].toString();
+                                  } else if (row['product_id'] != null) {
+                                    _receiveProductId =
+                                        row['product_id'].toString();
+                                  }
+
+                                  if (row['unit_cost'] != null) {
+                                    _receiveUnitCost.text =
+                                        row['unit_cost'].toString();
+                                  }
+
+                                  final ordered = _number(
+                                    row['quantity_ordered'],
+                                  );
+
+                                  final received = _number(
+                                    row['quantity_received'],
+                                  );
+
+                                  if (ordered != null) {
+                                    final remaining = ordered - (received ?? 0);
+
+                                    _receiveQuantity.text =
+                                        (remaining < 0 ? 0 : remaining)
+                                            .toString();
+                                  }
+
+                                  break;
+                                }
+                              });
+                            },
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  key: ValueKey<String>(
+                    'product-${_receiveProductId ?? ''}',
+                  ),
+                  initialValue: _receiveProductId ?? '',
+                  enabled: false,
+                  decoration: const InputDecoration(
+                    labelText: 'Product ID',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: locations.any(
+                    (row) => _id(row)?.toString() == _receiveLocationId,
+                  )
+                      ? _receiveLocationId
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Stock location',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: locations
+                      .where(
+                        (row) => _id(row) != null,
+                      )
+                      .map(
+                        (row) => DropdownMenuItem<String>(
+                          value: _id(row)!.toString(),
+                          child: Text(
+                            _value(
+                              row,
+                              const <String>[
+                                'name',
+                                'location_name',
+                              ],
+                              fallback: 'Location',
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _busy
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _receiveLocationId = value;
+                          });
+                        },
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _receiveBatch,
+                  decoration: const InputDecoration(
+                    labelText: 'Batch number',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _receiveQuantity,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity received',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _receiveExpiry,
+                  keyboardType: TextInputType.datetime,
+                  decoration: const InputDecoration(
+                    labelText: 'Expiry date',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _receiveUnitCost,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Unit cost',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _receiveSellingPrice,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Selling price',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: widget.offline || _busy ? null : _receivePo,
+                    child: const Text(
+                      'Receive Purchase Order',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         _Section(
           title: 'Outstanding Purchase Orders',
           child: purchaseOrders.isEmpty
@@ -3451,8 +3673,6 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
                       final id = _id(row);
 
                       final approveKey = 'approve-$id';
-
-                      final cancelKey = 'cancel-$id';
 
                       return Column(
                         children: <Widget>[
@@ -3500,8 +3720,6 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
                                                     await widget.onApprove(
                                                       row,
                                                     );
-
-                                                    await widget.onRefresh();
                                                   },
                                                 );
                                               },
@@ -3512,36 +3730,6 @@ class _Rc6ProcurementViewState extends State<Rc6ProcurementView> {
                                     ),
                                   ),
                                 ),
-                              if (_can(
-                                widget.profile,
-                                'pharmaco.procurement.purchase_order.approve',
-                              ))
-                                const SizedBox(
-                                  width: 8,
-                                ),
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: id == null || _poActionBusy != null
-                                      ? null
-                                      : () async {
-                                          await _runPoAction(
-                                            cancelKey,
-                                            () async {
-                                              await widget.onCancel(
-                                                row,
-                                              );
-
-                                              await widget.onRefresh();
-                                            },
-                                          );
-                                        },
-                                  child: Text(
-                                    _poActionBusy == cancelKey
-                                        ? 'Cancelling…'
-                                        : 'Cancel',
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                           const SizedBox(
