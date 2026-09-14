@@ -185,52 +185,174 @@ jobs:
           set -Eeuo pipefail
 
           APK="build/app/outputs/flutter-apk/app-release.apk"
+          SIGNER_REPORT="$RUNNER_TEMP/ubuzima-preview-apksigner.txt"
           KNOWN_PREVIEW_CERT_SHA256="f29865dbb2b733cce6cf821d358b5ca5652653dcc25af15a0d5a5272d83d3671"
 
           test -s "$APK"
 
           EXPECTED="$(
             printf '%s' "$EXPECTED_PREVIEW_CERT_SHA256" |
-            tr -d ' :' |
+            tr -d '[:space:]:-' |
             tr 'A-F' 'a-f'
           )"
 
-          test "$EXPECTED" = "$KNOWN_PREVIEW_CERT_SHA256"
+          if [ "$EXPECTED" != "$KNOWN_PREVIEW_CERT_SHA256" ]
+          then
+            echo "FAIL=PREVIEW_CERT_SECRET_DOES_NOT_MATCH_PINNED_CERT"
+            exit 1
+          fi
+
+          echo "PREVIEW_CERT_SECRET_CONSISTENCY=PASS"
+
+          ANDROID_SDK_BASE="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+
+          if [ -z "$ANDROID_SDK_BASE" ]
+          then
+            echo "FAIL=ANDROID_SDK_ROOT_NOT_AVAILABLE"
+            exit 1
+          fi
 
           APKSIGNER="$(
-            find "$ANDROID_HOME/build-tools" \
-              -type f \
-              -name apksigner \
-              -print |
+            find "$ANDROID_SDK_BASE/build-tools"               -type f               -name apksigner               -perm -111               -print |
             sort -V |
             tail -n 1
           )"
 
-          test -n "$APKSIGNER"
+          if [ -z "$APKSIGNER" ]
+          then
+            echo "FAIL=APKSIGNER_NOT_FOUND"
+            exit 1
+          fi
+
           test -x "$APKSIGNER"
 
-          "$APKSIGNER" \
-            verify \
-            --print-certs \
-            "$APK" \
-            > /tmp/preview-signer.txt
+          echo "APKSIGNER_PATH=$APKSIGNER"
+
+          "$APKSIGNER" version || true
+
+          set +e
+
+          "$APKSIGNER"             verify             --print-certs             "$APK"             > "$SIGNER_REPORT"             2>&1
+
+          APKSIGNER_EXIT=$?
+
+          set -e
+
+          echo "APKSIGNER_VERIFY_EXIT=$APKSIGNER_EXIT"
+          echo "APKSIGNER_REPORT_BEGIN"
+          cat "$SIGNER_REPORT"
+          echo "APKSIGNER_REPORT_END"
+
+          if [ "$APKSIGNER_EXIT" -ne 0 ]
+          then
+            echo "FAIL=APKSIGNER_VERIFY_FAILED"
+            exit "$APKSIGNER_EXIT"
+          fi
+
+          if [ ! -s "$SIGNER_REPORT" ]
+          then
+            echo "FAIL=APKSIGNER_REPORT_EMPTY"
+            exit 1
+          fi
 
           ACTUAL="$(
-            awk -F': ' \
-              '/Signer #1 certificate SHA-256 digest:/ {
-                print $2
-                exit
-              }' \
-              /tmp/preview-signer.txt |
-            tr -d ' :' |
-            tr 'A-F' 'a-f'
-          )"
+            python3 - "$SIGNER_REPORT" <<'PY_CERT'
+import re
+import sys
+from pathlib import Path
 
-          echo "ANDROID_PREVIEW_CERT_SHA256=$ACTUAL"
+report = Path(sys.argv[1]).read_text(
+    encoding="utf-8",
+    errors="replace",
+)
 
-          test -n "$ACTUAL"
-          test "$ACTUAL" = "$KNOWN_PREVIEW_CERT_SHA256"
+patterns = [
+    re.compile(
+        r"certificate\s+SHA[- ]?256\s+digest"
+        r"\s*:\s*([0-9A-Fa-f:\s]+)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"SHA[- ]?256\s+digest"
+        r"\s*:\s*([0-9A-Fa-f:\s]+)",
+        re.IGNORECASE,
+    ),
+]
 
+digests = []
+
+for line in report.splitlines():
+    for pattern in patterns:
+        match = pattern.search(line)
+
+        if match is None:
+            continue
+
+        value = re.sub(
+            r"[^0-9A-Fa-f]",
+            "",
+            match.group(1),
+        ).lower()
+
+        if len(value) == 64:
+            digests.append(value)
+            break
+
+unique = []
+
+for digest in digests:
+    if digest not in unique:
+        unique.append(digest)
+
+if not unique:
+    raise SystemExit(
+        "NO_SHA256_CERTIFICATE_DIGEST_FOUND"
+    )
+
+if len(unique) != 1:
+    raise SystemExit(
+        "MULTIPLE_DISTINCT_CERTIFICATE_DIGESTS="
+        + ",".join(unique)
+    )
+
+print(unique[0])
+PY_CERT
+          )" || {
+            echo "FAIL=PREVIEW_CERT_DIGEST_PARSE"
+            exit 1
+          }
+
+          if [ -z "$ACTUAL" ]
+          then
+            echo "FAIL=PREVIEW_CERT_DIGEST_EMPTY"
+            exit 1
+          fi
+
+          if ! printf '%s' "$ACTUAL" |
+            grep -Eq '^[0-9a-f]{64}$'
+          then
+            echo "FAIL=PREVIEW_CERT_DIGEST_INVALID"
+            exit 1
+          fi
+
+          echo "ANDROID_PREVIEW_CERT_DIGEST_PARSED=YES"
+
+          if [ "$ACTUAL" != "$EXPECTED" ]
+          then
+            echo "ANDROID_PREVIEW_CERT_MATCH=FAIL"
+            echo "FAIL=UNEXPECTED_PREVIEW_SIGNING_CERTIFICATE"
+            exit 1
+          fi
+
+          if [ "$ACTUAL" != "$KNOWN_PREVIEW_CERT_SHA256" ]
+          then
+            echo "ANDROID_PREVIEW_CERT_PIN_MATCH=FAIL"
+            echo "FAIL=PREVIEW_SIGNING_CERT_PIN_MISMATCH"
+            exit 1
+          fi
+
+          echo "ANDROID_PREVIEW_CERT_MATCH=PASS"
+          echo "ANDROID_PREVIEW_CERT_PIN_MATCH=PASS"
           echo "ANDROID_PREVIEW_SIGNER=PASS"
 
       - name: Verify optimized APK
