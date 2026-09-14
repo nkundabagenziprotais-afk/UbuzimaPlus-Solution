@@ -196,6 +196,13 @@ jobs:
             tr 'A-F' 'a-f'
           )"
 
+          if ! printf '%s' "$EXPECTED" |
+            grep -Eq '^[0-9a-f]{64}$'
+          then
+            echo "FAIL=PREVIEW_CERT_SECRET_FORMAT"
+            exit 1
+          fi
+
           if [ "$EXPECTED" != "$KNOWN_PREVIEW_CERT_SHA256" ]
           then
             echo "FAIL=PREVIEW_CERT_SECRET_DOES_NOT_MATCH_PINNED_CERT"
@@ -212,6 +219,12 @@ jobs:
             exit 1
           fi
 
+          if [ ! -d "$ANDROID_SDK_BASE/build-tools" ]
+          then
+            echo "FAIL=ANDROID_BUILD_TOOLS_DIRECTORY_MISSING"
+            exit 1
+          fi
+
           APKSIGNER="$(
             find "$ANDROID_SDK_BASE/build-tools"               -type f               -name apksigner               -perm -111               -print |
             sort -V |
@@ -224,11 +237,13 @@ jobs:
             exit 1
           fi
 
-          test -x "$APKSIGNER"
+          if [ ! -x "$APKSIGNER" ]
+          then
+            echo "FAIL=APKSIGNER_NOT_EXECUTABLE"
+            exit 1
+          fi
 
-          echo "APKSIGNER_PATH=$APKSIGNER"
-
-          "$APKSIGNER" version || true
+          echo "APKSIGNER_DISCOVERY=PASS"
 
           set +e
 
@@ -239,6 +254,7 @@ jobs:
           set -e
 
           echo "APKSIGNER_VERIFY_EXIT=$APKSIGNER_EXIT"
+
           echo "APKSIGNER_REPORT_BEGIN"
           cat "$SIGNER_REPORT"
           echo "APKSIGNER_REPORT_END"
@@ -255,72 +271,41 @@ jobs:
             exit 1
           fi
 
-          ACTUAL="$(
-            python3 - "$SIGNER_REPORT" <<'PY_CERT'
-import re
-import sys
-from pathlib import Path
+          CERT_DIGEST_COUNT="$(
+            grep -Eic               'certificate[[:space:]]+SHA-256[[:space:]]+digest[[:space:]]*:'               "$SIGNER_REPORT" ||
+            true
+          )"
 
-report = Path(sys.argv[1]).read_text(
-    encoding="utf-8",
-    errors="replace",
-)
+          echo "APK_CERT_DIGEST_LINE_COUNT=$CERT_DIGEST_COUNT"
 
-patterns = [
-    re.compile(
-        r"certificate\s+SHA[- ]?256\s+digest"
-        r"\s*:\s*([0-9A-Fa-f:\s]+)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"SHA[- ]?256\s+digest"
-        r"\s*:\s*([0-9A-Fa-f:\s]+)",
-        re.IGNORECASE,
-    ),
-]
-
-digests = []
-
-for line in report.splitlines():
-    for pattern in patterns:
-        match = pattern.search(line)
-
-        if match is None:
-            continue
-
-        value = re.sub(
-            r"[^0-9A-Fa-f]",
-            "",
-            match.group(1),
-        ).lower()
-
-        if len(value) == 64:
-            digests.append(value)
-            break
-
-unique = []
-
-for digest in digests:
-    if digest not in unique:
-        unique.append(digest)
-
-if not unique:
-    raise SystemExit(
-        "NO_SHA256_CERTIFICATE_DIGEST_FOUND"
-    )
-
-if len(unique) != 1:
-    raise SystemExit(
-        "MULTIPLE_DISTINCT_CERTIFICATE_DIGESTS="
-        + ",".join(unique)
-    )
-
-print(unique[0])
-PY_CERT
-          )" || {
-            echo "FAIL=PREVIEW_CERT_DIGEST_PARSE"
+          if [ "$CERT_DIGEST_COUNT" -ne 1 ]
+          then
+            echo "FAIL=UNEXPECTED_APK_CERT_DIGEST_COUNT"
             exit 1
-          }
+          fi
+
+          ACTUAL="$(
+            awk '
+              BEGIN {
+                IGNORECASE = 1
+              }
+
+              /certificate[[:space:]]+SHA-256[[:space:]]+digest[[:space:]]*:/ {
+                value = $0
+
+                sub(
+                  /^.*digest[[:space:]]*:[[:space:]]*/,
+                  "",
+                  value
+                )
+
+                print value
+                exit
+              }
+            ' "$SIGNER_REPORT" |
+            tr -d '[:space:]:-' |
+            tr 'A-F' 'a-f'
+          )"
 
           if [ -z "$ACTUAL" ]
           then
