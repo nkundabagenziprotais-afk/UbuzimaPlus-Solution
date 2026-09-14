@@ -1,7 +1,7 @@
 name: ubuzima_native
 description: Ubuzima+ mobile application.
 publish_to: none
-version: 3.2.0-rc.4+32004
+version: 3.2.0-rc.5+32005
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
