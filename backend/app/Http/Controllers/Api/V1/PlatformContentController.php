@@ -38,6 +38,72 @@ class PlatformContentController extends Controller
         ]);
     }
 
+    public function storePage(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'slug' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', 'unique:platform_content_pages,slug'],
+            'title' => ['required', 'string', 'max:191'],
+            'description' => ['nullable', 'string'],
+            'template' => ['nullable', 'string', 'max:80'],
+            'status' => ['nullable', Rule::in(['draft', 'published', 'archived'])],
+        ]);
+
+        $page = new PlatformContentPage();
+        $page->fill([
+            'slug' => $data['slug'],
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'template' => $data['template'] ?? 'standard',
+            'status' => $data['status'] ?? 'draft',
+            'seo' => [],
+            'style' => [],
+            'updated_by' => $request->user()->id,
+        ]);
+        $page->save();
+
+        return response()->json([
+            'status' => 'page_created',
+            'page' => $this->serializePage($page->fresh('sections')),
+        ], 201);
+    }
+
+    public function storeSection(Request $request, PlatformContentPage $page): JsonResponse
+    {
+        $data = $request->validate([
+            'section_key' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9]+(?:_[a-z0-9]+)*$/'],
+            'eyebrow' => ['nullable', 'string', 'max:160'],
+            'title' => ['nullable', 'string', 'max:191'],
+            'body' => ['nullable', 'string'],
+            'status' => ['nullable', Rule::in(['active', 'hidden', 'draft'])],
+        ]);
+
+        $exists = $page->sections()
+            ->where('section_key', $data['section_key'])
+            ->exists();
+
+        abort_if($exists, 422, 'A section with this key already exists on the page.');
+
+        $section = new PlatformContentSection();
+        $section->fill([
+            'page_id' => $page->id,
+            'section_key' => $data['section_key'],
+            'eyebrow' => $data['eyebrow'] ?? null,
+            'title' => $data['title'] ?? null,
+            'body' => $data['body'] ?? null,
+            'content' => [],
+            'style' => [],
+            'sort_order' => ((int) $page->sections()->max('sort_order')) + 1,
+            'status' => $data['status'] ?? 'draft',
+            'updated_by' => $request->user()->id,
+        ]);
+        $section->save();
+
+        return response()->json([
+            'status' => 'section_created',
+            'section' => $this->serializeSection($section->fresh()),
+        ], 201);
+    }
+
     public function updatePage(Request $request, PlatformContentPage $page): JsonResponse
     {
         $data = $request->validate([

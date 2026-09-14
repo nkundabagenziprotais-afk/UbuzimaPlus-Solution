@@ -715,7 +715,18 @@ class FinanceJournalWorkflowService
             ->filter(static fn (int $value): bool => $value > 0)
             ->unique();
 
-        if ($makers->contains($actorId)) {
+        if ((
+            $makers->contains($actorId)
+            && ! \App\Support\MakerCheckerExemptionPolicy::allows(
+                $actorId,
+                isset($draft->tenant_id)
+                    ? (int) $draft->tenant_id
+                    : null,
+                isset($draft->branch_id)
+                    ? (int) $draft->branch_id
+                    : null
+            )
+        )) {
             throw ValidationException::withMessages([
                 'reversal' => [
                     'The journal preparer or submitter cannot authorise its reversal.',

@@ -16,9 +16,7 @@ use App\Services\Access\ScopeResolver;
 use App\Services\Auth\UserAccessProfileService;
 use App\Services\Audit\AuditLogService;
 use App\Services\PharmaCo360\ProductSellingUnitSuggestionService;
-use App\Services\PharmaCo360\PosBatchEligibilityService;
 use App\Services\PharmaCo360\PosSellableBatchCombiner;
-use App\Services\PharmaCo360\PosSessionPolicyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -476,43 +474,16 @@ class ProductInventoryController extends Controller
             ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($request->query('product_id'), fn ($query, $productId) => $query->where('product_id', $productId))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
-            ->when(
-                $request->boolean('sellable_only'),
-                function ($query) use ($tenant): void {
-                    $batchEligibility = app(
-                        PosBatchEligibilityService::class
-                    );
-
-                    $businessDate = app(
-                        PosSessionPolicyService::class
-                    )->businessDate();
-
-                    $query
-                        ->where('status', 'active')
-                        ->whereRaw(
-                            '(quantity_on_hand - quantity_reserved) > 0'
-                        )
-                        ->whereHas(
-                            'product',
-                            fn ($productQuery) =>
-                                $productQuery
-                                    ->where(
-                                        'tenant_id',
-                                        $tenant->id
-                                    )
-                                    ->where(
-                                        'status',
-                                        'active'
-                                    )
-                        );
-
-                    $batchEligibility
-                        ->applyExpiryEligibility(
-                            $query,
-                            $businessDate
-                        );
-                }
-            )
+            ->when($request->boolean('sellable_only'), function ($query) {
+                $query
+                    ->whereIn('status', ['active', 'available'])
+                    ->whereRaw('(quantity_on_hand - quantity_reserved) > 0')
+                    ->where(function ($expiryQuery) {
+                        $expiryQuery
+                            ->whereNull('expiry_date')
+                            ->orWhereDate('expiry_date', '>=', now()->toDateString());
+                    });
+            })
             ->when($request->query('search'), function ($query, $search) {
                 $term = '%' . trim((string) $search) . '%';
 
@@ -2381,6 +2352,44 @@ class ProductInventoryController extends Controller
             }
 
 
+            if ($purchaseOrderReceipt) {
+                $f4AccountingReceipt =
+                    app(
+                        \App\Services\Finance\ProcurementAccountingIntegrationService::class
+                    )->captureProductReceipt(
+                        (int) $movement->id,
+                        (int)
+                        $purchaseOrderReceipt[
+                            'purchase_order_item_id'
+                        ],
+                        $request->user()?->id
+                    );
+
+                $purchaseOrderReceipt = [
+                    ...$purchaseOrderReceipt,
+
+                    'goods_receipt_id' =>
+                        $f4AccountingReceipt[
+                            'goods_receipt_id'
+                        ],
+
+                    'goods_receipt_number' =>
+                        $f4AccountingReceipt[
+                            'goods_receipt_number'
+                        ],
+
+                    'finance_journal_entry_id' =>
+                        $f4AccountingReceipt[
+                            'finance_journal_entry_id'
+                        ],
+
+                    'accounting_status' =>
+                        $f4AccountingReceipt[
+                            'accounting_status'
+                        ],
+                ];
+            }
+
             return [
                 $batch->fresh(['product.category', 'stockLocation', 'branch']),
                 $movement,
@@ -2565,6 +2574,95 @@ class ProductInventoryController extends Controller
     }
 
 
+
+    public function stockMovements(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date'],
+        ]);
+
+        $tenant =
+            $this->resolveTenant(
+                $request
+            );
+
+        $from =
+            $validated['start_date']
+            ?? $validated['date_from']
+            ?? null;
+
+        $to =
+            $validated['end_date']
+            ?? $validated['date_to']
+            ?? null;
+
+        $query =
+            StockMovement::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                );
+
+        if ($from !== null) {
+            $query->whereDate(
+                'occurred_at',
+                '>=',
+                $from
+            );
+        }
+
+        if ($to !== null) {
+            $query->whereDate(
+                'occurred_at',
+                '<=',
+                $to
+            );
+        }
+
+        $rows =
+            $query
+                ->orderByDesc(
+                    'occurred_at'
+                )
+                ->orderByDesc(
+                    'id'
+                )
+                ->limit(5000)
+                ->get()
+                ->map(
+                    fn (
+                        StockMovement $movement
+                    ): array =>
+                        $this->serializeMovement(
+                            $movement
+                        )
+                )
+                ->values();
+
+        return response()->json([
+            'data' => $rows,
+            'movements' => $rows,
+
+            'meta' => [
+                'count' =>
+                    $rows->count(),
+
+                'start_date' =>
+                    $from,
+
+                'end_date' =>
+                    $to,
+
+                'source' =>
+                    'stock_movements',
+            ],
+        ]);
+    }
+
+
     private function serializeMovement(StockMovement $movement): array
     {
         return [
@@ -2663,21 +2761,1348 @@ class ProductInventoryController extends Controller
             abort(422, 'This batch has reserved quantity and cannot be deleted.');
         }
 
-        \Illuminate\Support\Facades\DB::table('stock_movements')
-            ->where('stock_batch_id', $batch->id)
-            ->delete();
+        \Illuminate\Support\Facades\DB::transaction(
+            function () use (
+                $request,
+                $batch
+            ): void {
+                if (
+                    ! \Illuminate\Support\Facades\Schema::hasTable(
+                        'deleted_inventory_batches'
+                    )
+                ) {
+                    abort(
+                        503,
+                        'Deleted Inventory archive is not available.'
+                    );
+                }
 
-        $batchNumber = $batch->batch_number;
-        $batch->delete();
+                $batch->loadMissing([
+                    'product',
+                    'stockLocation',
+                    'branch',
+                ]);
+
+                $user =
+                    $request->user();
+
+                $metadata =
+                    is_array($batch->metadata)
+                        ? $batch->metadata
+                        : [];
+
+                $referenceNumber =
+                    $metadata['reference_number']
+                    ?? $metadata['reference']
+                    ?? $metadata['purchase_order_number']
+                    ?? $metadata['po_number']
+                    ?? $metadata['invoice_number']
+                    ?? null;
+
+                $receiveSource =
+                    $metadata['receive_source']
+                    ?? $metadata['inventory_receive_source']
+                    ?? $metadata['source']
+                    ?? $metadata['created_from']
+                    ?? null;
+
+                $quantityOnHand =
+                    max(
+                        (float) (
+                            $batch->quantity_on_hand
+                            ?? 0
+                        ),
+                        0
+                    );
+
+                $quantityReserved =
+                    max(
+                        (float) (
+                            $batch->quantity_reserved
+                            ?? 0
+                        ),
+                        0
+                    );
+
+                $availableQuantity =
+                    max(
+                        $quantityOnHand
+                        -
+                        $quantityReserved,
+                        0
+                    );
+
+                $unitCost =
+                    $batch->unit_cost === null
+                        ? null
+                        : (float) $batch->unit_cost;
+
+                $sellingPrice =
+                    $batch->selling_price === null
+                        ? null
+                        : (float) $batch->selling_price;
+
+                $marginPerUnit =
+                    (
+                        $unitCost !== null
+                        &&
+                        $sellingPrice !== null
+                    )
+                        ? (
+                            $sellingPrice
+                            -
+                            $unitCost
+                        )
+                        : null;
+
+                $movements =
+                    \Illuminate\Support\Facades\DB::table(
+                        'stock_movements'
+                    )
+                    ->where(
+                        'stock_batch_id',
+                        $batch->id
+                    )
+                    ->orderBy('id')
+                    ->get()
+                    ->map(
+                        static fn ($row) =>
+                            (array) $row
+                    )
+                    ->values()
+                    ->all();
+
+                $deletionReason =
+                    trim(
+                        (string) (
+                            $request->input(
+                                'deletion_reason'
+                            )
+                            ?? ''
+                        )
+                    );
+
+                if ($deletionReason === '') {
+                    $deletionReason =
+                        'Deleted from Product Inventory.';
+                }
+
+                $batchSnapshot =
+                    $batch->getAttributes();
+
+                \Illuminate\Support\Facades\DB::table(
+                    'deleted_inventory_batches'
+                )
+                ->insert([
+                    'uuid' =>
+                        (string)
+                        \Illuminate\Support\Str::uuid(),
+
+                    'tenant_id' =>
+                        (int) $batch->tenant_id,
+
+                    'branch_id' =>
+                        $batch->branch_id === null
+                            ? null
+                            : (int) $batch->branch_id,
+
+                    'original_stock_batch_id' =>
+                        (int) $batch->id,
+
+                    'restored_stock_batch_id' =>
+                        null,
+
+                    'product_id' =>
+                        $batch->product_id === null
+                            ? null
+                            : (int) $batch->product_id,
+
+                    'product_sku' =>
+                        $batch->product?->sku,
+
+                    'product_name' =>
+                        $batch->product?->name,
+
+                    'product_generic_name' =>
+                        $batch->product?->generic_name,
+
+                    'batch_number' =>
+                        (string) (
+                            $batch->batch_number
+                            ?? ''
+                        ),
+
+                    'quantity_on_hand' =>
+                        $quantityOnHand,
+
+                    'quantity_reserved' =>
+                        $quantityReserved,
+
+                    'available_quantity' =>
+                        $availableQuantity,
+
+                    'unit_cost' =>
+                        $unitCost,
+
+                    'selling_price' =>
+                        $sellingPrice,
+
+                    'margin_per_unit' =>
+                        $marginPerUnit,
+
+                    'supplier_name' =>
+                        $batch->supplier_name,
+
+                    'stock_location_id' =>
+                        $batch->stock_location_id === null
+                            ? null
+                            : (int)
+                                $batch->stock_location_id,
+
+                    'stock_location_name' =>
+                        $batch->stockLocation?->name,
+
+                    'expiry_date' =>
+                        $batch->expiry_date
+                            ? $batch
+                                ->expiry_date
+                                ->toDateString()
+                            : null,
+
+                    'reference_number' =>
+                        $referenceNumber,
+
+                    'receive_source' =>
+                        $receiveSource,
+
+                    'original_status' =>
+                        $batch->status,
+
+                    'batch_snapshot' =>
+                        json_encode(
+                            $batchSnapshot,
+                            JSON_UNESCAPED_UNICODE
+                            |
+                            JSON_UNESCAPED_SLASHES
+                        ),
+
+                    'movement_snapshot' =>
+                        json_encode(
+                            $movements,
+                            JSON_UNESCAPED_UNICODE
+                            |
+                            JSON_UNESCAPED_SLASHES
+                        ),
+
+                    'evidence_snapshot' =>
+                        null,
+
+                    'deleted_by' =>
+                        $user?->id,
+
+                    'deleted_by_name' =>
+                        $user?->name
+                        ?? $user?->email,
+
+                    'deleted_at' =>
+                        now(),
+
+                    'deletion_reason' =>
+                        $deletionReason,
+
+                    'archive_source' =>
+                        'live_delete',
+
+                    'evidence_reference' =>
+                        'ProductInventoryController::deleteBatch',
+
+                    'evidence_confidence' =>
+                        'exact',
+
+                    'restore_status' =>
+                        'archived',
+
+                    'restored_by' =>
+                        null,
+
+                    'restored_by_name' =>
+                        null,
+
+                    'restored_at' =>
+                        null,
+
+                    'restore_reason' =>
+                        null,
+
+                    'restore_metadata' =>
+                        null,
+
+                    'original_batch_created_at' =>
+                        $batch->created_at,
+
+                    'original_batch_updated_at' =>
+                        $batch->updated_at,
+
+                    'created_at' =>
+                        now(),
+
+                    'updated_at' =>
+                        now(),
+                ]);
+
+                /*
+                 * Preserve existing system semantics:
+                 * movements are removed from live operational
+                 * tables, but their complete snapshot now
+                 * survives in the immutable archive row.
+                 */
+                \Illuminate\Support\Facades\DB::table(
+                    'stock_movements'
+                )
+                ->where(
+                    'stock_batch_id',
+                    $batch->id
+                )
+                ->delete();
+
+                $batch->delete();
+            }
+        );
 
         return response()->json([
-            'message' => "Inventory batch {$batchNumber} deleted.",
+            'message' =>
+                "Inventory batch {$batch->batch_number} moved to Deleted Inventory.",
+            'archived' => true,
         ]);
     }
 
     /* LEGACY_COST_RESOLUTION_V1 */
     /* INVENTORY_TREND_RESOLVED_COST_V1 */
     /* INVENTORY_ANALYTICS_TREND_RESOLVED_COST_V2 */
+
+    /**
+     * Deleted Inventory / Recycle Bin.
+     *
+     * Read-only archive listing for users who already hold
+     * pharmaco.inventory.manage.
+     */
+    public function deletedBatches(
+        Request $request
+    ): \Illuminate\Http\JsonResponse {
+        $tenant =
+            $request->attributes->get(
+                'tenant'
+            );
+
+        if (! $tenant) {
+            abort(
+                404,
+                'Tenant not found.'
+            );
+        }
+
+        if (
+            ! \Illuminate\Support\Facades\Schema::hasTable(
+                'deleted_inventory_batches'
+            )
+        ) {
+            return response()->json([
+                'deleted_inventory' => [],
+                'meta' => [
+                    'total' => 0,
+                    'archive_available' => false,
+                ],
+            ]);
+        }
+
+        $perPage =
+            min(
+                max(
+                    (int) $request->query(
+                        'per_page',
+                        100
+                    ),
+                    1
+                ),
+                200
+            );
+
+        $search =
+            trim(
+                (string) $request->query(
+                    'search',
+                    ''
+                )
+            );
+
+        $status =
+            strtolower(
+                trim(
+                    (string) $request->query(
+                        'status',
+                        'all'
+                    )
+                )
+            );
+
+        $query =
+            \Illuminate\Support\Facades\DB::table(
+                'deleted_inventory_batches'
+            )
+            ->where(
+                'tenant_id',
+                $tenant->id
+            )
+            ->when(
+                $request->query(
+                    'branch_id'
+                ),
+                static function (
+                    $query,
+                    $branchId
+                ) {
+                    $query->where(
+                        'branch_id',
+                        $branchId
+                    );
+                }
+            )
+            ->when(
+                in_array(
+                    $status,
+                    [
+                        'archived',
+                        'restored',
+                    ],
+                    true
+                ),
+                static function (
+                    $query
+                ) use ($status) {
+                    $query->where(
+                        'restore_status',
+                        $status
+                    );
+                }
+            )
+            ->when(
+                $search !== '',
+                static function (
+                    $query
+                ) use ($search) {
+                    $like =
+                        '%'
+                        . $search
+                        . '%';
+
+                    $query->where(
+                        static function (
+                            $inner
+                        ) use ($like) {
+                            $inner
+                                ->where(
+                                    'product_name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'product_generic_name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'product_sku',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'batch_number',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'supplier_name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'stock_location_name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'reference_number',
+                                    'like',
+                                    $like
+                                );
+                        }
+                    );
+                }
+            );
+
+        $total =
+            (clone $query)
+                ->count();
+
+        $rows =
+            $query
+                ->orderByRaw(
+                    'CASE WHEN deleted_at IS NULL THEN 1 ELSE 0 END'
+                )
+                ->orderByDesc(
+                    'deleted_at'
+                )
+                ->orderByDesc(
+                    'id'
+                )
+                ->limit(
+                    $perPage
+                )
+                ->get()
+                ->map(
+                    static function ($row): array {
+                        $item =
+                            (array) $row;
+
+                        $toKigali =
+                            static function (
+                                $value
+                            ): ?string {
+                                if (! $value) {
+                                    return null;
+                                }
+
+                                try {
+                                    return
+                                        \Carbon\Carbon::parse(
+                                            (string) $value,
+                                            config(
+                                                'app.timezone',
+                                                'UTC'
+                                            )
+                                        )
+                                        ->timezone(
+                                            'Africa/Kigali'
+                                        )
+                                        ->format(
+                                            'd M Y, H:i:s'
+                                        )
+                                        . ' CAT';
+                                } catch (\Throwable) {
+                                    return null;
+                                }
+                            };
+
+                        $item[
+                            'deleted_at_kigali'
+                        ] =
+                            $toKigali(
+                                $row->deleted_at
+                                ?? null
+                            );
+
+                        $item[
+                            'archived_at_kigali'
+                        ] =
+                            $toKigali(
+                                $row->created_at
+                                ?? null
+                            );
+
+                        $item[
+                            'restored_at_kigali'
+                        ] =
+                            $toKigali(
+                                $row->restored_at
+                                ?? null
+                            );
+
+                        $item[
+                            'deleted_timestamp_quality'
+                        ] =
+                            $row->deleted_at
+                                ? 'exact'
+                                : 'historical_unknown';
+
+                        return $item;
+                    }
+                )
+                ->values();
+
+        return response()->json([
+            'deleted_inventory' =>
+                $rows,
+
+            'meta' => [
+                'total' =>
+                    $total,
+
+                'returned' =>
+                    $rows->count(),
+
+                'archive_available' =>
+                    true,
+            ],
+        ]);
+    }
+
+    /**
+     * Restore one archived inventory batch.
+     *
+     * Historical movements are deliberately NOT recreated.
+     * They remain preserved in movement_snapshot so restoring
+     * stock does not duplicate procurement/accounting history.
+     */
+
+    /**
+     * Permanently remove one record from the recoverable
+     * Deleted Inventory table.
+     *
+     * A full purge audit snapshot remains for governance.
+     * This endpoint never touches a live stock batch.
+     */
+    public function permanentlyDeleteDeletedBatch(
+        Request $request,
+        int $archive
+    ): \Illuminate\Http\JsonResponse {
+        $tenant =
+            $request->attributes->get(
+                'tenant'
+            );
+
+        if (! $tenant) {
+            abort(
+                404,
+                'Tenant not found.'
+            );
+        }
+
+        if (
+            ! \Illuminate\Support\Facades\Schema::hasTable(
+                'deleted_inventory_batches'
+            )
+        ) {
+            abort(
+                404,
+                'Deleted Inventory archive is not available.'
+            );
+        }
+
+        if (
+            ! \Illuminate\Support\Facades\Schema::hasTable(
+                'deleted_inventory_purge_audits'
+            )
+        ) {
+            abort(
+                503,
+                'Permanent deletion audit storage is not available.'
+            );
+        }
+
+        $validated =
+            $request->validate([
+                'confirmation' => [
+                    'required',
+                    'string',
+                    'max:100',
+                ],
+
+                'purge_reason' => [
+                    'required',
+                    'string',
+                    'max:1000',
+                ],
+            ]);
+
+        if (
+            trim(
+                (string) $validated[
+                    'confirmation'
+                ]
+            )
+            !==
+            'DELETE PERMANENTLY'
+        ) {
+            abort(
+                422,
+                'Permanent deletion confirmation did not match.'
+            );
+        }
+
+        $reason =
+            trim(
+                (string) $validated[
+                    'purge_reason'
+                ]
+            );
+
+        if ($reason === '') {
+            abort(
+                422,
+                'A permanent deletion reason is required.'
+            );
+        }
+
+        $record =
+            \Illuminate\Support\Facades\DB::table(
+                'deleted_inventory_batches'
+            )
+            ->where(
+                'id',
+                $archive
+            )
+            ->where(
+                'tenant_id',
+                $tenant->id
+            )
+            ->first();
+
+        if (! $record) {
+            abort(
+                404,
+                'Deleted inventory record not found.'
+            );
+        }
+
+        if (
+            strtolower(
+                trim(
+                    (string) (
+                        $record->restore_status
+                        ?? ''
+                    )
+                )
+            )
+            !==
+            'archived'
+        ) {
+            abort(
+                422,
+                'Only inventory that is still awaiting recovery can be permanently deleted.'
+            );
+        }
+
+        $user =
+            $request->user();
+
+        \Illuminate\Support\Facades\DB::transaction(
+            function () use (
+                $record,
+                $tenant,
+                $reason,
+                $user
+            ): void {
+                \Illuminate\Support\Facades\DB::table(
+                    'deleted_inventory_purge_audits'
+                )
+                ->insert([
+                    'uuid' =>
+                        (string)
+                        \Illuminate\Support\Str::uuid(),
+
+                    'tenant_id' =>
+                        (int) $tenant->id,
+
+                    'deleted_inventory_archive_id' =>
+                        (int) $record->id,
+
+                    'original_stock_batch_id' =>
+                        $record
+                            ->original_stock_batch_id
+                            === null
+                                ? null
+                                : (int)
+                                    $record
+                                        ->original_stock_batch_id,
+
+                    'product_id' =>
+                        $record->product_id
+                            === null
+                                ? null
+                                : (int)
+                                    $record->product_id,
+
+                    'product_sku' =>
+                        $record->product_sku,
+
+                    'product_name' =>
+                        $record->product_name,
+
+                    'batch_number' =>
+                        $record->batch_number,
+
+                    'purge_reason' =>
+                        $reason,
+
+                    'purged_by' =>
+                        $user?->id,
+
+                    'purged_by_name' =>
+                        $user?->name
+                        ?? $user?->email,
+
+                    'purged_at' =>
+                        now(),
+
+                    'archive_snapshot' =>
+                        json_encode(
+                            (array) $record,
+                            JSON_UNESCAPED_UNICODE
+                            |
+                            JSON_UNESCAPED_SLASHES
+                        ),
+
+                    'created_at' =>
+                        now(),
+
+                    'updated_at' =>
+                        now(),
+                ]);
+
+                \Illuminate\Support\Facades\DB::table(
+                    'deleted_inventory_batches'
+                )
+                ->where(
+                    'id',
+                    $record->id
+                )
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->delete();
+            }
+        );
+
+        return response()->json([
+            'message' =>
+                'Deleted inventory record permanently removed from the recovery table.',
+
+            'archive_id' =>
+                (int) $record->id,
+
+            'audit_retained' =>
+                true,
+        ]);
+    }
+
+    public function restoreDeletedBatch(
+        Request $request,
+        int $archive
+    ): \Illuminate\Http\JsonResponse {
+        $tenant =
+            $request->attributes->get(
+                'tenant'
+            );
+
+        if (! $tenant) {
+            abort(
+                404,
+                'Tenant not found.'
+            );
+        }
+
+        if (
+            ! \Illuminate\Support\Facades\Schema::hasTable(
+                'deleted_inventory_batches'
+            )
+        ) {
+            abort(
+                404,
+                'Deleted Inventory archive is not available.'
+            );
+        }
+
+        $record =
+            \Illuminate\Support\Facades\DB::table(
+                'deleted_inventory_batches'
+            )
+            ->where(
+                'id',
+                $archive
+            )
+            ->where(
+                'tenant_id',
+                $tenant->id
+            )
+            ->first();
+
+        if (! $record) {
+            abort(
+                404,
+                'Deleted inventory record not found.'
+            );
+        }
+
+        if (
+            strtolower(
+                (string) $record->restore_status
+            )
+            !== 'archived'
+        ) {
+            abort(
+                422,
+                'This inventory record has already been restored.'
+            );
+        }
+
+        $validated =
+            $request->validate([
+                'restore_reason' => [
+                    'nullable',
+                    'string',
+                    'max:1000',
+                ],
+            ]);
+
+        $product =
+            Product::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->whereKey(
+                    $record->product_id
+                )
+                ->first();
+
+        if (! $product) {
+            abort(
+                422,
+                'The Product Master record no longer exists. Restore is blocked.'
+            );
+        }
+
+        $location =
+            StockLocation::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->whereKey(
+                    $record->stock_location_id
+                )
+                ->first();
+
+        if (! $location) {
+            abort(
+                422,
+                'The original Stock Location no longer exists. Restore is blocked.'
+            );
+        }
+
+        if (
+            $record->branch_id !== null
+            &&
+            $location->branch_id !== null
+            &&
+            (int) $location->branch_id
+                !==
+                (int) $record->branch_id
+        ) {
+            abort(
+                422,
+                'The original Stock Location no longer belongs to the archived branch.'
+            );
+        }
+
+        if (
+            $record->branch_id !== null
+            &&
+            \Illuminate\Support\Facades\Schema::hasTable(
+                'branches'
+            )
+        ) {
+            $branchExists =
+                \Illuminate\Support\Facades\DB::table(
+                    'branches'
+                )
+                ->where(
+                    'id',
+                    $record->branch_id
+                )
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->exists();
+
+            if (! $branchExists) {
+                abort(
+                    422,
+                    'The original branch no longer exists. Restore is blocked.'
+                );
+            }
+        }
+
+        $originalBatchId =
+            (int)
+            $record
+                ->original_stock_batch_id;
+
+        if (
+            StockBatch::query()
+                ->whereKey(
+                    $originalBatchId
+                )
+                ->exists()
+        ) {
+            abort(
+                422,
+                'The original inventory batch ID is already in use.'
+            );
+        }
+
+        $duplicate =
+            StockBatch::query()
+                ->where(
+                    'tenant_id',
+                    $tenant->id
+                )
+                ->where(
+                    'product_id',
+                    $record->product_id
+                )
+                ->where(
+                    'stock_location_id',
+                    $record->stock_location_id
+                )
+                ->where(
+                    'batch_number',
+                    $record->batch_number
+                )
+                ->when(
+                    $record->branch_id !== null,
+                    static function (
+                        $query
+                    ) use ($record) {
+                        $query->where(
+                            'branch_id',
+                            $record->branch_id
+                        );
+                    }
+                )
+                ->exists();
+
+        if ($duplicate) {
+            abort(
+                422,
+                'A matching live inventory batch already exists. Restore is blocked to prevent duplication.'
+            );
+        }
+
+        $snapshot =
+            json_decode(
+                (string) $record
+                    ->batch_snapshot,
+                true
+            );
+
+        if (! is_array($snapshot)) {
+            abort(
+                422,
+                'The archived batch snapshot is invalid.'
+            );
+        }
+
+        $quantityOnHand =
+            (float) (
+                $snapshot['quantity_on_hand']
+                ?? $record->quantity_on_hand
+                ?? 0
+            );
+
+        $quantityReserved =
+            (float) (
+                $snapshot['quantity_reserved']
+                ?? $record->quantity_reserved
+                ?? 0
+            );
+
+        if (
+            $quantityOnHand < 0
+            ||
+            $quantityReserved < 0
+            ||
+            $quantityReserved
+                >
+                $quantityOnHand
+        ) {
+            abort(
+                422,
+                'Archived quantity integrity validation failed.'
+            );
+        }
+
+        $columns =
+            \Illuminate\Support\Facades\Schema::getColumnListing(
+                'stock_batches'
+            );
+
+        $allowed =
+            array_flip(
+                $columns
+            );
+
+        $insert =
+            array_intersect_key(
+                $snapshot,
+                $allowed
+            );
+
+        if (
+            in_array(
+                'id',
+                $columns,
+                true
+            )
+        ) {
+            $insert['id'] =
+                $originalBatchId;
+        }
+
+        $insert['tenant_id'] =
+            (int) $tenant->id;
+
+        $insert['product_id'] =
+            (int) $record->product_id;
+
+        $insert['stock_location_id'] =
+            (int) $record->stock_location_id;
+
+        if (
+            in_array(
+                'branch_id',
+                $columns,
+                true
+            )
+        ) {
+            $insert['branch_id'] =
+                $record->branch_id === null
+                    ? null
+                    : (int) $record->branch_id;
+        }
+
+        $insert['batch_number'] =
+            (string)
+            $record->batch_number;
+
+        $insert['quantity_on_hand'] =
+            $quantityOnHand;
+
+        $insert['quantity_reserved'] =
+            $quantityReserved;
+
+        if (
+            in_array(
+                'status',
+                $columns,
+                true
+            )
+        ) {
+            $status =
+                strtolower(
+                    trim(
+                        (string) (
+                            $record->original_status
+                            ?? ''
+                        )
+                    )
+                );
+
+            if ($status === '') {
+                $status =
+                    $quantityOnHand
+                        >
+                        0
+                            ? 'available'
+                            : 'depleted';
+            }
+
+            $insert['status'] =
+                $status;
+        }
+
+        if (
+            in_array(
+                'metadata',
+                $columns,
+                true
+            )
+        ) {
+            $metadata =
+                $insert['metadata']
+                    ?? [];
+
+            if (is_string($metadata)) {
+                $decoded =
+                    json_decode(
+                        $metadata,
+                        true
+                    );
+
+                $metadata =
+                    is_array($decoded)
+                        ? $decoded
+                        : [];
+            }
+
+            if (! is_array($metadata)) {
+                $metadata = [];
+            }
+
+            $metadata[
+                'restored_from_deleted_inventory_archive_id'
+            ] =
+                (int) $record->id;
+
+            $metadata[
+                'restored_from_original_stock_batch_id'
+            ] =
+                $originalBatchId;
+
+            $metadata[
+                'restored_at'
+            ] =
+                now()->toIso8601String();
+
+            $insert['metadata'] =
+                json_encode(
+                    $metadata,
+                    JSON_UNESCAPED_UNICODE
+                    |
+                    JSON_UNESCAPED_SLASHES
+                );
+        }
+
+        $user =
+            $request->user();
+
+        $restoreReason =
+            trim(
+                (string) (
+                    $validated['restore_reason']
+                    ?? ''
+                )
+            );
+
+        if ($restoreReason === '') {
+            $restoreReason =
+                'Restored from Deleted Inventory.';
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(
+            function () use (
+                $record,
+                $insert,
+                $originalBatchId,
+                $user,
+                $restoreReason
+            ): void {
+                \Illuminate\Support\Facades\DB::table(
+                    'stock_batches'
+                )
+                ->insert(
+                    $insert
+                );
+
+                /*
+                 * Do NOT replay archived StockMovement rows.
+                 *
+                 * They are historical evidence only and are
+                 * retained inside movement_snapshot.
+                 */
+                \Illuminate\Support\Facades\DB::table(
+                    'deleted_inventory_batches'
+                )
+                ->where(
+                    'id',
+                    $record->id
+                )
+                ->update([
+                    'restore_status' =>
+                        'restored',
+
+                    'restored_stock_batch_id' =>
+                        $originalBatchId,
+
+                    'restored_by' =>
+                        $user?->id,
+
+                    'restored_by_name' =>
+                        $user?->name
+                        ?? $user?->email,
+
+                    'restored_at' =>
+                        now(),
+
+                    'restore_reason' =>
+                        $restoreReason,
+
+                    'restore_metadata' =>
+                        json_encode(
+                            [
+                                'movements_replayed' =>
+                                    false,
+
+                                'accounting_replayed' =>
+                                    false,
+
+                                'procurement_replayed' =>
+                                    false,
+
+                                'identity_strategy' =>
+                                    'original_stock_batch_id',
+                            ],
+                            JSON_UNESCAPED_UNICODE
+                            |
+                            JSON_UNESCAPED_SLASHES
+                        ),
+
+                    'updated_at' =>
+                        now(),
+                ]);
+            }
+        );
+
+        $batch =
+            StockBatch::query()
+                ->findOrFail(
+                    $originalBatchId
+                );
+
+        $batch->load([
+            'product',
+            'stockLocation',
+            'branch',
+        ]);
+
+        return response()->json([
+            'message' =>
+                "Inventory batch {$batch->batch_number} restored.",
+
+            'batch' =>
+                $this->serializeBatch(
+                    $batch
+                ),
+
+            'restore' => [
+                'archive_id' =>
+                    (int) $record->id,
+
+                'stock_movements_replayed' =>
+                    false,
+
+                'accounting_replayed' =>
+                    false,
+
+                'procurement_replayed' =>
+                    false,
+            ],
+        ]);
+    }
+
+
     private function serializeBatch(StockBatch $batch): array
     {
         $metadata = is_array($batch->metadata) ? $batch->metadata : [];
@@ -2934,6 +4359,77 @@ class ProductInventoryController extends Controller
             ->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(m.business_date, m.occurred_at, m.created_at)'), '<=', $endDate);
 
         $movementValueExpression = "ABS(COALESCE(m.quantity, 0)) * (CASE WHEN b.cost_source IN ('legacy_equal_price_cost', 'inferred_from_price') AND COALESCE(b.inferred_unit_cost, 0) > 0 THEN COALESCE(b.inferred_unit_cost, 0) WHEN COALESCE(b.unit_cost, 0) > 0 THEN COALESCE(b.unit_cost, 0) WHEN COALESCE(b.selling_price, 0) > 0 THEN COALESCE(b.selling_price, 0) / 1.4 ELSE 0 END)";
+
+
+        /*
+         * AQUILA_INVENTORY_MOVEMENT_KPI_RESTORE_R3_R1
+         *
+         * Restore the movement KPI block that existed before
+         * INVENTORY_ANALYTICS_TIMESTAMP_POSITION_TRENDS_V6.
+         */
+        $receivedTypes = [
+            'receive',
+            'received',
+            'purchase',
+            'stock_in',
+            'inbound',
+            'adjustment_in',
+            'return_in',
+            'opening',
+        ];
+
+        $issuedTypes = [
+            'issue',
+            'issued',
+            'sale',
+            'sold',
+            'dispense',
+            'stock_out',
+            'outbound',
+            'adjustment_out',
+        ];
+
+        $receivedRows =
+            (clone $movementBase)
+                ->whereIn(
+                    \Illuminate\Support\Facades\DB::raw(
+                        'LOWER(m.movement_type)'
+                    ),
+                    $receivedTypes
+                );
+
+        $issuedRows =
+            (clone $movementBase)
+                ->whereIn(
+                    \Illuminate\Support\Facades\DB::raw(
+                        'LOWER(m.movement_type)'
+                    ),
+                    $issuedTypes
+                );
+
+        $stockReceivedValue =
+            (clone $receivedRows)
+                ->sum(
+                    \Illuminate\Support\Facades\DB::raw(
+                        $movementValueExpression
+                    )
+                );
+
+        $stockReceivedCount =
+            (clone $receivedRows)
+                ->count();
+
+        $stockIssuedValue =
+            (clone $issuedRows)
+                ->sum(
+                    \Illuminate\Support\Facades\DB::raw(
+                        $movementValueExpression
+                    )
+                );
+
+        $stockIssuedCount =
+            (clone $issuedRows)
+                ->count();
 
 
         /* INVENTORY_ANALYTICS_TIMESTAMP_POSITION_TRENDS_V6 */

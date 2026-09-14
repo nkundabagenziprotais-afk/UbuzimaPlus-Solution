@@ -1342,14 +1342,35 @@ class ProcurementController extends Controller
             ]);
         }
 
-        $supplierInvoice->status = 'approved';
-        $supplierInvoice->approved_by = $request->user()?->id;
-        $supplierInvoice->approved_at = now();
-        $supplierInvoice->metadata = [
-            ...($supplierInvoice->metadata ?? []),
-            'approval_workflow' => 'phase_9_1_supplier_invoice_payables',
-        ];
-        $supplierInvoice->save();
+        DB::transaction(
+            function () use (
+                $supplierInvoice,
+                $request,
+            ): void {
+                $supplierInvoice->status = 'approved';
+                $supplierInvoice->approved_by =
+                    $request->user()?->id;
+                $supplierInvoice->approved_at =
+                    now();
+
+                $supplierInvoice->metadata = [
+                    ...($supplierInvoice->metadata ?? []),
+                    'approval_workflow' =>
+                        'phase_9_1_supplier_invoice_payables',
+                ];
+
+                $supplierInvoice->save();
+
+                app(
+                    \App\Services\Finance\ProcurementAccountingIntegrationService::class
+                )->handleSupplierInvoiceApproval(
+                    (int) $supplierInvoice->id,
+                    $request->user()?->id
+                );
+            }
+        );
+
+        $supplierInvoice->refresh();
 
         $supplierInvoice->load(['supplier', 'purchaseOrder', 'items.product.category', 'payments']);
 
@@ -1395,7 +1416,7 @@ class ProcurementController extends Controller
 
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'payment_method' => ['required', 'string', 'in:cash,momo,card,bank_transfer,cheque,credit'],
+            'payment_method' => ['required', 'string', 'in:cash,momo,card,bank_transfer,cheque'],
             'reference_number' => ['nullable', 'string', 'max:120'],
             'paid_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -1435,6 +1456,17 @@ class ProcurementController extends Controller
             $supplierInvoice->balance_amount = $balance;
             $supplierInvoice->status = $balance <= 0 ? 'paid' : 'partially_paid';
             $supplierInvoice->save();
+
+            app(
+                \App\Services\Finance\ProcurementAccountingIntegrationService::class
+            )->handleSupplierPayment(
+                (int) $payment->id,
+                $request->user()?->id
+            );
+
+            $payment->refresh();
+            $supplierInvoice->refresh();
+
 
             return [
                 $payment,

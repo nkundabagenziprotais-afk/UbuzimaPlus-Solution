@@ -682,7 +682,6 @@ return response()->json([
                 )
                 ->with([
                     'lines.account',
-                    'lines.expenseItem',
                     'supplier',
                     'actions.actor',
                 ])

@@ -1,5 +1,7 @@
 <?php
 
+/* AQUILA_FINANCE_R50C_R7B_POSTED_ONLY_READINESS */
+
 namespace App\Services\Finance;
 
 use Illuminate\Support\Facades\DB;
@@ -141,7 +143,7 @@ class FinanceReadinessHealthReportService
         $query = DB::table('finance_journal_lines as lines')
             ->join('finance_journal_entries as entries', 'entries.id', '=', 'lines.journal_entry_id')
             ->where('lines.tenant_id', $tenantId)
-            ->whereIn('entries.status', ['posted', 'shadow_posted']);
+            ->where('entries.status', 'posted');
 
         if ($branchId) {
             $query->where('lines.branch_id', $branchId);
@@ -167,7 +169,7 @@ class FinanceReadinessHealthReportService
             'total_debit' => $totalDebit,
             'total_credit' => $totalCredit,
             'difference' => round($totalDebit - $totalCredit, 4),
-            'statuses' => ['posted', 'shadow_posted'],
+            'statuses' => ['posted'],
         ];
     }
 }

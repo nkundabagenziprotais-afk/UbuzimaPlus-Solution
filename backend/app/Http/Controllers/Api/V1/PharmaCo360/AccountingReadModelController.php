@@ -1,5 +1,7 @@
 <?php
 
+/* AQUILA_FINANCE_R50C_R7B_POSTED_ONLY_ACCOUNTING */
+
 namespace App\Http\Controllers\Api\V1\PharmaCo360;
 
 use App\Http\Controllers\Controller;
@@ -159,6 +161,13 @@ class AccountingReadModelController extends Controller
         return response()->json(['data' => $rows]);
     }
 
+    /*
+     * AQUILA_QUICKBOOKS_QB1_CORE_REPORTING
+     *
+     * General Ledger reporting contract.
+     *
+     * READ ONLY.
+     */
     public function ledger(Request $request): JsonResponse
     {
         [$tenantId, $branchId] = $this->scope($request);
@@ -198,14 +207,1517 @@ class AccountingReadModelController extends Controller
         return response()->json(['data' => $rows]);
     }
 
+
+    /*
+     * AQUILA_QUICKBOOKS_QB1_1_GENERAL_LEDGER_REPORT
+     *
+     * QuickBooks-style General Ledger reporting endpoint.
+     *
+     * READ ONLY.
+     *
+     * The existing ledger() endpoint remains unchanged.
+     */
+    public function generalLedgerReport(Request $request): JsonResponse
+    {
+        [$tenantId, $branchId] = $this->scope($request);
+
+        $validated = $request->validate([
+            'from' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+
+            'to' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+
+            'account' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+
+            'q' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+
+            'status' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'page' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+
+            'per_page' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:200',
+            ],
+        ]);
+
+        $from =
+            $validated['from']
+            ??
+            null;
+
+        $to =
+            $validated['to']
+            ??
+            null;
+
+        if (
+            $from !== null
+            &&
+            $to !== null
+            &&
+            $from > $to
+        ) {
+            return response()->json([
+                'message' =>
+                    'The report start date must not be after the end date.',
+            ], 422);
+        }
+
+        $page = max(
+            1,
+            (int) (
+                $validated['page']
+                ??
+                1
+            )
+        );
+
+        $perPage = min(
+            200,
+            max(
+                1,
+                (int) (
+                    $validated['per_page']
+                    ??
+                    100
+                )
+            )
+        );
+
+        $allowedStatuses = [
+            'posted',
+            'shadow_posted',
+            'draft',
+            'pending',
+            'approved',
+            'reversed',
+            'voided',
+        ];
+
+        $requestedStatuses =
+            collect(
+                explode(
+                    ',',
+                    (string) (
+                        $validated['status']
+                        ??
+                        ''
+                    )
+                )
+            )
+                ->map(
+                    static fn ($value) =>
+                        strtolower(
+                            trim(
+                                (string) $value
+                            )
+                        )
+                )
+                ->filter()
+                ->intersect(
+                    $allowedStatuses
+                )
+                ->values();
+
+        /*
+         * Financial reporting defaults to recognised ledger entries.
+         */
+        $statuses =
+            $requestedStatuses->isNotEmpty()
+                ? $requestedStatuses->all()
+                : [
+                    'posted',
+                    'shadow_posted',
+                ];
+
+        $query =
+            DB::table(
+                'finance_journal_lines as lines'
+            )
+                ->join(
+                    'finance_journal_entries as entries',
+                    'entries.id',
+                    '=',
+                    'lines.journal_entry_id'
+                )
+                ->join(
+                    'finance_chart_of_accounts as accounts',
+                    'accounts.id',
+                    '=',
+                    'lines.chart_of_account_id'
+                )
+                ->where(
+                    'entries.tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'accounts.tenant_id',
+                    $tenantId
+                )
+                ->whereIn(
+                    'entries.status',
+                    $statuses
+                )
+                ->when(
+                    $branchId !== null,
+                    fn ($builder) =>
+                        $builder->where(
+                            'entries.branch_id',
+                            $branchId
+                        )
+                )
+                ->when(
+                    $from !== null,
+                    fn ($builder) =>
+                        $builder->whereDate(
+                            'entries.business_date',
+                            '>=',
+                            $from
+                        )
+                )
+                ->when(
+                    $to !== null,
+                    fn ($builder) =>
+                        $builder->whereDate(
+                            'entries.business_date',
+                            '<=',
+                            $to
+                        )
+                );
+
+        $account =
+            trim(
+                (string) (
+                    $validated['account']
+                    ??
+                    ''
+                )
+            );
+
+        if ($account !== '') {
+            $query->where(
+                function ($builder) use ($account): void {
+                    $builder
+                        ->where(
+                            'accounts.code',
+                            $account
+                        )
+                        ->orWhere(
+                            'accounts.name',
+                            'like',
+                            '%' . $account . '%'
+                        );
+                }
+            );
+        }
+
+        $search =
+            trim(
+                (string) (
+                    $validated['q']
+                    ??
+                    ''
+                )
+            );
+
+        if ($search !== '') {
+            $query->where(
+                function ($builder) use ($search): void {
+                    $like =
+                        '%' . $search . '%';
+
+                    $builder
+                        ->where(
+                            'entries.journal_number',
+                            'like',
+                            $like
+                        )
+                        ->orWhere(
+                            'accounts.code',
+                            'like',
+                            $like
+                        )
+                        ->orWhere(
+                            'accounts.name',
+                            'like',
+                            $like
+                        )
+                        ->orWhere(
+                            'lines.description',
+                            'like',
+                            $like
+                        );
+                }
+            );
+        }
+
+        $totalRows =
+            (clone $query)
+                ->count(
+                    'lines.id'
+                );
+
+        $totals =
+            (clone $query)
+                ->selectRaw(
+                    'COALESCE(SUM(lines.debit), 0) as total_debit, '
+                    . 'COALESCE(SUM(lines.credit), 0) as total_credit'
+                )
+                ->first();
+
+        $rows =
+            (clone $query)
+                ->orderBy(
+                    'entries.business_date'
+                )
+                ->orderBy(
+                    'entries.id'
+                )
+                ->orderBy(
+                    'lines.id'
+                )
+                ->forPage(
+                    $page,
+                    $perPage
+                )
+                ->get([
+                    'lines.id',
+                    'lines.journal_entry_id',
+                    'lines.chart_of_account_id as account_id',
+
+                    'entries.journal_number',
+                    'entries.business_date',
+                    'entries.status',
+
+                    'accounts.code',
+                    'accounts.name',
+                    'accounts.account_type',
+                    'accounts.normal_balance',
+
+                    'lines.debit',
+                    'lines.credit',
+                    'lines.description',
+                ])
+                ->map(
+                    static function ($row): array {
+                        $debit =
+                            (float) $row->debit;
+
+                        $credit =
+                            (float) $row->credit;
+
+                        $normalDebit =
+                            strtolower(
+                                (string) $row->normal_balance
+                            )
+                            ===
+                            'debit';
+
+                        return [
+                            'id' =>
+                                (int) $row->id,
+
+                            'journal_entry_id' =>
+                                (int) $row->journal_entry_id,
+
+                            'account_id' =>
+                                (int) $row->account_id,
+
+                            'journal_number' =>
+                                $row->journal_number,
+
+                            'business_date' =>
+                                $row->business_date,
+
+                            'status' =>
+                                $row->status,
+
+                            'account_code' =>
+                                $row->code,
+
+                            'account_name' =>
+                                $row->name,
+
+                            'account_type' =>
+                                $row->account_type,
+
+                            'normal_balance' =>
+                                $row->normal_balance,
+
+                            'debit' =>
+                                $debit,
+
+                            'credit' =>
+                                $credit,
+
+                            'movement' =>
+                                round(
+                                    $debit - $credit,
+                                    2
+                                ),
+
+                            'natural_movement' =>
+                                round(
+                                    $normalDebit
+                                        ? $debit - $credit
+                                        : $credit - $debit,
+                                    2
+                                ),
+
+                            'description' =>
+                                $row->description,
+                        ];
+                    }
+                )
+                ->values();
+
+        $totalDebit =
+            (float) (
+                $totals->total_debit
+                ??
+                0
+            );
+
+        $totalCredit =
+            (float) (
+                $totals->total_credit
+                ??
+                0
+            );
+
+        $difference =
+            round(
+                $totalDebit
+                -
+                $totalCredit,
+                2
+            );
+
+        return response()->json([
+            'data' =>
+                $rows,
+
+            'summary' => [
+                'total_debit' =>
+                    $totalDebit,
+
+                'total_credit' =>
+                    $totalCredit,
+
+                'difference' =>
+                    $difference,
+
+                'balanced' =>
+                    abs(
+                        $difference
+                    )
+                    <=
+                    0.01,
+
+                'row_count' =>
+                    (int) $totalRows,
+            ],
+
+            'filters' => [
+                'from' =>
+                    $from,
+
+                'to' =>
+                    $to,
+
+                'account' =>
+                    $account !== ''
+                        ? $account
+                        : null,
+
+                'q' =>
+                    $search !== ''
+                        ? $search
+                        : null,
+
+                'statuses' =>
+                    $statuses,
+            ],
+
+            'pagination' => [
+                'page' =>
+                    $page,
+
+                'per_page' =>
+                    $perPage,
+
+                'total' =>
+                    (int) $totalRows,
+
+                'last_page' =>
+                    max(
+                        1,
+                        (int) ceil(
+                            $totalRows
+                            /
+                            $perPage
+                        )
+                    ),
+            ],
+
+            'reporting_basis' =>
+                'recognised-ledger',
+
+            'existing_general_ledger_endpoint_preserved' =>
+                true,
+
+            'read_only' =>
+                true,
+
+            'quickbooks_upgrade_phase' =>
+                'QB1.1',
+        ]);
+    }
+
+
+    /*
+     * AQUILA_QUICKBOOKS_QB2_1_RECONCILIATION_DASHBOARD
+     *
+     * READ ONLY.
+     *
+     * Existing owners remain authoritative:
+     * - POS owns payment/cash operational writes.
+     * - Existing MoMo controller owns approve/reject.
+     */
+    public function reconciliationDashboard(Request $request): JsonResponse
+    {
+        [$tenantId, $branchId] = $this->scope($request);
+
+        $validated = $request->validate([
+            'from' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+
+            'to' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+
+            'payment_method' => [
+                'nullable',
+                'string',
+                'max:80',
+            ],
+        ]);
+
+        $from =
+            $validated['from']
+            ??
+            null;
+
+        $to =
+            $validated['to']
+            ??
+            null;
+
+        if (
+            $from !== null
+            &&
+            $to !== null
+            &&
+            $from > $to
+        ) {
+            return response()->json([
+                'message' =>
+                    'The report start date must not be after the end date.',
+            ], 422);
+        }
+
+        $paymentMethod =
+            strtolower(
+                trim(
+                    (string) (
+                        $validated['payment_method']
+                        ??
+                        ''
+                    )
+                )
+            );
+
+        $payments =
+            DB::table(
+                'pharmaco_payments as payments'
+            )
+                ->leftJoin(
+                    'pharmaco_pos_sessions as sessions',
+                    'sessions.id',
+                    '=',
+                    'payments.pos_session_id'
+                )
+                ->where(
+                    'payments.tenant_id',
+                    $tenantId
+                )
+                ->when(
+                    $branchId !== null,
+                    fn ($query) =>
+                        $query->where(
+                            'sessions.branch_id',
+                            $branchId
+                        )
+                )
+                ->when(
+                    $from !== null,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'payments.business_date',
+                            '>=',
+                            $from
+                        )
+                )
+                ->when(
+                    $to !== null,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'payments.business_date',
+                            '<=',
+                            $to
+                        )
+                )
+                ->when(
+                    $paymentMethod !== '',
+                    fn ($query) =>
+                        $query->whereRaw(
+                            'LOWER(payments.payment_method) = ?',
+                            [
+                                $paymentMethod,
+                            ]
+                        )
+                );
+
+        $paymentSummary =
+            (clone $payments)
+                ->selectRaw(
+                    'COUNT(payments.id) as transaction_count, '
+                    . 'COALESCE(SUM(payments.amount), 0) as recorded_amount'
+                )
+                ->first();
+
+        $paymentMethods =
+            (clone $payments)
+                ->selectRaw(
+                    'LOWER(payments.payment_method) as payment_method, '
+                    . 'COUNT(payments.id) as transaction_count, '
+                    . 'COALESCE(SUM(payments.amount), 0) as amount'
+                )
+                ->groupByRaw(
+                    'LOWER(payments.payment_method)'
+                )
+                ->orderBy(
+                    'payment_method'
+                )
+                ->get()
+                ->map(
+                    static fn ($row): array => [
+                        'payment_method' =>
+                            $row->payment_method,
+
+                        'transaction_count' =>
+                            (int) $row->transaction_count,
+
+                        'amount' =>
+                            (float) $row->amount,
+                    ]
+                )
+                ->values();
+
+        $paymentStatuses =
+            (clone $payments)
+                ->selectRaw(
+                    'LOWER(payments.status) as status, '
+                    . 'COUNT(payments.id) as transaction_count, '
+                    . 'COALESCE(SUM(payments.amount), 0) as amount'
+                )
+                ->groupByRaw(
+                    'LOWER(payments.status)'
+                )
+                ->orderBy(
+                    'status'
+                )
+                ->get()
+                ->map(
+                    static fn ($row): array => [
+                        'status' =>
+                            $row->status,
+
+                        'transaction_count' =>
+                            (int) $row->transaction_count,
+
+                        'amount' =>
+                            (float) $row->amount,
+                    ]
+                )
+                ->values();
+
+        $paymentReconciliations =
+            DB::table(
+                'pharmaco_payment_reconciliations as reconciliations'
+            )
+                ->join(
+                    'pharmaco_payments as payments',
+                    'payments.id',
+                    '=',
+                    'reconciliations.pharmaco_payment_id'
+                )
+                ->leftJoin(
+                    'pharmaco_pos_sessions as sessions',
+                    'sessions.id',
+                    '=',
+                    'payments.pos_session_id'
+                )
+                ->where(
+                    'reconciliations.tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'payments.tenant_id',
+                    $tenantId
+                )
+                ->when(
+                    $branchId !== null,
+                    fn ($query) =>
+                        $query->where(
+                            'sessions.branch_id',
+                            $branchId
+                        )
+                )
+                ->when(
+                    $from !== null,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'payments.business_date',
+                            '>=',
+                            $from
+                        )
+                )
+                ->when(
+                    $to !== null,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'payments.business_date',
+                            '<=',
+                            $to
+                        )
+                )
+                ->when(
+                    $paymentMethod !== '',
+                    fn ($query) =>
+                        $query->whereRaw(
+                            'LOWER(payments.payment_method) = ?',
+                            [
+                                $paymentMethod,
+                            ]
+                        )
+                );
+
+        $paymentReconciliationTotals =
+            (clone $paymentReconciliations)
+                ->selectRaw(
+                    'COUNT(reconciliations.id) as reconciliation_count, '
+                    . 'COALESCE(SUM(reconciliations.expected_amount), 0) as expected_amount, '
+                    . 'COALESCE(SUM(reconciliations.settled_amount), 0) as settled_amount, '
+                    . 'COALESCE(SUM(reconciliations.variance_amount), 0) as variance_amount'
+                )
+                ->first();
+
+        $paymentReconciliationStatuses =
+            (clone $paymentReconciliations)
+                ->selectRaw(
+                    'LOWER(reconciliations.reconciliation_status) as status, '
+                    . 'COUNT(reconciliations.id) as reconciliation_count, '
+                    . 'COALESCE(SUM(reconciliations.variance_amount), 0) as variance_amount'
+                )
+                ->groupByRaw(
+                    'LOWER(reconciliations.reconciliation_status)'
+                )
+                ->orderBy(
+                    'status'
+                )
+                ->get()
+                ->map(
+                    static fn ($row): array => [
+                        'status' =>
+                            $row->status,
+
+                        'reconciliation_count' =>
+                            (int) $row->reconciliation_count,
+
+                        'variance_amount' =>
+                            (float) $row->variance_amount,
+                    ]
+                )
+                ->values();
+
+        $paymentCount =
+            (int) (
+                $paymentSummary->transaction_count
+                ??
+                0
+            );
+
+        $reconciliationCount =
+            (int) (
+                $paymentReconciliationTotals->reconciliation_count
+                ??
+                0
+            );
+
+        $unreconciledPaymentCount =
+            max(
+                0,
+                $paymentCount
+                -
+                $reconciliationCount
+            );
+
+        $coveragePercent =
+            $paymentCount > 0
+                ? round(
+                    (
+                        $reconciliationCount
+                        /
+                        $paymentCount
+                    )
+                    *
+                    100,
+                    2
+                )
+                : 0.0;
+
+        $momo =
+            DB::table(
+                'pharmaco_momo_reconciliations as momo'
+            )
+                ->leftJoin(
+                    'pharmaco_payments as payments',
+                    'payments.id',
+                    '=',
+                    'momo.pharmaco_payment_id'
+                )
+                ->leftJoin(
+                    'pharmaco_pos_sessions as sessions',
+                    'sessions.id',
+                    '=',
+                    'payments.pos_session_id'
+                )
+                ->where(
+                    'momo.tenant_id',
+                    $tenantId
+                )
+                ->when(
+                    $branchId !== null,
+                    fn ($query) =>
+                        $query->where(
+                            'sessions.branch_id',
+                            $branchId
+                        )
+                )
+                ->when(
+                    $from !== null,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'payments.business_date',
+                            '>=',
+                            $from
+                        )
+                )
+                ->when(
+                    $to !== null,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'payments.business_date',
+                            '<=',
+                            $to
+                        )
+                );
+
+        $momoTotals =
+            (clone $momo)
+                ->selectRaw(
+                    'COUNT(momo.id) as reconciliation_count, '
+                    . 'SUM(CASE WHEN momo.pharmaco_payment_id IS NOT NULL THEN 1 ELSE 0 END) as linked_payment_count, '
+                    . 'SUM(CASE WHEN momo.reviewed_at IS NOT NULL THEN 1 ELSE 0 END) as reviewed_count, '
+                    . 'COALESCE(SUM(momo.amount_variance), 0) as amount_variance'
+                )
+                ->first();
+
+        $momoStatuses =
+            (clone $momo)
+                ->selectRaw(
+                    'LOWER(momo.status) as status, '
+                    . 'COUNT(momo.id) as reconciliation_count, '
+                    . 'COALESCE(SUM(momo.amount_variance), 0) as amount_variance'
+                )
+                ->groupByRaw(
+                    'LOWER(momo.status)'
+                )
+                ->orderBy(
+                    'status'
+                )
+                ->get()
+                ->map(
+                    static fn ($row): array => [
+                        'status' =>
+                            $row->status,
+
+                        'reconciliation_count' =>
+                            (int) $row->reconciliation_count,
+
+                        'amount_variance' =>
+                            (float) $row->amount_variance,
+                    ]
+                )
+                ->values();
+
+        $momoDecisions =
+            (clone $momo)
+                ->selectRaw(
+                    'LOWER(momo.decision) as decision, '
+                    . 'COUNT(momo.id) as reconciliation_count'
+                )
+                ->groupByRaw(
+                    'LOWER(momo.decision)'
+                )
+                ->orderBy(
+                    'decision'
+                )
+                ->get()
+                ->map(
+                    static fn ($row): array => [
+                        'decision' =>
+                            $row->decision,
+
+                        'reconciliation_count' =>
+                            (int) $row->reconciliation_count,
+                    ]
+                )
+                ->values();
+
+        $cashSessions =
+            DB::table(
+                'pharmaco_pos_sessions as sessions'
+            )
+                ->where(
+                    'sessions.tenant_id',
+                    $tenantId
+                )
+                ->when(
+                    $branchId !== null,
+                    fn ($query) =>
+                        $query->where(
+                            'sessions.branch_id',
+                            $branchId
+                        )
+                )
+                ->when(
+                    $from !== null,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'sessions.business_date',
+                            '>=',
+                            $from
+                        )
+                )
+                ->when(
+                    $to !== null,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'sessions.business_date',
+                            '<=',
+                            $to
+                        )
+                );
+
+        $cashTotals =
+            (clone $cashSessions)
+                ->selectRaw(
+                    'COUNT(sessions.id) as session_count, '
+                    . 'COALESCE(SUM(sessions.opening_float_amount), 0) as opening_float_amount, '
+                    . 'COALESCE(SUM(sessions.expected_cash_amount), 0) as expected_cash_amount, '
+                    . 'COALESCE(SUM(sessions.declared_cash_amount), 0) as declared_cash_amount, '
+                    . 'COALESCE(SUM(sessions.cash_drop_amount), 0) as cash_drop_amount, '
+                    . 'COALESCE(SUM(sessions.balance_clearance_amount), 0) as balance_clearance_amount, '
+                    . 'COALESCE(SUM(sessions.variance_amount), 0) as variance_amount, '
+                    . 'SUM(CASE WHEN ABS(COALESCE(sessions.variance_amount, 0)) > 0.01 THEN 1 ELSE 0 END) as variance_session_count'
+                )
+                ->first();
+
+        $cashStatuses =
+            (clone $cashSessions)
+                ->selectRaw(
+                    'LOWER(sessions.status) as status, '
+                    . 'COUNT(sessions.id) as session_count, '
+                    . 'COALESCE(SUM(sessions.variance_amount), 0) as variance_amount'
+                )
+                ->groupByRaw(
+                    'LOWER(sessions.status)'
+                )
+                ->orderBy(
+                    'status'
+                )
+                ->get()
+                ->map(
+                    static fn ($row): array => [
+                        'status' =>
+                            $row->status,
+
+                        'session_count' =>
+                            (int) $row->session_count,
+
+                        'variance_amount' =>
+                            (float) $row->variance_amount,
+                    ]
+                )
+                ->values();
+
+        return response()->json([
+            'data' => [
+                'payments' => [
+                    'transaction_count' =>
+                        $paymentCount,
+
+                    'recorded_amount' =>
+                        (float) (
+                            $paymentSummary->recorded_amount
+                            ??
+                            0
+                        ),
+
+                    'methods' =>
+                        $paymentMethods,
+
+                    'statuses' =>
+                        $paymentStatuses,
+                ],
+
+                'payment_reconciliation' => [
+                    'reconciliation_count' =>
+                        $reconciliationCount,
+
+                    'unreconciled_payment_count' =>
+                        $unreconciledPaymentCount,
+
+                    'coverage_percent' =>
+                        $coveragePercent,
+
+                    'expected_amount' =>
+                        (float) (
+                            $paymentReconciliationTotals->expected_amount
+                            ??
+                            0
+                        ),
+
+                    'settled_amount' =>
+                        (float) (
+                            $paymentReconciliationTotals->settled_amount
+                            ??
+                            0
+                        ),
+
+                    'variance_amount' =>
+                        (float) (
+                            $paymentReconciliationTotals->variance_amount
+                            ??
+                            0
+                        ),
+
+                    'statuses' =>
+                        $paymentReconciliationStatuses,
+                ],
+
+                'momo' => [
+                    'reconciliation_count' =>
+                        (int) (
+                            $momoTotals->reconciliation_count
+                            ??
+                            0
+                        ),
+
+                    'linked_payment_count' =>
+                        (int) (
+                            $momoTotals->linked_payment_count
+                            ??
+                            0
+                        ),
+
+                    'reviewed_count' =>
+                        (int) (
+                            $momoTotals->reviewed_count
+                            ??
+                            0
+                        ),
+
+                    'amount_variance' =>
+                        (float) (
+                            $momoTotals->amount_variance
+                            ??
+                            0
+                        ),
+
+                    'statuses' =>
+                        $momoStatuses,
+
+                    'decisions' =>
+                        $momoDecisions,
+
+                    'existing_review_workflow' =>
+                        true,
+                ],
+
+                'cash' => [
+                    'session_count' =>
+                        (int) (
+                            $cashTotals->session_count
+                            ??
+                            0
+                        ),
+
+                    'opening_float_amount' =>
+                        (float) (
+                            $cashTotals->opening_float_amount
+                            ??
+                            0
+                        ),
+
+                    'expected_cash_amount' =>
+                        (float) (
+                            $cashTotals->expected_cash_amount
+                            ??
+                            0
+                        ),
+
+                    'declared_cash_amount' =>
+                        (float) (
+                            $cashTotals->declared_cash_amount
+                            ??
+                            0
+                        ),
+
+                    'cash_drop_amount' =>
+                        (float) (
+                            $cashTotals->cash_drop_amount
+                            ??
+                            0
+                        ),
+
+                    'balance_clearance_amount' =>
+                        (float) (
+                            $cashTotals->balance_clearance_amount
+                            ??
+                            0
+                        ),
+
+                    'variance_amount' =>
+                        (float) (
+                            $cashTotals->variance_amount
+                            ??
+                            0
+                        ),
+
+                    'variance_session_count' =>
+                        (int) (
+                            $cashTotals->variance_session_count
+                            ??
+                            0
+                        ),
+
+                    'statuses' =>
+                        $cashStatuses,
+
+                    'existing_pos_session_owner' =>
+                        true,
+                ],
+
+                'capabilities' => [
+                    'cash_session_control' =>
+                        true,
+
+                    'momo_reconciliation' =>
+                        true,
+
+                    'momo_review_approval' =>
+                        true,
+
+                    'generic_payment_reconciliation_table' =>
+                        true,
+
+                    'bank_statement_import' =>
+                        false,
+
+                    'bank_feed' =>
+                        false,
+
+                    'bank_statement_matching' =>
+                        false,
+
+                    'reconciliation_locking' =>
+                        false,
+                ],
+            ],
+
+            'filters' => [
+                'from' =>
+                    $from,
+
+                'to' =>
+                    $to,
+
+                'payment_method' =>
+                    $paymentMethod !== ''
+                        ? $paymentMethod
+                        : null,
+
+                'tenant_id' =>
+                    $tenantId,
+
+                'branch_id' =>
+                    $branchId,
+            ],
+
+            'read_only' =>
+                true,
+
+            'quickbooks_upgrade_phase' =>
+                'QB2.1',
+
+            'ownership' => [
+                'payments' =>
+                    'existing-pos-sales-owner',
+
+                'cash_sessions' =>
+                    'existing-pos-session-owner',
+
+                'momo_decisions' =>
+                    'existing-momo-reconciliation-owner',
+
+                'finance_dashboard' =>
+                    'read-model-only',
+            ],
+        ]);
+    }
+
     public function trialBalance(Request $request): JsonResponse
     {
         [$tenantId, $branchId] = $this->scope($request);
 
+        $validated = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
+            'include_zero' => ['nullable', 'boolean'],
+        ]);
+
+        $from = $validated['from'] ?? null;
+        $to = $validated['to'] ?? null;
+
+        if (
+            $from !== null
+            &&
+            $to !== null
+            &&
+            $from > $to
+        ) {
+            return response()->json([
+                'message' => 'The report start date must not be after the end date.',
+            ], 422);
+        }
+
+        $includeZero = array_key_exists(
+            'include_zero',
+            $validated
+        )
+            ? (bool) $validated['include_zero']
+            : true;
+
+        $rows = collect(
+            $this->trialBalanceRows(
+                $tenantId,
+                $branchId,
+                $from,
+                $to
+            )
+        );
+
+        if (! $includeZero) {
+            $rows = $rows
+                ->filter(
+                    static fn (array $row): bool =>
+                        abs(
+                            (float) $row['debit']
+                        )
+                        >
+                        0.005
+                        ||
+                        abs(
+                            (float) $row['credit']
+                        )
+                        >
+                        0.005
+                )
+                ->values();
+        }
+
+        $totalDebit = (float) $rows->sum(
+            'debit'
+        );
+
+        $totalCredit = (float) $rows->sum(
+            'credit'
+        );
+
+        $difference = round(
+            $totalDebit
+            -
+            $totalCredit,
+            2
+        );
+
         return response()->json([
-            'data' => $this->trialBalanceRows($tenantId, $branchId),
+            /*
+             * Existing Accounting UI contract preserved.
+             */
+            'data' => $rows->values(),
+
+            'summary' => [
+                'total_debit' =>
+                    $totalDebit,
+
+                'total_credit' =>
+                    $totalCredit,
+
+                'difference' =>
+                    $difference,
+
+                'balanced' =>
+                    abs($difference) <= 0.01,
+
+                'account_count' =>
+                    $rows->count(),
+
+                'non_zero_account_count' =>
+                    $rows
+                        ->filter(
+                            static fn (array $row): bool =>
+                                abs(
+                                    (float) $row['debit']
+                                )
+                                >
+                                0.005
+                                ||
+                                abs(
+                                    (float) $row['credit']
+                                )
+                                >
+                                0.005
+                        )
+                        ->count(),
+            ],
+
+            'filters' => [
+                'from' =>
+                    $from,
+
+                'to' =>
+                    $to,
+
+                'include_zero' =>
+                    $includeZero,
+            ],
+
+            'reporting_basis' =>
+                'posted-and-shadow-posted-ledger',
+
+            'read_only' =>
+                true,
         ]);
     }
+
+    public function reportingHealth(Request $request): JsonResponse
+    {
+        [$tenantId, $branchId] = $this->scope($request);
+
+        $validated = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
+        $from = $validated['from'] ?? null;
+        $to = $validated['to'] ?? null;
+
+        if (
+            $from !== null
+            &&
+            $to !== null
+            &&
+            $from > $to
+        ) {
+            return response()->json([
+                'message' => 'The report start date must not be after the end date.',
+            ], 422);
+        }
+
+        $trial = collect(
+            $this->trialBalanceRows(
+                $tenantId,
+                $branchId,
+                $from,
+                $to
+            )
+        );
+
+        $totalDebit =
+            (float) $trial->sum('debit');
+
+        $totalCredit =
+            (float) $trial->sum('credit');
+
+        $difference = round(
+            $totalDebit
+            -
+            $totalCredit,
+            2
+        );
+
+        $journalQuery =
+            DB::table(
+                'finance_journal_entries'
+            )
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->whereIn(
+                    'status',
+                    [
+                        'posted',
+                        'shadow_posted',
+                    ]
+                )
+                ->when(
+                    $branchId !== null,
+                    fn ($builder) =>
+                        $builder->where(
+                            'branch_id',
+                            $branchId
+                        )
+                )
+                ->when(
+                    $from !== null,
+                    fn ($builder) =>
+                        $builder->whereDate(
+                            'business_date',
+                            '>=',
+                            $from
+                        )
+                )
+                ->when(
+                    $to !== null,
+                    fn ($builder) =>
+                        $builder->whereDate(
+                            'business_date',
+                            '<=',
+                            $to
+                        )
+                );
+
+        return response()->json([
+            'data' => [
+                'trial_balance' => [
+                    'status' =>
+                        abs($difference) <= 0.01
+                            ? 'passed'
+                            : 'failed',
+
+                    'total_debit' =>
+                        $totalDebit,
+
+                    'total_credit' =>
+                        $totalCredit,
+
+                    'difference' =>
+                        $difference,
+
+                    'account_count' =>
+                        $trial->count(),
+                ],
+
+                'journal' => [
+                    'posted_entry_count' =>
+                        (clone $journalQuery)
+                            ->where(
+                                'status',
+                                'posted'
+                            )
+                            ->count(),
+
+                    'shadow_posted_entry_count' =>
+                        (clone $journalQuery)
+                            ->where(
+                                'status',
+                                'shadow_posted'
+                            )
+                            ->count(),
+
+                    'latest_business_date' =>
+                        (clone $journalQuery)
+                            ->max(
+                                'business_date'
+                            ),
+                ],
+
+                'scope' => [
+                    'tenant_id' =>
+                        $tenantId,
+
+                    'branch_id' =>
+                        $branchId,
+
+                    'from' =>
+                        $from,
+
+                    'to' =>
+                        $to,
+                ],
+
+                'read_only' =>
+                    true,
+
+                'quickbooks_upgrade_phase' =>
+                    'QB1',
+            ],
+        ]);
+    }
+
+
 
     public function chartOfAccounts(Request $request): JsonResponse
     {
@@ -260,7 +1772,7 @@ class AccountingReadModelController extends Controller
     {
         [$tenantId, $branchId] = $this->scope($request);
 
-        $rows = DB::table('pharmaco_sales')
+        $rows = $this->completedPaidAnalyticsSalesQuery(DB::table('pharmaco_sales'))
             ->where('tenant_id', $tenantId)
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->selectRaw(
@@ -319,22 +1831,98 @@ class AccountingReadModelController extends Controller
         ]);
     }
 
-    private function trialBalanceRows(int $tenantId, ?int $branchId): array
-    {
-        return DB::table('finance_chart_of_accounts as accounts')
-            ->leftJoin('finance_journal_lines as lines', function ($join) use ($tenantId, $branchId) {
-                $join->on('lines.chart_of_account_id', '=', 'accounts.id')
-                    ->where('lines.tenant_id', '=', $tenantId);
+    private function trialBalanceRows(
+        int $tenantId,
+        ?int $branchId,
+        ?string $from = null,
+        ?string $to = null,
+    ): array {
+        return DB::table(
+            'finance_chart_of_accounts as accounts'
+        )
+            ->leftJoin(
+                'finance_journal_lines as lines',
+                function ($join) use (
+                    $tenantId,
+                    $branchId
+                ): void {
+                    $join
+                        ->on(
+                            'lines.chart_of_account_id',
+                            '=',
+                            'accounts.id'
+                        )
+                        ->where(
+                            'lines.tenant_id',
+                            '=',
+                            $tenantId
+                        );
 
-                if ($branchId !== null) {
-                    $join->where('lines.branch_id', '=', $branchId);
+                    if ($branchId !== null) {
+                        $join->where(
+                            'lines.branch_id',
+                            '=',
+                            $branchId
+                        );
+                    }
                 }
-            })
-            ->leftJoin('finance_journal_entries as entries', function ($join) {
-                $join->on('entries.id', '=', 'lines.journal_entry_id')
-                    ->whereIn('entries.status', ['posted', 'shadow_posted']);
-            })
-            ->where('accounts.tenant_id', $tenantId)
+            )
+            ->leftJoin(
+                'finance_journal_entries as entries',
+                function ($join) use (
+                    $tenantId,
+                    $branchId,
+                    $from,
+                    $to
+                ): void {
+                    $join
+                        ->on(
+                            'entries.id',
+                            '=',
+                            'lines.journal_entry_id'
+                        )
+                        ->where(
+                            'entries.tenant_id',
+                            '=',
+                            $tenantId
+                        )
+                        ->whereIn(
+                            'entries.status',
+                            [
+                                'posted',
+                                'shadow_posted',
+                            ]
+                        );
+
+                    if ($branchId !== null) {
+                        $join->where(
+                            'entries.branch_id',
+                            '=',
+                            $branchId
+                        );
+                    }
+
+                    if ($from !== null) {
+                        $join->whereDate(
+                            'entries.business_date',
+                            '>=',
+                            $from
+                        );
+                    }
+
+                    if ($to !== null) {
+                        $join->whereDate(
+                            'entries.business_date',
+                            '<=',
+                            $to
+                        );
+                    }
+                }
+            )
+            ->where(
+                'accounts.tenant_id',
+                $tenantId
+            )
             ->groupBy(
                 'accounts.id',
                 'accounts.code',
@@ -342,32 +1930,105 @@ class AccountingReadModelController extends Controller
                 'accounts.account_type',
                 'accounts.normal_balance'
             )
-            ->orderBy('accounts.code')
+            ->orderBy(
+                'accounts.code'
+            )
             ->selectRaw(
-                'accounts.id as account_id, accounts.code, accounts.name, '
-                . 'accounts.account_type, accounts.normal_balance, '
-                . 'COALESCE(SUM(lines.debit), 0) as debit, '
-                . 'COALESCE(SUM(lines.credit), 0) as credit'
+                'accounts.id as account_id, '
+                . 'accounts.code, '
+                . 'accounts.name, '
+                . 'accounts.account_type, '
+                . 'accounts.normal_balance, '
+                . 'COALESCE(SUM(CASE WHEN entries.id IS NOT NULL THEN lines.debit ELSE 0 END), 0) as debit, '
+                . 'COALESCE(SUM(CASE WHEN entries.id IS NOT NULL THEN lines.credit ELSE 0 END), 0) as credit'
             )
             ->get()
-            ->map(function ($row): array {
-                $debit = (float) $row->debit;
-                $credit = (float) $row->credit;
-                $debitNormal = in_array($row->account_type, ['asset', 'expense'], true);
+            ->map(
+                static function ($row): array {
+                    $debit =
+                        (float) $row->debit;
 
-                return [
-                    'account_id' => (int) $row->account_id,
-                    'code' => $row->code,
-                    'name' => $row->name,
-                    'account_type' => $row->account_type,
-                    'normal_balance' => $row->normal_balance,
-                    'debit' => $debit,
-                    'credit' => $credit,
-                    'balance' => $debitNormal ? $debit - $credit : $credit - $debit,
-                ];
-            })
+                    $credit =
+                        (float) $row->credit;
+
+                    $normalDebit =
+                        strtolower(
+                            (string) $row->normal_balance
+                        )
+                        ===
+                        'debit';
+
+                    $balance =
+                        $normalDebit
+                            ? $debit - $credit
+                            : $credit - $debit;
+
+                    $netDebit =
+                        max(
+                            $debit - $credit,
+                            0.0
+                        );
+
+                    $netCredit =
+                        max(
+                            $credit - $debit,
+                            0.0
+                        );
+
+                    return [
+                        'account_id' =>
+                            (int) $row->account_id,
+
+                        'code' =>
+                            $row->code,
+
+                        'name' =>
+                            $row->name,
+
+                        'account_type' =>
+                            $row->account_type,
+
+                        'normal_balance' =>
+                            $row->normal_balance,
+
+                        /*
+                         * Movement totals.
+                         */
+                        'debit' =>
+                            $debit,
+
+                        'credit' =>
+                            $credit,
+
+                        /*
+                         * Natural account balance.
+                         */
+                        'balance' =>
+                            $balance,
+
+                        /*
+                         * QuickBooks-style ending side.
+                         */
+                        'ending_debit' =>
+                            $netDebit,
+
+                        'ending_credit' =>
+                            $netCredit,
+
+                        'ending_side' =>
+                            abs($balance) <= 0.005
+                                ? 'zero'
+                                : (
+                                    $netDebit > 0
+                                        ? 'debit'
+                                        : 'credit'
+                                ),
+                    ];
+                }
+            )
             ->all();
     }
+
 
     private function reconciliationSummary(
         int $tenantId,
@@ -486,4 +2147,42 @@ class AccountingReadModelController extends Controller
 
         return [$tenantId, $branchId];
     }
+
+
+    /**
+     * UBUZIMA+ R5.7.7F
+     *
+     * Analytics sales authority:
+     * include a sale only after the persisted paid amount
+     * fully covers the persisted sale total.
+     */
+    /**
+     * UBUZIMA+ R5.7.7G
+     *
+     * Sales analytics authority:
+     * completed / fully-paid active sales only.
+     */
+    private function completedPaidAnalyticsSalesQuery($query)
+    {
+        return $query
+            ->where('paid_amount', '>', 0)
+            ->whereColumn(
+                'paid_amount',
+                '>=',
+                'total_amount'
+            )
+            ->whereRaw(
+                "LOWER(COALESCE(status, '')) NOT LIKE ?",
+                ['%void%']
+            )
+            ->whereRaw(
+                "LOWER(COALESCE(status, '')) NOT LIKE ?",
+                ['%cancel%']
+            )
+            ->whereRaw(
+                "LOWER(COALESCE(status, '')) NOT LIKE ?",
+                ['%return%']
+            );
+    }
+
 }

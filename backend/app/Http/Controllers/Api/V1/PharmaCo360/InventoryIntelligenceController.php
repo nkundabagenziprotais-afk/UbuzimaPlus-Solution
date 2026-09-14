@@ -517,6 +517,172 @@ class InventoryIntelligenceController extends Controller
             });
     }
 
+    /*
+     * AQUILA_PWA_INVENTORY_MOVEMENT_SUMMARY_R1
+     *
+     * Read-only movement truth for the selected Business
+     * Overview date range.
+     *
+     * "New Product Inventory" means positive stock_received
+     * units only. Sale returns are not classified as new
+     * product inventory.
+     */
+    public function movementSummary(
+        Request $request,
+    ): JsonResponse {
+        $tenant = $this->resolveTenant($request);
+
+        $validated = $request->validate([
+            'start_date' => [
+                'required',
+                'date_format:Y-m-d',
+            ],
+
+            'end_date' => [
+                'required',
+                'date_format:Y-m-d',
+                'after_or_equal:start_date',
+            ],
+
+            'branch_id' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+        ]);
+
+        $query = DB::table(
+            'stock_movements'
+        )
+            ->where(
+                'tenant_id',
+                $tenant->id,
+            )
+            ->whereRaw(
+                "COALESCE(
+                    NULLIF(business_date, ''),
+                    DATE(occurred_at)
+                ) BETWEEN ? AND ?",
+                [
+                    $validated['start_date'],
+                    $validated['end_date'],
+                ],
+            );
+
+        if (! empty($validated['branch_id'])) {
+            $query->where(
+                'branch_id',
+                $validated['branch_id'],
+            );
+        }
+
+        $summary = $query
+            ->selectRaw(
+                "
+                COUNT(*) AS movement_count,
+
+                SUM(
+                    CASE
+                        WHEN movement_type = 'stock_received'
+                         AND quantity > 0
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS new_inventory_records,
+
+                SUM(
+                    CASE
+                        WHEN movement_type = 'stock_received'
+                         AND quantity > 0
+                        THEN quantity
+                        ELSE 0
+                    END
+                ) AS new_product_inventory,
+
+                SUM(
+                    CASE
+                        WHEN quantity < 0
+                        THEN ABS(quantity)
+                        ELSE 0
+                    END
+                ) AS decreasing_inventory,
+
+                SUM(quantity) AS net_change
+                "
+            )
+            ->first();
+
+        return response()->json([
+            'period' => [
+                'start_date' =>
+                    $validated['start_date'],
+
+                'end_date' =>
+                    $validated['end_date'],
+            ],
+
+            'branch_id' =>
+                ! empty($validated['branch_id'])
+                    ? (int) $validated['branch_id']
+                    : null,
+
+            'summary' => [
+                'new_product_inventory' =>
+                    round(
+                        (float) (
+                            $summary
+                                ->new_product_inventory
+                            ?? 0
+                        ),
+                        3,
+                    ),
+
+                'new_inventory_records' =>
+                    (int) (
+                        $summary
+                            ->new_inventory_records
+                        ?? 0
+                    ),
+
+                'decreasing_inventory' =>
+                    round(
+                        (float) (
+                            $summary
+                                ->decreasing_inventory
+                            ?? 0
+                        ),
+                        3,
+                    ),
+
+                'net_change' =>
+                    round(
+                        (float) (
+                            $summary
+                                ->net_change
+                            ?? 0
+                        ),
+                        3,
+                    ),
+
+                'movement_count' =>
+                    (int) (
+                        $summary
+                            ->movement_count
+                        ?? 0
+                    ),
+            ],
+
+            'new_product_inventory_source' =>
+                'positive_stock_received_movements',
+
+            'date_authority' =>
+                'business_date_then_occurred_at',
+
+            'read_only' =>
+                true,
+        ]);
+    }
+
     private function resolveTenant(
         Request $request,
     ): Tenant {

@@ -210,12 +210,44 @@ class TrendAnalysisController extends Controller
             return [];
         }
 
-        $dateColumn = Schema::hasColumn($table, 'sale_date') ? 'sale_date' : 'created_at';
+        $dateColumn =
+            $table === 'pharmaco_sales'
+            && Schema::hasColumn($table, 'business_date')
+                ? 'business_date'
+                : (
+                    Schema::hasColumn($table, 'sale_date')
+                        ? 'sale_date'
+                        : 'created_at'
+                );
         $amountColumn = Schema::hasColumn($table, 'total_amount') ? 'total_amount' : 'gross_amount';
 
         $query = DB::table($table)
             ->where('tenant_id', $tenantId)
             ->whereBetween($dateColumn, [$start->toDateString(), $end->toDateString()]);
+
+        // UBUZIMA+ R5.7.7G POS trend authority.
+        if ($table === 'pharmaco_sales') {
+            $query
+                ->where('paid_amount', '>', 0)
+                ->whereColumn(
+                    'paid_amount',
+                    '>=',
+                    'total_amount'
+                )
+                ->whereRaw(
+                    "LOWER(COALESCE(status, '')) NOT LIKE ?",
+                    ['%void%']
+                )
+                ->whereRaw(
+                    "LOWER(COALESCE(status, '')) NOT LIKE ?",
+                    ['%cancel%']
+                )
+                ->whereRaw(
+                    "LOWER(COALESCE(status, '')) NOT LIKE ?",
+                    ['%return%']
+                );
+        }
+
 
         if ($branchId !== null && Schema::hasColumn($table, 'branch_id')) {
             $query->where('branch_id', $branchId);

@@ -21,6 +21,9 @@ class PosSessionAdminController extends Controller
         Request $request,
         PosSessionPolicyService $policy,
     ): JsonResponse {
+        // AQUILA_POS_ADMIN_ROLLOVER_R578M_R1
+        $policy->autoCloseExpiredLiveSessions();
+
         $tenant = $this->resolveTenant($request);
 
         $validated = $request->validate([
@@ -156,6 +159,190 @@ class PosSessionAdminController extends Controller
                 'force_close_requires_reason' => true,
                 'all_admin_actions_create_clock_events' => true,
             ],
+        ]);
+    }
+
+    /*
+     * AQUILA_PWA_POS_OPEN_SUMMARY_R1
+     *
+     * Pure read-only Open Till projection.
+     *
+     * Important:
+     * - does not auto-close expired sessions;
+     * - does not reset, zeroize or close a till;
+     * - tenant scope remains authoritative;
+     * - route keeps pharmaco.pos.session.reset permission.
+     */
+    public function openSummary(
+        Request $request,
+    ): JsonResponse {
+        $tenant = $this->resolveTenant($request);
+
+        $validated = $request->validate([
+            'branch_id' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+            'limit' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:250',
+            ],
+        ]);
+
+        $query = PharmacoPosSession::query()
+            ->where(
+                'tenant_id',
+                $tenant->id,
+            )
+            ->whereIn(
+                'status',
+                [
+                    'open',
+                    'zeroized',
+                ],
+            )
+            ->with([
+                'branch:id,name,code',
+                'user:id,name,email',
+            ]);
+
+        if (! empty($validated['branch_id'])) {
+            $query->where(
+                'branch_id',
+                $validated['branch_id'],
+            );
+        }
+
+        $sessions = $query
+            ->latest('opened_at')
+            ->limit(
+                (int) (
+                    $validated['limit']
+                    ?? 100
+                )
+            )
+            ->get()
+            ->map(
+                function (
+                    PharmacoPosSession $session
+                ): array {
+                    return [
+                        'id' =>
+                            (int) $session->id,
+
+                        'uuid' =>
+                            $session->uuid,
+
+                        'session_number' =>
+                            $session->session_number,
+
+                        'session_mode' =>
+                            $session->session_mode
+                            ?? 'live',
+
+                        'status' =>
+                            $session->status,
+
+                        'business_date' =>
+                            $session->business_date,
+
+                        'terminal_identifier' =>
+                            $session
+                                ->terminal_identifier,
+
+                        'terminal_label' =>
+                            $session
+                                ->terminal_label,
+
+                        'opening_float_amount' =>
+                            (float) $session
+                                ->opening_float_amount,
+
+                        'expected_cash_amount' =>
+                            (float) $session
+                                ->expected_cash_amount,
+
+                        'opened_at' =>
+                            $session->opened_at
+                                ?->toISOString(),
+
+                        'branch' =>
+                            $session->branch
+                                ? [
+                                    'id' =>
+                                        (int) $session
+                                            ->branch
+                                            ->id,
+
+                                    'name' =>
+                                        $session
+                                            ->branch
+                                            ->name,
+
+                                    'code' =>
+                                        $session
+                                            ->branch
+                                            ->code,
+                                ]
+                                : null,
+
+                        'user' =>
+                            $session->user
+                                ? [
+                                    'id' =>
+                                        (int) $session
+                                            ->user
+                                            ->id,
+
+                                    'name' =>
+                                        $session
+                                            ->user
+                                            ->name,
+
+                                    'email' =>
+                                        $session
+                                            ->user
+                                            ->email,
+                                ]
+                                : null,
+                    ];
+                },
+            )
+            ->values();
+
+        return response()->json([
+            'summary' => [
+                'active' =>
+                    $sessions->count(),
+
+                'open' =>
+                    $sessions
+                        ->where(
+                            'status',
+                            'open',
+                        )
+                        ->count(),
+
+                'zeroized' =>
+                    $sessions
+                        ->where(
+                            'status',
+                            'zeroized',
+                        )
+                        ->count(),
+            ],
+
+            'sessions' =>
+                $sessions,
+
+            'data_source' =>
+                'pharmaco_pos_sessions',
+
+            'read_only' =>
+                true,
         ]);
     }
 

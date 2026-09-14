@@ -259,7 +259,18 @@ class FinanceApprovalWorkflowService
             ->filter(static fn (int $value): bool => $value > 0)
             ->unique();
 
-        if ($makerIds->contains($actorId)) {
+        if ((
+            $makerIds->contains($actorId)
+            && ! \App\Support\MakerCheckerExemptionPolicy::allows(
+                $actorId,
+                isset($approval->tenant_id)
+                    ? (int) $approval->tenant_id
+                    : null,
+                isset($approval->branch_id)
+                    ? (int) $approval->branch_id
+                    : null
+            )
+        )) {
             throw ValidationException::withMessages([
                 'approval' => [
                     'The preparer or submitter cannot decide this request.',

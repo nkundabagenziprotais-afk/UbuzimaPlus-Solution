@@ -76,47 +76,33 @@ class PosMultiBatchCheckoutAllocator
                 }
             );
 
-        $businessDate = app(
-            PosSessionPolicyService::class
-        )->businessDate();
-
-        $batchEligibility = app(
-            PosBatchEligibilityService::class
-        );
+        $today = now()->toDateString();
 
         /*
          * Rows are locked and ordered by FEFO for the complete
          * atomic checkout transaction.
          */
-        $batchQuery = StockBatch::query()
+        $batches = StockBatch::query()
             ->where('tenant_id', $tenantId)
             ->where('branch_id', $branchId)
             ->whereIn('product_id', $productIds)
-            ->where('status', 'active')
-            ->whereHas(
-                'product',
-                static fn ($productQuery) =>
-                    $productQuery
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'status',
-                            'active'
-                        )
-            )
+            ->whereIn('status', ['active', 'available'])
             ->whereRaw(
                 '(quantity_on_hand - quantity_reserved) > 0'
-            );
-
-        $batchEligibility
-            ->applyExpiryEligibility(
-                $batchQuery,
-                $businessDate
-            );
-
-        $batches = $batchQuery
+            )
+            ->where(
+                static function (
+                    $query
+                ) use ($today): void {
+                    $query
+                        ->whereNull('expiry_date')
+                        ->orWhereDate(
+                            'expiry_date',
+                            '>=',
+                            $today
+                        );
+                }
+            )
             ->orderByRaw(
                 'CASE WHEN expiry_date IS NULL '
                 . 'THEN 1 ELSE 0 END'
