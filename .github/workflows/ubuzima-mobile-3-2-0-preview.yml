@@ -285,24 +285,8 @@ jobs:
           fi
 
           ACTUAL="$(
-            awk '
-              BEGIN {
-                IGNORECASE = 1
-              }
-
-              /certificate[[:space:]]+SHA-256[[:space:]]+digest[[:space:]]*:/ {
-                value = $0
-
-                sub(
-                  /^.*digest[[:space:]]*:[[:space:]]*/,
-                  "",
-                  value
-                )
-
-                print value
-                exit
-              }
-            ' "$SIGNER_REPORT" |
+            grep -Ei 'certificate[[:space:]]+SHA-256[[:space:]]+digest[[:space:]]*:' "$SIGNER_REPORT" |
+            sed -E 's/^.*digest[[:space:]]*:[[:space:]]*//' |
             tr -d '[:space:]:-' |
             tr 'A-F' 'a-f'
           )"
