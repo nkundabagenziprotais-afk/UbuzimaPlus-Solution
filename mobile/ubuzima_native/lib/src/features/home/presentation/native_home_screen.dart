@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../update/data/preview_update_service.dart';
+
 import '../../../core/network/native_api_client.dart';
 import '../../../core/theme/ubuzima_brand.dart';
 import '../../../shared/presentation/ubuzima_brand_logo.dart';
@@ -22,7 +24,8 @@ class NativeHomeScreen extends StatefulWidget {
   State<NativeHomeScreen> createState() => _NativeHomeScreenState();
 }
 
-class _NativeHomeScreenState extends State<NativeHomeScreen> {
+class _NativeHomeScreenState extends State<NativeHomeScreen>
+    with WidgetsBindingObserver {
   late final BusinessApiRepository _business;
 
   final Map<String, Map<String, dynamic>> _payloads =
@@ -33,9 +36,28 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
   bool _loading = false;
   String? _actionBusy;
 
+  final PreviewUpdateService _updateService = const PreviewUpdateService();
+
+  bool _updateChecking = false;
+  bool _updateBusy = false;
+  PreviewUpdateManifest? _availableUpdate;
+  String? _updateNotice;
+  String? _preparedUpdatePath;
+  String? _preparedUpdateSha;
+  int? _preparedVersionCode;
+  int? _lastPromptedVersionCode;
+
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkForUpdate(silent: true);
+      }
+    });
 
     _business = BusinessApiRepository(
       readTenantSlug: _tenantSlug,
@@ -525,6 +547,408 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
   }
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(
+    AppLifecycleState state,
+  ) {
+    if (state == AppLifecycleState.resumed) {
+      _checkForUpdate(silent: true);
+    }
+  }
+
+  Future<void> _checkForUpdate({
+    required bool silent,
+  }) async {
+    if (_updateChecking || _updateBusy) {
+      return;
+    }
+
+    setState(() {
+      _updateChecking = true;
+
+      if (!silent) {
+        _updateNotice = 'Checking for updates...';
+      }
+    });
+
+    try {
+      final check = await _updateService.check();
+
+      if (!mounted) {
+        return;
+      }
+
+      final available = check.available;
+
+      setState(() {
+        _availableUpdate = available;
+
+        if (available != null) {
+          _updateNotice = '${available.versionName} is available.';
+        } else if (check.notPublished) {
+          _updateNotice = 'The Preview update channel is not published yet.';
+        } else if (check.unsupportedPlatform) {
+          _updateNotice = 'APK updates are available on Android Preview only.';
+        } else {
+          _updateNotice = 'Ubuzima+ Preview is up to date.';
+        }
+      });
+
+      if (available == null) {
+        if (!silent) {
+          _showUpdateMessage(
+            _updateNotice!,
+          );
+        }
+
+        return;
+      }
+
+      if (available.mandatory) {
+        return;
+      }
+
+      final shouldPrompt =
+          !silent || _lastPromptedVersionCode != available.versionCode;
+
+      if (shouldPrompt) {
+        _lastPromptedVersionCode = available.versionCode;
+
+        await _showOptionalUpdateDialog(
+          available,
+        );
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _updateNotice = 'Update check could not be completed.';
+      });
+
+      if (!silent) {
+        _showUpdateMessage(
+          'Unable to check for updates right now. '
+          'Your workspace is still available.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _updateChecking = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _showOptionalUpdateDialog(
+    PreviewUpdateManifest update,
+  ) async {
+    if (!mounted) {
+      return;
+    }
+
+    final shouldInstall = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Update available'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ubuzima+ Preview '
+                  '${update.versionName} is ready.',
+                ),
+                if (update.releaseNotes.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    'What changed',
+                    style: Theme.of(dialogContext).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 6),
+                  ...update.releaseNotes.take(5).map(
+                        (note) => Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 5,
+                          ),
+                          child: Text('• $note'),
+                        ),
+                      ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(
+                  dialogContext,
+                ).pop(false);
+              },
+              child: const Text('Later'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(
+                  dialogContext,
+                ).pop(true);
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldInstall == true && mounted) {
+      await _installPreviewUpdate(
+        update,
+      );
+    }
+  }
+
+  Future<bool> _installPreviewUpdate(
+    PreviewUpdateManifest update,
+  ) async {
+    if (_updateBusy) {
+      return false;
+    }
+
+    setState(() {
+      _updateBusy = true;
+
+      _updateNotice = 'Preparing ${update.versionName} securely...';
+    });
+
+    try {
+      String path;
+
+      if (_preparedVersionCode == update.versionCode &&
+          _preparedUpdatePath != null &&
+          _preparedUpdateSha == update.sha256) {
+        path = _preparedUpdatePath!;
+      } else {
+        final prepared = await _updateService.prepare(
+          update,
+        );
+
+        if (!mounted) {
+          return false;
+        }
+
+        path = prepared.path;
+
+        setState(() {
+          _preparedUpdatePath = prepared.path;
+
+          _preparedUpdateSha = update.sha256;
+
+          _preparedVersionCode = update.versionCode;
+
+          _updateNotice = 'Update verified. Opening Android installer...';
+        });
+      }
+
+      final status = await _updateService.installPrepared(
+        path: path,
+        sha256: update.sha256,
+      );
+
+      if (!mounted) {
+        return false;
+      }
+
+      if (status == 'installer_started') {
+        setState(() {
+          _updateNotice = 'Android Package Installer opened. '
+              'Confirm the update to continue.';
+        });
+
+        return true;
+      }
+
+      if (status == 'permission_required') {
+        final openSettings = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text(
+                'Allow Preview updates',
+              ),
+              content: const Text(
+                'Android needs permission to install '
+                'verified updates from Ubuzima+ Preview. '
+                'Open settings, allow this app, then '
+                'return and tap Update again.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(
+                      dialogContext,
+                    ).pop(false);
+                  },
+                  child: const Text(
+                    'Not now',
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(
+                      dialogContext,
+                    ).pop(true);
+                  },
+                  child: const Text(
+                    'Open settings',
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (openSettings == true && mounted) {
+          await _updateService.openInstallPermission();
+        }
+
+        return false;
+      }
+
+      throw StateError(
+        'Android returned an unknown installer state.',
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _updateNotice = 'The update could not be prepared safely.';
+        });
+
+        _showUpdateMessage(
+          'Update stopped before installation. '
+          'No existing app data was changed.',
+        );
+      }
+
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _updateBusy = false;
+        });
+      }
+    }
+  }
+
+  void _showUpdateMessage(
+    String message,
+  ) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
+  Widget _mandatoryUpdatePanel(
+    BuildContext context,
+  ) {
+    final update = _availableUpdate!;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(
+          24,
+          32,
+          24,
+          32,
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 520,
+          ),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(
+                24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.system_update_alt_rounded,
+                    size: 42,
+                  ),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  Text(
+                    'Update required',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  Text(
+                    'Ubuzima+ Preview '
+                    '${update.versionName} is required '
+                    'before this workspace can continue.',
+                    textAlign: TextAlign.center,
+                  ),
+                  if (update.releaseNotes.isNotEmpty) ...[
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    ...update.releaseNotes.take(5).map(
+                          (note) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: 5,
+                            ),
+                            child: Text(
+                              '• $note',
+                            ),
+                          ),
+                        ),
+                  ],
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  FilledButton.icon(
+                    onPressed: _updateBusy
+                        ? null
+                        : () => _installPreviewUpdate(
+                              update,
+                            ),
+                    icon: const Icon(
+                      Icons.download_rounded,
+                    ),
+                    label: Text(
+                      _updateBusy ? 'Preparing update...' : 'Update now',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -547,14 +971,18 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
           const SizedBox(width: 6),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (_loading) const LinearProgressIndicator(minHeight: 2),
-            Expanded(child: _selectedBody(context)),
-          ],
-        ),
-      ),
+      body: _availableUpdate?.mandatory == true
+          ? SafeArea(
+              child: _mandatoryUpdatePanel(context),
+            )
+          : SafeArea(
+              child: Column(
+                children: [
+                  if (_loading) const LinearProgressIndicator(minHeight: 2),
+                  Expanded(child: _selectedBody(context)),
+                ],
+              ),
+            ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (index) {
@@ -1211,6 +1639,61 @@ class _NativeHomeScreenState extends State<NativeHomeScreen> {
           icon: const Icon(Icons.sync_rounded),
           label: const Text('Refresh live workspace'),
         ),
+        const SizedBox(height: 10),
+        if (_availableUpdate != null)
+          _businessCard(
+            context,
+            title: _availableUpdate!.mandatory
+                ? 'Update required'
+                : 'Update available',
+            subtitle: 'Ubuzima+ Preview '
+                '${_availableUpdate!.versionName}',
+            leading: Icons.system_update_alt_rounded,
+            trailing: '',
+            badges: <String>[
+              _availableUpdate!.mandatory ? 'required' : 'optional',
+            ],
+          ),
+        if (_updateNotice != null) ...[
+          const SizedBox(height: 2),
+          _emptyCard(
+            context,
+            _updateNotice!,
+          ),
+          const SizedBox(height: 10),
+        ],
+        OutlinedButton.icon(
+          onPressed: _updateChecking || _updateBusy
+              ? null
+              : () => _checkForUpdate(
+                    silent: false,
+                  ),
+          icon: const Icon(
+            Icons.system_update_alt_rounded,
+          ),
+          label: Text(
+            _updateChecking ? 'Checking for updates...' : 'Check for updates',
+          ),
+        ),
+        if (_availableUpdate != null) ...[
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: _updateBusy
+                ? null
+                : () => _installPreviewUpdate(
+                      _availableUpdate!,
+                    ),
+            icon: const Icon(
+              Icons.download_rounded,
+            ),
+            label: Text(
+              _updateBusy
+                  ? 'Preparing update...'
+                  : 'Update to '
+                      '${_availableUpdate!.versionName}',
+            ),
+          ),
+        ],
         const SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed: widget.controller.logout,

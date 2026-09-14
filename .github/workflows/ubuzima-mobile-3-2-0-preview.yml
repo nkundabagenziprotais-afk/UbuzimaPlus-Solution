@@ -54,7 +54,7 @@ jobs:
         run: flutter pub get
 
       - name: Format verification
-        run: dart format --output=none --set-exit-if-changed lib/src/app/ubuzima_app.dart lib/src/core/theme/ubuzima_brand.dart lib/src/shared/presentation/ubuzima_brand_logo.dart lib/src/features/auth/presentation/auth_gate.dart lib/src/features/auth/presentation/native_login_screen.dart lib/src/features/home/presentation/native_home_screen.dart
+        run: dart format --output=none --set-exit-if-changed lib/src/app/ubuzima_app.dart lib/src/core/theme/ubuzima_brand.dart lib/src/shared/presentation/ubuzima_brand_logo.dart lib/src/features/auth/presentation/auth_gate.dart lib/src/features/auth/presentation/native_login_screen.dart lib/src/features/home/presentation/native_home_screen.dart lib/src/features/update/data/preview_update_service.dart test/preview_update_service_test.dart
 
       - name: Analyze
         run: flutter analyze --no-pub
@@ -87,7 +87,86 @@ jobs:
 
           echo "NATIVE_SOURCE_CONTRACT=PASS"
 
+      - name: Enforce Preview updater contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          grep -F \
+            'https://ubuzimaplus.com/downloads/preview-update.json' \
+            lib/src/features/update/data/preview_update_service.dart
+
+          grep -F \
+            'com.ubuzimaplus.preview' \
+            lib/src/features/update/data/preview_update_service.dart
+
+          grep -F \
+            'android.permission.REQUEST_INSTALL_PACKAGES' \
+            android/app/src/main/AndroidManifest.xml
+
+          grep -F \
+            'androidx.core.content.FileProvider' \
+            android/app/src/main/AndroidManifest.xml
+
+          grep -F \
+            '@xml/preview_update_paths' \
+            android/app/src/main/AndroidManifest.xml
+
+          grep -R -F \
+            'com.ubuzimaplus.preview/update' \
+            lib android/app/src/main
+
+          grep -R -F \
+            'f29865dbb2b733cce6cf821d358b5ca5652653dcc25af15a0d5a5272d83d3671' \
+            android/app/src/main
+
+          if grep -R -F \
+            'file://' \
+            lib/src/features/update \
+            android/app/src/main
+          then
+            echo "FAIL=FILE_URI_FOUND_IN_PREVIEW_UPDATER"
+            exit 1
+          fi
+
+          if grep -R -F \
+            'com.ubuzimaplus.app' \
+            lib/src/features/update \
+            android/app/src/main/kotlin/com/ubuzimaplus/preview/MainActivity.kt
+          then
+            echo "FAIL=COMMERCIAL_PACKAGE_REFERENCED_BY_PREVIEW_UPDATER"
+            exit 1
+          fi
+
+          echo "PREVIEW_UPDATER_SOURCE_CONTRACT=PASS"
+
+      - name: Prepare permanent Preview signing
+        shell: bash
+        env:
+          UBIZIMA_PREVIEW_KEYSTORE_B64: ${{ secrets.UBIZIMA_PREVIEW_KEYSTORE_B64 }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+
+          test -n "$UBIZIMA_PREVIEW_KEYSTORE_B64"
+
+          KEYSTORE="$RUNNER_TEMP/ubuzima-preview-release.p12"
+
+          printf '%s' "$UBIZIMA_PREVIEW_KEYSTORE_B64" |
+            base64 --decode > "$KEYSTORE"
+
+          test -s "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+
+          echo "UBIZIMA_PREVIEW_KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "PERMANENT_PREVIEW_KEYSTORE=READY"
+
       - name: Build optimized Android ARM64 release
+        env:
+          UBIZIMA_PREVIEW_STORE_PASSWORD: ${{ secrets.UBIZIMA_PREVIEW_STORE_PASSWORD }}
+          UBIZIMA_PREVIEW_KEY_ALIAS: ${{ secrets.UBIZIMA_PREVIEW_KEY_ALIAS }}
+          UBIZIMA_PREVIEW_KEY_PASSWORD: ${{ secrets.UBIZIMA_PREVIEW_KEY_PASSWORD }}
+          UBIZIMA_PREVIEW_STORE_TYPE: ${{ secrets.UBIZIMA_PREVIEW_STORE_TYPE }}
         run: |
           set -Eeuo pipefail
 
@@ -97,6 +176,62 @@ jobs:
             --obfuscate \
             --split-debug-info=build/symbols \
             --no-pub
+
+      - name: Verify permanent Preview signer
+        shell: bash
+        env:
+          EXPECTED_PREVIEW_CERT_SHA256: ${{ secrets.UBIZIMA_PREVIEW_CERT_SHA256 }}
+        run: |
+          set -Eeuo pipefail
+
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          KNOWN_PREVIEW_CERT_SHA256="f29865dbb2b733cce6cf821d358b5ca5652653dcc25af15a0d5a5272d83d3671"
+
+          test -s "$APK"
+
+          EXPECTED="$(
+            printf '%s' "$EXPECTED_PREVIEW_CERT_SHA256" |
+            tr -d ' :' |
+            tr 'A-F' 'a-f'
+          )"
+
+          test "$EXPECTED" = "$KNOWN_PREVIEW_CERT_SHA256"
+
+          APKSIGNER="$(
+            find "$ANDROID_HOME/build-tools" \
+              -type f \
+              -name apksigner \
+              -print |
+            sort -V |
+            tail -n 1
+          )"
+
+          test -n "$APKSIGNER"
+          test -x "$APKSIGNER"
+
+          "$APKSIGNER" \
+            verify \
+            --print-certs \
+            "$APK" \
+            > /tmp/preview-signer.txt
+
+          ACTUAL="$(
+            awk -F': ' \
+              '/Signer #1 certificate SHA-256 digest:/ {
+                print $2
+                exit
+              }' \
+              /tmp/preview-signer.txt |
+            tr -d ' :' |
+            tr 'A-F' 'a-f'
+          )"
+
+          echo "ANDROID_PREVIEW_CERT_SHA256=$ACTUAL"
+
+          test -n "$ACTUAL"
+          test "$ACTUAL" = "$KNOWN_PREVIEW_CERT_SHA256"
+
+          echo "ANDROID_PREVIEW_SIGNER=PASS"
 
       - name: Verify optimized APK
         shell: bash
@@ -117,8 +252,8 @@ jobs:
 
           grep -F "package: name='com.ubuzimaplus.preview'" /tmp/badging.txt
           grep -F "application-label:'Ubuzima+ Preview'" /tmp/badging.txt
-          grep -F "versionCode='32003'" /tmp/badging.txt
-          grep -F "versionName='3.2.0-rc.3'" /tmp/badging.txt
+          grep -F "versionCode='32004'" /tmp/badging.txt
+          grep -F "versionName='3.2.0-rc.4'" /tmp/badging.txt
 
           unzip -Z1 "$APK" > /tmp/apk-list.txt
 
@@ -206,15 +341,15 @@ jobs:
         run: |
           set -Eeuo pipefail
           cd build/app/outputs/flutter-apk
-          sha256sum app-release.apk > ubuzima-plus-android-3.2.0-rc3-arm64-release.sha256
-          cat ubuzima-plus-android-3.2.0-rc3-arm64-release.sha256
+          sha256sum app-release.apk > ubuzima-plus-android-3.2.0-rc4-arm64-release.sha256
+          cat ubuzima-plus-android-3.2.0-rc4-arm64-release.sha256
 
       - name: Upload Ubuzima+ Android Preview
         uses: actions/upload-artifact@v4
         with:
-          name: ubuzima-plus-android-3.2.0-rc3-arm64-release
+          name: ubuzima-plus-android-3.2.0-rc4-arm64-release
           path: |
             mobile/ubuzima_native/build/app/outputs/flutter-apk/app-release.apk
-            mobile/ubuzima_native/build/app/outputs/flutter-apk/ubuzima-plus-android-3.2.0-rc3-arm64-release.sha256
+            mobile/ubuzima_native/build/app/outputs/flutter-apk/ubuzima-plus-android-3.2.0-rc4-arm64-release.sha256
           if-no-files-found: error
           retention-days: 7

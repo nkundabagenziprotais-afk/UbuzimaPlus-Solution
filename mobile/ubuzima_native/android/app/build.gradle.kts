@@ -4,6 +4,35 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val previewKeystorePath =
+    System.getenv("UBIZIMA_PREVIEW_KEYSTORE_PATH")
+val previewStorePassword =
+    System.getenv("UBIZIMA_PREVIEW_STORE_PASSWORD")
+val previewKeyAlias =
+    System.getenv("UBIZIMA_PREVIEW_KEY_ALIAS")
+val previewKeyPassword =
+    System.getenv("UBIZIMA_PREVIEW_KEY_PASSWORD")
+val previewStoreType =
+    System.getenv("UBIZIMA_PREVIEW_STORE_TYPE")
+
+val previewSigningConfigured =
+    listOf(
+        previewKeystorePath,
+        previewStorePassword,
+        previewKeyAlias,
+        previewKeyPassword,
+        previewStoreType,
+    ).all { !it.isNullOrBlank() }
+
+if (
+    System.getenv("CI") == "true" &&
+    !previewSigningConfigured
+) {
+    throw org.gradle.api.GradleException(
+        "Permanent Ubuzima+ Preview signing is required in CI."
+    )
+}
+
 android {
     namespace = "com.ubuzimaplus.preview"
     compileSdk = flutter.compileSdkVersion
@@ -29,10 +58,28 @@ android {
         }
     }
 
+    signingConfigs {
+        if (previewSigningConfigured) {
+            create("previewRelease") {
+                storeFile = file(previewKeystorePath!!)
+                storePassword = previewStorePassword!!
+                keyAlias = previewKeyAlias!!
+                keyPassword = previewKeyPassword!!
+                storeType = previewStoreType!!
+            }
+        }
+    }
+
     buildTypes {
         release {
             // Preview CI build is re-signed with the stable Ubuzima+ Preview key before distribution.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig =
+                if (previewSigningConfigured) {
+                    signingConfigs.getByName("previewRelease")
+                } else {
+                    // Local-only fallback. CI requires permanent signing.
+                    signingConfigs.getByName("debug")
+                }
         }
     }
 }
