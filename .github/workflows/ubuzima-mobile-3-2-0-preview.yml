@@ -343,8 +343,8 @@ jobs:
 
           grep -F "package: name='com.ubuzimaplus.preview'" /tmp/badging.txt
           grep -F "application-label:'Ubuzima+ Preview'" /tmp/badging.txt
-          grep -F "versionCode='32005'" /tmp/badging.txt
-          grep -F "versionName='3.2.0-rc.5'" /tmp/badging.txt
+          grep -F "versionCode='32006'" /tmp/badging.txt
+          grep -F "versionName='3.2.0-rc.6'" /tmp/badging.txt
 
           unzip -Z1 "$APK" > /tmp/apk-list.txt
 
@@ -432,15 +432,15 @@ jobs:
         run: |
           set -Eeuo pipefail
           cd build/app/outputs/flutter-apk
-          sha256sum app-release.apk > ubuzima-plus-android-3.2.0-rc5-arm64-release.sha256
-          cat ubuzima-plus-android-3.2.0-rc5-arm64-release.sha256
+          sha256sum app-release.apk > ubuzima-plus-android-3.2.0-rc6-arm64-release.sha256
+          cat ubuzima-plus-android-3.2.0-rc6-arm64-release.sha256
 
       - name: Upload Ubuzima+ Android Preview
         uses: actions/upload-artifact@v4
         with:
-          name: ubuzima-plus-android-3.2.0-rc5-arm64-release
+          name: ubuzima-plus-android-3.2.0-rc6-arm64-release
           path: |
             mobile/ubuzima_native/build/app/outputs/flutter-apk/app-release.apk
-            mobile/ubuzima_native/build/app/outputs/flutter-apk/ubuzima-plus-android-3.2.0-rc5-arm64-release.sha256
+            mobile/ubuzima_native/build/app/outputs/flutter-apk/ubuzima-plus-android-3.2.0-rc6-arm64-release.sha256
           if-no-files-found: error
           retention-days: 7

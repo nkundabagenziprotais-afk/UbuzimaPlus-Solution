@@ -174,4 +174,37 @@ class BusinessApiRepository {
       body: payload,
     );
   }
+
+  Future<Map<String, dynamic>> loadInventoryAnalyticsSummary() =>
+      _get(ApiEndpoints.inventoryAnalyticsSummary);
+
+  Future<Map<String, dynamic>> loadSupplierInvoices() =>
+      _get(ApiEndpoints.supplierInvoices);
+
+  Future<Map<String, dynamic>> loadReportsOverview() =>
+      _get(ApiEndpoints.reportsOverview);
+
+  Future<Map<String, dynamic>> loadReportsSalesSummary() =>
+      _get(ApiEndpoints.reportsSalesSummary);
+
+  Future<Map<String, dynamic>> loadReportsProcurementSummary() =>
+      _get(ApiEndpoints.reportsProcurementSummary);
+
+  Future<Map<String, dynamic>> createSupplier(
+    Map<String, dynamic> payload,
+  ) {
+    return _post(
+      ApiEndpoints.suppliers,
+      body: payload,
+    );
+  }
+
+  Future<Map<String, dynamic>> createPurchaseOrder(
+    Map<String, dynamic> payload,
+  ) {
+    return _post(
+      ApiEndpoints.purchaseOrders,
+      body: payload,
+    );
+  }
 }
