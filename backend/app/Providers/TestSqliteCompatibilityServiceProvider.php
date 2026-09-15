@@ -4,12 +4,38 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Database\Php83ImmediateSqliteConnection;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 final class TestSqliteCompatibilityServiceProvider
     extends ServiceProvider
 {
+    public function register(): void
+    {
+        if (version_compare(PHP_VERSION, '8.4.0', '>=')) {
+            return;
+        }
+
+        Connection::resolverFor(
+            'sqlite',
+            static function (
+                $connection,
+                $database,
+                $prefix,
+                array $config
+            ): Php83ImmediateSqliteConnection {
+                return new Php83ImmediateSqliteConnection(
+                    $connection,
+                    $database,
+                    $prefix,
+                    $config
+                );
+            }
+        );
+    }
+
     public function boot(): void
     {
         $connection = DB::connection();
