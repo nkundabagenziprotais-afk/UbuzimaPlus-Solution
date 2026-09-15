@@ -21,6 +21,23 @@ final class Php83ImmediateSqliteConnection extends SQLiteConnection
             return false;
         }
 
+        /*
+         * Laravel's RefreshDatabase / DatabaseTransactions test envelope
+         * replaces the normal transaction manager with the testing manager.
+         * That outer envelope must remain PDO-managed on PHP 8.3 so
+         * PDO::inTransaction() remains visible during framework teardown.
+         *
+         * Normal application connections retain Laravel's base transaction
+         * manager and continue to use raw BEGIN IMMEDIATE below.
+         */
+        if (
+            is_object($this->transactionsManager)
+            && $this->transactionsManager::class
+                === 'Illuminate\\Foundation\\Testing\\DatabaseTransactionsManager'
+        ) {
+            return false;
+        }
+
         $mode = strtoupper(
             (string) (
                 $this->getConfig('transaction_mode')
