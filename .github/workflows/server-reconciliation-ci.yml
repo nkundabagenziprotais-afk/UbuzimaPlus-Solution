@@ -92,6 +92,7 @@ jobs:
       SESSION_DRIVER: array
       QUEUE_CONNECTION: sync
       MAIL_MAILER: log
+      WPA_VENDOR_AUTOLOAD: ${{ github.workspace }}/backend/vendor/autoload.php
 
     steps:
       - name: Checkout reconciliation candidate
