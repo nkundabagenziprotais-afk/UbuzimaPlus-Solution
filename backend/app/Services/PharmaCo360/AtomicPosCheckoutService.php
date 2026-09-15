@@ -46,14 +46,6 @@ class AtomicPosCheckoutService
                     );
 
                 if ($existing !== null) {
-                    $existing[
-                        'receipt_snapshot'
-                    ] =
-                        $this
-                            ->receiptSnapshotService
-                            ->createOrGet(
-                                $existing['sale']
-                            );
 
                     return [
                         ...$existing,
@@ -112,14 +104,6 @@ class AtomicPosCheckoutService
                 throw $exception;
             }
 
-            $existing[
-                'receipt_snapshot'
-            ] =
-                $this
-                    ->receiptSnapshotService
-                    ->createOrGet(
-                        $existing['sale']
-                    );
 
             return [
                 ...$existing,

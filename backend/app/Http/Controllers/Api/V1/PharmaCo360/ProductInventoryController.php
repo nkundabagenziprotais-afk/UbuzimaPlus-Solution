@@ -16,7 +16,9 @@ use App\Services\Access\ScopeResolver;
 use App\Services\Auth\UserAccessProfileService;
 use App\Services\Audit\AuditLogService;
 use App\Services\PharmaCo360\ProductSellingUnitSuggestionService;
+use App\Services\PharmaCo360\PosBatchEligibilityService;
 use App\Services\PharmaCo360\PosSellableBatchCombiner;
+use App\Services\PharmaCo360\PosSessionPolicyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -468,22 +470,53 @@ class ProductInventoryController extends Controller
     {
         $tenant = $request->attributes->get('tenant');
 
+        $batchEligibility = app(
+            PosBatchEligibilityService::class
+        );
+
+        $businessDate = app(
+            PosSessionPolicyService::class
+        )->businessDate();
+
         $batches = StockBatch::query()
             ->with(['product.category', 'stockLocation', 'branch'])
             ->where('tenant_id', $tenant->id)
             ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($request->query('product_id'), fn ($query, $productId) => $query->where('product_id', $productId))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
-            ->when($request->boolean('sellable_only'), function ($query) {
-                $query
-                    ->whereIn('status', ['active', 'available'])
-                    ->whereRaw('(quantity_on_hand - quantity_reserved) > 0')
-                    ->where(function ($expiryQuery) {
-                        $expiryQuery
-                            ->whereNull('expiry_date')
-                            ->orWhereDate('expiry_date', '>=', now()->toDateString());
-                    });
-            })
+            ->when(
+                $request->boolean('sellable_only'),
+                function ($query) use (
+                    $batchEligibility,
+                    $businessDate,
+                    $tenant
+                ): void {
+                    $query
+                        ->where('status', 'active')
+                        ->whereRaw(
+                            '(quantity_on_hand - quantity_reserved) > 0'
+                        )
+                        ->whereHas(
+                            'product',
+                            fn ($productQuery) =>
+                                $productQuery
+                                    ->where(
+                                        'tenant_id',
+                                        $tenant->id
+                                    )
+                                    ->where(
+                                        'status',
+                                        'active'
+                                    )
+                        );
+
+                    $batchEligibility
+                        ->applyExpiryEligibility(
+                            $query,
+                            $businessDate
+                        );
+                }
+            )
             ->when($request->query('search'), function ($query, $search) {
                 $term = '%' . trim((string) $search) . '%';
 
