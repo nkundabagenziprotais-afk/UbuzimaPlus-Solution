@@ -33,6 +33,44 @@ return new class extends Migration
     {
         $this->assertRequiredSchema();
 
+        $legacyAccountCount =
+            DB::table(
+                'finance_chart_of_accounts'
+            )
+                ->where(
+                    'tenant_id',
+                    self::TENANT_ID
+                )
+                ->count();
+
+        $legacyMappingCount =
+            DB::table(
+                'finance_account_mappings'
+            )
+                ->where(
+                    'tenant_id',
+                    self::TENANT_ID
+                )
+                ->count();
+
+        /*
+         * F3-R3 is historical VitaPharma tenant-1 data evolution.
+         * It is not the general Ubuzima+ multi-tenant finance bootstrap.
+         *
+         * A genuinely fresh installation has no legacy tenant-1 finance
+         * footprint, so this historical transformation is a no-op there.
+         *
+         * Any non-zero state continues into the original strict legacy
+         * contract below and remains fail-closed.
+         */
+        if (
+            (int) $legacyAccountCount === 0
+            &&
+            (int) $legacyMappingCount === 0
+        ) {
+            return;
+        }
+
         $accounts =
             $this->accounts();
 
@@ -386,6 +424,55 @@ return new class extends Migration
 
         $mappings =
             $this->mappings();
+
+        $managedAccountCount =
+            DB::table(
+                'finance_chart_of_accounts'
+            )
+                ->where(
+                    'tenant_id',
+                    self::TENANT_ID
+                )
+                ->whereIn(
+                    'code',
+                    array_column(
+                        $accounts,
+                        'code'
+                    )
+                )
+                ->count();
+
+        $managedMappingCount =
+            DB::table(
+                'finance_account_mappings'
+            )
+                ->where(
+                    'tenant_id',
+                    self::TENANT_ID
+                )
+                ->whereIn(
+                    'mapping_key',
+                    array_column(
+                        $mappings,
+                        'key'
+                    )
+                )
+                ->count();
+
+        /*
+         * Symmetry for fresh installations where up() intentionally
+         * performed no historical tenant-1 transformation.
+         *
+         * Any non-zero state continues through the original strict
+         * rollback marker, metadata, reference and count checks.
+         */
+        if (
+            (int) $managedAccountCount === 0
+            &&
+            (int) $managedMappingCount === 0
+        ) {
+            return;
+        }
 
         DB::transaction(
             function () use (

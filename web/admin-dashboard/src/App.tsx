@@ -51,6 +51,7 @@ import {
   type PosSession,
   closePosSession,
   getCurrentPosSession,
+  getStablePosTerminalIdentity,
   openPosSession,
   zeroizePosSession,
 } from './lib/posSessionApi';
@@ -4240,11 +4241,17 @@ function App() {
     pharmaCore.branches?.branches?.[0]?.id ??
     null;
 
+  const posTerminalIdentity = useMemo(
+    () => getStablePosTerminalIdentity(),
+    [],
+  );
+
   useEffect(() => {
     if (
       activeSection !== 'pos' ||
       !session?.token ||
-      !posSessionTenantSlug
+      !posSessionTenantSlug ||
+      !posSessionBranchId
     ) {
       return;
     }
@@ -4253,10 +4260,14 @@ function App() {
 
     setIsLoadingPosSession(true);
 
-    void getCurrentPosSession({
-      token: session.token,
-      tenantSlug: posSessionTenantSlug,
-    })
+    void getCurrentPosSession(
+      {
+        token: session.token,
+        tenantSlug: posSessionTenantSlug,
+      },
+      posSessionBranchId,
+      posTerminalIdentity.identifier,
+    )
       .then((response) => {
         if (cancelled) {
           return;
@@ -4300,9 +4311,11 @@ function App() {
     };
   }, [
     activeSection,
+    posSessionBranchId,
     posSessionTenantSlug,
+    posTerminalIdentity.identifier,
     session?.token,
-  ]);
+]);
 
   useEffect(() => {
     const language = staffLanguageCode(staffLoginLanguage);
@@ -6440,6 +6453,11 @@ function App() {
         return;
       }
 
+      if (!posTerminalIdentity.identifier) {
+        setPosNotice('A stable POS terminal identity is unavailable.');
+        return;
+      }
+
       const openingFloatAmount = Number(posStartingCashBalance);
 
       if (
@@ -6461,6 +6479,10 @@ function App() {
           },
           {
             branch_id: posSessionBranchId,
+            terminal_identifier:
+              posTerminalIdentity.identifier,
+            terminal_label:
+              posTerminalIdentity.label,
             opening_float_amount: openingFloatAmount,
             opening_mode: posOpeningMode,
           },
@@ -6700,15 +6722,33 @@ async function confirmTransaction() {
         return;
       }
 
+      if (!posSessionBranchId) {
+        setPosNotice(
+          'Select an active branch before confirming this transaction.',
+        );
+        return;
+      }
+
+      if (!posTerminalIdentity.identifier) {
+        setPosNotice(
+          'A stable POS terminal identity is unavailable.',
+        );
+        return;
+      }
+
       let activeCheckoutSession = posSession;
 
       if (activeCheckoutSession?.status !== 'open') {
         try {
           const currentSessionResponse =
-            await getCurrentPosSession({
-              token: session.token,
-              tenantSlug: posSessionTenantSlug,
-            });
+            await getCurrentPosSession(
+              {
+                token: session.token,
+                tenantSlug: posSessionTenantSlug,
+              },
+              posSessionBranchId,
+              posTerminalIdentity.identifier,
+            );
 
           activeCheckoutSession =
             currentSessionResponse.session;
@@ -6797,6 +6837,10 @@ async function confirmTransaction() {
             {
               idempotency_key: posCheckoutKey,
               branch_id: branchId,
+              pos_session_id:
+                activeCheckoutSession.id,
+              terminal_identifier:
+                posTerminalIdentity.identifier,
               sale_type: saleType,
               discount_amount:
                 Math.max(
