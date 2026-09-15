@@ -18,7 +18,7 @@ use App\Models\StockMovement;
 use App\Services\PharmaCo360\InventoryCostResolver;
 use App\Services\Access\ScopeResolver;
 use App\Services\Audit\AuditLogService;
-use App\Services\Finance\PharmacoPosPaymentLivePostingService;
+use App\Services\Finance\PharmacoPosPaymentShadowPostingService;
 use Throwable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -2758,7 +2758,7 @@ class SalesDispensingController extends Controller
     private function postPaymentToFinance(PharmacoPayment $payment, PharmacoSale $sale): void
     {
         try {
-            app(PharmacoPosPaymentLivePostingService::class)->postPayment(
+            app(PharmacoPosPaymentShadowPostingService::class)->postPayment(
                 $payment,
                 $sale
             );
